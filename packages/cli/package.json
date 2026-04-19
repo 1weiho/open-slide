@@ -1,7 +1,7 @@
 {
   "name": "openslide",
   "version": "0.1.0",
-  "description": "Scaffold an open-slide deck workspace with Claude Code skills preconfigured.",
+  "description": "Scaffold an openslide deck workspace with Claude Code skills preconfigured.",
   "type": "module",
   "bin": {
     "openslide": "bin/openslide.js"

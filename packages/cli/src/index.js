@@ -1,9 +1,9 @@
 import { init } from './init.js';
 
-const HELP = `openslide — scaffold an open-slide deck workspace
+const HELP = `openslide — scaffold an openslide deck workspace
 
 Usage:
-  openslide init [dir]    Create a new open-slide workspace (defaults to .)
+  openslide init [dir]    Create a new openslide workspace (defaults to .)
   openslide --help        Show this message
   openslide --version     Print version
 

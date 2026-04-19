@@ -1,6 +1,6 @@
 # openslide
 
-Scaffold a deck workspace for [open-slide](https://github.com/) — a React-based slide framework with Claude Code skills preconfigured.
+Scaffold a deck workspace for [openslide](https://github.com/1weiho/openslide) — a React-based slide framework with Claude Code skills preconfigured.
 
 ## Usage
 
@@ -13,7 +13,7 @@ pnpm dev
 
 This creates a workspace containing:
 
-- `src/` — the open-slide runtime (home page, deck viewer, fullscreen mode).
+- `src/` — the openslide runtime (home page, deck viewer, fullscreen mode).
 - `slides/example-slide/` — a starter deck you can edit or delete.
 - `.claude/skills/` and `.agents/skills/` — Claude Code skills (`create-slide`, `apply-comments`, …).
 - `CLAUDE.md` — agent guide for authoring decks.

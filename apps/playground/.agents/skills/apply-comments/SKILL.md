@@ -1,11 +1,11 @@
 ---
 name: apply-comments
-description: Apply pending @slide-comment markers written by the open-slide inspector tool. Use when the user asks to "apply comments", "process slide comments", "apply the inspector comments", "套用留言", or references markers left inside `slides/<id>/index.tsx`.
+description: Apply pending @slide-comment markers written by the openslide inspector tool. Use when the user asks to "apply comments", "process slide comments", "apply the inspector comments", "套用留言", or references markers left inside `slides/<id>/index.tsx`.
 ---
 
 # Apply slide comments
 
-The open-slide editor has an inspector tool that lets the user click on a rendered slide element and attach a textual comment (e.g. *"make this red"*, *"change to 'Open Slide Rocks'"*). Each comment is persisted as an in-source JSX marker inside `slides/<deckId>/index.tsx`.
+The openslide editor has an inspector tool that lets the user click on a rendered slide element and attach a textual comment (e.g. *"make this red"*, *"change to 'Open Slide Rocks'"*). Each comment is persisted as an in-source JSX marker inside `slides/<deckId>/index.tsx`.
 
 Your job: read those markers, perform the described edits, and delete the markers.
 

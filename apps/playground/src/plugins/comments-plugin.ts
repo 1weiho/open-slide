@@ -124,7 +124,7 @@ function findSafeInsertLine(
 
 export function commentsPlugin(): Plugin {
   return {
-    name: 'open-slide:comments',
+    name: 'openslide:comments',
     apply: 'serve',
     configureServer(server: ViteDevServer) {
       const root = server.config.root;

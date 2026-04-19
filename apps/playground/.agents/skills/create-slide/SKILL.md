@@ -1,9 +1,9 @@
 ---
 name: create-slide
-description: Use this skill when the user wants to create, draft, author, or generate a new slide deck / presentation in this open-slide repo. Triggers on phrases like "make a slide deck about X", "create a presentation", "draft slides for", "new deck", "投影片", "簡報", or when the user asks to add content under `slides/`. Do NOT use for editing the framework itself (src/, vite config, styles) — only for authoring content inside `slides/<id>/`.
+description: Use this skill when the user wants to create, draft, author, or generate a new slide deck / presentation in this openslide repo. Triggers on phrases like "make a slide deck about X", "create a presentation", "draft slides for", "new deck", "投影片", "簡報", or when the user asks to add content under `slides/`. Do NOT use for editing the framework itself (src/, vite config, styles) — only for authoring content inside `slides/<id>/`.
 ---
 
-# Create a slide deck in open-slide
+# Create a slide deck in openslide
 
 You are authoring a new deck in this framework. The framework already exists — you only write files under `slides/<id>/`. Never modify `src/`, `package.json`, `vite.config.ts`, or existing decks.
 

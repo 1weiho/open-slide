@@ -36,7 +36,7 @@ export async function init({ dir, force, name }) {
   }
 
   process.stdout.write(
-    `\nCreated open-slide workspace in ${target}\n\n` +
+    `\nCreated openslide workspace in ${target}\n\n` +
       `Next steps:\n` +
       `  cd ${dir === '.' ? basename(target) : dir}\n` +
       `  pnpm install    # or npm install / yarn\n` +
