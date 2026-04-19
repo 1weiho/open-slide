@@ -18,14 +18,17 @@ export function Player({ pages, index, onIndexChange, onExit }: Props) {
     if (document.fullscreenElement !== el) {
       el.requestFullscreen?.().catch(() => {});
     }
+    return () => {
+      if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    };
+  }, []);
+
+  useEffect(() => {
     const onFsChange = () => {
       if (!document.fullscreenElement) onExit();
     };
     document.addEventListener('fullscreenchange', onFsChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', onFsChange);
-      if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
-    };
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
   }, [onExit]);
 
   useEffect(() => {
