@@ -1,13 +1,16 @@
+import { ChevronLeft, ChevronRight, Play } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Play } from 'lucide-react';
-import { loadDeck } from '../lib/decks';
-import type { DeckModule } from '../lib/sdk';
-import { SlideCanvas } from '../components/SlideCanvas';
-import { ThumbnailRail } from '../components/ThumbnailRail';
-import { Player } from '../components/Player';
+import { CommentWidget } from '@/components/inspector/CommentWidget';
+import { InspectOverlay } from '@/components/inspector/InspectOverlay';
+import { InspectorProvider, InspectToggleButton } from '@/components/inspector/InspectorProvider';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Player } from '../components/Player';
+import { SlideCanvas } from '../components/SlideCanvas';
+import { ThumbnailRail } from '../components/ThumbnailRail';
+import { loadDeck } from '../lib/decks';
+import type { DeckModule } from '../lib/sdk';
 
 export function Deck() {
   const { deckId = '' } = useParams();
@@ -121,51 +124,62 @@ export function Deck() {
   const title = deck.meta?.title ?? deckId;
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
-      <header className="flex shrink-0 items-center gap-4 border-b bg-card px-5 py-3">
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/">
-            <ChevronLeft className="size-4" />
-            Home
-          </Link>
-        </Button>
-        <Separator orientation="vertical" className="h-5" />
-        <h1 className="flex-1 text-center text-sm font-semibold tracking-tight">{title}</h1>
-        <Button size="sm" onClick={() => setPlaying(true)}>
-          <Play className="size-4" />
-          Play <kbd className="ml-1 rounded bg-primary-foreground/20 px-1 text-[10px]">F</kbd>
-        </Button>
-      </header>
+    <InspectorProvider deckId={deckId}>
+      <div className="flex h-screen flex-col overflow-hidden bg-background">
+        <header className="flex shrink-0 items-center gap-4 border-b bg-card px-5 py-3">
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/">
+              <ChevronLeft className="size-4" />
+              Home
+            </Link>
+          </Button>
+          <Separator orientation="vertical" className="h-5" />
+          <h1 className="flex-1 text-center text-sm font-semibold tracking-tight">{title}</h1>
+          <InspectToggleButton />
+          <Button size="sm" onClick={() => setPlaying(true)}>
+            <Play className="size-4" />
+            Play <kbd className="ml-1 rounded bg-primary-foreground/20 px-1 text-[10px]">F</kbd>
+          </Button>
+        </header>
 
-      <div className="flex min-h-0 flex-1">
-        <div className="w-60 shrink-0">
-          <ThumbnailRail pages={pages} current={index} onSelect={goTo} />
+        <div className="flex min-h-0 flex-1">
+          <div className="w-60 shrink-0">
+            <ThumbnailRail pages={pages} current={index} onSelect={goTo} />
+          </div>
+          <main className="relative min-h-0 min-w-0 flex-1 bg-background p-8">
+            <SlideCanvas>
+              <CurrentPage />
+            </SlideCanvas>
+            <InspectOverlay />
+          </main>
         </div>
-        <main className="min-h-0 min-w-0 flex-1 bg-background p-8">
-          <SlideCanvas>
-            <CurrentPage />
-          </SlideCanvas>
-        </main>
-      </div>
 
-      <footer className="flex shrink-0 items-center justify-center gap-4 border-t bg-card p-3">
-        <Button variant="outline" size="sm" onClick={() => goTo(index - 1)} disabled={index === 0}>
-          <ChevronLeft className="size-4" />
-          Prev
-        </Button>
-        <span className="min-w-16 text-center text-sm text-muted-foreground tabular-nums">
-          {index + 1} / {pageCount}
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => goTo(index + 1)}
-          disabled={index === pageCount - 1}
-        >
-          Next
-          <ChevronRight className="size-4" />
-        </Button>
-      </footer>
-    </div>
+        <footer className="flex shrink-0 items-center justify-center gap-4 border-t bg-card p-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => goTo(index - 1)}
+            disabled={index === 0}
+          >
+            <ChevronLeft className="size-4" />
+            Prev
+          </Button>
+          <span className="min-w-16 text-center text-sm text-muted-foreground tabular-nums">
+            {index + 1} / {pageCount}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => goTo(index + 1)}
+            disabled={index === pageCount - 1}
+          >
+            Next
+            <ChevronRight className="size-4" />
+          </Button>
+        </footer>
+
+        <CommentWidget />
+      </div>
+    </InspectorProvider>
   );
 }
