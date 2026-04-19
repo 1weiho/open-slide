@@ -1,4 +1,4 @@
-import type { DeckMeta, SlidePage } from '../../src/lib/sdk';
+import type { DeckMeta, SlidePage } from '@open-slide/core';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const palette = {

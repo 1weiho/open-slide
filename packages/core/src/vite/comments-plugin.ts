@@ -54,9 +54,13 @@ function json(res: ServerResponse, status: number, body: unknown) {
   res.end(JSON.stringify(body));
 }
 
-function resolveSlidePath(root: string, deckId: string): string | null {
+function resolveSlidePath(
+  userCwd: string,
+  slidesDir: string,
+  deckId: string,
+): string | null {
   if (!DECK_ID_RE.test(deckId)) return null;
-  const slidesRoot = path.resolve(root, 'slides');
+  const slidesRoot = path.resolve(userCwd, slidesDir);
   const full = path.resolve(slidesRoot, deckId, 'index.tsx');
   if (!full.startsWith(slidesRoot + path.sep)) return null;
   return full;
@@ -122,13 +126,18 @@ function findSafeInsertLine(
   return null;
 }
 
-export function commentsPlugin(): Plugin {
+export type CommentsPluginOptions = {
+  userCwd: string;
+  slidesDir?: string;
+};
+
+export function commentsPlugin(opts: CommentsPluginOptions): Plugin {
+  const userCwd = opts.userCwd;
+  const slidesDir = opts.slidesDir ?? 'slides';
   return {
     name: 'open-slide:comments',
     apply: 'serve',
     configureServer(server: ViteDevServer) {
-      const root = server.config.root;
-
       server.middlewares.use('/__comments', async (req, res, next) => {
         const url = new URL(req.url ?? '/', 'http://local');
         const method = req.method ?? 'GET';
@@ -136,7 +145,7 @@ export function commentsPlugin(): Plugin {
         try {
           if (method === 'GET' && url.pathname === '/') {
             const deckId = url.searchParams.get('deckId') ?? '';
-            const file = resolveSlidePath(root, deckId);
+            const file = resolveSlidePath(userCwd, slidesDir, deckId);
             if (!file) return json(res, 400, { error: 'invalid deckId' });
             let source: string;
             try {
@@ -150,7 +159,7 @@ export function commentsPlugin(): Plugin {
           if (method === 'POST' && url.pathname === '/add') {
             const body = (await readBody(req)) as AddBody;
             const deckId = body.deckId ?? '';
-            const file = resolveSlidePath(root, deckId);
+            const file = resolveSlidePath(userCwd, slidesDir, deckId);
             if (!file) return json(res, 400, { error: 'invalid deckId' });
             if (!body.line || body.line < 1) return json(res, 400, { error: 'invalid line' });
             if (!body.text || typeof body.text !== 'string') {
@@ -189,7 +198,7 @@ export function commentsPlugin(): Plugin {
             const id = url.pathname.slice(1);
             if (!/^c-[a-f0-9]+$/.test(id)) return json(res, 400, { error: 'invalid id' });
             const deckId = url.searchParams.get('deckId') ?? '';
-            const file = resolveSlidePath(root, deckId);
+            const file = resolveSlidePath(userCwd, slidesDir, deckId);
             if (!file) return json(res, 400, { error: 'invalid deckId' });
 
             let source: string;

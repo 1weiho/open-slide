@@ -1,4 +1,4 @@
-# open-slide
+# @open-slide/cli
 
 Scaffold a deck workspace for [open-slide](https://github.com/1weiho/open-slide) — a React-based slide framework with Claude Code skills preconfigured.
 
@@ -13,11 +13,13 @@ pnpm dev
 
 This creates a workspace containing:
 
-- `src/` — the open-slide runtime (home page, deck viewer, fullscreen mode).
 - `slides/example-slide/` — a starter deck you can edit or delete.
+- `package.json` — depends on `@open-slide/core`, which provides the runtime (home page, deck viewer, fullscreen mode) and the `open-slide` CLI.
+- `open-slide.json` — optional config (title, slidesDir, port).
 - `.claude/skills/` and `.agents/skills/` — Claude Code skills (`create-slide`, `apply-comments`, …).
 - `CLAUDE.md` — agent guide for authoring decks.
-- `vite.config.ts`, `tsconfig.json`, `package.json`, etc.
+
+You won't see any Vite, React, or tsconfig files in the workspace. They live inside `@open-slide/core` and you never touch them.
 
 ## Commands
 
@@ -26,6 +28,8 @@ This creates a workspace containing:
 | `open-slide init [dir]` | Scaffold a new workspace in `dir` (defaults to current dir). |
 | `open-slide init --force` | Scaffold into a non-empty directory. |
 | `open-slide init --name <name>` | Override the generated `package.json` name. |
+
+(Once installed in the workspace, `@open-slide/core` provides `open-slide dev`, `open-slide build`, and `open-slide preview` via its own bin.)
 
 ## Authoring a deck
 

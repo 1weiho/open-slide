@@ -14,15 +14,55 @@ importers:
 
   apps/playground:
     dependencies:
+      '@open-slide/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
+    devDependencies:
+      '@types/react':
+        specifier: ^18.3.12
+        version: 18.3.28
+      '@types/react-dom':
+        specifier: ^18.3.1
+        version: 18.3.7(@types/react@18.3.28)
+
+  packages/cli:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.19.17
+        version: 22.19.17
+      tsdown:
+        specifier: ^0.9.9
+        version: 0.9.9(typescript@5.9.3)
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/core:
+    dependencies:
       '@fontsource-variable/geist':
         specifier: ^5.2.8
         version: 5.2.8
+      '@tailwindcss/vite':
+        specifier: ^4.2.2
+        version: 4.2.2(vite@5.4.21(@types/node@22.19.17)(lightningcss@1.32.0))
+      '@vitejs/plugin-react':
+        specifier: ^4.3.3
+        version: 4.7.0(vite@5.4.21(@types/node@22.19.17)(lightningcss@1.32.0))
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      fast-glob:
+        specifier: ^3.3.2
+        version: 3.3.3
       lucide-react:
         specifier: ^1.8.0
         version: 1.8.0(react@18.3.1)
@@ -40,47 +80,29 @@ importers:
         version: 6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       shadcn:
         specifier: ^4.3.0
-        version: 4.3.0(@types/node@25.6.0)(typescript@5.9.3)
+        version: 4.3.0(@types/node@22.19.17)(typescript@5.9.3)
       tailwind-merge:
         specifier: ^3.5.0
         version: 3.5.0
+      tailwindcss:
+        specifier: ^4.2.2
+        version: 4.2.2
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
+      vite:
+        specifier: ^5.4.10
+        version: 5.4.21(@types/node@22.19.17)(lightningcss@1.32.0)
     devDependencies:
-      '@biomejs/biome':
-        specifier: 2.4.12
-        version: 2.4.12
-      '@tailwindcss/vite':
-        specifier: ^4.2.2
-        version: 4.2.2(vite@5.4.21(@types/node@25.6.0)(lightningcss@1.32.0))
       '@types/node':
-        specifier: ^25.6.0
-        version: 25.6.0
+        specifier: ^22.19.17
+        version: 22.19.17
       '@types/react':
         specifier: ^18.3.12
         version: 18.3.28
       '@types/react-dom':
         specifier: ^18.3.1
         version: 18.3.7(@types/react@18.3.28)
-      '@vitejs/plugin-react':
-        specifier: ^4.3.3
-        version: 4.7.0(vite@5.4.21(@types/node@25.6.0)(lightningcss@1.32.0))
-      tailwindcss:
-        specifier: ^4.2.2
-        version: 4.2.2
-      typescript:
-        specifier: ^5.6.3
-        version: 5.9.3
-      vite:
-        specifier: ^5.4.10
-        version: 5.4.21(@types/node@25.6.0)(lightningcss@1.32.0)
-
-  packages/cli:
-    devDependencies:
-      '@types/node':
-        specifier: ^22.19.17
-        version: 22.19.17
       tsdown:
         specifier: ^0.9.9
         version: 0.9.9(typescript@5.9.3)
@@ -230,59 +252,6 @@ packages:
   '@babel/types@7.29.0':
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
-
-  '@biomejs/biome@2.4.12':
-    resolution: {integrity: sha512-Rro7adQl3NLq/zJCIL98eElXKI8eEiBtoeu5TbXF/U3qbjuSc7Jb5rjUbeHHcquDWeSf3HnGP7XI5qGrlRk/pA==}
-    engines: {node: '>=14.21.3'}
-    hasBin: true
-
-  '@biomejs/cli-darwin-arm64@2.4.12':
-    resolution: {integrity: sha512-BnMU4Pc3ciEVteVpZ0BK33MLr7X57F5w1dwDLDn+/iy/yTrA4Q/N2yftidFtsA4vrDh0FMXDpacNV/Tl3fbmng==}
-    engines: {node: '>=14.21.3'}
-    cpu: [arm64]
-    os: [darwin]
-
-  '@biomejs/cli-darwin-x64@2.4.12':
-    resolution: {integrity: sha512-x9uJ0bI1rJsWICp3VH8w/5PnAVD3A7SqzDpbrfoUQX1QyWrK5jSU4fRLo/wSgGeplCivbxBRKmt5Xq4/nWvq8A==}
-    engines: {node: '>=14.21.3'}
-    cpu: [x64]
-    os: [darwin]
-
-  '@biomejs/cli-linux-arm64-musl@2.4.12':
-    resolution: {integrity: sha512-FhfpkAAlKL6kwvcVap0Hgp4AhZmtd3YImg0kK1jd7C/aSoh4SfsB2f++yG1rU0lr8Y5MCFJrcSkmssiL9Xnnig==}
-    engines: {node: '>=14.21.3'}
-    cpu: [arm64]
-    os: [linux]
-
-  '@biomejs/cli-linux-arm64@2.4.12':
-    resolution: {integrity: sha512-tOwuCuZZtKi1jVzbk/5nXmIsziOB6yqN8c9r9QM0EJYPU6DpQWf11uBOSCfFKKM4H3d9ZoarvlgMfbcuD051Pw==}
-    engines: {node: '>=14.21.3'}
-    cpu: [arm64]
-    os: [linux]
-
-  '@biomejs/cli-linux-x64-musl@2.4.12':
-    resolution: {integrity: sha512-dwTIgZrGutzhkQCuvHynCkyW6hJxUuyZqKKO0YNfaS2GUoRO+tOvxXZqZB6SkWAOdfZTzwaw8IEdUnIkHKHoew==}
-    engines: {node: '>=14.21.3'}
-    cpu: [x64]
-    os: [linux]
-
-  '@biomejs/cli-linux-x64@2.4.12':
-    resolution: {integrity: sha512-8pFeAnLU9QdW9jCIslB/v82bI0lhBmz2ZAKc8pVMFPO0t0wAHsoEkrUQUbMkIorTRIjbqyNZHA3lEXavsPWYSw==}
-    engines: {node: '>=14.21.3'}
-    cpu: [x64]
-    os: [linux]
-
-  '@biomejs/cli-win32-arm64@2.4.12':
-    resolution: {integrity: sha512-B0DLnx0vA9ya/3v7XyCaP+/lCpnbWbMOfUFFve+xb5OxyYvdHaS55YsSddr228Y+JAFk58agCuZTsqNiw2a6ig==}
-    engines: {node: '>=14.21.3'}
-    cpu: [arm64]
-    os: [win32]
-
-  '@biomejs/cli-win32-x64@2.4.12':
-    resolution: {integrity: sha512-yMckRzTyZ83hkk8iDFWswqSdU8tvZxspJKnYNh7JZr/zhZNOlzH13k4ecboU6MurKExCe2HUkH75pGI/O2JwGA==}
-    engines: {node: '>=14.21.3'}
-    cpu: [x64]
-    os: [win32]
 
   '@dotenvx/dotenvx@1.61.1':
     resolution: {integrity: sha512-2OUX4KDKvQA6oa7oESG8eNcV4K/2C5jgrbxUcT0VoH9Zelg6dT+rDYew4w2GmXRV3db0tUaM4QZG3MyJL3fU5Q==}
@@ -1732,9 +1701,6 @@ packages:
   '@types/node@22.19.17':
     resolution: {integrity: sha512-wGdMcf+vPYM6jikpS/qhg6WiqSV/OhG+jeeHT/KlVqxYfD40iYJf9/AE1uQxVWFvU7MipKRkRv8NSHiCGgPr8Q==}
 
-  '@types/node@25.6.0':
-    resolution: {integrity: sha512-+qIYRKdNYJwY3vRCZMdJbPLJAtGjQBudzZzdzwQYkEPQd+PJGixUL5QfvCLDaULoLv+RhT3LDkwEfKaAkgSmNQ==}
-
   '@types/prop-types@15.7.15':
     resolution: {integrity: sha512-F6bEyamV9jKGAFBEmlQnesRPGOQqS2+Uwi0Em15xenOxHaf2hv6L8YCVn3rPdPJOiJfPiCnLIRyvwVaqMY3MIw==}
 
@@ -3120,9 +3086,6 @@ packages:
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
-  undici-types@7.19.2:
-    resolution: {integrity: sha512-qYVnV5OEm2AW8cJMCpdV20CDyaN3g0AjDlOGf1OW4iaDEx8MwdtChUp4zu4H0VP3nDRF/8RKWH+IPp9uW0YGZg==}
-
   unicorn-magic@0.3.0:
     resolution: {integrity: sha512-+QBBXBCvifc56fsbuxZQ6Sic3wqqc3WWaqxs58gvJrcOuN83HGTCwz3oS5phzU9LthRNE9VrJCFCLUgHeeFnfA==}
     engines: {node: '>=18'}
@@ -3484,41 +3447,6 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
 
-  '@biomejs/biome@2.4.12':
-    optionalDependencies:
-      '@biomejs/cli-darwin-arm64': 2.4.12
-      '@biomejs/cli-darwin-x64': 2.4.12
-      '@biomejs/cli-linux-arm64': 2.4.12
-      '@biomejs/cli-linux-arm64-musl': 2.4.12
-      '@biomejs/cli-linux-x64': 2.4.12
-      '@biomejs/cli-linux-x64-musl': 2.4.12
-      '@biomejs/cli-win32-arm64': 2.4.12
-      '@biomejs/cli-win32-x64': 2.4.12
-
-  '@biomejs/cli-darwin-arm64@2.4.12':
-    optional: true
-
-  '@biomejs/cli-darwin-x64@2.4.12':
-    optional: true
-
-  '@biomejs/cli-linux-arm64-musl@2.4.12':
-    optional: true
-
-  '@biomejs/cli-linux-arm64@2.4.12':
-    optional: true
-
-  '@biomejs/cli-linux-x64-musl@2.4.12':
-    optional: true
-
-  '@biomejs/cli-linux-x64@2.4.12':
-    optional: true
-
-  '@biomejs/cli-win32-arm64@2.4.12':
-    optional: true
-
-  '@biomejs/cli-win32-x64@2.4.12':
-    optional: true
-
   '@dotenvx/dotenvx@1.61.1':
     dependencies:
       commander: 11.1.0
@@ -3646,30 +3574,30 @@ snapshots:
 
   '@inquirer/ansi@2.0.5': {}
 
-  '@inquirer/confirm@6.0.11(@types/node@25.6.0)':
+  '@inquirer/confirm@6.0.11(@types/node@22.19.17)':
     dependencies:
-      '@inquirer/core': 11.1.8(@types/node@25.6.0)
-      '@inquirer/type': 4.0.5(@types/node@25.6.0)
+      '@inquirer/core': 11.1.8(@types/node@22.19.17)
+      '@inquirer/type': 4.0.5(@types/node@22.19.17)
     optionalDependencies:
-      '@types/node': 25.6.0
+      '@types/node': 22.19.17
 
-  '@inquirer/core@11.1.8(@types/node@25.6.0)':
+  '@inquirer/core@11.1.8(@types/node@22.19.17)':
     dependencies:
       '@inquirer/ansi': 2.0.5
       '@inquirer/figures': 2.0.5
-      '@inquirer/type': 4.0.5(@types/node@25.6.0)
+      '@inquirer/type': 4.0.5(@types/node@22.19.17)
       cli-width: 4.1.0
       fast-wrap-ansi: 0.2.0
       mute-stream: 3.0.0
       signal-exit: 4.1.0
     optionalDependencies:
-      '@types/node': 25.6.0
+      '@types/node': 22.19.17
 
   '@inquirer/figures@2.0.5': {}
 
-  '@inquirer/type@4.0.5(@types/node@25.6.0)':
+  '@inquirer/type@4.0.5(@types/node@22.19.17)':
     optionalDependencies:
-      '@types/node': 25.6.0
+      '@types/node': 22.19.17
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
@@ -4767,12 +4695,12 @@ snapshots:
       '@tailwindcss/oxide-win32-arm64-msvc': 4.2.2
       '@tailwindcss/oxide-win32-x64-msvc': 4.2.2
 
-  '@tailwindcss/vite@4.2.2(vite@5.4.21(@types/node@25.6.0)(lightningcss@1.32.0))':
+  '@tailwindcss/vite@4.2.2(vite@5.4.21(@types/node@22.19.17)(lightningcss@1.32.0))':
     dependencies:
       '@tailwindcss/node': 4.2.2
       '@tailwindcss/oxide': 4.2.2
       tailwindcss: 4.2.2
-      vite: 5.4.21(@types/node@25.6.0)(lightningcss@1.32.0)
+      vite: 5.4.21(@types/node@22.19.17)(lightningcss@1.32.0)
 
   '@ts-morph/common@0.27.0':
     dependencies:
@@ -4830,10 +4758,6 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
-  '@types/node@25.6.0':
-    dependencies:
-      undici-types: 7.19.2
-
   '@types/prop-types@15.7.15': {}
 
   '@types/react-dom@18.3.7(@types/react@18.3.28)':
@@ -4847,7 +4771,7 @@ snapshots:
 
   '@types/set-cookie-parser@2.4.10':
     dependencies:
-      '@types/node': 25.6.0
+      '@types/node': 22.19.17
 
   '@types/statuses@2.0.6': {}
 
@@ -4857,7 +4781,7 @@ snapshots:
     dependencies:
       valibot: 1.0.0(typescript@5.9.3)
 
-  '@vitejs/plugin-react@4.7.0(vite@5.4.21(@types/node@25.6.0)(lightningcss@1.32.0))':
+  '@vitejs/plugin-react@4.7.0(vite@5.4.21(@types/node@22.19.17)(lightningcss@1.32.0))':
     dependencies:
       '@babel/core': 7.29.0
       '@babel/plugin-transform-react-jsx-self': 7.27.1(@babel/core@7.29.0)
@@ -4865,7 +4789,7 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-beta.27
       '@types/babel__core': 7.20.5
       react-refresh: 0.17.0
-      vite: 5.4.21(@types/node@25.6.0)(lightningcss@1.32.0)
+      vite: 5.4.21(@types/node@22.19.17)(lightningcss@1.32.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -5591,9 +5515,9 @@ snapshots:
 
   ms@2.1.3: {}
 
-  msw@2.13.4(@types/node@25.6.0)(typescript@5.9.3):
+  msw@2.13.4(@types/node@22.19.17)(typescript@5.9.3):
     dependencies:
-      '@inquirer/confirm': 6.0.11(@types/node@25.6.0)
+      '@inquirer/confirm': 6.0.11(@types/node@22.19.17)
       '@mswjs/interceptors': 0.41.4
       '@open-draft/deferred-promise': 3.0.0
       '@types/statuses': 2.0.6
@@ -6057,7 +5981,7 @@ snapshots:
 
   setprototypeof@1.2.0: {}
 
-  shadcn@4.3.0(@types/node@25.6.0)(typescript@5.9.3):
+  shadcn@4.3.0(@types/node@22.19.17)(typescript@5.9.3):
     dependencies:
       '@babel/core': 7.29.0
       '@babel/parser': 7.29.2
@@ -6078,7 +6002,7 @@ snapshots:
       fuzzysort: 3.1.0
       https-proxy-agent: 7.0.6
       kleur: 4.1.5
-      msw: 2.13.4(@types/node@25.6.0)(typescript@5.9.3)
+      msw: 2.13.4(@types/node@22.19.17)(typescript@5.9.3)
       node-fetch: 3.3.2
       open: 11.0.0
       ora: 8.2.0
@@ -6288,8 +6212,6 @@ snapshots:
 
   undici-types@6.21.0: {}
 
-  undici-types@7.19.2: {}
-
   unicorn-magic@0.3.0: {}
 
   universalify@2.0.1: {}
@@ -6346,13 +6268,13 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vite@5.4.21(@types/node@25.6.0)(lightningcss@1.32.0):
+  vite@5.4.21(@types/node@22.19.17)(lightningcss@1.32.0):
     dependencies:
       esbuild: 0.21.5
       postcss: 8.5.10
       rollup: 4.60.2
     optionalDependencies:
-      '@types/node': 25.6.0
+      '@types/node': 22.19.17
       fsevents: 2.3.3
       lightningcss: 1.32.0
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { existsSync } from 'node:fs';
-import { cp, readdir, rm } from 'node:fs/promises';
+import { cp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -8,6 +8,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const CLI_ROOT = resolve(HERE, '..');
 const REPO_ROOT = resolve(CLI_ROOT, '..', '..');
 const PLAYGROUND = resolve(REPO_ROOT, 'apps', 'playground');
+const CORE_PKG = resolve(REPO_ROOT, 'packages', 'core', 'package.json');
 const TEMPLATE = resolve(CLI_ROOT, 'template');
 
 // Files/dirs at the repo root that are workspace-shared but belong in a
@@ -56,6 +57,17 @@ async function main(): Promise<void> {
   }
 
   await cp(PLAYGROUND, TEMPLATE, CP_OPTS);
+
+  // Pin @open-slide/core to a real version (template can't ship workspace:*).
+  const corePkg = JSON.parse(await readFile(CORE_PKG, 'utf8')) as { version: string };
+  const tplPkgPath = join(TEMPLATE, 'package.json');
+  const tplPkg = JSON.parse(await readFile(tplPkgPath, 'utf8')) as {
+    dependencies?: Record<string, string>;
+  };
+  if (tplPkg.dependencies?.['@open-slide/core']) {
+    tplPkg.dependencies['@open-slide/core'] = `^${corePkg.version}`;
+  }
+  await writeFile(tplPkgPath, `${JSON.stringify(tplPkg, null, 2)}\n`);
 
   for (const name of ROOT_EXTRAS) {
     const src = join(REPO_ROOT, name);

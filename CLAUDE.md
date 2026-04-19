@@ -7,14 +7,14 @@ You are authoring **slide decks** in this repo. Every deck is arbitrary React co
 - Put your deck under `slides/<kebab-case-id>/`.
 - The deck entry is `slides/<id>/index.tsx`.
 - Put images/videos/fonts under `slides/<id>/assets/`.
-- Do **not** touch `src/`, `package.json`, `vite.config.ts`, `tsconfig.json`, or other decks.
+- Do **not** touch `package.json`, `open-slide.json`, or other decks.
 - Do not add dependencies. Use only `react` and standard web APIs.
 
 ## File contract
 
 ```tsx
 // slides/<id>/index.tsx
-import type { DeckMeta, SlidePage } from '../../src/lib/sdk';
+import type { DeckMeta, SlidePage } from '@open-slide/core';
 
 const Cover: SlidePage = () => <div>…</div>;
 const Body: SlidePage = () => <div>…</div>;
