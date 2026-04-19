@@ -143,7 +143,7 @@ export function Deck() {
         </header>
 
         <div className="flex min-h-0 flex-1">
-          <div className="w-60 shrink-0">
+          <div className="w-[17rem] shrink-0">
             <ThumbnailRail pages={pages} current={index} onSelect={goTo} />
           </div>
           <main className="relative min-h-0 min-w-0 flex-1 bg-background p-8">
