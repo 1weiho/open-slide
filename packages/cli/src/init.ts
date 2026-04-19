@@ -15,7 +15,7 @@ export interface InitOptions {
 export async function init({ dir, force, name }: InitOptions): Promise<void> {
   if (!existsSync(TEMPLATE_DIR)) {
     throw new Error(
-      `Template missing at ${TEMPLATE_DIR}. If you are running from source, run \`pnpm --filter openslide build\` first.`,
+      `Template missing at ${TEMPLATE_DIR}. If you are running from source, run \`pnpm --filter @open-slide/cli build\` first.`,
     );
   }
 
@@ -42,7 +42,7 @@ export async function init({ dir, force, name }: InitOptions): Promise<void> {
   }
 
   process.stdout.write(
-    `\nCreated openslide workspace in ${target}\n\n` +
+    `\nCreated open-slide workspace in ${target}\n\n` +
       `Next steps:\n` +
       `  cd ${dir === '.' ? basename(target) : dir}\n` +
       `  pnpm install    # or npm install / yarn\n` +

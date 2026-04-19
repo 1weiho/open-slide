@@ -1,4 +1,4 @@
-# openslide — Agent Guide
+# open-slide — Agent Guide
 
 You are authoring **slide decks** in this repo. Every deck is arbitrary React code that you write.
 

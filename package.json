@@ -1,5 +1,5 @@
 {
-  "name": "openslide-monorepo",
+  "name": "open-slide-monorepo",
   "private": true,
   "version": "0.0.0",
   "packageManager": "pnpm@9.0.0",
@@ -8,7 +8,7 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "check": "turbo run check",
-    "cli": "pnpm --filter openslide"
+    "cli": "pnpm --filter @open-slide/cli"
   },
   "devDependencies": {
     "turbo": "^2.3.0"

@@ -3,12 +3,12 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { init, type InitOptions } from './init.ts';
 
-const HELP = `openslide — scaffold an openslide deck workspace
+const HELP = `open-slide — scaffold an open-slide deck workspace
 
 Usage:
-  openslide init [dir]    Create a new openslide workspace (defaults to .)
-  openslide --help        Show this message
-  openslide --version     Print version
+  open-slide init [dir]    Create a new open-slide workspace (defaults to .)
+  open-slide --help        Show this message
+  open-slide --version     Print version
 
 Flags for \`init\`:
   --force, -f             Overwrite non-empty target directory

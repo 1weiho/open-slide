@@ -11,7 +11,7 @@ export function Home() {
     <div className="mx-auto max-w-6xl px-8 py-16">
       <header className="mb-10 flex items-end justify-between gap-6">
         <div>
-          <h1 className="font-heading text-3xl font-bold tracking-tight">openslide</h1>
+          <h1 className="font-heading text-3xl font-bold tracking-tight">open-slide</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {deckIds.length} deck{deckIds.length === 1 ? '' : 's'} · start with any agent using the{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">create-slide</code>{' '}
