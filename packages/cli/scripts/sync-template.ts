@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { cp, readdir, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { cp, readdir, rm } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -33,18 +33,21 @@ const EXCLUDE = new Set([
 
 const EXCLUDE_SUFFIX = ['.log', '.tsbuildinfo'];
 
-function shouldSkip(name) {
+function shouldSkip(name: string): boolean {
   if (EXCLUDE.has(name)) return true;
   return EXCLUDE_SUFFIX.some((s) => name.endsWith(s));
 }
 
-const filter = (source) => !shouldSkip(source.split('/').pop());
+const filter = (source: string): boolean => {
+  const name = source.split('/').pop() ?? '';
+  return !shouldSkip(name);
+};
 
 // dereference: true → follow symlinks so the published template contains
 // real directories, not machine-local absolute symlinks.
-const CP_OPTS = { recursive: true, dereference: true, filter };
+const CP_OPTS = { recursive: true, dereference: true, filter } as const;
 
-async function main() {
+async function main(): Promise<void> {
   if (!existsSync(PLAYGROUND)) {
     throw new Error(`Playground not found at ${PLAYGROUND}`);
   }
@@ -71,7 +74,7 @@ async function main() {
   );
 }
 
-main().catch((err) => {
+main().catch((err: unknown) => {
   console.error(err);
   process.exit(1);
 });

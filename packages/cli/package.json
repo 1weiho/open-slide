@@ -1,20 +1,20 @@
 {
   "name": "openslide",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Scaffold an openslide deck workspace with Claude Code skills preconfigured.",
   "type": "module",
   "bin": {
-    "openslide": "bin/openslide.js"
+    "openslide": "dist/cli.js"
   },
   "files": [
-    "bin",
-    "src",
+    "dist",
     "template",
     "README.md"
   ],
   "scripts": {
-    "build": "node scripts/sync-template.js",
-    "prepack": "node scripts/sync-template.js"
+    "build": "tsdown && node dist/sync-template.js",
+    "check": "tsc --noEmit",
+    "prepack": "pnpm build"
   },
   "engines": {
     "node": ">=18"
@@ -25,5 +25,10 @@
     "claude-code",
     "scaffold"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.19.17",
+    "tsdown": "^0.9.9",
+    "typescript": "^5.9.3"
+  }
 }

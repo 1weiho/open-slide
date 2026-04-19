@@ -1,12 +1,18 @@
-import { cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const TEMPLATE_DIR = resolve(HERE, '..', 'template');
 
-export async function init({ dir, force, name }) {
+export interface InitOptions {
+  dir: string;
+  force: boolean;
+  name: string | undefined;
+}
+
+export async function init({ dir, force, name }: InitOptions): Promise<void> {
   if (!existsSync(TEMPLATE_DIR)) {
     throw new Error(
       `Template missing at ${TEMPLATE_DIR}. If you are running from source, run \`pnpm --filter openslide build\` first.`,
@@ -28,7 +34,7 @@ export async function init({ dir, force, name }) {
 
   const pkgPath = join(target, 'package.json');
   if (existsSync(pkgPath)) {
-    const pkg = JSON.parse(await readFile(pkgPath, 'utf8'));
+    const pkg = JSON.parse(await readFile(pkgPath, 'utf8')) as Record<string, unknown>;
     pkg.name = name ?? basename(target);
     pkg.version = '0.0.0';
     pkg.private = true;

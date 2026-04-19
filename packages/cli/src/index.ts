@@ -1,4 +1,7 @@
-import { init } from './init.js';
+import { readFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { init, type InitOptions } from './init.ts';
 
 const HELP = `openslide — scaffold an openslide deck workspace
 
@@ -12,16 +15,15 @@ Flags for \`init\`:
   --name <name>           Override package name (defaults to folder name)
 `;
 
-async function readVersion() {
-  const { readFile } = await import('node:fs/promises');
-  const { fileURLToPath } = await import('node:url');
-  const { dirname, join } = await import('node:path');
+async function readVersion(): Promise<string> {
   const here = dirname(fileURLToPath(import.meta.url));
-  const pkg = JSON.parse(await readFile(join(here, '..', 'package.json'), 'utf8'));
+  const pkg = JSON.parse(
+    await readFile(join(here, '..', 'package.json'), 'utf8'),
+  ) as { version: string };
   return pkg.version;
 }
 
-export async function run(argv) {
+export async function run(argv: string[]): Promise<void> {
   const [cmd, ...rest] = argv;
 
   if (!cmd || cmd === '--help' || cmd === '-h' || cmd === 'help') {
@@ -44,8 +46,8 @@ export async function run(argv) {
   process.exit(1);
 }
 
-function parseInitFlags(args) {
-  const opts = { dir: '.', force: false, name: undefined };
+function parseInitFlags(args: string[]): InitOptions {
+  const opts: InitOptions = { dir: '.', force: false, name: undefined };
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === '--force' || a === '-f') {
