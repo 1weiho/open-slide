@@ -1,0 +1,29 @@
+{
+  "name": "openslide",
+  "version": "0.1.0",
+  "description": "Scaffold an open-slide deck workspace with Claude Code skills preconfigured.",
+  "type": "module",
+  "bin": {
+    "openslide": "bin/openslide.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "template",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node scripts/sync-template.js",
+    "prepack": "node scripts/sync-template.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "slides",
+    "presentation",
+    "claude-code",
+    "scaffold"
+  ],
+  "license": "MIT"
+}
