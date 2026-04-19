@@ -4,7 +4,6 @@ import { FolderPlus } from 'lucide-react';
 import { deckIds, loadDeck } from '../lib/decks';
 import type { DeckModule } from '../lib/sdk';
 import { SlideCanvas } from '../components/SlideCanvas';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 
 export function Home() {
@@ -14,14 +13,11 @@ export function Home() {
         <div>
           <h1 className="font-heading text-3xl font-bold tracking-tight">open-slide</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {deckIds.length} deck{deckIds.length === 1 ? '' : 's'} · drop a folder into{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">/slides</code> to add
-            another
+            {deckIds.length} deck{deckIds.length === 1 ? '' : 's'} · start with any agent using the{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">create-slide</code>{' '}
+            skill
           </p>
         </div>
-        <Badge variant="secondary" className="hidden sm:inline-flex">
-          1920 × 1080
-        </Badge>
       </header>
 
       {deckIds.length === 0 ? (
