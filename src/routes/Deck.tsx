@@ -35,9 +35,7 @@ export function Deck() {
   const pages = useMemo(() => deck?.default ?? [], [deck]);
   const pageCount = pages.length;
   const rawIndex = Number(searchParams.get('p') ?? '1') - 1;
-  const index = Number.isFinite(rawIndex)
-    ? Math.max(0, Math.min(pageCount - 1, rawIndex))
-    : 0;
+  const index = Number.isFinite(rawIndex) ? Math.max(0, Math.min(pageCount - 1, rawIndex)) : 0;
 
   const goTo = useCallback(
     (i: number) => {
@@ -106,10 +104,8 @@ export function Deck() {
             slides/{deckId}/index.tsx
           </code>{' '}
           must{' '}
-          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-            export default
-          </code>{' '}
-          a non-empty array of components.
+          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">export default</code> a
+          non-empty array of components.
         </p>
       </div>
     );
@@ -117,12 +113,7 @@ export function Deck() {
 
   if (playing) {
     return (
-      <Player
-        pages={pages}
-        index={index}
-        onIndexChange={goTo}
-        onExit={() => setPlaying(false)}
-      />
+      <Player pages={pages} index={index} onIndexChange={goTo} onExit={() => setPlaying(false)} />
     );
   }
 
@@ -158,12 +149,7 @@ export function Deck() {
       </div>
 
       <footer className="flex shrink-0 items-center justify-center gap-4 border-t bg-card p-3">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => goTo(index - 1)}
-          disabled={index === 0}
-        >
+        <Button variant="outline" size="sm" onClick={() => goTo(index - 1)} disabled={index === 0}>
           <ChevronLeft className="size-4" />
           Prev
         </Button>
