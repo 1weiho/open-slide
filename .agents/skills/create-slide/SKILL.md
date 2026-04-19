@@ -158,7 +158,7 @@ Tell the user:
 
 - The deck id and file path you created.
 - That the dev server will hot-reload — they can open `http://localhost:5173/d/<id>` (or refresh the home page).
-- If dev isn't running: `npm run dev` from the repo root.
+- If dev isn't running: `pnpm dev` from the repo root.
 
 Don't run the dev server yourself unless asked.
 
