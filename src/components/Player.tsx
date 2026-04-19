@@ -54,8 +54,8 @@ export function Player({ pages, index, onIndexChange, onExit }: Props) {
   const Page = pages[index];
 
   return (
-    <div ref={rootRef} className="player">
-      <SlideCanvas>{Page ? <Page /> : null}</SlideCanvas>
+    <div ref={rootRef} className="flex h-screen w-screen items-center justify-center bg-black">
+      <SlideCanvas flat>{Page ? <Page /> : null}</SlideCanvas>
     </div>
   );
 }

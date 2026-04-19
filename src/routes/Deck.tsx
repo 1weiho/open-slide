@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Play } from 'lucide-react';
 import { loadDeck } from '../lib/decks';
 import type { DeckModule } from '../lib/sdk';
 import { SlideCanvas } from '../components/SlideCanvas';
 import { ThumbnailRail } from '../components/ThumbnailRail';
 import { Player } from '../components/Player';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 
 export function Deck() {
   const { deckId = '' } = useParams();
@@ -71,26 +74,42 @@ export function Deck() {
 
   if (error) {
     return (
-      <div className="deck-error">
-        <Link to="/">← Home</Link>
-        <h2>Failed to load deck</h2>
-        <pre>{error}</pre>
+      <div className="mx-auto max-w-3xl px-8 py-16 text-muted-foreground">
+        <Link to="/" className="text-sm font-medium text-primary hover:underline">
+          ← Home
+        </Link>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">Failed to load deck</h2>
+        <pre className="mt-4 overflow-auto rounded-md border bg-card p-4 text-xs whitespace-pre-wrap shadow-sm">
+          {error}
+        </pre>
       </div>
     );
   }
 
   if (!deck) {
-    return <div className="deck-loading">Loading {deckId}…</div>;
+    return (
+      <div className="mx-auto max-w-3xl px-8 py-16 text-sm text-muted-foreground">
+        Loading {deckId}…
+      </div>
+    );
   }
 
   if (pageCount === 0) {
     return (
-      <div className="deck-error">
-        <Link to="/">← Home</Link>
-        <h2>Empty deck</h2>
-        <p>
-          <code>slides/{deckId}/index.tsx</code> must{' '}
-          <code>export default</code> a non-empty array of components.
+      <div className="mx-auto max-w-3xl px-8 py-16 text-muted-foreground">
+        <Link to="/" className="text-sm font-medium text-primary hover:underline">
+          ← Home
+        </Link>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">Empty deck</h2>
+        <p className="mt-2 text-sm">
+          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+            slides/{deckId}/index.tsx
+          </code>{' '}
+          must{' '}
+          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+            export default
+          </code>{' '}
+          a non-empty array of components.
         </p>
       </div>
     );
@@ -111,34 +130,55 @@ export function Deck() {
   const title = deck.meta?.title ?? deckId;
 
   return (
-    <div className="deck">
-      <header className="deck-header">
-        <Link to="/" className="deck-back">← Home</Link>
-        <h1 className="deck-title">{title}</h1>
-        <div className="deck-actions">
-          <button className="primary" onClick={() => setPlaying(true)}>
-            ▶ Play (F)
-          </button>
-        </div>
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
+      <header className="flex shrink-0 items-center gap-4 border-b bg-card px-5 py-3">
+        <Button asChild variant="ghost" size="sm">
+          <Link to="/">
+            <ChevronLeft className="size-4" />
+            Home
+          </Link>
+        </Button>
+        <Separator orientation="vertical" className="h-5" />
+        <h1 className="flex-1 text-center text-sm font-semibold tracking-tight">{title}</h1>
+        <Button size="sm" onClick={() => setPlaying(true)}>
+          <Play className="size-4" />
+          Play <kbd className="ml-1 rounded bg-primary-foreground/20 px-1 text-[10px]">F</kbd>
+        </Button>
       </header>
-      <div className="deck-body">
-        <ThumbnailRail pages={pages} current={index} onSelect={goTo} />
-        <main className="deck-main">
+
+      <div className="flex min-h-0 flex-1">
+        <div className="w-60 shrink-0">
+          <ThumbnailRail pages={pages} current={index} onSelect={goTo} />
+        </div>
+        <main className="min-h-0 min-w-0 flex-1 bg-background p-8">
           <SlideCanvas>
             <CurrentPage />
           </SlideCanvas>
         </main>
       </div>
-      <footer className="deck-footer">
-        <button onClick={() => goTo(index - 1)} disabled={index === 0}>
-          ◀ Prev
-        </button>
-        <span className="deck-counter">
+
+      <footer className="flex shrink-0 items-center justify-center gap-4 border-t bg-card p-3">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => goTo(index - 1)}
+          disabled={index === 0}
+        >
+          <ChevronLeft className="size-4" />
+          Prev
+        </Button>
+        <span className="min-w-16 text-center text-sm text-muted-foreground tabular-nums">
           {index + 1} / {pageCount}
         </span>
-        <button onClick={() => goTo(index + 1)} disabled={index === pageCount - 1}>
-          Next ▶
-        </button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => goTo(index + 1)}
+          disabled={index === pageCount - 1}
+        >
+          Next
+          <ChevronRight className="size-4" />
+        </Button>
       </footer>
     </div>
   );

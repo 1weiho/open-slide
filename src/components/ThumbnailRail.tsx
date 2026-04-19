@@ -1,3 +1,5 @@
+import { cn } from '@/lib/utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import type { SlidePage } from '../lib/sdk';
 import { SlideCanvas } from './SlideCanvas';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../lib/sdk';
@@ -14,25 +16,42 @@ const THUMB_HEIGHT = CANVAS_HEIGHT * THUMB_SCALE;
 
 export function ThumbnailRail({ pages, current, onSelect }: Props) {
   return (
-    <aside className="thumbnail-rail">
-      {pages.map((Page, i) => (
-        <button
-          key={i}
-          className={`thumbnail ${i === current ? 'is-active' : ''}`}
-          onClick={() => onSelect(i)}
-          aria-label={`Go to slide ${i + 1}`}
-        >
-          <span className="thumbnail-index">{i + 1}</span>
-          <div
-            className="thumbnail-frame"
-            style={{ width: THUMB_WIDTH, height: THUMB_HEIGHT }}
-          >
-            <SlideCanvas scale={THUMB_SCALE} center={false} className="flat">
-              <Page />
-            </SlideCanvas>
-          </div>
-        </button>
-      ))}
-    </aside>
+    <ScrollArea className="h-full border-r bg-card">
+      <aside className="flex flex-col gap-2.5 p-3">
+        {pages.map((Page, i) => {
+          const active = i === current;
+          return (
+            <button
+              key={i}
+              onClick={() => onSelect(i)}
+              aria-label={`Go to slide ${i + 1}`}
+              aria-current={active ? 'true' : undefined}
+              className={cn(
+                'flex items-center gap-2.5 rounded-lg border-2 border-transparent p-1.5 text-left transition-colors',
+                'hover:bg-muted',
+                active && 'border-primary bg-primary/5',
+              )}
+            >
+              <span
+                className={cn(
+                  'w-5 shrink-0 text-right text-xs tabular-nums text-muted-foreground',
+                  active && 'font-semibold text-primary',
+                )}
+              >
+                {i + 1}
+              </span>
+              <div
+                className="relative shrink-0 overflow-hidden rounded border bg-white shadow-sm"
+                style={{ width: THUMB_WIDTH, height: THUMB_HEIGHT }}
+              >
+                <SlideCanvas scale={THUMB_SCALE} center={false} flat>
+                  <Page />
+                </SlideCanvas>
+              </div>
+            </button>
+          );
+        })}
+      </aside>
+    </ScrollArea>
   );
 }

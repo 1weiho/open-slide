@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { cn } from '@/lib/utils';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../lib/sdk';
 
 type Props = {
@@ -7,10 +8,12 @@ type Props = {
   scale?: number;
   /** Center the canvas within the container (default true). */
   center?: boolean;
+  /** Flat mode: no rounded corners or drop shadow. */
+  flat?: boolean;
   className?: string;
 };
 
-export function SlideCanvas({ children, scale, center = true, className }: Props) {
+export function SlideCanvas({ children, scale, center = true, flat = false, className }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [fitScale, setFitScale] = useState(1);
 
@@ -32,9 +35,12 @@ export function SlideCanvas({ children, scale, center = true, className }: Props
   const scaledH = CANVAS_HEIGHT * s;
 
   return (
-    <div ref={containerRef} className={`slide-canvas-container ${className ?? ''}`}>
+    <div ref={containerRef} className={cn('relative h-full w-full overflow-hidden', className)}>
       <div
-        className="slide-canvas-frame"
+        className={cn(
+          'overflow-hidden bg-white text-black',
+          !flat && 'rounded-md shadow-xl ring-1 ring-black/5',
+        )}
         style={{
           width: scaledW,
           height: scaledH,
@@ -49,7 +55,6 @@ export function SlideCanvas({ children, scale, center = true, className }: Props
         }}
       >
         <div
-          className="slide-canvas-inner"
           style={{
             width: CANVAS_WIDTH,
             height: CANVAS_HEIGHT,
