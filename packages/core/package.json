@@ -14,9 +14,10 @@
     }
   },
   "bin": {
-    "open-slide": "./dist/cli/bin.js"
+    "open-slide": "./bin.js"
   },
   "files": [
+    "bin.js",
     "dist",
     "src/app",
     "README.md"
