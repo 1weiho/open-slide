@@ -1,5 +1,13 @@
 import type { Page, SlideMeta } from '@open-slide/core';
 
+import claudeLogo from './assets/logos/claude.svg';
+import codexLogo from './assets/logos/openai-dark.svg';
+import geminiLogo from './assets/logos/gemini.svg';
+import opencodeLogo from './assets/logos/opencode-dark.svg';
+import vercelLogo from './assets/logos/vercel-dark.svg';
+import cloudflareLogo from './assets/logos/cloudflare.svg';
+import zeaburLogo from './assets/logos/zeabur-dark.svg';
+
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const palette = {
   bg: '#08090a',
@@ -308,6 +316,61 @@ const AgentLine = ({
     </div>
   );
 };
+
+const LogoCard = ({
+  src,
+  name,
+  delay = 0,
+  logoHeight = 72,
+}: {
+  src: string;
+  name: string;
+  delay?: number;
+  logoHeight?: number;
+}) => (
+  <div
+    className="es-fadeUp"
+    style={{
+      animationDelay: `${delay}s`,
+      flex: 1,
+      background: palette.surface,
+      border: `1px solid ${palette.border}`,
+      borderRadius: 16,
+      padding: '40px 28px 32px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 28,
+      minHeight: 0,
+    }}
+  >
+    <div
+      style={{
+        height: logoHeight,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <img
+        src={src}
+        alt={name}
+        style={{ height: logoHeight, width: 'auto', objectFit: 'contain' }}
+      />
+    </div>
+    <div
+      style={{
+        fontFamily: font.mono,
+        fontSize: 22,
+        color: palette.textSoft,
+        letterSpacing: '0.02em',
+      }}
+    >
+      {name}
+    </div>
+  </div>
+);
 
 // ─── Slide 1: Cover ──────────────────────────────────────────────────────────
 const Cover: Page = () => (
@@ -1397,10 +1460,696 @@ const Recap: Page = () => {
   );
 };
 
+// ─── Slide: Agent agnostic ───────────────────────────────────────────────────
+const AgentAgnostic: Page = () => {
+  const agents = [
+    { name: 'Claude Code', src: claudeLogo },
+    { name: 'Codex', src: codexLogo },
+    { name: 'Gemini CLI', src: geminiLogo },
+    { name: 'opencode', src: opencodeLogo },
+  ];
+  return (
+    <div style={fill}>
+      <Styles />
+      <GridBg />
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          padding: '110px 140px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 56,
+        }}
+      >
+        <div className="es-fadeUp">
+          <Eyebrow>why open-slide · 01</Eyebrow>
+          <h2
+            style={{
+              marginTop: 24,
+              marginBottom: 0,
+              fontSize: 120,
+              fontWeight: 600,
+              letterSpacing: '-0.04em',
+              lineHeight: 1.0,
+            }}
+          >
+            Bring your{' '}
+            <span
+              style={{
+                background: `linear-gradient(90deg, ${palette.accentSoft}, ${palette.accent})`,
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent',
+              }}
+            >
+              favorite agent.
+            </span>
+          </h2>
+          <p
+            style={{
+              marginTop: 28,
+              maxWidth: 1280,
+              fontSize: 32,
+              lineHeight: 1.4,
+              color: palette.textSoft,
+              letterSpacing: '-0.01em',
+            }}
+          >
+            open-slide speaks plain React and a file-convention protocol. Any coding agent
+            can author and edit slides — no lock-in, no bespoke SDK.
+          </p>
+        </div>
+
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            gap: 28,
+            minHeight: 0,
+          }}
+        >
+          {agents.map((a, i) => (
+            <LogoCard
+              key={a.name}
+              src={a.src}
+              name={a.name}
+              delay={0.25 + i * 0.1}
+              logoHeight={96}
+            />
+          ))}
+        </div>
+
+        <div
+          className="es-fadeUp"
+          style={{
+            animationDelay: '0.8s',
+            fontFamily: font.mono,
+            fontSize: 22,
+            color: palette.muted,
+            textAlign: 'center',
+          }}
+        >
+          …and anything else that can write files.
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Slide: Free layout ──────────────────────────────────────────────────────
+const FreeLayout: Page = () => {
+  const mockSlide = (
+    kind: 'hero' | 'split' | 'bleed' | 'grid' | 'quote' | 'bullets',
+  ): React.ReactNode => {
+    const base: React.CSSProperties = {
+      width: '100%',
+      height: '100%',
+      borderRadius: 12,
+      border: `1px solid ${palette.border}`,
+      background: `radial-gradient(ellipse at 30% 30%, ${palette.accent2}1f, transparent 60%), ${palette.bg}`,
+      padding: 26,
+      display: 'flex',
+      overflow: 'hidden',
+      position: 'relative',
+    };
+    if (kind === 'hero') {
+      return (
+        <div style={{ ...base, flexDirection: 'column', justifyContent: 'center' }}>
+          <div
+            style={{
+              fontSize: 44,
+              fontWeight: 600,
+              letterSpacing: '-0.03em',
+              lineHeight: 1,
+              color: palette.text,
+            }}
+          >
+            Ship
+            <br />
+            <span style={{ color: palette.accentSoft }}>louder.</span>
+          </div>
+        </div>
+      );
+    }
+    if (kind === 'split') {
+      return (
+        <div style={{ ...base, padding: 0 }}>
+          <div
+            style={{
+              flex: 1,
+              padding: 22,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              gap: 8,
+            }}
+          >
+            <div
+              style={{ height: 8, width: '70%', background: palette.textSoft, opacity: 0.7, borderRadius: 2 }}
+            />
+            <div style={{ height: 6, width: '55%', background: palette.muted, borderRadius: 2 }} />
+            <div style={{ height: 6, width: '60%', background: palette.muted, borderRadius: 2 }} />
+            <div style={{ height: 6, width: '40%', background: palette.muted, borderRadius: 2 }} />
+          </div>
+          <div
+            style={{
+              flex: 1,
+              background: `linear-gradient(135deg, ${palette.accent}55, ${palette.accent2}33)`,
+            }}
+          />
+        </div>
+      );
+    }
+    if (kind === 'bleed') {
+      return (
+        <div
+          style={{
+            ...base,
+            padding: 0,
+            background: `linear-gradient(160deg, ${palette.accentSoft}55, ${palette.accent2}33 40%, ${palette.bg} 100%)`,
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              left: 22,
+              bottom: 22,
+              right: 22,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 6,
+            }}
+          >
+            <div
+              style={{ height: 7, width: '45%', background: palette.text, opacity: 0.95, borderRadius: 2 }}
+            />
+            <div style={{ height: 5, width: '65%', background: palette.textSoft, opacity: 0.75, borderRadius: 2 }} />
+          </div>
+        </div>
+      );
+    }
+    if (kind === 'grid') {
+      return (
+        <div
+          style={{
+            ...base,
+            padding: 22,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gridTemplateRows: 'repeat(3, 1fr)',
+            gap: 8,
+          }}
+        >
+          {Array.from({ length: 9 }).map((_, i) => (
+            <div
+              key={i}
+              style={{
+                borderRadius: 4,
+                background: i % 4 === 0 ? `${palette.accent}44` : palette.surfaceMax,
+                border: `1px solid ${palette.border}`,
+              }}
+            />
+          ))}
+        </div>
+      );
+    }
+    if (kind === 'quote') {
+      return (
+        <div
+          style={{
+            ...base,
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            textAlign: 'center',
+            padding: 30,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 40,
+              color: palette.muted,
+              lineHeight: 1,
+              marginBottom: 6,
+              fontFamily: font.mono,
+            }}
+          >
+            “
+          </div>
+          <div
+            style={{
+              fontSize: 22,
+              fontWeight: 500,
+              letterSpacing: '-0.02em',
+              lineHeight: 1.2,
+              color: palette.textSoft,
+            }}
+          >
+            Any layout.
+            <br />
+            Any time.
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div
+        style={{ ...base, flexDirection: 'column', justifyContent: 'center', gap: 12, paddingLeft: 32 }}
+      >
+        {['— prompt. write. ship.', '— no templates.', '— no themes.', '— zero friction.'].map(
+          (t, i) => (
+            <div
+              key={i}
+              style={{
+                fontFamily: font.mono,
+                fontSize: 18,
+                color: i === 0 ? palette.accentSoft : palette.textSoft,
+                letterSpacing: '-0.01em',
+              }}
+            >
+              {t}
+            </div>
+          ),
+        )}
+      </div>
+    );
+  };
+
+  const kinds: Array<'hero' | 'split' | 'bleed' | 'grid' | 'quote' | 'bullets'> = [
+    'hero',
+    'split',
+    'bleed',
+    'grid',
+    'quote',
+    'bullets',
+  ];
+
+  return (
+    <div style={fill}>
+      <Styles />
+      <GridBg />
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          padding: '110px 140px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 48,
+        }}
+      >
+        <div className="es-fadeUp">
+          <Eyebrow>why open-slide · 02</Eyebrow>
+          <h2
+            style={{
+              marginTop: 24,
+              marginBottom: 0,
+              fontSize: 120,
+              fontWeight: 600,
+              letterSpacing: '-0.04em',
+              lineHeight: 1.0,
+            }}
+          >
+            No templates.{' '}
+            <span
+              style={{
+                background: `linear-gradient(90deg, ${palette.accentSoft}, ${palette.accent})`,
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent',
+              }}
+            >
+              No opinions.
+            </span>
+          </h2>
+          <p
+            style={{
+              marginTop: 28,
+              maxWidth: 1280,
+              fontSize: 32,
+              lineHeight: 1.4,
+              color: palette.textSoft,
+              letterSpacing: '-0.01em',
+            }}
+          >
+            Zero layouts. Zero slide types. Zero "themes". Each page is just a React
+            component on a 1920×1080 canvas — the agent decides everything.
+          </p>
+        </div>
+
+        <div
+          style={{
+            flex: 1,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gridTemplateRows: 'repeat(2, 1fr)',
+            gap: 28,
+            minHeight: 0,
+          }}
+        >
+          {kinds.map((k, i) => (
+            <div
+              key={k}
+              className="gs-thumbIn"
+              style={{ animationDelay: `${0.25 + i * 0.09}s` }}
+            >
+              {mockSlide(k)}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Slide: Git-tracked, yours forever ───────────────────────────────────────
+const GitTracked: Page = () => {
+  const commits = [
+    {
+      hash: 'a1b2c3d',
+      head: '(HEAD -> main)',
+      msg: 'refine cover typography',
+    },
+    {
+      hash: '9f8e7d6',
+      head: '',
+      msg: 'revise Q2 metrics from finance review',
+    },
+    {
+      hash: '6a5b4c3',
+      head: '',
+      msg: 'initial draft of Q2 launch deck',
+    },
+  ];
+
+  const properties = [
+    { label: 'plain .tsx files', caption: 'no proprietary format' },
+    { label: 'diffable in any tool', caption: 'review like any other PR' },
+    { label: 'branch · merge · revert', caption: 'the tools you already know' },
+  ];
+
+  return (
+    <div style={fill}>
+      <Styles />
+      <GridBg />
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          padding: '90px 120px 100px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 40,
+        }}
+      >
+        <div className="es-fadeUp">
+          <Eyebrow>why open-slide · 03</Eyebrow>
+          <h2
+            style={{
+              marginTop: 20,
+              marginBottom: 0,
+              fontSize: 104,
+              fontWeight: 600,
+              letterSpacing: '-0.04em',
+              lineHeight: 1.0,
+            }}
+          >
+            Your slides are{' '}
+            <span
+              style={{
+                background: `linear-gradient(90deg, ${palette.accentSoft}, ${palette.accent})`,
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent',
+              }}
+            >
+              yours. Forever.
+            </span>
+          </h2>
+          <p
+            style={{
+              marginTop: 20,
+              fontSize: 28,
+              color: palette.textSoft,
+              maxWidth: 1280,
+              letterSpacing: '-0.01em',
+            }}
+          >
+            Every slide is a file in your repo. No proprietary database. No SaaS lock-in.
+            No export-to-PDF-and-pray.
+          </p>
+        </div>
+
+        <div
+          style={{
+            flex: 1,
+            display: 'grid',
+            gridTemplateColumns: '1.25fr 1fr',
+            gap: 36,
+            minHeight: 0,
+          }}
+        >
+          <WindowShell title="~/my-slide — git log">
+            <div
+              style={{
+                flex: 1,
+                background: palette.surface,
+                padding: '32px 40px',
+                fontFamily: font.mono,
+                fontSize: 22,
+                lineHeight: 1.65,
+                color: palette.textSoft,
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{ color: palette.muted, marginBottom: 14 }}>
+                <span style={{ color: palette.mint }}>$</span> git log --oneline
+                slides/q2-launch/
+              </div>
+              {commits.map((c, i) => (
+                <div
+                  key={c.hash}
+                  className="gs-stream"
+                  style={{
+                    animationDelay: `${0.4 + i * 0.25}s`,
+                    display: 'flex',
+                    gap: 14,
+                    padding: '6px 0',
+                  }}
+                >
+                  <span style={{ color: palette.amber }}>*</span>
+                  <span style={{ color: palette.accentSoft }}>{c.hash}</span>
+                  {c.head && <span style={{ color: palette.mint }}>{c.head}</span>}
+                  <span style={{ color: palette.text }}>{c.msg}</span>
+                </div>
+              ))}
+              <div
+                className="gs-stream"
+                style={{
+                  animationDelay: '1.25s',
+                  marginTop: 22,
+                  display: 'flex',
+                  gap: 14,
+                  color: palette.muted,
+                }}
+              >
+                <span style={{ color: palette.mint }}>$</span>
+                <span className="es-caret" style={{ color: palette.text }} />
+              </div>
+            </div>
+          </WindowShell>
+
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 20,
+              minHeight: 0,
+            }}
+          >
+            {properties.map((p, i) => (
+              <div
+                key={p.label}
+                className="es-fadeUp"
+                style={{
+                  animationDelay: `${0.5 + i * 0.12}s`,
+                  flex: 1,
+                  padding: '28px 32px',
+                  borderRadius: 14,
+                  border: `1px solid ${palette.border}`,
+                  background: palette.surface,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  gap: 10,
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 14,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      background: palette.accent,
+                      boxShadow: `0 0 16px ${palette.accent}`,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontFamily: font.mono,
+                      fontSize: 28,
+                      color: palette.text,
+                      letterSpacing: '-0.01em',
+                    }}
+                  >
+                    {p.label}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    paddingLeft: 24,
+                    fontSize: 22,
+                    color: palette.muted,
+                  }}
+                >
+                  {p.caption}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Slide: Deploy anywhere ──────────────────────────────────────────────────
+const DeployAnywhere: Page = () => {
+  const hosts = [
+    { name: 'Vercel', src: vercelLogo },
+    { name: 'Cloudflare', src: cloudflareLogo },
+    { name: 'Zeabur', src: zeaburLogo },
+  ];
+  return (
+    <div style={fill}>
+      <Styles />
+      <GridBg />
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          padding: '110px 140px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 48,
+        }}
+      >
+        <div className="es-fadeUp">
+          <Eyebrow>why open-slide · 04</Eyebrow>
+          <h2
+            style={{
+              marginTop: 24,
+              marginBottom: 0,
+              fontSize: 104,
+              fontWeight: 600,
+              letterSpacing: '-0.04em',
+              lineHeight: 1.0,
+            }}
+          >
+            Ship it{' '}
+            <span
+              style={{
+                background: `linear-gradient(90deg, ${palette.accentSoft}, ${palette.accent})`,
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent',
+              }}
+            >
+              anywhere.
+            </span>
+          </h2>
+          <p
+            style={{
+              marginTop: 24,
+              maxWidth: 1280,
+              fontSize: 32,
+              lineHeight: 1.4,
+              color: palette.textSoft,
+              letterSpacing: '-0.01em',
+            }}
+          >
+            open-slide builds to plain static assets. Drop them on Vercel, Cloudflare,
+            Zeabur — or any server that serves HTML.
+          </p>
+        </div>
+
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            gap: 32,
+            minHeight: 0,
+          }}
+        >
+          {hosts.map((h, i) => (
+            <LogoCard
+              key={h.name}
+              src={h.src}
+              name={h.name}
+              delay={0.25 + i * 0.12}
+              logoHeight={104}
+            />
+          ))}
+        </div>
+
+        <div
+          className="es-fadeUp"
+          style={{
+            animationDelay: '0.75s',
+            alignSelf: 'center',
+            padding: '18px 28px',
+            borderRadius: 12,
+            border: `1px solid ${palette.border}`,
+            background: palette.surface,
+            fontFamily: font.mono,
+            fontSize: 26,
+            color: palette.textSoft,
+            display: 'flex',
+            gap: 16,
+            alignItems: 'center',
+          }}
+        >
+          <span style={{ color: palette.mint }}>$</span>
+          <span style={{ color: palette.text }}>pnpm build</span>
+          <span style={{ color: palette.muted }}>→ dist/</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── Slide export ────────────────────────────────────────────────────────────
 export const meta: SlideMeta = {
   title: 'Getting started with open-slide',
   theme: 'dark',
 };
 
-export default [Cover, Init, Prompt, Inspect, Apply, Recap] satisfies Page[];
+export default [
+  Cover,
+  AgentAgnostic,
+  FreeLayout,
+  Init,
+  Prompt,
+  Inspect,
+  Apply,
+  GitTracked,
+  DeployAnywhere,
+  Recap,
+] satisfies Page[];
