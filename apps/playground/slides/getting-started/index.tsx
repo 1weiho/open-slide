@@ -1,4 +1,4 @@
-import type { DeckMeta, SlidePage } from '@open-slide/core';
+import type { Page, SlideMeta } from '@open-slide/core';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const palette = {
@@ -310,7 +310,7 @@ const AgentLine = ({
 };
 
 // ─── Slide 1: Cover ──────────────────────────────────────────────────────────
-const Cover: SlidePage = () => (
+const Cover: Page = () => (
   <div style={fill}>
     <Styles />
     <GridBg />
@@ -356,7 +356,7 @@ const Cover: SlidePage = () => (
             animationDelay: '0.15s',
           }}
         >
-          Author decks
+          Author slides
           <br />
           <span
             style={{
@@ -380,7 +380,7 @@ const Cover: SlidePage = () => (
             animationDelay: '0.35s',
           }}
         >
-          Three steps from empty folder to a live, editable deck.
+          Three steps from empty folder to a live, editable slide.
         </p>
       </div>
 
@@ -410,17 +410,17 @@ const Cover: SlidePage = () => (
 );
 
 // ─── Slide 2: Init in a terminal ─────────────────────────────────────────────
-const Init: SlidePage = () => {
+const Init: Page = () => {
   const stream = [
     '',
-    'Created open-slide workspace in /Users/you/my-deck',
+    'Created open-slide workspace in /Users/you/my-slide',
     '',
     'Next steps:',
-    '  cd my-deck',
+    '  cd my-slide',
     '  pnpm install    # or npm install / yarn',
     '  pnpm dev',
     '',
-    'Then open the dev server and start authoring in slides/<your-deck>/.',
+    'Then open the dev server and start authoring in slides/<your-slide>/.',
   ];
   return (
     <div style={fill}>
@@ -478,7 +478,7 @@ const Init: SlidePage = () => {
             <div style={{ display: 'flex', gap: 16 }}>
               <span style={{ color: palette.mint }}>$</span>
               <span className="gs-type" style={{ color: palette.text }}>
-                npx @open-slide/cli init my-deck
+                npx @open-slide/cli init my-slide
               </span>
             </div>
             <div style={{ height: 18 }} />
@@ -520,7 +520,7 @@ const Init: SlidePage = () => {
 };
 
 // ─── Slide 3: Prompt → create-slide → pages appear ───────────────────────────
-const Prompt: SlidePage = () => {
+const Prompt: Page = () => {
   const thumbs = ['Cover', 'Agenda', 'Problem', 'Solution', 'Metrics', 'Next'];
   return (
     <div style={fill}>
@@ -562,7 +562,7 @@ const Prompt: SlidePage = () => {
           }}
         >
           {/* LEFT — agent CLI */}
-          <WindowShell title="claude · ~/my-deck">
+          <WindowShell title="claude · ~/my-slide">
             <div
               style={{
                 flex: 1,
@@ -578,7 +578,7 @@ const Prompt: SlidePage = () => {
                 </div>
                 <div style={{ marginTop: 10 }}>
                   <span className="gs-type" style={{ maxWidth: '100%', color: palette.text }}>
-                    a deck about the Q2 launch
+                    slides about the Q2 launch
                   </span>
                 </div>
               </AgentLine>
@@ -615,7 +615,7 @@ const Prompt: SlidePage = () => {
           </WindowShell>
 
           {/* RIGHT — browser preview */}
-          <WindowShell title="localhost:5173/decks/q2-launch">
+          <WindowShell title="localhost:5173/s/q2-launch">
             <div
               style={{
                 flex: 1,
@@ -770,7 +770,7 @@ const Prompt: SlidePage = () => {
 };
 
 // ─── Slide 4: Inspect a block ────────────────────────────────────────────────
-const Inspect: SlidePage = () => (
+const Inspect: Page = () => (
   <div style={fill}>
     <Styles />
     <GridBg />
@@ -814,7 +814,7 @@ const Inspect: SlidePage = () => (
       </div>
 
       <WindowShell
-        title="localhost:5173/decks/q2-launch"
+        title="localhost:5173/s/q2-launch"
         badge={
           <span
             className="gs-pulse"
@@ -1059,7 +1059,7 @@ const Inspect: SlidePage = () => (
 );
 
 // ─── Slide 5: Apply comments ─────────────────────────────────────────────────
-const Apply: SlidePage = () => (
+const Apply: Page = () => (
   <div style={fill}>
     <Styles />
     <GridBg />
@@ -1099,7 +1099,7 @@ const Apply: SlidePage = () => (
         }}
       >
         {/* LEFT — agent CLI + code */}
-        <WindowShell title="claude · ~/my-deck">
+        <WindowShell title="claude · ~/my-slide">
           <div
             style={{
               flex: 1,
@@ -1190,7 +1190,7 @@ const Apply: SlidePage = () => (
         </WindowShell>
 
         {/* RIGHT — browser canvas morphs */}
-        <WindowShell title="localhost:5173/decks/q2-launch">
+        <WindowShell title="localhost:5173/s/q2-launch">
           <div
             style={{
               flex: 1,
@@ -1274,7 +1274,7 @@ const Apply: SlidePage = () => (
 );
 
 // ─── Slide 6: Recap ──────────────────────────────────────────────────────────
-const Recap: SlidePage = () => {
+const Recap: Page = () => {
   const steps = [
     { n: '01', title: 'init', caption: 'npx @open-slide/cli init' },
     { n: '02', title: 'prompt', caption: 'create-slide' },
@@ -1388,7 +1388,7 @@ const Recap: SlidePage = () => {
           }}
         >
           <span>
-            edit <span style={{ color: palette.text }}>slides/&lt;your-deck&gt;/index.tsx</span> — HMR does the rest
+            edit <span style={{ color: palette.text }}>slides/&lt;your-slide&gt;/index.tsx</span> — HMR does the rest
           </span>
           <span>open-slide</span>
         </div>
@@ -1397,10 +1397,10 @@ const Recap: SlidePage = () => {
   );
 };
 
-// ─── Deck export ─────────────────────────────────────────────────────────────
-export const meta: DeckMeta = {
+// ─── Slide export ────────────────────────────────────────────────────────────
+export const meta: SlideMeta = {
   title: 'Getting started with open-slide',
   theme: 'dark',
 };
 
-export default [Cover, Init, Prompt, Inspect, Apply, Recap] satisfies SlidePage[];
+export default [Cover, Init, Prompt, Inspect, Apply, Recap] satisfies Page[];

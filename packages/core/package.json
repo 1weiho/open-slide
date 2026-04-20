@@ -1,7 +1,7 @@
 {
   "name": "@open-slide/core",
   "version": "0.0.2",
-  "description": "Runtime and CLI for open-slide — write decks in slides/, we handle the rest.",
+  "description": "Runtime and CLI for open-slide — write slides in slides/, we handle the rest.",
   "type": "module",
   "exports": {
     ".": {

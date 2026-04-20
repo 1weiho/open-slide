@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FolderPlus } from 'lucide-react';
-import { deckIds, loadDeck } from '../lib/decks';
-import type { DeckModule } from '../lib/sdk';
+import { slideIds, loadSlide } from '../lib/slides';
+import type { SlideModule } from '../lib/sdk';
 import { SlideCanvas } from '../components/SlideCanvas';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -13,22 +13,22 @@ export function Home() {
         <div>
           <h1 className="font-heading text-3xl font-bold tracking-tight">open-slide</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {deckIds.length} deck{deckIds.length === 1 ? '' : 's'} · start with any agent using the{' '}
+            {slideIds.length} slide{slideIds.length === 1 ? '' : 's'} · start with any agent using the{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">create-slide</code>{' '}
             skill
           </p>
         </div>
       </header>
 
-      {deckIds.length === 0 ? (
+      {slideIds.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground">
             <FolderPlus className="size-8 opacity-50" />
-            <p>No decks yet.</p>
+            <p>No slides yet.</p>
             <p className="text-sm">
               Create{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-                slides/my-deck/index.tsx
+                slides/my-slide/index.tsx
               </code>{' '}
               with{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
@@ -40,9 +40,9 @@ export function Home() {
         </Card>
       ) : (
         <ul className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
-          {deckIds.map((id) => (
+          {slideIds.map((id) => (
             <li key={id}>
-              <DeckCard id={id} />
+              <SlideCard id={id} />
             </li>
           ))}
         </ul>
@@ -51,13 +51,13 @@ export function Home() {
   );
 }
 
-function DeckCard({ id }: { id: string }) {
-  const [deck, setDeck] = useState<DeckModule | null>(null);
+function SlideCard({ id }: { id: string }) {
+  const [slide, setSlide] = useState<SlideModule | null>(null);
   useEffect(() => {
     let cancelled = false;
-    loadDeck(id)
+    loadSlide(id)
       .then((mod) => {
-        if (!cancelled) setDeck(mod);
+        if (!cancelled) setSlide(mod);
       })
       .catch(() => {});
     return () => {
@@ -65,13 +65,13 @@ function DeckCard({ id }: { id: string }) {
     };
   }, [id]);
 
-  const FirstPage = deck?.default[0];
-  const title = deck?.meta?.title ?? id;
-  const pageCount = deck?.default.length ?? 0;
+  const FirstPage = slide?.default[0];
+  const title = slide?.meta?.title ?? id;
+  const pageCount = slide?.default.length ?? 0;
 
   return (
     <Link
-      to={`/d/${id}`}
+      to={`/s/${id}`}
       className="group block overflow-hidden rounded-xl bg-card text-card-foreground ring-1 ring-foreground/10 transition-all duration-200 hover:-translate-y-0.5 hover:ring-foreground/20 hover:shadow-lg"
     >
       <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-indigo-50 to-violet-50">

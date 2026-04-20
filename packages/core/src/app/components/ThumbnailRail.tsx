@@ -1,11 +1,11 @@
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { SlidePage } from '../lib/sdk';
+import type { Page } from '../lib/sdk';
 import { SlideCanvas } from './SlideCanvas';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../lib/sdk';
 
 type Props = {
-  pages: SlidePage[];
+  pages: Page[];
   current: number;
   onSelect: (index: number) => void;
 };
@@ -18,13 +18,13 @@ export function ThumbnailRail({ pages, current, onSelect }: Props) {
   return (
     <ScrollArea className="h-full border-r bg-card">
       <aside className="flex flex-col gap-2.5 p-3">
-        {pages.map((Page, i) => {
+        {pages.map((PageComp, i) => {
           const active = i === current;
           return (
             <button
               key={i}
               onClick={() => onSelect(i)}
-              aria-label={`Go to slide ${i + 1}`}
+              aria-label={`Go to page ${i + 1}`}
               aria-current={active ? 'true' : undefined}
               className={cn(
                 'flex items-center gap-2.5 rounded-lg border-2 border-transparent p-1.5 text-left transition-colors',
@@ -45,7 +45,7 @@ export function ThumbnailRail({ pages, current, onSelect }: Props) {
                 style={{ width: THUMB_WIDTH, height: THUMB_HEIGHT }}
               >
                 <SlideCanvas scale={THUMB_SCALE} center={false} flat>
-                  <Page />
+                  <PageComp />
                 </SlideCanvas>
               </div>
             </button>

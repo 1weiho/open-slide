@@ -15,14 +15,14 @@ export type OpenSlidePluginOptions = {
   config: OpenSlideConfig;
 };
 
-const DECKS_VMOD = 'virtual:open-slide/decks';
+const SLIDES_VMOD = 'virtual:open-slide/slides';
 const CONFIG_VMOD = 'virtual:open-slide/config';
 
 function resolved(id: string): string {
   return `\0${id}`;
 }
 
-async function findDecks(userCwd: string, slidesDir: string): Promise<string[]> {
+async function findSlides(userCwd: string, slidesDir: string): Promise<string[]> {
   const abs = path.resolve(userCwd, slidesDir);
   if (!existsSync(abs)) return [];
   const hits = await fg('*/index.{tsx,jsx,ts,js}', {
@@ -38,7 +38,7 @@ function toId(absFile: string, slidesRoot: string): string {
   return rel.split(path.sep)[0];
 }
 
-function generateDecksModule(
+function generateSlidesModule(
   files: string[],
   slidesRoot: string,
   isDev: boolean,
@@ -57,13 +57,13 @@ function generateDecksModule(
     )
     .join('\n');
 
-  return `// virtual:open-slide/decks — generated
-export const deckIds = ${ids};
+  return `// virtual:open-slide/slides — generated
+export const slideIds = ${ids};
 
-export async function loadDeck(id) {
+export async function loadSlide(id) {
   switch (id) {
 ${cases}
-    default: throw new Error('Deck not found: ' + id);
+    default: throw new Error('Slide not found: ' + id);
   }
 }
 `;
@@ -85,14 +85,14 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
       };
     },
     resolveId(id) {
-      if (id === DECKS_VMOD) return resolved(DECKS_VMOD);
+      if (id === SLIDES_VMOD) return resolved(SLIDES_VMOD);
       if (id === CONFIG_VMOD) return resolved(CONFIG_VMOD);
       return null;
     },
     async load(id) {
-      if (id === resolved(DECKS_VMOD)) {
-        const files = await findDecks(userCwd, slidesDir);
-        return generateDecksModule(files, slidesRoot, isDev);
+      if (id === resolved(SLIDES_VMOD)) {
+        const files = await findSlides(userCwd, slidesDir);
+        return generateSlidesModule(files, slidesRoot, isDev);
       }
       if (id === resolved(CONFIG_VMOD)) {
         return `export default ${JSON.stringify(config)};\n`;
@@ -101,7 +101,7 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
     },
     configureServer(server) {
       const reload = () => {
-        const mod = server.moduleGraph.getModuleById(resolved(DECKS_VMOD));
+        const mod = server.moduleGraph.getModuleById(resolved(SLIDES_VMOD));
         if (mod) server.moduleGraph.invalidateModule(mod);
         server.ws.send({ type: 'full-reload' });
       };

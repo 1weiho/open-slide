@@ -21,8 +21,8 @@ function getSource(fiber: FiberLike) {
   return fiber._debugSource ?? fiber.memoizedProps?.__source;
 }
 
-export function findSlideSource(el: HTMLElement, deckId: string): SlideSourceHit | null {
-  const needle = `/slides/${deckId}/index.tsx`;
+export function findSlideSource(el: HTMLElement, slideId: string): SlideSourceHit | null {
+  const needle = `/slides/${slideId}/index.tsx`;
   let fiber = getFiber(el);
   let anchor: HTMLElement = el;
   while (fiber) {

@@ -47,6 +47,6 @@ export async function init({ dir, force, name }: InitOptions): Promise<void> {
       `  cd ${dir === '.' ? basename(target) : dir}\n` +
       `  pnpm install    # or npm install / yarn\n` +
       `  pnpm dev\n\n` +
-      `Then open the dev server and start authoring in slides/<your-deck>/.\n`,
+      `Then open the dev server and start authoring in slides/<your-slide>/.\n`,
   );
 }

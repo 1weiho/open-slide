@@ -9,23 +9,23 @@ import { Separator } from '@/components/ui/separator';
 import { Player } from '../components/Player';
 import { SlideCanvas } from '../components/SlideCanvas';
 import { ThumbnailRail } from '../components/ThumbnailRail';
-import { loadDeck } from '../lib/decks';
-import type { DeckModule } from '../lib/sdk';
+import { loadSlide } from '../lib/slides';
+import type { SlideModule } from '../lib/sdk';
 
-export function Deck() {
-  const { deckId = '' } = useParams();
+export function Slide() {
+  const { slideId = '' } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [deck, setDeck] = useState<DeckModule | null>(null);
+  const [slide, setSlide] = useState<SlideModule | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    setDeck(null);
+    setSlide(null);
     setError(null);
-    loadDeck(deckId)
+    loadSlide(slideId)
       .then((mod) => {
-        if (!cancelled) setDeck(mod);
+        if (!cancelled) setSlide(mod);
       })
       .catch((e) => {
         if (!cancelled) setError(String(e?.message ?? e));
@@ -33,9 +33,9 @@ export function Deck() {
     return () => {
       cancelled = true;
     };
-  }, [deckId]);
+  }, [slideId]);
 
-  const pages = useMemo(() => deck?.default ?? [], [deck]);
+  const pages = useMemo(() => slide?.default ?? [], [slide]);
   const pageCount = pages.length;
   const rawIndex = Number(searchParams.get('p') ?? '1') - 1;
   const index = Number.isFinite(rawIndex) ? Math.max(0, Math.min(pageCount - 1, rawIndex)) : 0;
@@ -79,7 +79,7 @@ export function Deck() {
         <Link to="/" className="text-sm font-medium text-primary hover:underline">
           ← Home
         </Link>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Failed to load deck</h2>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">Failed to load slide</h2>
         <pre className="mt-4 overflow-auto rounded-md border bg-card p-4 text-xs whitespace-pre-wrap shadow-sm">
           {error}
         </pre>
@@ -87,10 +87,10 @@ export function Deck() {
     );
   }
 
-  if (!deck) {
+  if (!slide) {
     return (
       <div className="mx-auto max-w-3xl px-8 py-16 text-sm text-muted-foreground">
-        Loading {deckId}…
+        Loading {slideId}…
       </div>
     );
   }
@@ -101,10 +101,10 @@ export function Deck() {
         <Link to="/" className="text-sm font-medium text-primary hover:underline">
           ← Home
         </Link>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Empty deck</h2>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">Empty slide</h2>
         <p className="mt-2 text-sm">
           <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-            slides/{deckId}/index.tsx
+            slides/{slideId}/index.tsx
           </code>{' '}
           must{' '}
           <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">export default</code> a
@@ -121,10 +121,10 @@ export function Deck() {
   }
 
   const CurrentPage = pages[index];
-  const title = deck.meta?.title ?? deckId;
+  const title = slide.meta?.title ?? slideId;
 
   return (
-    <InspectorProvider deckId={deckId}>
+    <InspectorProvider slideId={slideId}>
       <div className="flex h-screen flex-col overflow-hidden bg-background">
         <header className="flex shrink-0 items-center gap-4 border-b bg-card px-5 py-3">
           <Button asChild variant="ghost" size="sm">

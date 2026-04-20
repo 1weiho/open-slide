@@ -7,10 +7,10 @@ import type { Connect, Plugin, ViteDevServer } from 'vite';
 const MARKER_RE =
   /\{\/\*\s*@slide-comment\s+id="(c-[a-f0-9]+)"\s+ts="([^"]+)"\s+text="([A-Za-z0-9_-]+={0,2})"\s*\*\/\}/g;
 
-const DECK_ID_RE = /^[a-z0-9_-]+$/i;
+const SLIDE_ID_RE = /^[a-z0-9_-]+$/i;
 
 type AddBody = {
-  deckId?: string;
+  slideId?: string;
   line?: number;
   column?: number;
   text?: string;
@@ -57,11 +57,11 @@ function json(res: ServerResponse, status: number, body: unknown) {
 function resolveSlidePath(
   userCwd: string,
   slidesDir: string,
-  deckId: string,
+  slideId: string,
 ): string | null {
-  if (!DECK_ID_RE.test(deckId)) return null;
+  if (!SLIDE_ID_RE.test(slideId)) return null;
   const slidesRoot = path.resolve(userCwd, slidesDir);
-  const full = path.resolve(slidesRoot, deckId, 'index.tsx');
+  const full = path.resolve(slidesRoot, slideId, 'index.tsx');
   if (!full.startsWith(slidesRoot + path.sep)) return null;
   return full;
 }
@@ -144,23 +144,23 @@ export function commentsPlugin(opts: CommentsPluginOptions): Plugin {
 
         try {
           if (method === 'GET' && url.pathname === '/') {
-            const deckId = url.searchParams.get('deckId') ?? '';
-            const file = resolveSlidePath(userCwd, slidesDir, deckId);
-            if (!file) return json(res, 400, { error: 'invalid deckId' });
+            const slideId = url.searchParams.get('slideId') ?? '';
+            const file = resolveSlidePath(userCwd, slidesDir, slideId);
+            if (!file) return json(res, 400, { error: 'invalid slideId' });
             let source: string;
             try {
               source = await fs.readFile(file, 'utf8');
             } catch {
-              return json(res, 404, { error: 'deck not found' });
+              return json(res, 404, { error: 'slide not found' });
             }
             return json(res, 200, { comments: parseMarkers(source) });
           }
 
           if (method === 'POST' && url.pathname === '/add') {
             const body = (await readBody(req)) as AddBody;
-            const deckId = body.deckId ?? '';
-            const file = resolveSlidePath(userCwd, slidesDir, deckId);
-            if (!file) return json(res, 400, { error: 'invalid deckId' });
+            const slideId = body.slideId ?? '';
+            const file = resolveSlidePath(userCwd, slidesDir, slideId);
+            if (!file) return json(res, 400, { error: 'invalid slideId' });
             if (!body.line || body.line < 1) return json(res, 400, { error: 'invalid line' });
             if (!body.text || typeof body.text !== 'string') {
               return json(res, 400, { error: 'missing text' });
@@ -170,7 +170,7 @@ export function commentsPlugin(opts: CommentsPluginOptions): Plugin {
             try {
               source = await fs.readFile(file, 'utf8');
             } catch {
-              return json(res, 404, { error: 'deck not found' });
+              return json(res, 404, { error: 'slide not found' });
             }
 
             const lines = source.split('\n');
@@ -197,15 +197,15 @@ export function commentsPlugin(opts: CommentsPluginOptions): Plugin {
           if (method === 'DELETE' && url.pathname.startsWith('/')) {
             const id = url.pathname.slice(1);
             if (!/^c-[a-f0-9]+$/.test(id)) return json(res, 400, { error: 'invalid id' });
-            const deckId = url.searchParams.get('deckId') ?? '';
-            const file = resolveSlidePath(userCwd, slidesDir, deckId);
-            if (!file) return json(res, 400, { error: 'invalid deckId' });
+            const slideId = url.searchParams.get('slideId') ?? '';
+            const file = resolveSlidePath(userCwd, slidesDir, slideId);
+            if (!file) return json(res, 400, { error: 'invalid slideId' });
 
             let source: string;
             try {
               source = await fs.readFile(file, 'utf8');
             } catch {
-              return json(res, 404, { error: 'deck not found' });
+              return json(res, 404, { error: 'slide not found' });
             }
 
             const lines = source.split('\n');

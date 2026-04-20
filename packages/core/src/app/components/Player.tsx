@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
-import type { SlidePage } from '../lib/sdk';
+import type { Page } from '../lib/sdk';
 import { SlideCanvas } from './SlideCanvas';
 
 type Props = {
-  pages: SlidePage[];
+  pages: Page[];
   index: number;
   onIndexChange: (index: number) => void;
   onExit: () => void;
@@ -51,11 +51,11 @@ export function Player({ pages, index, onIndexChange, onExit }: Props) {
     return () => window.removeEventListener('keydown', onKey);
   }, [index, pages.length, onIndexChange, onExit]);
 
-  const Page = pages[index];
+  const PageComp = pages[index];
 
   return (
     <div ref={rootRef} className="flex h-screen w-screen items-center justify-center bg-black">
-      <SlideCanvas flat>{Page ? <Page /> : null}</SlideCanvas>
+      <SlideCanvas flat>{PageComp ? <PageComp /> : null}</SlideCanvas>
     </div>
   );
 }

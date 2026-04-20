@@ -5,7 +5,7 @@ description: Apply pending @slide-comment markers written by the open-slide insp
 
 # Apply slide comments
 
-The open-slide editor has an inspector tool that lets the user click on a rendered slide element and attach a textual comment (e.g. *"make this red"*, *"change to 'Open Slide Rocks'"*). Each comment is persisted as an in-source JSX marker inside `slides/<deckId>/index.tsx`.
+The open-slide editor has an inspector tool that lets the user click on a rendered page element and attach a textual comment (e.g. *"make this red"*, *"change to 'Open Slide Rocks'"*). Each comment is persisted as an in-source JSX marker inside `slides/<slideId>/index.tsx`.
 
 Your job: read those markers, perform the described edits, and delete the markers.
 
@@ -25,9 +25,9 @@ Your job: read those markers, perform the described edits, and delete the marker
 
 ## Procedure
 
-1. **Identify the target deck(s).**
-   - If the user names a deck (`example-deck`, `youbike-3-survey`, etc.), work on that single `slides/<deckId>/index.tsx`.
-   - If they say "all" or don't specify, scan every `slides/*/index.tsx`. Process each deck one at a time.
+1. **Identify the target slide(s).**
+   - If the user names one (`example-slide`, `youbike-3-survey`, etc.), work on that single `slides/<slideId>/index.tsx`.
+   - If they say "all" or don't specify, scan every `slides/*/index.tsx`. Process each slide one at a time.
 
 2. **Read the file and find all markers.**
    - Run the regex above against the whole file.
@@ -53,7 +53,7 @@ Your job: read those markers, perform the described edits, and delete the marker
    - Run `pnpm tsc --noEmit` and `pnpm biome check` (or `pnpm lint`). Fix any introduced errors.
 
 7. **Report.**
-   - Summarise: `N applied, 0 remaining` plus a one-line description of each change (including the deck id).
+   - Summarise: `N applied, 0 remaining` plus a one-line description of each change (including the slide id).
 
 ## base64url decoding helper
 
@@ -71,7 +71,7 @@ You can run this inline via `node -e '...'` if you need to inspect a payload; ot
 - **Marker at EOF / without a following element**: delete the marker; note it in the summary as orphan.
 - **Multiple markers stacked on consecutive lines**: they all refer to the same next non-blank JSX element. Apply them in source order but still delete each line individually.
 - **`_debugSource` used SWC instead of Babel**: not your problem — the marker line is authoritative.
-- **Comment asks for something outside the target element's scope** (e.g. "add a new slide"): do the closest-reasonable edit and mention the scope expansion in your summary.
+- **Comment asks for something outside the target element's scope** (e.g. "add a new page"): do the closest-reasonable edit and mention the scope expansion in your summary.
 - **Can't resolve the comment** (e.g. truly ambiguous, or the file changed shape such that the target element doesn't exist): leave the marker in place and report it as skipped. Don't guess.
 
 ## Do not

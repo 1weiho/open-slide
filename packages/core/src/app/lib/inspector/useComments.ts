@@ -10,14 +10,14 @@ export type SlideComment = {
 
 type ListResponse = { comments: SlideComment[] };
 
-export function useComments(deckId: string) {
+export function useComments(slideId: string) {
   const [comments, setComments] = useState<SlideComment[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const refetch = useCallback(async () => {
-    if (!deckId) return;
+    if (!slideId) return;
     try {
-      const res = await fetch(`/__comments?deckId=${encodeURIComponent(deckId)}`);
+      const res = await fetch(`/__comments?slideId=${encodeURIComponent(slideId)}`);
       if (!res.ok) {
         setError(`GET /__comments → ${res.status}`);
         return;
@@ -28,14 +28,14 @@ export function useComments(deckId: string) {
     } catch (e) {
       setError(String((e as Error).message ?? e));
     }
-  }, [deckId]);
+  }, [slideId]);
 
   const add = useCallback(
     async (line: number, column: number, text: string) => {
       const res = await fetch('/__comments/add', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ deckId, line, column, text }),
+        body: JSON.stringify({ slideId, line, column, text }),
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
@@ -43,18 +43,18 @@ export function useComments(deckId: string) {
       }
       await refetch();
     },
-    [deckId, refetch],
+    [slideId, refetch],
   );
 
   const remove = useCallback(
     async (id: string) => {
-      const res = await fetch(`/__comments/${id}?deckId=${encodeURIComponent(deckId)}`, {
+      const res = await fetch(`/__comments/${id}?slideId=${encodeURIComponent(slideId)}`, {
         method: 'DELETE',
       });
       if (!res.ok) throw new Error(`DELETE /__comments/${id} → ${res.status}`);
       await refetch();
     },
-    [deckId, refetch],
+    [slideId, refetch],
   );
 
   useEffect(() => {

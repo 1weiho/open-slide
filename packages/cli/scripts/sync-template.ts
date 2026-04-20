@@ -12,7 +12,7 @@ const CORE_PKG = resolve(REPO_ROOT, 'packages', 'core', 'package.json');
 const TEMPLATE = resolve(CLI_ROOT, 'template');
 
 // Files/dirs at the repo root that are workspace-shared but belong in a
-// scaffolded deck workspace. Copied in addition to apps/playground/*.
+// scaffolded workspace. Copied in addition to apps/playground/*.
 const ROOT_EXTRAS = [
   '.claude',
   '.agents',

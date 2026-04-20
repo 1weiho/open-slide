@@ -6,7 +6,7 @@ import { useInspector } from './InspectorProvider';
 type Highlight = { rect: DOMRect; hit: SlideSourceHit };
 
 export function InspectOverlay() {
-  const { active, deckId, pending, setPending } = useInspector();
+  const { active, slideId, pending, setPending } = useInspector();
   const overlayRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<Highlight | null>(null);
 
@@ -20,7 +20,7 @@ export function InspectOverlay() {
       if (pending) return;
       const el = pickElement(e.clientX, e.clientY);
       if (!el) return setHover(null);
-      const hit = findSlideSource(el, deckId);
+      const hit = findSlideSource(el, slideId);
       if (!hit) return setHover(null);
       setHover({ rect: hit.anchor.getBoundingClientRect(), hit });
     };
@@ -30,7 +30,7 @@ export function InspectOverlay() {
       if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) return;
       const el = pickElement(e.clientX, e.clientY);
       if (!el) return;
-      const hit = findSlideSource(el, deckId);
+      const hit = findSlideSource(el, slideId);
       if (!hit) return;
       e.preventDefault();
       e.stopPropagation();
@@ -50,7 +50,7 @@ export function InspectOverlay() {
       window.removeEventListener('pointermove', onMove, true);
       window.removeEventListener('click', onClick, true);
     };
-  }, [active, deckId, pending, setPending]);
+  }, [active, slideId, pending, setPending]);
 
   if (!active) return null;
 

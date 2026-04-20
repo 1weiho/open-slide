@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { init, type InitOptions } from './init.ts';
 
-const HELP = `open-slide — scaffold an open-slide deck workspace
+const HELP = `open-slide — scaffold an open-slide workspace
 
 Usage:
   open-slide init [dir]    Create a new open-slide workspace (defaults to .)

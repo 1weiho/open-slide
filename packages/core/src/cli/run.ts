@@ -2,11 +2,11 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const HELP = `open-slide — author decks, we handle the Vite/React stack
+const HELP = `open-slide — author slides, we handle the Vite/React stack
 
 Usage:
   open-slide dev              Start dev server
-  open-slide build            Build a static deck site
+  open-slide build            Build a static site
   open-slide preview          Preview the production build
   open-slide --help           Show this message
   open-slide --version        Print version

@@ -1,15 +1,15 @@
 import type { ComponentType } from 'react';
 
-export type SlidePage = ComponentType;
+export type Page = ComponentType;
 
-export type DeckMeta = {
+export type SlideMeta = {
   title?: string;
   theme?: 'light' | 'dark';
 };
 
-export type DeckModule = {
-  default: SlidePage[];
-  meta?: DeckMeta;
+export type SlideModule = {
+  default: Page[];
+  meta?: SlideMeta;
 };
 
 export const CANVAS_WIDTH = 1920;

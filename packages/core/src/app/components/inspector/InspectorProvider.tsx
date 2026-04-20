@@ -12,7 +12,7 @@ export type PendingTarget = {
 };
 
 type InspectorCtx = {
-  deckId: string;
+  slideId: string;
   active: boolean;
   toggle: () => void;
   comments: SlideComment[];
@@ -32,10 +32,10 @@ export function useInspector(): InspectorCtx {
   return v;
 }
 
-export function InspectorProvider({ deckId, children }: { deckId: string; children: ReactNode }) {
+export function InspectorProvider({ slideId, children }: { slideId: string; children: ReactNode }) {
   const [active, setActive] = useState(false);
   const [pending, setPending] = useState<PendingTarget | null>(null);
-  const { comments, error, refetch, add, remove } = useComments(deckId);
+  const { comments, error, refetch, add, remove } = useComments(slideId);
 
   const toggle = useCallback(() => {
     setActive((a) => {
@@ -46,7 +46,7 @@ export function InspectorProvider({ deckId, children }: { deckId: string; childr
 
   const value = useMemo<InspectorCtx>(
     () => ({
-      deckId,
+      slideId,
       active,
       toggle,
       comments,
@@ -57,7 +57,7 @@ export function InspectorProvider({ deckId, children }: { deckId: string; childr
       pending,
       setPending,
     }),
-    [deckId, active, toggle, comments, error, refetch, add, remove, pending],
+    [slideId, active, toggle, comments, error, refetch, add, remove, pending],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

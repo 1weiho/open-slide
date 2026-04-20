@@ -1,11 +1,11 @@
 ---
 name: create-slide
-description: Use this skill when the user wants to create, draft, author, or generate a new slide deck / presentation in this open-slide repo. Triggers on phrases like "make a slide deck about X", "create a presentation", "draft slides for", "new deck", "投影片", "簡報", or when the user asks to add content under `slides/`. Do NOT use for editing the framework itself — only for authoring content inside `slides/<id>/`.
+description: Use this skill when the user wants to create, draft, author, or generate new slides / a presentation in this open-slide repo. Triggers on phrases like "make slides about X", "create a presentation", "draft slides for", "new slide", "投影片", "簡報", or when the user asks to add content under `slides/`. Do NOT use for editing the framework itself — only for authoring content inside `slides/<id>/`.
 ---
 
-# Create a slide deck in open-slide
+# Create a slide in open-slide
 
-You are authoring a new deck in this framework. The framework is installed as `@open-slide/core` — you only write files under `slides/<id>/`. Never modify `package.json`, `open-slide.json`, or existing decks.
+You are authoring a new slide in this framework. The framework is installed as `@open-slide/core` — you only write files under `slides/<id>/`. Never modify `package.json`, `open-slide.json`, or existing slides.
 
 Read the full contract in `CLAUDE.md` at the repo root first. This skill extends it with process and design guidance.
 
@@ -13,21 +13,21 @@ Read the full contract in `CLAUDE.md` at the repo root first. This skill extends
 
 Before writing code, understand what's needed. Ask the user (use `AskUserQuestion` if any of these are ambiguous):
 
-- **Topic** — what is the deck about?
+- **Topic** — what is the slide about?
 - **Audience** — technical? investors? teammates? public?
 - **Length** — rough page count (typical: 5–15)
 - **Tone / aesthetic** — e.g. minimal editorial, playful, corporate, retro. If the user has no preference, propose one and commit to it.
 - **Any content they've drafted** — outline, bullets, key messages
 
-Don't ask all of these if the request is already specific (e.g. "make me a 3-slide intro to Rust for beginners"). Ask only what's actually unclear.
+Don't ask all of these if the request is already specific (e.g. "make me a 3-page intro to Rust for beginners"). Ask only what's actually unclear.
 
-## Step 2 — Pick a deck id
+## Step 2 — Pick a slide id
 
 Use **kebab-case**, short, descriptive. Examples: `rust-intro`, `q2-roadmap`, `team-offsite-2026`. Check `slides/` to avoid collisions.
 
 ## Step 3 — Plan the structure
 
-Sketch the deck as a list of page roles before writing code. Common page types:
+Sketch the slide as a list of page roles before writing code. Common page types:
 
 | Role             | Purpose                                       |
 | ---------------- | --------------------------------------------- |
@@ -40,7 +40,7 @@ Sketch the deck as a list of page roles before writing code. Common page types:
 | Comparison       | Two-column before/after or A vs B             |
 | Closing          | CTA, thanks, contact                          |
 
-**Rule of thumb**: one idea per slide. If you're tempted to put two, split them.
+**Rule of thumb**: one idea per page. If you're tempted to put two, split them.
 
 ## Step 4 — Commit to a visual direction
 
@@ -76,7 +76,7 @@ The canvas is **1920 × 1080** absolute pixels. Design as if that is literally t
 ### Page template
 
 ```tsx
-import type { DeckMeta, SlidePage } from '@open-slide/core';
+import type { Page, SlideMeta } from '@open-slide/core';
 
 const palette = {
   bg: '#0f172a',
@@ -91,7 +91,7 @@ const fill = {
   fontFamily: 'system-ui, -apple-system, sans-serif',
 } as const;
 
-const Cover: SlidePage = () => (
+const Cover: Page = () => (
   <div
     style={{
       ...fill,
@@ -110,12 +110,12 @@ const Cover: SlidePage = () => (
       The Big Idea
     </h1>
     <p style={{ fontSize: 40, color: palette.muted, maxWidth: 1200 }}>
-      A short subtitle that explains what this deck is about.
+      A short subtitle that explains what this slide is about.
     </p>
   </div>
 );
 
-const Content: SlidePage = () => (
+const Content: Page = () => (
   <div style={{ ...fill, background: palette.bg, color: palette.text, padding: 120 }}>
     <h2 style={{ fontSize: 80, fontWeight: 800, margin: 0 }}>Section heading</h2>
     <ul style={{ fontSize: 40, lineHeight: 1.6, marginTop: 64, paddingLeft: 48 }}>
@@ -126,8 +126,8 @@ const Content: SlidePage = () => (
   </div>
 );
 
-export const meta: DeckMeta = { title: 'The Big Idea' };
-export default [Cover, Content] satisfies SlidePage[];
+export const meta: SlideMeta = { title: 'The Big Idea' };
+export default [Cover, Content] satisfies Page[];
 ```
 
 ### Assets
@@ -140,15 +140,15 @@ import hero from './assets/hero.jpg';
 <img src={hero} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
 ```
 
-The `assets/` folder is only needed if you actually have files — skip it for pure-text decks.
+The `assets/` folder is only needed if you actually have files — skip it for pure-text slides.
 
 ## Step 6 — Self-review before finishing
 
-- [ ] `slides/<id>/index.tsx` `export default`s a non-empty `SlidePage[]`.
+- [ ] `slides/<id>/index.tsx` `export default`s a non-empty `Page[]`.
 - [ ] Every page's root fills `100% × 100%`.
 - [ ] Content lives inside padding (no text kisses the edge).
 - [ ] One visual direction across every page (same palette, same type scale).
-- [ ] One idea per slide.
+- [ ] One idea per page.
 - [ ] All imported assets exist on disk.
 - [ ] Nothing outside `slides/<id>/` was edited.
 
@@ -156,18 +156,18 @@ The `assets/` folder is only needed if you actually have files — skip it for p
 
 Tell the user:
 
-- The deck id and file path you created.
-- That the dev server will hot-reload — they can open `http://localhost:5173/d/<id>` (or refresh the home page).
+- The slide id and file path you created.
+- That the dev server will hot-reload — they can open `http://localhost:5173/s/<id>` (or refresh the home page).
 - If dev isn't running: `pnpm dev` from the repo root.
 
 Don't run the dev server yourself unless asked.
 
 ## Anti-patterns (do not do these)
 
-- ❌ Walls of text. If a slide has more than ~40 words, split it.
+- ❌ Walls of text. If a page has more than ~40 words, split it.
 - ❌ Using the full canvas for body copy. Respect the 100–160px padding.
 - ❌ Tiny type. Body under 28px is unreadable on a projector.
-- ❌ Inconsistent palette across pages — feels like different decks glued together.
+- ❌ Inconsistent palette across pages — feels glued together from different sources.
 - ❌ Installing packages. Only `react` and standard web APIs are available.
 - ❌ Writing CSS to a shared file. Inline styles or scoped classnames only.
-- ❌ Creating `README.md` or other prose files inside the deck folder. Just `index.tsx` + `assets/`.
+- ❌ Creating `README.md` or other prose files inside the slide folder. Just `index.tsx` + `assets/`.

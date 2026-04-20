@@ -1,7 +1,7 @@
-declare module 'virtual:open-slide/decks' {
-  import type { DeckModule } from './lib/sdk';
-  export const deckIds: string[];
-  export function loadDeck(id: string): Promise<DeckModule>;
+declare module 'virtual:open-slide/slides' {
+  import type { SlideModule } from './lib/sdk';
+  export const slideIds: string[];
+  export function loadSlide(id: string): Promise<SlideModule>;
 }
 
 declare module 'virtual:open-slide/config' {
