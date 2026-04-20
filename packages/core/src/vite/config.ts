@@ -51,6 +51,17 @@ export async function createViteConfig(
         '@': APP_ROOT,
       },
     },
+    optimizeDeps: {
+      entries: [path.join(APP_ROOT, 'main.tsx')],
+      include: [
+        'react-router-dom',
+        'radix-ui',
+        'lucide-react',
+        'clsx',
+        'tailwind-merge',
+        'class-variance-authority',
+      ],
+    },
     server: {
       port: config.port ?? 5173,
       fs: { allow: [APP_ROOT, userCwd, slidesAbs] },
