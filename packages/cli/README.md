@@ -13,7 +13,7 @@ pnpm dev
 
 This creates a workspace containing:
 
-- `slides/example-slide/` — a starter deck you can edit or delete.
+- `slides/getting-started/` — a starter deck you can edit or delete.
 - `package.json` — depends on `@open-slide/core`, which provides the runtime (home page, deck viewer, fullscreen mode) and the `open-slide` CLI.
 - `open-slide.json` — optional config (title, slidesDir, port).
 - `.claude/skills/` and `.agents/skills/` — Claude Code skills (`create-slide`, `apply-comments`, …).
