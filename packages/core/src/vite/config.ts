@@ -5,6 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import type { InlineConfig } from 'vite';
 import { commentsPlugin } from './comments-plugin.ts';
+import { foldersPlugin } from './folders-plugin.ts';
 import {
   loadUserConfig,
   type OpenSlideConfig,
@@ -45,6 +46,7 @@ export async function createViteConfig(
       tailwindcss(),
       openSlidePlugin({ userCwd, config }),
       commentsPlugin({ userCwd, slidesDir }),
+      foldersPlugin({ userCwd, slidesDir }),
     ],
     resolve: {
       alias: {
@@ -60,6 +62,7 @@ export async function createViteConfig(
         'clsx',
         'tailwind-merge',
         'class-variance-authority',
+        'emoji-picker-react',
       ],
     },
     server: {
