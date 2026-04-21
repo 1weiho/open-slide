@@ -24,7 +24,7 @@
   ],
   "scripts": {
     "build": "tsdown",
-    "check": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "prepack": "pnpm build"
   },
   "engines": {

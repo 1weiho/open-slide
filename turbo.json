@@ -10,7 +10,8 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "template/**"]
     },
-    "lint": {},
-    "check": {}
+    "typecheck": {
+      "dependsOn": ["^build"]
+    }
   }
 }

@@ -6,12 +6,18 @@
   "scripts": {
     "dev": "turbo run dev --filter=playground",
     "build": "turbo run build",
-    "lint": "turbo run lint",
-    "check": "turbo run check",
+    "typecheck": "turbo run typecheck",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
+    "check": "biome check .",
+    "check:fix": "biome check --write .",
     "core": "pnpm --filter @open-slide/core",
     "cli": "pnpm --filter @open-slide/cli"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.4.12",
     "turbo": "^2.3.0"
   }
 }

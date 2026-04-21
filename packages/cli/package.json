@@ -13,7 +13,7 @@
   ],
   "scripts": {
     "build": "tsdown && node dist/sync-template.js",
-    "check": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "prepack": "pnpm build"
   },
   "engines": {
