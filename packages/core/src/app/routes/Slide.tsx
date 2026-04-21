@@ -146,7 +146,10 @@ export function Slide() {
           <div className="w-[17rem] shrink-0">
             <ThumbnailRail pages={pages} current={index} onSelect={goTo} />
           </div>
-          <main className="relative min-h-0 min-w-0 flex-1 bg-background p-8">
+          <main
+            data-inspector-root
+            className="relative min-h-0 min-w-0 flex-1 bg-background p-8"
+          >
             <SlideCanvas>
               <CurrentPage />
             </SlideCanvas>

@@ -98,6 +98,7 @@ function pickElement(x: number, y: number): HTMLElement | null {
   for (const el of stack) {
     if (!(el instanceof HTMLElement)) continue;
     if (el.closest('[data-inspector-ui]')) continue;
+    if (!el.closest('[data-inspector-root]')) continue;
     return el;
   }
   return null;
