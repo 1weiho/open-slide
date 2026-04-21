@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { FolderPlus } from 'lucide-react';
 import { slideIds, loadSlide } from '../lib/slides';
-import type { SlideModule } from '../lib/sdk';
+import type { FolderIcon, SlideModule } from '../lib/sdk';
 import { SlideCanvas } from '../components/SlideCanvas';
 import { Card, CardContent } from '@/components/ui/card';
 import { useFolders } from '@/lib/folders';
@@ -53,27 +53,52 @@ export function Home() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar
-        folders={manifest.folders}
-        countFor={countFor}
-        selectedId={selectedId}
-        onSelect={selectFolder}
-        onCreate={(name, icon) => create(name, icon)}
-        onRename={(id, name) => update(id, { name })}
-        onChangeIcon={(id, icon) => update(id, { icon })}
-        onDelete={(id) => {
-          if (selectedId === id) selectFolder(DRAFT_ID);
-          remove(id);
-        }}
-        onDropToFolder={(folderId, slideId) => assign(slideId, folderId)}
-        onDropToDraft={(slideId) => assign(slideId, null)}
-      />
+      <div className="hidden md:block">
+        <Sidebar
+          folders={manifest.folders}
+          countFor={countFor}
+          selectedId={selectedId}
+          onSelect={selectFolder}
+          onCreate={(name, icon) => create(name, icon)}
+          onRename={(id, name) => update(id, { name })}
+          onChangeIcon={(id, icon) => update(id, { icon })}
+          onDelete={(id) => {
+            if (selectedId === id) selectFolder(DRAFT_ID);
+            remove(id);
+          }}
+          onDropToFolder={(folderId, slideId) => assign(slideId, folderId)}
+          onDropToDraft={(slideId) => assign(slideId, null)}
+        />
+      </div>
 
       <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
-        <div className="mx-auto w-full max-w-6xl px-8 py-12">
-          <header className="mb-8 flex items-center gap-3">
+        <div className="border-b bg-card/40 px-4 py-3 md:hidden">
+          <div className="mb-2 font-heading text-lg font-bold tracking-tight">open-slide</div>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            <MobileFolderPill
+              icon={{ type: 'emoji', value: '📝' }}
+              label="Draft"
+              count={countFor(null)}
+              active={selectedId === DRAFT_ID}
+              onClick={() => selectFolder(DRAFT_ID)}
+            />
+            {manifest.folders.map((f) => (
+              <MobileFolderPill
+                key={f.id}
+                icon={f.icon}
+                label={f.name}
+                count={countFor(f.id)}
+                active={selectedId === f.id}
+                onClick={() => selectFolder(f.id)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="mx-auto w-full max-w-6xl px-4 py-6 md:px-8 md:py-12">
+          <header className="mb-6 flex items-center gap-3 md:mb-8">
             <FolderIconChip icon={headerIcon} className="size-6 text-xl" />
-            <h2 className="font-heading text-2xl font-bold tracking-tight">{title}</h2>
+            <h2 className="font-heading text-xl font-bold tracking-tight md:text-2xl">{title}</h2>
             <span className="text-sm text-muted-foreground">
               {visibleSlides.length} slide{visibleSlides.length === 1 ? '' : 's'}
             </span>
@@ -82,7 +107,7 @@ export function Home() {
           {visibleSlides.length === 0 ? (
             <EmptyState isDraft={selectedId === DRAFT_ID} folderName={selectedFolder?.name} />
           ) : (
-            <ul className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
+            <ul className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4 md:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] md:gap-5">
               {visibleSlides.map((id) => (
                 <li key={id}>
                   <SlideCard id={id} />
@@ -93,6 +118,37 @@ export function Home() {
         </div>
       </div>
     </div>
+  );
+}
+
+function MobileFolderPill({
+  icon,
+  label,
+  count,
+  active,
+  onClick,
+}: {
+  icon: FolderIcon;
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        'flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ' +
+        (active
+          ? 'border-primary bg-primary/10 text-primary'
+          : 'border-border bg-background text-muted-foreground hover:text-foreground')
+      }
+    >
+      <FolderIconChip icon={icon} className="size-4 text-sm" />
+      <span className="truncate max-w-[8rem]">{label}</span>
+      <span className="tabular-nums opacity-70">{count}</span>
+    </button>
   );
 }
 

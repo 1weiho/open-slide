@@ -6,6 +6,7 @@ import { InspectOverlay } from '@/components/inspector/InspectOverlay';
 import { InspectorProvider, InspectToggleButton } from '@/components/inspector/InspectorProvider';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { ClickNavZones } from '../components/ClickNavZones';
 import { Player } from '../components/Player';
 import { SlideCanvas } from '../components/SlideCanvas';
 import { ThumbnailRail } from '../components/ThumbnailRail';
@@ -126,34 +127,48 @@ export function Slide() {
   return (
     <InspectorProvider slideId={slideId}>
       <div className="flex h-screen flex-col overflow-hidden bg-background">
-        <header className="flex shrink-0 items-center gap-4 border-b bg-card px-5 py-3">
-          <Button asChild variant="ghost" size="sm">
+        <header className="flex shrink-0 items-center gap-2 border-b bg-card px-3 py-2 md:gap-4 md:px-5 md:py-3">
+          <Button asChild variant="ghost" size="sm" className="px-2 md:px-3">
             <Link to="/">
               <ChevronLeft className="size-4" />
-              Home
+              <span className="hidden md:inline">Home</span>
             </Link>
           </Button>
-          <Separator orientation="vertical" className="h-5" />
-          <h1 className="flex-1 text-center text-sm font-semibold tracking-tight">{title}</h1>
+          <Separator orientation="vertical" className="hidden h-5 md:block" />
+          <h1 className="flex-1 truncate text-center text-xs font-semibold tracking-tight md:text-sm">
+            {title}
+          </h1>
           <InspectToggleButton />
-          <Button size="sm" onClick={() => setPlaying(true)}>
+          <Button size="sm" onClick={() => setPlaying(true)} className="px-2 md:px-3">
             <Play className="size-4" />
-            Play <kbd className="ml-1 rounded bg-primary-foreground/20 px-1 text-[10px]">F</kbd>
+            <span className="hidden md:inline">Play</span>
+            <kbd className="ml-1 hidden rounded bg-primary-foreground/20 px-1 text-[10px] md:inline">
+              F
+            </kbd>
           </Button>
         </header>
 
         <div className="flex min-h-0 flex-1">
-          <div className="w-[17rem] shrink-0">
+          <div className="hidden w-[17rem] shrink-0 md:block">
             <ThumbnailRail pages={pages} current={index} onSelect={goTo} />
           </div>
           <main
             data-inspector-root
-            className="relative min-h-0 min-w-0 flex-1 bg-background p-8"
+            className="relative min-h-0 min-w-0 flex-1 bg-background p-2 md:p-8"
           >
             <SlideCanvas>
               <CurrentPage />
             </SlideCanvas>
+            <ClickNavZones
+              onPrev={() => goTo(index - 1)}
+              onNext={() => goTo(index + 1)}
+              canPrev={index > 0}
+              canNext={index < pageCount - 1}
+            />
             <InspectOverlay />
+            <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/50 px-2.5 py-0.5 text-[11px] font-medium tabular-nums text-white backdrop-blur md:hidden">
+              {index + 1} / {pageCount}
+            </div>
           </main>
         </div>
 

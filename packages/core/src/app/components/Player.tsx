@@ -59,8 +59,22 @@ export function Player({ pages, index, onIndexChange, onExit }: Props) {
   const PageComp = pages[index];
 
   return (
-    <div ref={rootRef} className="flex h-screen w-screen items-center justify-center bg-black">
+    <div ref={rootRef} className="relative flex h-screen w-screen items-center justify-center bg-black">
       <SlideCanvas flat>{PageComp ? <PageComp /> : null}</SlideCanvas>
+      <button
+        type="button"
+        aria-label="Previous page"
+        onClick={() => index > 0 && onIndexChange(index - 1)}
+        disabled={index === 0}
+        className="absolute inset-y-0 left-0 z-10 w-[30%]"
+      />
+      <button
+        type="button"
+        aria-label="Next page"
+        onClick={() => index < pages.length - 1 && onIndexChange(index + 1)}
+        disabled={index === pages.length - 1}
+        className="absolute inset-y-0 right-0 z-10 w-[30%]"
+      />
     </div>
   );
 }
