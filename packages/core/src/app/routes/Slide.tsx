@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Play } from 'lucide-react';
+import { ChevronLeft, Play } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { CommentWidget } from '@/components/inspector/CommentWidget';
@@ -153,30 +153,6 @@ export function Slide() {
             <InspectOverlay />
           </main>
         </div>
-
-        <footer className="flex shrink-0 items-center justify-center gap-4 border-t bg-card p-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => goTo(index - 1)}
-            disabled={index === 0}
-          >
-            <ChevronLeft className="size-4" />
-            Prev
-          </Button>
-          <span className="min-w-16 text-center text-sm text-muted-foreground tabular-nums">
-            {index + 1} / {pageCount}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => goTo(index + 1)}
-            disabled={index === pageCount - 1}
-          >
-            Next
-            <ChevronRight className="size-4" />
-          </Button>
-        </footer>
 
         <CommentWidget />
       </div>
