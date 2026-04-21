@@ -6,7 +6,7 @@ import { useInspector } from './InspectorProvider';
 type Highlight = { rect: DOMRect; hit: SlideSourceHit };
 
 export function InspectOverlay() {
-  const { active, slideId, pending, setPending } = useInspector();
+  const { active, slideId, pending, setPending, cancel } = useInspector();
   const overlayRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<Highlight | null>(null);
 
@@ -15,6 +15,14 @@ export function InspectOverlay() {
       setHover(null);
       return;
     }
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        cancel();
+      }
+    };
 
     const onMove = (e: PointerEvent) => {
       if (pending) return;
@@ -46,11 +54,13 @@ export function InspectOverlay() {
 
     window.addEventListener('pointermove', onMove, true);
     window.addEventListener('click', onClick, true);
+    window.addEventListener('keydown', onKey, true);
     return () => {
       window.removeEventListener('pointermove', onMove, true);
       window.removeEventListener('click', onClick, true);
+      window.removeEventListener('keydown', onKey, true);
     };
-  }, [active, slideId, pending, setPending]);
+  }, [active, slideId, pending, setPending, cancel]);
 
   if (!active) return null;
 

@@ -15,6 +15,7 @@ type InspectorCtx = {
   slideId: string;
   active: boolean;
   toggle: () => void;
+  cancel: () => void;
   comments: SlideComment[];
   error: string | null;
   refetch: () => Promise<void>;
@@ -44,11 +45,17 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
     });
   }, []);
 
+  const cancel = useCallback(() => {
+    setActive(false);
+    setPending(null);
+  }, []);
+
   const value = useMemo<InspectorCtx>(
     () => ({
       slideId,
       active,
       toggle,
+      cancel,
       comments,
       error,
       refetch,
@@ -57,7 +64,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       pending,
       setPending,
     }),
-    [slideId, active, toggle, comments, error, refetch, add, remove, pending],
+    [slideId, active, toggle, cancel, comments, error, refetch, add, remove, pending],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

@@ -6,7 +6,7 @@ const POPOVER_W = 320;
 const POPOVER_H = 180;
 
 export function CommentPopover() {
-  const { pending, setPending, add } = useInspector();
+  const { pending, setPending, add, cancel } = useInspector();
   const [text, setText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,14 +15,6 @@ export function CommentPopover() {
   useEffect(() => {
     taRef.current?.focus();
   }, []);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setPending(null);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [setPending]);
 
   if (!pending) return null;
 
@@ -55,7 +47,7 @@ export function CommentPopover() {
         <button
           type="button"
           className="text-xs text-muted-foreground hover:text-foreground"
-          onClick={() => setPending(null)}
+          onClick={cancel}
         >
           ✕
         </button>
@@ -77,7 +69,7 @@ export function CommentPopover() {
       <div className="mt-2 flex items-center justify-end gap-2">
         <button
           type="button"
-          onClick={() => setPending(null)}
+          onClick={cancel}
           className="rounded border px-2 py-1 text-xs hover:bg-muted"
         >
           Cancel
