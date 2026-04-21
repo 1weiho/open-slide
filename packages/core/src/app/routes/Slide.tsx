@@ -1,4 +1,4 @@
-import { ChevronLeft, Play } from 'lucide-react';
+import { ChevronLeft, Download, Loader2, Play } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { CommentWidget } from '@/components/inspector/CommentWidget';
@@ -10,6 +10,7 @@ import { ClickNavZones } from '../components/ClickNavZones';
 import { Player } from '../components/Player';
 import { SlideCanvas } from '../components/SlideCanvas';
 import { ThumbnailRail } from '../components/ThumbnailRail';
+import { exportSlideAsHtml } from '../lib/export-html';
 import { loadSlide } from '../lib/slides';
 import type { SlideModule } from '../lib/sdk';
 
@@ -19,6 +20,7 @@ export function Slide() {
   const [slide, setSlide] = useState<SlideModule | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -138,6 +140,31 @@ export function Slide() {
           <h1 className="flex-1 truncate text-center text-xs font-semibold tracking-tight md:text-sm">
             {title}
           </h1>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="px-2 md:px-3"
+            disabled={exporting}
+            onClick={async () => {
+              if (!slide || exporting) return;
+              setExporting(true);
+              try {
+                await exportSlideAsHtml(slide, slideId);
+              } catch (err) {
+                console.error('[open-slide] export failed', err);
+              } finally {
+                setExporting(false);
+              }
+            }}
+            title="Download as HTML"
+          >
+            {exporting ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Download className="size-4" />
+            )}
+            <span className="hidden md:inline">Download</span>
+          </Button>
           <InspectToggleButton />
           <Button size="sm" onClick={() => setPlaying(true)} className="px-2 md:px-3">
             <Play className="size-4" />
