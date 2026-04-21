@@ -38,11 +38,7 @@ function toId(absFile: string, slidesRoot: string): string {
   return rel.split(path.sep)[0];
 }
 
-function generateSlidesModule(
-  files: string[],
-  slidesRoot: string,
-  isDev: boolean,
-): string {
+function generateSlidesModule(files: string[], slidesRoot: string, isDev: boolean): string {
   const entries = files.map((abs) => {
     const id = toId(abs, slidesRoot);
     const importPath = isDev ? `/@fs${abs}` : abs;
@@ -51,10 +47,7 @@ function generateSlidesModule(
 
   const ids = JSON.stringify(entries.map((e) => e.id).sort());
   const cases = entries
-    .map(
-      (e) =>
-        `    case ${JSON.stringify(e.id)}: return import(${JSON.stringify(e.importPath)});`,
-    )
+    .map((e) => `    case ${JSON.stringify(e.id)}: return import(${JSON.stringify(e.importPath)});`)
     .join('\n');
 
   return `// virtual:open-slide/slides — generated

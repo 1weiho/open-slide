@@ -147,10 +147,8 @@ const GridBg = () => (
       backgroundImage:
         'linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)',
       backgroundSize: '96px 96px',
-      maskImage:
-        'radial-gradient(ellipse at center, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 70%)',
-      WebkitMaskImage:
-        'radial-gradient(ellipse at center, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 70%)',
+      maskImage: 'radial-gradient(ellipse at center, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 70%)',
+      WebkitMaskImage: 'radial-gradient(ellipse at center, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 70%)',
     }}
   />
 );
@@ -459,13 +457,13 @@ const Cover: Page = () => (
         }}
       >
         <span>
-          <span style={{ color: palette.accentSoft }}>01</span>  init
+          <span style={{ color: palette.accentSoft }}>01</span> init
         </span>
         <span>
-          <span style={{ color: palette.accentSoft }}>02</span>  prompt
+          <span style={{ color: palette.accentSoft }}>02</span> prompt
         </span>
         <span>
-          <span style={{ color: palette.accentSoft }}>03</span>  inspect
+          <span style={{ color: palette.accentSoft }}>03</span> inspect
         </span>
       </div>
     </div>
@@ -869,9 +867,7 @@ const Inspect: Page = () => (
           }}
         >
           Toggle inspect, click a block, leave a note. The tool drops a{' '}
-          <span style={{ fontFamily: font.mono, color: palette.accentSoft }}>
-            @slide-comment
-          </span>{' '}
+          <span style={{ fontFamily: font.mono, color: palette.accentSoft }}>@slide-comment</span>{' '}
           marker in your source.
         </p>
       </div>
@@ -1216,11 +1212,10 @@ const Apply: Page = () => (
               >
                 <span style={{ color: palette.dim, marginRight: 14 }}>58</span>
                 {'{/* '}
-                <span style={{ color: palette.accentSoft }}>@slide-comment</span>{' '}
-                id=<span style={{ color: palette.mint }}>"c-a1b2c3d4"</span>{' '}
-                ts=<span style={{ color: palette.mint }}>"2026-04-20T10:15:00.000Z"</span>{' '}
-                text=<span style={{ color: palette.mint }}>"eyJub3RlIjoi…"</span>{' '}
-                {'*/}'}
+                <span style={{ color: palette.accentSoft }}>@slide-comment</span> id=
+                <span style={{ color: palette.mint }}>"c-a1b2c3d4"</span> ts=
+                <span style={{ color: palette.mint }}>"2026-04-20T10:15:00.000Z"</span> text=
+                <span style={{ color: palette.mint }}>"eyJub3RlIjoi…"</span> {'*/}'}
               </div>
               <div>
                 <span style={{ color: palette.dim, marginRight: 14 }}>59</span>
@@ -1451,7 +1446,8 @@ const Recap: Page = () => {
           }}
         >
           <span>
-            edit <span style={{ color: palette.text }}>slides/&lt;your-slide&gt;/index.tsx</span> — HMR does the rest
+            edit <span style={{ color: palette.text }}>slides/&lt;your-slide&gt;/index.tsx</span> —
+            HMR does the rest
           </span>
           <span>open-slide</span>
         </div>
@@ -1516,8 +1512,8 @@ const AgentAgnostic: Page = () => {
               letterSpacing: '-0.01em',
             }}
           >
-            open-slide speaks plain React and a file-convention protocol. Any coding agent
-            can author and edit slides — no lock-in, no bespoke SDK.
+            open-slide speaks plain React and a file-convention protocol. Any coding agent can
+            author and edit slides — no lock-in, no bespoke SDK.
           </p>
         </div>
 
@@ -1606,7 +1602,13 @@ const FreeLayout: Page = () => {
             }}
           >
             <div
-              style={{ height: 8, width: '70%', background: palette.textSoft, opacity: 0.7, borderRadius: 2 }}
+              style={{
+                height: 8,
+                width: '70%',
+                background: palette.textSoft,
+                opacity: 0.7,
+                borderRadius: 2,
+              }}
             />
             <div style={{ height: 6, width: '55%', background: palette.muted, borderRadius: 2 }} />
             <div style={{ height: 6, width: '60%', background: palette.muted, borderRadius: 2 }} />
@@ -1642,9 +1644,23 @@ const FreeLayout: Page = () => {
             }}
           >
             <div
-              style={{ height: 7, width: '45%', background: palette.text, opacity: 0.95, borderRadius: 2 }}
+              style={{
+                height: 7,
+                width: '45%',
+                background: palette.text,
+                opacity: 0.95,
+                borderRadius: 2,
+              }}
             />
-            <div style={{ height: 5, width: '65%', background: palette.textSoft, opacity: 0.75, borderRadius: 2 }} />
+            <div
+              style={{
+                height: 5,
+                width: '65%',
+                background: palette.textSoft,
+                opacity: 0.75,
+                borderRadius: 2,
+              }}
+            />
           </div>
         </div>
       );
@@ -1715,7 +1731,13 @@ const FreeLayout: Page = () => {
     }
     return (
       <div
-        style={{ ...base, flexDirection: 'column', justifyContent: 'center', gap: 12, paddingLeft: 32 }}
+        style={{
+          ...base,
+          flexDirection: 'column',
+          justifyContent: 'center',
+          gap: 12,
+          paddingLeft: 32,
+        }}
       >
         {['— prompt. write. ship.', '— no templates.', '— no themes.', '— zero friction.'].map(
           (t, i) => (
@@ -1793,8 +1815,8 @@ const FreeLayout: Page = () => {
               letterSpacing: '-0.01em',
             }}
           >
-            Zero layouts. Zero slide types. Zero "themes". Each page is just a React
-            component on a 1920×1080 canvas — the agent decides everything.
+            Zero layouts. Zero slide types. Zero "themes". Each page is just a React component on a
+            1920×1080 canvas — the agent decides everything.
           </p>
         </div>
 
@@ -1809,11 +1831,7 @@ const FreeLayout: Page = () => {
           }}
         >
           {kinds.map((k, i) => (
-            <div
-              key={k}
-              className="gs-thumbIn"
-              style={{ animationDelay: `${0.25 + i * 0.09}s` }}
-            >
+            <div key={k} className="gs-thumbIn" style={{ animationDelay: `${0.25 + i * 0.09}s` }}>
               {mockSlide(k)}
             </div>
           ))}
@@ -1896,8 +1914,8 @@ const GitTracked: Page = () => {
               letterSpacing: '-0.01em',
             }}
           >
-            Every slide is a file in your repo. No proprietary database. No SaaS lock-in.
-            No export-to-PDF-and-pray.
+            Every slide is a file in your repo. No proprietary database. No SaaS lock-in. No
+            export-to-PDF-and-pray.
           </p>
         </div>
 
@@ -1924,8 +1942,7 @@ const GitTracked: Page = () => {
               }}
             >
               <div style={{ color: palette.muted, marginBottom: 14 }}>
-                <span style={{ color: palette.mint }}>$</span> git log --oneline
-                slides/q2-launch/
+                <span style={{ color: palette.mint }}>$</span> git log --oneline slides/q2-launch/
               </div>
               {commits.map((c, i) => (
                 <div
@@ -2085,8 +2102,8 @@ const DeployAnywhere: Page = () => {
               letterSpacing: '-0.01em',
             }}
           >
-            open-slide builds to plain static assets. Drop them on Vercel, Cloudflare,
-            Zeabur — or any server that serves HTML.
+            open-slide builds to plain static assets. Drop them on Vercel, Cloudflare, Zeabur — or
+            any server that serves HTML.
           </p>
         </div>
 

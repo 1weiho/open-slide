@@ -42,12 +42,11 @@ export function Home() {
   }, [manifest]);
 
   const countFor = (folderId: string | null) =>
-    folderId === null ? draftSlides.length : slidesByFolder[folderId]?.length ?? 0;
+    folderId === null ? draftSlides.length : (slidesByFolder[folderId]?.length ?? 0);
 
   const selectedFolder =
-    selectedId === DRAFT_ID ? null : manifest.folders.find((f) => f.id === selectedId) ?? null;
-  const visibleSlides =
-    selectedId === DRAFT_ID ? draftSlides : slidesByFolder[selectedId] ?? [];
+    selectedId === DRAFT_ID ? null : (manifest.folders.find((f) => f.id === selectedId) ?? null);
+  const visibleSlides = selectedId === DRAFT_ID ? draftSlides : (slidesByFolder[selectedId] ?? []);
 
   const title = selectedFolder?.name ?? 'Draft';
   const headerIcon = selectedFolder?.icon ?? { type: 'emoji' as const, value: '📝' };

@@ -8,9 +8,7 @@ const FOLDER_ID_RE = /^f-[a-f0-9]{8}$/;
 const SLIDE_ID_RE = /^[a-z0-9_-]+$/i;
 const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 
-export type FolderIcon =
-  | { type: 'emoji'; value: string }
-  | { type: 'color'; value: string };
+export type FolderIcon = { type: 'emoji'; value: string } | { type: 'color'; value: string };
 
 export type Folder = {
   id: string;

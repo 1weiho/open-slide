@@ -12,9 +12,7 @@ export type SlideModule = {
   meta?: SlideMeta;
 };
 
-export type FolderIcon =
-  | { type: 'emoji'; value: string }
-  | { type: 'color'; value: string };
+export type FolderIcon = { type: 'emoji'; value: string } | { type: 'color'; value: string };
 
 export type Folder = {
   id: string;

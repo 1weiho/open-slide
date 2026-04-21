@@ -54,11 +54,7 @@ function json(res: ServerResponse, status: number, body: unknown) {
   res.end(JSON.stringify(body));
 }
 
-function resolveSlidePath(
-  userCwd: string,
-  slidesDir: string,
-  slideId: string,
-): string | null {
+function resolveSlidePath(userCwd: string, slidesDir: string, slideId: string): string | null {
   if (!SLIDE_ID_RE.test(slideId)) return null;
   const slidesRoot = path.resolve(userCwd, slidesDir);
   const full = path.resolve(slidesRoot, slideId, 'index.tsx');

@@ -25,9 +25,7 @@ export async function init({ dir, force, name }: InitOptions): Promise<void> {
   const entries = await readdir(target);
   const nonHidden = entries.filter((e) => !e.startsWith('.'));
   if (nonHidden.length > 0 && !force) {
-    throw new Error(
-      `Target ${target} is not empty. Pass --force to scaffold into it anyway.`,
-    );
+    throw new Error(`Target ${target} is not empty. Pass --force to scaffold into it anyway.`);
   }
 
   await cp(TEMPLATE_DIR, target, { recursive: true });

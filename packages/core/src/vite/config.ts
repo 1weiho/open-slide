@@ -6,11 +6,7 @@ import react from '@vitejs/plugin-react';
 import type { InlineConfig } from 'vite';
 import { commentsPlugin } from './comments-plugin.ts';
 import { foldersPlugin } from './folders-plugin.ts';
-import {
-  loadUserConfig,
-  type OpenSlideConfig,
-  openSlidePlugin,
-} from './open-slide-plugin.ts';
+import { loadUserConfig, type OpenSlideConfig, openSlidePlugin } from './open-slide-plugin.ts';
 
 function findPackageRoot(fromFile: string): string {
   let dir = path.dirname(fromFile);
@@ -30,9 +26,7 @@ export type CreateViteConfigOptions = {
   mode?: 'serve' | 'build';
 };
 
-export async function createViteConfig(
-  opts: CreateViteConfigOptions,
-): Promise<InlineConfig> {
+export async function createViteConfig(opts: CreateViteConfigOptions): Promise<InlineConfig> {
   const userCwd = path.resolve(opts.userCwd);
   const config = opts.config ?? (await loadUserConfig(userCwd));
   const slidesDir = config.slidesDir ?? 'slides';

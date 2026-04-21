@@ -13,13 +13,7 @@ const TEMPLATE = resolve(CLI_ROOT, 'template');
 
 // Files/dirs at the repo root that are workspace-shared but belong in a
 // scaffolded workspace. Copied in addition to apps/playground/*.
-const ROOT_EXTRAS = [
-  '.claude',
-  '.agents',
-  'CLAUDE.md',
-  'biome.json',
-  'skills-lock.json',
-];
+const ROOT_EXTRAS = ['.claude', '.agents', 'CLAUDE.md', 'biome.json', 'skills-lock.json'];
 
 const EXCLUDE = new Set([
   'node_modules',

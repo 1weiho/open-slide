@@ -114,10 +114,7 @@ export function FolderItem({
             </button>
           </PopoverTrigger>
           <PopoverContent side="right" align="start" className="w-auto p-2">
-            <IconPicker
-              value={row.folder.icon}
-              onChange={(next) => row.onChangeIcon(next)}
-            />
+            <IconPicker value={row.folder.icon} onChange={(next) => row.onChangeIcon(next)} />
           </PopoverContent>
         </Popover>
       ) : (

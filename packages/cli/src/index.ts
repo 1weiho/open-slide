@@ -17,9 +17,9 @@ Flags for \`init\`:
 
 async function readVersion(): Promise<string> {
   const here = dirname(fileURLToPath(import.meta.url));
-  const pkg = JSON.parse(
-    await readFile(join(here, '..', 'package.json'), 'utf8'),
-  ) as { version: string };
+  const pkg = JSON.parse(await readFile(join(here, '..', 'package.json'), 'utf8')) as {
+    version: string;
+  };
   return pkg.version;
 }
 
