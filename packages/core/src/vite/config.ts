@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import type { InlineConfig } from 'vite';
 import { commentsPlugin } from './comments-plugin.ts';
-import { foldersPlugin } from './folders-plugin.ts';
+import { filesPlugin } from './files-plugin.ts';
 import { loadUserConfig, type OpenSlideConfig, openSlidePlugin } from './open-slide-plugin.ts';
 
 function findPackageRoot(fromFile: string): string {
@@ -40,7 +40,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
       tailwindcss(),
       openSlidePlugin({ userCwd, config }),
       commentsPlugin({ userCwd, slidesDir }),
-      foldersPlugin({ userCwd, slidesDir }),
+      filesPlugin({ userCwd, slidesDir }),
     ],
     resolve: {
       alias: {

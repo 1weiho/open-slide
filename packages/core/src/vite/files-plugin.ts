@@ -24,6 +24,7 @@ export type FoldersManifest = {
 type CreateBody = { name?: unknown; icon?: unknown };
 type PatchBody = { name?: unknown; icon?: unknown };
 type AssignBody = { slideId?: unknown; folderId?: unknown };
+type SlidePatchBody = { name?: unknown };
 
 async function readBody(req: Connect.IncomingMessage): Promise<unknown> {
   return await new Promise((resolve, reject) => {
@@ -85,6 +86,101 @@ function validateName(v: unknown): string | null {
   return trimmed;
 }
 
+function validateSlideName(v: unknown): string | null {
+  if (typeof v !== 'string') return null;
+  const trimmed = v.trim();
+  if (trimmed.length < 1 || trimmed.length > 80) return null;
+  return trimmed;
+}
+
+async function rmSlideDir(slidesRoot: string, slideId: string): Promise<boolean> {
+  if (!SLIDE_ID_RE.test(slideId)) return false;
+  const dir = path.resolve(slidesRoot, slideId);
+  if (!dir.startsWith(slidesRoot + path.sep)) return false;
+  try {
+    await fs.rm(dir, { recursive: true, force: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function resolveSlideEntry(slidesRoot: string, slideId: string): string | null {
+  if (!SLIDE_ID_RE.test(slideId)) return null;
+  const dir = path.resolve(slidesRoot, slideId);
+  if (!dir.startsWith(slidesRoot + path.sep)) return null;
+  // The SlideMeta contract says every slide has slides/<id>/index.tsx; we only
+  // edit that file to keep the write surface tiny and predictable.
+  return path.join(dir, 'index.tsx');
+}
+
+function escapeSingleQuoted(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+/**
+ * Rewrite (or insert) the `title` field in the slide module's `export const meta`.
+ *
+ * Strategy:
+ *   1. Find `export const meta` and brace-match its object literal.
+ *   2. If the object already has a `title: '...'` entry, replace the literal.
+ *   3. If the object exists but has no title, inject a new `title: '...'` line
+ *      as the first property (preserving the author's surrounding indentation).
+ *   4. If there is no `meta` export at all, insert a fresh one right before
+ *      `export default`.
+ *
+ * Returns the rewritten source, or `null` if the file shape was too surprising
+ * to touch safely (e.g. `export default` missing when we'd need to inject meta).
+ */
+function updateMetaTitleInSource(source: string, title: string): string | null {
+  const newLiteral = `'${escapeSingleQuoted(title)}'`;
+
+  const metaStart = source.search(/export\s+const\s+meta\b/);
+  if (metaStart !== -1) {
+    const eqIdx = source.indexOf('=', metaStart);
+    if (eqIdx === -1) return null;
+    const openBrace = source.indexOf('{', eqIdx);
+    if (openBrace === -1) return null;
+
+    let depth = 0;
+    let closeBrace = -1;
+    for (let i = openBrace; i < source.length; i++) {
+      const ch = source[i];
+      if (ch === '{') depth++;
+      else if (ch === '}') {
+        depth--;
+        if (depth === 0) {
+          closeBrace = i;
+          break;
+        }
+      }
+    }
+    if (closeBrace === -1) return null;
+
+    const body = source.slice(openBrace + 1, closeBrace);
+    const titleRe = /(^|[\s,{])(title\s*:\s*)(['"`])((?:\\.|(?!\3).)*)\3/;
+    const match = body.match(titleRe);
+    if (match) {
+      const newBody = body.replace(titleRe, `${match[1]}${match[2]}${newLiteral}`);
+      return source.slice(0, openBrace + 1) + newBody + source.slice(closeBrace);
+    }
+
+    // No title yet — inject as the first property, copying the indentation of
+    // the first existing property (or a sensible default for an empty object).
+    const firstIndentMatch = body.match(/\n([ \t]+)\S/);
+    const indent = firstIndentMatch ? firstIndentMatch[1] : '  ';
+    const trimmedBody = body.replace(/^\s*\n?/, '');
+    const needsSeparator = trimmedBody.trim().length > 0;
+    const insertion = `\n${indent}title: ${newLiteral}${needsSeparator ? ',' : ''}`;
+    return source.slice(0, openBrace + 1) + insertion + body + source.slice(closeBrace);
+  }
+
+  const exportDefaultIdx = source.search(/export\s+default\b/);
+  if (exportDefaultIdx === -1) return null;
+  const insertion = `export const meta: SlideMeta = { title: ${newLiteral} };\n\n`;
+  return source.slice(0, exportDefaultIdx) + insertion + source.slice(exportDefaultIdx);
+}
+
 function validateIcon(v: unknown): FolderIcon | null {
   if (!v || typeof v !== 'object') return null;
   const icon = v as { type?: unknown; value?: unknown };
@@ -100,25 +196,82 @@ function validateIcon(v: unknown): FolderIcon | null {
   return null;
 }
 
-export type FoldersPluginOptions = {
+export type FilesPluginOptions = {
   userCwd: string;
   slidesDir?: string;
 };
 
-export function foldersPlugin(opts: FoldersPluginOptions): Plugin {
+export function filesPlugin(opts: FilesPluginOptions): Plugin {
   const userCwd = opts.userCwd;
   const slidesDir = opts.slidesDir ?? 'slides';
   const slidesRoot = path.resolve(userCwd, slidesDir);
   const manifestPath = path.join(slidesRoot, '.folders.json');
 
   return {
-    name: 'open-slide:folders',
+    name: 'open-slide:files',
     apply: 'serve',
     configureServer(server: ViteDevServer) {
       server.watcher.add(manifestPath);
       server.watcher.on('change', (p) => {
         if (p === manifestPath) {
-          server.ws.send({ type: 'custom', event: 'open-slide:folders-changed' });
+          server.ws.send({ type: 'custom', event: 'open-slide:files-changed' });
+        }
+      });
+
+      server.middlewares.use('/__slides', async (req, res, next) => {
+        const url = new URL(req.url ?? '/', 'http://local');
+        const method = req.method ?? 'GET';
+
+        try {
+          const idMatch = url.pathname.match(/^\/([^/]+)$/);
+          if (!idMatch) return next();
+          const slideId = idMatch[1];
+          if (!SLIDE_ID_RE.test(slideId)) return json(res, 400, { error: 'invalid slideId' });
+
+          if (method === 'PATCH') {
+            const body = (await readBody(req)) as SlidePatchBody;
+            const name = validateSlideName(body.name);
+            if (!name) return json(res, 400, { error: 'invalid name' });
+
+            const entry = resolveSlideEntry(slidesRoot, slideId);
+            if (!entry) return json(res, 400, { error: 'invalid slideId' });
+
+            let source: string;
+            try {
+              source = await fs.readFile(entry, 'utf8');
+            } catch {
+              return json(res, 404, { error: 'slide not found' });
+            }
+
+            const updated = updateMetaTitleInSource(source, name);
+            if (updated === null) {
+              return json(res, 422, {
+                error: 'could not locate a safe place to write meta.title in index.tsx',
+              });
+            }
+            if (updated !== source) {
+              await fs.writeFile(entry, updated, 'utf8');
+            }
+            // The TSX edit lands through Vite's normal HMR pipeline, but the
+            // React state holding `slide.meta` in the editor won't re-fetch on
+            // its own — tell every client to refresh so the new title shows up.
+            server.ws.send({ type: 'full-reload' });
+            return json(res, 200, { ok: true, slideId, name });
+          }
+
+          if (method === 'DELETE') {
+            const removed = await rmSlideDir(slidesRoot, slideId);
+            if (!removed) return json(res, 404, { error: 'slide not found' });
+
+            const manifest = await readManifest(manifestPath);
+            delete manifest.assignments[slideId];
+            await writeManifest(manifestPath, manifest);
+            return json(res, 200, { ok: true });
+          }
+
+          return next();
+        } catch (err) {
+          json(res, 500, { error: String((err as Error).message ?? err) });
         }
       });
 

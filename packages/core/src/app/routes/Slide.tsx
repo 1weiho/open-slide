@@ -1,18 +1,20 @@
-import { ChevronLeft, Download, Loader2, Play } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ChevronLeft, Download, Loader2, Pencil, Play } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { CommentWidget } from '@/components/inspector/CommentWidget';
 import { InspectOverlay } from '@/components/inspector/InspectOverlay';
 import { InspectorProvider, InspectToggleButton } from '@/components/inspector/InspectorProvider';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { useFolders } from '@/lib/folders';
+import { cn } from '@/lib/utils';
 import { ClickNavZones } from '../components/ClickNavZones';
 import { Player } from '../components/Player';
 import { SlideCanvas } from '../components/SlideCanvas';
 import { ThumbnailRail } from '../components/ThumbnailRail';
 import { exportSlideAsHtml } from '../lib/export-html';
-import { loadSlide } from '../lib/slides';
 import type { SlideModule } from '../lib/sdk';
+import { loadSlide } from '../lib/slides';
 
 export function Slide() {
   const { slideId = '' } = useParams();
@@ -21,6 +23,7 @@ export function Slide() {
   const [error, setError] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const { renameSlide } = useFolders();
 
   useEffect(() => {
     let cancelled = false;
@@ -137,9 +140,7 @@ export function Slide() {
             </Link>
           </Button>
           <Separator orientation="vertical" className="hidden h-5 md:block" />
-          <h1 className="flex-1 truncate text-center text-xs font-semibold tracking-tight md:text-sm">
-            {title}
-          </h1>
+          <InlineTitleEditor title={title} onSubmit={(next) => renameSlide(slideId, next)} />
           <Button
             variant="ghost"
             size="sm"
@@ -202,5 +203,96 @@ export function Slide() {
         <CommentWidget />
       </div>
     </InspectorProvider>
+  );
+}
+
+function InlineTitleEditor({
+  title,
+  onSubmit,
+}: {
+  title: string;
+  onSubmit: (name: string) => Promise<void> | void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(title);
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!editing) setValue(title);
+  }, [title, editing]);
+
+  useEffect(() => {
+    if (editing) {
+      queueMicrotask(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      });
+    }
+  }, [editing]);
+
+  const commit = async () => {
+    const trimmed = value.trim();
+    if (!trimmed || trimmed === title) {
+      setValue(title);
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSubmit(trimmed);
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const cancel = () => {
+    setValue(title);
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <input
+          ref={inputRef}
+          value={value}
+          disabled={saving}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={() => {
+            if (!saving) commit();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              commit();
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              cancel();
+            }
+          }}
+          maxLength={80}
+          className="min-w-0 max-w-[min(32rem,90%)] rounded-md border bg-background px-2 py-0.5 text-center text-xs font-semibold tracking-tight outline-none ring-ring/40 focus:ring-2 md:text-sm"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="group/title flex flex-1 items-center justify-center gap-1.5 min-w-0">
+      <h1 className="truncate text-xs font-semibold tracking-tight md:text-sm">{title}</h1>
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        aria-label="Rename slide"
+        className={cn(
+          'flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-opacity hover:bg-muted hover:text-foreground',
+          'opacity-0 group-hover/title:opacity-100 focus-visible:opacity-100',
+        )}
+      >
+        <Pencil className="size-3.5" />
+      </button>
+    </div>
   );
 }
