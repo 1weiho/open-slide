@@ -1,0 +1,87 @@
+export function Footer() {
+  return (
+    <footer className="border-t border-[color:var(--color-rule)] bg-[color:var(--color-panel)]/60">
+      <div className="mx-auto max-w-[1360px] px-8 lg:px-12 py-14 grid grid-cols-12 gap-x-6 gap-y-10">
+        <div className="col-span-12 lg:col-span-4 flex flex-col gap-4">
+          <div className="flex items-center gap-3 font-[family-name:var(--font-mono)] text-[13px]">
+            <span
+              aria-hidden
+              className="h-2.5 w-2.5 rounded-[2px] bg-[color:var(--color-accent)]"
+              style={{ boxShadow: "0 0 18px var(--color-accent)" }}
+            />
+            <span className="tracking-[-0.01em]">open-slide</span>
+            <span className="text-[color:var(--color-dim)]">/ v0.0</span>
+          </div>
+          <p className="text-[14px] leading-[1.6] text-[color:var(--color-muted)] max-w-[38ch]">
+            A React-first slide framework authored by AI coding agents. MIT licensed,
+            built for the long haul.
+          </p>
+        </div>
+
+        <FooterCol
+          title="Product"
+          links={[
+            ["Live demo", "#demo"],
+            ["How it works", "#how-it-works"],
+            ["Anatomy", "#anatomy"],
+            ["Principles", "#principles"],
+          ]}
+        />
+        <FooterCol
+          title="Packages"
+          links={[
+            ["@open-slide/core", "https://www.npmjs.com/package/@open-slide/core"],
+            ["@open-slide/cli", "https://www.npmjs.com/package/@open-slide/cli"],
+          ]}
+        />
+        <FooterCol
+          title="Elsewhere"
+          links={[
+            ["GitHub", "https://github.com/"],
+            ["npm", "https://www.npmjs.com/"],
+            ["Issues", "https://github.com/"],
+          ]}
+        />
+      </div>
+
+      <div className="border-t border-[color:var(--color-rule)]">
+        <div className="mx-auto max-w-[1360px] px-8 lg:px-12 py-5 flex items-center justify-between font-[family-name:var(--font-mono)] text-[11px] tracking-[0.18em] uppercase text-[color:var(--color-muted)]">
+          <span>© open-slide · MIT</span>
+          <span className="hidden sm:inline">
+            handmade · rendered by agents · served at the speed of static
+          </span>
+          <span>
+            <span className="text-[color:var(--color-text)]">⌘K</span>{" "}
+            <span className="text-[color:var(--color-dim)]">— coming soon</span>
+          </span>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+function FooterCol({
+  title,
+  links,
+}: {
+  title: string;
+  links: [string, string][];
+}) {
+  return (
+    <div className="col-span-6 md:col-span-4 lg:col-span-2 flex flex-col gap-4">
+      <div className="caption">{title}</div>
+      <ul className="flex flex-col gap-2">
+        {links.map(([label, href]) => (
+          <li key={label}>
+            <a
+              href={href}
+              className="text-[14px] text-[color:var(--color-text-soft)] hover:text-[color:var(--color-accent)] transition-colors"
+            >
+              {label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
