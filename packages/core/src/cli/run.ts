@@ -1,16 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-
-const HELP = `open-slide — author slides, we handle the Vite/React stack
-
-Usage:
-  open-slide dev              Start dev server
-  open-slide build            Build a static site
-  open-slide preview          Preview the production build
-  open-slide --help           Show this message
-  open-slide --version        Print version
-`;
+import chalk from 'chalk';
+import { Command, Option } from 'commander';
 
 async function readVersion(): Promise<string> {
   const here = path.dirname(fileURLToPath(import.meta.url));
@@ -20,37 +12,65 @@ async function readVersion(): Promise<string> {
   return (JSON.parse(raw) as { version: string }).version;
 }
 
+function parsePort(value: string): number {
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < 0 || n > 65535) {
+    throw new Error(`Invalid port: ${value}`);
+  }
+  return n;
+}
+
+interface ServerFlags {
+  port?: number;
+  host?: string | boolean;
+  open?: boolean;
+}
+
+interface BuildFlags {
+  outDir?: string;
+}
+
 export async function run(argv: string[]): Promise<void> {
-  const [cmd] = argv;
+  const version = await readVersion();
 
-  if (!cmd || cmd === '--help' || cmd === '-h' || cmd === 'help') {
-    process.stdout.write(HELP);
-    return;
-  }
+  const program = new Command();
+  program
+    .name('open-slide')
+    .description('Author slides — we handle the Vite/React stack.')
+    .version(version, '-v, --version', 'print version')
+    .helpOption('-h, --help', 'show help')
+    .showHelpAfterError(chalk.dim('(run `open-slide --help` for usage)'));
 
-  if (cmd === '--version' || cmd === '-v') {
-    process.stdout.write(`${await readVersion()}\n`);
-    return;
-  }
+  program
+    .command('dev')
+    .description('Start the dev server')
+    .addOption(new Option('-p, --port <port>', 'port to listen on').argParser(parsePort))
+    .addOption(new Option('--host [host]', 'expose on the network (optional host)'))
+    .option('--open', 'open the browser on start')
+    .action(async (flags: ServerFlags) => {
+      const { dev } = await import('./dev.ts');
+      await dev(flags);
+    });
 
-  if (cmd === 'dev') {
-    const { dev } = await import('./dev.ts');
-    await dev();
-    return;
-  }
+  program
+    .command('build')
+    .description('Build a static site')
+    .option('--out-dir <dir>', 'output directory (defaults to `dist`)')
+    .action(async (flags: BuildFlags) => {
+      const { build } = await import('./build.ts');
+      await build(flags);
+    });
 
-  if (cmd === 'build') {
-    const { build } = await import('./build.ts');
-    await build();
-    return;
-  }
+  program
+    .command('preview')
+    .description('Preview the production build')
+    .addOption(new Option('-p, --port <port>', 'port to listen on').argParser(parsePort))
+    .addOption(new Option('--host [host]', 'expose on the network (optional host)'))
+    .option('--open', 'open the browser on start')
+    .action(async (flags: ServerFlags) => {
+      const { preview } = await import('./preview.ts');
+      await preview(flags);
+    });
 
-  if (cmd === 'preview') {
-    const { preview } = await import('./preview.ts');
-    await preview();
-    return;
-  }
-
-  process.stderr.write(`Unknown command: ${cmd}\n\n${HELP}`);
-  process.exit(1);
+  await program.parseAsync(argv, { from: 'user' });
 }

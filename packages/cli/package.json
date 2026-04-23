@@ -26,8 +26,14 @@
     "scaffold"
   ],
   "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "prompts": "^2.4.2"
+  },
   "devDependencies": {
     "@types/node": "^22.19.17",
+    "@types/prompts": "^2.4.9",
     "tsdown": "^0.9.9",
     "typescript": "^5.9.3"
   }
