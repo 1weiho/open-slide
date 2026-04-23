@@ -9,6 +9,8 @@ The open-slide editor has an inspector tool that lets the user click on a render
 
 Your job: read those markers, perform the described edits, and delete the markers.
 
+> **Before making any page edit**, consult the **`slide-authoring`** skill — it is the technical reference for how `slides/<id>/index.tsx` is structured (canvas, type scale, palette, assets, file contract). A comment like *"make this bigger"* or *"change the accent colour"* should be applied in a way that stays consistent with those rules.
+
 ## Marker format
 
 ```
