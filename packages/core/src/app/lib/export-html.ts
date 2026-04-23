@@ -9,7 +9,8 @@ import type { SlideModule } from './sdk';
 
 type AssetEntry = { name: string; bytes: Uint8Array };
 
-const ASSET_EXT_RE = /\.(?:png|jpe?g|gif|svg|webp|avif|mp4|webm|mov|woff2?|ttf|otf|mp3|wav|ogg)(?:\?[^#]*)?(?:#.*)?$/i;
+const ASSET_EXT_RE =
+  /\.(?:png|jpe?g|gif|svg|webp|avif|mp4|webm|mov|woff2?|ttf|otf|mp3|wav|ogg)(?:\?[^#]*)?(?:#.*)?$/i;
 
 export async function exportSlideAsHtml(slide: SlideModule, slideId: string): Promise<void> {
   const pages = slide.default ?? [];
@@ -218,7 +219,11 @@ function shortHash(input: string): string {
   return (h >>> 0).toString(36).slice(0, 6);
 }
 
-function rewriteUrls(source: string, assets: Map<string, AssetEntry>, kind: 'html' | 'css'): string {
+function rewriteUrls(
+  source: string,
+  assets: Map<string, AssetEntry>,
+  kind: 'html' | 'css',
+): string {
   let out = source;
   for (const [orig, { name }] of assets) {
     const replacement = kind === 'css' ? `./assets/${name}` : `assets/${name}`;
@@ -234,7 +239,9 @@ function buildHtml(opts: {
   externalLinks: string;
 }): string {
   const pagesMarkup = opts.pagesHtml
-    .map((page, i) => `<div class="os-page" data-idx="${i}"${i === 0 ? '' : ' hidden'}>${page}</div>`)
+    .map(
+      (page, i) => `<div class="os-page" data-idx="${i}"${i === 0 ? '' : ' hidden'}>${page}</div>`,
+    )
     .join('');
 
   return `<!doctype html>

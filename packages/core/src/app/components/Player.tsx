@@ -59,7 +59,10 @@ export function Player({ pages, index, onIndexChange, onExit }: Props) {
   const PageComp = pages[index];
 
   return (
-    <div ref={rootRef} className="relative flex h-screen w-screen items-center justify-center bg-black">
+    <div
+      ref={rootRef}
+      className="relative flex h-screen w-screen items-center justify-center bg-black"
+    >
       <SlideCanvas flat>{PageComp ? <PageComp /> : null}</SlideCanvas>
       <button
         type="button"
