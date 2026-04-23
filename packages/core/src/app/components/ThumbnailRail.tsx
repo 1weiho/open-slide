@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Page } from '../lib/sdk';
@@ -15,6 +16,12 @@ const THUMB_SCALE = THUMB_WIDTH / CANVAS_WIDTH;
 const THUMB_HEIGHT = CANVAS_HEIGHT * THUMB_SCALE;
 
 export function ThumbnailRail({ pages, current, onSelect }: Props) {
+  const activeRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [current]);
+
   return (
     <ScrollArea className="h-full border-r bg-card">
       <aside className="flex flex-col gap-2.5 p-3">
@@ -23,6 +30,7 @@ export function ThumbnailRail({ pages, current, onSelect }: Props) {
           return (
             <button
               key={i}
+              ref={active ? activeRef : undefined}
               onClick={() => onSelect(i)}
               aria-label={`Go to page ${i + 1}`}
               aria-current={active ? 'true' : undefined}
