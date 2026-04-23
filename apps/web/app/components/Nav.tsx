@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ThemeToggle } from "./ThemeToggle";
 
 export function Nav() {
   return (
@@ -51,6 +52,7 @@ export function Nav() {
             init
             <span aria-hidden>→</span>
           </a>
+          <ThemeToggle />
         </nav>
       </div>
     </header>

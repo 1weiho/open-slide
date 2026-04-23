@@ -1,7 +1,9 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
-  /* palette */
+  /* palette — dark (default during SSR; next-themes resolves .light/.dark on html) */
   --color-ink: #0a0a0c;
   --color-paper: #f6f5f0;
   --color-panel: #111114;
@@ -28,6 +30,25 @@
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 22px;
+}
+
+/* light palette — applied when next-themes resolves to "light" */
+html.light {
+  --color-ink: #f6f5f0;
+  --color-paper: #0a0a0c;
+  --color-panel: #ffffff;
+  --color-panel-hi: #eceae3;
+  --color-rule: rgba(10, 10, 12, 0.14);
+  --color-rule-soft: rgba(10, 10, 12, 0.07);
+  --color-text: #0a0a0c;
+  --color-text-soft: #2f2f31;
+  --color-muted: #6a6a64;
+  --color-dim: #b4b3aa;
+  --color-accent: #5e6ad2;
+  --color-accent-soft: #7a79e8;
+  --color-accent-deep: #4a52b5;
+  --color-warm: #b6741a;
+  --color-mint: #1f8458;
 }
 
 html,
