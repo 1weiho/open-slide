@@ -42,14 +42,15 @@ export function InspectOverlay() {
       if (!hit) return;
       e.preventDefault();
       e.stopPropagation();
+      const anchorRect = hit.anchor.getBoundingClientRect();
       setPending({
         line: hit.line,
         column: hit.column,
-        anchorRect: hit.anchor.getBoundingClientRect(),
+        anchorRect,
         clickX: e.clientX,
         clickY: e.clientY,
       });
-      setHover(null);
+      setHover({ rect: anchorRect, hit });
     };
 
     window.addEventListener('pointermove', onMove, true);
