@@ -9,17 +9,18 @@ You are authoring a new slide in this framework. The framework is installed as `
 
 Read the full contract in `CLAUDE.md` at the repo root first. This skill extends it with process and design guidance.
 
-## Step 1 — Clarify requirements
+## Step 1 — Clarify requirements (MUST ask before writing code)
 
-Before writing code, understand what's needed. Ask the user (use `AskUserQuestion` if any of these are ambiguous):
+**Before doing anything else, call `AskUserQuestion` to confirm the four key style decisions below.** These shape every downstream choice (layout, type scale, asset needs, motion code), so locking them in up front avoids rework. Only skip a question when the user's original message already gave an unambiguous answer for it — and if you skip, restate your assumption so they can correct it.
 
-- **Topic** — what is the slide about?
-- **Audience** — technical? investors? teammates? public?
-- **Length** — rough page count (typical: 5–15)
-- **Tone / aesthetic** — e.g. minimal editorial, playful, corporate, retro. If the user has no preference, propose one and commit to it.
-- **Any content they've drafted** — outline, bullets, key messages
+Ask these four in a single `AskUserQuestion` call (multi-question form):
 
-Don't ask all of these if the request is already specific (e.g. "make me a 3-page intro to Rust for beginners"). Ask only what's actually unclear.
+1. **主題風格 / Topic & aesthetic** — what is this slide about, and what visual direction? Offer options like: minimal editorial, playful, corporate-clean, retro, brutalist, soft/pastel, dark neon. If they have no preference, propose one.
+2. **頁數篇幅 / Page count** — rough length. Offer brackets: 3–5 (short), 6–10 (standard), 11–20 (deep dive), custom.
+3. **每頁文字多寡 / Text density per page** — how much copy lives on each page? Offer: 極簡 (one line / big number), 精簡 (heading + 2–3 bullets), 標準 (heading + 4–5 bullets or short paragraph), 密集 (multi-column / detailed). This directly drives type scale and layout.
+4. **動畫 vs 靜態 / Motion** — does the user want CSS/React animations and transitions, or a fully static deck? Offer: 靜態 (no motion), 輕動畫 (subtle fades / entrance only), 豐富動畫 (keyframes, staggered reveals, looping visuals). If animated, plan to use CSS `@keyframes` / inline `style` + `useEffect`; no extra libraries.
+
+After those four, ask follow-ups **only if still unclear**: audience, any drafted outline/content, brand colors, required assets. Don't pad the conversation with questions already answered.
 
 ## Step 2 — Pick a slide id
 
