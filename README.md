@@ -1,3 +1,5 @@
+<img width="2172" height="724" alt="open-slide github cover" src="https://github.com/user-attachments/assets/9c063932-f3b6-45bb-9a74-06dc5fc49c5e" />
+
 # open-slide
 
 Write slides as React components. The framework handles layout, scaling, navigation, and fullscreen play mode — you just write the pages.
