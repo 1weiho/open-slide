@@ -44,7 +44,8 @@ export function Features() {
         <h2 className="text-[40px] sm:text-[52px] lg:text-[72px] leading-[1.02] tracking-[-0.03em] max-w-[960px] mb-16">
           <span className="font-[family-name:var(--font-sans)] font-medium">
             Boring where it counts.
-          </span>{" "}
+          </span>
+          <br />
           <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-warm)]">
             Wild where it matters.
           </span>

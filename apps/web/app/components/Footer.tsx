@@ -37,9 +37,9 @@ export function Footer() {
         <FooterCol
           title="Elsewhere"
           links={[
-            ["GitHub", "https://github.com/"],
-            ["npm", "https://www.npmjs.com/"],
-            ["Issues", "https://github.com/"],
+            ["GitHub", "https://github.com/1weiho/open-slide"],
+            ["npm", "https://www.npmjs.com/package/@open-slide/core"],
+            ["Issues", "https://github.com/1weiho/open-slide/issues"],
           ]}
         />
       </div>
@@ -47,12 +47,17 @@ export function Footer() {
       <div className="border-t border-[color:var(--color-rule)]">
         <div className="mx-auto max-w-[1360px] px-8 lg:px-12 py-5 flex items-center justify-between font-[family-name:var(--font-mono)] text-[11px] tracking-[0.18em] uppercase text-[color:var(--color-muted)]">
           <span>© open-slide · MIT</span>
-          <span className="hidden sm:inline">
-            handmade · rendered by agents · served at the speed of static
-          </span>
           <span>
-            <span className="text-[color:var(--color-text)]">⌘K</span>{" "}
-            <span className="text-[color:var(--color-dim)]">— coming soon</span>
+            Crafted with 🤍 by{" "}
+            <a
+              href="https://1wei.dev/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[color:var(--color-text)] hover:text-[color:var(--color-accent)] transition-colors"
+            >
+              Yiwei
+            </a>
+            .
           </span>
         </div>
       </div>
@@ -75,6 +80,8 @@ function FooterCol({
           <li key={label}>
             <a
               href={href}
+              target={href.startsWith("http") ? "_blank" : undefined}
+              rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
               className="text-[14px] text-[color:var(--color-text-soft)] hover:text-[color:var(--color-accent)] transition-colors"
             >
               {label}

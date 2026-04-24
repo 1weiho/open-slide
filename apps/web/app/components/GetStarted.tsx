@@ -14,7 +14,7 @@ export function GetStarted() {
       <div className="relative mx-auto max-w-[1360px] px-8 lg:px-12 py-28 lg:py-40">
         <div>
           <div className="flex flex-col gap-10">
-            <h2 className="text-[56px] sm:text-[92px] lg:text-[152px] leading-[0.94] tracking-[-0.04em]">
+            <h2 className="text-[40px] sm:text-[52px] lg:text-[72px] leading-[1.02] tracking-[-0.03em]">
               <span className="font-[family-name:var(--font-sans)] font-medium">
                 Author a deck
               </span>
@@ -33,42 +33,10 @@ export function GetStarted() {
 
             <div className="flex flex-wrap items-center gap-4">
               <CopyCommand command="npx @open-slide/cli init" />
-              <a
-                href="https://github.com/"
-                className="inline-flex items-center gap-2 h-[52px] px-5 rounded-[10px] border border-[color:var(--color-rule)] text-[14px] font-[family-name:var(--font-mono)] text-[color:var(--color-text)] hover:border-[color:var(--color-text)] transition"
-              >
-                read the docs
-                <span
-                  aria-hidden
-                  className="text-[color:var(--color-muted)]"
-                >
-                  ↗
-                </span>
-              </a>
-            </div>
-
-            <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-[820px]">
-              <Meta label="core" value="@open-slide/core" />
-              <Meta label="cli" value="@open-slide/cli" />
-              <Meta label="node" value="≥ 18" />
-              <Meta label="license" value="MIT" />
             </div>
           </div>
         </div>
       </div>
     </section>
-  );
-}
-
-function Meta({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col gap-1 pt-3 border-t border-[color:var(--color-rule)]">
-      <span className="font-[family-name:var(--font-mono)] text-[10px] tracking-[0.22em] uppercase text-[color:var(--color-muted)]">
-        {label}
-      </span>
-      <span className="font-[family-name:var(--font-mono)] text-[13px] text-[color:var(--color-text)] tracking-[-0.01em]">
-        {value}
-      </span>
-    </div>
   );
 }

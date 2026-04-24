@@ -51,10 +51,21 @@ html.light {
   --color-mint: #1f8458;
 }
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+}
+
 html,
 body {
   background: var(--color-ink);
   color: var(--color-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 body {
@@ -146,7 +157,7 @@ body {
 }
 .marquee-track {
   display: inline-flex;
-  gap: 64px;
+  gap: 160px;
   animation: marquee 45s linear infinite;
   white-space: nowrap;
 }
@@ -173,6 +184,67 @@ body {
   transform: translateY(0.14em);
   animation: caret 1.1s steps(1) infinite;
   margin-left: 0.15ch;
+}
+
+/* pulse applied to a code line whose value just changed */
+@keyframes codePulse {
+  0% {
+    background-color: color-mix(in oklab, var(--color-accent) 32%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+@keyframes codeSwap {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+.code-pulse {
+  animation:
+    codePulse 900ms ease-out,
+    codeSwap 450ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* reveal used for preview headline / subtitle when the source of truth changes */
+@keyframes textReveal {
+  from {
+    opacity: 0;
+    transform: translateY(0.5em);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+/* theme-keyed logo swap — `.logo-dark` shows on dark, `.logo-light` on light */
+.logo-light {
+  display: none;
+}
+html.light .logo-dark {
+  display: none;
+}
+html.light .logo-light {
+  display: inline-block;
+}
+
+/* flatten a colored logo to mono — white on dark, dark gray on light */
+.agent-mono {
+  filter: brightness(0) invert(1);
+}
+html.light .agent-mono {
+  filter: brightness(0);
+  opacity: 0.7;
 }
 
 /* focus ring used across interactive elements */

@@ -1,4 +1,18 @@
-const steps = [
+import type { ReactNode } from "react";
+
+type Step = {
+  num: string;
+  kicker: string;
+  title: string;
+  body: string;
+  code: {
+    prompt: string;
+    line: string;
+    tail: ReactNode;
+  };
+};
+
+const steps: Step[] = [
   {
     num: "01",
     kicker: "scaffold",
@@ -17,22 +31,64 @@ const steps = [
     body: "Your coding agent drafts pages as arbitrary React components. You guide with prompts; it writes files on disk.",
     code: {
       prompt: "›",
-      line: "draft a 5-slide deck on Q2 roadmap",
-      tail: "claude / codex / gemini",
+      line: "/create-slide for Q2 roadmap",
+      tail: <AgentRow />,
     },
   },
   {
     num: "03",
     kicker: "iterate",
-    title: "Comment, reapply",
-    body: "Leave @slide-comment markers in the inspector. The agent reads them, rewrites the page, commits the diff.",
+    title: "Inspect and comment",
+    body: "Open the inspector, click any block, leave a note. Then run /apply-comments — the agent reads every marker, rewrites the page, clears them.",
     code: {
-      prompt: "//",
-      line: "@slide-comment tighten the headline",
-      tail: "git diff · 1 file changed",
+      prompt: "›",
+      line: "/apply-comment",
+      tail: "✓ applied change",
     },
   },
 ];
+
+const SLASH_COMMAND = /\/[a-z][a-z-]*/g;
+
+function renderLine(line: string) {
+  const parts: ReactNode[] = [];
+  let last = 0;
+  for (const match of line.matchAll(SLASH_COMMAND)) {
+    const start = match.index ?? 0;
+    if (start > last) parts.push(line.slice(last, start));
+    const cmd = match[0];
+    parts.push(
+      <span key={`cmd-${start}`}>
+        <span className="text-[color:var(--color-accent)]">/</span>
+        <span className="text-[color:var(--color-accent-soft)]">{cmd.slice(1)}</span>
+      </span>,
+    );
+    last = start + cmd.length;
+  }
+  if (last < line.length) parts.push(line.slice(last));
+  return <>{parts}</>;
+}
+
+function AgentRow() {
+  const agents: [string, string][] = [
+    ["claude.svg", "Claude"],
+    ["codex-dark.svg", "Codex"],
+    ["cursor-dark.svg", "Cursor"],
+    ["gemini.svg", "Gemini CLI"],
+  ];
+  const cls = "agent-mono h-[14px] w-auto object-contain shrink-0";
+  return (
+    <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-2 normal-case tracking-normal">
+      {agents.map(([file, name]) => (
+        // biome-ignore lint/performance/noImgElement: SVG from /public
+        <img key={file} src={`/assets/${file}`} alt={name} className={cls} />
+      ))}
+      <span className="text-[10px] tracking-[0.1em] uppercase text-[color:var(--color-muted)]">
+        ...
+      </span>
+    </span>
+  );
+}
 
 export function HowItWorks() {
   return (
@@ -45,13 +101,11 @@ export function HowItWorks() {
         <div className="flex items-end justify-between flex-wrap gap-y-6 mb-16">
           <h2 className="text-[40px] sm:text-[52px] lg:text-[72px] leading-[1.02] tracking-[-0.03em] max-w-[860px]">
             <span className="font-[family-name:var(--font-sans)] font-medium">
-              Three files,
-            </span>{" "}
+              Slides as code.
+            </span>
+            <br />
             <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-accent)]">
-              three steps,
-            </span>{" "}
-            <span className="font-[family-name:var(--font-sans)] font-medium text-[color:var(--color-muted)]">
-              forever.
+              Crafted by agents.
             </span>
           </h2>
           <div className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.22em] uppercase text-[color:var(--color-muted)]">
@@ -81,16 +135,16 @@ export function HowItWorks() {
                 </p>
               </div>
 
-              <div className="mt-auto rounded-[10px] border border-[color:var(--color-rule)] bg-black/40 p-4 font-[family-name:var(--font-mono)] text-[13px]">
+              <div className="mt-auto rounded-[10px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] p-4 font-[family-name:var(--font-mono)] text-[13px]">
                 <div className="flex items-center gap-2">
                   <span className="text-[color:var(--color-accent)]">
                     {s.code.prompt}
                   </span>
                   <span className="text-[color:var(--color-text)] truncate">
-                    {s.code.line}
+                    {renderLine(s.code.line)}
                   </span>
                 </div>
-                <div className="mt-2 text-[11px] tracking-[0.1em] uppercase text-[color:var(--color-muted)]">
+                <div className="mt-3 text-[11px] tracking-[0.1em] uppercase text-[color:var(--color-muted)]">
                   {s.code.tail}
                 </div>
               </div>

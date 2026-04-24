@@ -2,7 +2,6 @@
 
 import demoSlides from "./demo-slide";
 import {
-  useCallback,
   useEffect,
   useRef,
   useState,
@@ -12,18 +11,21 @@ import {
 const CANVAS_W = 1920;
 const CANVAS_H = 1080;
 
-export function InlineSlidePlayer() {
+export const inlineSlideCount = demoSlides.length;
+
+type Props = {
+  index: number;
+  onIndexChange: (i: number) => void;
+};
+
+export function InlineSlidePlayer({ index, onIndexChange }: Props) {
   const slides = demoSlides;
   const rootRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  const [index, setIndex] = useState(0);
   const [scale, setScale] = useState(1);
 
   const count = slides.length;
-  const clamp = useCallback(
-    (i: number) => Math.max(0, Math.min(count - 1, i)),
-    [count],
-  );
+  const clamp = (i: number) => Math.max(0, Math.min(count - 1, i));
 
   useEffect(() => {
     const el = stageRef.current;
@@ -42,16 +44,16 @@ export function InlineSlidePlayer() {
     const prev = new Set(["ArrowLeft", "ArrowUp", "PageUp"]);
     if (next.has(e.key)) {
       e.preventDefault();
-      setIndex((i) => clamp(i + 1));
+      onIndexChange(clamp(index + 1));
     } else if (prev.has(e.key)) {
       e.preventDefault();
-      setIndex((i) => clamp(i - 1));
+      onIndexChange(clamp(index - 1));
     } else if (e.key === "Home") {
       e.preventDefault();
-      setIndex(0);
+      onIndexChange(0);
     } else if (e.key === "End") {
       e.preventDefault();
-      setIndex(count - 1);
+      onIndexChange(count - 1);
     }
   };
 

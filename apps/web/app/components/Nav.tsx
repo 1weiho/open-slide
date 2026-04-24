@@ -22,16 +22,16 @@ export function Nav() {
 
         <nav className="flex items-center gap-8 font-[family-name:var(--font-mono)] text-[12px] tracking-[0.08em] uppercase">
           <a
+            href="#demo"
+            className="hidden md:inline text-[color:var(--color-muted)] hover:text-[color:var(--color-text)] transition-colors"
+          >
+            Demo
+          </a>
+          <a
             href="#how-it-works"
             className="hidden md:inline text-[color:var(--color-muted)] hover:text-[color:var(--color-text)] transition-colors"
           >
             How
-          </a>
-          <a
-            href="#agents"
-            className="hidden md:inline text-[color:var(--color-muted)] hover:text-[color:var(--color-text)] transition-colors"
-          >
-            Agents
           </a>
           <a
             href="#anatomy"
@@ -40,7 +40,15 @@ export function Nav() {
             Anatomy
           </a>
           <a
-            href="https://github.com/"
+            href="#agents"
+            className="hidden md:inline text-[color:var(--color-muted)] hover:text-[color:var(--color-text)] transition-colors"
+          >
+            Agents
+          </a>
+          <a
+            href="https://github.com/1weiho/open-slide"
+            target="_blank"
+            rel="noopener noreferrer"
             className="hidden md:inline text-[color:var(--color-muted)] hover:text-[color:var(--color-text)] transition-colors"
           >
             GitHub ↗

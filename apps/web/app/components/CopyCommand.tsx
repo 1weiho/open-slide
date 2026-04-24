@@ -40,21 +40,29 @@ export function CopyCommand({
         className="ml-1 inline-flex items-center gap-1.5 text-[color:var(--color-muted)] group-hover:text-[color:var(--color-accent)] transition-colors"
       >
         <span className="h-4 w-px bg-[color:var(--color-rule)]" />
-        {copied ? (
-          <span className="text-[color:var(--color-mint)] text-[12px] tracking-[0.12em] uppercase">
-            copied
-          </span>
-        ) : (
-          <CopyGlyph />
-        )}
+        <span className="relative inline-flex h-[14px] w-[14px] items-center justify-center">
+          <CopyGlyph
+            className={`absolute inset-0 transition-opacity duration-200 ${copied ? "opacity-0" : "opacity-100"}`}
+          />
+          <CheckGlyph
+            className={`absolute inset-0 text-[color:var(--color-mint)] transition-opacity duration-200 ${copied ? "opacity-100" : "opacity-0"}`}
+          />
+        </span>
       </span>
     </button>
   );
 }
 
-function CopyGlyph() {
+function CopyGlyph({ className }: { className?: string }) {
   return (
-    <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none">
+    <svg
+      aria-hidden
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      className={className}
+    >
       <rect
         x="7"
         y="7"
@@ -69,6 +77,27 @@ function CopyGlyph() {
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function CheckGlyph({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      className={className}
+    >
+      <path
+        d="M5 12.5 10 17.5 19 7.5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );

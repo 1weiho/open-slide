@@ -37,7 +37,7 @@ export function Hero() {
               </span>
               <br />
               <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-paper)]">
-                Rendered by{" "}
+                Crafted by{" "}
                 <span className="text-[color:var(--color-accent)] relative">
                   agents
                   <svg
@@ -63,7 +63,7 @@ export function Hero() {
               className="max-w-[720px] text-[18px] sm:text-[20px] leading-[1.55] text-[color:var(--color-text-soft)] rise"
               style={{ animationDelay: "240ms" }}
             >
-              A React-first slide framework authored by AI coding agents. Every page
+              A React-first slide framework authored by AI agents. Every page
               is arbitrary code on a{" "}
               <span className="font-[family-name:var(--font-mono)] text-[color:var(--color-text)]">
                 1920×1080
@@ -80,11 +80,13 @@ export function Hero() {
             >
               <CopyCommand command="npx @open-slide/cli init" />
               <a
-                href="https://github.com/"
+                href="https://github.com/1weiho/open-slide"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="group inline-flex items-center gap-2 h-[52px] px-5 rounded-[10px] border border-[color:var(--color-rule)] text-[14px] font-[family-name:var(--font-mono)] text-[color:var(--color-text)] hover:border-[color:var(--color-text)] transition"
               >
                 <GithubGlyph />
-                <span>github.com/open-slide</span>
+                <span>github.com/1weiho/open-slide</span>
                 <span
                   aria-hidden
                   className="text-[color:var(--color-muted)] group-hover:translate-x-0.5 transition-transform"
@@ -94,42 +96,10 @@ export function Hero() {
               </a>
             </div>
 
-            <div
-              className="flex flex-wrap items-center gap-x-8 gap-y-3 pt-6 rise"
-              style={{ animationDelay: "500ms" }}
-            >
-              <Fact label="Canvas" value="1920 × 1080" />
-              <Divider />
-              <Fact label="Runtime" value="React 18+" />
-              <Divider />
-              <Fact label="Output" value="Static HTML" />
-              <Divider />
-              <Fact label="License" value="MIT" />
-            </div>
           </div>
         </div>
       </div>
     </section>
-  );
-}
-
-function Fact({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-baseline gap-2 font-[family-name:var(--font-mono)] text-[12px]">
-      <span className="text-[color:var(--color-muted)] uppercase tracking-[0.2em]">
-        {label}
-      </span>
-      <span className="text-[color:var(--color-text)] tracking-[-0.01em]">{value}</span>
-    </div>
-  );
-}
-
-function Divider() {
-  return (
-    <span
-      aria-hidden
-      className="h-3 w-px bg-[color:var(--color-rule)] hidden sm:inline-block"
-    />
   );
 }
 
