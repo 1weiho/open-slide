@@ -24,15 +24,19 @@ const instrument = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "open-slide — slides as React code, rendered by agents",
+  title: "open-slide — slides as React code, crafted by agents",
   description:
-    "A React-first slide framework authored by AI coding agents. Each page is arbitrary code on a 1920×1080 canvas — versioned, reviewable, yours.",
+    "A React-first slide framework authored by AI agents. Each page is arbitrary code on a 1920×1080 canvas — versioned, reviewable, yours.",
   metadataBase: new URL("https://open-slide.dev"),
   openGraph: {
     title: "open-slide",
-    description:
-      "A React-first slide framework authored by AI coding agents.",
+    description: "A React-first slide framework, crafted by agents.",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "open-slide",
+    description: "A React-first slide framework, crafted by agents.",
   },
 };
 

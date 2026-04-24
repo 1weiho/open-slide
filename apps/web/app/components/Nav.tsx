@@ -17,7 +17,6 @@ export function Nav() {
             }}
           />
           <span className="text-[color:var(--color-text)]">open-slide</span>
-          <span className="text-[color:var(--color-dim)] ml-1">/ v0.0</span>
         </Link>
 
         <nav className="flex items-center gap-8 font-[family-name:var(--font-mono)] text-[12px] tracking-[0.08em] uppercase">

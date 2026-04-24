@@ -10,7 +10,6 @@ export function Footer() {
               style={{ boxShadow: "0 0 18px var(--color-accent)" }}
             />
             <span className="tracking-[-0.01em]">open-slide</span>
-            <span className="text-[color:var(--color-dim)]">/ v0.0</span>
           </div>
           <p className="text-[14px] leading-[1.6] text-[color:var(--color-muted)] max-w-[38ch]">
             A React-first slide framework authored by AI coding agents. MIT licensed,
