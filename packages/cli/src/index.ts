@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { basename, dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import { Command } from 'commander';
@@ -55,25 +55,15 @@ async function runInit(dirArg: string | undefined, flags: InitCliFlags): Promise
 
   if (isTTY && dir === undefined) {
     const answers = await prompts(
-      [
-        {
-          type: 'text',
-          name: 'dir',
-          message: 'Target directory',
-          initial: '.',
-        },
-        {
-          type: 'text',
-          name: 'name',
-          message: 'Package name',
-          initial: (_prev: string, values: { dir: string }) =>
-            basename(resolve(process.cwd(), values.dir || '.')),
-        },
-      ],
+      {
+        type: 'text',
+        name: 'dir',
+        message: 'Target directory',
+        initial: '.',
+      },
       { onCancel },
     );
     dir = answers.dir;
-    if (name === undefined) name = answers.name;
   }
 
   const resolvedDir = dir ?? '.';
