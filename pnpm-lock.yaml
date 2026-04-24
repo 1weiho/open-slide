@@ -20,9 +20,6 @@ importers:
       '@open-slide/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@open-slide/demo-slide':
-        specifier: workspace:*
-        version: link:../../packages/demo-slide
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -39,9 +36,6 @@ importers:
 
   apps/web:
     dependencies:
-      '@open-slide/demo-slide':
-        specifier: workspace:*
-        version: link:../../packages/demo-slide
       next:
         specifier: 16.2.4
         version: 16.2.4(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -177,19 +171,6 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
-
-  packages/demo-slide:
-    dependencies:
-      react:
-        specifier: '>=18'
-        version: 18.3.1
-      react-dom:
-        specifier: '>=18'
-        version: 18.3.1(react@18.3.1)
-    devDependencies:
-      '@types/react':
-        specifier: ^18.3.12
-        version: 18.3.28
 
 packages:
 

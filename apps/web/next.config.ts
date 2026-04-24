@@ -1,7 +1,5 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  transpilePackages: ["@open-slide/demo-slide"],
-};
+const nextConfig: NextConfig = {};
 
 export default nextConfig;

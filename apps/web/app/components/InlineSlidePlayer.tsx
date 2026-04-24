@@ -1,6 +1,6 @@
 "use client";
 
-import demoSlides from "@open-slide/demo-slide";
+import demoSlides from "./demo-slide";
 import {
   useCallback,
   useEffect,
