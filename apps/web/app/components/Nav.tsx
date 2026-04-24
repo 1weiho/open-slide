@@ -9,12 +9,12 @@ export function Nav() {
           href="/"
           className="flex items-center gap-3 font-[family-name:var(--font-mono)] text-[13px] tracking-[0.04em]"
         >
-          <span
+          {/* biome-ignore lint/performance/noImgElement: static brand icon */}
+          <img
+            src="/open-slide.png"
+            alt=""
             aria-hidden
-            className="relative block h-2.5 w-2.5 rounded-[2px] bg-[color:var(--color-accent)]"
-            style={{
-              boxShadow: "0 0 20px var(--color-accent), 0 0 0 1px var(--color-accent-deep)",
-            }}
+            className="block h-6 w-6 rounded-[5px]"
           />
           <span className="text-[color:var(--color-text)]">open-slide</span>
         </Link>

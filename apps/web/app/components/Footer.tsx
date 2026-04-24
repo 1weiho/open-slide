@@ -4,10 +4,12 @@ export function Footer() {
       <div className="mx-auto max-w-[1360px] px-8 lg:px-12 py-14 grid grid-cols-12 gap-x-6 gap-y-10">
         <div className="col-span-12 lg:col-span-4 flex flex-col gap-4">
           <div className="flex items-center gap-3 font-[family-name:var(--font-mono)] text-[13px]">
-            <span
+            {/* biome-ignore lint/performance/noImgElement: static brand icon */}
+            <img
+              src="/open-slide.png"
+              alt=""
               aria-hidden
-              className="h-2.5 w-2.5 rounded-[2px] bg-[color:var(--color-accent)]"
-              style={{ boxShadow: "0 0 18px var(--color-accent)" }}
+              className="h-6 w-6 rounded-[5px]"
             />
             <span className="tracking-[-0.01em]">open-slide</span>
           </div>
