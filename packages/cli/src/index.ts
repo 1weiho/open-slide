@@ -5,6 +5,7 @@ import chalk from 'chalk';
 import { Command } from 'commander';
 import prompts from 'prompts';
 import { init, isDirNonEmpty, type InitOptions } from './init.ts';
+import { detectPackageManager, type PackageManager } from './package-manager.ts';
 
 async function readVersion(): Promise<string> {
   const here = dirname(fileURLToPath(import.meta.url));
@@ -17,11 +18,32 @@ async function readVersion(): Promise<string> {
 interface InitCliFlags {
   force?: boolean;
   name?: string;
+  useNpm?: boolean;
+  usePnpm?: boolean;
+  useYarn?: boolean;
+  useBun?: boolean;
+  install?: boolean;
+  git?: boolean;
 }
 
 function onCancel(): never {
   process.stdout.write(chalk.dim('\nCancelled.\n'));
   process.exit(130);
+}
+
+function resolvePackageManager(flags: InitCliFlags): PackageManager {
+  const picks: PackageManager[] = [];
+  if (flags.useNpm) picks.push('npm');
+  if (flags.usePnpm) picks.push('pnpm');
+  if (flags.useYarn) picks.push('yarn');
+  if (flags.useBun) picks.push('bun');
+
+  if (picks.length > 1) {
+    throw new Error(
+      `Only one of --use-npm / --use-pnpm / --use-yarn / --use-bun may be specified (got ${picks.map((p) => `--use-${p}`).join(', ')}).`,
+    );
+  }
+  return picks[0] ?? detectPackageManager();
 }
 
 async function runInit(dirArg: string | undefined, flags: InitCliFlags): Promise<void> {
@@ -77,7 +99,14 @@ async function runInit(dirArg: string | undefined, flags: InitCliFlags): Promise
     force = true;
   }
 
-  const opts: InitOptions = { dir: resolvedDir, force, name };
+  const opts: InitOptions = {
+    dir: resolvedDir,
+    force,
+    name,
+    packageManager: resolvePackageManager(flags),
+    install: flags.install !== false,
+    git: flags.git !== false,
+  };
   await init(opts);
 }
 
@@ -98,6 +127,12 @@ export async function run(argv: string[]): Promise<void> {
     .argument('[dir]', 'target directory', undefined)
     .option('-f, --force', 'overwrite non-empty target directory', false)
     .option('-n, --name <name>', 'override package name (defaults to folder name)')
+    .option('--use-npm', 'use npm to install dependencies')
+    .option('--use-pnpm', 'use pnpm to install dependencies')
+    .option('--use-yarn', 'use yarn to install dependencies')
+    .option('--use-bun', 'use bun to install dependencies')
+    .option('--no-install', 'skip dependency installation')
+    .option('--no-git', 'skip git init and initial commit')
     .action(async (dir: string | undefined, flags: InitCliFlags) => {
       await runInit(dir, flags);
     });

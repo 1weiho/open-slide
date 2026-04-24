@@ -1,16 +1,23 @@
+import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
+import { gitInitAndCommit } from './git.ts';
+import type { PackageManager } from './package-manager.ts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const TEMPLATE_DIR = resolve(HERE, '..', 'template');
+const IS_WINDOWS = process.platform === 'win32';
 
 export interface InitOptions {
   dir: string;
   force: boolean;
   name: string | undefined;
+  packageManager: PackageManager;
+  install: boolean;
+  git: boolean;
 }
 
 export async function isDirNonEmpty(target: string): Promise<boolean> {
@@ -19,7 +26,19 @@ export async function isDirNonEmpty(target: string): Promise<boolean> {
   return entries.some((e) => !e.startsWith('.'));
 }
 
-export async function init({ dir, force, name }: InitOptions): Promise<void> {
+async function runInstall(pm: PackageManager, cwd: string): Promise<void> {
+  await new Promise<void>((res, rej) => {
+    const child = spawn(pm, ['install'], { cwd, stdio: 'inherit', shell: IS_WINDOWS });
+    child.on('error', rej);
+    child.on('close', (code) =>
+      code === 0 ? res() : rej(new Error(`${pm} install exited with code ${code}`)),
+    );
+  });
+}
+
+export async function init(opts: InitOptions): Promise<void> {
+  const { dir, force, name, packageManager, install, git } = opts;
+
   if (!existsSync(TEMPLATE_DIR)) {
     throw new Error(
       `Template missing at ${TEMPLATE_DIR}. If you are running from source, run \`pnpm --filter @open-slide/cli build\` first.`,
@@ -44,13 +63,59 @@ export async function init({ dir, force, name }: InitOptions): Promise<void> {
     await writeFile(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
   }
 
+  await writeFile(join(target, '.gitignore'), 'node_modules\n');
+
   const cdTarget = dir === '.' ? basename(target) : dir;
   process.stdout.write(
-    `\n${chalk.green.bold('✔ Created open-slide workspace')} ${chalk.dim(`in ${target}`)}\n\n` +
-      `${chalk.bold('Next steps:')}\n` +
-      `  ${chalk.cyan(`cd ${cdTarget}`)}\n` +
-      `  ${chalk.cyan('pnpm install')}    ${chalk.dim('# or npm install / yarn')}\n` +
-      `  ${chalk.cyan('pnpm dev')}\n\n` +
-      chalk.dim('Then open the dev server and start authoring in slides/<your-slide>/.\n'),
+    `\n${chalk.green.bold('✔ Created open-slide workspace')} ${chalk.dim(`in ${target}`)}\n`,
+  );
+
+  let installed = false;
+  if (install) {
+    process.stdout.write(`\n${chalk.bold(`Installing dependencies with ${packageManager}…`)}\n\n`);
+    try {
+      await runInstall(packageManager, target);
+      installed = true;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      process.stdout.write(
+        `\n${chalk.yellow('! Dependency install failed:')} ${chalk.dim(msg)}\n` +
+          chalk.dim(`  You can retry manually with \`${packageManager} install\`.\n`),
+      );
+    }
+  }
+
+  if (git) {
+    const result = await gitInitAndCommit(target);
+    if (result.status === 'committed') {
+      process.stdout.write(`${chalk.green('✔')} Initialized git repository with first commit.\n`);
+    } else if (result.status === 'skipped-nested') {
+      process.stdout.write(
+        `${chalk.yellow('!')} Skipped ${chalk.bold('git init')}: ${chalk.dim(result.message ?? '')}\n`,
+      );
+    } else if (result.status === 'skipped-no-git') {
+      process.stdout.write(
+        `${chalk.yellow('!')} Skipped git setup: ${chalk.dim(result.message ?? '')}\n`,
+      );
+    } else {
+      process.stdout.write(
+        `${chalk.yellow('!')} Git setup failed: ${chalk.dim(result.message ?? '')}\n` +
+          chalk.dim('  You can initialize the repo manually.\n'),
+      );
+    }
+  }
+
+  process.stdout.write(`\n${chalk.bold('Next steps:')}\n`);
+  process.stdout.write(`  ${chalk.cyan(`cd ${cdTarget}`)}\n`);
+  if (!installed && install) {
+    process.stdout.write(`  ${chalk.cyan(`${packageManager} install`)}\n`);
+  } else if (!install) {
+    process.stdout.write(
+      `  ${chalk.cyan(`${packageManager} install`)}    ${chalk.dim('# install was skipped')}\n`,
+    );
+  }
+  process.stdout.write(`  ${chalk.cyan(`${packageManager} dev`)}\n\n`);
+  process.stdout.write(
+    chalk.dim('Then open the dev server and start authoring in slides/<your-slide>/.\n'),
   );
 }
