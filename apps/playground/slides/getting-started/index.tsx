@@ -427,7 +427,7 @@ const Cover: Page = () => (
               color: 'transparent',
             }}
           >
-            with your coding agent.
+            with your agent.
           </span>
         </h1>
         <p
@@ -1512,7 +1512,7 @@ const AgentAgnostic: Page = () => {
               letterSpacing: '-0.01em',
             }}
           >
-            open-slide speaks plain React and a file-convention protocol. Any coding agent can
+            open-slide speaks plain React and a file-convention protocol. Any agent can
             author and edit slides — no lock-in, no bespoke SDK.
           </p>
         </div>

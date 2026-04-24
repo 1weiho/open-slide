@@ -28,7 +28,7 @@ const steps: Step[] = [
     num: "02",
     kicker: "author",
     title: "Ask your agent",
-    body: "Your coding agent drafts pages as arbitrary React components. You guide with prompts; it writes files on disk.",
+    body: "Your agent drafts pages as arbitrary React components. You guide with prompts; it writes files on disk.",
     code: {
       prompt: "›",
       line: "/create-slide for Q2 roadmap",
