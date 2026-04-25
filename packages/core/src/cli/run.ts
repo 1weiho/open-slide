@@ -12,7 +12,7 @@ async function readVersion(): Promise<string> {
   return (JSON.parse(raw) as { version: string }).version;
 }
 
-function parsePort(value: string): number {
+export function parsePort(value: string): number {
   const n = Number(value);
   if (!Number.isInteger(n) || n < 0 || n > 65535) {
     throw new Error(`Invalid port: ${value}`);

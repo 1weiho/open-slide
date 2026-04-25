@@ -79,14 +79,14 @@ function newFolderId(): string {
   return `f-${randomUUID().replace(/-/g, '').slice(0, 8)}`;
 }
 
-function validateName(v: unknown): string | null {
+export function validateName(v: unknown): string | null {
   if (typeof v !== 'string') return null;
   const trimmed = v.trim();
   if (trimmed.length < 1 || trimmed.length > 40) return null;
   return trimmed;
 }
 
-function validateSlideName(v: unknown): string | null {
+export function validateSlideName(v: unknown): string | null {
   if (typeof v !== 'string') return null;
   const trimmed = v.trim();
   if (trimmed.length < 1 || trimmed.length > 80) return null;
@@ -132,7 +132,7 @@ function escapeSingleQuoted(s: string): string {
  * Returns the rewritten source, or `null` if the file shape was too surprising
  * to touch safely (e.g. `export default` missing when we'd need to inject meta).
  */
-function updateMetaTitleInSource(source: string, title: string): string | null {
+export function updateMetaTitleInSource(source: string, title: string): string | null {
   const newLiteral = `'${escapeSingleQuoted(title)}'`;
 
   const metaStart = source.search(/export\s+const\s+meta\b/);
@@ -181,7 +181,7 @@ function updateMetaTitleInSource(source: string, title: string): string | null {
   return source.slice(0, exportDefaultIdx) + insertion + source.slice(exportDefaultIdx);
 }
 
-function validateIcon(v: unknown): FolderIcon | null {
+export function validateIcon(v: unknown): FolderIcon | null {
   if (!v || typeof v !== 'object') return null;
   const icon = v as { type?: unknown; value?: unknown };
   if (icon.type === 'emoji') {

@@ -13,11 +13,14 @@
     "lint:fix": "biome lint --write .",
     "check": "biome check .",
     "check:fix": "biome check --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "core": "pnpm --filter @open-slide/core",
     "cli": "pnpm --filter @open-slide/cli"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.12",
-    "turbo": "^2.3.0"
+    "turbo": "^2.3.0",
+    "vitest": "^2.1.9"
   }
 }

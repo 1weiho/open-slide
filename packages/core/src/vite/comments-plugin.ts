@@ -19,7 +19,7 @@ type AddBody = {
 };
 type Comment = { id: string; line: number; ts: string; note: string; hint?: string };
 
-function b64urlEncode(s: string): string {
+export function b64urlEncode(s: string): string {
   return Buffer.from(s, 'utf8')
     .toString('base64')
     .replace(/\+/g, '-')
@@ -27,7 +27,7 @@ function b64urlEncode(s: string): string {
     .replace(/=+$/, '');
 }
 
-function b64urlDecode(s: string): string {
+export function b64urlDecode(s: string): string {
   const pad = s.length % 4 === 0 ? '' : '='.repeat(4 - (s.length % 4));
   return Buffer.from(s.replace(/-/g, '+').replace(/_/g, '/') + pad, 'base64').toString('utf8');
 }
@@ -63,7 +63,7 @@ function resolveSlidePath(userCwd: string, slidesDir: string, slideId: string): 
   return full;
 }
 
-function parseMarkers(source: string): Comment[] {
+export function parseMarkers(source: string): Comment[] {
   const comments: Comment[] = [];
   const lines = source.split('\n');
   for (let i = 0; i < lines.length; i++) {
