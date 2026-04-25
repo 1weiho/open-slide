@@ -32,24 +32,33 @@ export function CommentWidget() {
               No comments yet. Toggle Inspect and click a slide element.
             </p>
           ) : (
-            <ul className="max-h-72 overflow-auto">
-              {comments.map((c) => (
-                <li key={c.id} className="flex items-start gap-2 border-b px-3 py-2 last:border-0">
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[10px] font-mono text-muted-foreground">line {c.line}</div>
-                    <div className="mt-0.5 text-xs break-words">{c.note}</div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => remove(c.id)}
-                    className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-red-600"
-                    title="Delete"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="max-h-72 overflow-auto">
+                {comments.map((c) => (
+                  <li key={c.id} className="flex items-start gap-2 border-b px-3 py-2 last:border-0">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[10px] font-mono text-muted-foreground">line {c.line}</div>
+                      <div className="mt-0.5 text-xs break-words">{c.note}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => remove(c.id)}
+                      className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-red-600"
+                      title="Delete"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <div className="border-t px-3 py-2 text-[11px] text-muted-foreground">
+                Run{' '}
+                <code className="rounded bg-muted px-1 py-0.5 font-mono text-foreground">
+                  /apply-comments
+                </code>{' '}
+                in your agent to apply these.
+              </div>
+            </>
           )}
         </div>
       )}
