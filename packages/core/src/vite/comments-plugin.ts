@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import type { ServerResponse } from 'node:http';
 import path from 'node:path';
+import { parse as babelParse } from '@babel/parser';
 import type { Connect, Plugin, ViteDevServer } from 'vite';
 
 const MARKER_RE =
@@ -85,41 +86,163 @@ function newId(): string {
   return `c-${randomUUID().replace(/-/g, '').slice(0, 8)}`;
 }
 
-function isJsxOpeningLine(line: string): boolean {
-  const t = line.trimStart();
-  if (!t.startsWith('<')) return false;
-  if (t.startsWith('</')) return false;
-  if (t.startsWith('<!')) return false;
-  return true;
+type Loc = { line: number; column: number };
+type AstNode = {
+  type: string;
+  start: number;
+  end: number;
+  loc?: { start: Loc; end: Loc };
+  [k: string]: unknown;
+};
+
+// Insertion plan: where to splice the marker into the source.
+//
+// We always insert the marker *inside* a JSX container (as its first child),
+// never as a JSX-comment sibling. A JSX-comment-like token written outside
+// JSX context (e.g. as the body of `() => ( <Foo/> )`) is parsed as an empty
+// object literal and breaks the surrounding expression. Children of a
+// JSXElement / JSXFragment are unambiguously JSX context, so the marker is
+// always valid there.
+//
+// `offset` is the character index where a fresh `\n<indent><marker>` should
+// be spliced in; `indent` is the indentation to apply to the marker line.
+type InsertionPlan = { offset: number; indent: string };
+
+function lineToOffset(source: string, line: number): number {
+  let off = 0;
+  for (let l = 1; l < line; l++) {
+    const nl = source.indexOf('\n', off);
+    if (nl === -1) return source.length;
+    off = nl + 1;
+  }
+  return off;
+}
+
+function lineIndent(source: string, lineNumber: number): string {
+  const start = lineToOffset(source, lineNumber);
+  const m = source.slice(start, start + 200).match(/^[ \t]*/);
+  return m?.[0] ?? '';
 }
 
 /**
- * Find the line index to insert a JSX comment above.
+ * Walk the AST, collect every JSXElement/JSXFragment whose location encloses
+ * the click point, ordered innermost-first.
  *
- * Babel's `_debugSource.lineNumber/columnNumber` points at the `<` of a JSX
- * opening tag, but the value can go stale (HMR races) or, per reports, point
- * at a line that's not actually a JSX boundary — e.g. inside an inline style
- * object. Verify with the source of truth before committing.
+ * "Encloses" here is inclusive at the start (so a click on the opening `<`
+ * counts as inside) and exclusive at the end. We deliberately don't trust
+ * Babel's `_debugSource` line/column to be exact — HMR or upstream transforms
+ * can shift it slightly — so we treat the click as a probe and pick the
+ * tightest JSX container around it.
  */
-function findSafeInsertLine(
-  lines: string[],
-  line: number,
-  column: number | undefined,
-): number | null {
-  const idx = line - 1;
-  if (idx < 0 || idx >= lines.length) return null;
+function findJsxAncestors(ast: AstNode, line: number, column: number): AstNode[] {
+  const hits: { node: AstNode; size: number }[] = [];
 
-  if (column !== undefined && lines[idx].charAt(column) === '<') return idx;
-  if (isJsxOpeningLine(lines[idx])) return idx;
+  const walk = (node: unknown) => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) {
+      for (const c of node) walk(c);
+      return;
+    }
+    const n = node as AstNode;
+    if (typeof n.type !== 'string') return;
 
-  const WINDOW = 30;
-  for (let i = idx - 1; i >= Math.max(0, idx - WINDOW); i--) {
-    if (isJsxOpeningLine(lines[i])) return i;
+    if ((n.type === 'JSXElement' || n.type === 'JSXFragment') && n.loc) {
+      const s = n.loc.start;
+      const e = n.loc.end;
+      const afterStart = line > s.line || (line === s.line && column >= s.column);
+      const beforeEnd = line < e.line || (line === e.line && column < e.column);
+      if (afterStart && beforeEnd) {
+        hits.push({ node: n, size: n.end - n.start });
+      }
+    }
+
+    for (const key of Object.keys(n)) {
+      if (
+        key === 'loc' ||
+        key === 'start' ||
+        key === 'end' ||
+        key === 'type' ||
+        key === 'extra' ||
+        key === 'leadingComments' ||
+        key === 'trailingComments' ||
+        key === 'innerComments'
+      ) {
+        continue;
+      }
+      walk((n as Record<string, unknown>)[key]);
+    }
+  };
+
+  walk(ast);
+  hits.sort((a, b) => a.size - b.size);
+  return hits.map((h) => h.node);
+}
+
+function planInsertion(source: string, target: AstNode): InsertionPlan | null {
+  if (target.type === 'JSXFragment') {
+    const opening = target.openingFragment as AstNode | undefined;
+    if (!opening) return null;
+    const startLine = target.loc?.start.line ?? 1;
+    return {
+      offset: opening.end,
+      indent: `${lineIndent(source, startLine)}  `,
+    };
   }
-  for (let i = idx + 1; i < Math.min(lines.length, idx + WINDOW); i++) {
-    if (isJsxOpeningLine(lines[i])) return i;
+  if (target.type === 'JSXElement') {
+    const opening = target.openingElement as (AstNode & { selfClosing?: boolean }) | undefined;
+    if (!opening || opening.selfClosing) return null;
+    const startLine = target.loc?.start.line ?? 1;
+    return {
+      offset: opening.end,
+      indent: `${lineIndent(source, startLine)}  `,
+    };
   }
   return null;
+}
+
+/**
+ * Resolve a click on the slide page (line/col from React fiber's
+ * `_debugSource`) to an in-source offset where we can safely splice a
+ * `@slide-comment` marker.
+ *
+ * Strategy: parse the file, find every JSX container around the click, and
+ * walk innermost → outermost looking for the first one we can insert *inside*
+ * (i.e. not self-closing). Self-closing elements like `<img/>` get hoisted to
+ * their nearest non-self-closing ancestor.
+ */
+function findInsertion(
+  source: string,
+  line: number,
+  column: number | undefined,
+): InsertionPlan | null {
+  let ast: AstNode;
+  try {
+    ast = babelParse(source, {
+      sourceType: 'module',
+      plugins: ['typescript', 'jsx'],
+      errorRecovery: true,
+    }) as unknown as AstNode;
+  } catch {
+    return null;
+  }
+
+  const col = column ?? 0;
+  const ancestors = findJsxAncestors(ast, line, col);
+  if (ancestors.length === 0) return null;
+
+  for (const node of ancestors) {
+    const plan = planInsertion(source, node);
+    if (plan) return plan;
+  }
+  return null;
+}
+
+function offsetToLine(source: string, offset: number): number {
+  let line = 1;
+  for (let i = 0; i < offset && i < source.length; i++) {
+    if (source[i] === '\n') line++;
+  }
+  return line;
 }
 
 export type CommentsPluginOptions = {
@@ -169,25 +292,24 @@ export function commentsPlugin(opts: CommentsPluginOptions): Plugin {
               return json(res, 404, { error: 'slide not found' });
             }
 
-            const lines = source.split('\n');
-            const idx = findSafeInsertLine(lines, body.line, body.column);
-            if (idx === null) {
+            const plan = findInsertion(source, body.line, body.column);
+            if (!plan) {
               return json(res, 422, {
                 error:
-                  'could not find a safe JSX boundary near line ' +
+                  'could not find a JSX container around line ' +
                   `${body.line}. Try clicking a different element.`,
               });
             }
-            const indent = lines[idx].match(/^\s*/)?.[0] ?? '';
 
             const id = newId();
             const ts = new Date().toISOString();
             const payload = b64urlEncode(JSON.stringify({ note: body.text, hint: body.hint }));
-            const marker = `${indent}{/* @slide-comment id="${id}" ts="${ts}" text="${payload}" */}`;
+            const marker = `\n${plan.indent}{/* @slide-comment id="${id}" ts="${ts}" text="${payload}" */}`;
 
-            lines.splice(idx, 0, marker);
-            await fs.writeFile(file, lines.join('\n'), 'utf8');
-            return json(res, 200, { id, line: idx + 1 });
+            const next = source.slice(0, plan.offset) + marker + source.slice(plan.offset);
+            await fs.writeFile(file, next, 'utf8');
+            const markerLine = offsetToLine(next, plan.offset + 1);
+            return json(res, 200, { id, line: markerLine });
           }
 
           if (method === 'DELETE' && url.pathname.startsWith('/')) {

@@ -41,6 +41,7 @@
     "access": "public"
   },
   "dependencies": {
+    "@babel/parser": "^7.29.2",
     "@fontsource-variable/geist": "^5.2.8",
     "@tailwindcss/vite": "^4.2.2",
     "@vitejs/plugin-react": "^4.3.3",

@@ -95,6 +95,9 @@ importers:
 
   packages/core:
     dependencies:
+      '@babel/parser':
+        specifier: ^7.29.2
+        version: 7.29.2
       '@fontsource-variable/geist':
         specifier: ^5.2.8
         version: 5.2.8

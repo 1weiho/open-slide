@@ -17,7 +17,7 @@ Your job: read those markers, perform the described edits, and delete the marker
 {/* @slide-comment id="c-<8hex>" ts="<ISO>" text="<base64url(JSON)>" */}
 ```
 
-- Always sits on its own line, immediately **above** the JSX element it refers to.
+- Always sits on its own line as the **first child inside** the JSX element it refers to (i.e. between that element's opening `>` and its other children). The marker is dropped *into* its target, not floated above it.
 - `text` is base64url-encoded JSON: `{"note": "...", "hint"?: "..."}`.
 - Detection regex (authoritative — use exactly this):
 
@@ -38,8 +38,8 @@ Your job: read those markers, perform the described edits, and delete the marker
    - If there are no markers, tell the user and stop.
 
 3. **Understand each comment in context.**
-   - The targeted JSX element is the next non-blank line after the marker.
-   - Read enough surrounding code (parent element, sibling elements, inline styles) to apply the change faithfully. A comment on a `<div>` with an inline `background` style usually refers to that element's styling, for example.
+   - The targeted JSX element is the **enclosing** element of the marker — i.e. read upward from the marker line until you reach the unclosed JSX opening tag whose body the marker lives in. That element is the target. (For self-closing elements like `<img />`, the inspector hoists the marker to the nearest non-self-closing ancestor; in that case the comment usually refers to a child of the enclosing element rather than the enclosing element itself — use the `note` text to disambiguate.)
+   - Read enough surrounding code (parent element, sibling elements, inline styles) to apply the change faithfully. A comment inside a `<div>` with an inline `background` style usually refers to that element's styling, for example.
    - If the `note` is ambiguous, do the smallest reasonable interpretation and mention the assumption in your summary.
 
 4. **Apply edits in reverse line order.**
@@ -70,8 +70,8 @@ You can run this inline via `node -e '...'` if you need to inspect a payload; ot
 
 ## Edge cases
 
-- **Marker at EOF / without a following element**: delete the marker; note it in the summary as orphan.
-- **Multiple markers stacked on consecutive lines**: they all refer to the same next non-blank JSX element. Apply them in source order but still delete each line individually.
+- **Marker with no enclosing JSX element** (shouldn't happen — the inspector won't write one — but if you find one): delete it and note as orphan.
+- **Multiple markers stacked on consecutive lines inside the same element**: they all refer to that enclosing element. Apply them in source order but still delete each line individually.
 - **`_debugSource` used SWC instead of Babel**: not your problem — the marker line is authoritative.
 - **Comment asks for something outside the target element's scope** (e.g. "add a new page"): do the closest-reasonable edit and mention the scope expansion in your summary.
 - **Can't resolve the comment** (e.g. truly ambiguous, or the file changed shape such that the target element doesn't exist): leave the marker in place and report it as skipped. Don't guess.
