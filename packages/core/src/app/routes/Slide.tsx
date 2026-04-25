@@ -1,6 +1,7 @@
 import { ChevronLeft, Download, FileCode2, Loader2, Pencil, Play } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
+import config from 'virtual:open-slide/config';
 import { CommentWidget } from '@/components/inspector/CommentWidget';
 import { InspectOverlay } from '@/components/inspector/InspectOverlay';
 import { InspectorProvider, InspectToggleButton } from '@/components/inspector/InspectorProvider';
@@ -21,6 +22,8 @@ import { ThumbnailRail } from '../components/ThumbnailRail';
 import { exportSlideAsHtml } from '../lib/export-html';
 import type { SlideModule } from '../lib/sdk';
 import { loadSlide } from '../lib/slides';
+
+const { showSlideUi, showSlideBrowser, allowHtmlDownload } = config.build;
 
 export function Slide() {
   const { slideId = '' } = useParams();
@@ -88,9 +91,11 @@ export function Slide() {
   if (error) {
     return (
       <div className="mx-auto max-w-3xl px-8 py-16 text-muted-foreground">
-        <Link to="/" className="text-sm font-medium text-primary hover:underline">
-          ← Home
-        </Link>
+        {showSlideBrowser && (
+          <Link to="/" className="text-sm font-medium text-primary hover:underline">
+            ← Home
+          </Link>
+        )}
         <h2 className="mt-4 text-xl font-semibold text-foreground">Failed to load slide</h2>
         <pre className="mt-4 overflow-auto rounded-md border bg-card p-4 text-xs whitespace-pre-wrap shadow-sm">
           {error}
@@ -110,9 +115,11 @@ export function Slide() {
   if (pageCount === 0) {
     return (
       <div className="mx-auto max-w-3xl px-8 py-16 text-muted-foreground">
-        <Link to="/" className="text-sm font-medium text-primary hover:underline">
-          ← Home
-        </Link>
+        {showSlideBrowser && (
+          <Link to="/" className="text-sm font-medium text-primary hover:underline">
+            ← Home
+          </Link>
+        )}
         <h2 className="mt-4 text-xl font-semibold text-foreground">Empty slide</h2>
         <p className="mt-2 text-sm">
           <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
@@ -123,6 +130,18 @@ export function Slide() {
           non-empty array of components.
         </p>
       </div>
+    );
+  }
+
+  if (!showSlideUi) {
+    return (
+      <Player
+        pages={pages}
+        index={index}
+        onIndexChange={goTo}
+        onExit={() => {}}
+        allowExit={false}
+      />
     );
   }
 
@@ -140,13 +159,17 @@ export function Slide() {
       <div className="flex h-screen flex-col overflow-hidden bg-background">
         <header className="relative flex shrink-0 items-center justify-between border-b bg-card px-3 py-2 md:px-5 md:py-3">
           <div className="flex items-center gap-2 md:gap-3">
-            <Button asChild variant="ghost" size="sm" className="px-2 md:px-3">
-              <Link to="/">
-                <ChevronLeft className="size-4" />
-                <span className="hidden md:inline">Home</span>
-              </Link>
-            </Button>
-            <Separator orientation="vertical" className="hidden h-5 md:block" />
+            {showSlideBrowser && (
+              <>
+                <Button asChild variant="ghost" size="sm" className="px-2 md:px-3">
+                  <Link to="/">
+                    <ChevronLeft className="size-4" />
+                    <span className="hidden md:inline">Home</span>
+                  </Link>
+                </Button>
+                <Separator orientation="vertical" className="hidden h-5 md:block" />
+              </>
+            )}
           </div>
 
           <div className="pointer-events-none absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-center px-2">
@@ -156,40 +179,42 @@ export function Slide() {
           </div>
 
           <div className="flex items-center gap-1.5">
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                type="button"
-                disabled={exporting}
-                aria-label="Download"
-                title="Download"
-                className={cn(buttonVariants({ variant: 'outline', size: 'icon-sm' }))}
-              >
-                {exporting ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Download className="size-4" />
-                )}
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[180px]">
-                <DropdownMenuItem
+            {allowHtmlDownload && (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  type="button"
                   disabled={exporting}
-                  onSelect={async () => {
-                    if (!slide || exporting) return;
-                    setExporting(true);
-                    try {
-                      await exportSlideAsHtml(slide, slideId);
-                    } catch (err) {
-                      console.error('[open-slide] export failed', err);
-                    } finally {
-                      setExporting(false);
-                    }
-                  }}
+                  aria-label="Download"
+                  title="Download"
+                  className={cn(buttonVariants({ variant: 'outline', size: 'icon-sm' }))}
                 >
-                  <FileCode2 />
-                  Download HTML
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  {exporting ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Download className="size-4" />
+                  )}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-[180px]">
+                  <DropdownMenuItem
+                    disabled={exporting}
+                    onSelect={async () => {
+                      if (!slide || exporting) return;
+                      setExporting(true);
+                      try {
+                        await exportSlideAsHtml(slide, slideId);
+                      } catch (err) {
+                        console.error('[open-slide] export failed', err);
+                      } finally {
+                        setExporting(false);
+                      }
+                    }}
+                  >
+                    <FileCode2 />
+                    Download HTML
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <InspectToggleButton />
             <Button size="sm" onClick={() => setPlaying(true)} className="px-2 md:px-3">
               <Play className="size-4" />

@@ -7,9 +7,10 @@ type Props = {
   index: number;
   onIndexChange: (index: number) => void;
   onExit: () => void;
+  allowExit?: boolean;
 };
 
-export function Player({ pages, index, onIndexChange, onExit }: Props) {
+export function Player({ pages, index, onIndexChange, onExit, allowExit = true }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -24,12 +25,13 @@ export function Player({ pages, index, onIndexChange, onExit }: Props) {
   }, []);
 
   useEffect(() => {
+    if (!allowExit) return;
     const onFsChange = () => {
       if (!document.fullscreenElement) onExit();
     };
     document.addEventListener('fullscreenchange', onFsChange);
     return () => document.removeEventListener('fullscreenchange', onFsChange);
-  }, [onExit]);
+  }, [onExit, allowExit]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -45,7 +47,7 @@ export function Player({ pages, index, onIndexChange, onExit }: Props) {
         e.preventDefault();
         if (index > 0) onIndexChange(index - 1);
       } else if (e.key === 'Escape') {
-        onExit();
+        if (allowExit) onExit();
       } else if (e.key === 'Home') {
         onIndexChange(0);
       } else if (e.key === 'End') {
@@ -54,7 +56,7 @@ export function Player({ pages, index, onIndexChange, onExit }: Props) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [index, pages.length, onIndexChange, onExit]);
+  }, [index, pages.length, onIndexChange, onExit, allowExit]);
 
   const PageComp = pages[index];
 

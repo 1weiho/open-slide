@@ -6,9 +6,13 @@ declare module 'virtual:open-slide/slides' {
 
 declare module 'virtual:open-slide/config' {
   const config: {
-    title?: string;
     slidesDir?: string;
     port?: number;
+    build: {
+      showSlideBrowser: boolean;
+      showSlideUi: boolean;
+      allowHtmlDownload: boolean;
+    };
   };
   export default config;
 }
