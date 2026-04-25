@@ -2,37 +2,43 @@
 
 # open-slide
 
-Write slides as React components. The framework handles layout, scaling, navigation, and fullscreen play mode — you just write the pages.
+A slide framework built for agents. You describe the deck in natural language; the agent authors the pages. The framework handles layout, scaling, navigation, hot reload, and fullscreen play mode so the agent can focus on content.
 
-Every slide renders into a fixed **1920 × 1080** canvas and gets a thumbnail rail, keyboard navigation, hot reload, and a fullscreen presenter mode for free.
+Every slide renders into a fixed **1920 × 1080** canvas with a thumbnail rail, keyboard navigation, and a fullscreen presenter mode out of the box.
 
 ## Quick start
 
 ```bash
 npx @open-slide/cli init my-slide
 cd my-slide
-pnpm install
 pnpm dev
 ```
 
-Then edit `slides/<id>/index.tsx`:
+The scaffolded workspace ships with agent skills preconfigured for Claude Code. From here you drive the deck through your agent.
 
-```tsx
-import type { Page, SlideMeta } from '@open-slide/core';
+## Working with the agent
 
-const Cover: Page = () => (
-  <div style={{ width: '100%', height: '100%' }}>Hello</div>
-);
+Two skills cover the full authoring loop:
 
-export const meta: SlideMeta = { title: 'My slide' };
-export default [Cover] satisfies Page[];
-```
+### `/create-slide` — drafting a new deck
 
-See [CLAUDE.md](CLAUDE.md) for the full authoring guide.
+Ask the agent to "make slides about X". The skill takes over and:
 
-## Claude Code integration
+1. Asks four scoping questions up front — topic & aesthetic, page count, text density per page, and motion vs. static — so the visual direction is locked in before any code is written.
+2. Picks a kebab-case slide id and plans the page structure.
+3. Writes everything under `slides/<id>/` following the canvas, type scale, and palette rules in the `/slide-authoring` reference.
 
-The scaffolded workspace ships with Claude Code skills preconfigured. Ask Claude Code to "make slides about X" and the `create-slide` skill takes over. The `apply-comments` skill lets you iterate via inspector-style markers inside your source.
+You review the result in the dev server and iterate.
+
+### `/apply-comments` — iterating via inspector markers
+
+The dev server has an inspector tool: click any element on a rendered page and attach a comment like *"make this red"* or *"change to 'Open Slide Rocks'"*. Each comment is persisted as an in-source `@slide-comment` marker above the JSX it refers to.
+
+When you're ready, run the `/apply-comments` command. The skill reads every pending marker, performs the edits, and removes the markers — so the loop is: present → click to comment → run `/apply-comments` → repeat.
+
+### Manual edits
+
+For tweaks you'd rather make yourself, slides are just files under `slides/<id>/`. See [CLAUDE.md](CLAUDE.md) for the hard rules and the `slide-authoring` skill for the full technical reference.
 
 ## Repo layout
 
