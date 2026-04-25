@@ -8,10 +8,7 @@ export function CommentWidget() {
   const count = comments.length;
 
   return (
-    <div
-      data-inspector-ui
-      className="fixed right-4 bottom-4 z-40 flex flex-col items-end gap-2"
-    >
+    <div data-inspector-ui className="fixed right-4 bottom-4 z-40 flex flex-col items-end gap-2">
       {open && (
         <div className="w-80 rounded-md border bg-card shadow-xl animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
           <div className="flex items-center justify-between border-b px-3 py-2">
@@ -35,9 +32,14 @@ export function CommentWidget() {
             <>
               <ul className="max-h-72 overflow-auto">
                 {comments.map((c) => (
-                  <li key={c.id} className="flex items-start gap-2 border-b px-3 py-2 last:border-0">
+                  <li
+                    key={c.id}
+                    className="flex items-start gap-2 border-b px-3 py-2 last:border-0"
+                  >
                     <div className="min-w-0 flex-1">
-                      <div className="text-[10px] font-mono text-muted-foreground">line {c.line}</div>
+                      <div className="text-[10px] font-mono text-muted-foreground">
+                        line {c.line}
+                      </div>
                       <div className="mt-0.5 text-xs break-words">{c.note}</div>
                     </div>
                     <button

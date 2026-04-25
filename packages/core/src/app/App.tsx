@@ -7,10 +7,7 @@ export function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route
-          path="/"
-          element={config.build.showSlideBrowser ? <Home /> : <NotFound />}
-        />
+        <Route path="/" element={config.build.showSlideBrowser ? <Home /> : <NotFound />} />
         <Route path="/s/:slideId" element={<Slide />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

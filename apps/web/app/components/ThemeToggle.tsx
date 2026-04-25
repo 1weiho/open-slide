@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useTheme } from 'next-themes';
+import { useEffect, useState } from 'react';
 
 type Option = {
-  value: "system" | "light" | "dark";
+  value: 'system' | 'light' | 'dark';
   label: string;
   icon: React.ReactNode;
 };
 
 const OPTIONS: Option[] = [
-  { value: "system", label: "Auto", icon: <AutoIcon /> },
-  { value: "light", label: "Light", icon: <SunIcon /> },
-  { value: "dark", label: "Dark", icon: <MoonIcon /> },
+  { value: 'system', label: 'Auto', icon: <AutoIcon /> },
+  { value: 'light', label: 'Light', icon: <SunIcon /> },
+  { value: 'dark', label: 'Dark', icon: <MoonIcon /> },
 ];
 
 export function ThemeToggle() {
@@ -23,7 +23,7 @@ export function ThemeToggle() {
     setMounted(true);
   }, []);
 
-  const current = mounted ? theme ?? "system" : "system";
+  const current = mounted ? (theme ?? 'system') : 'system';
 
   return (
     <div
@@ -43,10 +43,10 @@ export function ThemeToggle() {
             title={opt.label}
             onClick={() => setTheme(opt.value)}
             className={
-              "inline-flex items-center justify-center h-7 w-7 rounded-full transition-colors " +
+              'inline-flex items-center justify-center h-7 w-7 rounded-full transition-colors ' +
               (active
-                ? "bg-[color:var(--color-panel-hi)] text-[color:var(--color-text)] shadow-[inset_0_0_0_1px_var(--color-rule)]"
-                : "text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]")
+                ? 'bg-[color:var(--color-panel-hi)] text-[color:var(--color-text)] shadow-[inset_0_0_0_1px_var(--color-rule)]'
+                : 'text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]')
             }
           >
             {opt.icon}

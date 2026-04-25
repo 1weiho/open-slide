@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
 type Step = {
   num: string;
@@ -14,36 +14,36 @@ type Step = {
 
 const steps: Step[] = [
   {
-    num: "01",
-    kicker: "scaffold",
-    title: "Init a deck",
-    body: "One command spins up slides/, open-slide.config.ts, and a hot-reloading dev server. No templates, no themes, no assumptions.",
+    num: '01',
+    kicker: 'scaffold',
+    title: 'Init a deck',
+    body: 'One command spins up slides/, open-slide.config.ts, and a hot-reloading dev server. No templates, no themes, no assumptions.',
     code: {
-      prompt: "$",
-      line: "npx @open-slide/cli init my-deck",
-      tail: "✓ ready in 3s",
+      prompt: '$',
+      line: 'npx @open-slide/cli init my-deck',
+      tail: '✓ ready in 3s',
     },
   },
   {
-    num: "02",
-    kicker: "author",
-    title: "Ask your agent",
-    body: "Your agent drafts pages as arbitrary React components. You guide with prompts; it writes files on disk.",
+    num: '02',
+    kicker: 'author',
+    title: 'Ask your agent',
+    body: 'Your agent drafts pages as arbitrary React components. You guide with prompts; it writes files on disk.',
     code: {
-      prompt: "›",
-      line: "/create-slide for Q2 roadmap",
+      prompt: '›',
+      line: '/create-slide for Q2 roadmap',
       tail: <AgentRow />,
     },
   },
   {
-    num: "03",
-    kicker: "iterate",
-    title: "Inspect and comment",
-    body: "Open the inspector, click any block, leave a note. Then run /apply-comments — the agent reads every marker, rewrites the page, clears them.",
+    num: '03',
+    kicker: 'iterate',
+    title: 'Inspect and comment',
+    body: 'Open the inspector, click any block, leave a note. Then run /apply-comments — the agent reads every marker, rewrites the page, clears them.',
     code: {
-      prompt: "›",
-      line: "/apply-comment",
-      tail: "✓ applied change",
+      prompt: '›',
+      line: '/apply-comment',
+      tail: '✓ applied change',
     },
   },
 ];
@@ -71,12 +71,12 @@ function renderLine(line: string) {
 
 function AgentRow() {
   const agents: [string, string][] = [
-    ["claude.svg", "Claude"],
-    ["codex-dark.svg", "Codex"],
-    ["cursor-dark.svg", "Cursor"],
-    ["gemini.svg", "Gemini CLI"],
+    ['claude.svg', 'Claude'],
+    ['codex-dark.svg', 'Codex'],
+    ['cursor-dark.svg', 'Cursor'],
+    ['gemini.svg', 'Gemini CLI'],
   ];
-  const cls = "agent-mono h-[14px] w-auto object-contain shrink-0";
+  const cls = 'agent-mono h-[14px] w-auto object-contain shrink-0';
   return (
     <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-2 normal-case tracking-normal">
       {agents.map(([file, name]) => (
@@ -93,16 +93,11 @@ function AgentRow() {
 export function HowItWorks() {
   return (
     <section id="how-it-works" className="relative">
-      <div
-        aria-hidden
-        className="absolute inset-x-0 top-0 h-px bg-[color:var(--color-rule)]"
-      />
+      <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-[color:var(--color-rule)]" />
       <div className="mx-auto max-w-[1360px] px-8 lg:px-12 py-24 lg:py-32">
         <div className="flex items-end justify-between flex-wrap gap-y-6 mb-16">
           <h2 className="text-[40px] sm:text-[52px] lg:text-[72px] leading-[1.02] tracking-[-0.03em] max-w-[860px]">
-            <span className="font-[family-name:var(--font-sans)] font-medium">
-              Slides as code.
-            </span>
+            <span className="font-[family-name:var(--font-sans)] font-medium">Slides as code.</span>
             <br />
             <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-accent)]">
               Crafted by agents.
@@ -137,9 +132,7 @@ export function HowItWorks() {
 
               <div className="mt-auto rounded-[10px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] p-4 font-[family-name:var(--font-mono)] text-[13px]">
                 <div className="flex items-center gap-2">
-                  <span className="text-[color:var(--color-accent)]">
-                    {s.code.prompt}
-                  </span>
+                  <span className="text-[color:var(--color-accent)]">{s.code.prompt}</span>
                   <span className="text-[color:var(--color-text)] truncate">
                     {renderLine(s.code.line)}
                   </span>

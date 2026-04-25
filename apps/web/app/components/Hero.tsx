@@ -1,4 +1,4 @@
-import { CopyCommand } from "./CopyCommand";
+import { CopyCommand } from './CopyCommand';
 
 export function Hero() {
   return (
@@ -8,7 +8,7 @@ export function Hero() {
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(1200px 720px at 18% 30%, rgba(113,112,255,0.18) 0%, transparent 62%), radial-gradient(900px 600px at 88% 82%, rgba(163,160,255,0.10) 0%, transparent 60%)",
+            'radial-gradient(1200px 720px at 18% 30%, rgba(113,112,255,0.18) 0%, transparent 62%), radial-gradient(900px 600px at 88% 82%, rgba(163,160,255,0.10) 0%, transparent 60%)',
         }}
       />
 
@@ -16,28 +16,27 @@ export function Hero() {
         aria-hidden
         className="absolute inset-x-0 top-0 h-px"
         style={{
-          background:
-            "linear-gradient(90deg, transparent, rgba(113,112,255,0.7), transparent)",
+          background: 'linear-gradient(90deg, transparent, rgba(113,112,255,0.7), transparent)',
         }}
       />
 
       <div className="relative mx-auto max-w-[1360px] px-8 lg:px-12 pt-20 lg:pt-32 pb-24">
         <div>
           <div className="flex flex-col gap-10">
-            <div className="caption rise" style={{ animationDelay: "40ms" }}>
+            <div className="caption rise" style={{ animationDelay: '40ms' }}>
               a slide framework for the agent era
             </div>
 
             <h1
               className="text-[64px] sm:text-[84px] lg:text-[128px] leading-[0.94] tracking-[-0.035em] rise"
-              style={{ animationDelay: "120ms" }}
+              style={{ animationDelay: '120ms' }}
             >
               <span className="font-[family-name:var(--font-sans)] font-medium text-[color:var(--color-text)]">
                 Slides as code.
               </span>
               <br />
               <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-paper)]">
-                Crafted by{" "}
+                Crafted by{' '}
                 <span className="text-[color:var(--color-accent)] relative">
                   agents
                   <svg
@@ -61,22 +60,19 @@ export function Hero() {
 
             <p
               className="max-w-[720px] text-[18px] sm:text-[20px] leading-[1.55] text-[color:var(--color-text-soft)] rise"
-              style={{ animationDelay: "240ms" }}
+              style={{ animationDelay: '240ms' }}
             >
-              A React-first slide framework authored by AI agents. Every page
-              is arbitrary code on a{" "}
+              A React-first slide framework authored by AI agents. Every page is arbitrary code on a{' '}
               <span className="font-[family-name:var(--font-mono)] text-[color:var(--color-text)]">
                 1920×1080
-              </span>{" "}
-              canvas—{" "}
-              <span className="text-[color:var(--color-muted)]">
-                versioned, reviewable, yours.
-              </span>
+              </span>{' '}
+              canvas—{' '}
+              <span className="text-[color:var(--color-muted)]">versioned, reviewable, yours.</span>
             </p>
 
             <div
               className="flex flex-wrap items-center gap-4 rise"
-              style={{ animationDelay: "360ms" }}
+              style={{ animationDelay: '360ms' }}
             >
               <CopyCommand command="npx @open-slide/cli init" />
               <a
@@ -95,7 +91,6 @@ export function Hero() {
                 </span>
               </a>
             </div>
-
           </div>
         </div>
       </div>

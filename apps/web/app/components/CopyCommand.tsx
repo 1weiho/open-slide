@@ -1,14 +1,8 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-export function CopyCommand({
-  command,
-  size = "lg",
-}: {
-  command: string;
-  size?: "lg" | "md";
-}) {
+export function CopyCommand({ command, size = 'lg' }: { command: string; size?: 'lg' | 'md' }) {
   const [copied, setCopied] = useState(false);
 
   const onCopy = async () => {
@@ -21,9 +15,9 @@ export function CopyCommand({
     }
   };
 
-  const height = size === "lg" ? "h-[52px]" : "h-10";
-  const pad = size === "lg" ? "px-5" : "px-4";
-  const text = size === "lg" ? "text-[15px]" : "text-[13px]";
+  const height = size === 'lg' ? 'h-[52px]' : 'h-10';
+  const pad = size === 'lg' ? 'px-5' : 'px-4';
+  const text = size === 'lg' ? 'text-[15px]' : 'text-[13px]';
 
   return (
     <button
@@ -42,10 +36,10 @@ export function CopyCommand({
         <span className="h-4 w-px bg-[color:var(--color-rule)]" />
         <span className="relative inline-flex h-[14px] w-[14px] items-center justify-center">
           <CopyGlyph
-            className={`absolute inset-0 transition-opacity duration-200 ${copied ? "opacity-0" : "opacity-100"}`}
+            className={`absolute inset-0 transition-opacity duration-200 ${copied ? 'opacity-0' : 'opacity-100'}`}
           />
           <CheckGlyph
-            className={`absolute inset-0 text-[color:var(--color-mint)] transition-opacity duration-200 ${copied ? "opacity-100" : "opacity-0"}`}
+            className={`absolute inset-0 text-[color:var(--color-mint)] transition-opacity duration-200 ${copied ? 'opacity-100' : 'opacity-0'}`}
           />
         </span>
       </span>
@@ -55,23 +49,8 @@ export function CopyCommand({
 
 function CopyGlyph({ className }: { className?: string }) {
   return (
-    <svg
-      aria-hidden
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      className={className}
-    >
-      <rect
-        x="7"
-        y="7"
-        width="12"
-        height="13"
-        rx="2"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      />
+    <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" className={className}>
+      <rect x="7" y="7" width="12" height="13" rx="2" stroke="currentColor" strokeWidth="1.5" />
       <path
         d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"
         stroke="currentColor"
@@ -84,14 +63,7 @@ function CopyGlyph({ className }: { className?: string }) {
 
 function CheckGlyph({ className }: { className?: string }) {
   return (
-    <svg
-      aria-hidden
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      className={className}
-    >
+    <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" className={className}>
       <path
         d="M5 12.5 10 17.5 19 7.5"
         stroke="currentColor"

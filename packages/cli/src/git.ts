@@ -61,12 +61,18 @@ export async function gitInitAndCommit(target: string): Promise<GitInitResult> {
 
   const init = await run('git', ['init'], target);
   if (init.code !== 0) {
-    return { status: 'failed', message: `git init failed: ${init.stderr.trim() || init.stdout.trim()}` };
+    return {
+      status: 'failed',
+      message: `git init failed: ${init.stderr.trim() || init.stdout.trim()}`,
+    };
   }
 
   const add = await run('git', ['add', '-A'], target);
   if (add.code !== 0) {
-    return { status: 'failed', message: `git add failed: ${add.stderr.trim() || add.stdout.trim()}` };
+    return {
+      status: 'failed',
+      message: `git add failed: ${add.stderr.trim() || add.stdout.trim()}`,
+    };
   }
 
   const commit = await run('git', ['commit', '-m', 'chore: init open-slide project'], target);

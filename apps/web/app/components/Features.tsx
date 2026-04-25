@@ -1,39 +1,39 @@
 const features = [
   {
-    id: "01",
-    eyebrow: "agent-agnostic",
-    title: "Any agent that writes files can author.",
-    body: "Claude Code, Codex, Gemini, Cursor, opencode, Aider — if it edits React, it authors slides. No proprietary SDK to learn.",
+    id: '01',
+    eyebrow: 'agent-agnostic',
+    title: 'Any agent that writes files can author.',
+    body: 'Claude Code, Codex, Gemini, Cursor, opencode, Aider — if it edits React, it authors slides. No proprietary SDK to learn.',
   },
   {
-    id: "02",
-    eyebrow: "pure react",
-    title: "No DSL. No templates. No theme.",
-    body: "Every page is a zero-prop React component. Animations, data viz, embedded canvases — whatever React can render, a slide can render.",
+    id: '02',
+    eyebrow: 'pure react',
+    title: 'No DSL. No templates. No theme.',
+    body: 'Every page is a zero-prop React component. Animations, data viz, embedded canvases — whatever React can render, a slide can render.',
   },
   {
-    id: "03",
-    eyebrow: "fixed canvas",
-    title: "Design against 1920 × 1080, ship anywhere.",
-    body: "Absolute pixel units. No responsive puzzles. The framework scales the canvas for you — talk, phone, projector.",
+    id: '03',
+    eyebrow: 'fixed canvas',
+    title: 'Design against 1920 × 1080, ship anywhere.',
+    body: 'Absolute pixel units. No responsive puzzles. The framework scales the canvas for you — talk, phone, projector.',
   },
   {
-    id: "04",
-    eyebrow: "git-tracked",
-    title: "Every diff is a file change.",
-    body: "Review a deck like a pull request. Revert a slide, branch for a draft, bisect a typo. Your existing workflow, applied to presentations.",
+    id: '04',
+    eyebrow: 'git-tracked',
+    title: 'Every diff is a file change.',
+    body: 'Review a deck like a pull request. Revert a slide, branch for a draft, bisect a typo. Your existing workflow, applied to presentations.',
   },
   {
-    id: "05",
-    eyebrow: "inspector loop",
-    title: "Comment in the page, apply later.",
-    body: "@slide-comment markers let you critique in place. The apply-comments skill finds them, rewrites the component, and removes the marker.",
+    id: '05',
+    eyebrow: 'inspector loop',
+    title: 'Comment in the page, apply later.',
+    body: '@slide-comment markers let you critique in place. The apply-comments skill finds them, rewrites the component, and removes the marker.',
   },
   {
-    id: "06",
-    eyebrow: "static output",
-    title: "One build command. HTML + JS + assets.",
-    body: "open-slide build emits a folder. Drop it on Vercel, Cloudflare Pages, Zeabur, S3, a USB stick. No server, no lock-in.",
+    id: '06',
+    eyebrow: 'static output',
+    title: 'One build command. HTML + JS + assets.',
+    body: 'open-slide build emits a folder. Drop it on Vercel, Cloudflare Pages, Zeabur, S3, a USB stick. No server, no lock-in.',
   },
 ];
 
@@ -56,10 +56,10 @@ export function Features() {
             const col = i % 3;
             const row = Math.floor(i / 3);
             const borderClasses = [
-              "border-t border-[color:var(--color-rule)]",
-              col > 0 ? "md:border-l border-[color:var(--color-rule)]" : "",
-              row > 0 ? "" : "",
-            ].join(" ");
+              'border-t border-[color:var(--color-rule)]',
+              col > 0 ? 'md:border-l border-[color:var(--color-rule)]' : '',
+              row > 0 ? '' : '',
+            ].join(' ');
             return (
               <li
                 key={f.id}

@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { InlineSlidePlayer, inlineSlideCount } from "./InlineSlidePlayer";
+import { useState } from 'react';
+import { InlineSlidePlayer, inlineSlideCount } from './InlineSlidePlayer';
 
 export function LiveDemo() {
   const [index, setIndex] = useState(0);
@@ -27,7 +27,7 @@ export function LiveDemo() {
 
           <div
             className="relative block w-full overflow-hidden rounded-[14px] border border-[color:var(--color-rule)] bg-black"
-            style={{ aspectRatio: "16 / 9" }}
+            style={{ aspectRatio: '16 / 9' }}
           >
             <InlineSlidePlayer index={index} onIndexChange={setIndex} />
           </div>
@@ -73,14 +73,25 @@ export function LiveDemo() {
 }
 
 function SpecimenCorners() {
-  const corner =
-    "absolute h-5 w-5 border-[color:var(--color-accent)] pointer-events-none";
+  const corner = 'absolute h-5 w-5 border-[color:var(--color-accent)] pointer-events-none';
   return (
     <>
-      <span aria-hidden className={`${corner} -top-px -left-px border-t border-l rounded-tl-[22px]`} />
-      <span aria-hidden className={`${corner} -top-px -right-px border-t border-r rounded-tr-[22px]`} />
-      <span aria-hidden className={`${corner} -bottom-px -left-px border-b border-l rounded-bl-[22px]`} />
-      <span aria-hidden className={`${corner} -bottom-px -right-px border-b border-r rounded-br-[22px]`} />
+      <span
+        aria-hidden
+        className={`${corner} -top-px -left-px border-t border-l rounded-tl-[22px]`}
+      />
+      <span
+        aria-hidden
+        className={`${corner} -top-px -right-px border-t border-r rounded-tr-[22px]`}
+      />
+      <span
+        aria-hidden
+        className={`${corner} -bottom-px -left-px border-b border-l rounded-bl-[22px]`}
+      />
+      <span
+        aria-hidden
+        className={`${corner} -bottom-px -right-px border-b border-r rounded-br-[22px]`}
+      />
     </>
   );
 }

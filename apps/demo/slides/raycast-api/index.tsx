@@ -119,14 +119,21 @@ const Footer = ({ index, total }: { index: number; total: number }) => (
   >
     <span>raycast.com / developers</span>
     <span>
-      {String(index).padStart(2, '0')} <span style={{ opacity: 0.4 }}>/ {String(total).padStart(2, '0')}</span>
+      {String(index).padStart(2, '0')}{' '}
+      <span style={{ opacity: 0.4 }}>/ {String(total).padStart(2, '0')}</span>
     </span>
   </div>
 );
 
 const TOTAL = 9;
 
-const CommandBar = ({ query, results }: { query: string; results: { icon: string; title: string; sub: string; kbd?: string }[] }) => (
+const CommandBar = ({
+  query,
+  results,
+}: {
+  query: string;
+  results: { icon: string; title: string; sub: string; kbd?: string }[];
+}) => (
   <div
     style={{
       width: 820,
@@ -157,10 +164,20 @@ const CommandBar = ({ query, results }: { query: string; results: { icon: string
       />
       <div style={{ fontSize: 24, fontWeight: 500, flex: 1, color: palette.text }}>
         {query}
-        <span className="rc-caret" style={{ display: 'inline-block', width: 2, height: 24, background: palette.accent, marginLeft: 6, verticalAlign: 'middle' }} />
+        <span
+          className="rc-caret"
+          style={{
+            display: 'inline-block',
+            width: 2,
+            height: 24,
+            background: palette.accent,
+            marginLeft: 6,
+            verticalAlign: 'middle',
+          }}
+        />
       </div>
       <div style={{ display: 'flex', gap: 6 }}>
-        {['⌘', 'K'].map(k => (
+        {['⌘', 'K'].map((k) => (
           <span
             key={k}
             style={{
@@ -179,7 +196,15 @@ const CommandBar = ({ query, results }: { query: string; results: { icon: string
       </div>
     </div>
     <div style={{ padding: '10px 12px' }}>
-      <div style={{ fontSize: 14, color: palette.muted, padding: '6px 12px', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+      <div
+        style={{
+          fontSize: 14,
+          color: palette.muted,
+          padding: '6px 12px',
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+        }}
+      >
         Results
       </div>
       {results.map((r, i) => (
@@ -275,21 +300,37 @@ const Cover: Page = () => (
             animationDelay: '160ms',
           }}
         >
-          Raycast<br />
+          Raycast
+          <br />
           <span style={{ color: palette.accent }}>Developer API</span>
         </h1>
         <p
           className="rc-fadeup"
-          style={{ fontSize: 24, color: palette.muted, maxWidth: 620, lineHeight: 1.5, animationDelay: '240ms' }}
+          style={{
+            fontSize: 24,
+            color: palette.muted,
+            maxWidth: 620,
+            lineHeight: 1.5,
+            animationDelay: '240ms',
+          }}
         >
-          Build extensions for the launcher people already live in — with TypeScript, React, and a strongly-typed API.
+          Build extensions for the launcher people already live in — with TypeScript, React, and a
+          strongly-typed API.
         </p>
       </div>
-      <div className="rc-fade" style={{ animationDelay: '300ms', display: 'flex', justifyContent: 'flex-end' }}>
+      <div
+        className="rc-fade"
+        style={{ animationDelay: '300ms', display: 'flex', justifyContent: 'flex-end' }}
+      >
         <CommandBar
           query="Create Extension"
           results={[
-            { icon: '⚡', title: 'Create Extension', sub: 'Scaffold a new Raycast extension', kbd: '↵' },
+            {
+              icon: '⚡',
+              title: 'Create Extension',
+              sub: 'Scaffold a new Raycast extension',
+              kbd: '↵',
+            },
             { icon: '📦', title: 'Manage Extensions', sub: 'View installed and local extensions' },
             { icon: '📚', title: 'Open Documentation', sub: 'developers.raycast.com' },
           ]}
@@ -318,7 +359,8 @@ const Pitch: Page = () => (
           animationDelay: '120ms',
         }}
       >
-        A platform to extend the macOS launcher you<br />
+        A platform to extend the macOS launcher you
+        <br />
         already use <span style={{ color: palette.accent }}>40 times a day.</span>
       </h2>
       <div style={{ display: 'flex', gap: 24 }}>
@@ -339,7 +381,14 @@ const Pitch: Page = () => (
               animationDelay: `${280 + i * 100}ms`,
             }}
           >
-            <div style={{ fontSize: 56, fontWeight: 800, color: palette.accent, letterSpacing: '-0.02em' }}>
+            <div
+              style={{
+                fontSize: 56,
+                fontWeight: 800,
+                color: palette.accent,
+                letterSpacing: '-0.02em',
+              }}
+            >
               {s.kpi}
             </div>
             <div style={{ fontSize: 22, color: palette.muted, marginTop: 8 }}>{s.label}</div>
@@ -359,15 +408,34 @@ const Stack: Page = () => (
       <Eyebrow>The stack</Eyebrow>
       <h2
         className="rc-fadeup"
-        style={{ fontSize: 84, fontWeight: 800, margin: '32px 0 56px', letterSpacing: '-0.02em', lineHeight: 1.1, animationDelay: '120ms' }}
+        style={{
+          fontSize: 84,
+          fontWeight: 800,
+          margin: '32px 0 56px',
+          letterSpacing: '-0.02em',
+          lineHeight: 1.1,
+          animationDelay: '120ms',
+        }}
       >
         Tools you already know.
       </h2>
       <div style={{ display: 'flex', gap: 24 }}>
         {[
-          { tag: '01', name: 'TypeScript', sub: 'Strongly-typed end-to-end. Autocomplete every API surface.' },
-          { tag: '02', name: 'React', sub: 'Declarative UI. The same components you write for the web.' },
-          { tag: '03', name: 'Node + npm', sub: 'The full ecosystem. Bring any package along for the ride.' },
+          {
+            tag: '01',
+            name: 'TypeScript',
+            sub: 'Strongly-typed end-to-end. Autocomplete every API surface.',
+          },
+          {
+            tag: '02',
+            name: 'React',
+            sub: 'Declarative UI. The same components you write for the web.',
+          },
+          {
+            tag: '03',
+            name: 'Node + npm',
+            sub: 'The full ecosystem. Bring any package along for the ride.',
+          },
         ].map((t, i) => (
           <div
             key={t.name}
@@ -381,11 +449,22 @@ const Stack: Page = () => (
               animationDelay: `${260 + i * 110}ms`,
             }}
           >
-            <div style={{ fontFamily: fonts.mono, fontSize: 18, color: palette.accent, letterSpacing: '0.1em' }}>
+            <div
+              style={{
+                fontFamily: fonts.mono,
+                fontSize: 18,
+                color: palette.accent,
+                letterSpacing: '0.1em',
+              }}
+            >
               {t.tag}
             </div>
-            <div style={{ fontSize: 40, fontWeight: 700, marginTop: 16, letterSpacing: '-0.02em' }}>{t.name}</div>
-            <div style={{ fontSize: 22, color: palette.muted, marginTop: 14, lineHeight: 1.5 }}>{t.sub}</div>
+            <div style={{ fontSize: 40, fontWeight: 700, marginTop: 16, letterSpacing: '-0.02em' }}>
+              {t.name}
+            </div>
+            <div style={{ fontSize: 22, color: palette.muted, marginTop: 14, lineHeight: 1.5 }}>
+              {t.sub}
+            </div>
           </div>
         ))}
       </div>
@@ -409,7 +488,14 @@ const UIPrimitives: Page = () => {
         <Eyebrow>UI primitives</Eyebrow>
         <h2
           className="rc-fadeup"
-          style={{ fontSize: 80, fontWeight: 800, margin: '32px 0 48px', letterSpacing: '-0.02em', lineHeight: 1.1, animationDelay: '120ms' }}
+          style={{
+            fontSize: 80,
+            fontWeight: 800,
+            margin: '32px 0 48px',
+            letterSpacing: '-0.02em',
+            lineHeight: 1.1,
+            animationDelay: '120ms',
+          }}
         >
           Four components. Most extensions need nothing else.
         </h2>
@@ -470,16 +556,31 @@ const ActionPanel: Page = () => (
         <Eyebrow>Keyboard-first</Eyebrow>
         <h2
           className="rc-fadeup"
-          style={{ fontSize: 76, fontWeight: 800, margin: '28px 0 28px', letterSpacing: '-0.02em', lineHeight: 1.1, animationDelay: '120ms' }}
+          style={{
+            fontSize: 76,
+            fontWeight: 800,
+            margin: '28px 0 28px',
+            letterSpacing: '-0.02em',
+            lineHeight: 1.1,
+            animationDelay: '120ms',
+          }}
         >
-          ActionPanel:<br />
+          ActionPanel:
+          <br />
           <span style={{ color: palette.accent }}>every action,</span> a shortcut.
         </h2>
         <p
           className="rc-fadeup"
-          style={{ fontSize: 24, color: palette.muted, lineHeight: 1.5, maxWidth: 600, animationDelay: '220ms' }}
+          style={{
+            fontSize: 24,
+            color: palette.muted,
+            lineHeight: 1.5,
+            maxWidth: 600,
+            animationDelay: '220ms',
+          }}
         >
-          Bind any action to a key combo. Power users navigate without lifting their hands — and your extension feels native to Raycast.
+          Bind any action to a key combo. Power users navigate without lifting their hands — and
+          your extension feels native to Raycast.
         </p>
       </div>
       <div className="rc-fade" style={{ animationDelay: '300ms' }}>
@@ -493,7 +594,15 @@ const ActionPanel: Page = () => (
             padding: 14,
           }}
         >
-          <div style={{ fontSize: 14, color: palette.muted, padding: '6px 12px', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+          <div
+            style={{
+              fontSize: 14,
+              color: palette.muted,
+              padding: '6px 12px',
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+            }}
+          >
             Actions
           </div>
           {[
@@ -561,12 +670,22 @@ const AIApi: Page = () => (
       <Eyebrow>AI API</Eyebrow>
       <h2
         className="rc-fadeup"
-        style={{ fontSize: 84, fontWeight: 800, margin: '32px 0 48px', letterSpacing: '-0.02em', lineHeight: 1.1, animationDelay: '120ms' }}
+        style={{
+          fontSize: 84,
+          fontWeight: 800,
+          margin: '32px 0 48px',
+          letterSpacing: '-0.02em',
+          lineHeight: 1.1,
+          animationDelay: '120ms',
+        }}
       >
-        Call any model.<br />
+        Call any model.
+        <br />
         <span style={{ color: palette.accent }}>No keys. No setup.</span>
       </h2>
-      <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 40, alignItems: 'start' }}>
+      <div
+        style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 40, alignItems: 'start' }}
+      >
         <div
           className="rc-fadeup"
           style={{
@@ -583,15 +702,14 @@ const AIApi: Page = () => (
           <div style={{ color: palette.muted }}>{'// import { AI } from "@raycast/api"'}</div>
           <div style={{ marginTop: 8 }}>
             <span style={{ color: '#C792EA' }}>const</span> answer ={' '}
-            <span style={{ color: '#C792EA' }}>await</span> AI.<span style={{ color: palette.accent }}>ask</span>(
+            <span style={{ color: '#C792EA' }}>await</span> AI.
+            <span style={{ color: palette.accent }}>ask</span>(
           </div>
-          <div style={{ paddingLeft: 28, color: '#A5E844' }}>
-            "Summarize my selected text",
-          </div>
+          <div style={{ paddingLeft: 28, color: '#A5E844' }}>"Summarize my selected text",</div>
           <div style={{ paddingLeft: 28 }}>
             {'{ '}
-            <span style={{ color: '#82AAFF' }}>model</span>: AI.Model[<span style={{ color: '#A5E844' }}>"Anthropic_Claude_Sonnet"</span>]
-            {' }'}
+            <span style={{ color: '#82AAFF' }}>model</span>: AI.Model[
+            <span style={{ color: '#A5E844' }}>"Anthropic_Claude_Sonnet"</span>]{' }'}
           </div>
           <div>);</div>
         </div>
@@ -615,7 +733,9 @@ const AIApi: Page = () => (
                 animationDelay: `${360 + i * 100}ms`,
               }}
             >
-              <div style={{ fontSize: 30, fontWeight: 800, color: palette.accent, minWidth: 100 }}>{b.k}</div>
+              <div style={{ fontSize: 30, fontWeight: 800, color: palette.accent, minWidth: 100 }}>
+                {b.k}
+              </div>
               <div style={{ fontSize: 20, color: palette.text, lineHeight: 1.4 }}>{b.v}</div>
             </div>
           ))}
@@ -643,7 +763,14 @@ const Platform: Page = () => {
         <Eyebrow>Platform APIs</Eyebrow>
         <h2
           className="rc-fadeup"
-          style={{ fontSize: 76, fontWeight: 800, margin: '32px 0 44px', letterSpacing: '-0.02em', lineHeight: 1.1, animationDelay: '120ms' }}
+          style={{
+            fontSize: 76,
+            fontWeight: 800,
+            margin: '32px 0 44px',
+            letterSpacing: '-0.02em',
+            lineHeight: 1.1,
+            animationDelay: '120ms',
+          }}
         >
           Reach into the OS — safely.
         </h2>
@@ -676,8 +803,12 @@ const Platform: Page = () => {
               >
                 {a.sym}
               </div>
-              <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.01em' }}>{a.name}</div>
-              <div style={{ fontSize: 19, color: palette.muted, marginTop: 8, lineHeight: 1.45 }}>{a.desc}</div>
+              <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.01em' }}>
+                {a.name}
+              </div>
+              <div style={{ fontSize: 19, color: palette.muted, marginTop: 8, lineHeight: 1.45 }}>
+                {a.desc}
+              </div>
             </div>
           ))}
         </div>
@@ -695,15 +826,31 @@ const DX: Page = () => (
       <Eyebrow>Developer experience</Eyebrow>
       <h2
         className="rc-fadeup"
-        style={{ fontSize: 84, fontWeight: 800, margin: '32px 0 48px', letterSpacing: '-0.02em', lineHeight: 1.1, animationDelay: '120ms' }}
+        style={{
+          fontSize: 84,
+          fontWeight: 800,
+          margin: '32px 0 48px',
+          letterSpacing: '-0.02em',
+          lineHeight: 1.1,
+          animationDelay: '120ms',
+        }}
       >
         Ship in an afternoon.
       </h2>
       <div style={{ display: 'flex', gap: 24 }}>
         {[
-          { tag: 'Hot reload', desc: 'Save the file. Raycast reloads. No build step in your loop.' },
-          { tag: 'Strongly typed', desc: 'Every component, prop, and event lights up in your editor.' },
-          { tag: 'Zero config', desc: '`ray develop` and you’re running. The CLI handles the rest.' },
+          {
+            tag: 'Hot reload',
+            desc: 'Save the file. Raycast reloads. No build step in your loop.',
+          },
+          {
+            tag: 'Strongly typed',
+            desc: 'Every component, prop, and event lights up in your editor.',
+          },
+          {
+            tag: 'Zero config',
+            desc: '`ray develop` and you’re running. The CLI handles the rest.',
+          },
         ].map((d, i) => (
           <div
             key={d.tag}
@@ -717,10 +864,19 @@ const DX: Page = () => (
               animationDelay: `${280 + i * 100}ms`,
             }}
           >
-            <div style={{ fontSize: 32, fontWeight: 700, color: palette.accent, letterSpacing: '-0.02em' }}>
+            <div
+              style={{
+                fontSize: 32,
+                fontWeight: 700,
+                color: palette.accent,
+                letterSpacing: '-0.02em',
+              }}
+            >
               {d.tag}
             </div>
-            <div style={{ fontSize: 21, color: palette.muted, marginTop: 14, lineHeight: 1.5 }}>{d.desc}</div>
+            <div style={{ fontSize: 21, color: palette.muted, marginTop: 14, lineHeight: 1.5 }}>
+              {d.desc}
+            </div>
           </div>
         ))}
       </div>
@@ -769,8 +925,7 @@ const Closing: Page = () => (
           animationDelay: '160ms',
         }}
       >
-        npm i{' '}
-        <span style={{ color: palette.accent, fontFamily: fonts.mono }}>@raycast/api</span>
+        npm i <span style={{ color: palette.accent, fontFamily: fonts.mono }}>@raycast/api</span>
       </h1>
       <p
         className="rc-fadeup"
@@ -783,7 +938,8 @@ const Closing: Page = () => (
           animationDelay: '240ms',
         }}
       >
-        Or open Raycast → <span style={{ color: palette.text }}>Create Extension</span> → pick a template.
+        Or open Raycast → <span style={{ color: palette.text }}>Create Extension</span> → pick a
+        template.
         <br />
         Docs at <span style={{ color: palette.text }}>developers.raycast.com</span>
       </p>
@@ -794,4 +950,14 @@ const Closing: Page = () => (
 
 export const meta: SlideMeta = { title: 'Raycast Developer API' };
 
-export default [Cover, Pitch, Stack, UIPrimitives, ActionPanel, AIApi, Platform, DX, Closing] satisfies Page[];
+export default [
+  Cover,
+  Pitch,
+  Stack,
+  UIPrimitives,
+  ActionPanel,
+  AIApi,
+  Platform,
+  DX,
+  Closing,
+] satisfies Page[];

@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { ThemeToggle } from "./ThemeToggle";
+import Link from 'next/link';
+import { ThemeToggle } from './ThemeToggle';
 
 export function Nav() {
   return (
@@ -10,12 +10,7 @@ export function Nav() {
           className="flex items-center gap-3 font-[family-name:var(--font-mono)] text-[13px] tracking-[0.04em]"
         >
           {/* biome-ignore lint/performance/noImgElement: static brand icon */}
-          <img
-            src="/open-slide.png"
-            alt=""
-            aria-hidden
-            className="block h-6 w-6 rounded-[5px]"
-          />
+          <img src="/open-slide.png" alt="" aria-hidden className="block h-6 w-6 rounded-[5px]" />
           <span className="text-[color:var(--color-text)]">open-slide</span>
         </Link>
 

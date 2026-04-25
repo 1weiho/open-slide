@@ -144,13 +144,7 @@ const Eyebrow = ({ index, label }: { index: string; label: string }) => (
 
 const TOTAL = 8;
 
-const Code = ({
-  children,
-  fontSize = 20,
-}: {
-  children: ReactNode;
-  fontSize?: number;
-}) => (
+const Code = ({ children, fontSize = 20 }: { children: ReactNode; fontSize?: number }) => (
   <pre
     style={{
       margin: 0,
@@ -277,7 +271,6 @@ const Cover: Page = () => (
       }}
     />
 
-
     <div
       style={{
         position: 'absolute',
@@ -293,8 +286,7 @@ const Cover: Page = () => (
       }}
     >
       <span style={{ color: palette.text, fontWeight: 600 }}>
-        <span style={{ animation: 'ppr-blink 1.2s steps(1) infinite' }}>▍</span> ready when
-        you are
+        <span style={{ animation: 'ppr-blink 1.2s steps(1) infinite' }}>▍</span> ready when you are
       </span>
       <span>01 / {String(TOTAL).padStart(2, '0')}</span>
     </div>
@@ -391,7 +383,8 @@ const TradeOff: Page = () => {
             lineHeight: 1.0,
           }}
         >
-          Static <span style={{ color: palette.muted }}>or</span> dynamic,<br />
+          Static <span style={{ color: palette.muted }}>or</span> dynamic,
+          <br />
           pick one?
         </h2>
         <p
@@ -513,8 +506,8 @@ const PPRConcept: Page = () => {
             lineHeight: 1.0,
           }}
         >
-          One static shell.<br />
-          A few dynamic holes.
+          One static shell.
+          <br />A few dynamic holes.
         </h2>
       </div>
 
@@ -551,7 +544,14 @@ const PPRConcept: Page = () => {
           <Hole top={32} left={540} width={188} height={52} label="<Cart/>" delay={0.4} />
 
           {/* dynamic hole — recommendations */}
-          <Hole top={200} left={32} width={696} height={140} label="<Recommendations/>" delay={0.55} />
+          <Hole
+            top={200}
+            left={32}
+            width={696}
+            height={140}
+            label="<Recommendations/>"
+            delay={0.55}
+          />
 
           {/* static footer */}
           <StaticBlock top={372} left={32} width={696} height={20} />
@@ -630,7 +630,9 @@ const PPRConcept: Page = () => {
               <span style={{ fontSize: 32, fontWeight: 700 }}>Dynamic holes</span>
             </div>
             <p style={{ margin: 0, fontSize: 26, color: palette.muted, lineHeight: 1.55 }}>
-              Wrap them in <code style={{ fontFamily: fontMono, color: palette.text }}>&lt;Suspense&gt;</code>. Streamed in from origin.
+              Wrap them in{' '}
+              <code style={{ fontFamily: fontMono, color: palette.text }}>&lt;Suspense&gt;</code>.
+              Streamed in from origin.
             </p>
           </div>
 
@@ -646,8 +648,7 @@ const PPRConcept: Page = () => {
               color: palette.muted,
             }}
           >
-            <span style={{ color: palette.text, fontWeight: 600 }}>One request.</span> Two
-            speeds.
+            <span style={{ color: palette.text, fontWeight: 600 }}>One request.</span> Two speeds.
           </div>
         </div>
       </div>
@@ -704,8 +705,7 @@ const PPRCode: Page = () => (
           {kw('export default function')} {fn('Page')}() {'{'}
           {'\n'}
           {'  '}
-          {kw('return')} (
-          {'\n'}
+          {kw('return')} ({'\n'}
           {'    '}&lt;{tag('main')}&gt;
           {'\n'}
           {'      '}&lt;{tag('Header')} /&gt; {com('// static, prerendered')}
@@ -713,7 +713,8 @@ const PPRCode: Page = () => (
           {'      '}&lt;{tag('ProductInfo')} /&gt; {com('// static')}
           {'\n'}
           {'\n'}
-          {'      '}&lt;{tag('Suspense')} {fn('fallback')}={'{'}&lt;{tag('CartSkeleton')} /&gt;{'}'}&gt;
+          {'      '}&lt;{tag('Suspense')} {fn('fallback')}={'{'}&lt;{tag('CartSkeleton')} /&gt;{'}'}
+          &gt;
           {'\n'}
           {'        '}&lt;{tag('Cart')} /&gt; {com('// dynamic, streamed')}
           {'\n'}
@@ -758,7 +759,8 @@ const PPRCode: Page = () => (
             ◆ STATIC
           </div>
           <div style={{ fontSize: 26, lineHeight: 1.5 }}>
-            Everything <em style={{ fontStyle: 'normal', fontWeight: 600 }}>outside</em> a Suspense boundary.
+            Everything <em style={{ fontStyle: 'normal', fontWeight: 600 }}>outside</em> a Suspense
+            boundary.
           </div>
         </div>
 
@@ -835,8 +837,10 @@ const UseCache: Page = () => (
           lineHeight: 1.45,
         }}
       >
-        Not an API call, not a wrapper — just a <em style={{ fontStyle: 'normal', fontWeight: 600, color: palette.text }}>directive</em>.
-        The compiler sees it and turns the whole function, component, or route into a cacheable unit.
+        Not an API call, not a wrapper — just a{' '}
+        <em style={{ fontStyle: 'normal', fontWeight: 600, color: palette.text }}>directive</em>.
+        The compiler sees it and turns the whole function, component, or route into a cacheable
+        unit.
       </p>
     </div>
 
@@ -861,13 +865,13 @@ const UseCache: Page = () => (
           BEFORE — manual key + revalidate
         </div>
         <Code fontSize={20}>
-          {kw('const')} product = {kw('await')} {fn('unstable_cache')}(
-          {'\n'}
+          {kw('const')} product = {kw('await')} {fn('unstable_cache')}({'\n'}
           {'  '}() =&gt; db.products.{fn('find')}(id),
           {'\n'}
           {'  '}[{str("'product'")}, id],
           {'\n'}
-          {'  '}{'{ '}revalidate: {str('3600')}, tags: [{str("'product'")}] {'}'}
+          {'  '}
+          {'{ '}revalidate: {str('3600')}, tags: [{str("'product'")}] {'}'}
           {'\n'}
           )();
         </Code>
@@ -888,14 +892,18 @@ const UseCache: Page = () => (
         <Code fontSize={20}>
           {kw('async function')} {fn('getProduct')}(id: {kw('string')}) {'{'}
           {'\n'}
-          {'  '}<span style={{ color: palette.pink }}>'use cache'</span>
+          {'  '}
+          <span style={{ color: palette.pink }}>'use cache'</span>
           {'\n'}
-          {'  '}{fn('cacheLife')}({str("'hours'")});
+          {'  '}
+          {fn('cacheLife')}({str("'hours'")});
           {'\n'}
-          {'  '}{fn('cacheTag')}({str('`product:${id}`')});
+          {'  '}
+          {fn('cacheTag')}({str('`product:${id}`')});
           {'\n'}
           {'\n'}
-          {'  '}{kw('return')} db.products.{fn('find')}(id);
+          {'  '}
+          {kw('return')} db.products.{fn('find')}(id);
           {'\n'}
           {'}'}
         </Code>
@@ -915,7 +923,8 @@ const UseCache: Page = () => (
     >
       <span style={{ color: palette.text }}>→</span>
       <span>
-        Args become the cache key · return values auto-serialized · backed by Next.js & Vercel Data Cache.
+        Args become the cache key · return values auto-serialized · backed by Next.js & Vercel Data
+        Cache.
       </span>
     </div>
 
@@ -1012,9 +1021,11 @@ const CacheScopes: Page = () => {
             <>
               {kw('async function')} {fn('getUser')}(id) {'{'}
               {'\n'}
-              {'  '}<span style={{ color: palette.pink }}>'use cache'</span>
+              {'  '}
+              <span style={{ color: palette.pink }}>'use cache'</span>
               {'\n'}
-              {'  '}{kw('return')} db.{fn('find')}(id);
+              {'  '}
+              {kw('return')} db.{fn('find')}(id);
               {'\n'}
               {'}'}
             </>
@@ -1028,9 +1039,11 @@ const CacheScopes: Page = () => {
             <>
               {kw('async function')} {fn('Sidebar')}() {'{'}
               {'\n'}
-              {'  '}<span style={{ color: palette.pink }}>'use cache'</span>
+              {'  '}
+              <span style={{ color: palette.pink }}>'use cache'</span>
               {'\n'}
-              {'  '}{kw('return')} &lt;{tag('nav')}&gt;…&lt;/{tag('nav')}&gt;;
+              {'  '}
+              {kw('return')} &lt;{tag('nav')}&gt;…&lt;/{tag('nav')}&gt;;
               {'\n'}
               {'}'}
             </>
@@ -1049,8 +1062,7 @@ const CacheScopes: Page = () => {
               {'\n'}
               {kw('export default function')} {fn('Page')}() {'{'}
               {'\n'}
-              {'  '}…
-              {'\n'}
+              {'  '}…{'\n'}
               {'}'}
             </>
           }
@@ -1190,7 +1202,8 @@ const Lifecycle: Page = () => {
             lineHeight: 1.0,
           }}
         >
-          One request,<br />
+          One request,
+          <br />
           two journeys.
         </h2>
       </div>
@@ -1328,15 +1341,7 @@ const Lifecycle: Page = () => {
 // 08 — TL;DR
 // ─────────────────────────────────────────────────────────────────────────────
 const TLDR: Page = () => {
-  const Row = ({
-    k,
-    v,
-    delay,
-  }: {
-    k: string;
-    v: ReactNode;
-    delay: number;
-  }) => (
+  const Row = ({ k, v, delay }: { k: string; v: ReactNode; delay: number }) => (
     <div
       style={{
         display: 'grid',
@@ -1388,7 +1393,8 @@ const TLDR: Page = () => {
           v={
             <>
               One route can have a <span style={{ color: palette.cyan }}>static shell</span> and{' '}
-              <span style={{ color: palette.pink }}>dynamic holes</span> at the same time. Suspense draws the line.
+              <span style={{ color: palette.pink }}>dynamic holes</span> at the same time. Suspense
+              draws the line.
             </>
           }
           delay={0.15}

@@ -1521,8 +1521,8 @@ const AgentAgnostic: Page = () => {
               letterSpacing: '-0.01em',
             }}
           >
-            open-slide speaks plain React and a file-convention protocol. Any agent can
-            author and edit slides — no lock-in, no bespoke SDK.
+            open-slide speaks plain React and a file-convention protocol. Any agent can author and
+            edit slides — no lock-in, no bespoke SDK.
           </p>
         </div>
 

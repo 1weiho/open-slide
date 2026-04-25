@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { ThemeProvider as NextThemesProvider } from "next-themes";
-import type { ReactNode } from "react";
+import { ThemeProvider as NextThemesProvider } from 'next-themes';
+import type { ReactNode } from 'react';
 
 type Props = {
   children: ReactNode;
-  attribute?: "class" | `data-${string}`;
+  attribute?: 'class' | `data-${string}`;
   defaultTheme?: string;
   enableSystem?: boolean;
   disableTransitionOnChange?: boolean;

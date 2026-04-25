@@ -6,13 +6,13 @@ type Agent = {
 };
 
 const agents: Agent[] = [
-  { name: "Claude", file: "claude", variants: false },
-  { name: "Codex", file: "codex", variants: true },
-  { name: "Cursor", file: "cursor", variants: true },
-  { name: "Gemini CLI", file: "gemini", variants: false },
-  { name: "OpenCode", file: "opencode", variants: true },
-  { name: "Windsurf", file: "windsurf", variants: true },
-  { name: "Zed", file: "zed", variants: true },
+  { name: 'Claude', file: 'claude', variants: false },
+  { name: 'Codex', file: 'codex', variants: true },
+  { name: 'Cursor', file: 'cursor', variants: true },
+  { name: 'Gemini CLI', file: 'gemini', variants: false },
+  { name: 'OpenCode', file: 'opencode', variants: true },
+  { name: 'Windsurf', file: 'windsurf', variants: true },
+  { name: 'Zed', file: 'zed', variants: true },
 ];
 
 export function Agents() {
@@ -34,18 +34,13 @@ export function Agents() {
         <div
           className="relative"
           style={{
-            WebkitMaskImage:
-              "linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)",
-            maskImage:
-              "linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)",
+            WebkitMaskImage: 'linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)',
+            maskImage: 'linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)',
           }}
         >
           <div className="marquee-track py-10 will-change-transform">
             {track.map((agent, i) => (
-              <span
-                key={`${agent.file}-${i}`}
-                className="inline-flex items-center gap-4"
-              >
+              <span key={`${agent.file}-${i}`} className="inline-flex items-center gap-4">
                 <AgentLogo agent={agent} />
                 <span className="font-[family-name:var(--font-sans)] text-[color:var(--color-text)] text-[28px] lg:text-[36px] tracking-[-0.02em]">
                   {agent.name}
@@ -61,8 +56,7 @@ export function Agents() {
 
 function AgentLogo({ agent }: { agent: Agent }) {
   const alt = agent.name;
-  const cls =
-    "h-[28px] md:h-[34px] lg:h-[40px] w-auto object-contain shrink-0";
+  const cls = 'h-[28px] md:h-[34px] lg:h-[40px] w-auto object-contain shrink-0';
 
   if (!agent.variants) {
     return (
@@ -73,11 +67,7 @@ function AgentLogo({ agent }: { agent: Agent }) {
   return (
     <>
       {/* biome-ignore lint/performance/noImgElement: SVG from /public */}
-      <img
-        src={`/assets/${agent.file}-dark.svg`}
-        alt={alt}
-        className={`${cls} logo-dark`}
-      />
+      <img src={`/assets/${agent.file}-dark.svg`} alt={alt} className={`${cls} logo-dark`} />
       {/* biome-ignore lint/performance/noImgElement: SVG from /public */}
       <img
         src={`/assets/${agent.file}-light.svg`}
