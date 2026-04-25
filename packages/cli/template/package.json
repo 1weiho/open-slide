@@ -1,0 +1,20 @@
+{
+  "name": "playground",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "open-slide dev",
+    "build": "open-slide build",
+    "preview": "open-slide preview"
+  },
+  "dependencies": {
+    "@open-slide/core": "^0.0.6",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1"
+  }
+}

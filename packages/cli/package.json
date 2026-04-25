@@ -12,7 +12,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsdown && node dist/sync-template.js",
+    "build": "tsdown",
     "typecheck": "tsc --noEmit",
     "prepack": "pnpm build"
   },
