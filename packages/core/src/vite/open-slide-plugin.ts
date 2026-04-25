@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import fg from 'fast-glob';
 import { loadConfigFromFile, type Plugin } from 'vite';
@@ -15,6 +16,31 @@ const CONFIG_FILE = 'open-slide.config.ts';
 
 const SLIDES_VMOD = 'virtual:open-slide/slides';
 const CONFIG_VMOD = 'virtual:open-slide/config';
+const FOLDERS_VMOD = 'virtual:open-slide/folders';
+
+type FoldersManifest = {
+  folders: unknown[];
+  assignments: Record<string, string>;
+};
+
+async function readFoldersManifest(file: string): Promise<FoldersManifest> {
+  try {
+    const raw = await fs.readFile(file, 'utf8');
+    const parsed = JSON.parse(raw) as Partial<FoldersManifest>;
+    return {
+      folders: Array.isArray(parsed.folders) ? parsed.folders : [],
+      assignments:
+        parsed.assignments && typeof parsed.assignments === 'object'
+          ? (parsed.assignments as Record<string, string>)
+          : {},
+    };
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      return { folders: [], assignments: {} };
+    }
+    throw err;
+  }
+}
 
 function resolved(id: string): string {
   return `\0${id}`;
@@ -64,6 +90,7 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
   const { userCwd, config } = opts;
   const slidesDir = config.slidesDir ?? 'slides';
   const slidesRoot = path.resolve(userCwd, slidesDir);
+  const foldersManifestPath = path.join(slidesRoot, '.folders.json');
 
   let isDev = false;
 
@@ -78,6 +105,7 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
     resolveId(id) {
       if (id === SLIDES_VMOD) return resolved(SLIDES_VMOD);
       if (id === CONFIG_VMOD) return resolved(CONFIG_VMOD);
+      if (id === FOLDERS_VMOD) return resolved(FOLDERS_VMOD);
       return null;
     },
     async load(id) {
@@ -97,6 +125,10 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
         const resolvedConfig = { ...config, build: buildResolved };
         return `export default ${JSON.stringify(resolvedConfig)};\n`;
       }
+      if (id === resolved(FOLDERS_VMOD)) {
+        const manifest = await readFoldersManifest(foldersManifestPath);
+        return `export default ${JSON.stringify(manifest)};\n`;
+      }
       return null;
     },
     configureServer(server) {
@@ -111,6 +143,21 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
       });
       server.watcher.on('unlink', (p) => {
         if (p.startsWith(slidesRoot)) reload();
+      });
+
+      const invalidateFolders = () => {
+        const mod = server.moduleGraph.getModuleById(resolved(FOLDERS_VMOD));
+        if (mod) server.moduleGraph.invalidateModule(mod);
+      };
+      server.watcher.add(foldersManifestPath);
+      server.watcher.on('change', (p) => {
+        if (p === foldersManifestPath) invalidateFolders();
+      });
+      server.watcher.on('add', (p) => {
+        if (p === foldersManifestPath) invalidateFolders();
+      });
+      server.watcher.on('unlink', (p) => {
+        if (p === foldersManifestPath) invalidateFolders();
       });
     },
   };

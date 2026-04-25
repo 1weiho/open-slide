@@ -16,3 +16,9 @@ declare module 'virtual:open-slide/config' {
   };
   export default config;
 }
+
+declare module 'virtual:open-slide/folders' {
+  import type { FoldersManifest } from './lib/sdk';
+  const manifest: FoldersManifest;
+  export default manifest;
+}

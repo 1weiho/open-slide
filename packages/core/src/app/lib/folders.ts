@@ -1,15 +1,26 @@
 import { useCallback, useEffect, useState } from 'react';
+import buildManifest from 'virtual:open-slide/folders';
 import type { Folder, FolderIcon, FoldersManifest } from './sdk';
 
 const EMPTY: FoldersManifest = { folders: [], assignments: {} };
 
 async function getManifest(): Promise<FoldersManifest> {
-  const res = await fetch('/__folders');
-  if (!res.ok) throw new Error(`GET /__folders ${res.status}`);
-  const raw = (await res.json()) as Partial<FoldersManifest>;
+  // In dev the manifest is mutable: read live from the plugin endpoint so
+  // edits made in the sidebar reflect immediately. In a static build there
+  // is no server, so fall back to the bundled snapshot from the virtual
+  // module (populated at build time from slides/.folders.json).
+  if (import.meta.env.DEV) {
+    const res = await fetch('/__folders');
+    if (!res.ok) throw new Error(`GET /__folders ${res.status}`);
+    const raw = (await res.json()) as Partial<FoldersManifest>;
+    return {
+      folders: raw.folders ?? [],
+      assignments: raw.assignments ?? {},
+    };
+  }
   return {
-    folders: raw.folders ?? [],
-    assignments: raw.assignments ?? {},
+    folders: buildManifest.folders ?? [],
+    assignments: buildManifest.assignments ?? {},
   };
 }
 
