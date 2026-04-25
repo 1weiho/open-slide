@@ -1331,6 +1331,195 @@ const Apply: Page = () => (
   </div>
 );
 
+// ─── Slide: Themes ───────────────────────────────────────────────────────────
+const Themes: Page = () => {
+  const themes = [
+    {
+      id: 'editorial-noir',
+      mode: 'dark · serif',
+      bg: '#0b0d10',
+      text: '#f4ecdc',
+      accent: '#d6a64b',
+      muted: '#7a7468',
+      titleFont: "'Georgia', 'Source Serif Pro', serif",
+      sample: 'A quiet year.',
+    },
+    {
+      id: 'paper-press',
+      mode: 'light · serif',
+      bg: '#f6f1e7',
+      text: '#141210',
+      accent: '#c43a1d',
+      muted: '#8a8276',
+      titleFont: "'Times New Roman', serif",
+      sample: 'Field notes.',
+    },
+    {
+      id: 'neon-terminal',
+      mode: 'dark · mono',
+      bg: '#05070a',
+      text: '#e6edf3',
+      accent: '#39ff88',
+      muted: '#4a5560',
+      titleFont: font.mono,
+      sample: '$ boot.',
+    },
+  ];
+
+  return (
+    <div style={fill}>
+      <Styles />
+      <GridBg />
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          padding: '140px 140px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Eyebrow className="es-fadeUp">themes · /create-theme</Eyebrow>
+
+        <div className="es-fadeUp" style={{ animationDelay: '0.15s' }}>
+          <h2
+            style={{
+              fontSize: 132,
+              fontWeight: 600,
+              letterSpacing: '-0.04em',
+              lineHeight: 0.98,
+              margin: 0,
+              maxWidth: 1500,
+            }}
+          >
+            Pin your look once,{' '}
+            <span
+              style={{
+                background: `linear-gradient(90deg, ${palette.accentSoft}, ${palette.accent})`,
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent',
+              }}
+            >
+              reuse it everywhere.
+            </span>
+          </h2>
+          <p
+            style={{
+              marginTop: 28,
+              fontSize: 28,
+              lineHeight: 1.45,
+              color: palette.textSoft,
+              maxWidth: 1380,
+            }}
+          >
+            Each{' '}
+            <code style={{ fontFamily: font.mono, color: palette.accentSoft }}>
+              themes/&lt;id&gt;.md
+            </code>{' '}
+            describes one visual identity — palette, typography, fixed Title and Footer.{' '}
+            <code style={{ fontFamily: font.mono, color: palette.accentSoft }}>/create-slide</code>{' '}
+            picks one before authoring; every page in the deck stays consistent.
+          </p>
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 28,
+          }}
+        >
+          {themes.map((t, i) => (
+            <div
+              key={t.id}
+              className="es-fadeUp"
+              style={{
+                animationDelay: `${0.35 + i * 0.12}s`,
+                borderRadius: 18,
+                border: `1px solid ${palette.border}`,
+                background: t.bg,
+                padding: '32px 32px 28px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 22,
+                minHeight: 320,
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'baseline',
+                  fontFamily: font.mono,
+                  fontSize: 18,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                <span style={{ color: t.accent }}>{t.id}</span>
+                <span style={{ color: t.muted }}>{t.mode}</span>
+              </div>
+
+              <div
+                style={{
+                  fontFamily: t.titleFont,
+                  fontSize: 64,
+                  fontWeight: 700,
+                  lineHeight: 1.04,
+                  color: t.text,
+                  letterSpacing: '-0.015em',
+                }}
+              >
+                {t.sample}
+              </div>
+
+              <div style={{ flex: 1 }} />
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                {[t.bg, t.text, t.accent, t.muted].map((c) => (
+                  <span
+                    key={c}
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 8,
+                      background: c,
+                      border: '1px solid rgba(255,255,255,0.10)',
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div
+          className="es-fadeUp"
+          style={{
+            animationDelay: '0.85s',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            fontFamily: font.mono,
+            fontSize: 22,
+            color: palette.muted,
+          }}
+        >
+          <span>
+            extract from a slide, image, or prose —{' '}
+            <span style={{ color: palette.text }}>/create-theme</span>
+          </span>
+          <span>themes/*.md</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── Slide 6: Recap ──────────────────────────────────────────────────────────
 const Recap: Page = () => {
   const steps = [
@@ -2155,7 +2344,6 @@ const DeployAnywhere: Page = () => {
 // ─── Slide export ────────────────────────────────────────────────────────────
 export const meta: SlideMeta = {
   title: 'Getting started with open-slide',
-  theme: 'dark',
 };
 
 export default [
@@ -2166,6 +2354,7 @@ export default [
   Prompt,
   Inspect,
   Apply,
+  Themes,
   GitTracked,
   DeployAnywhere,
   Recap,

@@ -1,6 +1,6 @@
 ---
 name: apply-comments
-description: Apply pending @slide-comment markers written by the open-slide inspector tool. Use when the user asks to "apply comments", "process slide comments", "apply the inspector comments", "套用留言", or references markers left inside `slides/<id>/index.tsx`.
+description: Apply pending @slide-comment markers written by the open-slide inspector tool. Use when the user asks to "apply comments", "process slide comments", "apply the inspector comments", or references markers left inside `slides/<id>/index.tsx`.
 ---
 
 # Apply slide comments

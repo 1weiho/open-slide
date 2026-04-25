@@ -73,6 +73,12 @@ Pick a coherent look and hold it across every page:
 
 Consult the `frontend-design` skill for deeper aesthetic guidance if the user wants something bold.
 
+## Themes
+
+If `themes/<id>.md` exists at the project root and the slide is meant to follow it, **the theme file overrides the defaults in this skill** — its palette, typography, layout padding, and Title/Footer components are authoritative. Read the theme file before applying anything else in this section.
+
+Themes are produced by the `create-theme` skill and are pure documentation: copy the palette and the paste-ready Title / Footer / Eyebrow components straight into your slide. If the theme's frontmatter has `mode: dark` or `mode: light`, treat that as the slide's background mode (e.g. when picking which logo variant to import).
+
 ## Starter template
 
 ```tsx
