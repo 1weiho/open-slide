@@ -78,6 +78,6 @@ You can run this inline via `node -e '...'` if you need to inspect a payload; ot
 
 ## Do not
 
-- Do not touch `package.json`, `open-slide.json`, or files outside `slides/`.
+- Do not touch `package.json`, `open-slide.config.ts`, or files outside `slides/`.
 - Do not add dependencies.
 - Do not re-introduce markers or leave `TODO` breadcrumbs — the user already has a record in git.

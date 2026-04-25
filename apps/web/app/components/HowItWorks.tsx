@@ -17,7 +17,7 @@ const steps: Step[] = [
     num: "01",
     kicker: "scaffold",
     title: "Init a deck",
-    body: "One command spins up slides/, open-slide.json, and a hot-reloading dev server. No templates, no themes, no assumptions.",
+    body: "One command spins up slides/, open-slide.config.ts, and a hot-reloading dev server. No templates, no themes, no assumptions.",
     code: {
       prompt: "$",
       line: "npx @open-slide/cli init my-deck",

@@ -7,7 +7,7 @@ description: Use this skill when the user wants to create, draft, author, or ext
 
 This skill produces one markdown file under `themes/<id>.md` that describes a reusable visual identity for slides — palette, typography, layout, fixed Title/Footer/Eyebrow components, motion. Themes are agent-facing documentation, not executable runtime: a slide author reads the theme markdown and applies it when writing `slides/<id>/index.tsx`.
 
-You only write a single file under `themes/`. Never modify slides, `package.json`, `open-slide.json`, or other configuration. The canvas / type-scale defaults that themes can override live in the **`slide-authoring`** skill — read it before writing the theme so your overrides are stated explicitly.
+You only write a single file under `themes/`. Never modify slides, `package.json`, `open-slide.config.ts`, or other configuration. The canvas / type-scale defaults that themes can override live in the **`slide-authoring`** skill — read it before writing the theme so your overrides are stated explicitly.
 
 ## Step 1 — Identify the input source
 
@@ -188,5 +188,5 @@ Do not run the dev server. Do not modify slides — even to demonstrate the them
 - ❌ Writing executable code in `themes/<id>.md` outside the labeled component snippets — the file is documentation.
 - ❌ Producing more than one file. One theme = one `themes/<id>.md`.
 - ❌ Inventing palette / fonts when the user supplied images or an existing slide. Extract, don't fabricate.
-- ❌ Editing `slides/`, `packages/`, `package.json`, or `open-slide.json`.
+- ❌ Editing `slides/`, `packages/`, `package.json`, or `open-slide.config.ts`.
 - ❌ Skipping the Fixed components section. Title and Footer are the most common reuse target — they must be paste-ready.

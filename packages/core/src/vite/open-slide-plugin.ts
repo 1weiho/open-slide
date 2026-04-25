@@ -1,19 +1,17 @@
 import { existsSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import fg from 'fast-glob';
-import type { Plugin } from 'vite';
+import { loadConfigFromFile, type Plugin } from 'vite';
+import type { OpenSlideConfig } from '../config.ts';
 
-export type OpenSlideConfig = {
-  title?: string;
-  slidesDir?: string;
-  port?: number;
-};
+export type { OpenSlideConfig };
 
 export type OpenSlidePluginOptions = {
   userCwd: string;
   config: OpenSlideConfig;
 };
+
+const CONFIG_FILE = 'open-slide.config.ts';
 
 const SLIDES_VMOD = 'virtual:open-slide/slides';
 const CONFIG_VMOD = 'virtual:open-slide/config';
@@ -105,18 +103,18 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
       server.watcher.on('unlink', (p) => {
         if (p.startsWith(slidesRoot)) reload();
       });
-
-      server.middlewares.use('/__open-slide/title', (_req, res) => {
-        res.setHeader('content-type', 'application/json');
-        res.end(JSON.stringify({ title: config.title ?? null }));
-      });
     },
   };
 }
 
 export async function loadUserConfig(userCwd: string): Promise<OpenSlideConfig> {
-  const file = path.join(userCwd, 'open-slide.json');
+  const file = path.join(userCwd, CONFIG_FILE);
   if (!existsSync(file)) return {};
-  const raw = await readFile(file, 'utf8');
-  return JSON.parse(raw) as OpenSlideConfig;
+  const loaded = await loadConfigFromFile(
+    { command: 'serve', mode: 'development' },
+    file,
+    userCwd,
+    'silent',
+  );
+  return (loaded?.config ?? {}) as OpenSlideConfig;
 }

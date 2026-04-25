@@ -17,7 +17,7 @@ When any of those paths reach the point of *writing React code for a page*, this
 
 - Put the slide under `slides/<kebab-case-id>/`.
 - Entry is `slides/<id>/index.tsx`. Images/videos/fonts go under `slides/<id>/assets/`.
-- Do **not** touch `package.json`, `open-slide.json`, or other slides.
+- Do **not** touch `package.json`, `open-slide.config.ts`, or other slides.
 - Do not add dependencies. Only `react` and standard web APIs are available.
 - Do not create `README.md` or other prose files inside the slide folder — just `index.tsx` + `assets/`.
 
@@ -181,4 +181,4 @@ Skip the `assets/` folder entirely for pure-text slides.
 - ❌ Installing packages. Only `react` and standard web APIs are available.
 - ❌ Writing CSS to a shared file. Inline styles or scoped classnames only.
 - ❌ Creating `README.md` or other prose files inside the slide folder.
-- ❌ Editing `package.json`, `open-slide.json`, or other slides.
+- ❌ Editing `package.json`, `open-slide.config.ts`, or other slides.

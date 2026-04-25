@@ -7,7 +7,7 @@ description: Use this skill when the user wants to create, draft, author, or gen
 
 This skill owns the **workflow** for drafting a new deck. The technical reference — file contract, 1920×1080 canvas, type scale, palette, layout, assets — lives in the **`slide-authoring`** skill. Read that skill whenever you need details on *how* a page is structured. This skill assumes you'll consult it before writing code.
 
-You only write files under `slides/<id>/`. Never modify `package.json`, `open-slide.json`, or existing slides.
+You only write files under `slides/<id>/`. Never modify `package.json`, `open-slide.config.ts`, or existing slides.
 
 ## Step 1 — Pick a theme
 

@@ -49,12 +49,16 @@ This workspace ships with Claude Code skills preconfigured under `.claude/skills
 
 ## Config
 
-Optional `open-slide.json` at the workspace root:
+Optional `open-slide.config.ts` at the workspace root:
 
-```json
-{
-  "title": "My presentation"
-}
+```ts
+import type { OpenSlideConfig } from '@open-slide/core';
+
+const openSlideConfig: OpenSlideConfig = {
+  port: 5173,
+};
+
+export default openSlideConfig;
 ```
 
-Supported fields: `title`, `slidesDir`, `port`.
+Supported fields: `slidesDir`, `port`.

@@ -28,14 +28,17 @@ Once installed, the `open-slide` bin is available in the workspace:
 
 ## Config
 
-Create `open-slide.json` in the workspace root (all fields optional):
+Create `open-slide.config.ts` in the workspace root (all fields optional):
 
-```json
-{
-  "title": "My Deck",
-  "slidesDir": "slides",
-  "port": 5173
-}
+```ts
+import type { OpenSlideConfig } from '@open-slide/core';
+
+const openSlideConfig: OpenSlideConfig = {
+  slidesDir: 'slides',
+  port: 5173,
+};
+
+export default openSlideConfig;
 ```
 
 ## Authoring slides
@@ -66,13 +69,14 @@ import {
   type Page,
   type SlideMeta,
   type SlideModule,
+  type OpenSlideConfig,
 } from '@open-slide/core';
 ```
 
 The Vite plugin is exposed under a subpath for advanced setups:
 
 ```ts
-import { createViteConfig, type OpenSlideConfig } from '@open-slide/core/vite';
+import { createViteConfig } from '@open-slide/core/vite';
 ```
 
 ## License

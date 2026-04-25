@@ -15,7 +15,7 @@ This creates a workspace containing:
 
 - `slides/getting-started/` — a starter slide you can edit or delete.
 - `package.json` — depends on `@open-slide/core`, which provides the runtime (home page, slide viewer, fullscreen mode) and the `open-slide` CLI.
-- `open-slide.json` — optional config (title, slidesDir, port).
+- `open-slide.config.ts` — optional typed config (slidesDir, port).
 - `.claude/skills/` and `.agents/skills/` — Claude Code skills (`create-slide`, `apply-comments`, …).
 - `CLAUDE.md` — agent guide for authoring slides.
 

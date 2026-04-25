@@ -7,7 +7,7 @@ You are authoring **slides** in this repo. Every slide is arbitrary React code t
 - Put your slide under `slides/<kebab-case-id>/`.
 - The entry is `slides/<id>/index.tsx`.
 - Put images/videos/fonts under `slides/<id>/assets/`.
-- Do **not** touch `package.json`, `open-slide.json`, or other slides.
+- Do **not** touch `package.json`, `open-slide.config.ts`, or other slides.
 - Do not add dependencies. Use only `react` and standard web APIs.
 
 ## Which skill to use
