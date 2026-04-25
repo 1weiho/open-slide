@@ -55,6 +55,18 @@ export function LiveDemo() {
             </span>
           </div>
         </div>
+
+        <div className="mt-8 flex justify-center">
+          <a
+            href="https://demo.open-slide.dev/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 font-[family-name:var(--font-mono)] text-[12px] tracking-[0.12em] uppercase text-[color:var(--color-muted)] hover:text-[color:var(--color-accent)] transition-colors"
+          >
+            View more demos
+            <span aria-hidden>↗</span>
+          </a>
+        </div>
       </div>
     </section>
   );
