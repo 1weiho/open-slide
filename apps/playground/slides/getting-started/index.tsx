@@ -471,18 +471,62 @@ const Cover: Page = () => (
 );
 
 // ─── Slide 2: Init in a terminal ─────────────────────────────────────────────
+type InitLine =
+  | { kind: 'blank' }
+  | { kind: 'success'; text: string; dim?: string }
+  | { kind: 'bold'; text: string }
+  | { kind: 'cmd'; text: string }
+  | { kind: 'dim'; text: string };
+
 const Init: Page = () => {
-  const stream = [
-    '',
-    'Created open-slide workspace in /Users/you/my-slide',
-    '',
-    'Next steps:',
-    '  cd my-slide',
-    '  pnpm install    # or npm install / yarn',
-    '  pnpm dev',
-    '',
-    'Then open the dev server and start authoring in slides/<your-slide>/.',
+  const stream: InitLine[] = [
+    { kind: 'blank' },
+    {
+      kind: 'success',
+      text: 'Created open-slide workspace',
+      dim: 'in /Users/you/my-slide',
+    },
+    { kind: 'blank' },
+    { kind: 'bold', text: 'Installing dependencies with pnpm…' },
+    { kind: 'blank' },
+    { kind: 'success', text: 'Initialized git repository with first commit.' },
+    { kind: 'blank' },
+    { kind: 'bold', text: 'Next steps:' },
+    { kind: 'cmd', text: 'cd my-slide' },
+    { kind: 'cmd', text: 'pnpm dev' },
+    { kind: 'blank' },
+    {
+      kind: 'dim',
+      text: 'Then open the dev server and start authoring in slides/<your-slide>/.',
+    },
   ];
+
+  const renderLine = (line: InitLine): React.ReactNode => {
+    switch (line.kind) {
+      case 'blank':
+        return ' ';
+      case 'success':
+        return (
+          <>
+            <span style={{ color: palette.mint }}>✔</span>{' '}
+            <span style={{ color: palette.text }}>{line.text}</span>
+            {line.dim && <span style={{ color: palette.muted }}> {line.dim}</span>}
+          </>
+        );
+      case 'bold':
+        return <span style={{ color: palette.text, fontWeight: 600 }}>{line.text}</span>;
+      case 'cmd':
+        return (
+          <>
+            {'  '}
+            <span style={{ color: palette.accentSoft }}>{line.text}</span>
+          </>
+        );
+      case 'dim':
+        return <span style={{ color: palette.muted }}>{line.text}</span>;
+    }
+  };
+
   return (
     <div style={fill}>
       <Styles />
@@ -519,7 +563,8 @@ const Init: Page = () => {
               letterSpacing: '-0.01em',
             }}
           >
-            Runs anywhere. No global installs, no Vite config to touch.
+            Installs deps, inits git, drops you at the dev server. No global installs, no Vite
+            config to touch.
           </p>
         </div>
 
@@ -527,10 +572,10 @@ const Init: Page = () => {
           <div
             style={{
               flex: 1,
-              padding: '36px 48px',
+              padding: '32px 44px',
               fontFamily: font.mono,
-              fontSize: 28,
-              lineHeight: 1.55,
+              fontSize: 24,
+              lineHeight: 1.45,
               color: palette.textSoft,
               background: palette.surface,
               overflow: 'hidden',
@@ -542,30 +587,25 @@ const Init: Page = () => {
                 npx @open-slide/cli init my-slide
               </span>
             </div>
-            <div style={{ height: 18 }} />
+            <div style={{ height: 16 }} />
             {stream.map((line, i) => (
               <div
                 key={i}
                 className="gs-stream"
                 style={{
-                  minHeight: 44,
-                  animationDelay: `${1.8 + i * 0.12}s`,
-                  color: line.startsWith('Next steps')
-                    ? palette.accentSoft
-                    : line.startsWith('Created')
-                      ? palette.mint
-                      : palette.textSoft,
+                  minHeight: 34,
+                  animationDelay: `${1.8 + i * 0.1}s`,
                   whiteSpace: 'pre',
                 }}
               >
-                {line || ' '}
+                {renderLine(line)}
               </div>
             ))}
             <div
               className="gs-stream"
               style={{
-                marginTop: 16,
-                animationDelay: `${1.8 + stream.length * 0.12 + 0.1}s`,
+                marginTop: 14,
+                animationDelay: `${1.8 + stream.length * 0.1 + 0.1}s`,
                 display: 'flex',
                 gap: 16,
               }}
