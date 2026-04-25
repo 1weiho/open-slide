@@ -1,4 +1,24 @@
 {
-  "folders": [],
-  "assignments": {}
+  "folders": [
+    {
+      "id": "f-4a6fca00",
+      "name": "Motion",
+      "icon": {
+        "type": "emoji",
+        "value": "⚡"
+      }
+    }
+  ],
+  "assignments": {
+    "motion-arcade": "f-4a6fca00",
+    "motion-brutalist": "f-4a6fca00",
+    "motion-cyber-glitch": "f-4a6fca00",
+    "motion-data": "f-4a6fca00",
+    "motion-glass": "f-4a6fca00",
+    "motion-kinetic": "f-4a6fca00",
+    "motion-liquid": "f-4a6fca00",
+    "motion-newsprint": "f-4a6fca00",
+    "motion-swiss": "f-4a6fca00",
+    "motion-zen": "f-4a6fca00"
+  }
 }
