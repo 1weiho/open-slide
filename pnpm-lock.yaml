@@ -15,7 +15,7 @@ importers:
         specifier: ^2.3.0
         version: 2.9.6
 
-  apps/playground:
+  apps/demo:
     dependencies:
       '@open-slide/core':
         specifier: workspace:*
