@@ -1,10 +1,16 @@
-import { ChevronLeft, Download, Loader2, Pencil, Play } from 'lucide-react';
+import { ChevronLeft, Download, FileCode2, Loader2, Pencil, Play } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { CommentWidget } from '@/components/inspector/CommentWidget';
 import { InspectOverlay } from '@/components/inspector/InspectOverlay';
 import { InspectorProvider, InspectToggleButton } from '@/components/inspector/InspectorProvider';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Separator } from '@/components/ui/separator';
 import { useFolders } from '@/lib/folders';
 import { cn } from '@/lib/utils';
@@ -132,48 +138,67 @@ export function Slide() {
   return (
     <InspectorProvider slideId={slideId}>
       <div className="flex h-screen flex-col overflow-hidden bg-background">
-        <header className="flex shrink-0 items-center gap-2 border-b bg-card px-3 py-2 md:gap-4 md:px-5 md:py-3">
-          <Button asChild variant="ghost" size="sm" className="px-2 md:px-3">
-            <Link to="/">
-              <ChevronLeft className="size-4" />
-              <span className="hidden md:inline">Home</span>
-            </Link>
-          </Button>
-          <Separator orientation="vertical" className="hidden h-5 md:block" />
-          <InlineTitleEditor title={title} onSubmit={(next) => renameSlide(slideId, next)} />
-          <Button
-            variant="ghost"
-            size="sm"
-            className="px-2 md:px-3"
-            disabled={exporting}
-            onClick={async () => {
-              if (!slide || exporting) return;
-              setExporting(true);
-              try {
-                await exportSlideAsHtml(slide, slideId);
-              } catch (err) {
-                console.error('[open-slide] export failed', err);
-              } finally {
-                setExporting(false);
-              }
-            }}
-            title="Download as HTML"
-          >
-            {exporting ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Download className="size-4" />
-            )}
-            <span className="hidden md:inline">Download</span>
-          </Button>
-          <InspectToggleButton />
-          <Button size="sm" onClick={() => setPlaying(true)} className="px-2 md:px-3">
-            <Play className="size-4" />
-            <span className="hidden md:inline">Play</span>
-            <kbd className="ml-1 hidden rounded bg-primary-foreground/20 px-1 text-[10px] md:inline">
-              F
-            </kbd>
-          </Button>
+        <header className="relative flex shrink-0 items-center justify-between border-b bg-card px-3 py-2 md:px-5 md:py-3">
+          <div className="flex items-center gap-2 md:gap-3">
+            <Button asChild variant="ghost" size="sm" className="px-2 md:px-3">
+              <Link to="/">
+                <ChevronLeft className="size-4" />
+                <span className="hidden md:inline">Home</span>
+              </Link>
+            </Button>
+            <Separator orientation="vertical" className="hidden h-5 md:block" />
+          </div>
+
+          <div className="pointer-events-none absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-center px-2">
+            <div className="pointer-events-auto min-w-0 max-w-[min(32rem,calc(100vw-20rem))]">
+              <InlineTitleEditor title={title} onSubmit={(next) => renameSlide(slideId, next)} />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                type="button"
+                disabled={exporting}
+                aria-label="Download"
+                title="Download"
+                className={cn(buttonVariants({ variant: 'outline', size: 'icon-sm' }))}
+              >
+                {exporting ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Download className="size-4" />
+                )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[180px]">
+                <DropdownMenuItem
+                  disabled={exporting}
+                  onSelect={async () => {
+                    if (!slide || exporting) return;
+                    setExporting(true);
+                    try {
+                      await exportSlideAsHtml(slide, slideId);
+                    } catch (err) {
+                      console.error('[open-slide] export failed', err);
+                    } finally {
+                      setExporting(false);
+                    }
+                  }}
+                >
+                  <FileCode2 />
+                  Download HTML
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <InspectToggleButton />
+            <Button size="sm" onClick={() => setPlaying(true)} className="px-2 md:px-3">
+              <Play className="size-4" />
+              <span className="hidden md:inline">Play</span>
+              <kbd className="ml-1 hidden rounded bg-primary-foreground/20 px-1 text-[10px] md:inline">
+                F
+              </kbd>
+            </Button>
+          </div>
         </header>
 
         <div className="flex min-h-0 flex-1">

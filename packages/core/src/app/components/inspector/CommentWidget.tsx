@@ -8,9 +8,12 @@ export function CommentWidget() {
   const count = comments.length;
 
   return (
-    <div data-inspector-ui className="fixed right-4 bottom-4 z-40">
+    <div
+      data-inspector-ui
+      className="fixed right-4 bottom-4 z-40 flex flex-col items-end gap-2"
+    >
       {open && (
-        <div className="mb-2 w-80 rounded-md border bg-card shadow-xl">
+        <div className="w-80 rounded-md border bg-card shadow-xl animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
           <div className="flex items-center justify-between border-b px-3 py-2">
             <span className="text-xs font-semibold">
               {count} comment{count === 1 ? '' : 's'}
