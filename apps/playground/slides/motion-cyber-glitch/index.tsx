@@ -362,18 +362,16 @@ const Styles = () => (
 
 // ---------- PAGE 1 — Boot ----------
 
+const BOOT_LINES = [
+  '> SYS_BOOT v0.42.7 ............................. [OK]',
+  '> LINK    cyber.glitch.local @ 1920x1080 ........ [OK]',
+  '> KERNEL  motion-runtime ........................ [OK]',
+  '> AUDIO   /dev/null ............................. [MUTED]',
+  '> READY.',
+];
+
 const Boot: Page = () => {
-  const lines = useTypewriter(
-    [
-      '> SYS_BOOT v0.42.7 ............................. [OK]',
-      '> LINK    cyber.glitch.local @ 1920x1080 ........ [OK]',
-      '> KERNEL  motion-runtime ........................ [OK]',
-      '> AUDIO   /dev/null ............................. [MUTED]',
-      '> READY.',
-    ],
-    18,
-    180,
-  );
+  const lines = useTypewriter(BOOT_LINES, 18, 180);
 
   return (
     <div style={fill}>
@@ -500,7 +498,7 @@ const Row = ({
   unit: string;
   accent: string;
 }) => {
-  const scrambled = useScramble(value, 3500 + Math.random() * 2000, 650);
+  const scrambled = useScramble(value, 4500, 650);
   return (
     <div
       style={{
