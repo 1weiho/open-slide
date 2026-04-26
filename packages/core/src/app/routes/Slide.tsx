@@ -1,10 +1,14 @@
-import { ChevronLeft, Download, FileCode2, Loader2, Pencil, Play } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
 import config from 'virtual:open-slide/config';
+import { ChevronLeft, Download, FileCode2, Loader2, Pencil, Play } from 'lucide-react';
+import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { CommentWidget } from '@/components/inspector/CommentWidget';
 import { InspectOverlay } from '@/components/inspector/InspectOverlay';
-import { InspectorProvider, InspectToggleButton } from '@/components/inspector/InspectorProvider';
+import {
+  InspectorProvider,
+  InspectToggleButton,
+  useInspector,
+} from '@/components/inspector/InspectorProvider';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -14,6 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Separator } from '@/components/ui/separator';
 import { useFolders } from '@/lib/folders';
+import { useWheelPageNavigation } from '@/lib/useWheelPageNavigation';
 import { cn } from '@/lib/utils';
 import { ClickNavZones } from '../components/ClickNavZones';
 import { Player } from '../components/Player';
@@ -33,6 +38,7 @@ export function Slide() {
   const [playing, setPlaying] = useState(false);
   const [exporting, setExporting] = useState(false);
   const { renameSlide } = useFolders();
+  const slideViewportRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -231,9 +237,17 @@ export function Slide() {
             <ThumbnailRail pages={pages} current={index} onSelect={goTo} />
           </div>
           <main
+            ref={slideViewportRef}
             data-inspector-root
             className="relative min-h-0 min-w-0 flex-1 bg-background p-2 md:p-8"
           >
+            <SlideWheelNavigation
+              targetRef={slideViewportRef}
+              onPrev={() => goTo(index - 1)}
+              onNext={() => goTo(index + 1)}
+              canPrev={index > 0}
+              canNext={index < pageCount - 1}
+            />
             <SlideCanvas>
               <CurrentPage />
             </SlideCanvas>
@@ -254,6 +268,33 @@ export function Slide() {
       </div>
     </InspectorProvider>
   );
+}
+
+function SlideWheelNavigation({
+  targetRef,
+  onPrev,
+  onNext,
+  canPrev,
+  canNext,
+}: {
+  targetRef: RefObject<HTMLElement>;
+  onPrev: () => void;
+  onNext: () => void;
+  canPrev: boolean;
+  canNext: boolean;
+}) {
+  const { active } = useInspector();
+
+  useWheelPageNavigation({
+    ref: targetRef,
+    enabled: !active,
+    canPrev,
+    canNext,
+    onPrev,
+    onNext,
+  });
+
+  return null;
 }
 
 function InlineTitleEditor({

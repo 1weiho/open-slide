@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { useWheelPageNavigation } from '@/lib/useWheelPageNavigation';
 import type { Page } from '../lib/sdk';
 import { SlideCanvas } from './SlideCanvas';
 
@@ -12,6 +13,20 @@ type Props = {
 
 export function Player({ pages, index, onIndexChange, onExit, allowExit = true }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const goPrev = useCallback(() => {
+    if (index > 0) onIndexChange(index - 1);
+  }, [index, onIndexChange]);
+  const goNext = useCallback(() => {
+    if (index < pages.length - 1) onIndexChange(index + 1);
+  }, [index, pages.length, onIndexChange]);
+
+  useWheelPageNavigation({
+    ref: rootRef,
+    canPrev: index > 0,
+    canNext: index < pages.length - 1,
+    onPrev: goPrev,
+    onNext: goNext,
+  });
 
   useEffect(() => {
     const el = rootRef.current;
@@ -69,14 +84,14 @@ export function Player({ pages, index, onIndexChange, onExit, allowExit = true }
       <button
         type="button"
         aria-label="Previous page"
-        onClick={() => index > 0 && onIndexChange(index - 1)}
+        onClick={goPrev}
         disabled={index === 0}
         className="absolute inset-y-0 left-0 z-10 w-[30%]"
       />
       <button
         type="button"
         aria-label="Next page"
-        onClick={() => index < pages.length - 1 && onIndexChange(index + 1)}
+        onClick={goNext}
         disabled={index === pages.length - 1}
         className="absolute inset-y-0 right-0 z-10 w-[30%]"
       />
