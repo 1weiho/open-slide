@@ -18,6 +18,7 @@ const THUMB_HEIGHT = CANVAS_HEIGHT * THUMB_SCALE;
 export function ThumbnailRail({ pages, current, onSelect }: Props) {
   const activeRef = useRef<HTMLButtonElement | null>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `current` triggers re-scroll on selection change
   useEffect(() => {
     activeRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [current]);
@@ -29,7 +30,9 @@ export function ThumbnailRail({ pages, current, onSelect }: Props) {
           const active = i === current;
           return (
             <button
+              // biome-ignore lint/suspicious/noArrayIndexKey: pages list is render-stable
               key={i}
+              type="button"
               ref={active ? activeRef : undefined}
               onClick={() => onSelect(i)}
               aria-label={`Go to page ${i + 1}`}

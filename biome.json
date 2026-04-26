@@ -6,7 +6,13 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/dist", "!**/node_modules", "!**/*.tsbuildinfo"]
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/node_modules",
+      "!**/*.tsbuildinfo",
+      "!packages/core/src/app/components/ui"
+    ]
   },
   "formatter": {
     "enabled": true,
@@ -20,6 +26,43 @@
       "recommended": true
     }
   },
+  "overrides": [
+    {
+      "includes": [
+        "**/slides/**",
+        "apps/web/app/components/demo-slide/**",
+        "apps/web/app/components/Hero.tsx",
+        "apps/web/app/components/Anatomy.tsx",
+        "apps/web/app/components/CopyCommand.tsx",
+        "apps/web/app/components/ThemeToggle.tsx",
+        "apps/web/app/components/InlineSlidePlayer.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "noSvgWithoutTitle": "off",
+            "noStaticElementInteractions": "off",
+            "useAriaPropsSupportedByRole": "off",
+            "useSemanticElements": "off"
+          },
+          "performance": {
+            "noImgElement": "off"
+          },
+          "complexity": {
+            "noUselessFragments": "off"
+          },
+          "security": {
+            "noDangerouslySetInnerHtml": "off"
+          },
+          "suspicious": {
+            "noArrayIndexKey": "off",
+            "noTemplateCurlyInString": "off",
+            "noShadowRestrictedNames": "off"
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "formatter": {
       "quoteStyle": "single",

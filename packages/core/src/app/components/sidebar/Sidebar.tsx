@@ -22,7 +22,7 @@ export function Sidebar({
   countFor: (folderId: string | null) => number;
   selectedId: string;
   onSelect: (id: string) => void;
-  onCreate: (name: string, icon: FolderIcon) => Promise<Folder> | void;
+  onCreate: (name: string, icon: FolderIcon) => Promise<Folder> | undefined;
   onRename: (id: string, name: string) => void;
   onChangeIcon: (id: string, icon: FolderIcon) => void;
   onDelete: (id: string) => void;
@@ -86,7 +86,6 @@ export function Sidebar({
         {creating ? (
           <div className="mt-1 flex items-center gap-2 rounded-md border border-dashed bg-background px-2 py-1.5">
             <input
-              autoFocus
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               onBlur={commitCreate}

@@ -40,6 +40,7 @@ export function Agents() {
         >
           <div className="marquee-track py-10 will-change-transform">
             {track.map((agent, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: marquee track repeats agents
               <span key={`${agent.file}-${i}`} className="inline-flex items-center gap-4">
                 <AgentLogo agent={agent} />
                 <span className="font-[family-name:var(--font-sans)] text-[color:var(--color-text)] text-[28px] lg:text-[36px] tracking-[-0.02em]">

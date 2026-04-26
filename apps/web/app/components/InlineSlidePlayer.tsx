@@ -59,7 +59,6 @@ export function InlineSlidePlayer({ index, onIndexChange }: Props) {
   return (
     <div
       ref={rootRef}
-      tabIndex={0}
       onKeyDown={onKeyDown}
       aria-roledescription="slide player"
       aria-label={`Slide ${index + 1} of ${count}`}

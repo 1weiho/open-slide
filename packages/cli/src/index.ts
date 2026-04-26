@@ -50,7 +50,7 @@ async function runInit(dirArg: string | undefined, flags: InitCliFlags): Promise
   const isTTY = Boolean(process.stdin.isTTY && process.stdout.isTTY);
 
   let dir = dirArg;
-  let name = flags.name;
+  const name = flags.name;
   let force = flags.force ?? false;
 
   if (isTTY && dir === undefined) {

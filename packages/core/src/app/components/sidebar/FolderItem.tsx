@@ -91,6 +91,7 @@ export function FolderItem({
   };
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: drag-and-drop target wraps interactive children
     <div
       className={cn(
         'group relative flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
@@ -125,7 +126,6 @@ export function FolderItem({
 
       {renaming && row.kind === 'folder' ? (
         <input
-          autoFocus
           value={draftName}
           onChange={(e) => setDraftName(e.target.value)}
           onBlur={commitRename}

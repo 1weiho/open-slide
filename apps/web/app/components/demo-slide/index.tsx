@@ -274,17 +274,21 @@ const SlashCmd = ({ name, color = palette.accent }: { name: string; color?: stri
 );
 
 const AgentLine = ({
-  role,
+  speaker,
   children,
   delay,
 }: {
-  role: 'user' | 'assistant' | 'tool';
+  speaker: 'user' | 'assistant' | 'tool';
   children: React.ReactNode;
   delay: number;
 }) => {
-  const label = role === 'user' ? 'you' : role === 'assistant' ? 'agent' : 'tool';
+  const label = speaker === 'user' ? 'you' : speaker === 'assistant' ? 'agent' : 'tool';
   const color =
-    role === 'user' ? palette.mint : role === 'assistant' ? palette.accentSoft : palette.amber;
+    speaker === 'user'
+      ? palette.mint
+      : speaker === 'assistant'
+        ? palette.accentSoft
+        : palette.amber;
   return (
     <div
       className="gs-stream"
@@ -642,7 +646,7 @@ const Prompt: Page = () => {
                 flexDirection: 'column',
               }}
             >
-              <AgentLine role="user" delay={0.3}>
+              <AgentLine speaker="user" delay={0.3}>
                 <div>
                   <SlashCmd name="create-slide" />
                 </div>
@@ -653,15 +657,15 @@ const Prompt: Page = () => {
                 </div>
               </AgentLine>
               <div style={{ height: 1, background: palette.border, margin: '8px 0' }} />
-              <AgentLine role="assistant" delay={2.0}>
+              <AgentLine speaker="assistant" delay={2.0}>
                 Drafting 6 pages…
               </AgentLine>
-              <AgentLine role="tool" delay={2.7}>
+              <AgentLine speaker="tool" delay={2.7}>
                 <div style={{ color: palette.muted }}>
                   write <span style={{ color: palette.text }}>slides/q2-launch/index.tsx</span>
                 </div>
               </AgentLine>
-              <AgentLine role="tool" delay={3.4}>
+              <AgentLine speaker="tool" delay={3.4}>
                 <div style={{ color: palette.muted }}>
                   hmr <span style={{ color: palette.mint }}>✓</span> localhost:5173 updated
                 </div>
@@ -1180,10 +1184,10 @@ const Apply: Page = () => (
               overflow: 'hidden',
             }}
           >
-            <AgentLine role="user" delay={0.2}>
+            <AgentLine speaker="user" delay={0.2}>
               <SlashCmd name="apply-comments" color={palette.amber} />
             </AgentLine>
-            <AgentLine role="assistant" delay={1.0}>
+            <AgentLine speaker="assistant" delay={1.0}>
               1 marker found. Applying…
             </AgentLine>
 
@@ -1246,7 +1250,7 @@ const Apply: Page = () => (
               </div>
             </div>
 
-            <AgentLine role="tool" delay={3.8}>
+            <AgentLine speaker="tool" delay={3.8}>
               <div style={{ color: palette.muted }}>
                 edit <span style={{ color: palette.text }}>slides/q2-launch/index.tsx</span>{' '}
                 <span style={{ color: palette.mint }}>✓ 1 comment applied</span>

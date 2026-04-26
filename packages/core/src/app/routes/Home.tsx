@@ -49,7 +49,8 @@ export function Home() {
     for (const id of slideIds) {
       const folderId = manifest.assignments[id];
       if (folderId && known.has(folderId)) {
-        (byFolder[folderId] ??= []).push(id);
+        byFolder[folderId] ??= [];
+        byFolder[folderId].push(id);
       } else {
         draft.push(id);
       }
@@ -245,6 +246,7 @@ function SlideCard({
 
   return (
     <>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: drag source wraps an interactive Link */}
       <div
         draggable
         onDragStart={(e) => {
