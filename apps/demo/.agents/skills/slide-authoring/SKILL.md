@@ -62,6 +62,38 @@ Every page renders into a fixed **1920 × 1080** canvas. The framework scales it
 - Line-height: 1.2 for headings, 1.5–1.7 for body.
 - Breathing room between elements: 32–64px.
 
+### Vertical budget — content MUST fit 1080px
+
+The canvas does **not** scroll. Anything below 1080px is silently cropped. Before writing JSX, do the math on paper and confirm the page fits. This is the #1 cause of broken slides — assume you will overflow unless you've checked.
+
+**Usable height** = `1080 − top_padding − bottom_padding`. With 120px padding on each side that's **840px**. With 160px each side, **760px**. Pick the padding first, then design within that budget.
+
+**Element height** = `font_size × line_height × number_of_lines`. A bullet that wraps to 2 lines counts as 2 lines. Add the gap below it (32–64px) before summing the next element.
+
+**Worked example — single content page, 120px padding (budget = 840px):**
+
+| Element                                  | Height                  |
+| ---------------------------------------- | ----------------------- |
+| Heading: 80px × 1.2 × 1 line             | 96px                    |
+| Gap                                      | 64px                    |
+| Body paragraph: 40px × 1.6 × 3 lines     | 192px                   |
+| Gap                                      | 48px                    |
+| 5 bullets: 40px × 1.6 × 1 line each      | 320px (5 × 64px)        |
+| 4 gaps between bullets: 24px each        | 96px                    |
+| **Total**                                | **816px ✅ fits in 840** |
+
+Swap the heading to 120px or add a 6th bullet and you're over. **Verify every page like this before you write it.**
+
+**Page-level rules:**
+
+- One heading + body OR one heading + ≤5 short bullets. Not both blocks of body copy *and* a long bullet list.
+- A bullet should fit on one line at the chosen font size. If it wraps, either shorten the copy or move it to its own page.
+- Hero title pages (140–200px) carry a title + 1 subtitle + maybe an eyebrow — nothing else.
+- Section headings (80–120px) need almost nothing else on the page.
+- If you find yourself raising padding, shrinking type below the scale's lower bound, or tightening line-height under 1.4 to make things fit — **split into two pages instead**. Splitting is always the right answer when the budget is tight.
+
+**Never** use `overflow: auto/scroll`, negative margins, or transforms to hide overflow. The canvas is fixed; cropped content is gone.
+
 ## Visual direction
 
 Pick a coherent look and hold it across every page:
@@ -167,6 +199,8 @@ Skip the `assets/` folder entirely for pure-text slides.
 - [ ] `slides/<id>/index.tsx` `export default`s a non-empty `Page[]`.
 - [ ] Every page's root fills `100% × 100%`.
 - [ ] Content lives inside padding (no text kisses the edge).
+- [ ] **For every page, sum (font_size × line_height × lines) + gaps + 2×padding ≤ 1080px.** If close, split the page. No `overflow: auto` escape hatches.
+- [ ] No bullet wraps to a second line at the chosen font size.
 - [ ] One coherent visual direction across every page (palette + type scale).
 - [ ] One idea per page.
 - [ ] All imported assets exist on disk under `slides/<id>/assets/`.
@@ -176,6 +210,10 @@ Skip the `assets/` folder entirely for pure-text slides.
 
 - ❌ Walls of text. If a page has more than ~40 words, split it.
 - ❌ Using the full canvas for body copy. Respect 100–160px padding.
+- ❌ Overflowing 1080px vertically. Cropped content is invisible — split the page.
+- ❌ `overflow: auto` / `overflow: scroll` / `overflow: hidden` to "hide" too much content. The canvas doesn't scroll; you've just hidden the bug.
+- ❌ Shrinking type below the scale's lower bound, or padding below 100px, to cram more in. Split instead.
+- ❌ Bullets that wrap to a second line — either shorten or move to its own page.
 - ❌ Body type under 28px — unreadable on a projector.
 - ❌ Inconsistent palette across pages.
 - ❌ Installing packages. Only `react` and standard web APIs are available.
