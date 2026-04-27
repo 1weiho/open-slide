@@ -26,6 +26,13 @@ export async function isDirNonEmpty(target: string): Promise<boolean> {
   return entries.some((e) => !e.startsWith('.'));
 }
 
+async function readCliVersion(): Promise<string> {
+  const pkg = JSON.parse(await readFile(resolve(HERE, '..', 'package.json'), 'utf8')) as {
+    version: string;
+  };
+  return pkg.version;
+}
+
 async function runInstall(pm: PackageManager, cwd: string): Promise<void> {
   await new Promise<void>((res, rej) => {
     const child = spawn(pm, ['install'], { cwd, stdio: 'inherit', shell: IS_WINDOWS });
@@ -56,10 +63,15 @@ export async function init(opts: InitOptions): Promise<void> {
 
   const pkgPath = join(target, 'package.json');
   if (existsSync(pkgPath)) {
-    const pkg = JSON.parse(await readFile(pkgPath, 'utf8')) as Record<string, unknown>;
+    const pkg = JSON.parse(await readFile(pkgPath, 'utf8')) as Record<string, unknown> & {
+      dependencies?: Record<string, string>;
+    };
     pkg.name = name ?? basename(target);
     pkg.version = '0.0.0';
     pkg.private = true;
+    if (pkg.dependencies?.['@open-slide/core']) {
+      pkg.dependencies['@open-slide/core'] = `^${await readCliVersion()}`;
+    }
     await writeFile(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
   }
 
