@@ -58,6 +58,22 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
         'class-variance-authority',
         'emoji-picker-react',
       ],
+      // The app source ships inside node_modules/@open-slide/core/src/app, so
+      // Vite's dep scanner traverses it as if it were a third-party dep and
+      // tries to bundle our virtual imports with esbuild. Mark them external.
+      esbuildOptions: {
+        plugins: [
+          {
+            name: 'open-slide:virtual-externals',
+            setup(build) {
+              build.onResolve({ filter: /^virtual:open-slide\// }, (args) => ({
+                path: args.path,
+                external: true,
+              }));
+            },
+          },
+        ],
+      },
     },
     server: {
       port: config.port ?? 5173,
