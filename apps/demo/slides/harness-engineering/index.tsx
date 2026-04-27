@@ -184,7 +184,9 @@ const Cover: Page = () => (
           animationDelay: '120ms',
         }}
       >
-        <span style={{ color: palette.accent, textShadow: '0 0 22px rgba(57,255,136,0.6)' }}>$ </span>
+        <span style={{ color: palette.accent, textShadow: '0 0 22px rgba(57,255,136,0.6)' }}>
+          ${' '}
+        </span>
         harness
       </span>
       <span
@@ -334,8 +336,7 @@ const Shift: Page = () => (
         maxWidth: 1700,
       }}
     >
-      the model is no longer{' '}
-      <span style={{ color: palette.accent }}>the bottleneck.</span>
+      the model is no longer <span style={{ color: palette.accent }}>the bottleneck.</span>
     </h2>
     <div style={{ display: 'flex', gap: 50, flex: 1 }}>
       <ShiftColumn
@@ -642,15 +643,7 @@ const Anatomy: Page = () => (
 
 /* ─────────────── 5. Worked example: Claude Code ─────────────── */
 
-const Annotation = ({
-  label,
-  body,
-  delay,
-}: {
-  label: string;
-  body: string;
-  delay: number;
-}) => (
+const Annotation = ({ label, body, delay }: { label: string; body: string; delay: number }) => (
   <div
     className="h-fadeup"
     style={{
@@ -758,7 +751,17 @@ const ClaudeCodeExample: Page = () => (
         </div>
         <div style={{ color: palette.warn, paddingLeft: 22 }}>
           ? run `pnpm dev` — [y/N]
-          <span className="h-cursor" style={{ display: 'inline-block', width: 10, height: 18, background: palette.accent, marginLeft: 8, verticalAlign: 'middle' }} />
+          <span
+            className="h-cursor"
+            style={{
+              display: 'inline-block',
+              width: 10,
+              height: 18,
+              background: palette.accent,
+              marginLeft: 8,
+              verticalAlign: 'middle',
+            }}
+          />
         </div>
       </div>
 
@@ -913,7 +916,12 @@ const Principles: Page = () => (
 
 /* ─────────────── 7. Disambiguation ─────────────── */
 
-const layers: Array<{ name: string; artifact: string; scope: string; tone: 'dim' | 'mid' | 'bright' }> = [
+const layers: Array<{
+  name: string;
+  artifact: string;
+  scope: string;
+  tone: 'dim' | 'mid' | 'bright';
+}> = [
   {
     name: 'prompt engineering',
     artifact: 'the string',
@@ -994,11 +1002,7 @@ const Layers: Page = () => (
 
       {layers.map((l, i) => {
         const color =
-          l.tone === 'bright'
-            ? palette.accent
-            : l.tone === 'mid'
-              ? palette.accent2
-              : palette.muted;
+          l.tone === 'bright' ? palette.accent : l.tone === 'mid' ? palette.accent2 : palette.muted;
         return (
           <div
             key={l.name}
@@ -1038,9 +1042,21 @@ const Layers: Page = () => (
 /* ─────────────── 8. Closing ─────────────── */
 
 const sources: Array<{ who: string; what: string; date: string }> = [
-  { who: 'openai', what: 'harness engineering: leveraging codex in an agent-first world', date: 'feb 2026' },
-  { who: 'anthropic / justin young', what: 'effective harnesses for long-running agents', date: '26 nov 2025' },
-  { who: 'birgitta böckeler', what: 'harness engineering for coding agent users', date: '2 apr 2026' },
+  {
+    who: 'openai',
+    what: 'harness engineering: leveraging codex in an agent-first world',
+    date: 'feb 2026',
+  },
+  {
+    who: 'anthropic / justin young',
+    what: 'effective harnesses for long-running agents',
+    date: '26 nov 2025',
+  },
+  {
+    who: 'birgitta böckeler',
+    what: 'harness engineering for coding agent users',
+    date: '2 apr 2026',
+  },
   { who: 'addy osmani', what: 'agent harness engineering', date: '19 apr 2026' },
   { who: 'humanlayer', what: 'skill issue: harness engineering for coding agents', date: '—' },
 ];
@@ -1074,10 +1090,7 @@ const Closing: Page = () => (
         zIndex: 1,
       }}
     >
-      <span
-        className="h-typein"
-        style={{ display: 'block', animationDelay: '120ms' }}
-      >
+      <span className="h-typein" style={{ display: 'block', animationDelay: '120ms' }}>
         the harness
       </span>
       <span
