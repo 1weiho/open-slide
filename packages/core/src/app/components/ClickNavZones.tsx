@@ -19,7 +19,7 @@ export function ClickNavZones({ onPrev, onNext, canPrev, canNext }: Props) {
         onClick={onPrev}
         disabled={!canPrev}
         data-inspector-ui
-        className="absolute inset-y-0 left-0 z-20 w-[18%] min-w-12"
+        className="absolute inset-y-0 left-0 z-20 w-[18%] min-w-12 md:hidden"
       />
       <button
         type="button"
@@ -27,7 +27,7 @@ export function ClickNavZones({ onPrev, onNext, canPrev, canNext }: Props) {
         onClick={onNext}
         disabled={!canNext}
         data-inspector-ui
-        className="absolute inset-y-0 right-0 z-20 w-[18%] min-w-12"
+        className="absolute inset-y-0 right-0 z-20 w-[18%] min-w-12 md:hidden"
       />
     </>
   );
