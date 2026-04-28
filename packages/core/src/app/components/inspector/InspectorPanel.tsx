@@ -12,9 +12,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { findSlideSource } from '@/lib/inspector/fiber';
 import type { SlideComment } from '@/lib/inspector/useComments';
 import type { EditOp } from '@/lib/inspector/useEditor';
-import { useInspector } from './InspectorProvider';
+import { type SelectedTarget, useInspector } from './InspectorProvider';
 
 const PANEL_W = 340;
+const PANEL_TRANSITION_MS = 280;
 
 type ElementSnapshot = {
   fontSize: number; // px
@@ -148,92 +149,130 @@ export function InspectorPanel() {
     };
   }, [selected, applyEdit]);
 
-  // The panel only mounts once the user has actually clicked an
-  // element — toggling the inspector on enables the overlay/highlight
-  // but keeps the canvas full-width until there's something to edit.
-  if (!active || !selected || !snapshot) return null;
+  // Smooth slide-in/out: keep a "pinned" copy of the latest valid
+  // selection so the panel can keep rendering during the close-out
+  // animation, even after `selected` and `snapshot` have been cleared.
+  // `animVisible` lags one frame behind mount, which lets the CSS
+  // width transition fire on the *change* from 0 → PANEL_W instead
+  // of starting already-open.
+  const targetOpen = active && !!selected && !!snapshot;
+  const [pinned, setPinned] = useState<{ s: SelectedTarget; n: ElementSnapshot } | null>(null);
+  const [animVisible, setAnimVisible] = useState(false);
+
+  useEffect(() => {
+    if (selected && snapshot) setPinned({ s: selected, n: snapshot });
+  }, [selected, snapshot]);
+
+  useEffect(() => {
+    if (targetOpen && pinned) {
+      const id = requestAnimationFrame(() => setAnimVisible(true));
+      return () => cancelAnimationFrame(id);
+    }
+    setAnimVisible(false);
+  }, [targetOpen, pinned]);
+
+  useEffect(() => {
+    if (!targetOpen && pinned) {
+      const t = setTimeout(() => setPinned(null), PANEL_TRANSITION_MS);
+      return () => clearTimeout(t);
+    }
+  }, [targetOpen, pinned]);
+
+  if (!pinned) return null;
+  const { s: pinSelected, n: pinSnapshot } = pinned;
 
   return (
     <aside
       data-inspector-ui
-      className="flex h-full shrink-0 flex-col border-l bg-card"
-      style={{ width: PANEL_W }}
+      className="flex h-full shrink-0 justify-end overflow-hidden bg-card transition-[width,border-left-width] ease-out"
+      style={{
+        width: animVisible ? PANEL_W : 0,
+        borderLeftWidth: animVisible ? 1 : 0,
+        transitionDuration: `${PANEL_TRANSITION_MS}ms`,
+      }}
     >
-      <header className="flex shrink-0 items-center justify-between border-b px-3 py-2">
-        <span className="min-w-0 flex-1 text-[11px] text-muted-foreground">
-          <span className="font-mono text-foreground">
-            &lt;{selected.anchor.tagName.toLowerCase()}&gt;
+      <div style={{ width: PANEL_W }} className="flex h-full shrink-0 flex-col">
+        <header className="flex shrink-0 items-center justify-between border-b px-3 py-2">
+          <span className="min-w-0 flex-1 text-[11px] text-muted-foreground">
+            <span className="font-mono text-foreground">
+              &lt;{pinSelected.anchor.tagName.toLowerCase()}&gt;
+            </span>
+            <span className="mx-1.5">·</span>
+            <span>line {pinSelected.line}</span>
           </span>
-          <span className="mx-1.5">·</span>
-          <span>line {selected.line}</span>
-        </span>
-        <button
-          type="button"
-          onClick={() => setSelected(null)}
-          className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-          title="Deselect"
-        >
-          <X className="size-3.5" />
-        </button>
-      </header>
+          <button
+            type="button"
+            onClick={() => setSelected(null)}
+            className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            title="Deselect"
+          >
+            <X className="size-3.5" />
+          </button>
+        </header>
 
-      <div className="flex-1 overflow-auto">
-        {error && (
-          <div className="mx-3 mt-2 rounded border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] text-red-700">
-            {error}
-          </div>
-        )}
+        <div className="flex-1 overflow-auto">
+          {error && (
+            <div className="mx-3 mt-2 rounded border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] text-red-700">
+              {error}
+            </div>
+          )}
 
-        <Section title="Content">
-          <TextField snapshot={snapshot} apply={apply} />
-        </Section>
+          <Section title="Content">
+            <TextField snapshot={pinSnapshot} apply={apply} />
+          </Section>
 
-        <Section title="Typography">
-          <FontSizeField snapshot={snapshot} apply={apply} />
-          <FontWeightField snapshot={snapshot} apply={apply} />
-          <Row label="Style">
-            <ToggleButton
-              pressed={snapshot.fontWeight >= 600}
-              onPressedChange={(v) =>
-                apply([{ kind: 'set-style', key: 'fontWeight', value: v ? '700' : null }])
-              }
-              title="Bold"
-            >
-              <Bold className="size-3.5" />
-            </ToggleButton>
-            <ToggleButton
-              pressed={snapshot.fontStyle === 'italic'}
-              onPressedChange={(v) =>
-                apply([{ kind: 'set-style', key: 'fontStyle', value: v ? 'italic' : null }])
-              }
-              title="Italic"
-            >
-              <Italic className="size-3.5" />
-            </ToggleButton>
-          </Row>
-          <LineHeightField snapshot={snapshot} apply={apply} />
-          <LetterSpacingField snapshot={snapshot} apply={apply} />
-          <TextAlignField snapshot={snapshot} apply={apply} />
-        </Section>
+          <Section title="Typography">
+            <FontSizeField snapshot={pinSnapshot} apply={apply} />
+            <FontWeightField snapshot={pinSnapshot} apply={apply} />
+            <Row label="Style">
+              <ToggleButton
+                pressed={pinSnapshot.fontWeight >= 600}
+                onPressedChange={(v) =>
+                  apply([{ kind: 'set-style', key: 'fontWeight', value: v ? '700' : null }])
+                }
+                title="Bold"
+              >
+                <Bold className="size-3.5" />
+              </ToggleButton>
+              <ToggleButton
+                pressed={pinSnapshot.fontStyle === 'italic'}
+                onPressedChange={(v) =>
+                  apply([{ kind: 'set-style', key: 'fontStyle', value: v ? 'italic' : null }])
+                }
+                title="Italic"
+              >
+                <Italic className="size-3.5" />
+              </ToggleButton>
+            </Row>
+            <LineHeightField snapshot={pinSnapshot} apply={apply} />
+            <LetterSpacingField snapshot={pinSnapshot} apply={apply} />
+            <TextAlignField snapshot={pinSnapshot} apply={apply} />
+          </Section>
 
-        <Section title="Color">
-          <ColorField
-            label="Text"
-            value={snapshot.color}
-            onChange={(v) => apply([{ kind: 'set-style', key: 'color', value: v }])}
-            clearable={false}
+          <Section title="Color">
+            <ColorField
+              label="Text"
+              value={pinSnapshot.color}
+              onChange={(v) => apply([{ kind: 'set-style', key: 'color', value: v }])}
+              clearable={false}
+            />
+            <ColorField
+              label="Background"
+              value={pinSnapshot.backgroundColor ?? '#ffffff'}
+              dim={!pinSnapshot.backgroundColor}
+              onChange={(v) => apply([{ kind: 'set-style', key: 'backgroundColor', value: v }])}
+              onClear={() => apply([{ kind: 'set-style', key: 'backgroundColor', value: null }])}
+              clearable
+            />
+          </Section>
+
+          <CommentsSection
+            comments={comments}
+            selected={pinSelected}
+            onAdd={add}
+            onRemove={remove}
           />
-          <ColorField
-            label="Background"
-            value={snapshot.backgroundColor ?? '#ffffff'}
-            dim={!snapshot.backgroundColor}
-            onChange={(v) => apply([{ kind: 'set-style', key: 'backgroundColor', value: v }])}
-            onClear={() => apply([{ kind: 'set-style', key: 'backgroundColor', value: null }])}
-            clearable
-          />
-        </Section>
-
-        <CommentsSection comments={comments} selected={selected} onAdd={add} onRemove={remove} />
+        </div>
       </div>
     </aside>
   );
