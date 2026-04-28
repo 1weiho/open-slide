@@ -27,18 +27,11 @@ import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { findSlideSource } from '@/lib/inspector/fiber';
 import type { SlideComment } from '@/lib/inspector/useComments';
-import type { Edit, EditOp } from '@/lib/inspector/useEditor';
+import type { EditOp } from '@/lib/inspector/useEditor';
 import { type SelectedTarget, useInspector } from './InspectorProvider';
 
 const PANEL_W = 340;
 const PANEL_TRANSITION_MS = 280;
-
-type OpsBucket = { styleOps: Map<string, string | null>; textOp: string | null };
-type ElementBucket = { line: number; column: number; ops: OpsBucket };
-
-function createOpsBucket(): OpsBucket {
-  return { styleOps: new Map(), textOp: null };
-}
 
 type ElementSnapshot = {
   fontSize: number; // px
@@ -53,19 +46,10 @@ type ElementSnapshot = {
 };
 
 export function InspectorPanel() {
-  const { active, slideId, selected, setSelected, applyEdits, comments, add, remove } =
+  const { active, slideId, selected, setSelected, bufferOps, comments, add, remove } =
     useInspector();
   const [snapshot, setSnapshot] = useState<ElementSnapshot | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const reloadCounter = useReloadCounter();
-
-  // Buffer pending ops *per element* (keyed by `${line}:${column}`) for
-  // the duration of the inspector session. We mutate the DOM directly
-  // for visual feedback and only commit to source when the inspector
-  // closes — switching between elements just appends to this map, so
-  // a flurry of edits across many elements becomes a single batched
-  // file write and a single HMR tick at the end of the session.
-  const pendingRef = useRef<Map<string, ElementBucket>>(new Map());
 
   useEffect(() => {
     void reloadCounter;
@@ -115,44 +99,22 @@ export function InspectorPanel() {
     (ops: EditOp[]) => {
       if (!selected) return;
       const anchor = selected.anchor;
-      const key = `${selected.line}:${selected.column}`;
-      let bucket = pendingRef.current.get(key);
-      if (!bucket) {
-        bucket = { line: selected.line, column: selected.column, ops: createOpsBucket() };
-        pendingRef.current.set(key, bucket);
-      }
+      // Optimistic DOM mutation: instant visual feedback. The provider
+      // separately persists these ops into the commit buffer so the
+      // SaveBar and the eventual file write know about them.
       for (const op of ops) {
-        if (op.kind === 'set-style') {
-          if (anchor.isConnected) {
-            const style = anchor.style as unknown as Record<string, string>;
-            style[op.key] = op.value ?? '';
-          }
-          bucket.ops.styleOps.set(op.key, op.value);
-        } else if (op.kind === 'set-text') {
-          if (anchor.isConnected) anchor.textContent = op.value;
-          bucket.ops.textOp = op.value;
+        if (op.kind === 'set-style' && anchor.isConnected) {
+          const style = anchor.style as unknown as Record<string, string>;
+          style[op.key] = op.value ?? '';
+        } else if (op.kind === 'set-text' && anchor.isConnected) {
+          anchor.textContent = op.value;
         }
       }
+      bufferOps(selected.line, selected.column, ops);
       if (anchor.isConnected) setSnapshot(readSnapshot(anchor));
     },
-    [selected],
+    [selected, bufferOps],
   );
-
-  // Commit the whole buffer in one batch when the inspector closes
-  // (toggle off) or the panel unmounts (route change). Selection
-  // changes within the same session don't flush — the optimistic DOM
-  // mutations are already visible, so the file write can wait.
-  const flushAllRef = useRef<() => void>(() => {});
-  flushAllRef.current = () => flushAll(applyEdits, pendingRef, setError);
-
-  useEffect(() => {
-    if (active) return;
-    flushAllRef.current();
-  }, [active]);
-
-  useEffect(() => {
-    return () => flushAllRef.current();
-  }, []);
 
   // Smooth slide-in/out: keep a "pinned" copy of the latest valid
   // selection so the panel can keep rendering during the close-out
@@ -214,12 +176,6 @@ export function InspectorPanel() {
 
         <ScrollArea className="flex flex-1 flex-col">
           <div className="flex min-h-full flex-col">
-            {error && (
-              <div className="mx-3 mt-3 rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-[11px] text-destructive">
-                {error}
-              </div>
-            )}
-
             {pinSnapshot.text !== null && (
               <Section title="Content">
                 <ContentField snapshot={pinSnapshot} apply={apply} />
@@ -312,28 +268,6 @@ const EDITING_FREEZE_CSS = `
   cursor: pointer !important;
 }
 `;
-
-function flushAll(
-  applyEdits: (edits: Edit[]) => Promise<void>,
-  pendingRef: React.MutableRefObject<Map<string, ElementBucket>>,
-  setError: (msg: string | null) => void,
-): void {
-  const buckets = pendingRef.current;
-  if (buckets.size === 0) return;
-  const edits: Edit[] = [];
-  for (const { line, column, ops } of buckets.values()) {
-    const list: EditOp[] = [];
-    for (const [k, v] of ops.styleOps) list.push({ kind: 'set-style', key: k, value: v });
-    if (ops.textOp !== null) list.push({ kind: 'set-text', value: ops.textOp });
-    if (list.length > 0) edits.push({ line, column, ops: list });
-  }
-  pendingRef.current = new Map();
-  if (edits.length === 0) return;
-  applyEdits(edits).then(
-    () => setError(null),
-    (e) => setError(String((e as Error).message ?? e)),
-  );
-}
 
 // ─── Field components ───────────────────────────────────────────────
 

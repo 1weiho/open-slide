@@ -1,5 +1,14 @@
 import { Crosshair } from 'lucide-react';
-import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Button } from '@/components/ui/button';
 import { type SlideComment, useComments } from '@/lib/inspector/useComments';
 import { type Edit, type EditOp, useEditor } from '@/lib/inspector/useEditor';
@@ -9,6 +18,9 @@ export type SelectedTarget = {
   column: number;
   anchor: HTMLElement;
 };
+
+type OpsBucket = { styleOps: Map<string, string | null>; textOp: string | null };
+type ElementBucket = { line: number; column: number; ops: OpsBucket };
 
 type InspectorCtx = {
   slideId: string;
@@ -24,6 +36,19 @@ type InspectorCtx = {
   setSelected: (s: SelectedTarget | null) => void;
   applyEdit: (line: number, column: number, ops: EditOp[]) => Promise<void>;
   applyEdits: (edits: Edit[]) => Promise<void>;
+  /**
+   * Append optimistic ops for a specific element to the in-memory
+   * commit buffer. Used by the editor panel each time the user nudges
+   * a control; the actual file write only happens on `commitEdits`
+   * (manual Save button) or when the inspector closes.
+   */
+  bufferOps: (line: number, column: number, ops: EditOp[]) => void;
+  /** Number of distinct elements with un-saved buffered edits. */
+  pendingCount: number;
+  /** Persist all buffered ops in one batched POST. */
+  commitEdits: () => Promise<void>;
+  /** True between the moment commit fires and the network round-trip resolves. */
+  committing: boolean;
 };
 
 const Ctx = createContext<InspectorCtx | null>(null);
@@ -39,6 +64,70 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
   const [selected, setSelected] = useState<SelectedTarget | null>(null);
   const { comments, error, refetch, add, remove } = useComments(slideId);
   const { applyEdit, applyEdits } = useEditor(slideId);
+
+  const pendingRef = useRef<Map<string, ElementBucket>>(new Map());
+  const [pendingCount, setPendingCount] = useState(0);
+  const [committing, setCommitting] = useState(false);
+
+  const refreshCount = useCallback(() => {
+    let n = 0;
+    for (const b of pendingRef.current.values()) {
+      if (b.ops.styleOps.size > 0 || b.ops.textOp !== null) n++;
+    }
+    setPendingCount(n);
+  }, []);
+
+  const bufferOps = useCallback(
+    (line: number, column: number, ops: EditOp[]) => {
+      const key = `${line}:${column}`;
+      let bucket = pendingRef.current.get(key);
+      if (!bucket) {
+        bucket = { line, column, ops: { styleOps: new Map(), textOp: null } };
+        pendingRef.current.set(key, bucket);
+      }
+      for (const op of ops) {
+        if (op.kind === 'set-style') bucket.ops.styleOps.set(op.key, op.value);
+        else if (op.kind === 'set-text') bucket.ops.textOp = op.value;
+      }
+      refreshCount();
+    },
+    [refreshCount],
+  );
+
+  const commitEdits = useCallback(async () => {
+    const buckets = pendingRef.current;
+    if (buckets.size === 0) return;
+    const edits: Edit[] = [];
+    for (const { line, column, ops } of buckets.values()) {
+      const list: EditOp[] = [];
+      for (const [k, v] of ops.styleOps) list.push({ kind: 'set-style', key: k, value: v });
+      if (ops.textOp !== null) list.push({ kind: 'set-text', value: ops.textOp });
+      if (list.length > 0) edits.push({ line, column, ops: list });
+    }
+    pendingRef.current = new Map();
+    setPendingCount(0);
+    if (edits.length === 0) return;
+    setCommitting(true);
+    try {
+      await applyEdits(edits);
+    } finally {
+      setCommitting(false);
+    }
+  }, [applyEdits]);
+
+  // Auto-flush when the inspector is fully closed or the slide route
+  // unmounts, so a user who toggles inspect off (or navigates away)
+  // doesn't lose their edits.
+  const commitRef = useRef(commitEdits);
+  commitRef.current = commitEdits;
+  useEffect(() => {
+    if (!active) commitRef.current().catch(() => {});
+  }, [active]);
+  useEffect(() => {
+    return () => {
+      commitRef.current().catch(() => {});
+    };
+  }, []);
 
   const toggle = useCallback(() => {
     setActive((a) => {
@@ -67,6 +156,10 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       setSelected,
       applyEdit,
       applyEdits,
+      bufferOps,
+      pendingCount,
+      commitEdits,
+      committing,
     }),
     [
       slideId,
@@ -81,6 +174,10 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       selected,
       applyEdit,
       applyEdits,
+      bufferOps,
+      pendingCount,
+      commitEdits,
+      committing,
     ],
   );
 
