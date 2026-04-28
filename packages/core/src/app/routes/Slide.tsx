@@ -1,8 +1,8 @@
 import config from 'virtual:open-slide/config';
 import { ChevronLeft, Download, FileCode2, FileText, Loader2, Pencil, Play } from 'lucide-react';
-import { toast } from 'sonner';
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { CommentWidget } from '@/components/inspector/CommentWidget';
 import { InspectOverlay } from '@/components/inspector/InspectOverlay';
 import {
@@ -10,6 +10,7 @@ import {
   InspectToggleButton,
   useInspector,
 } from '@/components/inspector/InspectorProvider';
+import { VisualEditorPanel } from '@/components/inspector/VisualEditorPanel';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -22,10 +23,10 @@ import { useFolders } from '@/lib/folders';
 import { useWheelPageNavigation } from '@/lib/useWheelPageNavigation';
 import { cn } from '@/lib/utils';
 import { ClickNavZones } from '../components/ClickNavZones';
+import { PdfProgressToast } from '../components/PdfProgressToast';
 import { Player } from '../components/Player';
 import { SlideCanvas } from '../components/SlideCanvas';
 import { ThumbnailRail } from '../components/ThumbnailRail';
-import { PdfProgressToast } from '../components/PdfProgressToast';
 import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf } from '../lib/export-pdf';
 import type { SlideModule } from '../lib/sdk';
@@ -303,12 +304,21 @@ export function Slide() {
               {index + 1} / {pageCount}
             </div>
           </main>
+          <VisualEditorPanel />
         </div>
 
-        <CommentWidget />
+        <CommentWidgetSlot />
       </div>
     </InspectorProvider>
   );
+}
+
+function CommentWidgetSlot() {
+  // Hide the floating comment widget while the visual editor panel is
+  // open — they'd otherwise overlap in the bottom-right corner.
+  const { active, mode } = useInspector();
+  if (active && mode === 'edit') return null;
+  return <CommentWidget />;
 }
 
 function SlideWheelNavigation({

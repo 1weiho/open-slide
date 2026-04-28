@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react';
 import type { InlineConfig } from 'vite';
 import { commentsPlugin } from './comments-plugin.ts';
 import { filesPlugin } from './files-plugin.ts';
+import { locTagsPlugin } from './loc-tags-plugin.ts';
 import { loadUserConfig, type OpenSlideConfig, openSlidePlugin } from './open-slide-plugin.ts';
 
 function findPackageRoot(fromFile: string): string {
@@ -36,6 +37,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
     root: APP_ROOT,
     configFile: false,
     plugins: [
+      locTagsPlugin({ userCwd, slidesDir }),
       react(),
       tailwindcss(),
       openSlidePlugin({ userCwd, config }),

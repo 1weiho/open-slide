@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { b64urlDecode, b64urlEncode, parseMarkers } from './comments-plugin.ts';
+import { applyEdit, b64urlDecode, b64urlEncode, parseMarkers } from './comments-plugin.ts';
 
 describe('b64url encoding', () => {
   it('round-trips arbitrary unicode strings', () => {
@@ -68,5 +68,161 @@ describe('parseMarkers', () => {
     const comments = parseMarkers(source);
     expect(comments.map((c) => c.note)).toEqual(['one', 'two']);
     expect(comments.map((c) => c.line)).toEqual([1, 3]);
+  });
+});
+
+describe('applyEdit / set-style', () => {
+  // The synthetic source files in these tests put every JSXElement's
+  // opening tag at column 0 of its line. The line numbers below match
+  // the position of that opening tag (1-indexed).
+  it('inserts a new style attribute when none exists', () => {
+    const src = ['export default [() => (', '<h1>Hello</h1>', ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-style', key: 'color', value: '#ef4444' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toBe(
+      ['export default [() => (', "<h1 style={{ color: '#ef4444' }}>Hello</h1>", ')];', ''].join(
+        '\n',
+      ),
+    );
+  });
+
+  it('updates an existing style key in place', () => {
+    const src = ['export default [() => (', "<h1 style={{ color: 'red' }}>Hi</h1>", ')];', ''].join(
+      '\n',
+    );
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-style', key: 'color', value: '#00ff00' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("style={{ color: '#00ff00' }}");
+  });
+
+  it('adds a new key alongside existing keys', () => {
+    const src = ['export default [() => (', "<h1 style={{ color: 'red' }}>Hi</h1>", ')];', ''].join(
+      '\n',
+    );
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-style', key: 'fontSize', value: '24px' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("style={{ color: 'red', fontSize: '24px' }}");
+  });
+
+  it('removes a key when value is null', () => {
+    const src = [
+      'export default [() => (',
+      "<h1 style={{ color: 'red', fontSize: '24px' }}>Hi</h1>",
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-style', key: 'fontSize', value: null }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("style={{ color: 'red' }}");
+    expect(r.source).not.toContain('fontSize');
+  });
+
+  it('removes the entire style attribute when the last property is cleared', () => {
+    const src = ['export default [() => (', "<h1 style={{ color: 'red' }}>Hi</h1>", ')];', ''].join(
+      '\n',
+    );
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-style', key: 'color', value: null }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('<h1>Hi</h1>');
+    expect(r.source).not.toContain('style');
+  });
+
+  it('preserves variable-valued properties when editing other keys', () => {
+    const src = [
+      'export default [() => (',
+      '<h1 style={{ fontSize: someVar, color: "red" }}>Hi</h1>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-style', key: 'color', value: 'blue' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("style={{ fontSize: someVar, color: 'blue' }}");
+  });
+
+  it('bails when style is a non-object expression', () => {
+    const src = ['export default [() => (', '<h1 style={someStyle}>Hi</h1>', ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-style', key: 'color', value: 'red' }]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.status).toBe(422);
+    expect(r.error).toMatch(/literal object/);
+  });
+
+  it('bails when style object contains a spread', () => {
+    const src = ['export default [() => (', '<h1 style={{ ...base }}>Hi</h1>', ')];', ''].join(
+      '\n',
+    );
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-style', key: 'color', value: 'red' }]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.status).toBe(422);
+  });
+
+  it('escapes special characters in style values', () => {
+    const src = ['export default [() => (', '<h1>Hi</h1>', ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-style', key: 'fontFamily', value: "Pacifico's" }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("fontFamily: 'Pacifico\\'s'");
+  });
+});
+
+describe('applyEdit / set-text', () => {
+  it('replaces a JSXText child', () => {
+    const src = ['export default [() => (', '<h1>Hello</h1>', ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-text', value: 'Goodbye' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('<h1>Goodbye</h1>');
+  });
+
+  it('replaces a string-literal expression child', () => {
+    const src = ['export default [() => (', "<h1>{'Hello'}</h1>", ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-text', value: 'Goodbye' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("<h1>{'Goodbye'}</h1>");
+  });
+
+  it('emits an expression container when value contains JSX-unsafe chars', () => {
+    const src = ['export default [() => (', '<h1>Hello</h1>', ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-text', value: '1 < 2 > 0' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("<h1>{'1 < 2 > 0'}</h1>");
+  });
+
+  it('bails when element has nested JSX children', () => {
+    const src = ['export default [() => (', '<h1>Hello <span>world</span></h1>', ')];', ''].join(
+      '\n',
+    );
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-text', value: 'Goodbye' }]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.status).toBe(422);
+    expect(r.error).toMatch(/complex children/);
+  });
+
+  it('bails when element child is a dynamic expression', () => {
+    const src = ['export default [() => (', '<h1>{name}</h1>', ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-text', value: 'Goodbye' }]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.status).toBe(422);
+  });
+});
+
+describe('applyEdit / combined ops', () => {
+  it('applies style and text ops in one pass', () => {
+    const src = ['export default [() => (', '<h1>Hello</h1>', ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [
+      { kind: 'set-style', key: 'fontWeight', value: '700' },
+      { kind: 'set-text', value: 'Bold!' },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("<h1 style={{ fontWeight: '700' }}>Bold!</h1>");
+  });
+
+  it('returns an unchanged source when ops are empty', () => {
+    const src = '<h1>Hi</h1>';
+    const r = applyEdit(src, 1, 0, []);
+    if (!r.ok) throw new Error('expected ok');
+    expect(r.source).toBe(src);
   });
 });

@@ -6,7 +6,8 @@ import { useInspector } from './InspectorProvider';
 type Highlight = { rect: DOMRect; hit: SlideSourceHit };
 
 export function InspectOverlay() {
-  const { active, slideId, pending, setPending, cancel } = useInspector();
+  const { active, slideId, mode, pending, setPending, selected, setSelected, cancel } =
+    useInspector();
   const overlayRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<Highlight | null>(null);
 
@@ -24,11 +25,13 @@ export function InspectOverlay() {
       }
     };
 
+    const findOpts = mode === 'edit' ? { hostOnly: true } : undefined;
+
     const onMove = (e: PointerEvent) => {
       if (pending) return;
       const el = pickElement(e.clientX, e.clientY);
       if (!el) return setHover(null);
-      const hit = findSlideSource(el, slideId);
+      const hit = findSlideSource(el, slideId, findOpts);
       if (!hit) return setHover(null);
       setHover({ rect: hit.anchor.getBoundingClientRect(), hit });
     };
@@ -38,18 +41,22 @@ export function InspectOverlay() {
       if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) return;
       const el = pickElement(e.clientX, e.clientY);
       if (!el) return;
-      const hit = findSlideSource(el, slideId);
+      const hit = findSlideSource(el, slideId, findOpts);
       if (!hit) return;
       e.preventDefault();
       e.stopPropagation();
       const anchorRect = hit.anchor.getBoundingClientRect();
-      setPending({
-        line: hit.line,
-        column: hit.column,
-        anchorRect,
-        clickX: e.clientX,
-        clickY: e.clientY,
-      });
+      if (mode === 'comment') {
+        setPending({
+          line: hit.line,
+          column: hit.column,
+          anchorRect,
+          clickX: e.clientX,
+          clickY: e.clientY,
+        });
+      } else {
+        setSelected({ line: hit.line, column: hit.column, anchor: hit.anchor });
+      }
       setHover({ rect: anchorRect, hit });
     };
 
@@ -61,12 +68,17 @@ export function InspectOverlay() {
       window.removeEventListener('click', onClick, true);
       window.removeEventListener('keydown', onKey, true);
     };
-  }, [active, slideId, pending, setPending, cancel]);
+  }, [active, slideId, mode, pending, setPending, setSelected, cancel]);
 
   if (!active) return null;
 
   const overlayRect = overlayRef.current?.getBoundingClientRect();
-  const show = hover && overlayRect;
+  // In edit mode keep the highlight on the selected element so the user
+  // sees what the right-side panel is editing even after the cursor moves.
+  const persistentRect =
+    mode === 'edit' && selected ? selected.anchor.getBoundingClientRect() : null;
+  const displayRect = persistentRect ?? hover?.rect ?? null;
+  const show = displayRect && overlayRect;
 
   return (
     <>
@@ -79,17 +91,17 @@ export function InspectOverlay() {
           <div
             className="absolute"
             style={{
-              left: hover.rect.left - overlayRect.left,
-              top: hover.rect.top - overlayRect.top,
-              width: hover.rect.width,
-              height: hover.rect.height,
+              left: displayRect.left - overlayRect.left,
+              top: displayRect.top - overlayRect.top,
+              width: displayRect.width,
+              height: displayRect.height,
               outline: '2px solid #3b82f6',
               background: 'rgba(59,130,246,0.1)',
             }}
           />
         )}
       </div>
-      {pending && <CommentPopover />}
+      {mode === 'comment' && pending && <CommentPopover />}
     </>
   );
 }
