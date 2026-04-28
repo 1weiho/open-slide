@@ -53,6 +53,19 @@ const PRINT_STYLES = `
     page-break-after: auto;
     break-after: auto;
   }
+  /* Supersample: Chrome rasterizes filtered/composited layers (e.g. filter:
+     blur, mix-blend-mode) at the layer's CSS-pixel size, so a blurred
+     gradient on a 1920×1080 page bakes in at ~1× DPI and bands when the PDF
+     is viewed scaled up. zoom:2 doubles the layer raster size; scale(0.5)
+     composites it back to 1920×1080. Vector content (text, plain CSS
+     gradients, SVG) stays vector through both transforms. */
+  #${PRINT_ROOT_ID} .os-print-supersample {
+    width: 1920px !important;
+    height: 1080px !important;
+    zoom: 2;
+    transform: scale(0.5);
+    transform-origin: top left;
+  }
 }
 `;
 
@@ -97,9 +110,14 @@ export async function exportSlideAsPdf(
     host.className = 'os-print-frame';
     host.style.width = '1920px';
     host.style.height = '1080px';
+    const inner = document.createElement('div');
+    inner.className = 'os-print-supersample';
+    inner.style.width = '1920px';
+    inner.style.height = '1080px';
+    host.appendChild(inner);
     root.appendChild(host);
     frames.push(host);
-    const r = createRoot(host);
+    const r = createRoot(inner);
     r.render(createElement(Page));
     reactRoots.push(r);
   }
