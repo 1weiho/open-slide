@@ -325,10 +325,38 @@ function ContentField({
   snapshot: ElementSnapshot;
   apply: (ops: EditOp[]) => void;
 }) {
+  // IME composition (Bopomofo, Pinyin, etc.) doesn't fire `onChange` for
+  // each keystroke — only when the user commits a candidate. If we keep
+  // the textarea controlled by `snapshot.text`, any unrelated re-render
+  // mid-composition forces React to sync the DOM value back, clobbering
+  // the in-progress composition. Mirror the value in local state and
+  // skip syncs while a composition is active.
+  const [local, setLocal] = useState(snapshot.text ?? '');
+  const composingRef = useRef(false);
+
+  useEffect(() => {
+    if (!composingRef.current) setLocal(snapshot.text ?? '');
+  }, [snapshot.text]);
+
   return (
     <Textarea
-      value={snapshot.text ?? ''}
-      onChange={(e) => apply([{ kind: 'set-text', value: e.target.value }])}
+      value={local}
+      onCompositionStart={() => {
+        composingRef.current = true;
+      }}
+      onCompositionEnd={(e) => {
+        composingRef.current = false;
+        const v = e.currentTarget.value;
+        setLocal(v);
+        apply([{ kind: 'set-text', value: v }]);
+      }}
+      onChange={(e) => {
+        const v = e.target.value;
+        setLocal(v);
+        if (!composingRef.current) {
+          apply([{ kind: 'set-text', value: v }]);
+        }
+      }}
       rows={3}
       className="min-h-16 resize-none text-xs"
       placeholder="Element text"
