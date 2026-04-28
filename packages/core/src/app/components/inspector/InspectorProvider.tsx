@@ -121,6 +121,41 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
     };
   }, []);
 
+  // Re-apply buffered ops onto any `[data-slide-loc]` element that gets
+  // (re)mounted in the slide canvas. Without this, navigating to a
+  // different page and back drops the optimistic styles, since the
+  // page's DOM nodes are torn down on unmount even though the buffer
+  // (keyed by source line:col) survives.
+  useEffect(() => {
+    const root = document.querySelector<HTMLElement>('[data-inspector-root]');
+    if (!root) return;
+
+    const applyBuffered = (el: HTMLElement) => {
+      const loc = el.dataset.slideLoc;
+      if (!loc) return;
+      const bucket = pendingRef.current.get(loc);
+      if (!bucket) return;
+      const style = el.style as unknown as Record<string, string>;
+      for (const [key, value] of bucket.ops.styleOps) {
+        const v = value ?? '';
+        if (style[key] !== v) style[key] = v;
+      }
+      if (bucket.ops.textOp !== null && el.textContent !== bucket.ops.textOp) {
+        el.textContent = bucket.ops.textOp;
+      }
+    };
+
+    const replayAll = () => {
+      if (pendingRef.current.size === 0) return;
+      root.querySelectorAll<HTMLElement>('[data-slide-loc]').forEach(applyBuffered);
+    };
+
+    replayAll();
+    const observer = new MutationObserver(replayAll);
+    observer.observe(root, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
   const toggle = useCallback(() => {
     setActive((a) => {
       if (a) setSelected(null);
