@@ -391,6 +391,7 @@ const EDITING_FREEZE_CSS = `
   animation-fill-mode: forwards !important;
   transition: none !important;
   view-transition-name: none !important;
+  cursor: pointer !important;
 }
 `;
 

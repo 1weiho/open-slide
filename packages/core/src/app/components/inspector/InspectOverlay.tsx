@@ -118,12 +118,7 @@ function FrameOverlay({
     : `opacity ${FRAME_FADE_MS}ms ease-out`;
 
   return (
-    <div
-      ref={overlayRef}
-      data-inspector-ui
-      className="pointer-events-none absolute inset-0 z-30"
-      style={{ cursor: 'crosshair' }}
-    >
+    <div ref={overlayRef} data-inspector-ui className="pointer-events-none absolute inset-0 z-30">
       {rect && (
         <div
           className="absolute"
