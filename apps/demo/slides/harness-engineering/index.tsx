@@ -216,7 +216,7 @@ const Cover: Page = () => (
         zIndex: 1,
       }}
     >
-      // the scaffolding around the model is the new bottleneck.
+      {'// the scaffolding around the model is the new bottleneck.'}
     </p>
     <div
       className="h-fadeup"
@@ -693,7 +693,7 @@ const ClaudeCodeExample: Page = () => (
         maxWidth: 1500,
       }}
     >
-      // a thin TUI wrapping a model with a curated tool surface, a planning loop, and approvals.
+      {'// a thin TUI wrapping a model with a curated tool surface, a planning loop, and approvals.'}
     </p>
 
     <div style={{ display: 'flex', gap: 50, flex: 1 }}>
@@ -978,7 +978,7 @@ const Layers: Page = () => (
         maxWidth: 1500,
       }}
     >
-      // each one is a strict subset of the next — and the bottleneck has moved outward.
+      {'// each one is a strict subset of the next — and the bottleneck has moved outward.'}
     </p>
 
     <div style={{ display: 'flex', flexDirection: 'column', gap: 22, flex: 1 }}>
