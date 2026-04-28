@@ -3,6 +3,7 @@ import { ChevronLeft, Download, FileCode2, FileText, Loader2, Pencil, Play } fro
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { CommentWidget } from '@/components/inspector/CommentWidget';
 import { InspectOverlay } from '@/components/inspector/InspectOverlay';
 import { InspectorPanel } from '@/components/inspector/InspectorPanel';
 import {
@@ -299,6 +300,7 @@ export function Slide() {
               canNext={index < pageCount - 1}
             />
             <InspectOverlay />
+            <CommentWidget />
             <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/50 px-2.5 py-0.5 text-[11px] font-medium tabular-nums text-white backdrop-blur md:hidden">
               {index + 1} / {pageCount}
             </div>
