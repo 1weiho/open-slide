@@ -4,6 +4,8 @@ export type EditOp =
   | { kind: 'set-style'; key: string; value: string | null }
   | { kind: 'set-text'; value: string };
 
+export type Edit = { line: number; column: number; ops: EditOp[] };
+
 export class NoOpEditError extends Error {
   constructor() {
     super(
@@ -32,5 +34,30 @@ export function useEditor(slideId: string) {
     [slideId],
   );
 
-  return { applyEdit };
+  // Batched commit: send many element edits in one round-trip so a
+  // session of edits across multiple elements lands as a single file
+  // write and a single HMR tick.
+  const applyEdits = useCallback(
+    async (edits: Edit[]) => {
+      if (edits.length === 0) return;
+      const res = await fetch('/__edit/batch', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ slideId, edits }),
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        changed?: boolean;
+        results?: Array<{ ok: boolean; error?: string }>;
+      };
+      if (!res.ok) {
+        throw new Error(body.error ?? `POST /__edit/batch → ${res.status}`);
+      }
+      const failed = body.results?.find((r) => !r.ok);
+      if (failed?.error) throw new Error(failed.error);
+    },
+    [slideId],
+  );
+
+  return { applyEdit, applyEdits };
 }

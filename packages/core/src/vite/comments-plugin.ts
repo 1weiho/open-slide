@@ -24,6 +24,10 @@ type EditBody = {
   column?: number;
   ops?: EditOp[];
 };
+type EditBatchBody = {
+  slideId?: string;
+  edits?: Array<{ line?: number; column?: number; ops?: EditOp[] }>;
+};
 type Comment = { id: string; line: number; ts: string; note: string; hint?: string };
 
 export function b64urlEncode(s: string): string {
@@ -471,34 +475,71 @@ export function commentsPlugin(opts: CommentsPluginOptions): Plugin {
       server.middlewares.use('/__edit', async (req, res, next) => {
         const url = new URL(req.url ?? '/', 'http://local');
         const method = req.method ?? 'GET';
+        if (method !== 'POST') return next();
 
         try {
-          if (method !== 'POST' || url.pathname !== '/') {
-            return next();
-          }
-          const body = (await readBody(req)) as EditBody;
-          const slideId = body.slideId ?? '';
-          const file = resolveSlidePath(userCwd, slidesDir, slideId);
-          if (!file) return json(res, 400, { error: 'invalid slideId' });
-          if (!body.line || body.line < 1) return json(res, 400, { error: 'invalid line' });
-          if (!Array.isArray(body.ops)) return json(res, 400, { error: 'missing ops' });
+          if (url.pathname === '/') {
+            const body = (await readBody(req)) as EditBody;
+            const slideId = body.slideId ?? '';
+            const file = resolveSlidePath(userCwd, slidesDir, slideId);
+            if (!file) return json(res, 400, { error: 'invalid slideId' });
+            if (!body.line || body.line < 1) return json(res, 400, { error: 'invalid line' });
+            if (!Array.isArray(body.ops)) return json(res, 400, { error: 'missing ops' });
 
-          let source: string;
-          try {
-            source = await fs.readFile(file, 'utf8');
-          } catch {
-            return json(res, 404, { error: 'slide not found' });
+            let source: string;
+            try {
+              source = await fs.readFile(file, 'utf8');
+            } catch {
+              return json(res, 404, { error: 'slide not found' });
+            }
+
+            const result = applyEdit(source, body.line, body.column ?? 0, body.ops);
+            if (!result.ok) return json(res, result.status, { error: result.error });
+            const changed = result.source !== source;
+            if (changed) await fs.writeFile(file, result.source, 'utf8');
+            return json(res, 200, { ok: true, changed });
           }
 
-          const result = applyEdit(source, body.line, body.column ?? 0, body.ops);
-          if (!result.ok) {
-            return json(res, result.status, { error: result.error });
+          // Apply many edits to one file in a single read-modify-write
+          // cycle, so a session of edits across multiple elements only
+          // triggers one HMR. Edits are applied in order; per-edit
+          // failures are reported in the response without aborting the
+          // batch, since each edit is independent.
+          if (url.pathname === '/batch') {
+            const body = (await readBody(req)) as EditBatchBody;
+            const slideId = body.slideId ?? '';
+            const file = resolveSlidePath(userCwd, slidesDir, slideId);
+            if (!file) return json(res, 400, { error: 'invalid slideId' });
+            if (!Array.isArray(body.edits)) return json(res, 400, { error: 'missing edits' });
+
+            let source: string;
+            try {
+              source = await fs.readFile(file, 'utf8');
+            } catch {
+              return json(res, 404, { error: 'slide not found' });
+            }
+
+            const original = source;
+            const results: Array<{ ok: boolean; error?: string }> = [];
+            for (const edit of body.edits) {
+              if (!edit.line || edit.line < 1 || !Array.isArray(edit.ops)) {
+                results.push({ ok: false, error: 'invalid edit' });
+                continue;
+              }
+              const r = applyEdit(source, edit.line, edit.column ?? 0, edit.ops);
+              if (r.ok) {
+                source = r.source;
+                results.push({ ok: true });
+              } else {
+                results.push({ ok: false, error: r.error });
+              }
+            }
+            const changed = source !== original;
+            if (changed) await fs.writeFile(file, source, 'utf8');
+            return json(res, 200, { ok: true, changed, results });
           }
-          const changed = result.source !== source;
-          if (changed) {
-            await fs.writeFile(file, result.source, 'utf8');
-          }
-          return json(res, 200, { ok: true, changed });
+
+          return next();
         } catch (err) {
           json(res, 500, { error: String((err as Error).message ?? err) });
         }

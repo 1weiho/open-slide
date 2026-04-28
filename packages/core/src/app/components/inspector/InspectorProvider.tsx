@@ -2,7 +2,7 @@ import { Crosshair } from 'lucide-react';
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { type SlideComment, useComments } from '@/lib/inspector/useComments';
-import { type EditOp, useEditor } from '@/lib/inspector/useEditor';
+import { type Edit, type EditOp, useEditor } from '@/lib/inspector/useEditor';
 
 export type SelectedTarget = {
   line: number;
@@ -23,6 +23,7 @@ type InspectorCtx = {
   selected: SelectedTarget | null;
   setSelected: (s: SelectedTarget | null) => void;
   applyEdit: (line: number, column: number, ops: EditOp[]) => Promise<void>;
+  applyEdits: (edits: Edit[]) => Promise<void>;
 };
 
 const Ctx = createContext<InspectorCtx | null>(null);
@@ -37,7 +38,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
   const [active, setActive] = useState(false);
   const [selected, setSelected] = useState<SelectedTarget | null>(null);
   const { comments, error, refetch, add, remove } = useComments(slideId);
-  const { applyEdit } = useEditor(slideId);
+  const { applyEdit, applyEdits } = useEditor(slideId);
 
   const toggle = useCallback(() => {
     setActive((a) => {
@@ -65,8 +66,22 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       selected,
       setSelected,
       applyEdit,
+      applyEdits,
     }),
-    [slideId, active, toggle, cancel, comments, error, refetch, add, remove, selected, applyEdit],
+    [
+      slideId,
+      active,
+      toggle,
+      cancel,
+      comments,
+      error,
+      refetch,
+      add,
+      remove,
+      selected,
+      applyEdit,
+      applyEdits,
+    ],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
