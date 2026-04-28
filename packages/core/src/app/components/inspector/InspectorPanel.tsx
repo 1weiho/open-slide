@@ -193,12 +193,8 @@ export function InspectorPanel() {
     >
       <div style={{ width: PANEL_W }} className="flex h-full shrink-0 flex-col">
         <header className="flex shrink-0 items-center justify-between border-b px-3 py-2">
-          <span className="min-w-0 flex-1 text-[11px] text-muted-foreground">
-            <span className="font-mono text-foreground">
-              &lt;{pinSelected.anchor.tagName.toLowerCase()}&gt;
-            </span>
-            <span className="mx-1.5">·</span>
-            <span>line {pinSelected.line}</span>
+          <span className="min-w-0 flex-1 font-mono text-xs text-foreground">
+            &lt;{pinSelected.anchor.tagName.toLowerCase()}&gt;
           </span>
           <button
             type="button"
@@ -210,16 +206,18 @@ export function InspectorPanel() {
           </button>
         </header>
 
-        <div className="flex-1 overflow-auto">
+        <div className="flex flex-1 flex-col overflow-auto">
           {error && (
             <div className="mx-3 mt-2 rounded border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] text-red-700">
               {error}
             </div>
           )}
 
-          <Section title="Content">
-            <TextField snapshot={pinSnapshot} apply={apply} />
-          </Section>
+          {pinSnapshot.text !== null && (
+            <Section title="Content">
+              <TextField snapshot={pinSnapshot} apply={apply} />
+            </Section>
+          )}
 
           <Section title="Typography">
             <FontSizeField snapshot={pinSnapshot} apply={apply} />
@@ -266,12 +264,16 @@ export function InspectorPanel() {
             />
           </Section>
 
-          <CommentsSection
-            comments={comments}
-            selected={pinSelected}
-            onAdd={add}
-            onRemove={remove}
-          />
+          {/* `mt-auto` pins comments to the bottom of the panel even when
+              the edit sections above don't fill the viewport. */}
+          <div className="mt-auto">
+            <CommentsSection
+              comments={comments}
+              selected={pinSelected}
+              onAdd={add}
+              onRemove={remove}
+            />
+          </div>
         </div>
       </div>
     </aside>
@@ -469,20 +471,12 @@ function TextField({
   snapshot: ElementSnapshot;
   apply: (ops: EditOp[]) => void;
 }) {
-  const editable = snapshot.text !== null;
-  const upstream = snapshot.text ?? '';
-
-  if (!editable) {
-    return (
-      <p className="rounded border border-dashed px-2 py-1.5 text-[11px] text-muted-foreground">
-        Element has complex children — can't edit text directly.
-      </p>
-    );
-  }
-
+  // Caller renders this only when `snapshot.text` is non-null (the
+  // element has a single text child); the empty-string fallback here
+  // is just for type narrowing.
   return (
     <textarea
-      value={upstream}
+      value={snapshot.text ?? ''}
       onChange={(e) => apply([{ kind: 'set-text', value: e.target.value }])}
       rows={3}
       className="w-full resize-none rounded border bg-background px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-primary/40"
