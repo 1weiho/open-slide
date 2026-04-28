@@ -693,7 +693,9 @@ const ClaudeCodeExample: Page = () => (
         maxWidth: 1500,
       }}
     >
-      {'// a thin TUI wrapping a model with a curated tool surface, a planning loop, and approvals.'}
+      {
+        '// a thin TUI wrapping a model with a curated tool surface, a planning loop, and approvals.'
+      }
     </p>
 
     <div style={{ display: 'flex', gap: 50, flex: 1 }}>
