@@ -4,6 +4,7 @@ import type { ServerResponse } from 'node:http';
 import path from 'node:path';
 import { parse as babelParse } from '@babel/parser';
 import type { Connect, Plugin, ViteDevServer } from 'vite';
+import { type AstNode, walkJsx } from './babel-walk.ts';
 
 const MARKER_RE =
   /\{\/\*\s*@slide-comment\s+id="(c-[a-f0-9]+)"\s+ts="([^"]+)"\s+text="([A-Za-z0-9_-]+={0,2})"\s*\*\/\}/g;
@@ -16,6 +17,16 @@ type AddBody = {
   column?: number;
   text?: string;
   hint?: string;
+};
+type EditBody = {
+  slideId?: string;
+  line?: number;
+  column?: number;
+  ops?: EditOp[];
+};
+type EditBatchBody = {
+  slideId?: string;
+  edits?: Array<{ line?: number; column?: number; ops?: EditOp[] }>;
 };
 type Comment = { id: string; line: number; ts: string; note: string; hint?: string };
 
@@ -75,9 +86,7 @@ export function parseMarkers(source: string): Comment[] {
     try {
       const payload = JSON.parse(b64urlDecode(textB64)) as { note: string; hint?: string };
       comments.push({ id, line: i + 1, ts, note: payload.note, hint: payload.hint });
-    } catch {
-      // skip malformed
-    }
+    } catch {}
   }
   return comments;
 }
@@ -86,26 +95,10 @@ function newId(): string {
   return `c-${randomUUID().replace(/-/g, '').slice(0, 8)}`;
 }
 
-type Loc = { line: number; column: number };
-type AstNode = {
-  type: string;
-  start: number;
-  end: number;
-  loc?: { start: Loc; end: Loc };
-  [k: string]: unknown;
-};
-
-// Insertion plan: where to splice the marker into the source.
-//
-// We always insert the marker *inside* a JSX container (as its first child),
-// never as a JSX-comment sibling. A JSX-comment-like token written outside
-// JSX context (e.g. as the body of `() => ( <Foo/> )`) is parsed as an empty
-// object literal and breaks the surrounding expression. Children of a
-// JSXElement / JSXFragment are unambiguously JSX context, so the marker is
-// always valid there.
-//
-// `offset` is the character index where a fresh `\n<indent><marker>` should
-// be spliced in; `indent` is the indentation to apply to the marker line.
+// We always splice the marker as the first child of a JSX container.
+// A JSX-comment-like token outside JSX context (e.g. as the body of
+// `() => ( <Foo/> )`) is parsed as an empty object literal and breaks
+// the surrounding expression.
 type InsertionPlan = { offset: number; indent: string };
 
 function lineToOffset(source: string, line: number): number {
@@ -124,56 +117,18 @@ function lineIndent(source: string, lineNumber: number): string {
   return m?.[0] ?? '';
 }
 
-/**
- * Walk the AST, collect every JSXElement/JSXFragment whose location encloses
- * the click point, ordered innermost-first.
- *
- * "Encloses" here is inclusive at the start (so a click on the opening `<`
- * counts as inside) and exclusive at the end. We deliberately don't trust
- * Babel's `_debugSource` line/column to be exact — HMR or upstream transforms
- * can shift it slightly — so we treat the click as a probe and pick the
- * tightest JSX container around it.
- */
+// Innermost-first list of JSX nodes enclosing the click point.
+// Inclusive at start, exclusive at end.
 function findJsxAncestors(ast: AstNode, line: number, column: number): AstNode[] {
   const hits: { node: AstNode; size: number }[] = [];
-
-  const walk = (node: unknown) => {
-    if (!node || typeof node !== 'object') return;
-    if (Array.isArray(node)) {
-      for (const c of node) walk(c);
-      return;
-    }
-    const n = node as AstNode;
-    if (typeof n.type !== 'string') return;
-
-    if ((n.type === 'JSXElement' || n.type === 'JSXFragment') && n.loc) {
-      const s = n.loc.start;
-      const e = n.loc.end;
-      const afterStart = line > s.line || (line === s.line && column >= s.column);
-      const beforeEnd = line < e.line || (line === e.line && column < e.column);
-      if (afterStart && beforeEnd) {
-        hits.push({ node: n, size: n.end - n.start });
-      }
-    }
-
-    for (const key of Object.keys(n)) {
-      if (
-        key === 'loc' ||
-        key === 'start' ||
-        key === 'end' ||
-        key === 'type' ||
-        key === 'extra' ||
-        key === 'leadingComments' ||
-        key === 'trailingComments' ||
-        key === 'innerComments'
-      ) {
-        continue;
-      }
-      walk((n as Record<string, unknown>)[key]);
-    }
-  };
-
-  walk(ast);
+  walkJsx(ast, (n) => {
+    if (!n.loc) return;
+    const s = n.loc.start;
+    const e = n.loc.end;
+    const afterStart = line > s.line || (line === s.line && column >= s.column);
+    const beforeEnd = line < e.line || (line === e.line && column < e.column);
+    if (afterStart && beforeEnd) hits.push({ node: n, size: n.end - n.start });
+  });
   hits.sort((a, b) => a.size - b.size);
   return hits.map((h) => h.node);
 }
@@ -200,16 +155,9 @@ function planInsertion(source: string, target: AstNode): InsertionPlan | null {
   return null;
 }
 
-/**
- * Resolve a click on the slide page (line/col from React fiber's
- * `_debugSource`) to an in-source offset where we can safely splice a
- * `@slide-comment` marker.
- *
- * Strategy: parse the file, find every JSX container around the click, and
- * walk innermost → outermost looking for the first one we can insert *inside*
- * (i.e. not self-closing). Self-closing elements like `<img/>` get hoisted to
- * their nearest non-self-closing ancestor.
- */
+// Walk innermost → outermost looking for the first JSX container we
+// can insert *inside* (not self-closing). Self-closing elements like
+// `<img/>` get hoisted to their nearest non-self-closing ancestor.
 function findInsertion(
   source: string,
   line: number,
@@ -245,6 +193,243 @@ function offsetToLine(source: string, offset: number): number {
   return line;
 }
 
+// `applyEdit` rewrites a slide file in place via minimal text splices
+// computed from AST ranges, so unrelated formatting is preserved.
+
+export type EditOp =
+  | { kind: 'set-style'; key: string; value: string | null }
+  | { kind: 'set-text'; value: string };
+
+export type ApplyEditResult =
+  | { ok: true; source: string }
+  | { ok: false; status: number; error: string };
+
+type Splice = { from: number; to: number; text: string };
+
+function parseSource(source: string): AstNode | null {
+  try {
+    return babelParse(source, {
+      sourceType: 'module',
+      plugins: ['typescript', 'jsx'],
+      errorRecovery: true,
+    }) as unknown as AstNode;
+  } catch {
+    return null;
+  }
+}
+
+function findInnermostJsxElement(source: string, line: number, column: number): AstNode | null {
+  const ast = parseSource(source);
+  if (!ast) return null;
+
+  // Prefer exact `loc.start` match (what `data-slide-loc` sends) so
+  // we don't accidentally hit an outer JSX whose range happens to
+  // enclose the click point.
+  const exact = findJsxByStart(ast, line, column);
+  if (exact) return exact;
+
+  // Fallback for fiber-walked clicks whose column may not align with
+  // the opening `<`.
+  const ancestors = findJsxAncestors(ast, line, column);
+  for (const n of ancestors) {
+    if (n.type === 'JSXElement') return n;
+  }
+  return null;
+}
+
+function findJsxByStart(ast: AstNode, line: number, column: number): AstNode | null {
+  let hit: AstNode | null = null;
+  walkJsx(ast, (n) => {
+    if (n.type !== 'JSXElement' || !n.loc) return;
+    const s = n.loc.start;
+    if (s.line === line && s.column === column) {
+      hit = n;
+      return 'stop';
+    }
+  });
+  return hit;
+}
+
+function jsString(s: string): string {
+  return `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n')}'`;
+}
+
+type StyleAttr = AstNode & { value?: AstNode | null };
+
+function findStyleAttr(opening: AstNode): StyleAttr | null {
+  const attrs = (opening as unknown as { attributes?: AstNode[] }).attributes ?? [];
+  for (const attr of attrs) {
+    if (attr.type !== 'JSXAttribute') continue;
+    const name = (attr as unknown as { name?: { type?: string; name?: string } }).name;
+    if (name?.type === 'JSXIdentifier' && name.name === 'style') {
+      return attr as StyleAttr;
+    }
+  }
+  return null;
+}
+
+function buildStyleSplice(
+  source: string,
+  element: AstNode,
+  ops: Array<{ key: string; value: string | null }>,
+): Splice | { error: string } | null {
+  const opening = (element as unknown as { openingElement?: AstNode }).openingElement;
+  if (!opening) return { error: 'no opening element' };
+
+  const existing = findStyleAttr(opening);
+  // Raw source slices, not parsed values — preserves variables and
+  // complex expressions exactly as authored.
+  const style = new Map<string, string>();
+
+  if (existing) {
+    const value = existing.value;
+    if (!value || value.type !== 'JSXExpressionContainer') {
+      return { error: 'style attribute has unsupported form' };
+    }
+    const expr = (value as unknown as { expression: AstNode }).expression;
+    if (expr.type !== 'ObjectExpression') {
+      return { error: 'style is not a literal object' };
+    }
+    const properties = (expr as unknown as { properties: AstNode[] }).properties;
+    for (const prop of properties) {
+      if (prop.type !== 'ObjectProperty') {
+        return { error: 'style contains spread or method' };
+      }
+      const p = prop as unknown as {
+        computed?: boolean;
+        shorthand?: boolean;
+        key: { type?: string; name?: string; value?: string };
+        value: AstNode;
+      };
+      if (p.computed) return { error: 'style has computed key' };
+      let keyName: string | null = null;
+      if (p.key.type === 'Identifier' && p.key.name) keyName = p.key.name;
+      else if (p.key.type === 'StringLiteral' && typeof p.key.value === 'string') {
+        keyName = p.key.value;
+      }
+      if (!keyName) return { error: 'style has unsupported key' };
+      style.set(keyName, source.slice(p.value.start, p.value.end));
+    }
+  }
+
+  for (const op of ops) {
+    if (op.value === null) style.delete(op.key);
+    else style.set(op.key, jsString(op.value));
+  }
+
+  if (style.size === 0) {
+    if (!existing) return null;
+    let from = existing.start;
+    if (from > 0 && source[from - 1] === ' ') from -= 1;
+    return { from, to: existing.end, text: '' };
+  }
+
+  const propsText = Array.from(style.entries())
+    .map(([k, v]) => `${k}: ${v}`)
+    .join(', ');
+  const newAttr = `style={{ ${propsText} }}`;
+
+  if (existing) {
+    return { from: existing.start, to: existing.end, text: newAttr };
+  }
+
+  const name = (opening as unknown as { name: AstNode }).name;
+  return { from: name.end, to: name.end, text: ` ${newAttr}` };
+}
+
+function formatJsxText(value: string): string {
+  // JSXText can't hold `{}<>` and collapses leading/trailing whitespace,
+  // so wrap the value in an expression container when it would lose info.
+  if (/[{}<>]/.test(value) || /^\s|\s$/.test(value) || value === '') {
+    return `{${jsString(value)}}`;
+  }
+  return value;
+}
+
+function buildTextSplice(element: AstNode, value: string): Splice | { error: string } {
+  const children = (element as unknown as { children?: AstNode[] }).children ?? [];
+  if (children.length === 0) {
+    return { error: 'element has no children to edit' };
+  }
+
+  const meaningful = children.filter((c) => {
+    if (c.type === 'JSXText') {
+      const v = (c as unknown as { value: string }).value;
+      return v.trim() !== '';
+    }
+    return true;
+  });
+
+  if (meaningful.length !== 1) {
+    return { error: 'element has complex children' };
+  }
+
+  const child = meaningful[0];
+
+  if (child.type === 'JSXText') {
+    // Replace the whole children span so old surrounding whitespace
+    // doesn't leak into the new value.
+    const first = children[0];
+    const last = children[children.length - 1];
+    return { from: first.start, to: last.end, text: formatJsxText(value) };
+  }
+
+  if (child.type === 'JSXExpressionContainer') {
+    const expr = (child as unknown as { expression: AstNode }).expression;
+    if (expr.type === 'StringLiteral' || expr.type === 'NumericLiteral') {
+      return {
+        from: child.start,
+        to: child.end,
+        text: `{${jsString(value)}}`,
+      };
+    }
+    return { error: 'element has dynamic expression child' };
+  }
+
+  return { error: 'element has complex children' };
+}
+
+export function applyEdit(
+  source: string,
+  line: number,
+  column: number,
+  ops: EditOp[],
+): ApplyEditResult {
+  if (ops.length === 0) return { ok: true, source };
+
+  const element = findInnermostJsxElement(source, line, column);
+  if (!element) return { ok: false, status: 422, error: 'no JSX element at location' };
+
+  const splices: Splice[] = [];
+
+  const styleOps = ops.flatMap((op) =>
+    op.kind === 'set-style' ? [{ key: op.key, value: op.value }] : [],
+  );
+  if (styleOps.length > 0) {
+    const result = buildStyleSplice(source, element, styleOps);
+    if (result && 'error' in result) {
+      return { ok: false, status: 422, error: result.error };
+    }
+    if (result) splices.push(result);
+  }
+
+  for (const op of ops) {
+    if (op.kind !== 'set-text') continue;
+    const result = buildTextSplice(element, op.value);
+    if ('error' in result) return { ok: false, status: 422, error: result.error };
+    splices.push(result);
+  }
+
+  if (splices.length === 0) return { ok: true, source };
+
+  splices.sort((a, b) => b.from - a.from);
+  let next = source;
+  for (const sp of splices) {
+    next = next.slice(0, sp.from) + sp.text + next.slice(sp.to);
+  }
+  return { ok: true, source: next };
+}
+
 export type CommentsPluginOptions = {
   userCwd: string;
   slidesDir?: string;
@@ -257,6 +442,77 @@ export function commentsPlugin(opts: CommentsPluginOptions): Plugin {
     name: 'open-slide:comments',
     apply: 'serve',
     configureServer(server: ViteDevServer) {
+      server.middlewares.use('/__edit', async (req, res, next) => {
+        const url = new URL(req.url ?? '/', 'http://local');
+        const method = req.method ?? 'GET';
+        if (method !== 'POST') return next();
+
+        try {
+          if (url.pathname === '/') {
+            const body = (await readBody(req)) as EditBody;
+            const slideId = body.slideId ?? '';
+            const file = resolveSlidePath(userCwd, slidesDir, slideId);
+            if (!file) return json(res, 400, { error: 'invalid slideId' });
+            if (!body.line || body.line < 1) return json(res, 400, { error: 'invalid line' });
+            if (!Array.isArray(body.ops)) return json(res, 400, { error: 'missing ops' });
+
+            let source: string;
+            try {
+              source = await fs.readFile(file, 'utf8');
+            } catch {
+              return json(res, 404, { error: 'slide not found' });
+            }
+
+            const result = applyEdit(source, body.line, body.column ?? 0, body.ops);
+            if (!result.ok) return json(res, result.status, { error: result.error });
+            const changed = result.source !== source;
+            if (changed) await fs.writeFile(file, result.source, 'utf8');
+            return json(res, 200, { ok: true, changed });
+          }
+
+          // One read-modify-write per batch so a multi-element edit
+          // session lands as a single HMR. Per-edit failures are
+          // reported but don't abort the batch.
+          if (url.pathname === '/batch') {
+            const body = (await readBody(req)) as EditBatchBody;
+            const slideId = body.slideId ?? '';
+            const file = resolveSlidePath(userCwd, slidesDir, slideId);
+            if (!file) return json(res, 400, { error: 'invalid slideId' });
+            if (!Array.isArray(body.edits)) return json(res, 400, { error: 'missing edits' });
+
+            let source: string;
+            try {
+              source = await fs.readFile(file, 'utf8');
+            } catch {
+              return json(res, 404, { error: 'slide not found' });
+            }
+
+            const original = source;
+            const results: Array<{ ok: boolean; error?: string }> = [];
+            for (const edit of body.edits) {
+              if (!edit.line || edit.line < 1 || !Array.isArray(edit.ops)) {
+                results.push({ ok: false, error: 'invalid edit' });
+                continue;
+              }
+              const r = applyEdit(source, edit.line, edit.column ?? 0, edit.ops);
+              if (r.ok) {
+                source = r.source;
+                results.push({ ok: true });
+              } else {
+                results.push({ ok: false, error: r.error });
+              }
+            }
+            const changed = source !== original;
+            if (changed) await fs.writeFile(file, source, 'utf8');
+            return json(res, 200, { ok: true, changed, results });
+          }
+
+          return next();
+        } catch (err) {
+          json(res, 500, { error: String((err as Error).message ?? err) });
+        }
+      });
+
       server.middlewares.use('/__comments', async (req, res, next) => {
         const url = new URL(req.url ?? '/', 'http://local');
         const method = req.method ?? 'GET';

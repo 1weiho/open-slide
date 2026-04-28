@@ -1,15 +1,17 @@
 import config from 'virtual:open-slide/config';
 import { ChevronLeft, Download, FileCode2, FileText, Loader2, Pencil, Play } from 'lucide-react';
-import { toast } from 'sonner';
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { CommentWidget } from '@/components/inspector/CommentWidget';
 import { InspectOverlay } from '@/components/inspector/InspectOverlay';
+import { InspectorPanel } from '@/components/inspector/InspectorPanel';
 import {
   InspectorProvider,
   InspectToggleButton,
   useInspector,
 } from '@/components/inspector/InspectorProvider';
+import { SaveBar } from '@/components/inspector/SaveBar';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -22,10 +24,10 @@ import { useFolders } from '@/lib/folders';
 import { useWheelPageNavigation } from '@/lib/useWheelPageNavigation';
 import { cn } from '@/lib/utils';
 import { ClickNavZones } from '../components/ClickNavZones';
+import { PdfProgressToast } from '../components/PdfProgressToast';
 import { Player } from '../components/Player';
 import { SlideCanvas } from '../components/SlideCanvas';
 import { ThumbnailRail } from '../components/ThumbnailRail';
-import { PdfProgressToast } from '../components/PdfProgressToast';
 import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf } from '../lib/export-pdf';
 import type { SlideModule } from '../lib/sdk';
@@ -299,13 +301,14 @@ export function Slide() {
               canNext={index < pageCount - 1}
             />
             <InspectOverlay />
+            <SaveBar />
+            <CommentWidget />
             <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/50 px-2.5 py-0.5 text-[11px] font-medium tabular-nums text-white backdrop-blur md:hidden">
               {index + 1} / {pageCount}
             </div>
           </main>
+          <InspectorPanel />
         </div>
-
-        <CommentWidget />
       </div>
     </InspectorProvider>
   );

@@ -8,7 +8,7 @@ export function CommentWidget() {
   const count = comments.length;
 
   return (
-    <div data-inspector-ui className="fixed right-4 bottom-4 z-40 flex flex-col items-end gap-2">
+    <div data-inspector-ui className="absolute right-4 bottom-4 z-20 flex flex-col items-end gap-2">
       {open && (
         <div className="w-80 rounded-md border bg-card shadow-xl animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
           <div className="flex items-center justify-between border-b px-3 py-2">
