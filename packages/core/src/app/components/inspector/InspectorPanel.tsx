@@ -377,10 +377,14 @@ function CommentsSection({
 // frame is 0%, which looks identical to a replay. Forcing duration→0
 // + fill-mode forwards makes any newly-mounted element jump directly
 // to the final keyframe, so HMR is invisible.
+//
+// `:not([data-inspector-ui], [data-inspector-ui] *)` keeps inspector
+// chrome (overlay frame, panel, comment widget) outside the freeze, so
+// their own transitions (e.g., the hover frame's morph) still animate.
 const EDITING_FREEZE_CSS = `
-[data-inspector-editing] *,
-[data-inspector-editing] *::before,
-[data-inspector-editing] *::after {
+[data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *),
+[data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *)::before,
+[data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *)::after {
   animation-duration: 1ms !important;
   animation-delay: 0s !important;
   animation-iteration-count: 1 !important;

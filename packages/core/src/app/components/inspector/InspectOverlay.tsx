@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { findSlideSource, type SlideSourceHit } from '@/lib/inspector/fiber';
 import { useInspector } from './InspectorProvider';
 
@@ -97,14 +97,14 @@ function FrameOverlay({
   // becomes visible (or re-appears after a fade-out), we want to *snap*
   // to the new rect, not slide in from wherever the previous frame was
   // — so morph stays off for the first render of a new appearance, and
-  // an effect flips it on once the fade-in is committed.
+  // a layout effect flips it on synchronously after commit so any
+  // subsequent rect change in the same visible session animates.
   const [morph, setMorph] = useState(false);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (visible) {
-      const id = requestAnimationFrame(() => setMorph(true));
-      return () => cancelAnimationFrame(id);
+      setMorph(true);
+      return;
     }
-    // After fade-out, drop morph so the next appearance can snap.
     const t = setTimeout(() => setMorph(false), FRAME_FADE_MS);
     return () => clearTimeout(t);
   }, [visible]);
@@ -120,6 +120,7 @@ function FrameOverlay({
   return (
     <div
       ref={overlayRef}
+      data-inspector-ui
       className="pointer-events-none absolute inset-0 z-30"
       style={{ cursor: 'crosshair' }}
     >
