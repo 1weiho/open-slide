@@ -4,21 +4,14 @@ import type { Plugin } from 'vite';
 import { type AstNode, walkJsx } from './babel-walk.ts';
 
 // Inject `data-slide-loc="<line>:<col>"` onto every host JSX element in
-// slide source files. The inspector reads this attribute off the DOM at
-// click time to map a click to a source location directly, instead of
-// walking React fibers and trusting `_debugSource` (which can be stale
-// after HMR, or point at a parent component invocation that doesn't
-// forward `style`).
-//
-// The line/col captured is the position of the element's opening `<`
-// in the on-disk file as Vite reads it. Each `/__edit` write triggers
-// a re-transform, so the attribute stays in sync with the file.
+// slide source files so the inspector can map a click straight to a
+// source location, sidestepping HMR-stale `_debugSource` on fibers.
 
 function isHostJsxName(name: unknown): name is { type: string; name: string; end: number } {
   if (!name || typeof name !== 'object') return false;
   const n = name as { type?: string; name?: string };
-  // Only lowercase-identifier tags render as DOM elements; capitalized
-  // ones are React components and may not forward arbitrary props.
+  // Only lowercase tags are host elements; capitalized ones are
+  // components that may not forward arbitrary props.
   return n.type === 'JSXIdentifier' && typeof n.name === 'string' && /^[a-z]/.test(n.name);
 }
 
@@ -79,12 +72,11 @@ export function locTagsPlugin(opts: LocTagsPluginOptions): Plugin {
   return {
     name: 'open-slide:loc-tags',
     apply: 'serve',
-    // Run before @vitejs/plugin-react so React's JSX transform sees our
-    // injected attributes as part of the source.
+    // Must run before @vitejs/plugin-react so the JSX transform
+    // sees our injected attributes.
     enforce: 'pre',
     transform(code, id) {
       const filePath = id.split('?')[0];
-      // Only slide entry files: `<slidesRoot>/<id>/index.tsx`.
       if (!filePath.startsWith(slidesRoot + path.sep)) return null;
       if (!filePath.endsWith(`${path.sep}index.tsx`)) return null;
       const next = injectLocTags(code);

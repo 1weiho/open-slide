@@ -72,9 +72,8 @@ describe('parseMarkers', () => {
 });
 
 describe('applyEdit / set-style', () => {
-  // The synthetic source files in these tests put every JSXElement's
-  // opening tag at column 0 of its line. The line numbers below match
-  // the position of that opening tag (1-indexed).
+  // Every JSX opening tag in these synthetic sources sits at column 0;
+  // the line numbers below are that tag's line (1-indexed).
   it('inserts a new style attribute when none exists', () => {
     const src = ['export default [() => (', '<h1>Hello</h1>', ')];', ''].join('\n');
     const r = applyEdit(src, 2, 0, [{ kind: 'set-style', key: 'color', value: '#ef4444' }]);

@@ -86,9 +86,7 @@ export function parseMarkers(source: string): Comment[] {
     try {
       const payload = JSON.parse(b64urlDecode(textB64)) as { note: string; hint?: string };
       comments.push({ id, line: i + 1, ts, note: payload.note, hint: payload.hint });
-    } catch {
-      // skip malformed
-    }
+    } catch {}
   }
   return comments;
 }
@@ -97,17 +95,10 @@ function newId(): string {
   return `c-${randomUUID().replace(/-/g, '').slice(0, 8)}`;
 }
 
-// Insertion plan: where to splice the marker into the source.
-//
-// We always insert the marker *inside* a JSX container (as its first child),
-// never as a JSX-comment sibling. A JSX-comment-like token written outside
-// JSX context (e.g. as the body of `() => ( <Foo/> )`) is parsed as an empty
-// object literal and breaks the surrounding expression. Children of a
-// JSXElement / JSXFragment are unambiguously JSX context, so the marker is
-// always valid there.
-//
-// `offset` is the character index where a fresh `\n<indent><marker>` should
-// be spliced in; `indent` is the indentation to apply to the marker line.
+// We always splice the marker as the first child of a JSX container.
+// A JSX-comment-like token outside JSX context (e.g. as the body of
+// `() => ( <Foo/> )`) is parsed as an empty object literal and breaks
+// the surrounding expression.
 type InsertionPlan = { offset: number; indent: string };
 
 function lineToOffset(source: string, line: number): number {
@@ -126,13 +117,8 @@ function lineIndent(source: string, lineNumber: number): string {
   return m?.[0] ?? '';
 }
 
-/**
- * Collect every JSXElement/JSXFragment whose location encloses the click
- * point, ordered innermost-first. "Encloses" is inclusive at the start
- * and exclusive at the end. Used as a fallback when an exact start
- * match isn't available (e.g., the client sent a fiber-derived line/col
- * that doesn't quite line up with the JSX opening `<`).
- */
+// Innermost-first list of JSX nodes enclosing the click point.
+// Inclusive at start, exclusive at end.
 function findJsxAncestors(ast: AstNode, line: number, column: number): AstNode[] {
   const hits: { node: AstNode; size: number }[] = [];
   walkJsx(ast, (n) => {
@@ -169,16 +155,9 @@ function planInsertion(source: string, target: AstNode): InsertionPlan | null {
   return null;
 }
 
-/**
- * Resolve a click on the slide page (line/col from React fiber's
- * `_debugSource`) to an in-source offset where we can safely splice a
- * `@slide-comment` marker.
- *
- * Strategy: parse the file, find every JSX container around the click, and
- * walk innermost → outermost looking for the first one we can insert *inside*
- * (i.e. not self-closing). Self-closing elements like `<img/>` get hoisted to
- * their nearest non-self-closing ancestor.
- */
+// Walk innermost → outermost looking for the first JSX container we
+// can insert *inside* (not self-closing). Self-closing elements like
+// `<img/>` get hoisted to their nearest non-self-closing ancestor.
 function findInsertion(
   source: string,
   line: number,
@@ -214,15 +193,8 @@ function offsetToLine(source: string, offset: number): number {
   return line;
 }
 
-// =====================================================================
-// Visual editor
-//
-// `applyEdit` mutates a slide source file in-place: it locates the
-// innermost JSXElement at a click point and rewrites either its
-// `style={{...}}` prop or its single text child. The mutation is a
-// minimal text splice computed from AST ranges, so unrelated formatting
-// is preserved.
-// =====================================================================
+// `applyEdit` rewrites a slide file in place via minimal text splices
+// computed from AST ranges, so unrelated formatting is preserved.
 
 export type EditOp =
   | { kind: 'set-style'; key: string; value: string | null }
@@ -250,16 +222,14 @@ function findInnermostJsxElement(source: string, line: number, column: number): 
   const ast = parseSource(source);
   if (!ast) return null;
 
-  // Prefer an exact match on `loc.start` — this is what the client
-  // sends when reading from `data-slide-loc`, and matching exactly
-  // avoids accidentally targeting an outer JSX whose loc happens to
-  // enclose a click point.
+  // Prefer exact `loc.start` match (what `data-slide-loc` sends) so
+  // we don't accidentally hit an outer JSX whose range happens to
+  // enclose the click point.
   const exact = findJsxByStart(ast, line, column);
   if (exact) return exact;
 
-  // Fallback: any JSXElement that encloses (line, column), innermost
-  // first. Covers fiber-walked clicks where the column may not be
-  // perfectly aligned with the JSX opening `<`.
+  // Fallback for fiber-walked clicks whose column may not align with
+  // the opening `<`.
   const ancestors = findJsxAncestors(ast, line, column);
   for (const n of ancestors) {
     if (n.type === 'JSXElement') return n;
@@ -307,7 +277,8 @@ function buildStyleSplice(
   if (!opening) return { error: 'no opening element' };
 
   const existing = findStyleAttr(opening);
-  // key → raw source slice of the value (preserves variables, complex exprs)
+  // Raw source slices, not parsed values — preserves variables and
+  // complex expressions exactly as authored.
   const style = new Map<string, string>();
 
   if (existing) {
@@ -367,9 +338,8 @@ function buildStyleSplice(
 }
 
 function formatJsxText(value: string): string {
-  // JSXText cannot contain `{`, `}`, `<`, `>`. If the value has any of
-  // those (or starts/ends with whitespace, which JSX collapses), emit as
-  // a JSXExpressionContainer wrapping a string literal.
+  // JSXText can't hold `{}<>` and collapses leading/trailing whitespace,
+  // so wrap the value in an expression container when it would lose info.
   if (/[{}<>]/.test(value) || /^\s|\s$/.test(value) || value === '') {
     return `{${jsString(value)}}`;
   }
@@ -397,8 +367,8 @@ function buildTextSplice(element: AstNode, value: string): Splice | { error: str
   const child = meaningful[0];
 
   if (child.type === 'JSXText') {
-    // Replace the entire children span (incl. surrounding whitespace) so
-    // we don't leave dangling whitespace from the old layout.
+    // Replace the whole children span so old surrounding whitespace
+    // doesn't leak into the new value.
     const first = children[0];
     const last = children[children.length - 1];
     return { from: first.start, to: last.end, text: formatJsxText(value) };
@@ -500,11 +470,9 @@ export function commentsPlugin(opts: CommentsPluginOptions): Plugin {
             return json(res, 200, { ok: true, changed });
           }
 
-          // Apply many edits to one file in a single read-modify-write
-          // cycle, so a session of edits across multiple elements only
-          // triggers one HMR. Edits are applied in order; per-edit
-          // failures are reported in the response without aborting the
-          // batch, since each edit is independent.
+          // One read-modify-write per batch so a multi-element edit
+          // session lands as a single HMR. Per-edit failures are
+          // reported but don't abort the batch.
           if (url.pathname === '/batch') {
             const body = (await readBody(req)) as EditBatchBody;
             const slideId = body.slideId ?? '';

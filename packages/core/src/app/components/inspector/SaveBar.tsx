@@ -3,18 +3,14 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useInspector } from './InspectorProvider';
 
-// Floating "you have unsaved changes" pill at the bottom-center of the
-// slide canvas. Lives inside `<main data-inspector-root>` so it tracks
-// the canvas area when the editor panel slides in. Renders only while
-// there are buffered edits — the optimistic DOM updates make the
-// canvas *look* saved, so without this affordance a user could close
-// the tab without realising their tweaks never hit disk.
+// Optimistic DOM updates make the canvas *look* saved, so without
+// this affordance a user could close the tab thinking their tweaks
+// hit disk when they're still buffered in memory.
 export function SaveBar() {
   const { pendingCount, commitEdits, committing } = useInspector();
   const [justSaved, setJustSaved] = useState(false);
 
-  // Show a brief "Saved" state after a manual commit so the
-  // disappearance of the bar feels intentional, not glitchy.
+  // Brief "Saved" hold so the bar's disappearance feels intentional.
   useEffect(() => {
     if (!justSaved) return;
     const t = setTimeout(() => setJustSaved(false), 1200);

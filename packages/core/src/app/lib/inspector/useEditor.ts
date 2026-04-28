@@ -34,9 +34,7 @@ export function useEditor(slideId: string) {
     [slideId],
   );
 
-  // Batched commit: send many element edits in one round-trip so a
-  // session of edits across multiple elements lands as a single file
-  // write and a single HMR tick.
+  // Batch many element edits into one file write and one HMR tick.
   const applyEdits = useCallback(
     async (edits: Edit[]) => {
       if (edits.length === 0) return;

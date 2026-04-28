@@ -1,8 +1,4 @@
-/**
- * Generic JSX-aware AST walker shared by the comments and loc-tags
- * plugins. Visits every `JSXElement` / `JSXFragment` in the tree;
- * returning `'stop'` from the visitor short-circuits traversal.
- */
+// Visits every JSXElement/JSXFragment; return `'stop'` to short-circuit.
 
 export type Loc = { line: number; column: number };
 export type AstNode = {

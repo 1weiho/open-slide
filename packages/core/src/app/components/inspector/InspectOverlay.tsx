@@ -62,8 +62,8 @@ export function InspectOverlay() {
     <FrameOverlay
       active={active}
       overlayRef={overlayRef}
-      // Pin the highlight to the selected element so the user sees
-      // what the panel is editing even after the cursor moves elsewhere.
+      // Pin to the selection so the highlight tracks what the panel
+      // is editing even after the cursor moves away.
       targetRect={selected?.anchor.getBoundingClientRect() ?? hover?.rect ?? null}
     />
   );
@@ -81,8 +81,8 @@ function FrameOverlay({
   const overlayRect = overlayRef.current?.getBoundingClientRect();
   const visible = !!(active && targetRect && overlayRect);
 
-  // Hold the last rendered rect in a ref so the frame can stay in
-  // place during a fade-out (when targetRect goes null).
+  // Hold the last rect so the frame stays put during fade-out, when
+  // `targetRect` has already gone null.
   const lastRectRef = useRef<RelRect | null>(null);
   if (visible && targetRect && overlayRect) {
     lastRectRef.current = {
@@ -93,12 +93,8 @@ function FrameOverlay({
     };
   }
 
-  // `morph` toggles the geometry transitions on. When the frame first
-  // becomes visible (or re-appears after a fade-out), we want to *snap*
-  // to the new rect, not slide in from wherever the previous frame was
-  // — so morph stays off for the first render of a new appearance, and
-  // a layout effect flips it on synchronously after commit so any
-  // subsequent rect change in the same visible session animates.
+  // First render after appearing: snap to the new rect (no transition).
+  // Subsequent rect changes in the same visible session: animate.
   const [morph, setMorph] = useState(false);
   useLayoutEffect(() => {
     if (visible) {

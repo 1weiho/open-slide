@@ -5,15 +5,9 @@ export type SlideSourceHit = {
 };
 
 export type FindSlideSourceOptions = {
-  /**
-   * If true, skip fibers whose `stateNode` isn't a host HTMLElement
-   * (i.e., custom React components). Use this for the visual editor,
-   * which needs to mutate inline `style` on a real element — adding
-   * `style={...}` to a component-invocation JSX (`<MyComp/>`) usually
-   * does nothing because most components don't forward `style`. For
-   * comments, leave this off so the user can annotate any JSX,
-   * including component invocations.
-   */
+  // Visual editor uses this: skip component-invocation JSX (`<MyComp/>`)
+  // since most components don't forward `style`. Comments leave it off
+  // so any JSX can be annotated.
   hostOnly?: boolean;
 };
 
@@ -39,9 +33,8 @@ export function findSlideSource(
   slideId: string,
   opts?: FindSlideSourceOptions,
 ): SlideSourceHit | null {
-  // Primary: read the `data-slide-loc` attribute injected at compile
-  // time by the loc-tags Vite plugin. This is unambiguous, immune to
-  // HMR-stale fiber state, and lands directly on the host DOM element.
+  // Primary path: the `data-slide-loc` attribute injected by the
+  // loc-tags Vite plugin. Immune to HMR-stale fiber state.
   const tagged = el.closest<HTMLElement>('[data-slide-loc]');
   if (tagged) {
     const loc = tagged.dataset.slideLoc;
@@ -57,9 +50,8 @@ export function findSlideSource(
     }
   }
 
-  // Fallback: walk fibers. Used for elements whose JSX wasn't
-  // transformed (e.g., rendered by an imported component file) or
-  // when the plugin isn't installed.
+  // Fallback for JSX rendered from imported component files (which the
+  // loc-tags plugin doesn't transform).
   const needle = `/slides/${slideId}/index.tsx`;
   let fiber = getFiber(el);
   let anchor: HTMLElement = el;

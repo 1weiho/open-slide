@@ -36,18 +36,11 @@ type InspectorCtx = {
   setSelected: (s: SelectedTarget | null) => void;
   applyEdit: (line: number, column: number, ops: EditOp[]) => Promise<void>;
   applyEdits: (edits: Edit[]) => Promise<void>;
-  /**
-   * Append optimistic ops for a specific element to the in-memory
-   * commit buffer. Used by the editor panel each time the user nudges
-   * a control; the actual file write only happens on `commitEdits`
-   * (manual Save button) or when the inspector closes.
-   */
+  // Buffer ops in memory; `commitEdits` (manual Save or auto-flush on
+  // close) is what actually writes to disk.
   bufferOps: (line: number, column: number, ops: EditOp[]) => void;
-  /** Number of distinct elements with un-saved buffered edits. */
   pendingCount: number;
-  /** Persist all buffered ops in one batched POST. */
   commitEdits: () => Promise<void>;
-  /** True between the moment commit fires and the network round-trip resolves. */
   committing: boolean;
 };
 
@@ -115,9 +108,8 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
     }
   }, [applyEdits]);
 
-  // Auto-flush when the inspector is fully closed or the slide route
-  // unmounts, so a user who toggles inspect off (or navigates away)
-  // doesn't lose their edits.
+  // Auto-flush on inspector close and on route unmount so toggling
+  // off or navigating away doesn't drop buffered edits.
   const commitRef = useRef(commitEdits);
   commitRef.current = commitEdits;
   useEffect(() => {

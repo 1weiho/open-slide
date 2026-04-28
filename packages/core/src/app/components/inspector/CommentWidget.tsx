@@ -2,8 +2,6 @@ import { MessageSquare, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { useInspector } from './InspectorProvider';
 
-// Floating bottom-right comments overview. Lives inside `<main>` so it
-// tracks the canvas area when the right-side panel slides in/out.
 export function CommentWidget() {
   const { comments, remove, error } = useInspector();
   const [open, setOpen] = useState(false);

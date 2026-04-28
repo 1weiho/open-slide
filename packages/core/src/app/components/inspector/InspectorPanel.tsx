@@ -34,15 +34,15 @@ const PANEL_W = 340;
 const PANEL_TRANSITION_MS = 280;
 
 type ElementSnapshot = {
-  fontSize: number; // px
-  fontWeight: number; // 100–900
+  fontSize: number;
+  fontWeight: number;
   fontStyle: 'normal' | 'italic';
-  color: string; // hex
-  backgroundColor: string | null; // hex or null (transparent)
+  color: string;
+  backgroundColor: string | null;
   textAlign: 'left' | 'center' | 'right' | 'justify';
-  lineHeight: number | null; // unitless, or null when 'normal'
-  letterSpacing: number; // px
-  text: string | null; // null when not editable
+  lineHeight: number | null;
+  letterSpacing: number;
+  text: string | null;
 };
 
 export function InspectorPanel() {
@@ -70,8 +70,7 @@ export function InspectorPanel() {
     setSnapshot(readSnapshot(anchor));
   }, [selected, setSelected, slideId, reloadCounter]);
 
-  // Freeze CSS animations + transitions inside the slide whenever the
-  // inspector is open, so commits don't replay motion.
+  // Freeze slide animations while editing so commits don't replay motion.
   useEffect(() => {
     if (!active) return;
     const root = document.querySelector<HTMLElement>('[data-inspector-root]');
@@ -99,9 +98,8 @@ export function InspectorPanel() {
     (ops: EditOp[]) => {
       if (!selected) return;
       const anchor = selected.anchor;
-      // Optimistic DOM mutation: instant visual feedback. The provider
-      // separately persists these ops into the commit buffer so the
-      // SaveBar and the eventual file write know about them.
+      // Mutate the DOM optimistically for instant feedback; the provider
+      // buffers the same ops for the eventual file write.
       for (const op of ops) {
         if (op.kind === 'set-style' && anchor.isConnected) {
           const style = anchor.style as unknown as Record<string, string>;
@@ -116,10 +114,9 @@ export function InspectorPanel() {
     [selected, bufferOps],
   );
 
-  // Smooth slide-in/out: keep a "pinned" copy of the latest valid
-  // selection so the panel can keep rendering during the close-out
-  // animation. `animVisible` lags one frame behind mount so the CSS
-  // width transition fires on the deferred 0 → PANEL_W flip.
+  // `pinned` keeps the last selection rendered through the close-out
+  // animation; `animVisible` lags one frame so the width transition
+  // fires on the 0 → PANEL_W flip.
   const targetOpen = active && !!selected && !!snapshot;
   const [pinned, setPinned] = useState<{ s: SelectedTarget; n: ElementSnapshot } | null>(null);
   const [animVisible, setAnimVisible] = useState(false);
@@ -214,8 +211,6 @@ export function InspectorPanel() {
 
             <Separator />
 
-            {/* `mt-auto` pins comments to the bottom of the panel even
-                when the edit sections above don't fill the viewport. */}
             <div className="mt-auto">
               <CommentsSection
                 comments={comments}
@@ -230,8 +225,6 @@ export function InspectorPanel() {
     </aside>
   );
 }
-
-// ─── Layout helpers ─────────────────────────────────────────────────
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -253,8 +246,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-// ─── Pending-ops flush + freeze CSS ────────────────────────────────
-
 const EDITING_FREEZE_CSS = `
 [data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *),
 [data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *)::before,
@@ -269,8 +260,6 @@ const EDITING_FREEZE_CSS = `
 }
 `;
 
-// ─── Field components ───────────────────────────────────────────────
-
 function ContentField({
   snapshot,
   apply,
@@ -278,12 +267,9 @@ function ContentField({
   snapshot: ElementSnapshot;
   apply: (ops: EditOp[]) => void;
 }) {
-  // IME composition (Bopomofo, Pinyin, etc.) doesn't fire `onChange` for
-  // each keystroke — only when the user commits a candidate. If we keep
-  // the textarea controlled by `snapshot.text`, any unrelated re-render
-  // mid-composition forces React to sync the DOM value back, clobbering
-  // the in-progress composition. Mirror the value in local state and
-  // skip syncs while a composition is active.
+  // Mirror the value locally and skip syncs during IME composition;
+  // a re-render mid-composition would otherwise clobber in-progress
+  // candidates (Bopomofo/Pinyin only commit on candidate selection).
   const [local, setLocal] = useState(snapshot.text ?? '');
   const composingRef = useRef(false);
 
@@ -550,8 +536,8 @@ function ColorField({
   onClear?: () => void;
   clearable: boolean;
 }) {
-  // Hex text input keeps a `draft` so the user can type intermediate
-  // values like "#a" without us spamming `apply` with invalid hex.
+  // Buffer the text input so intermediate hex like "#a" doesn't
+  // commit until it parses as a full color.
   const [draft, setDraft] = useState(value);
   useEffect(() => setDraft(value), [value]);
 
@@ -641,8 +627,6 @@ function NumberField({
     </div>
   );
 }
-
-// ─── Comments ───────────────────────────────────────────────────────
 
 function CommentsSection({
   comments,
@@ -736,8 +720,6 @@ function CommentsSection({
     </Section>
   );
 }
-
-// ─── Helpers ────────────────────────────────────────────────────────
 
 function readSnapshot(el: HTMLElement): ElementSnapshot {
   const cs = getComputedStyle(el);
