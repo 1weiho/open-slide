@@ -4,6 +4,11 @@ import { useInspector } from './InspectorProvider';
 
 type Highlight = { rect: DOMRect; hit: SlideSourceHit };
 
+type RelRect = { left: number; top: number; width: number; height: number };
+
+const FRAME_FADE_MS = 150;
+const FRAME_MORPH_MS = 180;
+
 export function InspectOverlay() {
   const { active, slideId, selected, setSelected, cancel } = useInspector();
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -53,14 +58,64 @@ export function InspectOverlay() {
     };
   }, [active, slideId, setSelected, cancel]);
 
-  if (!active) return null;
+  return (
+    <FrameOverlay
+      active={active}
+      overlayRef={overlayRef}
+      // Pin the highlight to the selected element so the user sees
+      // what the panel is editing even after the cursor moves elsewhere.
+      targetRect={selected?.anchor.getBoundingClientRect() ?? hover?.rect ?? null}
+    />
+  );
+}
 
+function FrameOverlay({
+  active,
+  overlayRef,
+  targetRect,
+}: {
+  active: boolean;
+  overlayRef: React.RefObject<HTMLDivElement>;
+  targetRect: DOMRect | null;
+}) {
   const overlayRect = overlayRef.current?.getBoundingClientRect();
-  // Pin the highlight to the selected element so the user sees what
-  // the panel is editing even after the cursor moves elsewhere.
-  const persistentRect = selected?.anchor.getBoundingClientRect() ?? null;
-  const displayRect = persistentRect ?? hover?.rect ?? null;
-  const show = displayRect && overlayRect;
+  const visible = !!(active && targetRect && overlayRect);
+
+  // Hold the last rendered rect in a ref so the frame can stay in
+  // place during a fade-out (when targetRect goes null).
+  const lastRectRef = useRef<RelRect | null>(null);
+  if (visible && targetRect && overlayRect) {
+    lastRectRef.current = {
+      left: targetRect.left - overlayRect.left,
+      top: targetRect.top - overlayRect.top,
+      width: targetRect.width,
+      height: targetRect.height,
+    };
+  }
+
+  // `morph` toggles the geometry transitions on. When the frame first
+  // becomes visible (or re-appears after a fade-out), we want to *snap*
+  // to the new rect, not slide in from wherever the previous frame was
+  // — so morph stays off for the first render of a new appearance, and
+  // an effect flips it on once the fade-in is committed.
+  const [morph, setMorph] = useState(false);
+  useEffect(() => {
+    if (visible) {
+      const id = requestAnimationFrame(() => setMorph(true));
+      return () => cancelAnimationFrame(id);
+    }
+    // After fade-out, drop morph so the next appearance can snap.
+    const t = setTimeout(() => setMorph(false), FRAME_FADE_MS);
+    return () => clearTimeout(t);
+  }, [visible]);
+
+  if (!active) return null;
+  const rect = lastRectRef.current;
+  const transition = morph
+    ? `left ${FRAME_MORPH_MS}ms ease-out, top ${FRAME_MORPH_MS}ms ease-out, ` +
+      `width ${FRAME_MORPH_MS}ms ease-out, height ${FRAME_MORPH_MS}ms ease-out, ` +
+      `opacity ${FRAME_FADE_MS}ms ease-out`
+    : `opacity ${FRAME_FADE_MS}ms ease-out`;
 
   return (
     <div
@@ -68,14 +123,16 @@ export function InspectOverlay() {
       className="pointer-events-none absolute inset-0 z-30"
       style={{ cursor: 'crosshair' }}
     >
-      {show && (
+      {rect && (
         <div
           className="absolute"
           style={{
-            left: displayRect.left - overlayRect.left,
-            top: displayRect.top - overlayRect.top,
-            width: displayRect.width,
-            height: displayRect.height,
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height,
+            opacity: visible ? 1 : 0,
+            transition,
             outline: '2px solid #3b82f6',
             background: 'rgba(59,130,246,0.1)',
           }}
