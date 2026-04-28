@@ -951,16 +951,16 @@ const Autoregressive: Page = () => (
   >
     <Style />
     <Eyebrow>The loop</Eyebrow>
-    <SectionTitle>One token in. One token out. Repeat.</SectionTitle>
+    <SectionTitle margin="20px 0 12px">One token in. One token out. Repeat.</SectionTitle>
     <p
       className="l-fadeup"
       style={{
         animationDelay: '320ms',
-        fontSize: 28,
+        fontSize: 26,
         lineHeight: 1.5,
         color: palette.muted,
         fontWeight: 300,
-        margin: '0 0 50px',
+        margin: '0 0 32px',
         maxWidth: 1500,
       }}
     >
@@ -968,7 +968,7 @@ const Autoregressive: Page = () => (
       again. Generation is a chain of single-step bets.
     </p>
 
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, flex: 1 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1 }}>
       {[
         {
           n: '01',
@@ -1009,8 +1009,8 @@ const Autoregressive: Page = () => (
             animationDelay: `${row.delay}ms`,
             display: 'flex',
             alignItems: 'center',
-            gap: 36,
-            padding: '24px 36px',
+            gap: 32,
+            padding: '16px 32px',
             background: row.highlight ? palette.accentSoft : palette.surface,
             border: `1px solid ${row.highlight ? palette.accent : palette.line}`,
             borderRadius: 14,
@@ -1019,9 +1019,9 @@ const Autoregressive: Page = () => (
           <div
             style={{
               flexShrink: 0,
-              width: 72,
+              width: 64,
               fontFamily: fonts.serif,
-              fontSize: 56,
+              fontSize: 48,
               color: row.highlight ? palette.accent : palette.faint,
               lineHeight: 1,
               fontWeight: 400,
@@ -1030,13 +1030,13 @@ const Autoregressive: Page = () => (
             {row.n}
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 28, color: palette.text, lineHeight: 1.4 }}>{row.label}</div>
+            <div style={{ fontSize: 26, color: palette.text, lineHeight: 1.3 }}>{row.label}</div>
             <div
               style={{
                 fontFamily: fonts.mono,
                 fontSize: 22,
                 color: palette.muted,
-                marginTop: 6,
+                marginTop: 4,
                 letterSpacing: '-0.01em',
               }}
             >
