@@ -46,13 +46,14 @@ type ElementSnapshot = {
 };
 
 export function InspectorPanel() {
-  const { active, slideId, selected, setSelected, bufferOps, comments, add, remove } =
+  const { active, slideId, selected, setSelected, bufferOps, pendingCount, comments, add, remove } =
     useInspector();
   const [snapshot, setSnapshot] = useState<ElementSnapshot | null>(null);
   const reloadCounter = useReloadCounter();
 
   useEffect(() => {
     void reloadCounter;
+    void pendingCount;
     if (!selected) {
       setSnapshot(null);
       return;
@@ -68,7 +69,7 @@ export function InspectorPanel() {
       }
     }
     setSnapshot(readSnapshot(anchor));
-  }, [selected, setSelected, slideId, reloadCounter]);
+  }, [selected, setSelected, slideId, reloadCounter, pendingCount]);
 
   // Freeze slide animations while editing so commits don't replay motion.
   useEffect(() => {
@@ -97,19 +98,8 @@ export function InspectorPanel() {
   const apply = useCallback(
     (ops: EditOp[]) => {
       if (!selected) return;
-      const anchor = selected.anchor;
-      // Mutate the DOM optimistically for instant feedback; the provider
-      // buffers the same ops for the eventual file write.
-      for (const op of ops) {
-        if (op.kind === 'set-style' && anchor.isConnected) {
-          const style = anchor.style as unknown as Record<string, string>;
-          style[op.key] = op.value ?? '';
-        } else if (op.kind === 'set-text' && anchor.isConnected) {
-          anchor.textContent = op.value;
-        }
-      }
-      bufferOps(selected.line, selected.column, ops);
-      if (anchor.isConnected) setSnapshot(readSnapshot(anchor));
+      bufferOps(selected.line, selected.column, selected.anchor, ops);
+      if (selected.anchor.isConnected) setSnapshot(readSnapshot(selected.anchor));
     },
     [selected, bufferOps],
   );

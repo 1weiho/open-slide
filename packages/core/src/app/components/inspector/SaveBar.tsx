@@ -1,4 +1,4 @@
-import { Check, Loader2, Save } from 'lucide-react';
+import { Check, Loader2, Save, Undo2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useInspector } from './InspectorProvider';
@@ -7,7 +7,7 @@ import { useInspector } from './InspectorProvider';
 // this affordance a user could close the tab thinking their tweaks
 // hit disk when they're still buffered in memory.
 export function SaveBar() {
-  const { pendingCount, commitEdits, committing } = useInspector();
+  const { pendingCount, commitEdits, cancelEdits, committing } = useInspector();
   const [justSaved, setJustSaved] = useState(false);
 
   // Brief "Saved" hold so the bar's disappearance feels intentional.
@@ -40,6 +40,18 @@ export function SaveBar() {
           <span className="text-xs font-medium text-foreground">
             {pendingCount} unsaved {pendingCount === 1 ? 'change' : 'changes'}
           </span>
+        )}
+        {!justSaved && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 rounded-full px-2.5 text-[11px] text-muted-foreground hover:text-foreground"
+            onClick={cancelEdits}
+            disabled={committing || pendingCount === 0}
+          >
+            <Undo2 className="size-3.5" />
+            Discard
+          </Button>
         )}
         <Button
           size="sm"

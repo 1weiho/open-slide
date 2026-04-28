@@ -19,8 +19,16 @@ export type SelectedTarget = {
   anchor: HTMLElement;
 };
 
-type OpsBucket = { styleOps: Map<string, string | null>; textOp: string | null };
-type ElementBucket = { line: number; column: number; ops: OpsBucket };
+type Bucket = {
+  line: number;
+  column: number;
+  styleOps: Map<string, string | null>;
+  textOp: { value: string } | null;
+  // Pre-edit snapshot of the DOM, captured the first time we touch
+  // each style key / text. Used by `cancelEdits` to revert.
+  origStyle: Map<string, string>;
+  origText: { value: string } | null;
+};
 
 type InspectorCtx = {
   slideId: string;
@@ -36,11 +44,13 @@ type InspectorCtx = {
   setSelected: (s: SelectedTarget | null) => void;
   applyEdit: (line: number, column: number, ops: EditOp[]) => Promise<void>;
   applyEdits: (edits: Edit[]) => Promise<void>;
-  // Buffer ops in memory; `commitEdits` (manual Save or auto-flush on
-  // close) is what actually writes to disk.
-  bufferOps: (line: number, column: number, ops: EditOp[]) => void;
+  // Mutate the DOM optimistically, snapshot the pre-edit values, and
+  // remember the ops. `commitEdits` (manual Save or auto-flush on
+  // close) is what actually writes to disk; `cancelEdits` reverts.
+  bufferOps: (line: number, column: number, anchor: HTMLElement, ops: EditOp[]) => void;
   pendingCount: number;
   commitEdits: () => Promise<void>;
+  cancelEdits: () => void;
   committing: boolean;
 };
 
@@ -58,29 +68,48 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
   const { comments, error, refetch, add, remove } = useComments(slideId);
   const { applyEdit, applyEdits } = useEditor(slideId);
 
-  const pendingRef = useRef<Map<string, ElementBucket>>(new Map());
+  const pendingRef = useRef<Map<string, Bucket>>(new Map());
   const [pendingCount, setPendingCount] = useState(0);
   const [committing, setCommitting] = useState(false);
 
   const refreshCount = useCallback(() => {
     let n = 0;
     for (const b of pendingRef.current.values()) {
-      if (b.ops.styleOps.size > 0 || b.ops.textOp !== null) n++;
+      if (b.styleOps.size > 0 || b.textOp !== null) n++;
     }
     setPendingCount(n);
   }, []);
 
   const bufferOps = useCallback(
-    (line: number, column: number, ops: EditOp[]) => {
+    (line: number, column: number, anchor: HTMLElement, ops: EditOp[]) => {
       const key = `${line}:${column}`;
       let bucket = pendingRef.current.get(key);
       if (!bucket) {
-        bucket = { line, column, ops: { styleOps: new Map(), textOp: null } };
+        bucket = {
+          line,
+          column,
+          styleOps: new Map(),
+          textOp: null,
+          origStyle: new Map(),
+          origText: null,
+        };
         pendingRef.current.set(key, bucket);
       }
+      const style = anchor.style as unknown as Record<string, string>;
       for (const op of ops) {
-        if (op.kind === 'set-style') bucket.ops.styleOps.set(op.key, op.value);
-        else if (op.kind === 'set-text') bucket.ops.textOp = op.value;
+        if (op.kind === 'set-style') {
+          if (!bucket.origStyle.has(op.key)) {
+            bucket.origStyle.set(op.key, style[op.key] ?? '');
+          }
+          bucket.styleOps.set(op.key, op.value);
+          if (anchor.isConnected) style[op.key] = op.value ?? '';
+        } else if (op.kind === 'set-text') {
+          if (bucket.origText === null) {
+            bucket.origText = { value: anchor.textContent ?? '' };
+          }
+          bucket.textOp = { value: op.value };
+          if (anchor.isConnected) anchor.textContent = op.value;
+        }
       }
       refreshCount();
     },
@@ -91,10 +120,10 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
     const buckets = pendingRef.current;
     if (buckets.size === 0) return;
     const edits: Edit[] = [];
-    for (const { line, column, ops } of buckets.values()) {
+    for (const { line, column, styleOps, textOp } of buckets.values()) {
       const list: EditOp[] = [];
-      for (const [k, v] of ops.styleOps) list.push({ kind: 'set-style', key: k, value: v });
-      if (ops.textOp !== null) list.push({ kind: 'set-text', value: ops.textOp });
+      for (const [k, v] of styleOps) list.push({ kind: 'set-style', key: k, value: v });
+      if (textOp !== null) list.push({ kind: 'set-text', value: textOp.value });
       if (list.length > 0) edits.push({ line, column, ops: list });
     }
     pendingRef.current = new Map();
@@ -107,6 +136,20 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       setCommitting(false);
     }
   }, [applyEdits]);
+
+  const cancelEdits = useCallback(() => {
+    if (pendingRef.current.size === 0) return;
+    const root = document.querySelector<HTMLElement>('[data-inspector-root]');
+    for (const b of pendingRef.current.values()) {
+      const el = root?.querySelector<HTMLElement>(`[data-slide-loc="${b.line}:${b.column}"]`);
+      if (!el) continue;
+      const style = el.style as unknown as Record<string, string>;
+      for (const [k, v] of b.origStyle) style[k] = v;
+      if (b.origText !== null) el.textContent = b.origText.value;
+    }
+    pendingRef.current = new Map();
+    setPendingCount(0);
+  }, []);
 
   // Auto-flush on inspector close and on route unmount so toggling
   // off or navigating away doesn't drop buffered edits.
@@ -136,12 +179,12 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       const bucket = pendingRef.current.get(loc);
       if (!bucket) return;
       const style = el.style as unknown as Record<string, string>;
-      for (const [key, value] of bucket.ops.styleOps) {
+      for (const [key, value] of bucket.styleOps) {
         const v = value ?? '';
         if (style[key] !== v) style[key] = v;
       }
-      if (bucket.ops.textOp !== null && el.textContent !== bucket.ops.textOp) {
-        el.textContent = bucket.ops.textOp;
+      if (bucket.textOp !== null && el.textContent !== bucket.textOp.value) {
+        el.textContent = bucket.textOp.value;
       }
     };
 
@@ -186,6 +229,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       bufferOps,
       pendingCount,
       commitEdits,
+      cancelEdits,
       committing,
     }),
     [
@@ -204,6 +248,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       bufferOps,
       pendingCount,
       commitEdits,
+      cancelEdits,
       committing,
     ],
   );
