@@ -126,7 +126,8 @@ export async function init(opts: InitOptions): Promise<void> {
       `  ${chalk.cyan(`${packageManager} install`)}    ${chalk.dim('# install was skipped')}\n`,
     );
   }
-  process.stdout.write(`  ${chalk.cyan(`${packageManager} dev`)}\n\n`);
+  const devCommand = packageManager === 'npm' ? 'npm run dev' : `${packageManager} dev`;
+  process.stdout.write(`  ${chalk.cyan(devCommand)}\n\n`);
   process.stdout.write(
     chalk.dim('Then open the dev server and start authoring in slides/<your-slide>/.\n'),
   );
