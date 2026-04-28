@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import config from 'virtual:open-slide/config';
+import { Toaster } from './components/ui/sonner';
 import { Home } from './routes/Home';
 import { Slide } from './routes/Slide';
 
@@ -11,6 +12,7 @@ export function App() {
         <Route path="/s/:slideId" element={<Slide />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <Toaster />
     </BrowserRouter>
   );
 }

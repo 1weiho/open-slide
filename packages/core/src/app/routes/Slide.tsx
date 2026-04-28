@@ -1,5 +1,6 @@
 import config from 'virtual:open-slide/config';
-import { ChevronLeft, Download, FileCode2, Loader2, Pencil, Play } from 'lucide-react';
+import { ChevronLeft, Download, FileCode2, FileText, Loader2, Pencil, Play } from 'lucide-react';
+import { toast } from 'sonner';
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { CommentWidget } from '@/components/inspector/CommentWidget';
@@ -24,7 +25,9 @@ import { ClickNavZones } from '../components/ClickNavZones';
 import { Player } from '../components/Player';
 import { SlideCanvas } from '../components/SlideCanvas';
 import { ThumbnailRail } from '../components/ThumbnailRail';
+import { PdfProgressToast } from '../components/PdfProgressToast';
 import { exportSlideAsHtml } from '../lib/export-html';
+import { exportSlideAsPdf } from '../lib/export-pdf';
 import type { SlideModule } from '../lib/sdk';
 import { loadSlide } from '../lib/slides';
 
@@ -217,6 +220,44 @@ export function Slide() {
                   >
                     <FileCode2 />
                     Download HTML
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={exporting}
+                    onSelect={async () => {
+                      if (!slide || exporting) return;
+                      setExporting(true);
+                      const toastId = `pdf-export-${slideId}`;
+                      toast.custom(
+                        () => (
+                          <PdfProgressToast
+                            progress={{
+                              phase: 'processing',
+                              current: 0,
+                              total: pages.length,
+                              percent: 0,
+                            }}
+                          />
+                        ),
+                        { id: toastId, duration: Infinity },
+                      );
+                      try {
+                        await exportSlideAsPdf(slide, slideId, (p) => {
+                          toast.custom(() => <PdfProgressToast progress={p} />, {
+                            id: toastId,
+                            duration: Infinity,
+                          });
+                        });
+                      } catch (err) {
+                        console.error('[open-slide] pdf export failed', err);
+                        toast.error('PDF export failed', { id: toastId, duration: 4000 });
+                      } finally {
+                        setExporting(false);
+                        toast.dismiss(toastId);
+                      }
+                    }}
+                  >
+                    <FileText />
+                    Download PDF
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
