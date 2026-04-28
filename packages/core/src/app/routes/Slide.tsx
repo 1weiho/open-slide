@@ -3,14 +3,13 @@ import { ChevronLeft, Download, FileCode2, FileText, Loader2, Pencil, Play } fro
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { CommentWidget } from '@/components/inspector/CommentWidget';
 import { InspectOverlay } from '@/components/inspector/InspectOverlay';
+import { InspectorPanel } from '@/components/inspector/InspectorPanel';
 import {
   InspectorProvider,
   InspectToggleButton,
   useInspector,
 } from '@/components/inspector/InspectorProvider';
-import { VisualEditorPanel } from '@/components/inspector/VisualEditorPanel';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -304,21 +303,11 @@ export function Slide() {
               {index + 1} / {pageCount}
             </div>
           </main>
-          <VisualEditorPanel />
+          <InspectorPanel />
         </div>
-
-        <CommentWidgetSlot />
       </div>
     </InspectorProvider>
   );
-}
-
-function CommentWidgetSlot() {
-  // Hide the floating comment widget while the visual editor panel is
-  // open — they'd otherwise overlap in the bottom-right corner.
-  const { active, mode } = useInspector();
-  if (active && mode === 'edit') return null;
-  return <CommentWidget />;
 }
 
 function SlideWheelNavigation({

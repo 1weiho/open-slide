@@ -1,6 +1,16 @@
-import { AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, Italic, X } from 'lucide-react';
+import {
+  AlignCenter,
+  AlignJustify,
+  AlignLeft,
+  AlignRight,
+  Bold,
+  Italic,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { findSlideSource } from '@/lib/inspector/fiber';
+import type { SlideComment } from '@/lib/inspector/useComments';
 import type { EditOp } from '@/lib/inspector/useEditor';
 import { useInspector } from './InspectorProvider';
 
@@ -18,19 +28,20 @@ type ElementSnapshot = {
   text: string | null; // null when not editable
 };
 
-export function VisualEditorPanel() {
-  const { active, mode, slideId, selected, setSelected, applyEdit } = useInspector();
+export function InspectorPanel() {
+  const { active, slideId, selected, setSelected, applyEdit, comments, add, remove } =
+    useInspector();
   const [snapshot, setSnapshot] = useState<ElementSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const reloadCounter = useReloadCounter();
 
   // Pending ops buffered while the user is editing one element. We mutate
   // the DOM directly for visual feedback and only commit to source when
-  // the user *moves on* — clicks a different element, closes the panel,
-  // or exits edit mode. That way a sustained "tweak this color, no a
-  // bit darker, no try 30px" session triggers zero HMR and zero
-  // animation replays. Every commit point is handled by the cleanup
-  // effect below, so the buffer is never silently dropped.
+  // the user *moves on* — clicks a different element or closes the
+  // panel. That way a sustained "tweak this color, no a bit darker, no
+  // try 30px" session triggers zero HMR and zero animation replays.
+  // Every commit point is handled by the cleanup effect below, so the
+  // buffer is never silently dropped.
   const pendingRef = useRef<{ styleOps: Map<string, string | null>; textOp: string | null }>({
     styleOps: new Map(),
     textOp: null,
@@ -65,14 +76,12 @@ export function VisualEditorPanel() {
   }, [selected, setSelected, slideId, reloadCounter]);
 
   // Freeze CSS animations + transitions inside the slide whenever the
-  // inspector is open — including comment mode and the brief moments
-  // after a flush triggers HMR. Removing the freeze re-cascades the
-  // animation properties on already-mounted elements, which most
-  // browsers treat as a new animation declaration and restart from
-  // frame 0. That shows up as a "state revert" right after the user
-  // commits an edit. By only tearing down freeze when the inspector is
-  // fully toggled off, mode switches, deselects, and HMR reconciles
-  // never trigger a replay.
+  // inspector is open. Removing the freeze re-cascades animation
+  // properties on already-mounted elements, which most browsers treat
+  // as a new animation declaration and restart from frame 0 — visible
+  // as a "state revert" right after the user commits an edit. Holding
+  // the freeze for the whole inspector session means deselects and
+  // HMR reconciles never trigger a replay.
   useEffect(() => {
     if (!active) return;
     const root = document.querySelector<HTMLElement>('[data-inspector-root]');
@@ -129,8 +138,8 @@ export function VisualEditorPanel() {
   );
 
   // Commit any pending edits before the selection changes (clicking a
-  // different element, closing the panel, exiting edit mode), so we
-  // don't drop user changes on the floor.
+  // different element, closing the panel), so we don't drop user
+  // changes on the floor.
   useEffect(() => {
     const target = selected;
     return () => {
@@ -139,7 +148,10 @@ export function VisualEditorPanel() {
     };
   }, [selected, applyEdit]);
 
-  if (!active || mode !== 'edit') return null;
+  // The panel only mounts once the user has actually clicked an
+  // element — toggling the inspector on enables the overlay/highlight
+  // but keeps the canvas full-width until there's something to edit.
+  if (!active || !selected || !snapshot) return null;
 
   return (
     <aside
@@ -148,88 +160,171 @@ export function VisualEditorPanel() {
       style={{ width: PANEL_W }}
     >
       <header className="flex shrink-0 items-center justify-between border-b px-3 py-2">
-        <div className="text-xs font-semibold">Visual editor</div>
-        {selected && (
-          <button
-            type="button"
-            onClick={() => setSelected(null)}
-            className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-            title="Deselect"
-          >
-            <X className="size-3.5" />
-          </button>
-        )}
+        <span className="min-w-0 flex-1 text-[11px] text-muted-foreground">
+          <span className="font-mono text-foreground">
+            &lt;{selected.anchor.tagName.toLowerCase()}&gt;
+          </span>
+          <span className="mx-1.5">·</span>
+          <span>line {selected.line}</span>
+        </span>
+        <button
+          type="button"
+          onClick={() => setSelected(null)}
+          className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+          title="Deselect"
+        >
+          <X className="size-3.5" />
+        </button>
       </header>
 
-      {!selected || !snapshot ? (
-        <div className="flex flex-1 items-center justify-center px-6 py-8 text-center text-xs text-muted-foreground">
-          Click an element on the slide to edit its text and styles.
-        </div>
-      ) : (
-        <div className="flex-1 overflow-auto">
-          <div className="border-b px-3 py-2 text-[11px] text-muted-foreground">
-            <span className="font-mono">&lt;{selected.anchor.tagName.toLowerCase()}&gt;</span>
-            <span className="mx-1.5">·</span>
-            <span>line {selected.line}</span>
+      <div className="flex-1 overflow-auto">
+        {error && (
+          <div className="mx-3 mt-2 rounded border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] text-red-700">
+            {error}
           </div>
+        )}
 
-          {error && (
-            <div className="mx-3 mt-2 rounded border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] text-red-700">
-              {error}
-            </div>
-          )}
+        <Section title="Content">
+          <TextField snapshot={snapshot} apply={apply} />
+        </Section>
 
-          <Section title="Content">
-            <TextField snapshot={snapshot} apply={apply} />
-          </Section>
+        <Section title="Typography">
+          <FontSizeField snapshot={snapshot} apply={apply} />
+          <FontWeightField snapshot={snapshot} apply={apply} />
+          <Row label="Style">
+            <ToggleButton
+              pressed={snapshot.fontWeight >= 600}
+              onPressedChange={(v) =>
+                apply([{ kind: 'set-style', key: 'fontWeight', value: v ? '700' : null }])
+              }
+              title="Bold"
+            >
+              <Bold className="size-3.5" />
+            </ToggleButton>
+            <ToggleButton
+              pressed={snapshot.fontStyle === 'italic'}
+              onPressedChange={(v) =>
+                apply([{ kind: 'set-style', key: 'fontStyle', value: v ? 'italic' : null }])
+              }
+              title="Italic"
+            >
+              <Italic className="size-3.5" />
+            </ToggleButton>
+          </Row>
+          <LineHeightField snapshot={snapshot} apply={apply} />
+          <LetterSpacingField snapshot={snapshot} apply={apply} />
+          <TextAlignField snapshot={snapshot} apply={apply} />
+        </Section>
 
-          <Section title="Typography">
-            <FontSizeField snapshot={snapshot} apply={apply} />
-            <FontWeightField snapshot={snapshot} apply={apply} />
-            <Row label="Style">
-              <ToggleButton
-                pressed={snapshot.fontWeight >= 600}
-                onPressedChange={(v) =>
-                  apply([{ kind: 'set-style', key: 'fontWeight', value: v ? '700' : null }])
-                }
-                title="Bold"
-              >
-                <Bold className="size-3.5" />
-              </ToggleButton>
-              <ToggleButton
-                pressed={snapshot.fontStyle === 'italic'}
-                onPressedChange={(v) =>
-                  apply([{ kind: 'set-style', key: 'fontStyle', value: v ? 'italic' : null }])
-                }
-                title="Italic"
-              >
-                <Italic className="size-3.5" />
-              </ToggleButton>
-            </Row>
-            <LineHeightField snapshot={snapshot} apply={apply} />
-            <LetterSpacingField snapshot={snapshot} apply={apply} />
-            <TextAlignField snapshot={snapshot} apply={apply} />
-          </Section>
+        <Section title="Color">
+          <ColorField
+            label="Text"
+            value={snapshot.color}
+            onChange={(v) => apply([{ kind: 'set-style', key: 'color', value: v }])}
+            clearable={false}
+          />
+          <ColorField
+            label="Background"
+            value={snapshot.backgroundColor ?? '#ffffff'}
+            dim={!snapshot.backgroundColor}
+            onChange={(v) => apply([{ kind: 'set-style', key: 'backgroundColor', value: v }])}
+            onClear={() => apply([{ kind: 'set-style', key: 'backgroundColor', value: null }])}
+            clearable
+          />
+        </Section>
 
-          <Section title="Color">
-            <ColorField
-              label="Text"
-              value={snapshot.color}
-              onChange={(v) => apply([{ kind: 'set-style', key: 'color', value: v }])}
-              clearable={false}
-            />
-            <ColorField
-              label="Background"
-              value={snapshot.backgroundColor ?? '#ffffff'}
-              dim={!snapshot.backgroundColor}
-              onChange={(v) => apply([{ kind: 'set-style', key: 'backgroundColor', value: v }])}
-              onClear={() => apply([{ kind: 'set-style', key: 'backgroundColor', value: null }])}
-              clearable
-            />
-          </Section>
-        </div>
-      )}
+        <CommentsSection comments={comments} selected={selected} onAdd={add} onRemove={remove} />
+      </div>
     </aside>
+  );
+}
+
+function CommentsSection({
+  comments,
+  selected,
+  onAdd,
+  onRemove,
+}: {
+  comments: SlideComment[];
+  selected: { line: number; column: number };
+  onAdd: (line: number, column: number, text: string) => Promise<void>;
+  onRemove: (id: string) => Promise<void>;
+}) {
+  const [draft, setDraft] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async () => {
+    const trimmed = draft.trim();
+    if (!trimmed) return;
+    setSubmitting(true);
+    try {
+      await onAdd(selected.line, selected.column, trimmed);
+      setDraft('');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Section title={`Comments${comments.length ? ` (${comments.length})` : ''}`}>
+      <div className="flex flex-col gap-2">
+        <textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              submit();
+            }
+          }}
+          placeholder="Describe a change for the agent…"
+          className="h-16 w-full resize-none rounded border bg-background p-2 text-xs outline-none focus:ring-2 focus:ring-primary/40"
+        />
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] text-muted-foreground">⌘/Ctrl + Enter</span>
+          <button
+            type="button"
+            disabled={submitting || !draft.trim()}
+            onClick={submit}
+            className="rounded bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground disabled:opacity-50"
+          >
+            Add comment
+          </button>
+        </div>
+      </div>
+
+      {comments.length === 0 ? (
+        <p className="text-[11px] text-muted-foreground">No comments yet.</p>
+      ) : (
+        <>
+          <ul className="flex flex-col divide-y">
+            {comments.map((c) => (
+              <li key={c.id} className="flex items-start gap-2 py-2 first:pt-0 last:pb-0">
+                <div className="min-w-0 flex-1">
+                  <div className="text-[10px] font-mono text-muted-foreground">line {c.line}</div>
+                  <div className="mt-0.5 text-xs break-words">{c.note}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onRemove(c.id)}
+                  className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-red-600"
+                  title="Delete"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            Run{' '}
+            <code className="rounded bg-muted px-1 py-0.5 font-mono text-foreground">
+              /apply-comments
+            </code>{' '}
+            to apply.
+          </p>
+        </>
+      )}
+    </Section>
   );
 }
 
