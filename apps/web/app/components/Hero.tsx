@@ -82,7 +82,7 @@ export function Hero() {
                 className="group inline-flex items-center gap-2 h-[52px] px-5 rounded-[10px] border border-[color:var(--color-rule)] text-[14px] font-[family-name:var(--font-mono)] text-[color:var(--color-text)] hover:border-[color:var(--color-text)] transition"
               >
                 <GithubGlyph />
-                <span>github.com/1weiho/open-slide</span>
+                <span>1weiho/open-slide</span>
                 <span
                   aria-hidden
                   className="text-[color:var(--color-muted)] group-hover:translate-x-0.5 transition-transform"
