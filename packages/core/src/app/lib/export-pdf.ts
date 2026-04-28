@@ -135,10 +135,7 @@ export async function exportSlideAsPdf(
     // settled, which matches "page X of N is being processed" mental model.
     const deadline = performance.now() + ANIMATION_TIMEOUT_MS;
     while (performance.now() < deadline) {
-      const settled = frames.reduce(
-        (n, frame) => (isFrameAnimationSettled(frame) ? n + 1 : n),
-        0,
-      );
+      const settled = frames.reduce((n, frame) => (isFrameAnimationSettled(frame) ? n + 1 : n), 0);
       onProgress?.({
         phase: 'processing',
         current: settled,
