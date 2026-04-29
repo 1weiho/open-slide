@@ -75,7 +75,7 @@ export async function init(opts: InitOptions): Promise<void> {
     await writeFile(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
   }
 
-  await writeFile(join(target, '.gitignore'), 'node_modules\n');
+  await writeFile(join(target, '.gitignore'), 'node_modules\ndist\n');
 
   const cdTarget = dir === '.' ? basename(target) : dir;
   process.stdout.write(
