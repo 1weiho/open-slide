@@ -1,4 +1,5 @@
 import {
+  ArrowDownToLine,
   File as FileIcon,
   FileImage,
   ImageIcon,
@@ -200,37 +201,15 @@ export function AssetView({ slideId }: Props) {
 
       {dragActive && (
         <div
-          className="pointer-events-none absolute inset-0 z-30 animate-in fade-in-0 duration-150"
+          className="pointer-events-none absolute inset-0 z-30 animate-in fade-in-0 duration-200"
           aria-hidden="true"
         >
-          {/* Marching-ants outline framing the whole view */}
-          <div
-            className="absolute inset-2 rounded-xl"
-            style={{
-              background:
-                'linear-gradient(90deg, var(--color-primary) 50%, transparent 0) 0 0 / 18px 2px repeat-x, linear-gradient(0deg, var(--color-primary) 50%, transparent 0) 100% 0 / 2px 18px repeat-y, linear-gradient(90deg, var(--color-primary) 50%, transparent 0) 0 100% / 18px 2px repeat-x, linear-gradient(0deg, var(--color-primary) 50%, transparent 0) 0 0 / 2px 18px repeat-y',
-              opacity: 0.7,
-              animation: 'asset-marching-ants 0.6s linear infinite',
-            }}
-          />
-          {/* Soft breathing inner glow on the whole view */}
-          <div
-            className="absolute inset-0"
-            style={{ animation: 'asset-breathe 1.8s ease-in-out infinite' }}
-          />
-          {/* Floating pill at the top */}
-          <div className="absolute inset-x-0 top-6 flex justify-center">
-            <div
-              className="flex animate-in items-center gap-2 rounded-full border border-primary/20 bg-card/95 px-4 py-2 shadow-lg backdrop-blur fade-in-0 slide-in-from-top-3 duration-300"
-              style={{ animation: 'asset-pill-bob 2s ease-in-out infinite 300ms' }}
-            >
-              <span className="flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <Upload className="size-3" />
-              </span>
-              <span className="text-sm font-medium">Drop to upload</span>
-              <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-                {existingNames.size === 0 ? 'first asset' : `${existingNames.size} files`}
-              </kbd>
+          <div className="absolute inset-0 bg-foreground/[0.03]" />
+          <div className="absolute inset-2 rounded-xl border border-dashed border-foreground/25" />
+          <div className="absolute inset-x-0 bottom-8 flex justify-center">
+            <div className="flex animate-in items-center gap-2 rounded-full border bg-background px-3.5 py-1.5 text-xs font-medium shadow-sm fade-in-0 slide-in-from-bottom-1 duration-300">
+              <ArrowDownToLine className="size-3.5 text-muted-foreground" />
+              <span>Drop to upload</span>
             </div>
           </div>
         </div>
