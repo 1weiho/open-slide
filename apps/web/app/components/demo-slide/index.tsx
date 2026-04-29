@@ -9,13 +9,13 @@ type SlideMeta = { title?: string; theme?: 'light' | 'dark' };
 type AssetImport = string | { src: string };
 const url = (a: AssetImport): string => (typeof a === 'string' ? a : a.src);
 
-import claudeLogo from './assets/logos/claude.svg';
-import cloudflareLogo from './assets/logos/cloudflare.svg';
-import geminiLogo from './assets/logos/gemini.svg';
-import codexLogo from './assets/logos/openai-dark.svg';
-import opencodeLogo from './assets/logos/opencode-dark.svg';
-import vercelLogo from './assets/logos/vercel-dark.svg';
-import zeaburLogo from './assets/logos/zeabur-dark.svg';
+import claudeLogo from './assets/claude.svg';
+import cloudflareLogo from './assets/cloudflare.svg';
+import geminiLogo from './assets/gemini.svg';
+import codexLogo from './assets/openai.svg';
+import opencodeLogo from './assets/opencode.svg';
+import vercelLogo from './assets/vercel.svg';
+import zeaburLogo from './assets/zeabur.svg';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const palette = {
@@ -1298,11 +1298,11 @@ const VisualEdit: Page = () => {
 const AssetsManager: Page = () => {
   const cards: { name: string; size: string; src: AssetImport }[] = [
     { name: 'claude.svg', size: '3.4 KB', src: claudeLogo },
-    { name: 'openai-dark.svg', size: '2.1 KB', src: codexLogo },
+    { name: 'openai.svg', size: '2.1 KB', src: codexLogo },
     { name: 'gemini.svg', size: '4.0 KB', src: geminiLogo },
-    { name: 'opencode-dark.svg', size: '5.2 KB', src: opencodeLogo },
+    { name: 'opencode.svg', size: '5.2 KB', src: opencodeLogo },
     { name: 'cloudflare.svg', size: '6.8 KB', src: cloudflareLogo },
-    { name: 'zeabur-dark.svg', size: '4.7 KB', src: zeaburLogo },
+    { name: 'zeabur.svg', size: '4.7 KB', src: zeaburLogo },
   ];
 
   const svglResults: { name: string; src: AssetImport }[] = [
@@ -1493,7 +1493,7 @@ const AssetsManager: Page = () => {
               ))}
               <AssetCardMock
                 key="vercel-new"
-                name="vercel-dark.svg"
+                name="vercel.svg"
                 size="3.2 KB"
                 src={vercelLogo}
                 className="am-newCard"
