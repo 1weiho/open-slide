@@ -45,6 +45,35 @@ async function deleteAsset(slideId: string, name: string): Promise<Response> {
   return fetch(`/__assets/${slideId}/${encodeURIComponent(name)}`, { method: 'DELETE' });
 }
 
+export type SvglItem = {
+  id: number;
+  title: string;
+  category: string | string[];
+  route: string | { light: string; dark: string };
+  url: string;
+};
+
+export async function searchSvgl(query: string, signal?: AbortSignal): Promise<SvglItem[]> {
+  const q = query.trim();
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  else params.set('limit', '24');
+  const res = await fetch(`/__svgl/search?${params.toString()}`, { signal });
+  if (!res.ok) throw new Error(`svgl ${res.status}`);
+  return (await res.json()) as SvglItem[];
+}
+
+export function svgProxyUrl(routeUrl: string): string {
+  return `/__svgl/svg?u=${encodeURIComponent(routeUrl)}`;
+}
+
+export async function fetchSvgAsFile(routeUrl: string, filename: string): Promise<File> {
+  const res = await fetch(svgProxyUrl(routeUrl));
+  if (!res.ok) throw new Error(`svgl route ${res.status}`);
+  const blob = await res.blob();
+  return new File([blob], filename, { type: 'image/svg+xml' });
+}
+
 export type UseAssetsResult = {
   assets: AssetEntry[];
   loading: boolean;

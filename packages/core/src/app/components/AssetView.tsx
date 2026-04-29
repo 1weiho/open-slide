@@ -3,12 +3,14 @@ import {
   File as FileIcon,
   FileImage,
   ImageIcon,
+  Loader2,
   MoreVertical,
   Pencil,
+  Search,
   Trash2,
   Upload,
 } from 'lucide-react';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
@@ -25,7 +27,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { type AssetEntry, useAssets } from '@/lib/assets';
+import {
+  type AssetEntry,
+  fetchSvgAsFile,
+  type SvglItem,
+  searchSvgl,
+  useAssets,
+} from '@/lib/assets';
 import { cn } from '@/lib/utils';
 
 type Props = { slideId: string };
@@ -42,6 +50,7 @@ export function AssetView({ slideId }: Props) {
   const [preview, setPreview] = useState<AssetEntry | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<AssetEntry | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
+  const [logoSearchOpen, setLogoSearchOpen] = useState(false);
   const dragDepth = useRef(0);
   const inputId = useId();
 
@@ -128,6 +137,17 @@ export function AssetView({ slideId }: Props) {
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setLogoSearchOpen(true)}
+            className={cn(
+              'inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border bg-background px-3 text-sm font-medium transition-colors',
+              'hover:bg-muted active:translate-y-px',
+            )}
+          >
+            <Search className="size-4" />
+            <span>Search logos</span>
+          </button>
           <label
             htmlFor={inputId}
             className={cn(
@@ -239,6 +259,13 @@ export function AssetView({ slideId }: Props) {
       )}
 
       {preview && <PreviewDialog asset={preview} onClose={() => setPreview(null)} />}
+
+      {logoSearchOpen && (
+        <LogoSearchDialog
+          onClose={() => setLogoSearchOpen(false)}
+          onPick={(file) => handleFile(file)}
+        />
+      )}
     </section>
   );
 }
@@ -520,6 +547,243 @@ function PreviewDialog({ asset, onClose }: { asset: AssetEntry; onClose: () => v
       </DialogContent>
     </Dialog>
   );
+}
+
+const SKELETON_SLOTS = ['s0', 's1', 's2', 's3', 's4', 's5'] as const;
+
+function LogoSearchDialog({
+  onClose,
+  onPick,
+}: {
+  onClose: () => void;
+  onPick: (file: File) => Promise<void> | void;
+}) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<SvglItem[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState<Set<number>>(() => new Set());
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    queueMicrotask(() => inputRef.current?.focus());
+  }, []);
+
+  useEffect(() => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => {
+      setLoading(true);
+      setError(null);
+      searchSvgl(query, ctrl.signal)
+        .then((next) => {
+          setResults(next);
+          setLoading(false);
+        })
+        .catch((err: unknown) => {
+          if (ctrl.signal.aborted) return;
+          setError(err instanceof Error ? err.message : 'Search failed');
+          setLoading(false);
+        });
+    }, 200);
+    return () => {
+      clearTimeout(timer);
+      ctrl.abort();
+    };
+  }, [query]);
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Search logos</DialogTitle>
+          <DialogDescription>
+            Powered by{' '}
+            <a
+              href="https://svgl.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2"
+            >
+              svgl.app
+            </a>
+            .
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by brand…"
+            className="w-full rounded-md border bg-background py-2 pl-8 pr-3 text-sm outline-none ring-ring/40 focus:ring-2"
+          />
+        </div>
+
+        <div className="max-h-[60vh] min-h-[16rem] overflow-y-auto">
+          {error ? (
+            <div className="flex h-32 items-center justify-center text-sm text-destructive">
+              {error}
+            </div>
+          ) : loading && !results ? (
+            <div className="grid grid-cols-3 gap-3">
+              {SKELETON_SLOTS.map((slot) => (
+                <div
+                  key={slot}
+                  className="aspect-square animate-pulse rounded-lg border bg-muted/40"
+                />
+              ))}
+            </div>
+          ) : results && results.length === 0 ? (
+            <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
+              No logos found.
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-3">
+              {results?.map((item) => (
+                <LogoResultCard
+                  key={item.id}
+                  item={item}
+                  pending={pending.has(item.id)}
+                  onAdd={async (file) => {
+                    setPending((prev) => {
+                      const next = new Set(prev);
+                      next.add(item.id);
+                      return next;
+                    });
+                    try {
+                      await onPick(file);
+                    } catch (err) {
+                      toast.error(err instanceof Error ? err.message : 'Failed to download logo');
+                    } finally {
+                      setPending((prev) => {
+                        const next = new Set(prev);
+                        next.delete(item.id);
+                        return next;
+                      });
+                    }
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Done
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function LogoResultCard({
+  item,
+  pending,
+  onAdd,
+}: {
+  item: SvglItem;
+  pending: boolean;
+  onAdd: (file: File) => Promise<void> | void;
+}) {
+  const hasVariants = typeof item.route === 'object' && item.route !== null;
+  const [variant, setVariant] = useState<'light' | 'dark'>('light');
+
+  const previewUrl = useMemo(() => {
+    if (typeof item.route === 'string') return item.route;
+    return item.route[variant];
+  }, [item.route, variant]);
+
+  const filename = useMemo(() => {
+    const url = previewUrl;
+    const fromUrl = basenameFromUrl(url);
+    if (fromUrl) return fromUrl;
+    const slug = slugify(item.title);
+    return hasVariants ? `${slug}-${variant}.svg` : `${slug}.svg`;
+  }, [previewUrl, item.title, hasVariants, variant]);
+
+  const category = Array.isArray(item.category) ? item.category.join(', ') : item.category;
+
+  return (
+    <div className="group flex flex-col overflow-hidden rounded-lg border bg-card">
+      <div
+        className={cn(
+          'relative flex aspect-square w-full items-center justify-center overflow-hidden bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:16px_16px]',
+          variant === 'dark' && hasVariants && 'bg-neutral-900',
+        )}
+      >
+        <img src={previewUrl} alt={item.title} className="size-3/4 object-contain" />
+      </div>
+      <div className="flex flex-col gap-1.5 border-t bg-card px-2.5 py-2">
+        <div className="min-w-0">
+          <div className="truncate text-xs font-medium" title={item.title}>
+            {item.title}
+          </div>
+          <div className="truncate text-[10px] text-muted-foreground">{category}</div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {hasVariants ? (
+            <div className="flex overflow-hidden rounded-md border text-[10px]">
+              <button
+                type="button"
+                onClick={() => setVariant('light')}
+                className={cn(
+                  'px-1.5 py-0.5 transition-colors',
+                  variant === 'light' ? 'bg-foreground text-background' : 'hover:bg-muted',
+                )}
+              >
+                Light
+              </button>
+              <button
+                type="button"
+                onClick={() => setVariant('dark')}
+                className={cn(
+                  'border-l px-1.5 py-0.5 transition-colors',
+                  variant === 'dark' ? 'bg-foreground text-background' : 'hover:bg-muted',
+                )}
+              >
+                Dark
+              </button>
+            </div>
+          ) : null}
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={pending}
+            onClick={async () => {
+              try {
+                const file = await fetchSvgAsFile(previewUrl, filename);
+                await onAdd(file);
+              } catch (err) {
+                toast.error(err instanceof Error ? err.message : 'Failed to download logo');
+              }
+            }}
+            className="ml-auto h-6 px-2 text-[11px]"
+          >
+            {pending ? <Loader2 className="size-3 animate-spin" /> : 'Add'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function basenameFromUrl(u: string): string {
+  try {
+    return new URL(u).pathname.split('/').pop() || '';
+  } catch {
+    return '';
+  }
+}
+
+function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 function formatSize(bytes: number): string {
