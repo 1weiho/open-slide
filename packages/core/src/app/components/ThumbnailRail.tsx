@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 import type { Page } from '../lib/sdk';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
 import { SlideCanvas } from './SlideCanvas';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../lib/sdk';
 
 type Props = {
   pages: Page[];

@@ -7,6 +7,52 @@ import type { Connect, Plugin, ViteDevServer } from 'vite';
 const FOLDER_ID_RE = /^f-[a-f0-9]{8}$/;
 const SLIDE_ID_RE = /^[a-z0-9_-]+$/i;
 const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+// biome-ignore lint/suspicious/noControlCharactersInRegex: explicit control-char block list for filename safety
+const ASSET_FORBIDDEN_RE = /[\x00-\x1F\x7F/\\:*?"<>|]/;
+const ASSET_MAX_BYTES = 25 * 1024 * 1024;
+
+const MIME_BY_EXT: Record<string, string> = {
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  svg: 'image/svg+xml',
+  webp: 'image/webp',
+  avif: 'image/avif',
+  ico: 'image/x-icon',
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  mov: 'video/quicktime',
+  woff: 'font/woff',
+  woff2: 'font/woff2',
+  ttf: 'font/ttf',
+  otf: 'font/otf',
+  json: 'application/json',
+  txt: 'text/plain; charset=utf-8',
+  md: 'text/markdown; charset=utf-8',
+};
+
+export function mimeForFilename(name: string): string {
+  const dot = name.lastIndexOf('.');
+  if (dot < 0) return 'application/octet-stream';
+  const ext = name.slice(dot + 1).toLowerCase();
+  return MIME_BY_EXT[ext] ?? 'application/octet-stream';
+}
+
+export function validateAssetName(v: unknown): string | null {
+  if (typeof v !== 'string') return null;
+  const trimmed = v.trim();
+  if (trimmed.length < 1 || trimmed.length > 120) return null;
+  // No path separators, control chars, or characters Windows/macOS can't store.
+  if (ASSET_FORBIDDEN_RE.test(trimmed)) return null;
+  // Block leading dots / tildes (hidden files, home expansion) and any `..` segment.
+  if (trimmed.startsWith('.') || trimmed.startsWith('~')) return null;
+  if (trimmed === '..' || trimmed.split(/[/\\]/).includes('..')) return null;
+  // Require an extension so authors get sensible MIME / dev-server behavior.
+  const dot = trimmed.lastIndexOf('.');
+  if (dot <= 0 || dot === trimmed.length - 1) return null;
+  return trimmed;
+}
 
 export type FolderIcon = { type: 'emoji'; value: string } | { type: 'color'; value: string };
 
@@ -103,6 +149,24 @@ async function rmSlideDir(slidesRoot: string, slideId: string): Promise<boolean>
   } catch {
     return false;
   }
+}
+
+function resolveAssetsDir(slidesRoot: string, slideId: string): string | null {
+  if (!SLIDE_ID_RE.test(slideId)) return null;
+  const slideDir = path.resolve(slidesRoot, slideId);
+  if (!slideDir.startsWith(slidesRoot + path.sep)) return null;
+  const assetsDir = path.resolve(slideDir, 'assets');
+  if (assetsDir !== path.join(slideDir, 'assets')) return null;
+  return assetsDir;
+}
+
+function resolveAssetFile(slidesRoot: string, slideId: string, filename: string): string | null {
+  const assetsDir = resolveAssetsDir(slidesRoot, slideId);
+  if (!assetsDir) return null;
+  if (!validateAssetName(filename)) return null;
+  const file = path.resolve(assetsDir, filename);
+  if (!file.startsWith(assetsDir + path.sep)) return null;
+  return file;
 }
 
 function resolveSlideEntry(slidesRoot: string, slideId: string): string | null {
@@ -218,6 +282,25 @@ export function filesPlugin(opts: FilesPluginOptions): Plugin {
         }
       });
 
+      // Surface asset directory mutations as an HMR ping so the editor's
+      // <AssetPanel> can re-list without a full reload.
+      const onAssetChange = (p: string) => {
+        if (!p.startsWith(slidesRoot + path.sep)) return;
+        const rel = p.slice(slidesRoot.length + 1);
+        const parts = rel.split(path.sep);
+        if (parts.length < 3 || parts[1] !== 'assets') return;
+        const slideId = parts[0];
+        if (!SLIDE_ID_RE.test(slideId)) return;
+        server.ws.send({
+          type: 'custom',
+          event: 'open-slide:assets-changed',
+          data: { slideId },
+        });
+      };
+      server.watcher.on('add', onAssetChange);
+      server.watcher.on('change', onAssetChange);
+      server.watcher.on('unlink', onAssetChange);
+
       server.middlewares.use('/__slides', async (req, res, next) => {
         const url = new URL(req.url ?? '/', 'http://local');
         const method = req.method ?? 'GET';
@@ -267,6 +350,163 @@ export function filesPlugin(opts: FilesPluginOptions): Plugin {
             delete manifest.assignments[slideId];
             await writeManifest(manifestPath, manifest);
             return json(res, 200, { ok: true });
+          }
+
+          return next();
+        } catch (err) {
+          json(res, 500, { error: String((err as Error).message ?? err) });
+        }
+      });
+
+      server.middlewares.use('/__assets', async (req, res, next) => {
+        const url = new URL(req.url ?? '/', 'http://local');
+        const method = req.method ?? 'GET';
+
+        try {
+          const listMatch = url.pathname.match(/^\/([^/]+)\/?$/);
+          const fileMatch = url.pathname.match(/^\/([^/]+)\/([^/]+)$/);
+
+          if (listMatch && method === 'GET') {
+            const slideId = listMatch[1];
+            const assetsDir = resolveAssetsDir(slidesRoot, slideId);
+            if (!assetsDir) return json(res, 400, { error: 'invalid slideId' });
+
+            let entries: string[];
+            try {
+              entries = await fs.readdir(assetsDir);
+            } catch (err) {
+              if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+                return json(res, 200, { assets: [] });
+              }
+              throw err;
+            }
+
+            const assets = [];
+            for (const name of entries) {
+              if (!validateAssetName(name)) continue;
+              const stat = await fs.stat(path.join(assetsDir, name));
+              if (!stat.isFile()) continue;
+              assets.push({
+                name,
+                size: stat.size,
+                mtime: stat.mtimeMs,
+                mime: mimeForFilename(name),
+                url: `/__assets/${slideId}/${encodeURIComponent(name)}`,
+              });
+            }
+            assets.sort((a, b) => a.name.localeCompare(b.name));
+            return json(res, 200, { assets });
+          }
+
+          if (fileMatch) {
+            const slideId = fileMatch[1];
+            const filename = decodeURIComponent(fileMatch[2]);
+            const file = resolveAssetFile(slidesRoot, slideId, filename);
+            if (!file) return json(res, 400, { error: 'invalid path' });
+
+            if (method === 'GET') {
+              try {
+                const buf = await fs.readFile(file);
+                res.statusCode = 200;
+                res.setHeader('content-type', mimeForFilename(filename));
+                res.setHeader('cache-control', 'no-store');
+                res.end(buf);
+                return;
+              } catch (err) {
+                if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+                  return json(res, 404, { error: 'asset not found' });
+                }
+                throw err;
+              }
+            }
+
+            if (method === 'POST') {
+              const overwrite = url.searchParams.get('overwrite') === '1';
+              const lenHeader = req.headers['content-length'];
+              const len = typeof lenHeader === 'string' ? Number(lenHeader) : NaN;
+              if (Number.isFinite(len) && len > ASSET_MAX_BYTES) {
+                return json(res, 413, { error: 'file too large' });
+              }
+
+              if (!overwrite) {
+                try {
+                  await fs.access(file);
+                  return json(res, 409, { error: 'asset exists' });
+                } catch {
+                  // fall through — file does not exist, OK to write
+                }
+              }
+
+              const assetsDir = resolveAssetsDir(slidesRoot, slideId);
+              if (!assetsDir) return json(res, 400, { error: 'invalid slideId' });
+              await fs.mkdir(assetsDir, { recursive: true });
+
+              const chunks: Buffer[] = [];
+              let total = 0;
+              let oversized = false;
+              await new Promise<void>((resolve, reject) => {
+                req.on('data', (c: Buffer) => {
+                  total += c.length;
+                  if (total > ASSET_MAX_BYTES) {
+                    oversized = true;
+                    req.destroy();
+                    return;
+                  }
+                  chunks.push(c);
+                });
+                req.on('end', () => resolve());
+                req.on('error', reject);
+              });
+              if (oversized) return json(res, 413, { error: 'file too large' });
+
+              await fs.writeFile(file, Buffer.concat(chunks));
+              return json(res, 200, {
+                ok: true,
+                name: filename,
+                size: total,
+                mime: mimeForFilename(filename),
+                url: `/__assets/${slideId}/${encodeURIComponent(filename)}`,
+              });
+            }
+
+            if (method === 'PATCH') {
+              const body = (await readBody(req)) as { name?: unknown };
+              const target = validateAssetName(body.name);
+              if (!target) return json(res, 400, { error: 'invalid name' });
+              if (target === filename) return json(res, 200, { ok: true, name: filename });
+
+              const dest = resolveAssetFile(slidesRoot, slideId, target);
+              if (!dest) return json(res, 400, { error: 'invalid name' });
+
+              try {
+                await fs.access(dest);
+                return json(res, 409, { error: 'target exists' });
+              } catch {
+                // OK
+              }
+
+              try {
+                await fs.rename(file, dest);
+              } catch (err) {
+                if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+                  return json(res, 404, { error: 'asset not found' });
+                }
+                throw err;
+              }
+              return json(res, 200, { ok: true, name: target });
+            }
+
+            if (method === 'DELETE') {
+              try {
+                await fs.unlink(file);
+              } catch (err) {
+                if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+                  return json(res, 404, { error: 'asset not found' });
+                }
+                throw err;
+              }
+              return json(res, 200, { ok: true });
+            }
           }
 
           return next();
