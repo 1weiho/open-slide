@@ -199,10 +199,43 @@ export function AssetView({ slideId }: Props) {
       </div>
 
       {dragActive && (
-        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-primary/10 backdrop-blur-[2px]">
-          <div className="flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-primary/60 bg-background px-10 py-8 text-primary shadow-lg">
-            <Upload className="size-8" />
-            <p className="text-sm font-medium">Drop files to upload</p>
+        <div
+          className="pointer-events-none absolute inset-0 z-30 flex animate-in items-center justify-center bg-primary/10 backdrop-blur-[2px] fade-in-0 duration-150"
+          aria-hidden="true"
+        >
+          <div className="relative flex animate-in flex-col items-center gap-4 rounded-2xl bg-background px-14 py-10 text-primary shadow-2xl fade-in-0 zoom-in-95 slide-in-from-bottom-2 duration-200">
+            <span
+              className="pointer-events-none absolute inset-0 rounded-2xl"
+              style={{
+                padding: '2px',
+                background:
+                  'linear-gradient(110deg, transparent 25%, color-mix(in oklab, var(--color-primary) 70%, transparent) 50%, transparent 75%) 0 0 / 200% 100% no-repeat, color-mix(in oklab, var(--color-primary) 35%, transparent)',
+                WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
+                WebkitMaskComposite: 'xor',
+                maskComposite: 'exclude',
+                animation: 'asset-border-flow 2.4s linear infinite',
+              }}
+            />
+            <div className="relative flex size-16 items-center justify-center">
+              <span
+                className="absolute inset-0 rounded-full bg-primary/25"
+                style={{ animation: 'asset-ring 1.8s ease-out infinite' }}
+              />
+              <span
+                className="absolute inset-0 rounded-full bg-primary/15"
+                style={{ animation: 'asset-ring 1.8s ease-out infinite', animationDelay: '0.6s' }}
+              />
+              <div className="relative flex size-16 items-center justify-center rounded-full bg-primary/10 ring-1 ring-primary/30 ring-inset">
+                <Upload
+                  className="size-7"
+                  style={{ animation: 'asset-float 2.2s ease-in-out infinite' }}
+                />
+              </div>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <p className="text-sm font-semibold">Drop files to upload</p>
+              <p className="text-xs text-muted-foreground">Release to add to this slide's assets</p>
+            </div>
           </div>
         </div>
       )}
