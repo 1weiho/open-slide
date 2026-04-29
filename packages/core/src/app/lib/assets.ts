@@ -59,6 +59,9 @@ export async function searchSvgl(query: string, signal?: AbortSignal): Promise<S
   if (q) params.set('q', q);
   else params.set('limit', '24');
   const res = await fetch(`/__svgl/search?${params.toString()}`, { signal });
+  // svgl returns 404 when a search has no matches — treat it as an empty list,
+  // not an error.
+  if (res.status === 404) return [];
   if (!res.ok) throw new Error(`svgl ${res.status}`);
   return (await res.json()) as SvglItem[];
 }

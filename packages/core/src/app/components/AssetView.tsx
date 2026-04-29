@@ -1,12 +1,15 @@
 import {
   ArrowDownToLine,
+  CloudOff,
   File as FileIcon,
   FileImage,
   ImageIcon,
   Loader2,
   MoreVertical,
   Pencil,
+  RotateCw,
   Search,
+  SearchX,
   Trash2,
   Upload,
 } from 'lucide-react';
@@ -568,12 +571,14 @@ function LogoSearchDialog({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<Set<number>>(() => new Set());
+  const [retryToken, setRetryToken] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     queueMicrotask(() => inputRef.current?.focus());
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: retryToken is a bump-to-refetch trigger
   useEffect(() => {
     const ctrl = new AbortController();
     const timer = setTimeout(() => {
@@ -594,7 +599,7 @@ function LogoSearchDialog({
       clearTimeout(timer);
       ctrl.abort();
     };
-  }, [query]);
+  }, [query, retryToken]);
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -628,8 +633,25 @@ function LogoSearchDialog({
 
         <div className="max-h-[60vh] min-h-[16rem] overflow-y-auto">
           {error ? (
-            <div className="flex h-32 items-center justify-center text-sm text-destructive">
-              {error}
+            <div className="flex h-64 flex-col items-center justify-center gap-3 px-6 text-center">
+              <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+                <CloudOff className="size-5 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Couldn't reach svgl</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Check your connection and try again.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setRetryToken((n) => n + 1)}
+                className="gap-1.5"
+              >
+                <RotateCw className="size-3.5" />
+                Try again
+              </Button>
             </div>
           ) : loading && !results ? (
             <div className="grid grid-cols-3 gap-3">
@@ -641,8 +663,34 @@ function LogoSearchDialog({
               ))}
             </div>
           ) : results && results.length === 0 ? (
-            <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
-              No logos found.
+            <div className="flex h-64 flex-col items-center justify-center gap-3 px-6 text-center">
+              <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+                <SearchX className="size-5 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">
+                  {query.trim() ? (
+                    <>
+                      No logos for{' '}
+                      <span className="font-mono text-foreground">"{query.trim()}"</span>
+                    </>
+                  ) : (
+                    'No logos available'
+                  )}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Try a different brand name, or browse the full catalog at{' '}
+                  <a
+                    href="https://svgl.app"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline underline-offset-2 hover:text-foreground"
+                  >
+                    svgl.app
+                  </a>
+                  .
+                </p>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-3">
