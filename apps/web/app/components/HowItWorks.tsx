@@ -38,8 +38,8 @@ const steps: Step[] = [
   {
     num: '03',
     kicker: 'iterate',
-    title: 'Inspect and comment',
-    body: 'Open the inspector, click any block, leave a note. Then run /apply-comments — the agent reads every marker, rewrites the page, clears them.',
+    title: 'Edit, comment, apply',
+    body: 'Toggle inspect: click an element to tweak it visually, drop images into the assets pane, or leave a @slide-comment. Save batches your edits; /apply-comments lets the agent rewrite the rest.',
     code: {
       prompt: '›',
       line: '/apply-comment',

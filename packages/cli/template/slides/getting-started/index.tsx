@@ -1,11 +1,11 @@
 import type { Page, SlideMeta } from '@open-slide/core';
 
 import claudeLogo from './assets/logos/claude.svg';
-import codexLogo from './assets/logos/openai-dark.svg';
+import cloudflareLogo from './assets/logos/cloudflare.svg';
 import geminiLogo from './assets/logos/gemini.svg';
+import codexLogo from './assets/logos/openai-dark.svg';
 import opencodeLogo from './assets/logos/opencode-dark.svg';
 import vercelLogo from './assets/logos/vercel-dark.svg';
-import cloudflareLogo from './assets/logos/cloudflare.svg';
 import zeaburLogo from './assets/logos/zeabur-dark.svg';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -467,7 +467,13 @@ const Cover: Page = () => (
           <span style={{ color: palette.accentSoft }}>02</span> prompt
         </span>
         <span>
-          <span style={{ color: palette.accentSoft }}>03</span> inspect
+          <span style={{ color: palette.accentSoft }}>03</span> edit
+        </span>
+        <span>
+          <span style={{ color: palette.accentSoft }}>04</span> assets
+        </span>
+        <span>
+          <span style={{ color: palette.accentSoft }}>05</span> comment
         </span>
       </div>
     </div>
@@ -874,7 +880,963 @@ const Prompt: Page = () => {
   );
 };
 
-// ─── Slide 4: Inspect a block ────────────────────────────────────────────────
+// ─── Slide: Visual editor (click → tweak → save) ─────────────────────────────
+const VisualEdit: Page = () => {
+  return (
+    <div style={fill}>
+      <Styles />
+      <GridBg />
+      <style>{`
+        @keyframes ve-saveSwap {
+          0%, 88% { opacity: 1; transform: translateY(0); }
+          92%     { opacity: 0; transform: translateY(-4px); }
+          100%    { opacity: 0; transform: translateY(-4px); }
+        }
+        @keyframes ve-savedIn {
+          0%, 88% { opacity: 0; transform: translateY(4px); }
+          100%    { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes ve-swatchPulse {
+          0%, 100% { box-shadow: 0 0 0 0 ${palette.accent}00; transform: scale(1); }
+          50%      { box-shadow: 0 0 0 6px ${palette.accent}33; transform: scale(1.06); }
+        }
+        .ve-saveSwap  { animation: ve-saveSwap  3.6s ease forwards; }
+        .ve-savedIn   { animation: ve-savedIn   3.6s ease forwards; }
+        .ve-swatchPulse { animation: ve-swatchPulse 1.6s ease-in-out 1.0s 1 both; }
+      `}</style>
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          padding: '90px 120px 100px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 36,
+        }}
+      >
+        <div className="es-fadeUp">
+          <Eyebrow>03 / Edit visually</Eyebrow>
+          <h2
+            style={{
+              marginTop: 20,
+              marginBottom: 0,
+              fontSize: 88,
+              fontWeight: 600,
+              letterSpacing: '-0.035em',
+              lineHeight: 1.02,
+            }}
+          >
+            Click. Tweak. Save.
+          </h2>
+          <p
+            style={{
+              marginTop: 20,
+              fontSize: 28,
+              color: palette.textSoft,
+              maxWidth: 1280,
+            }}
+          >
+            Pick any element. Change text, font, color, or swap an image — right on the canvas.
+            Edits buffer until you hit{' '}
+            <span style={{ fontFamily: font.mono, color: palette.accentSoft }}>Save</span>.
+          </p>
+        </div>
+
+        <WindowShell
+          title="localhost:5173/s/q2-launch"
+          badge={
+            <span
+              className="gs-pulse"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '6px 14px',
+                background: `${palette.inspect}22`,
+                border: `1px solid ${palette.inspect}`,
+                borderRadius: 8,
+                fontFamily: font.mono,
+                fontSize: 20,
+                color: palette.inspect,
+              }}
+            >
+              <span
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  background: palette.inspect,
+                }}
+              />
+              Inspect on
+            </span>
+          }
+          style={{ flex: 1, minHeight: 0 }}
+        >
+          <div
+            style={{
+              flex: 1,
+              display: 'grid',
+              gridTemplateColumns: '1fr 360px',
+              background: palette.surface,
+              minHeight: 0,
+            }}
+          >
+            {/* LEFT — canvas with selection + SaveBar */}
+            <div
+              style={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 40,
+                borderRight: `1px solid ${palette.border}`,
+                minHeight: 0,
+              }}
+            >
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: 14,
+                  border: `1px solid ${palette.border}`,
+                  background: `radial-gradient(ellipse at 30% 30%, ${palette.accent2}22, transparent 60%), ${palette.bg}`,
+                  padding: 56,
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                }}
+              >
+                <Eyebrow style={{ fontSize: 14 }}>cover</Eyebrow>
+                <div
+                  style={{
+                    position: 'relative',
+                    marginTop: 20,
+                    display: 'inline-block',
+                    width: 'fit-content',
+                  }}
+                >
+                  <div
+                    className="gs-outline"
+                    style={{
+                      position: 'absolute',
+                      inset: -10,
+                      border: `2px solid ${palette.inspect}`,
+                      background: palette.inspectFill,
+                      borderRadius: 6,
+                      pointerEvents: 'none',
+                      animationDelay: '0.6s',
+                    }}
+                  />
+                  <div
+                    className="gs-morph"
+                    style={{
+                      animationDelay: '1.4s',
+                      fontSize: 88,
+                      fontWeight: 600,
+                      letterSpacing: '-0.035em',
+                      lineHeight: 1.02,
+                      color: palette.text,
+                      position: 'relative',
+                    }}
+                  >
+                    Q2 Launch
+                  </div>
+                </div>
+                <div
+                  style={{
+                    marginTop: 18,
+                    fontSize: 24,
+                    color: palette.textSoft,
+                    maxWidth: 620,
+                  }}
+                >
+                  What we're shipping, why it matters, and how we'll measure success.
+                </div>
+
+                {/* Crosshair cursor */}
+                <div
+                  className="gs-crosshair"
+                  style={{
+                    position: 'absolute',
+                    left: 220,
+                    top: 200,
+                    width: 28,
+                    height: 28,
+                    pointerEvents: 'none',
+                    animationDelay: '0.2s',
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: '50%',
+                      width: '100%',
+                      height: 2,
+                      background: palette.inspect,
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: '50%',
+                      width: 2,
+                      height: '100%',
+                      background: palette.inspect,
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: '25%',
+                      border: `2px solid ${palette.inspect}`,
+                      borderRadius: '50%',
+                      background: 'transparent',
+                    }}
+                  />
+                </div>
+
+                {/* SaveBar pill */}
+                <div
+                  className="es-fadeUp"
+                  style={{
+                    animationDelay: '2.0s',
+                    position: 'absolute',
+                    left: '50%',
+                    bottom: 28,
+                    transform: 'translateX(-50%)',
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'relative',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      padding: '6px 6px 6px 16px',
+                      borderRadius: 999,
+                      background: `${palette.surfaceHi}f0`,
+                      border: `1px solid ${palette.borderBright}`,
+                      boxShadow: '0 24px 48px -16px rgba(0,0,0,0.6)',
+                      backdropFilter: 'blur(8px)',
+                      fontFamily: font.sans,
+                      fontSize: 18,
+                      color: palette.text,
+                      minHeight: 40,
+                    }}
+                  >
+                    <span
+                      className="ve-saveSwap"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 12,
+                      }}
+                    >
+                      <span style={{ fontWeight: 500 }}>1 unsaved change</span>
+                      <span
+                        style={{
+                          fontFamily: font.mono,
+                          fontSize: 15,
+                          color: palette.muted,
+                          padding: '6px 12px',
+                          borderRadius: 999,
+                        }}
+                      >
+                        ↺ Discard
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: font.sans,
+                          fontSize: 15,
+                          fontWeight: 500,
+                          color: palette.text,
+                          background: palette.accent,
+                          padding: '6px 14px',
+                          borderRadius: 999,
+                        }}
+                      >
+                        ⤓ Save
+                      </span>
+                    </span>
+                    <span
+                      className="ve-savedIn"
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        color: palette.text,
+                        fontWeight: 500,
+                      }}
+                    >
+                      <span style={{ color: palette.mint, fontSize: 18 }}>✓</span>
+                      Saved
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT — inspector property panel mock */}
+            <div
+              style={{
+                background: palette.surfaceHi,
+                display: 'flex',
+                flexDirection: 'column',
+                minHeight: 0,
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  padding: '20px 22px 14px',
+                  borderBottom: `1px solid ${palette.border}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontFamily: font.mono,
+                  fontSize: 18,
+                  color: palette.muted,
+                }}
+              >
+                <span style={{ color: palette.textSoft, letterSpacing: '0.02em' }}>
+                  &lt;h1&gt; · line 58
+                </span>
+                <span style={{ color: palette.dim }}>✕</span>
+              </div>
+
+              <PanelSection title="Content">
+                <div
+                  style={{
+                    background: palette.surface,
+                    border: `1px solid ${palette.border}`,
+                    borderRadius: 8,
+                    padding: '12px 14px',
+                    fontFamily: font.sans,
+                    fontSize: 18,
+                    color: palette.text,
+                    minHeight: 64,
+                  }}
+                >
+                  Q2 Launch
+                </div>
+              </PanelSection>
+
+              <PanelDivider />
+
+              <PanelSection title="Typography">
+                <PanelRow label="Size">
+                  <div
+                    style={{
+                      flex: 1,
+                      height: 6,
+                      borderRadius: 3,
+                      background: palette.surfaceMax,
+                      position: 'relative',
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: '38%',
+                        background: palette.accent,
+                        borderRadius: 3,
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: '38%',
+                        top: '50%',
+                        width: 14,
+                        height: 14,
+                        marginLeft: -7,
+                        marginTop: -7,
+                        borderRadius: '50%',
+                        background: palette.text,
+                        border: `2px solid ${palette.accent}`,
+                      }}
+                    />
+                  </div>
+                  <PanelInput value="88px" />
+                </PanelRow>
+                <PanelRow label="Weight">
+                  <PanelSelect value="Semibold · 600" />
+                </PanelRow>
+              </PanelSection>
+
+              <PanelDivider />
+
+              <PanelSection title="Color">
+                <PanelRow label="Color">
+                  <div
+                    className="ve-swatchPulse"
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 6,
+                      background: palette.accent,
+                      border: `1px solid ${palette.borderBright}`,
+                    }}
+                  />
+                  <PanelInput value={palette.accent} />
+                </PanelRow>
+                <PanelRow label="Background">
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 6,
+                      background: 'transparent',
+                      border: `1px dashed ${palette.dim}`,
+                    }}
+                  />
+                  <PanelInput value="—" dim />
+                </PanelRow>
+              </PanelSection>
+
+              <PanelDivider />
+
+              <PanelSection title="Image">
+                <div
+                  style={{
+                    fontFamily: font.mono,
+                    fontSize: 15,
+                    color: palette.dim,
+                  }}
+                >
+                  No image on this element.
+                </div>
+              </PanelSection>
+            </div>
+          </div>
+        </WindowShell>
+      </div>
+    </div>
+  );
+};
+
+// ─── Slide: Assets manager ───────────────────────────────────────────────────
+const AssetsManager: Page = () => {
+  const cards: { name: string; size: string; src: string }[] = [
+    { name: 'claude.svg', size: '3.4 KB', src: claudeLogo },
+    { name: 'openai-dark.svg', size: '2.1 KB', src: codexLogo },
+    { name: 'gemini.svg', size: '4.0 KB', src: geminiLogo },
+    { name: 'opencode-dark.svg', size: '5.2 KB', src: opencodeLogo },
+    { name: 'cloudflare.svg', size: '6.8 KB', src: cloudflareLogo },
+    { name: 'zeabur-dark.svg', size: '4.7 KB', src: zeaburLogo },
+  ];
+
+  const svglResults: { name: string; src: string }[] = [
+    { name: 'Vercel', src: vercelLogo },
+    { name: 'Cloudflare', src: cloudflareLogo },
+    { name: 'Zeabur', src: zeaburLogo },
+  ];
+
+  return (
+    <div style={fill}>
+      <Styles />
+      <GridBg />
+      <style>{`
+        @keyframes am-marchingAnts {
+          to { background-position: 16px 0, -16px 0, 0 16px, 0 -16px; }
+        }
+        @keyframes am-overlayLoop {
+          0%, 8%   { opacity: 0; }
+          14%, 38% { opacity: 1; }
+          44%, 100% { opacity: 0; }
+        }
+        @keyframes am-newCardIn {
+          0%, 50% { opacity: 0; transform: translateY(12px) scale(.96); }
+          70%     { opacity: 1; transform: translateY(0) scale(1); }
+          100%    { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .am-overlay {
+          background-image:
+            linear-gradient(90deg, ${palette.borderBright} 50%, transparent 0),
+            linear-gradient(90deg, ${palette.borderBright} 50%, transparent 0),
+            linear-gradient(0deg, ${palette.borderBright} 50%, transparent 0),
+            linear-gradient(0deg, ${palette.borderBright} 50%, transparent 0);
+          background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+          background-size: 16px 1px, 16px 1px, 1px 16px, 1px 16px;
+          background-position: 0 0, 0 100%, 0 0, 100% 0;
+          animation: am-marchingAnts 0.9s linear infinite, am-overlayLoop 4.5s ease-in-out 1.6s infinite;
+        }
+        .am-overlayPill { animation: am-overlayLoop 4.5s ease-in-out 1.6s infinite; }
+        .am-newCard { opacity: 0; animation: am-newCardIn 4.5s ease-in-out 1.6s infinite; }
+      `}</style>
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          padding: '90px 120px 100px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 36,
+        }}
+      >
+        <div className="es-fadeUp">
+          <Eyebrow>04 / Manage assets</Eyebrow>
+          <h2
+            style={{
+              marginTop: 20,
+              marginBottom: 0,
+              fontSize: 88,
+              fontWeight: 600,
+              letterSpacing: '-0.035em',
+              lineHeight: 1.02,
+            }}
+          >
+            Drop images. Pull in logos.
+          </h2>
+          <p
+            style={{
+              marginTop: 20,
+              fontSize: 28,
+              color: palette.textSoft,
+              maxWidth: 1280,
+            }}
+          >
+            Drag files into the deck — or search{' '}
+            <span style={{ fontFamily: font.mono, color: palette.accentSoft }}>svgl</span> for a
+            brand logo. Rename, replace, or delete without leaving the editor.
+          </p>
+        </div>
+
+        <WindowShell title="localhost:5173/s/q2-launch · assets" style={{ flex: 1, minHeight: 0 }}>
+          <div
+            style={{
+              flex: 1,
+              background: palette.surface,
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: 0,
+              position: 'relative',
+            }}
+          >
+            {/* Toolbar: Slides/Assets switcher + Upload */}
+            <div
+              style={{
+                padding: '20px 28px',
+                borderBottom: `1px solid ${palette.border}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 16,
+              }}
+            >
+              <div
+                style={{
+                  display: 'inline-flex',
+                  background: palette.surfaceHi,
+                  border: `1px solid ${palette.border}`,
+                  borderRadius: 999,
+                  padding: 4,
+                  position: 'relative',
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 4,
+                    left: 'calc(50% + 0px)',
+                    width: 'calc(50% - 4px)',
+                    bottom: 4,
+                    background: `${palette.accent}22`,
+                    border: `1px solid ${palette.accent}`,
+                    borderRadius: 999,
+                    transition: 'left 200ms ease',
+                  }}
+                />
+                <span
+                  style={{
+                    position: 'relative',
+                    padding: '8px 22px',
+                    fontFamily: font.mono,
+                    fontSize: 18,
+                    color: palette.muted,
+                  }}
+                >
+                  Slides
+                </span>
+                <span
+                  style={{
+                    position: 'relative',
+                    padding: '8px 22px',
+                    fontFamily: font.mono,
+                    fontSize: 18,
+                    color: palette.accentSoft,
+                  }}
+                >
+                  Assets
+                </span>
+              </div>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '8px 18px',
+                  background: palette.surfaceHi,
+                  border: `1px solid ${palette.borderBright}`,
+                  borderRadius: 10,
+                  fontFamily: font.sans,
+                  fontSize: 18,
+                  color: palette.text,
+                }}
+              >
+                <span style={{ color: palette.accentSoft }}>↑</span>
+                Upload
+              </div>
+            </div>
+
+            {/* Grid */}
+            <div
+              style={{
+                flex: 1,
+                padding: '28px 32px',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gridAutoRows: 'min-content',
+                gap: 22,
+                minHeight: 0,
+                alignContent: 'start',
+              }}
+            >
+              {cards.map((c, i) => (
+                <AssetCardMock
+                  key={c.name}
+                  name={c.name}
+                  size={c.size}
+                  src={c.src}
+                  className="gs-thumbIn"
+                  delay={0.3 + i * 0.08}
+                />
+              ))}
+              <AssetCardMock
+                key="vercel-new"
+                name="vercel-dark.svg"
+                size="3.2 KB"
+                src={vercelLogo}
+                className="am-newCard"
+                accent
+              />
+            </div>
+
+            {/* Drag-drop overlay (loops) */}
+            <div
+              className="am-overlay"
+              style={{
+                position: 'absolute',
+                inset: 12,
+                pointerEvents: 'none',
+                borderRadius: 14,
+                background: `${palette.bg}26`,
+              }}
+            />
+            <div
+              className="am-overlayPill"
+              style={{
+                position: 'absolute',
+                left: '50%',
+                bottom: 36,
+                transform: 'translateX(-50%)',
+                pointerEvents: 'none',
+              }}
+            >
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '10px 20px',
+                  borderRadius: 999,
+                  background: `${palette.surfaceHi}f0`,
+                  border: `1px solid ${palette.borderBright}`,
+                  boxShadow: '0 18px 36px -12px rgba(0,0,0,0.5)',
+                  backdropFilter: 'blur(8px)',
+                  fontFamily: font.sans,
+                  fontSize: 18,
+                  color: palette.textSoft,
+                }}
+              >
+                <span style={{ color: palette.accentSoft }}>↓</span>
+                Drop to upload
+              </div>
+            </div>
+
+            {/* svgl Logo Search dialog (popovers in late) */}
+            <div
+              className="gs-popover"
+              style={{
+                position: 'absolute',
+                right: 36,
+                bottom: 36,
+                width: 420,
+                background: palette.surfaceHi,
+                border: `1px solid ${palette.borderBright}`,
+                borderRadius: 14,
+                padding: 18,
+                boxShadow: '0 40px 80px -24px rgba(0,0,0,0.7)',
+                animationDelay: '3.4s',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontFamily: font.mono,
+                  fontSize: 15,
+                  color: palette.muted,
+                  marginBottom: 10,
+                }}
+              >
+                <span>Search svgl</span>
+                <span style={{ color: palette.dim }}>✕</span>
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  background: palette.surface,
+                  border: `1px solid ${palette.border}`,
+                  borderRadius: 8,
+                  padding: '10px 12px',
+                  fontFamily: font.mono,
+                  fontSize: 17,
+                  color: palette.text,
+                  marginBottom: 14,
+                }}
+              >
+                <span style={{ color: palette.muted }}>⌕</span>
+                vercel
+                <span className="es-caret" style={{ color: palette.text }} />
+              </div>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: 10,
+                }}
+              >
+                {svglResults.map((r, i) => (
+                  <div
+                    key={r.name}
+                    style={{
+                      background: palette.surface,
+                      border: `1px solid ${i === 0 ? palette.accent : palette.border}`,
+                      borderRadius: 10,
+                      padding: '14px 8px 10px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: 40,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <img
+                        src={r.src}
+                        alt={r.name}
+                        style={{ height: 32, width: 'auto', objectFit: 'contain' }}
+                      />
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: font.mono,
+                        fontSize: 13,
+                        color: palette.textSoft,
+                      }}
+                    >
+                      {r.name}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </WindowShell>
+      </div>
+    </div>
+  );
+};
+
+// ─── Inspector panel mock helpers ────────────────────────────────────────────
+const PanelSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <div style={{ padding: '16px 22px' }}>
+    <div
+      style={{
+        marginBottom: 12,
+        fontFamily: font.mono,
+        fontSize: 12,
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+        color: palette.muted,
+      }}
+    >
+      {title}
+    </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{children}</div>
+  </div>
+);
+
+const PanelDivider = () => <div style={{ height: 1, background: palette.border }} />;
+
+const PanelRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div
+    style={{
+      display: 'grid',
+      gridTemplateColumns: '80px 1fr',
+      alignItems: 'center',
+      gap: 12,
+    }}
+  >
+    <span
+      style={{
+        fontFamily: font.sans,
+        fontSize: 14,
+        color: palette.muted,
+      }}
+    >
+      {label}
+    </span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{children}</div>
+  </div>
+);
+
+const PanelInput = ({ value, dim = false }: { value: string; dim?: boolean }) => (
+  <div
+    style={{
+      flex: 1,
+      background: palette.surface,
+      border: `1px solid ${palette.border}`,
+      borderRadius: 6,
+      padding: '6px 10px',
+      fontFamily: font.mono,
+      fontSize: 14,
+      color: dim ? palette.dim : palette.text,
+      minHeight: 28,
+    }}
+  >
+    {value}
+  </div>
+);
+
+const PanelSelect = ({ value }: { value: string }) => (
+  <div
+    style={{
+      flex: 1,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      background: palette.surface,
+      border: `1px solid ${palette.border}`,
+      borderRadius: 6,
+      padding: '6px 10px',
+      fontFamily: font.sans,
+      fontSize: 14,
+      color: palette.text,
+      minHeight: 28,
+    }}
+  >
+    <span>{value}</span>
+    <span style={{ color: palette.muted, fontSize: 12 }}>▾</span>
+  </div>
+);
+
+// ─── Asset card mock ─────────────────────────────────────────────────────────
+const AssetCardMock = ({
+  name,
+  size,
+  src,
+  className,
+  delay = 0,
+  accent = false,
+}: {
+  name: string;
+  size: string;
+  src: string;
+  className?: string;
+  delay?: number;
+  accent?: boolean;
+}) => (
+  <div
+    className={className}
+    style={{
+      animationDelay: `${delay}s`,
+      borderRadius: 12,
+      border: `1px solid ${accent ? palette.accent : palette.border}`,
+      background: palette.surfaceHi,
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      boxShadow: accent ? `0 0 0 3px ${palette.accent}22` : 'none',
+    }}
+  >
+    <div
+      style={{
+        height: 130,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background:
+          'repeating-conic-gradient(#1a1c2155 0deg 90deg, transparent 90deg 180deg) 0 0 / 16px 16px',
+      }}
+    >
+      <img src={src} alt="" style={{ height: 64, width: 'auto', objectFit: 'contain' }} />
+    </div>
+    <div
+      style={{
+        padding: '10px 14px',
+        borderTop: `1px solid ${palette.border}`,
+        background: palette.surfaceHi,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: font.sans,
+          fontSize: 16,
+          color: palette.text,
+          letterSpacing: '-0.005em',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
+        {name}
+      </div>
+      <div
+        style={{
+          fontFamily: font.mono,
+          fontSize: 12,
+          color: palette.muted,
+          marginTop: 2,
+        }}
+      >
+        {size}
+      </div>
+    </div>
+  </div>
+);
+
+// ─── Slide: Inspect a block ──────────────────────────────────────────────────
 const Inspect: Page = () => (
   <div style={fill}>
     <Styles />
@@ -890,7 +1852,7 @@ const Inspect: Page = () => (
       }}
     >
       <div className="es-fadeUp">
-        <Eyebrow>03 / Inspect &amp; comment</Eyebrow>
+        <Eyebrow>05 / Inspect &amp; comment</Eyebrow>
         <h2
           style={{
             marginTop: 20,
@@ -1177,7 +2139,7 @@ const Apply: Page = () => (
       }}
     >
       <div className="es-fadeUp">
-        <Eyebrow>04 / Apply comments</Eyebrow>
+        <Eyebrow>06 / Apply comments</Eyebrow>
         <h2
           style={{
             marginTop: 20,
@@ -1569,7 +2531,9 @@ const Recap: Page = () => {
   const steps = [
     { n: '01', title: 'init', caption: 'npx @open-slide/cli init' },
     { n: '02', title: 'prompt', caption: 'create-slide' },
-    { n: '03', title: 'inspect', caption: 'apply-comments' },
+    { n: '03', title: 'edit', caption: 'click → save' },
+    { n: '04', title: 'assets', caption: 'drag · drop · svgl' },
+    { n: '05', title: 'comment', caption: 'apply-comments' },
   ];
   return (
     <div style={fill}>
@@ -1615,8 +2579,8 @@ const Recap: Page = () => {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: 32,
+            gridTemplateColumns: 'repeat(5, 1fr)',
+            gap: 20,
           }}
         >
           {steps.map((s, i) => (
@@ -1624,20 +2588,20 @@ const Recap: Page = () => {
               key={s.n}
               className="es-fadeUp"
               style={{
-                animationDelay: `${0.35 + i * 0.12}s`,
-                padding: '32px 36px',
+                animationDelay: `${0.35 + i * 0.1}s`,
+                padding: '24px 24px',
                 border: `1px solid ${palette.border}`,
-                borderRadius: 16,
+                borderRadius: 14,
                 background: palette.surface,
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 18,
+                gap: 14,
               }}
             >
               <div
                 style={{
                   fontFamily: font.mono,
-                  fontSize: 22,
+                  fontSize: 20,
                   color: palette.accentSoft,
                   letterSpacing: '0.12em',
                 }}
@@ -1646,7 +2610,7 @@ const Recap: Page = () => {
               </div>
               <div
                 style={{
-                  fontSize: 52,
+                  fontSize: 40,
                   fontWeight: 600,
                   letterSpacing: '-0.03em',
                 }}
@@ -1656,7 +2620,7 @@ const Recap: Page = () => {
               <div
                 style={{
                   fontFamily: font.mono,
-                  fontSize: 22,
+                  fontSize: 18,
                   color: palette.muted,
                 }}
               >
@@ -2396,6 +3360,8 @@ export default [
   FreeLayout,
   Init,
   Prompt,
+  VisualEdit,
+  AssetsManager,
   Inspect,
   Apply,
   Themes,

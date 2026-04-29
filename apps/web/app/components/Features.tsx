@@ -35,6 +35,18 @@ const features = [
     title: 'One build command. HTML + JS + assets.',
     body: 'open-slide build emits a folder. Drop it on Vercel, Cloudflare Pages, Zeabur, S3, a USB stick. No server, no lock-in.',
   },
+  {
+    id: '07',
+    eyebrow: 'visual editor',
+    title: 'Click an element. Tweak it. Save.',
+    body: 'Toggle inspect, click any block, change text, font, weight, color, or swap an image — right on the canvas. Edits buffer in memory; one Save batches them into a single HMR write.',
+  },
+  {
+    id: '08',
+    eyebrow: 'assets manager',
+    title: 'Drop images. Search logos. Done.',
+    body: "Drag files into the deck — or pull a brand logo from svgl without leaving the editor. Rename, replace, or delete; the inspector's image picker reuses the same library.",
+  },
 ];
 
 export function Features() {
