@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
@@ -33,6 +33,32 @@ async function readCliVersion(): Promise<string> {
   return pkg.version;
 }
 
+// `.claude/skills/*` and `CLAUDE.md` are symlinks into `.agents/` + `AGENTS.md`
+// in the repo, but `npm pack` drops symlinks from the published tarball. Rebuild
+// them as real copies after scaffolding so users get both the OpenAI-style
+// `.agents/` tree and the Claude Code paths.
+async function materializeClaudeFiles(target: string): Promise<void> {
+  const agentsMd = join(target, 'AGENTS.md');
+  const claudeMd = join(target, 'CLAUDE.md');
+  if (existsSync(agentsMd)) {
+    await rm(claudeMd, { force: true });
+    await cp(agentsMd, claudeMd, { dereference: true });
+  }
+
+  const agentsSkills = join(target, '.agents', 'skills');
+  if (!existsSync(agentsSkills)) return;
+  const claudeSkills = join(target, '.claude', 'skills');
+  await rm(claudeSkills, { recursive: true, force: true });
+  await mkdir(claudeSkills, { recursive: true });
+  for (const entry of await readdir(agentsSkills, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    await cp(join(agentsSkills, entry.name), join(claudeSkills, entry.name), {
+      recursive: true,
+      dereference: true,
+    });
+  }
+}
+
 async function runInstall(pm: PackageManager, cwd: string): Promise<void> {
   await new Promise<void>((res, rej) => {
     const child = spawn(pm, ['install'], { cwd, stdio: 'inherit', shell: IS_WINDOWS });
@@ -60,6 +86,7 @@ export async function init(opts: InitOptions): Promise<void> {
   }
 
   await cp(TEMPLATE_DIR, target, { recursive: true });
+  await materializeClaudeFiles(target);
 
   const pkgPath = join(target, 'package.json');
   if (existsSync(pkgPath)) {
