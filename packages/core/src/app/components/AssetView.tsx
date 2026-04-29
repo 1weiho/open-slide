@@ -66,15 +66,18 @@ export function AssetView({ slideId }: Props) {
       if (decision === 'replace') {
         const res = await upload(file, { overwrite: true });
         if (!res.ok) toast.error(`Upload failed (${res.status})`);
+        else toast.success(`Replaced ${file.name}`);
         return;
       }
       const next = renamedCopy(file, existingNames);
       const res = await upload(next, { overwrite: false });
       if (!res.ok) toast.error(`Upload failed (${res.status})`);
+      else toast.success(`Uploaded as ${next.name}`);
       return;
     }
     const res = await upload(file);
     if (!res.ok) toast.error(`Upload failed (${res.status})`);
+    else toast.success(`Uploaded ${file.name}`);
   }
 
   async function handleFiles(files: FileList | File[]) {
@@ -202,6 +205,7 @@ export function AssetView({ slideId }: Props) {
                       toast.error(`Rename failed (${res.status})`);
                       return;
                     }
+                    toast.success(`Renamed to ${next}`);
                     setRenaming(null);
                   }}
                 />
@@ -254,6 +258,7 @@ export function AssetView({ slideId }: Props) {
             setConfirmDelete(null);
             const res = await remove(target.name);
             if (!res.ok) toast.error(`Delete failed (${res.status})`);
+            else toast.success(`Deleted ${target.name}`);
           }}
         />
       )}
