@@ -3,6 +3,7 @@ import { ChevronLeft, Download, FileCode2, FileText, Loader2, Pencil, Play } fro
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { AssetView } from '@/components/AssetView';
 import { CommentWidget } from '@/components/inspector/CommentWidget';
 import { InspectOverlay } from '@/components/inspector/InspectOverlay';
 import { InspectorPanel } from '@/components/inspector/InspectorPanel';
@@ -19,7 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFolders } from '@/lib/folders';
 import { useWheelPageNavigation } from '@/lib/useWheelPageNavigation';
 import { cn } from '@/lib/utils';
@@ -65,6 +66,7 @@ export function Slide() {
   const pageCount = pages.length;
   const rawIndex = Number(searchParams.get('p') ?? '1') - 1;
   const index = Number.isFinite(rawIndex) ? Math.max(0, Math.min(pageCount - 1, rawIndex)) : 0;
+  const view = searchParams.get('view') === 'assets' ? 'assets' : 'slides';
 
   const goTo = useCallback(
     (i: number) => {
@@ -171,15 +173,50 @@ export function Slide() {
         <header className="relative flex shrink-0 items-center justify-between border-b bg-card px-3 py-2 md:px-5 md:py-3">
           <div className="flex items-center gap-2 md:gap-3">
             {showSlideBrowser && (
-              <>
-                <Button asChild variant="ghost" size="sm" className="px-2 md:px-3">
-                  <Link to="/">
-                    <ChevronLeft className="size-4" />
-                    <span className="hidden md:inline">Home</span>
-                  </Link>
-                </Button>
-                <Separator orientation="vertical" className="hidden h-5 md:block" />
-              </>
+              <Button asChild variant="ghost" size="sm" className="px-2 md:px-3">
+                <Link to="/">
+                  <ChevronLeft className="size-4" />
+                  <span className="hidden md:inline">Home</span>
+                </Link>
+              </Button>
+            )}
+            {import.meta.env.DEV && (
+              <Tabs
+                value={view}
+                onValueChange={(next) => {
+                  setSearchParams(
+                    (prev) => {
+                      const params = new URLSearchParams(prev);
+                      if (next === 'assets') params.set('view', 'assets');
+                      else params.delete('view');
+                      return params;
+                    },
+                    { replace: true },
+                  );
+                }}
+              >
+                <TabsList className="relative h-7 rounded-md p-0.5 group-data-[orientation=horizontal]/tabs:h-7">
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-[5px] bg-background shadow-sm transition-transform duration-200 ease-out"
+                    style={{
+                      transform: view === 'assets' ? 'translateX(100%)' : 'translateX(0)',
+                    }}
+                  />
+                  <TabsTrigger
+                    value="slides"
+                    className="relative z-10 h-6 px-3 text-xs data-[state=active]:bg-transparent data-[state=active]:shadow-none dark:data-[state=active]:bg-transparent"
+                  >
+                    Slides
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="assets"
+                    className="relative z-10 h-6 px-3 text-xs data-[state=active]:bg-transparent data-[state=active]:shadow-none dark:data-[state=active]:bg-transparent"
+                  >
+                    Assets
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             )}
           </div>
 
@@ -190,7 +227,7 @@ export function Slide() {
           </div>
 
           <div className="flex items-center gap-1.5">
-            {allowHtmlDownload && (
+            {view === 'slides' && allowHtmlDownload && (
               <DropdownMenu>
                 <DropdownMenuTrigger
                   type="button"
@@ -264,51 +301,59 @@ export function Slide() {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-            <InspectToggleButton />
-            <Button size="sm" onClick={() => setPlaying(true)} className="px-2 md:px-3">
-              <Play className="size-4" />
-              <span className="hidden md:inline">Play</span>
-              <kbd className="ml-1 hidden rounded bg-primary-foreground/20 px-1 text-[10px] md:inline">
-                F
-              </kbd>
-            </Button>
+            {view === 'slides' && <InspectToggleButton />}
+            {view === 'slides' && (
+              <Button size="sm" onClick={() => setPlaying(true)} className="px-2 md:px-3">
+                <Play className="size-4" />
+                <span className="hidden md:inline">Play</span>
+                <kbd className="ml-1 hidden rounded bg-primary-foreground/20 px-1 text-[10px] md:inline">
+                  F
+                </kbd>
+              </Button>
+            )}
           </div>
         </header>
 
-        <div className="flex min-h-0 flex-1">
-          <div className="hidden w-[17rem] shrink-0 md:block">
-            <ThumbnailRail pages={pages} current={index} onSelect={goTo} />
+        {view === 'assets' ? (
+          <div className="min-h-0 flex-1">
+            <AssetView slideId={slideId} />
           </div>
-          <main
-            ref={slideViewportRef}
-            data-inspector-root
-            className="relative min-h-0 min-w-0 flex-1 bg-background p-2 md:p-8"
-          >
-            <SlideWheelNavigation
-              targetRef={slideViewportRef}
-              onPrev={() => goTo(index - 1)}
-              onNext={() => goTo(index + 1)}
-              canPrev={index > 0}
-              canNext={index < pageCount - 1}
-            />
-            <SlideCanvas>
-              <CurrentPage />
-            </SlideCanvas>
-            <ClickNavZones
-              onPrev={() => goTo(index - 1)}
-              onNext={() => goTo(index + 1)}
-              canPrev={index > 0}
-              canNext={index < pageCount - 1}
-            />
-            <InspectOverlay />
-            <SaveBar />
-            <CommentWidget />
-            <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/50 px-2.5 py-0.5 text-[11px] font-medium tabular-nums text-white backdrop-blur md:hidden">
-              {index + 1} / {pageCount}
+        ) : (
+          <div className="flex min-h-0 flex-1">
+            <div className="hidden w-[17rem] shrink-0 md:block">
+              <ThumbnailRail pages={pages} current={index} onSelect={goTo} />
             </div>
-          </main>
-          <InspectorPanel />
-        </div>
+            <main
+              ref={slideViewportRef}
+              data-inspector-root
+              className="relative min-h-0 min-w-0 flex-1 bg-background p-2 md:p-8"
+            >
+              <SlideWheelNavigation
+                targetRef={slideViewportRef}
+                onPrev={() => goTo(index - 1)}
+                onNext={() => goTo(index + 1)}
+                canPrev={index > 0}
+                canNext={index < pageCount - 1}
+              />
+              <SlideCanvas>
+                <CurrentPage />
+              </SlideCanvas>
+              <ClickNavZones
+                onPrev={() => goTo(index - 1)}
+                onNext={() => goTo(index + 1)}
+                canPrev={index > 0}
+                canNext={index < pageCount - 1}
+              />
+              <InspectOverlay />
+              <SaveBar />
+              <CommentWidget />
+              <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/50 px-2.5 py-0.5 text-[11px] font-medium tabular-nums text-white backdrop-blur md:hidden">
+                {index + 1} / {pageCount}
+              </div>
+            </main>
+            <InspectorPanel />
+          </div>
+        )}
       </div>
     </InspectorProvider>
   );

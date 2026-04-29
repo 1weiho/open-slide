@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { applyEdit, b64urlDecode, b64urlEncode, parseMarkers } from './comments-plugin.ts';
+import {
+  applyEdit,
+  b64urlDecode,
+  b64urlEncode,
+  parseMarkers,
+  safeAssetIdentifier,
+} from './comments-plugin.ts';
 
 describe('b64url encoding', () => {
   it('round-trips arbitrary unicode strings', () => {
@@ -223,5 +229,89 @@ describe('applyEdit / combined ops', () => {
     const r = applyEdit(src, 1, 0, []);
     if (!r.ok) throw new Error('expected ok');
     expect(r.source).toBe(src);
+  });
+});
+
+describe('safeAssetIdentifier', () => {
+  it('camel-cases dashes and spaces', () => {
+    expect(safeAssetIdentifier('my-logo.svg', new Set())).toBe('myLogo');
+    expect(safeAssetIdentifier('hello world.png', new Set())).toBe('helloWorld');
+  });
+
+  it('prefixes identifiers that would start with a digit', () => {
+    expect(safeAssetIdentifier('2026-photo.jpg', new Set())).toBe('asset2026Photo');
+  });
+
+  it('falls back to "asset" for names with no usable characters', () => {
+    expect(safeAssetIdentifier('---.png', new Set())).toBe('asset');
+  });
+
+  it('appends a counter when the candidate collides with an existing name', () => {
+    const taken = new Set(['logo', 'logo2']);
+    expect(safeAssetIdentifier('logo.svg', taken)).toBe('logo3');
+  });
+});
+
+describe('applyEdit / set-attr-asset', () => {
+  it('inserts an import and rewrites the src attribute on a fresh <img>', () => {
+    const src = [
+      "import logo from './assets/logo.svg';",
+      'export default [() => (',
+      '<img src={logo} />',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 3, 0, [
+      { kind: 'set-attr-asset', attr: 'src', assetPath: './assets/photo.png' },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("import photo from './assets/photo.png';");
+    expect(r.source).toContain('<img src={photo} />');
+    // Original import is preserved.
+    expect(r.source).toContain("import logo from './assets/logo.svg';");
+  });
+
+  it('reuses an existing import when the path is already imported', () => {
+    const src = [
+      "import logo from './assets/logo.svg';",
+      "import photo from './assets/photo.png';",
+      'export default [() => (',
+      '<img src={logo} />',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 4, 0, [
+      { kind: 'set-attr-asset', attr: 'src', assetPath: './assets/photo.png' },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('<img src={photo} />');
+    // No duplicate import added.
+    const occurrences = r.source.match(/from '\.\/assets\/photo\.png'/g) ?? [];
+    expect(occurrences.length).toBe(1);
+  });
+
+  it('inserts a fresh src attribute on an <img> that has none', () => {
+    const src = [
+      "import alt from './assets/alt.svg';",
+      'export default [() => (',
+      '<img alt="" />',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 3, 0, [
+      { kind: 'set-attr-asset', attr: 'src', assetPath: './assets/alt.svg' },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('<img src={alt} alt="" />');
+  });
+
+  it('rejects asset paths outside ./assets/', () => {
+    const src = ['export default [() => (', '<img src="x" />', ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [
+      { kind: 'set-attr-asset', attr: 'src', assetPath: '../foo.png' },
+    ]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.error).toMatch(/\.\/assets\//);
   });
 });
