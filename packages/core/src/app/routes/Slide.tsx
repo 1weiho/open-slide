@@ -20,7 +20,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFolders } from '@/lib/folders';
 import { useWheelPageNavigation } from '@/lib/useWheelPageNavigation';
@@ -174,15 +173,12 @@ export function Slide() {
         <header className="relative flex shrink-0 items-center justify-between border-b bg-card px-3 py-2 md:px-5 md:py-3">
           <div className="flex items-center gap-2 md:gap-3">
             {showSlideBrowser && (
-              <>
-                <Button asChild variant="ghost" size="sm" className="px-2 md:px-3">
-                  <Link to="/">
-                    <ChevronLeft className="size-4" />
-                    <span className="hidden md:inline">Home</span>
-                  </Link>
-                </Button>
-                <Separator orientation="vertical" className="hidden h-5 md:block" />
-              </>
+              <Button asChild variant="ghost" size="sm" className="px-2 md:px-3">
+                <Link to="/">
+                  <ChevronLeft className="size-4" />
+                  <span className="hidden md:inline">Home</span>
+                </Link>
+              </Button>
             )}
             {import.meta.env.DEV && (
               <Tabs
@@ -199,11 +195,24 @@ export function Slide() {
                   );
                 }}
               >
-                <TabsList className="h-8">
-                  <TabsTrigger value="slides" className="px-3 text-xs">
+                <TabsList className="relative h-7 rounded-md p-0.5 group-data-[orientation=horizontal]/tabs:h-7">
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-[5px] bg-background shadow-sm transition-transform duration-200 ease-out"
+                    style={{
+                      transform: view === 'assets' ? 'translateX(100%)' : 'translateX(0)',
+                    }}
+                  />
+                  <TabsTrigger
+                    value="slides"
+                    className="relative z-10 h-6 px-3 text-xs data-[state=active]:bg-transparent data-[state=active]:shadow-none dark:data-[state=active]:bg-transparent"
+                  >
                     Slides
                   </TabsTrigger>
-                  <TabsTrigger value="assets" className="px-3 text-xs">
+                  <TabsTrigger
+                    value="assets"
+                    className="relative z-10 h-6 px-3 text-xs data-[state=active]:bg-transparent data-[state=active]:shadow-none dark:data-[state=active]:bg-transparent"
+                  >
                     Assets
                   </TabsTrigger>
                 </TabsList>
