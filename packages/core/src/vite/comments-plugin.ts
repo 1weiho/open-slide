@@ -198,7 +198,8 @@ function offsetToLine(source: string, offset: number): number {
 
 export type EditOp =
   | { kind: 'set-style'; key: string; value: string | null }
-  | { kind: 'set-text'; value: string };
+  | { kind: 'set-text'; value: string }
+  | { kind: 'set-attr-asset'; attr: string; assetPath: string };
 
 export type ApplyEditResult =
   | { ok: true; source: string }
@@ -389,6 +390,133 @@ function buildTextSplice(element: AstNode, value: string): Splice | { error: str
   return { error: 'element has complex children' };
 }
 
+type ImportInfo = { node: AstNode; source: string; defaultIdent: string | null };
+
+function findImports(ast: AstNode): ImportInfo[] {
+  const body = (ast as unknown as { program?: { body?: AstNode[] } }).program?.body ?? [];
+  const out: ImportInfo[] = [];
+  for (const node of body) {
+    if (node.type !== 'ImportDeclaration') continue;
+    const src = (node as unknown as { source?: { value?: unknown } }).source?.value;
+    if (typeof src !== 'string') continue;
+    const specs = (node as unknown as { specifiers?: AstNode[] }).specifiers ?? [];
+    let def: string | null = null;
+    for (const spec of specs) {
+      if (spec.type === 'ImportDefaultSpecifier') {
+        const local = (spec as unknown as { local?: { name?: string } }).local?.name;
+        if (typeof local === 'string') {
+          def = local;
+          break;
+        }
+      }
+    }
+    out.push({ node, source: src, defaultIdent: def });
+  }
+  return out;
+}
+
+function collectTopLevelIdentifiers(ast: AstNode): Set<string> {
+  // Only need to avoid colliding with anything resolvable by JSX —
+  // import bindings cover the common case. Local consts/lets are
+  // handled by source-level identifier scanning below.
+  const names = new Set<string>();
+  for (const imp of findImports(ast)) {
+    if (imp.defaultIdent) names.add(imp.defaultIdent);
+    const specs = (imp.node as unknown as { specifiers?: AstNode[] }).specifiers ?? [];
+    for (const spec of specs) {
+      if (spec.type !== 'ImportDefaultSpecifier') {
+        const local = (spec as unknown as { local?: { name?: string } }).local?.name;
+        if (typeof local === 'string') names.add(local);
+      }
+    }
+  }
+  return names;
+}
+
+export function safeAssetIdentifier(filename: string, taken: Set<string>): string {
+  const stem = filename.replace(/\.[^.]+$/, '');
+  let camel = '';
+  let upper = false;
+  for (const ch of stem) {
+    if (/[A-Za-z0-9]/.test(ch)) {
+      camel += upper ? ch.toUpperCase() : ch;
+      upper = false;
+    } else {
+      upper = camel.length > 0;
+    }
+  }
+  let base = camel;
+  if (!base || !/^[A-Za-z_$]/.test(base)) {
+    base = `asset${base.charAt(0).toUpperCase()}${base.slice(1)}` || 'asset';
+  }
+  base = base.charAt(0).toLowerCase() + base.slice(1);
+  let candidate = base;
+  let i = 2;
+  while (taken.has(candidate)) {
+    candidate = `${base}${i}`;
+    i += 1;
+  }
+  return candidate;
+}
+
+function findJsxAttr(opening: AstNode, name: string): AstNode | null {
+  const attrs = (opening as unknown as { attributes?: AstNode[] }).attributes ?? [];
+  for (const attr of attrs) {
+    if (attr.type !== 'JSXAttribute') continue;
+    const n = (attr as unknown as { name?: { type?: string; name?: string } }).name;
+    if (n?.type === 'JSXIdentifier' && n.name === name) return attr;
+  }
+  return null;
+}
+
+type AssetEditPlan = {
+  importSplice: Splice | null;
+  attrSplice: Splice;
+};
+
+function planAssetAttr(
+  ast: AstNode,
+  element: AstNode,
+  attr: string,
+  assetPath: string,
+): AssetEditPlan | { error: string } {
+  const opening = (element as unknown as { openingElement?: AstNode }).openingElement;
+  if (!opening) return { error: 'no opening element' };
+  if (!attr || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(attr)) return { error: 'invalid attribute name' };
+  if (!assetPath.startsWith('./assets/')) return { error: 'asset path must start with ./assets/' };
+
+  const imports = findImports(ast);
+  let identifier: string | null = null;
+  for (const imp of imports) {
+    if (imp.source === assetPath && imp.defaultIdent) {
+      identifier = imp.defaultIdent;
+      break;
+    }
+  }
+
+  let importSplice: Splice | null = null;
+  if (!identifier) {
+    const filename = assetPath.slice(assetPath.lastIndexOf('/') + 1);
+    const taken = collectTopLevelIdentifiers(ast);
+    identifier = safeAssetIdentifier(filename, taken);
+    const importStmt = `import ${identifier} from '${assetPath.replace(/'/g, "\\'")}';\n`;
+    const insertAt = imports.length > 0 ? imports[imports.length - 1].node.end : 0;
+    const prefix = imports.length > 0 ? '\n' : '';
+    importSplice = { from: insertAt, to: insertAt, text: prefix + importStmt };
+  }
+
+  const newAttr = `${attr}={${identifier}}`;
+  const existing = findJsxAttr(opening, attr);
+  let attrSplice: Splice;
+  if (existing) {
+    attrSplice = { from: existing.start, to: existing.end, text: newAttr };
+  } else {
+    const name = (opening as unknown as { name: AstNode }).name;
+    attrSplice = { from: name.end, to: name.end, text: ` ${newAttr}` };
+  }
+  return { importSplice, attrSplice };
+}
+
 export function applyEdit(
   source: string,
   line: number,
@@ -418,6 +546,29 @@ export function applyEdit(
     const result = buildTextSplice(element, op.value);
     if ('error' in result) return { ok: false, status: 422, error: result.error };
     splices.push(result);
+  }
+
+  const assetOps = ops.flatMap((op) => (op.kind === 'set-attr-asset' ? [op] : []));
+  if (assetOps.length > 0) {
+    const ast = parseSource(source);
+    if (!ast) return { ok: false, status: 422, error: 'could not parse source' };
+    const importSplices: Splice[] = [];
+    for (const op of assetOps) {
+      const plan = planAssetAttr(ast, element, op.attr, op.assetPath);
+      if ('error' in plan) return { ok: false, status: 422, error: plan.error };
+      splices.push(plan.attrSplice);
+      if (plan.importSplice) importSplices.push(plan.importSplice);
+    }
+    // Multiple new imports for the same edit must not overlap, but they
+    // all anchor to the same offset (end of last existing import). When
+    // applied in reverse-`from` order they would land at the same point,
+    // so concat their text into a single splice to keep ordering stable.
+    if (importSplices.length > 0) {
+      const from = importSplices[0].from;
+      const to = importSplices[0].to;
+      const text = importSplices.map((s) => s.text).join('');
+      splices.push({ from, to, text });
+    }
   }
 
   if (splices.length === 0) return { ok: true, source };

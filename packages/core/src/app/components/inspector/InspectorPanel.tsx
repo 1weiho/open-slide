@@ -4,12 +4,20 @@ import {
   AlignLeft,
   AlignRight,
   Bold,
+  ImageIcon,
   Italic,
   Trash2,
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -25,9 +33,11 @@ import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { type AssetEntry, useAssets } from '@/lib/assets';
 import { findSlideSource } from '@/lib/inspector/fiber';
 import type { SlideComment } from '@/lib/inspector/useComments';
 import type { EditOp } from '@/lib/inspector/useEditor';
+import { cn } from '@/lib/utils';
 import { type SelectedTarget, useInspector } from './InspectorProvider';
 
 const PANEL_W = 340;
@@ -43,6 +53,7 @@ type ElementSnapshot = {
   lineHeight: number | null;
   letterSpacing: number;
   text: string | null;
+  imageSrc: string | null;
 };
 
 export function InspectorPanel() {
@@ -198,6 +209,15 @@ export function InspectorPanel() {
                 clearable
               />
             </Section>
+
+            {pinSnapshot.imageSrc !== null && (
+              <>
+                <Separator />
+                <Section title="Image">
+                  <ImageField slideId={slideId} src={pinSnapshot.imageSrc} apply={apply} />
+                </Section>
+              </>
+            )}
 
             <Separator />
 
@@ -618,6 +638,124 @@ function NumberField({
   );
 }
 
+function ImageField({
+  slideId,
+  src,
+  apply,
+}: {
+  slideId: string;
+  src: string;
+  apply: (ops: EditOp[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-3">
+        <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:8px_8px]">
+          <img
+            src={src}
+            alt=""
+            className="size-full object-contain"
+            draggable={false}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="flex-1"
+          onClick={() => setOpen(true)}
+        >
+          <ImageIcon className="size-3.5" />
+          Replace…
+        </Button>
+      </div>
+      {open && (
+        <AssetPickerDialog
+          slideId={slideId}
+          onClose={() => setOpen(false)}
+          onPick={(asset) => {
+            setOpen(false);
+            apply([
+              {
+                kind: 'set-attr-asset',
+                attr: 'src',
+                assetPath: `./assets/${asset.name}`,
+                previewUrl: asset.url,
+              },
+            ]);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function AssetPickerDialog({
+  slideId,
+  onClose,
+  onPick,
+}: {
+  slideId: string;
+  onClose: () => void;
+  onPick: (asset: AssetEntry) => void;
+}) {
+  const { assets, loading } = useAssets(slideId);
+  const images = assets.filter((a) => a.mime.startsWith('image/'));
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Replace image</DialogTitle>
+          <DialogDescription>
+            Pick an asset from <span className="font-mono">slides/{slideId}/assets/</span>.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="max-h-[60vh] overflow-y-auto">
+          {loading ? (
+            <p className="px-1 py-6 text-center text-xs text-muted-foreground">Loading…</p>
+          ) : images.length === 0 ? (
+            <p className="px-1 py-6 text-center text-xs text-muted-foreground">
+              No images in this slide's assets folder yet. Add some from the Assets tab.
+            </p>
+          ) : (
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-3">
+              {images.map((asset) => (
+                <button
+                  key={asset.name}
+                  type="button"
+                  onClick={() => onPick(asset)}
+                  className={cn(
+                    'group flex flex-col overflow-hidden rounded-lg border bg-card text-left shadow-sm transition-all',
+                    'hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none',
+                  )}
+                >
+                  <div className="flex aspect-square w-full items-center justify-center overflow-hidden bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:12px_12px]">
+                    <img
+                      src={asset.url}
+                      alt=""
+                      className="size-full object-contain"
+                      draggable={false}
+                    />
+                  </div>
+                  <div className="border-t px-2 py-1.5">
+                    <div className="truncate text-[11px] font-medium" title={asset.name}>
+                      {asset.name}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function CommentsSection({
   comments,
   selected,
@@ -714,6 +852,10 @@ function CommentsSection({
 function readSnapshot(el: HTMLElement): ElementSnapshot {
   const cs = getComputedStyle(el);
   const text = isSimpleTextElement(el) ? (el.textContent ?? '') : null;
+  const imageSrc =
+    el.tagName === 'IMG'
+      ? (el as HTMLImageElement).currentSrc || (el as HTMLImageElement).src || null
+      : null;
 
   return {
     fontSize: parseFloat(cs.fontSize) || 16,
@@ -725,6 +867,7 @@ function readSnapshot(el: HTMLElement): ElementSnapshot {
     lineHeight: parseLineHeight(cs.lineHeight, parseFloat(cs.fontSize) || 16),
     letterSpacing: parseLetterSpacing(cs.letterSpacing),
     text,
+    imageSrc,
   };
 }
 

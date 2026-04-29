@@ -19,15 +19,19 @@ export type SelectedTarget = {
   anchor: HTMLElement;
 };
 
+type AssetAttrOp = { assetPath: string; previewUrl: string };
+
 type Bucket = {
   line: number;
   column: number;
   styleOps: Map<string, string | null>;
   textOp: { value: string } | null;
+  attrOps: Map<string, AssetAttrOp>;
   // Pre-edit snapshot of the DOM, captured the first time we touch
-  // each style key / text. Used by `cancelEdits` to revert.
+  // each style key / text / attribute. Used by `cancelEdits` to revert.
   origStyle: Map<string, string>;
   origText: { value: string } | null;
+  origAttrs: Map<string, string | null>;
 };
 
 type InspectorCtx = {
@@ -75,7 +79,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
   const refreshCount = useCallback(() => {
     let n = 0;
     for (const b of pendingRef.current.values()) {
-      if (b.styleOps.size > 0 || b.textOp !== null) n++;
+      if (b.styleOps.size > 0 || b.textOp !== null || b.attrOps.size > 0) n++;
     }
     setPendingCount(n);
   }, []);
@@ -90,8 +94,10 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
           column,
           styleOps: new Map(),
           textOp: null,
+          attrOps: new Map(),
           origStyle: new Map(),
           origText: null,
+          origAttrs: new Map(),
         };
         pendingRef.current.set(key, bucket);
       }
@@ -109,6 +115,15 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
           }
           bucket.textOp = { value: op.value };
           if (anchor.isConnected) anchor.textContent = op.value;
+        } else if (op.kind === 'set-attr-asset') {
+          if (!bucket.origAttrs.has(op.attr)) {
+            bucket.origAttrs.set(
+              op.attr,
+              anchor.hasAttribute(op.attr) ? anchor.getAttribute(op.attr) : null,
+            );
+          }
+          bucket.attrOps.set(op.attr, { assetPath: op.assetPath, previewUrl: op.previewUrl });
+          if (anchor.isConnected) anchor.setAttribute(op.attr, op.previewUrl);
         }
       }
       refreshCount();
@@ -120,10 +135,18 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
     const buckets = pendingRef.current;
     if (buckets.size === 0) return;
     const edits: Edit[] = [];
-    for (const { line, column, styleOps, textOp } of buckets.values()) {
+    for (const { line, column, styleOps, textOp, attrOps } of buckets.values()) {
       const list: EditOp[] = [];
       for (const [k, v] of styleOps) list.push({ kind: 'set-style', key: k, value: v });
       if (textOp !== null) list.push({ kind: 'set-text', value: textOp.value });
+      for (const [attr, op] of attrOps) {
+        list.push({
+          kind: 'set-attr-asset',
+          attr,
+          assetPath: op.assetPath,
+          previewUrl: op.previewUrl,
+        });
+      }
       if (list.length > 0) edits.push({ line, column, ops: list });
     }
     pendingRef.current = new Map();
@@ -146,6 +169,10 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       const style = el.style as unknown as Record<string, string>;
       for (const [k, v] of b.origStyle) style[k] = v;
       if (b.origText !== null) el.textContent = b.origText.value;
+      for (const [attr, value] of b.origAttrs) {
+        if (value === null) el.removeAttribute(attr);
+        else el.setAttribute(attr, value);
+      }
     }
     pendingRef.current = new Map();
     setPendingCount(0);
@@ -185,6 +212,9 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       }
       if (bucket.textOp !== null && el.textContent !== bucket.textOp.value) {
         el.textContent = bucket.textOp.value;
+      }
+      for (const [attr, op] of bucket.attrOps) {
+        if (el.getAttribute(attr) !== op.previewUrl) el.setAttribute(attr, op.previewUrl);
       }
     };
 
