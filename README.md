@@ -60,6 +60,12 @@ pnpm check    # type-checks all packages
 pnpm lint     # lints via biome
 ```
 
+## Support
+
+If open-slide has been useful to you, consider supporting development:
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/D1D11YPUP1)
+
 ## License
 
 MIT
