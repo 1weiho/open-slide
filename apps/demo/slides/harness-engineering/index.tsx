@@ -1045,8 +1045,12 @@ const Layers: Page = () => (
             >
               {l.name}
             </div>
-            <div style={{ flex: 1, fontSize: 'var(--osd-size-body)', color: 'var(--osd-text)' }}>{l.artifact}</div>
-            <div style={{ flex: 1, fontSize: 'var(--osd-size-body)', color: palette.muted }}>{l.scope}</div>
+            <div style={{ flex: 1, fontSize: 'var(--osd-size-body)', color: 'var(--osd-text)' }}>
+              {l.artifact}
+            </div>
+            <div style={{ flex: 1, fontSize: 'var(--osd-size-body)', color: palette.muted }}>
+              {l.scope}
+            </div>
           </div>
         );
       })}

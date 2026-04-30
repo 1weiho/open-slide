@@ -419,8 +419,8 @@ const WhatIsToken: Page = () => (
           color: palette.muted,
         }}
       >
-        <span style={{ fontFamily: fonts.mono, color: 'var(--osd-text)' }}>·</span> marks a leading space
-        — yes, it's part of the token.
+        <span style={{ fontFamily: fonts.mono, color: 'var(--osd-text)' }}>·</span> marks a leading
+        space — yes, it's part of the token.
       </div>
     </div>
     <PageNumber n={3} total={TOTAL} />
@@ -1040,7 +1040,9 @@ const Autoregressive: Page = () => (
             {row.n}
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 26, color: 'var(--osd-text)', lineHeight: 1.3 }}>{row.label}</div>
+            <div style={{ fontSize: 26, color: 'var(--osd-text)', lineHeight: 1.3 }}>
+              {row.label}
+            </div>
             <div
               style={{
                 fontFamily: fonts.mono,
@@ -1346,7 +1348,14 @@ const Hallucinate: Page = () => (
           >
             {b.title}
           </div>
-          <div style={{ fontSize: 'var(--osd-size-body)', lineHeight: 1.55, color: palette.muted, fontWeight: 300 }}>
+          <div
+            style={{
+              fontSize: 'var(--osd-size-body)',
+              lineHeight: 1.55,
+              color: palette.muted,
+              fontWeight: 300,
+            }}
+          >
             {b.body}
           </div>
         </div>

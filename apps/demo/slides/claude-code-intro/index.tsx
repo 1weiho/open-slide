@@ -605,7 +605,8 @@ const Permissions: Page = () => (
               <span style={{ color: palette.ink }}>"permissions"</span>: {'{'}
             </div>
             <div style={{ paddingLeft: 24 }}>
-              <span style={{ color: 'var(--osd-accent)' }}>"allow"</span>: ["Bash(npm test:*)", "Edit"]
+              <span style={{ color: 'var(--osd-accent)' }}>"allow"</span>: ["Bash(npm test:*)",
+              "Edit"]
             </div>
             <div>{'}'}</div>
           </div>
