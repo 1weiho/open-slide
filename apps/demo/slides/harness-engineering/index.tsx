@@ -1,4 +1,14 @@
-import type { Page, SlideMeta } from '@open-slide/core';
+import type { DesignSystem, Page, SlideMeta } from '@open-slide/core';
+
+export const design: DesignSystem = {
+  palette: { bg: '#05070a', text: '#e6edf3', accent: '#39ff88' },
+  fonts: {
+    display: "'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace",
+    body: "'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace",
+  },
+  typeScale: { hero: 156, body: 24 },
+  radius: { md: 0 },
+};
 
 /* ─────────────── Design tokens (neon-terminal) ─────────────── */
 
@@ -24,9 +34,9 @@ const TOTAL = 8;
 const fill = {
   width: '100%',
   height: '100%',
-  background: palette.bg,
-  color: palette.text,
-  fontFamily: mono,
+  background: 'var(--osd-bg)',
+  color: 'var(--osd-text)',
+  fontFamily: 'var(--osd-font-body)',
   position: 'relative',
   overflow: 'hidden',
   border: `1px solid ${palette.line}`,
@@ -81,7 +91,7 @@ const Eyebrow = ({ children, delay = 0 }: { children: React.ReactNode; delay?: n
       animationDelay: `${delay}ms`,
       fontSize: 24,
       fontWeight: 500,
-      color: palette.accent,
+      color: 'var(--osd-accent)',
       textShadow: '0 0 12px rgba(57, 255, 136, 0.5)',
       letterSpacing: '0.04em',
     }}
@@ -98,7 +108,7 @@ const Cursor = ({ size = '0.55em', height = '0.92em' }: { size?: string; height?
       display: 'inline-block',
       width: size,
       height,
-      background: palette.accent,
+      background: 'var(--osd-accent)',
       boxShadow: '0 0 16px rgba(57, 255, 136, 0.6)',
       marginLeft: 14,
       verticalAlign: '-0.05em',
@@ -115,7 +125,7 @@ const Footer = ({ pageNum, section }: { pageNum: number; section?: string }) => 
       bottom: 36,
       display: 'flex',
       justifyContent: 'space-between',
-      fontFamily: mono,
+      fontFamily: 'var(--osd-font-body)',
       fontSize: 20,
       color: palette.faint,
       borderTop: `1px solid ${palette.line}`,
@@ -123,7 +133,7 @@ const Footer = ({ pageNum, section }: { pageNum: number; section?: string }) => 
     }}
   >
     <span>
-      <span style={{ color: palette.accent }}>●</span> {section ?? 'main'} ·{' '}
+      <span style={{ color: 'var(--osd-accent)' }}>●</span> {section ?? 'main'} ·{' '}
       <span style={{ color: palette.accent2 }}>~/deck/harness-engineering</span>
     </span>
     <span>
@@ -166,13 +176,13 @@ const Cover: Page = () => (
     </div>
     <h1
       style={{
-        fontFamily: mono,
-        fontSize: 156,
+        fontFamily: 'var(--osd-font-display)',
+        fontSize: 'var(--osd-size-hero)',
         fontWeight: 700,
         lineHeight: 1.02,
         letterSpacing: '-0.025em',
         margin: 0,
-        color: palette.text,
+        color: 'var(--osd-text)',
         position: 'relative',
         zIndex: 1,
       }}
@@ -184,7 +194,7 @@ const Cover: Page = () => (
           animationDelay: '120ms',
         }}
       >
-        <span style={{ color: palette.accent, textShadow: '0 0 22px rgba(57,255,136,0.6)' }}>
+        <span style={{ color: 'var(--osd-accent)', textShadow: '0 0 22px rgba(57,255,136,0.6)' }}>
           ${' '}
         </span>
         harness
@@ -194,7 +204,7 @@ const Cover: Page = () => (
         style={{
           display: 'block',
           animationDelay: '900ms',
-          color: palette.accent,
+          color: 'var(--osd-accent)',
           textShadow: '0 0 22px rgba(57,255,136,0.4)',
         }}
       >
@@ -206,7 +216,7 @@ const Cover: Page = () => (
       className="h-fadeup"
       style={{
         animationDelay: '1700ms',
-        fontFamily: mono,
+        fontFamily: 'var(--osd-font-body)',
         fontSize: 36,
         lineHeight: 1.5,
         color: palette.muted,
@@ -222,7 +232,7 @@ const Cover: Page = () => (
       className="h-fadeup"
       style={{
         animationDelay: '2000ms',
-        fontFamily: mono,
+        fontFamily: 'var(--osd-font-body)',
         fontSize: 22,
         color: palette.faint,
         position: 'relative',
@@ -258,7 +268,7 @@ const ShiftColumn = ({
       animationDelay: `${delay}ms`,
       flex: 1,
       background: palette.surface,
-      border: `1px solid ${tone === 'bright' ? palette.accent : palette.line}`,
+      border: `1px solid ${tone === 'bright' ? 'var(--osd-accent)' : palette.line}`,
       boxShadow: tone === 'bright' ? '0 0 32px rgba(57,255,136,0.15)' : 'none',
       padding: '32px 36px',
       display: 'flex',
@@ -269,7 +279,7 @@ const ShiftColumn = ({
     <div
       style={{
         fontSize: 22,
-        color: tone === 'bright' ? palette.accent : palette.muted,
+        color: tone === 'bright' ? 'var(--osd-accent)' : palette.muted,
         letterSpacing: '0.18em',
       }}
     >
@@ -279,7 +289,7 @@ const ShiftColumn = ({
       style={{
         fontSize: 48,
         fontWeight: 700,
-        color: palette.text,
+        color: 'var(--osd-text)',
         lineHeight: 1.15,
         letterSpacing: '-0.01em',
       }}
@@ -299,7 +309,7 @@ const ShiftColumn = ({
         >
           <span
             style={{
-              color: tone === 'bright' ? palette.accent : palette.faint,
+              color: tone === 'bright' ? 'var(--osd-accent)' : palette.faint,
               marginRight: 14,
             }}
           >
@@ -327,7 +337,7 @@ const Shift: Page = () => (
       className="h-fadeup"
       style={{
         animationDelay: '180ms',
-        fontFamily: mono,
+        fontFamily: 'var(--osd-font-display)',
         fontSize: 76,
         fontWeight: 700,
         lineHeight: 1.15,
@@ -336,7 +346,7 @@ const Shift: Page = () => (
         maxWidth: 1700,
       }}
     >
-      the model is no longer <span style={{ color: palette.accent }}>the bottleneck.</span>
+      the model is no longer <span style={{ color: 'var(--osd-accent)' }}>the bottleneck.</span>
     </h2>
     <div style={{ display: 'flex', gap: 50, flex: 1 }}>
       <ShiftColumn
@@ -360,11 +370,11 @@ const Shift: Page = () => (
         animationDelay: '1300ms',
         marginTop: 40,
         padding: '20px 28px',
-        borderLeft: `2px solid ${palette.accent}`,
+        borderLeft: `2px solid var(--osd-accent)`,
         background: 'rgba(57,255,136,0.05)',
       }}
     >
-      <div style={{ fontSize: 26, lineHeight: 1.5, color: palette.text, fontStyle: 'italic' }}>
+      <div style={{ fontSize: 26, lineHeight: 1.5, color: 'var(--osd-text)', fontStyle: 'italic' }}>
         "a decent model with a great harness beats a great model with a bad harness."
       </div>
       <div style={{ fontSize: 20, color: palette.muted, marginTop: 8 }}>
@@ -392,7 +402,7 @@ const Definition: Page = () => (
       className="h-fadeup"
       style={{
         animationDelay: '180ms',
-        fontFamily: mono,
+        fontFamily: 'var(--osd-font-display)',
         fontSize: 64,
         fontWeight: 700,
         lineHeight: 1.2,
@@ -401,7 +411,7 @@ const Definition: Page = () => (
         maxWidth: 1700,
       }}
     >
-      an <span style={{ color: palette.accent }}>agent harness</span> is{' '}
+      an <span style={{ color: 'var(--osd-accent)' }}>agent harness</span> is{' '}
       <span style={{ color: palette.muted, fontWeight: 400 }}>
         "everything in an AI agent except the model itself."
       </span>
@@ -433,7 +443,7 @@ const Definition: Page = () => (
         style={{
           width: 1100,
           maxWidth: '100%',
-          border: `1.5px solid ${palette.accent}`,
+          border: `1.5px solid var(--osd-accent)`,
           padding: '28px 36px 36px',
           background: 'rgba(57,255,136,0.03)',
           position: 'relative',
@@ -444,9 +454,9 @@ const Definition: Page = () => (
             position: 'absolute',
             top: -16,
             left: 32,
-            background: palette.bg,
+            background: 'var(--osd-bg)',
             padding: '0 14px',
-            color: palette.accent,
+            color: 'var(--osd-accent)',
             fontSize: 22,
             letterSpacing: '0.18em',
             textShadow: '0 0 12px rgba(57,255,136,0.5)',
@@ -559,7 +569,7 @@ const Anatomy: Page = () => (
       className="h-fadeup"
       style={{
         animationDelay: '180ms',
-        fontFamily: mono,
+        fontFamily: 'var(--osd-font-display)',
         fontSize: 72,
         fontWeight: 700,
         lineHeight: 1.15,
@@ -602,7 +612,7 @@ const Anatomy: Page = () => (
               left: 0,
               right: 0,
               height: 2,
-              background: palette.accent,
+              background: 'var(--osd-accent)',
             }}
           />
           <div
@@ -617,7 +627,7 @@ const Anatomy: Page = () => (
           <div
             style={{
               fontSize: 36,
-              color: palette.accent,
+              color: 'var(--osd-accent)',
               fontWeight: 700,
               margin: '14px 0 18px',
               letterSpacing: '-0.005em',
@@ -648,11 +658,11 @@ const Annotation = ({ label, body, delay }: { label: string; body: string; delay
     className="h-fadeup"
     style={{
       animationDelay: `${delay}ms`,
-      borderLeft: `2px solid ${palette.accent}`,
+      borderLeft: `2px solid var(--osd-accent)`,
       paddingLeft: 18,
     }}
   >
-    <div style={{ fontSize: 20, color: palette.accent, letterSpacing: '0.16em' }}>{label}</div>
+    <div style={{ fontSize: 20, color: 'var(--osd-accent)', letterSpacing: '0.16em' }}>{label}</div>
     <div style={{ fontSize: 22, color: palette.muted, lineHeight: 1.55, marginTop: 4 }}>{body}</div>
   </div>
 );
@@ -672,7 +682,7 @@ const ClaudeCodeExample: Page = () => (
       className="h-fadeup"
       style={{
         animationDelay: '180ms',
-        fontFamily: mono,
+        fontFamily: 'var(--osd-font-display)',
         fontSize: 72,
         fontWeight: 700,
         lineHeight: 1.15,
@@ -680,13 +690,13 @@ const ClaudeCodeExample: Page = () => (
         margin: '24px 0 16px',
       }}
     >
-      <span style={{ color: palette.accent }}>claude code</span> is a harness.
+      <span style={{ color: 'var(--osd-accent)' }}>claude code</span> is a harness.
     </h2>
     <p
       className="h-fadeup"
       style={{
         animationDelay: '320ms',
-        fontSize: 24,
+        fontSize: 'var(--osd-size-body)',
         color: palette.muted,
         lineHeight: 1.55,
         margin: '0 0 40px',
@@ -727,29 +737,29 @@ const ClaudeCodeExample: Page = () => (
           }}
         >
           <span>~ claude-code · session</span>
-          <span style={{ color: palette.accent }}>● connected</span>
+          <span style={{ color: 'var(--osd-accent)' }}>● connected</span>
         </div>
         <div style={{ color: palette.muted }}>
-          <span style={{ color: palette.accent }}>›</span> tools{' '}
+          <span style={{ color: 'var(--osd-accent)' }}>›</span> tools{' '}
           <span style={{ color: palette.faint }}>(permission-gated)</span>
         </div>
         <div style={{ color: palette.accent2, paddingLeft: 22 }}>
           Read · Edit · Write · Bash · Grep · WebFetch · TodoWrite · Agent · Skill
         </div>
         <div style={{ color: palette.muted, marginTop: 8 }}>
-          <span style={{ color: palette.accent }}>›</span> loop
+          <span style={{ color: 'var(--osd-accent)' }}>›</span> loop
         </div>
-        <div style={{ color: palette.text, paddingLeft: 22 }}>
+        <div style={{ color: 'var(--osd-text)', paddingLeft: 22 }}>
           think → call tool → read result → decide → repeat
         </div>
         <div style={{ color: palette.muted, marginTop: 8 }}>
-          <span style={{ color: palette.accent }}>›</span> state
+          <span style={{ color: 'var(--osd-accent)' }}>›</span> state
         </div>
-        <div style={{ color: palette.text, paddingLeft: 22 }}>
+        <div style={{ color: 'var(--osd-text)', paddingLeft: 22 }}>
           TodoWrite · plan files · CLAUDE.md · git commits
         </div>
         <div style={{ color: palette.muted, marginTop: 8 }}>
-          <span style={{ color: palette.accent }}>›</span> approval
+          <span style={{ color: 'var(--osd-accent)' }}>›</span> approval
         </div>
         <div style={{ color: palette.warn, paddingLeft: 22 }}>
           ? run `pnpm dev` — [y/N]
@@ -759,7 +769,7 @@ const ClaudeCodeExample: Page = () => (
               display: 'inline-block',
               width: 10,
               height: 18,
-              background: palette.accent,
+              background: 'var(--osd-accent)',
               marginLeft: 8,
               verticalAlign: 'middle',
             }}
@@ -852,7 +862,7 @@ const Principles: Page = () => (
       className="h-fadeup"
       style={{
         animationDelay: '180ms',
-        fontFamily: mono,
+        fontFamily: 'var(--osd-font-display)',
         fontSize: 72,
         fontWeight: 700,
         lineHeight: 1.15,
@@ -886,8 +896,8 @@ const Principles: Page = () => (
         >
           <div
             style={{
-              fontSize: 24,
-              color: palette.accent,
+              fontSize: 'var(--osd-size-body)',
+              color: 'var(--osd-accent)',
               flexShrink: 0,
               minWidth: 64,
             }}
@@ -897,7 +907,7 @@ const Principles: Page = () => (
           <div
             style={{
               fontSize: 30,
-              color: palette.text,
+              color: 'var(--osd-text)',
               fontWeight: 700,
               minWidth: 460,
               flexShrink: 0,
@@ -959,7 +969,7 @@ const Layers: Page = () => (
       className="h-fadeup"
       style={{
         animationDelay: '180ms',
-        fontFamily: mono,
+        fontFamily: 'var(--osd-font-display)',
         fontSize: 72,
         fontWeight: 700,
         lineHeight: 1.15,
@@ -973,7 +983,7 @@ const Layers: Page = () => (
       className="h-fadeup"
       style={{
         animationDelay: '320ms',
-        fontSize: 24,
+        fontSize: 'var(--osd-size-body)',
         color: palette.muted,
         lineHeight: 1.55,
         margin: '0 0 44px',
@@ -1004,7 +1014,11 @@ const Layers: Page = () => (
 
       {layers.map((l, i) => {
         const color =
-          l.tone === 'bright' ? palette.accent : l.tone === 'mid' ? palette.accent2 : palette.muted;
+          l.tone === 'bright'
+            ? 'var(--osd-accent)'
+            : l.tone === 'mid'
+              ? palette.accent2
+              : palette.muted;
         return (
           <div
             key={l.name}
@@ -1016,7 +1030,7 @@ const Layers: Page = () => (
               alignItems: 'center',
               padding: '24px 26px',
               background: l.tone === 'bright' ? 'rgba(57,255,136,0.05)' : palette.surface,
-              border: `1px solid ${l.tone === 'bright' ? palette.accent : palette.line}`,
+              border: `1px solid ${l.tone === 'bright' ? 'var(--osd-accent)' : palette.line}`,
               boxShadow: l.tone === 'bright' ? '0 0 28px rgba(57,255,136,0.12)' : 'none',
             }}
           >
@@ -1031,8 +1045,8 @@ const Layers: Page = () => (
             >
               {l.name}
             </div>
-            <div style={{ flex: 1, fontSize: 24, color: palette.text }}>{l.artifact}</div>
-            <div style={{ flex: 1, fontSize: 24, color: palette.muted }}>{l.scope}</div>
+            <div style={{ flex: 1, fontSize: 'var(--osd-size-body)', color: 'var(--osd-text)' }}>{l.artifact}</div>
+            <div style={{ flex: 1, fontSize: 'var(--osd-size-body)', color: palette.muted }}>{l.scope}</div>
           </div>
         );
       })}
@@ -1081,13 +1095,13 @@ const Closing: Page = () => (
     </div>
     <h2
       style={{
-        fontFamily: mono,
+        fontFamily: 'var(--osd-font-display)',
         fontSize: 132,
         fontWeight: 700,
         lineHeight: 1.02,
         letterSpacing: '-0.025em',
         margin: 0,
-        color: palette.text,
+        color: 'var(--osd-text)',
         position: 'relative',
         zIndex: 1,
       }}
@@ -1103,7 +1117,7 @@ const Closing: Page = () => (
         }}
       >
         <span style={{ color: palette.muted }}>is</span>{' '}
-        <span style={{ color: palette.accent, textShadow: '0 0 22px rgba(57,255,136,0.5)' }}>
+        <span style={{ color: 'var(--osd-accent)', textShadow: '0 0 22px rgba(57,255,136,0.5)' }}>
           the product.
         </span>
         <Cursor size="0.5em" height="0.85em" />
@@ -1115,7 +1129,7 @@ const Closing: Page = () => (
         animationDelay: '1700ms',
         width: 480,
         height: 1,
-        background: palette.accent,
+        background: 'var(--osd-accent)',
         position: 'relative',
         zIndex: 1,
       }}
@@ -1142,9 +1156,9 @@ const Closing: Page = () => (
             lineHeight: 1.5,
           }}
         >
-          <span style={{ color: palette.accent, minWidth: 32 }}>›</span>
+          <span style={{ color: 'var(--osd-accent)', minWidth: 32 }}>›</span>
           <span style={{ color: palette.accent2, minWidth: 240 }}>{s.who}</span>
-          <span style={{ flex: 1, color: palette.text }}>{s.what}</span>
+          <span style={{ flex: 1, color: 'var(--osd-text)' }}>{s.what}</span>
           <span style={{ color: palette.faint, minWidth: 110, textAlign: 'right' }}>{s.date}</span>
         </div>
       ))}

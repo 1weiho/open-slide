@@ -1,7 +1,17 @@
 import type { ReactNode } from 'react';
-import type { Page, SlideMeta } from '@open-slide/core';
+import type { DesignSystem, Page, SlideMeta } from '@open-slide/core';
 import vercelMark from './assets/vercel.svg';
 import nextMark from './assets/next-js.svg';
+
+export const design: DesignSystem = {
+  palette: { bg: '#ffffff', text: '#000000', accent: '#ff0080' },
+  fonts: {
+    display: "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+    body: "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+  },
+  typeScale: { hero: 176, body: 28 },
+  radius: { md: 12 },
+};
 
 const palette = {
   bg: '#ffffff',
@@ -25,9 +35,9 @@ const fontMono = "'Geist Mono', 'SF Mono', Menlo, Consolas, monospace";
 const fill = {
   width: '100%',
   height: '100%',
-  background: palette.bg,
-  color: palette.text,
-  fontFamily: fontSans,
+  background: 'var(--osd-bg)',
+  color: 'var(--osd-text)',
+  fontFamily: 'var(--osd-font-body)',
   position: 'relative' as const,
   overflow: 'hidden' as const,
   boxSizing: 'border-box' as const,
@@ -151,7 +161,7 @@ const Code = ({ children, fontSize = 20 }: { children: ReactNode; fontSize?: num
       padding: 24,
       background: palette.surface,
       border: `1px solid ${palette.border}`,
-      borderRadius: 12,
+      borderRadius: 'var(--osd-radius-md)',
       fontFamily: fontMono,
       fontSize,
       lineHeight: 1.45,
@@ -219,7 +229,7 @@ const Cover: Page = () => (
       </div>
       <h1
         style={{
-          fontSize: 176,
+          fontSize: 'var(--osd-size-hero)',
           fontWeight: 700,
           margin: 0,
           lineHeight: 0.92,
@@ -389,7 +399,7 @@ const TradeOff: Page = () => {
         </h2>
         <p
           style={{
-            fontSize: 28,
+            fontSize: 'var(--osd-size-body)',
             color: palette.muted,
             margin: '24px 0 0',
             maxWidth: 1300,
@@ -450,7 +460,7 @@ const PPRConcept: Page = () => {
         left,
         width,
         height,
-        borderRadius: 12,
+        borderRadius: 'var(--osd-radius-md)',
         background: `linear-gradient(110deg, ${palette.surface} 8%, #f0f0f0 18%, ${palette.surface} 33%)`,
         backgroundSize: '200% 100%',
         border: `1.5px dashed ${palette.pink}`,
@@ -642,7 +652,7 @@ const PPRConcept: Page = () => {
               padding: 20,
               background: palette.surface,
               border: `1px solid ${palette.border}`,
-              borderRadius: 12,
+              borderRadius: 'var(--osd-radius-md)',
               fontSize: 24,
               fontFamily: fontMono,
               color: palette.muted,
@@ -679,7 +689,7 @@ const PPRCode: Page = () => (
       </h2>
       <p
         style={{
-          fontSize: 28,
+          fontSize: 'var(--osd-size-body)',
           color: palette.muted,
           margin: '24px 0 0',
           maxWidth: 1300,
@@ -826,7 +836,7 @@ const UseCache: Page = () => (
           fontFamily: fontMono,
         }}
       >
-        '<span style={{ color: palette.pink }}>use cache</span>'
+        '<span style={{ color: 'var(--osd-accent)' }}>use cache</span>'
       </h2>
       <p
         style={{
@@ -1007,7 +1017,7 @@ const CacheScopes: Page = () => {
         >
           Three places it lives.
         </h2>
-        <p style={{ fontSize: 28, color: palette.muted, margin: '20px 0 0' }}>
+        <p style={{ fontSize: 'var(--osd-size-body)', color: palette.muted, margin: '20px 0 0' }}>
           Function, component, or an entire route — the directive knows them all.
         </p>
       </div>

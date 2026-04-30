@@ -1,4 +1,14 @@
-import type { Page, SlideMeta } from '@open-slide/core';
+import type { DesignSystem, Page, SlideMeta } from '@open-slide/core';
+
+export const design: DesignSystem = {
+  palette: { bg: '#f7f5f0', text: '#1a1814', accent: '#6d4cff' },
+  fonts: {
+    display: '"Times New Roman", "Georgia", serif',
+    body: '-apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display", system-ui, sans-serif',
+  },
+  typeScale: { hero: 196, body: 28 },
+  radius: { md: 16 },
+};
 
 /* ─────────────── Tokens & primitives ─────────────── */
 
@@ -34,9 +44,9 @@ const fonts = {
 const fill = {
   width: '100%',
   height: '100%',
-  fontFamily: fonts.sans,
-  color: palette.text,
-  background: palette.bg,
+  fontFamily: 'var(--osd-font-body)',
+  color: 'var(--osd-text)',
+  background: 'var(--osd-bg)',
   position: 'relative',
   overflow: 'hidden',
 } as const;
@@ -100,12 +110,12 @@ const Eyebrow = ({ children, delay = 0 }: { children: React.ReactNode; delay?: n
     className="l-fadeup"
     style={{
       animationDelay: `${delay}ms`,
-      fontFamily: fonts.sans,
+      fontFamily: 'var(--osd-font-body)',
       fontSize: 22,
       fontWeight: 500,
       letterSpacing: '0.32em',
       textTransform: 'uppercase',
-      color: palette.accent,
+      color: 'var(--osd-accent)',
     }}
   >
     {children}
@@ -118,7 +128,7 @@ const PageNumber = ({ n, total }: { n: number; total: number }) => (
       position: 'absolute',
       left: PAD_X,
       bottom: 60,
-      fontFamily: fonts.sans,
+      fontFamily: 'var(--osd-font-body)',
       fontSize: 18,
       letterSpacing: '0.3em',
       textTransform: 'uppercase',
@@ -146,14 +156,14 @@ const SectionTitle = ({
     className="l-fadeup"
     style={{
       animationDelay: `${delay}ms`,
-      fontFamily: fonts.serif,
+      fontFamily: 'var(--osd-font-display)',
       fontSize: size,
       fontWeight: 400,
       lineHeight: 1.1,
       letterSpacing: '-0.02em',
       margin,
       maxWidth,
-      color: palette.text,
+      color: 'var(--osd-text)',
     }}
   >
     {children}
@@ -240,16 +250,16 @@ const Cover: Page = () => (
         className="l-fadeup"
         style={{
           animationDelay: '180ms',
-          fontFamily: fonts.serif,
-          fontSize: 196,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 'var(--osd-size-hero)',
           fontWeight: 400,
           lineHeight: 1.02,
           letterSpacing: '-0.025em',
           margin: '40px 0 0',
-          color: palette.text,
+          color: 'var(--osd-text)',
         }}
       >
-        How <em style={{ fontStyle: 'italic', color: palette.accent }}>LLMs</em>
+        How <em style={{ fontStyle: 'italic', color: 'var(--osd-accent)' }}>LLMs</em>
         <br />
         actually work.
       </h1>
@@ -259,7 +269,7 @@ const Cover: Page = () => (
           animationDelay: '900ms',
           height: 1,
           width: 520,
-          background: palette.text,
+          background: 'var(--osd-text)',
           margin: '64px 0 32px',
         }}
       />
@@ -267,7 +277,7 @@ const Cover: Page = () => (
         className="l-fadeup"
         style={{
           animationDelay: '1100ms',
-          fontFamily: fonts.sans,
+          fontFamily: 'var(--osd-font-body)',
           fontSize: 36,
           lineHeight: 1.5,
           color: palette.muted,
@@ -298,7 +308,7 @@ const BigIdea: Page = () => (
     <Style />
     <Eyebrow>The whole thing in one sentence</Eyebrow>
     <SectionTitle size={120} margin="40px 0 60px" maxWidth={1600}>
-      An LLM predicts the <em style={{ color: palette.accent }}>next token</em>,
+      An LLM predicts the <em style={{ color: 'var(--osd-accent)' }}>next token</em>,
       <br />
       one token at a time.
     </SectionTitle>
@@ -336,7 +346,7 @@ const WhatIsToken: Page = () => (
       className="l-fadeup"
       style={{
         animationDelay: '320ms',
-        fontSize: 28,
+        fontSize: 'var(--osd-size-body)',
         lineHeight: 1.5,
         color: palette.muted,
         fontWeight: 300,
@@ -354,7 +364,7 @@ const WhatIsToken: Page = () => (
         animationDelay: '600ms',
         background: palette.surface,
         border: `1px solid ${palette.line}`,
-        borderRadius: 16,
+        borderRadius: 'var(--osd-radius-md)',
         padding: '50px 60px',
       }}
     >
@@ -371,10 +381,10 @@ const WhatIsToken: Page = () => (
       </div>
       <div
         style={{
-          fontFamily: fonts.serif,
+          fontFamily: 'var(--osd-font-display)',
           fontStyle: 'italic',
           fontSize: 56,
-          color: palette.text,
+          color: 'var(--osd-text)',
           marginBottom: 48,
           lineHeight: 1.2,
         }}
@@ -387,7 +397,7 @@ const WhatIsToken: Page = () => (
           fontSize: 22,
           letterSpacing: '0.28em',
           textTransform: 'uppercase',
-          color: palette.accent,
+          color: 'var(--osd-accent)',
           marginBottom: 24,
         }}
       >
@@ -404,12 +414,12 @@ const WhatIsToken: Page = () => (
         style={{
           animationDelay: '2200ms',
           marginTop: 40,
-          fontFamily: fonts.sans,
+          fontFamily: 'var(--osd-font-body)',
           fontSize: 22,
           color: palette.muted,
         }}
       >
-        <span style={{ fontFamily: fonts.mono, color: palette.text }}>·</span> marks a leading space
+        <span style={{ fontFamily: fonts.mono, color: 'var(--osd-text)' }}>·</span> marks a leading space
         — yes, it's part of the token.
       </div>
     </div>
@@ -429,7 +439,7 @@ const Tokenization: Page = () => (
       className="l-fadeup"
       style={{
         animationDelay: '320ms',
-        fontSize: 28,
+        fontSize: 'var(--osd-size-body)',
         lineHeight: 1.5,
         color: palette.muted,
         fontWeight: 300,
@@ -476,7 +486,7 @@ const Tokenization: Page = () => (
             flex: 1,
             background: palette.surface,
             border: `1px solid ${palette.line}`,
-            borderRadius: 16,
+            borderRadius: 'var(--osd-radius-md)',
             padding: 40,
             display: 'flex',
             flexDirection: 'column',
@@ -487,7 +497,7 @@ const Tokenization: Page = () => (
               fontSize: 22,
               letterSpacing: '0.28em',
               textTransform: 'uppercase',
-              color: palette.accent,
+              color: 'var(--osd-accent)',
               fontWeight: 500,
               marginBottom: 28,
             }}
@@ -498,7 +508,7 @@ const Tokenization: Page = () => (
             style={{
               fontFamily: fonts.mono,
               fontSize: 30,
-              color: palette.text,
+              color: 'var(--osd-text)',
               marginBottom: 28,
             }}
           >
@@ -546,7 +556,7 @@ const VocabSize: Page = () => (
       className="l-fadeup"
       style={{
         animationDelay: '320ms',
-        fontSize: 28,
+        fontSize: 'var(--osd-size-body)',
         lineHeight: 1.5,
         color: palette.muted,
         fontWeight: 300,
@@ -572,7 +582,7 @@ const VocabSize: Page = () => (
             flex: 1,
             background: palette.surface,
             border: `1px solid ${palette.line}`,
-            borderRadius: 16,
+            borderRadius: 'var(--osd-radius-md)',
             padding: 48,
             display: 'flex',
             flexDirection: 'column',
@@ -584,7 +594,7 @@ const VocabSize: Page = () => (
               fontSize: 22,
               letterSpacing: '0.28em',
               textTransform: 'uppercase',
-              color: palette.accent,
+              color: 'var(--osd-accent)',
               fontWeight: 500,
             }}
           >
@@ -592,9 +602,9 @@ const VocabSize: Page = () => (
           </div>
           <div
             style={{
-              fontFamily: fonts.serif,
+              fontFamily: 'var(--osd-font-display)',
               fontSize: 96,
-              color: palette.text,
+              color: 'var(--osd-text)',
               lineHeight: 1,
               margin: '40px 0',
               letterSpacing: '-0.02em',
@@ -657,7 +667,7 @@ const ContextWindow: Page = () => {
         className="l-fadeup"
         style={{
           animationDelay: '320ms',
-          fontSize: 28,
+          fontSize: 'var(--osd-size-body)',
           lineHeight: 1.5,
           color: palette.muted,
           fontWeight: 300,
@@ -676,7 +686,7 @@ const ContextWindow: Page = () => {
           animationDelay: '600ms',
           background: palette.surface,
           border: `1px solid ${palette.line}`,
-          borderRadius: 16,
+          borderRadius: 'var(--osd-radius-md)',
           padding: '50px 60px',
           marginBottom: 40,
           position: 'relative',
@@ -711,7 +721,7 @@ const ContextWindow: Page = () => {
                   flex: 1,
                   height: 40,
                   borderRadius: 3,
-                  background: inWin ? palette.accent : palette.line,
+                  background: inWin ? 'var(--osd-accent)' : palette.line,
                   opacity: inWin ? 1 : 0.7,
                   transition: 'background 600ms ease',
                 }}
@@ -727,7 +737,7 @@ const ContextWindow: Page = () => {
               bottom: -14,
               left: `${(30 / total) * 100}%`,
               width: `${(winSize / total) * 100}%`,
-              border: `2px solid ${palette.accent}`,
+              border: `2px solid var(--osd-accent)`,
               borderRadius: 8,
               pointerEvents: 'none',
               boxSizing: 'border-box',
@@ -743,7 +753,7 @@ const ContextWindow: Page = () => {
               fontSize: 20,
               letterSpacing: '0.24em',
               textTransform: 'uppercase',
-              color: palette.accent,
+              color: 'var(--osd-accent)',
               fontWeight: 500,
             }}
           >
@@ -777,9 +787,9 @@ const ContextWindow: Page = () => {
           <div key={b.label} style={{ flex: 1 }}>
             <div
               style={{
-                fontFamily: fonts.serif,
+                fontFamily: 'var(--osd-font-display)',
                 fontSize: 56,
-                color: palette.text,
+                color: 'var(--osd-text)',
                 lineHeight: 1,
                 margin: '0 0 16px',
                 letterSpacing: '-0.02em',
@@ -794,7 +804,7 @@ const ContextWindow: Page = () => {
                   animationDelay: `${b.delay}ms`,
                   '--scale': b.frac,
                   height: 14,
-                  background: palette.accent,
+                  background: 'var(--osd-accent)',
                   borderRadius: 4,
                   width: '100%',
                 } as React.CSSProperties
@@ -846,7 +856,7 @@ const Attention: Page = () => {
         className="l-fadeup"
         style={{
           animationDelay: '320ms',
-          fontSize: 28,
+          fontSize: 'var(--osd-size-body)',
           lineHeight: 1.5,
           color: palette.muted,
           fontWeight: 300,
@@ -865,7 +875,7 @@ const Attention: Page = () => {
           animationDelay: '600ms',
           background: palette.surface,
           border: `1px solid ${palette.line}`,
-          borderRadius: 16,
+          borderRadius: 'var(--osd-radius-md)',
           padding: '40px 30px',
         }}
       >
@@ -1012,7 +1022,7 @@ const Autoregressive: Page = () => (
             gap: 32,
             padding: '16px 32px',
             background: row.highlight ? palette.accentSoft : palette.surface,
-            border: `1px solid ${row.highlight ? palette.accent : palette.line}`,
+            border: `1px solid ${row.highlight ? 'var(--osd-accent)' : palette.line}`,
             borderRadius: 14,
           }}
         >
@@ -1020,9 +1030,9 @@ const Autoregressive: Page = () => (
             style={{
               flexShrink: 0,
               width: 64,
-              fontFamily: fonts.serif,
+              fontFamily: 'var(--osd-font-display)',
               fontSize: 48,
-              color: row.highlight ? palette.accent : palette.faint,
+              color: row.highlight ? 'var(--osd-accent)' : palette.faint,
               lineHeight: 1,
               fontWeight: 400,
             }}
@@ -1030,7 +1040,7 @@ const Autoregressive: Page = () => (
             {row.n}
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 26, color: palette.text, lineHeight: 1.3 }}>{row.label}</div>
+            <div style={{ fontSize: 26, color: 'var(--osd-text)', lineHeight: 1.3 }}>{row.label}</div>
             <div
               style={{
                 fontFamily: fonts.mono,
@@ -1071,7 +1081,7 @@ const Sampling: Page = () => (
       className="l-fadeup"
       style={{
         animationDelay: '320ms',
-        fontSize: 28,
+        fontSize: 'var(--osd-size-body)',
         lineHeight: 1.5,
         color: palette.muted,
         fontWeight: 300,
@@ -1092,7 +1102,7 @@ const Sampling: Page = () => (
           flex: 1.4,
           background: palette.surface,
           border: `1px solid ${palette.line}`,
-          borderRadius: 16,
+          borderRadius: 'var(--osd-radius-md)',
           padding: 40,
         }}
       >
@@ -1101,7 +1111,7 @@ const Sampling: Page = () => (
             fontSize: 22,
             letterSpacing: '0.28em',
             textTransform: 'uppercase',
-            color: palette.accent,
+            color: 'var(--osd-accent)',
             fontWeight: 500,
             marginBottom: 8,
           }}
@@ -1134,7 +1144,7 @@ const Sampling: Page = () => (
                 width: 140,
                 fontFamily: fonts.mono,
                 fontSize: 28,
-                color: palette.text,
+                color: 'var(--osd-text)',
               }}
             >
               {c.tok.replace(/ /g, '·')}
@@ -1157,7 +1167,7 @@ const Sampling: Page = () => (
                     '--scale': c.p / 0.42,
                     height: '100%',
                     width: '100%',
-                    background: palette.accent,
+                    background: 'var(--osd-accent)',
                     borderRadius: 4,
                   } as React.CSSProperties
                 }
@@ -1230,9 +1240,9 @@ const Sampling: Page = () => (
               </div>
               <div
                 style={{
-                  fontFamily: fonts.serif,
+                  fontFamily: 'var(--osd-font-display)',
                   fontSize: 44,
-                  color: palette.accent,
+                  color: 'var(--osd-accent)',
                   letterSpacing: '-0.02em',
                   lineHeight: 1,
                 }}
@@ -1240,7 +1250,7 @@ const Sampling: Page = () => (
                 {k.t}
               </div>
             </div>
-            <div style={{ fontSize: 22, lineHeight: 1.5, color: palette.text }}>{k.body}</div>
+            <div style={{ fontSize: 22, lineHeight: 1.5, color: 'var(--osd-text)' }}>{k.body}</div>
           </div>
         ))}
       </div>
@@ -1261,7 +1271,7 @@ const Hallucinate: Page = () => (
       className="l-fadeup"
       style={{
         animationDelay: '320ms',
-        fontSize: 28,
+        fontSize: 'var(--osd-size-body)',
         lineHeight: 1.5,
         color: palette.muted,
         fontWeight: 300,
@@ -1306,7 +1316,7 @@ const Hallucinate: Page = () => (
             flex: 1,
             background: palette.surface,
             border: `1px solid ${palette.line}`,
-            borderRadius: 16,
+            borderRadius: 'var(--osd-radius-md)',
             padding: 50,
             display: 'flex',
             flexDirection: 'column',
@@ -1314,9 +1324,9 @@ const Hallucinate: Page = () => (
         >
           <div
             style={{
-              fontFamily: fonts.serif,
+              fontFamily: 'var(--osd-font-display)',
               fontSize: 88,
-              color: palette.accent,
+              color: 'var(--osd-accent)',
               lineHeight: 1,
               marginBottom: 28,
             }}
@@ -1325,10 +1335,10 @@ const Hallucinate: Page = () => (
           </div>
           <div
             style={{
-              fontFamily: fonts.serif,
+              fontFamily: 'var(--osd-font-display)',
               fontSize: 56,
               fontWeight: 400,
-              color: palette.text,
+              color: 'var(--osd-text)',
               lineHeight: 1.1,
               letterSpacing: '-0.02em',
               marginBottom: 28,
@@ -1336,7 +1346,7 @@ const Hallucinate: Page = () => (
           >
             {b.title}
           </div>
-          <div style={{ fontSize: 28, lineHeight: 1.55, color: palette.muted, fontWeight: 300 }}>
+          <div style={{ fontSize: 'var(--osd-size-body)', lineHeight: 1.55, color: palette.muted, fontWeight: 300 }}>
             {b.body}
           </div>
         </div>
@@ -1389,16 +1399,16 @@ const Practical: Page = () => (
             padding: '36px 44px',
             background: palette.surface,
             border: `1px solid ${palette.line}`,
-            borderRadius: 16,
+            borderRadius: 'var(--osd-radius-md)',
           }}
         >
           <div
             style={{
               flexShrink: 0,
               width: 90,
-              fontFamily: fonts.serif,
+              fontFamily: 'var(--osd-font-display)',
               fontSize: 76,
-              color: palette.accent,
+              color: 'var(--osd-accent)',
               lineHeight: 1,
               fontWeight: 400,
               letterSpacing: '0.02em',
@@ -1409,10 +1419,10 @@ const Practical: Page = () => (
           <div style={{ flex: 1 }}>
             <div
               style={{
-                fontFamily: fonts.serif,
+                fontFamily: 'var(--osd-font-display)',
                 fontSize: 48,
                 fontWeight: 400,
-                color: palette.text,
+                color: 'var(--osd-text)',
                 lineHeight: 1.2,
                 letterSpacing: '-0.01em',
                 marginBottom: 10,
@@ -1470,7 +1480,7 @@ const Closing: Page = () => (
         className="l-fadeup"
         style={{
           animationDelay: '180ms',
-          fontFamily: fonts.serif,
+          fontFamily: 'var(--osd-font-display)',
           fontSize: 152,
           fontWeight: 400,
           lineHeight: 1.05,
@@ -1480,7 +1490,7 @@ const Closing: Page = () => (
       >
         Tokens. Attention.
         <br />
-        <em style={{ color: palette.accent }}>Predict. Repeat.</em>
+        <em style={{ color: 'var(--osd-accent)' }}>Predict. Repeat.</em>
       </h2>
       <div
         className="l-line"
@@ -1488,7 +1498,7 @@ const Closing: Page = () => (
           animationDelay: '900ms',
           height: 1,
           width: 520,
-          background: palette.text,
+          background: 'var(--osd-text)',
           margin: '64px 0 32px',
         }}
       />
