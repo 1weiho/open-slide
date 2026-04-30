@@ -7,7 +7,9 @@ description: Use this skill when the user wants to create, draft, author, or ext
 
 This skill produces one markdown file under `themes/<id>.md` that describes a reusable visual identity for slides — palette, typography, layout, fixed Title/Footer/Eyebrow components, motion. Themes are agent-facing documentation, not executable runtime: a slide author reads the theme markdown and applies it when writing `slides/<id>/index.tsx`.
 
-You only write a single file under `themes/`. Never modify slides, `package.json`, `open-slide.config.ts`, or other configuration. The canvas / type-scale defaults that themes can override live in the **`slide-authoring`** skill — read it before writing the theme so your overrides are stated explicitly.
+A theme is **distinct from a slide's `design` const**. The theme markdown is authoring-time aesthetic direction (read by `create-slide`, copied into slide source). A per-slide `const design: DesignSystem = { … }` (declared at the top of `slides/<id>/index.tsx`) is the runtime tokens object the user can tweak from the Design panel in the dev UI. Both can coexist: the markdown theme commits the *direction*, the per-slide `design` const makes the slide *tweakable*. This skill only writes the markdown.
+
+You only write a single file under `themes/`. Never modify slides or other configuration. The canvas / type-scale defaults that themes can override live in the **`slide-authoring`** skill — read it before writing the theme so your overrides are stated explicitly.
 
 ## Step 1 — Identify the input source
 

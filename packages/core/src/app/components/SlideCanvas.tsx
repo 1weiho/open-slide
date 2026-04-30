@@ -55,6 +55,7 @@ export function SlideCanvas({ children, scale, center = true, flat = false, clas
         }}
       >
         <div
+          data-osd-canvas
           style={{
             width: CANVAS_WIDTH,
             height: CANVAS_HEIGHT,

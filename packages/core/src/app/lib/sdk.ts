@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import type { DesignSystem } from '../../design.ts';
 
 export type Page = ComponentType;
 
@@ -9,6 +10,7 @@ export type SlideMeta = {
 export type SlideModule = {
   default: Page[];
   meta?: SlideMeta;
+  design?: DesignSystem;
 };
 
 export type FolderIcon = { type: 'emoji'; value: string } | { type: 'color'; value: string };

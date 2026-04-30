@@ -5,6 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import type { InlineConfig } from 'vite';
 import { commentsPlugin } from './comments-plugin.ts';
+import { designPlugin } from './design-plugin.ts';
 import { filesPlugin } from './files-plugin.ts';
 import { locTagsPlugin } from './loc-tags-plugin.ts';
 import { loadUserConfig, type OpenSlideConfig, openSlidePlugin } from './open-slide-plugin.ts';
@@ -41,6 +42,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
       react(),
       tailwindcss(),
       openSlidePlugin({ userCwd, config }),
+      designPlugin({ userCwd }),
       commentsPlugin({ userCwd, slidesDir }),
       filesPlugin({ userCwd, slidesDir }),
     ],

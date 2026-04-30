@@ -56,6 +56,8 @@ Sketch the slide as a list of page roles before writing code. Common page types:
 
 Pick one coherent palette / type scale / aesthetic and hold it across every page. The full set of constraints (palette structure, type scale, padding, aesthetic options) lives in `slide-authoring` — apply it.
 
+If the user wants the slide to remain tweakable from the Design panel afterwards, declare a top-level `const design: DesignSystem = { … }` at the top of `index.tsx` (after imports) using the chosen palette / type scale, and reference `design.X` from inline styles. The "Design system" section of `slide-authoring` covers the format and available tokens.
+
 Consult the `frontend-design` skill for deeper aesthetic guidance if the user wants something bold.
 
 ## Step 6 — Write `slides/<id>/index.tsx`
