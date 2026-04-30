@@ -40,13 +40,20 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
   useEffect(() => {
     if (open) {
       setMounted(true);
-      const id = requestAnimationFrame(() => setAnimVisible(true));
-      return () => cancelAnimationFrame(id);
+      return;
     }
     setAnimVisible(false);
     const t = setTimeout(() => setMounted(false), PANEL_TRANSITION_MS);
     return () => clearTimeout(t);
   }, [open]);
+
+  // Defer the width expansion to the next frame so the browser paints once
+  // at width=0 first; otherwise the transition has no starting frame.
+  useEffect(() => {
+    if (!open || !mounted) return;
+    const id = requestAnimationFrame(() => setAnimVisible(true));
+    return () => cancelAnimationFrame(id);
+  }, [open, mounted]);
 
   if (!loaded) return null;
   if (!mounted) return null;
