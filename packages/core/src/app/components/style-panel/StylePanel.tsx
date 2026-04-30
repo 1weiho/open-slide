@@ -33,17 +33,23 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
   const { slideId, draft, exists, warning, loaded, dirty, update, resetToDefaults } =
     useDesignPanelState();
   const [animVisible, setAnimVisible] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
+  // Stay mounted through the close-out width transition so the panel
+  // visibly collapses instead of vanishing.
   useEffect(() => {
     if (open) {
+      setMounted(true);
       const id = requestAnimationFrame(() => setAnimVisible(true));
       return () => cancelAnimationFrame(id);
     }
     setAnimVisible(false);
+    const t = setTimeout(() => setMounted(false), PANEL_TRANSITION_MS);
+    return () => clearTimeout(t);
   }, [open]);
 
   if (!loaded) return null;
-  if (!open && !animVisible) return null;
+  if (!mounted) return null;
   if (!draft) return null;
 
   return (
