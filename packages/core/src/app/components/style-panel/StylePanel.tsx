@@ -1,4 +1,4 @@
-import { Palette, RotateCcw, X } from 'lucide-react';
+import { Palette, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -30,8 +30,7 @@ type DesignPanelProps = {
 };
 
 export function DesignPanel({ open, onClose }: DesignPanelProps) {
-  const { slideId, draft, exists, warning, loaded, dirty, update, resetToDefaults } =
-    useDesignPanelState();
+  const { draft, exists, warning, loaded, dirty, update } = useDesignPanelState();
   const [animVisible, setAnimVisible] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -198,20 +197,6 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
             </Section>
           </div>
         </ScrollArea>
-
-        <div className="flex shrink-0 items-center justify-between gap-2 border-t bg-card px-3 py-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={resetToDefaults}
-            className="h-7 text-[11px] text-muted-foreground hover:text-foreground"
-          >
-            <RotateCcw className="size-3" />
-            Reset
-          </Button>
-          <span className="text-[10px] text-muted-foreground">slides/{slideId}/index.tsx</span>
-        </div>
       </div>
     </aside>
   );
