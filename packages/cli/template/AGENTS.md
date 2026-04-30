@@ -18,3 +18,14 @@ You are authoring **slides** in this repo. Every slide is arbitrary React code t
 - **Any other slide edit** — read the `slide-authoring` skill before writing. It is the technical reference for everything inside `slides/<id>/`: file contract, the 1920×1080 canvas, type scale, palette, layout, assets, self-review checklist, and anti-patterns. `create-slide` and `apply-comments` both defer to it for the *how*.
 
 Keep this file short: hard rules only. All deeper guidance lives in the skills above.
+
+## Updating skills
+
+The skills above are managed by `@open-slide/core`. Do not edit them in place. To pull the latest versions:
+
+```
+pnpm up @open-slide/core
+pnpm sync:skills
+```
+
+`pnpm sync:skills --dry-run` (via `pnpm exec open-slide sync:skills --dry-run`) previews changes without writing.

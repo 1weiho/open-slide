@@ -30,6 +30,16 @@ interface BuildFlags {
   outDir?: string;
 }
 
+interface SyncFlags {
+  dryRun?: boolean;
+}
+
+function resolveBuiltinSkillsDir(): string {
+  // dist/cli/bin.js → ../../skills (package root + /skills)
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  return path.resolve(here, '..', '..', 'skills');
+}
+
 export async function run(argv: string[]): Promise<void> {
   const version = await readVersion();
 
@@ -70,6 +80,15 @@ export async function run(argv: string[]): Promise<void> {
     .action(async (flags: ServerFlags) => {
       const { preview } = await import('./preview.ts');
       await preview(flags);
+    });
+
+  program
+    .command('sync:skills')
+    .description('Sync built-in skills from @open-slide/core into this workspace')
+    .option('--dry-run', 'show what would change without writing')
+    .action(async (flags: SyncFlags) => {
+      const { syncSkills } = await import('./sync.ts');
+      await syncSkills(resolveBuiltinSkillsDir(), flags);
     });
 
   await program.parseAsync(argv, { from: 'user' });

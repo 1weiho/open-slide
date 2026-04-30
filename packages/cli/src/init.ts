@@ -131,4 +131,11 @@ export async function init(opts: InitOptions): Promise<void> {
   process.stdout.write(
     chalk.dim('Then open the dev server and start authoring in slides/<your-slide>/.\n'),
   );
+  const syncCommand =
+    packageManager === 'npm' ? 'npm run sync:skills' : `${packageManager} sync:skills`;
+  process.stdout.write(
+    chalk.dim(
+      `\nLater, run \`${syncCommand}\` after bumping @open-slide/core to pull skill updates.\n`,
+    ),
+  );
 }

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "open-slide dev",
     "build": "open-slide build",
-    "preview": "open-slide preview"
+    "preview": "open-slide preview",
+    "sync:skills": "open-slide sync:skills"
   },
   "dependencies": {
     "@open-slide/core": "^0.0.6",

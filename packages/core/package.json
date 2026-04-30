@@ -20,6 +20,7 @@
     "bin.js",
     "dist",
     "src/app",
+    "skills",
     "README.md"
   ],
   "scripts": {
