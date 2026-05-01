@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import type { DesignSystem } from '../../design';
 import type { Page } from '../lib/sdk';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
+import { LazyThumbnail } from './lazy-thumbnail';
 import { SlideCanvas } from './slide-canvas';
 
 type Orientation = 'vertical' | 'horizontal';
@@ -18,6 +19,27 @@ type Props = {
 
 const VERTICAL_THUMB_WIDTH = 184;
 const HORIZONTAL_THUMB_HEIGHT = 64;
+
+/**
+ * Memoized so changing `current` in the parent only re-renders the outer
+ * button (border, page-number colour). The expensive SlideCanvas subtree
+ * stays put as long as its inputs are referentially stable.
+ */
+const ThumbnailContent = memo(function ThumbnailContent({
+  PageComp,
+  scale,
+  design,
+}: {
+  PageComp: Page;
+  scale: number;
+  design?: DesignSystem;
+}) {
+  return (
+    <SlideCanvas scale={scale} center={false} flat thumbnail design={design}>
+      <PageComp />
+    </SlideCanvas>
+  );
+});
 
 export function ThumbnailRail({
   pages,
@@ -74,9 +96,9 @@ export function ThumbnailRail({
                     )}
                     style={{ width, height: HORIZONTAL_THUMB_HEIGHT }}
                   >
-                    <SlideCanvas scale={scale} center={false} flat design={design}>
-                      <PageComp />
-                    </SlideCanvas>
+                    <LazyThumbnail>
+                      <ThumbnailContent PageComp={PageComp} scale={scale} design={design} />
+                    </LazyThumbnail>
                   </div>
                 </button>
               );
@@ -130,9 +152,9 @@ export function ThumbnailRail({
                 )}
                 style={{ width: VERTICAL_THUMB_WIDTH, height }}
               >
-                <SlideCanvas scale={scale} center={false} flat design={design}>
-                  <PageComp />
-                </SlideCanvas>
+                <LazyThumbnail>
+                  <ThumbnailContent PageComp={PageComp} scale={scale} design={design} />
+                </LazyThumbnail>
                 {active && (
                   <span
                     aria-hidden

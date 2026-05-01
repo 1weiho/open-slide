@@ -19,6 +19,13 @@ type Props = {
    * rendering them.
    */
   design?: DesignSystem;
+  /**
+   * Mark this canvas as a thumbnail. Emits `data-osd-thumb` so global CSS
+   * can pause animations and disable expensive filters, and adds
+   * `content-visibility` / `contain` hints so the browser skips paint &
+   * layout work for off-screen thumbnails (critical on iOS Safari).
+   */
+  thumbnail?: boolean;
 };
 
 export function SlideCanvas({
@@ -28,6 +35,7 @@ export function SlideCanvas({
   flat = false,
   className,
   design,
+  thumbnail = false,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [fitScale, setFitScale] = useState(1);
@@ -49,8 +57,21 @@ export function SlideCanvas({
   const scaledW = CANVAS_WIDTH * s;
   const scaledH = CANVAS_HEIGHT * s;
 
+  const containerStyle: CSSProperties = thumbnail
+    ? {
+        contentVisibility: 'auto',
+        contain: 'layout paint style',
+        containIntrinsicSize: `${Math.round(scaledW) || 1} ${Math.round(scaledH) || 1}`,
+      }
+    : {};
+
   return (
-    <div ref={containerRef} className={cn('relative h-full w-full overflow-hidden', className)}>
+    <div
+      ref={containerRef}
+      className={cn('relative h-full w-full overflow-hidden', className)}
+      data-osd-thumb={thumbnail ? 'true' : undefined}
+      style={containerStyle}
+    >
       <div
         className={cn(
           'overflow-hidden bg-white text-black',

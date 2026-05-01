@@ -1,5 +1,5 @@
 import { FolderInput, FolderPlus, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,10 +18,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useFolders } from '@/lib/folders';
 import { cn } from '@/lib/utils';
+import type { DesignSystem } from '../../design';
+import { useHasBeenVisible } from '../components/lazy-thumbnail';
 import { FolderIconChip, SLIDE_DND_MIME } from '../components/sidebar/folder-item';
 import { DRAFT_ID, Sidebar } from '../components/sidebar/sidebar';
 import { SlideCanvas } from '../components/slide-canvas';
-import type { Folder, FolderIcon, SlideModule } from '../lib/sdk';
+import type { Folder, FolderIcon, Page, SlideModule } from '../lib/sdk';
 import { loadSlide, slideIds } from '../lib/slides';
 
 export function Home() {
@@ -224,6 +226,26 @@ function EmptyState({ isDraft, folderName }: { isDraft: boolean; folderName?: st
 
 type DialogKind = null | 'rename' | 'move' | 'delete';
 
+/**
+ * Memoized so the parent re-rendering (drag state, dropdown opening, etc.)
+ * doesn't re-render the heavy SlideCanvas + page subtree. Only the
+ * `FirstPage` reference and `design` ever change for a given card, and
+ * both are stable across the slide's lifetime once loaded.
+ */
+const SlideCardThumb = memo(function SlideCardThumb({
+  FirstPage,
+  design,
+}: {
+  FirstPage: Page;
+  design?: DesignSystem;
+}) {
+  return (
+    <SlideCanvas flat thumbnail design={design}>
+      <FirstPage />
+    </SlideCanvas>
+  );
+});
+
 function SlideCard({
   id,
   folders,
@@ -242,8 +264,11 @@ function SlideCard({
   const [slide, setSlide] = useState<SlideModule | null>(null);
   const [dragging, setDragging] = useState(false);
   const [dialog, setDialog] = useState<DialogKind>(null);
+  const thumbRef = useRef<HTMLDivElement>(null);
+  const thumbVisible = useHasBeenVisible(thumbRef);
 
   useEffect(() => {
+    if (!thumbVisible) return;
     let cancelled = false;
     loadSlide(id)
       .then((mod) => {
@@ -253,7 +278,7 @@ function SlideCard({
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, thumbVisible]);
 
   const FirstPage = slide?.default[0];
   const displayTitle = slide?.meta?.title ?? id;
@@ -279,14 +304,15 @@ function SlideCard({
           )}
         >
           {/* Slide thumb — tight border, grey baseboard, no shadcn rounded-xl */}
-          <div className="relative aspect-video overflow-hidden rounded-[6px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] transition-shadow group-hover:shadow-floating">
-            {FirstPage ? (
-              <SlideCanvas flat design={slide?.design}>
-                <FirstPage />
-              </SlideCanvas>
+          <div
+            ref={thumbRef}
+            className="relative aspect-video overflow-hidden rounded-[6px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] transition-shadow group-hover:shadow-floating"
+          >
+            {thumbVisible && FirstPage ? (
+              <SlideCardThumb FirstPage={FirstPage} design={slide?.design} />
             ) : (
               <div className="grid h-full w-full place-items-center text-[10px] tracking-[0.16em] uppercase text-muted-foreground/60">
-                Loading
+                {thumbVisible ? 'Loading' : ''}
               </div>
             )}
           </div>

@@ -349,6 +349,40 @@
 }
 
 /*
+ * Thumbnail rendering optimisations.
+ *
+ * Slides render their full 1920×1080 React tree even when shown as 9%-sized
+ * thumbnails, then CSS scales the result. Two side-effects of that approach
+ * are catastrophic on iOS Safari:
+ *
+ *  1. CSS animations and SVG filters keep running off-screen, burning GPU.
+ *  2. Filter passes (e.g. paperGrain feTurbulence/feDisplacementMap) are
+ *     rasterised at the source resolution before scaling, saturating GPU
+ *     memory for any deck with non-trivial pages.
+ *
+ * The `data-osd-thumb` flag, set by SlideCanvas in thumbnail mode, lets us
+ * pause animations and skip the filter passes — invisible at 9% scale,
+ * orders of magnitude cheaper to paint.
+ */
+[data-osd-thumb="true"],
+[data-osd-thumb="true"] *,
+[data-osd-thumb="true"] *::before,
+[data-osd-thumb="true"] *::after {
+  /* Slide authors set animations via inline style, Tailwind utilities and
+     keyframes; only `!important` reliably wins against all of them. */
+  /* biome-ignore lint/complexity/noImportantStyles: needed to override slide-author animations */
+  animation-play-state: paused !important;
+}
+[data-osd-thumb="true"] [style*="filter:"],
+[data-osd-thumb="true"] [style*="filter "],
+[data-osd-thumb="true"] [filter] {
+  /* Same reasoning — author-supplied inline `filter` styles otherwise win
+     by specificity. */
+  /* biome-ignore lint/complexity/noImportantStyles: needed to override slide-author inline filters */
+  filter: none !important;
+}
+
+/*
  * Custom scrollbar — slim, ink-on-paper. Removes the chunky default that
  * fights the calm surfaces.
  */
