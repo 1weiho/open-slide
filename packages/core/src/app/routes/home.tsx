@@ -69,7 +69,7 @@ export function Home() {
   const isDraft = selectedId === DRAFT_ID;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background text-foreground">
+    <div className="flex h-dvh overflow-hidden bg-background text-foreground">
       <div className="hidden md:block">
         <Sidebar
           folders={manifest.folders}

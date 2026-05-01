@@ -190,7 +190,7 @@ export function Slide() {
   return (
     <HistoryProvider>
       <InspectorProvider slideId={slideId}>
-        <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
+        <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
           {/* Editorial toolbar — three zones, hairline separators, mono-folio center */}
           <header className="relative flex h-12 shrink-0 items-center justify-between border-b border-hairline bg-sidebar/85 px-2 backdrop-blur-md md:px-3">
             <div className="flex items-center gap-1.5 md:gap-2">
@@ -368,7 +368,11 @@ export function Slide() {
                   <InspectOverlay />
                   <SaveBar />
                   {import.meta.env.DEV && <CommentWidget />}
-                  <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-[5px] border border-foreground/10 bg-foreground/85 px-2 py-0.5 font-mono text-[10.5px] font-medium tracking-[0.06em] text-background backdrop-blur md:hidden">
+                  {/* Safe-area aware so Safari's URL bar can't cover the folio. */}
+                  <div
+                    className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded-[5px] border border-foreground/10 bg-foreground/85 px-2 py-0.5 font-mono text-[10.5px] font-medium tracking-[0.06em] text-background backdrop-blur md:hidden"
+                    style={{ bottom: 'max(0.75rem, calc(env(safe-area-inset-bottom) + 0.5rem))' }}
+                  >
                     {(index + 1).toString().padStart(2, '0')}
                     <span className="opacity-50"> / </span>
                     {pageCount.toString().padStart(2, '0')}

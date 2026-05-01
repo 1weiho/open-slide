@@ -80,7 +80,7 @@ export function Player({ pages, design, index, onIndexChange, onExit, allowExit 
   return (
     <div
       ref={rootRef}
-      className="relative flex h-screen w-screen items-center justify-center bg-black"
+      className="relative flex h-dvh w-screen items-center justify-center bg-black"
     >
       <SlideCanvas flat design={design}>
         {PageComp ? <PageComp /> : null}
