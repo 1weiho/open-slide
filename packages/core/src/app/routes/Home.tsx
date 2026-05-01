@@ -282,37 +282,39 @@ function SlideCard({
           </div>
         </Link>
 
-        <div className="absolute right-2 top-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                }}
-                className="flex size-7 items-center justify-center rounded-md bg-background/80 text-foreground shadow-sm ring-1 ring-foreground/10 opacity-0 backdrop-blur transition-opacity hover:bg-background group-hover:opacity-100 aria-expanded:opacity-100"
-                aria-label="Slide actions"
-              >
-                <MoreHorizontal className="size-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[160px]">
-              <DropdownMenuItem onSelect={() => setDialog('rename')}>
-                <Pencil />
-                Rename
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setDialog('move')}>
-                <FolderInput />
-                Move to folder
-              </DropdownMenuItem>
-              <DropdownMenuItem variant="destructive" onSelect={() => setDialog('delete')}>
-                <Trash2 />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        {import.meta.env.DEV && (
+          <div className="absolute right-2 top-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                  }}
+                  className="flex size-7 items-center justify-center rounded-md bg-background/80 text-foreground shadow-sm ring-1 ring-foreground/10 opacity-0 backdrop-blur transition-opacity hover:bg-background group-hover:opacity-100 aria-expanded:opacity-100"
+                  aria-label="Slide actions"
+                >
+                  <MoreHorizontal className="size-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[160px]">
+                <DropdownMenuItem onSelect={() => setDialog('rename')}>
+                  <Pencil />
+                  Rename
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setDialog('move')}>
+                  <FolderInput />
+                  Move to folder
+                </DropdownMenuItem>
+                <DropdownMenuItem variant="destructive" onSelect={() => setDialog('delete')}>
+                  <Trash2 />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
       </div>
 
       <RenameDialog

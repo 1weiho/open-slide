@@ -102,7 +102,7 @@ export function FolderItem({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {row.kind === 'folder' ? (
+      {row.kind === 'folder' && import.meta.env.DEV ? (
         <Popover>
           <PopoverTrigger asChild>
             <button
@@ -154,7 +154,7 @@ export function FolderItem({
         {count}
       </span>
 
-      {row.kind === 'folder' && (
+      {row.kind === 'folder' && import.meta.env.DEV && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button

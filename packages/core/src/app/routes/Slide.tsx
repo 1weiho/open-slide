@@ -486,17 +486,19 @@ function InlineTitleEditor({
   return (
     <div className="group/title flex flex-1 items-center justify-center gap-1.5 min-w-0">
       <h1 className="truncate text-xs font-semibold tracking-tight md:text-sm">{title}</h1>
-      <button
-        type="button"
-        onClick={() => setEditing(true)}
-        aria-label="Rename slide"
-        className={cn(
-          'flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-opacity hover:bg-muted hover:text-foreground',
-          'opacity-0 group-hover/title:opacity-100 focus-visible:opacity-100',
-        )}
-      >
-        <Pencil className="size-3.5" />
-      </button>
+      {import.meta.env.DEV && (
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          aria-label="Rename slide"
+          className={cn(
+            'flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-opacity hover:bg-muted hover:text-foreground',
+            'opacity-0 group-hover/title:opacity-100 focus-visible:opacity-100',
+          )}
+        >
+          <Pencil className="size-3.5" />
+        </button>
+      )}
     </div>
   );
 }

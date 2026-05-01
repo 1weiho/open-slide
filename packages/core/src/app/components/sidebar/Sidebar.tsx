@@ -83,34 +83,35 @@ export function Sidebar({
           />
         ))}
 
-        {creating ? (
-          <div className="mt-1 flex items-center gap-2 rounded-md border border-dashed bg-background px-2 py-1.5">
-            <input
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              onBlur={commitCreate}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') commitCreate();
-                if (e.key === 'Escape') {
-                  setCreating(false);
-                  setNewName('');
-                }
-              }}
-              placeholder="Folder name"
-              maxLength={40}
-              className="min-w-0 flex-1 bg-transparent text-sm outline-none"
-            />
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setCreating(true)}
-            className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border/70 px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:border-border hover:bg-muted/40 hover:text-foreground"
-          >
-            <Plus className="size-3.5" />
-            Add folder
-          </button>
-        )}
+        {import.meta.env.DEV &&
+          (creating ? (
+            <div className="mt-1 flex items-center gap-2 rounded-md border border-dashed bg-background px-2 py-1.5">
+              <input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onBlur={commitCreate}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') commitCreate();
+                  if (e.key === 'Escape') {
+                    setCreating(false);
+                    setNewName('');
+                  }
+                }}
+                placeholder="Folder name"
+                maxLength={40}
+                className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+              />
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setCreating(true)}
+              className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border/70 px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:border-border hover:bg-muted/40 hover:text-foreground"
+            >
+              <Plus className="size-3.5" />
+              Add folder
+            </button>
+          ))}
       </div>
     </aside>
   );
