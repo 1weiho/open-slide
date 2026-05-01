@@ -39,8 +39,7 @@ export function ImagePlaceholder({
         background:
           'linear-gradient(135deg, rgba(120,120,130,0.06) 0%, rgba(120,120,130,0.02) 50%, rgba(120,120,130,0.06) 100%)',
         color: 'rgba(90, 90, 100, 0.7)',
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif',
         textAlign: 'center',
         padding: 24,
         boxSizing: 'border-box',
@@ -85,8 +84,7 @@ export function ImagePlaceholder({
             style={{
               fontSize: 11,
               fontVariantNumeric: 'tabular-nums',
-              fontFamily:
-                'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
+              fontFamily: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
               opacity: 0.5,
               marginTop: 2,
             }}
