@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { useHistory } from '@/components/HistoryProvider';
 import { Button } from '@/components/ui/button';
 import { type SlideComment, useComments } from '@/lib/inspector/useComments';
 import { type Edit, type EditOp, useEditor } from '@/lib/inspector/useEditor';
@@ -71,6 +72,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
   const [selected, setSelected] = useState<SelectedTarget | null>(null);
   const { comments, error, refetch, add, remove } = useComments(slideId);
   const { applyEdit, applyEdits } = useEditor(slideId);
+  const history = useHistory();
 
   const pendingRef = useRef<Map<string, Bucket>>(new Map());
   const [pendingCount, setPendingCount] = useState(0);
@@ -84,8 +86,17 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
     setPendingCount(n);
   }, []);
 
-  const bufferOps = useCallback(
-    (line: number, column: number, anchor: HTMLElement, ops: EditOp[]) => {
+  // Find the live anchor for a buffered loc. Used by history undo/redo
+  // since the original `anchor` reference may have unmounted.
+  const findAnchor = useCallback((line: number, column: number) => {
+    const root = document.querySelector<HTMLElement>('[data-inspector-root]');
+    return root?.querySelector<HTMLElement>(`[data-slide-loc="${line}:${column}"]`) ?? null;
+  }, []);
+
+  // Mutate bucket + DOM without recording history. Shared by `bufferOps`
+  // (the public, history-recording entry point) and by `redo` closures.
+  const applyOpsRaw = useCallback(
+    (line: number, column: number, anchor: HTMLElement | null, ops: EditOp[]) => {
       const key = `${line}:${column}`;
       let bucket = pendingRef.current.get(key);
       if (!bucket) {
@@ -101,34 +112,177 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
         };
         pendingRef.current.set(key, bucket);
       }
-      const style = anchor.style as unknown as Record<string, string>;
+      const style = (anchor?.style ?? {}) as unknown as Record<string, string>;
       for (const op of ops) {
         if (op.kind === 'set-style') {
-          if (!bucket.origStyle.has(op.key)) {
+          if (anchor && !bucket.origStyle.has(op.key)) {
             bucket.origStyle.set(op.key, style[op.key] ?? '');
           }
           bucket.styleOps.set(op.key, op.value);
-          if (anchor.isConnected) style[op.key] = op.value ?? '';
+          if (anchor?.isConnected) style[op.key] = op.value ?? '';
         } else if (op.kind === 'set-text') {
-          if (bucket.origText === null) {
+          if (anchor && bucket.origText === null) {
             bucket.origText = { value: anchor.textContent ?? '' };
           }
           bucket.textOp = { value: op.value };
-          if (anchor.isConnected) anchor.textContent = op.value;
+          if (anchor?.isConnected) anchor.textContent = op.value;
         } else if (op.kind === 'set-attr-asset') {
-          if (!bucket.origAttrs.has(op.attr)) {
+          if (anchor && !bucket.origAttrs.has(op.attr)) {
             bucket.origAttrs.set(
               op.attr,
               anchor.hasAttribute(op.attr) ? anchor.getAttribute(op.attr) : null,
             );
           }
           bucket.attrOps.set(op.attr, { assetPath: op.assetPath, previewUrl: op.previewUrl });
-          if (anchor.isConnected) anchor.setAttribute(op.attr, op.previewUrl);
+          if (anchor?.isConnected) anchor.setAttribute(op.attr, op.previewUrl);
         }
       }
       refreshCount();
     },
     [refreshCount],
+  );
+
+  // Pre-edit snapshot for history: capture the *currently effective* value of
+  // each touched field so undo can restore exactly the prior state, including
+  // the case where the bucket already had a buffered edit before this op.
+  type StyleSnap = { kind: 'style'; key: string; value: string | null; existed: boolean };
+  type TextSnap = { kind: 'text'; value: string | null; existed: boolean };
+  type AttrSnap = {
+    kind: 'attr';
+    attr: string;
+    value: AssetAttrOp | string | null;
+    source: 'op' | 'orig' | 'dom-missing' | 'dom-present';
+  };
+  type Snap = StyleSnap | TextSnap | AttrSnap;
+
+  const snapshotForOps = useCallback(
+    (line: number, column: number, anchor: HTMLElement, ops: EditOp[]): Snap[] => {
+      const key = `${line}:${column}`;
+      const bucket = pendingRef.current.get(key);
+      const style = anchor.style as unknown as Record<string, string>;
+      const snaps: Snap[] = [];
+      for (const op of ops) {
+        if (op.kind === 'set-style') {
+          if (bucket?.styleOps.has(op.key)) {
+            snaps.push({
+              kind: 'style',
+              key: op.key,
+              value: bucket.styleOps.get(op.key) ?? null,
+              existed: true,
+            });
+          } else {
+            snaps.push({
+              kind: 'style',
+              key: op.key,
+              value: style[op.key] ?? '',
+              existed: false,
+            });
+          }
+        } else if (op.kind === 'set-text') {
+          if (bucket?.textOp) {
+            snaps.push({ kind: 'text', value: bucket.textOp.value, existed: true });
+          } else {
+            snaps.push({ kind: 'text', value: anchor.textContent ?? '', existed: false });
+          }
+        } else if (op.kind === 'set-attr-asset') {
+          const prev = bucket?.attrOps.get(op.attr);
+          if (prev) {
+            snaps.push({ kind: 'attr', attr: op.attr, value: prev, source: 'op' });
+          } else if (bucket?.origAttrs.has(op.attr)) {
+            snaps.push({
+              kind: 'attr',
+              attr: op.attr,
+              value: bucket.origAttrs.get(op.attr) ?? null,
+              source: 'orig',
+            });
+          } else if (anchor.hasAttribute(op.attr)) {
+            snaps.push({
+              kind: 'attr',
+              attr: op.attr,
+              value: anchor.getAttribute(op.attr),
+              source: 'dom-present',
+            });
+          } else {
+            snaps.push({ kind: 'attr', attr: op.attr, value: null, source: 'dom-missing' });
+          }
+        }
+      }
+      return snaps;
+    },
+    [],
+  );
+
+  // Restore the snapshotted values to bucket + DOM. Mirrors the bucket-empty
+  // logic of `cancelEdits` so an undo back to the absolute baseline cleans up.
+  const restoreSnapshot = useCallback(
+    (line: number, column: number, snaps: Snap[]) => {
+      const key = `${line}:${column}`;
+      const bucket = pendingRef.current.get(key);
+      if (!bucket) return;
+      const anchor = findAnchor(line, column);
+      const style = (anchor?.style ?? {}) as unknown as Record<string, string>;
+      for (const snap of snaps) {
+        if (snap.kind === 'style') {
+          if (snap.existed) {
+            const v = snap.value ?? '';
+            bucket.styleOps.set(snap.key, snap.value);
+            if (anchor?.isConnected) style[snap.key] = v;
+          } else {
+            bucket.styleOps.delete(snap.key);
+            const orig = bucket.origStyle.get(snap.key);
+            if (anchor?.isConnected) style[snap.key] = orig ?? '';
+          }
+        } else if (snap.kind === 'text') {
+          if (snap.existed) {
+            bucket.textOp = { value: snap.value ?? '' };
+            if (anchor?.isConnected) anchor.textContent = snap.value ?? '';
+          } else {
+            bucket.textOp = null;
+            if (anchor?.isConnected) anchor.textContent = bucket.origText?.value ?? '';
+          }
+        } else if (snap.kind === 'attr') {
+          if (snap.source === 'op') {
+            const op = snap.value as AssetAttrOp;
+            bucket.attrOps.set(snap.attr, op);
+            if (anchor?.isConnected) anchor.setAttribute(snap.attr, op.previewUrl);
+          } else {
+            bucket.attrOps.delete(snap.attr);
+            const orig = bucket.origAttrs.get(snap.attr);
+            if (anchor?.isConnected) {
+              if (orig === null || orig === undefined) anchor.removeAttribute(snap.attr);
+              else anchor.setAttribute(snap.attr, orig);
+            }
+          }
+        }
+      }
+      if (bucket.styleOps.size === 0 && bucket.textOp === null && bucket.attrOps.size === 0) {
+        pendingRef.current.delete(key);
+      }
+      refreshCount();
+    },
+    [findAnchor, refreshCount],
+  );
+
+  const bufferOps = useCallback(
+    (line: number, column: number, anchor: HTMLElement, ops: EditOp[]) => {
+      const snaps = snapshotForOps(line, column, anchor, ops);
+      applyOpsRaw(line, column, anchor, ops);
+      const first = ops[0];
+      const opKey = first
+        ? first.kind === 'set-style'
+          ? first.key
+          : first.kind === 'set-attr-asset'
+            ? first.attr
+            : 'text'
+        : 'noop';
+      const coalesceKey = `inspector:${line}:${column}:${first?.kind ?? 'noop'}:${opKey}`;
+      history.record({
+        coalesceKey,
+        undo: () => restoreSnapshot(line, column, snaps),
+        redo: () => applyOpsRaw(line, column, findAnchor(line, column), ops),
+      });
+    },
+    [applyOpsRaw, snapshotForOps, restoreSnapshot, findAnchor, history],
   );
 
   const commitEdits = useCallback(async () => {
@@ -151,17 +305,24 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
     }
     pendingRef.current = new Map();
     setPendingCount(0);
-    if (edits.length === 0) return;
+    if (edits.length === 0) {
+      history.clear();
+      return;
+    }
     setCommitting(true);
     try {
       await applyEdits(edits);
     } finally {
       setCommitting(false);
+      history.clear();
     }
-  }, [applyEdits]);
+  }, [applyEdits, history]);
 
   const cancelEdits = useCallback(() => {
-    if (pendingRef.current.size === 0) return;
+    if (pendingRef.current.size === 0) {
+      history.clear();
+      return;
+    }
     const root = document.querySelector<HTMLElement>('[data-inspector-root]');
     for (const b of pendingRef.current.values()) {
       const el = root?.querySelector<HTMLElement>(`[data-slide-loc="${b.line}:${b.column}"]`);
@@ -176,7 +337,8 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
     }
     pendingRef.current = new Map();
     setPendingCount(0);
-  }, []);
+    history.clear();
+  }, [history]);
 
   // Auto-flush on inspector close and on route unmount so toggling
   // off or navigating away doesn't drop buffered edits.

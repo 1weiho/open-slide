@@ -76,7 +76,7 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
           onChange={(v) =>
             update((d) => {
               d.palette.bg = v;
-            })
+            }, 'design:palette.bg')
           }
         />
         <ColorField
@@ -85,7 +85,7 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
           onChange={(v) =>
             update((d) => {
               d.palette.text = v;
-            })
+            }, 'design:palette.text')
           }
         />
         <ColorField
@@ -94,7 +94,7 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
           onChange={(v) =>
             update((d) => {
               d.palette.accent = v;
-            })
+            }, 'design:palette.accent')
           }
         />
       </Section>
@@ -108,7 +108,7 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
           onChange={(v) =>
             update((d) => {
               d.fonts.display = v;
-            })
+            }, 'design:fonts.display')
           }
         />
         <FontField
@@ -117,7 +117,7 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
           onChange={(v) =>
             update((d) => {
               d.fonts.body = v;
-            })
+            }, 'design:fonts.body')
           }
         />
         <SliderField
@@ -130,7 +130,7 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
           onChange={(n) =>
             update((d) => {
               d.typeScale.hero = n;
-            })
+            }, 'design:typeScale.hero')
           }
         />
         <SliderField
@@ -143,7 +143,7 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
           onChange={(n) =>
             update((d) => {
               d.typeScale.body = n;
-            })
+            }, 'design:typeScale.body')
           }
         />
       </Section>
@@ -161,7 +161,7 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
           onChange={(n) =>
             update((d) => {
               d.radius.md = n;
-            })
+            }, 'design:radius.md')
           }
         />
       </Section>

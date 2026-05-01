@@ -4,6 +4,7 @@ import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } fro
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AssetView } from '@/components/AssetView';
+import { HistoryProvider } from '@/components/HistoryProvider';
 import { CommentWidget } from '@/components/inspector/CommentWidget';
 import { InspectOverlay } from '@/components/inspector/InspectOverlay';
 import { InspectorPanel } from '@/components/inspector/InspectorPanel';
@@ -178,205 +179,207 @@ export function Slide() {
   const title = slide.meta?.title ?? slideId;
 
   return (
-    <InspectorProvider slideId={slideId}>
-      <div className="flex h-screen flex-col overflow-hidden bg-background">
-        <header className="relative flex shrink-0 items-center justify-between border-b bg-card px-3 py-2 md:px-5 md:py-3">
-          <div className="flex items-center gap-2 md:gap-3">
-            {showSlideBrowser && (
-              <Button asChild variant="ghost" size="sm" className="px-2 md:px-3">
-                <Link to="/">
-                  <ChevronLeft className="size-4" />
-                  <span className="hidden md:inline">Home</span>
-                </Link>
-              </Button>
-            )}
-            {import.meta.env.DEV && (
-              <Tabs
-                value={view}
-                onValueChange={(next) => {
-                  setSearchParams(
-                    (prev) => {
-                      const params = new URLSearchParams(prev);
-                      if (next === 'assets') params.set('view', 'assets');
-                      else params.delete('view');
-                      return params;
-                    },
-                    { replace: true },
-                  );
-                }}
-              >
-                <TabsList className="relative h-7 rounded-md p-0.5 group-data-[orientation=horizontal]/tabs:h-7">
-                  <div
-                    aria-hidden
-                    className="pointer-events-none absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-[5px] bg-background shadow-sm transition-transform duration-200 ease-out"
-                    style={{
-                      transform: view === 'assets' ? 'translateX(100%)' : 'translateX(0)',
-                    }}
-                  />
-                  <TabsTrigger
-                    value="slides"
-                    className="relative z-10 h-6 px-3 text-xs data-[state=active]:bg-transparent data-[state=active]:shadow-none dark:data-[state=active]:bg-transparent"
-                  >
-                    Slides
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="assets"
-                    className="relative z-10 h-6 px-3 text-xs data-[state=active]:bg-transparent data-[state=active]:shadow-none dark:data-[state=active]:bg-transparent"
-                  >
-                    Assets
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            )}
-          </div>
-
-          <div className="pointer-events-none absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-center px-2">
-            <div className="pointer-events-auto min-w-0 max-w-[min(32rem,calc(100vw-20rem))]">
-              <InlineTitleEditor title={title} onSubmit={(next) => renameSlide(slideId, next)} />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            {view === 'slides' && allowHtmlDownload && (
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  type="button"
-                  disabled={exporting}
-                  aria-label="Download"
-                  title="Download"
-                  className={cn(buttonVariants({ variant: 'outline', size: 'icon-sm' }))}
+    <HistoryProvider>
+      <InspectorProvider slideId={slideId}>
+        <div className="flex h-screen flex-col overflow-hidden bg-background">
+          <header className="relative flex shrink-0 items-center justify-between border-b bg-card px-3 py-2 md:px-5 md:py-3">
+            <div className="flex items-center gap-2 md:gap-3">
+              {showSlideBrowser && (
+                <Button asChild variant="ghost" size="sm" className="px-2 md:px-3">
+                  <Link to="/">
+                    <ChevronLeft className="size-4" />
+                    <span className="hidden md:inline">Home</span>
+                  </Link>
+                </Button>
+              )}
+              {import.meta.env.DEV && (
+                <Tabs
+                  value={view}
+                  onValueChange={(next) => {
+                    setSearchParams(
+                      (prev) => {
+                        const params = new URLSearchParams(prev);
+                        if (next === 'assets') params.set('view', 'assets');
+                        else params.delete('view');
+                        return params;
+                      },
+                      { replace: true },
+                    );
+                  }}
                 >
-                  {exporting ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <Download className="size-4" />
-                  )}
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-[180px]">
-                  <DropdownMenuItem
-                    disabled={exporting}
-                    onSelect={async () => {
-                      if (!slide || exporting) return;
-                      setExporting(true);
-                      try {
-                        await exportSlideAsHtml(slide, slideId);
-                      } catch (err) {
-                        console.error('[open-slide] export failed', err);
-                      } finally {
-                        setExporting(false);
-                      }
-                    }}
-                  >
-                    <FileCode2 />
-                    Download HTML
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    disabled={exporting}
-                    onSelect={async () => {
-                      if (!slide || exporting) return;
-                      setExporting(true);
-                      const toastId = `pdf-export-${slideId}`;
-                      toast.custom(
-                        () => (
-                          <PdfProgressToast
-                            progress={{
-                              phase: 'processing',
-                              current: 0,
-                              total: pages.length,
-                              percent: 0,
-                            }}
-                          />
-                        ),
-                        { id: toastId, duration: Infinity },
-                      );
-                      try {
-                        await exportSlideAsPdf(slide, slideId, (p) => {
-                          toast.custom(() => <PdfProgressToast progress={p} />, {
-                            id: toastId,
-                            duration: Infinity,
-                          });
-                        });
-                      } catch (err) {
-                        console.error('[open-slide] pdf export failed', err);
-                        toast.error('PDF export failed', { id: toastId, duration: 4000 });
-                      } finally {
-                        setExporting(false);
-                        toast.dismiss(toastId);
-                      }
-                    }}
-                  >
-                    <FileText />
-                    Download PDF
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            {view === 'slides' && (
-              <DesignToggleButton active={designOpen} onToggle={() => setDesignOpen((v) => !v)} />
-            )}
-            {view === 'slides' && <InspectToggleButton />}
-            {view === 'slides' && (
-              <Button size="sm" onClick={() => setPlaying(true)} className="px-2 md:px-3">
-                <Play className="size-4" />
-                <span className="hidden md:inline">Play</span>
-                <kbd className="ml-1 hidden rounded bg-primary-foreground/20 px-1 text-[10px] md:inline">
-                  F
-                </kbd>
-              </Button>
-            )}
-          </div>
-        </header>
-
-        {view === 'assets' ? (
-          <div className="min-h-0 flex-1">
-            <AssetView slideId={slideId} />
-          </div>
-        ) : (
-          <DesignProvider slideId={slideId}>
-            <div className="flex min-h-0 flex-1">
-              <div className="hidden w-[17rem] shrink-0 md:block">
-                <ThumbnailRail
-                  pages={pages}
-                  design={slide.design}
-                  current={index}
-                  onSelect={goTo}
-                />
-              </div>
-              <main
-                ref={slideViewportRef}
-                data-inspector-root
-                className="relative min-h-0 min-w-0 flex-1 bg-background p-2 md:p-8"
-              >
-                <SlideWheelNavigation
-                  targetRef={slideViewportRef}
-                  onPrev={() => goTo(index - 1)}
-                  onNext={() => goTo(index + 1)}
-                  canPrev={index > 0}
-                  canNext={index < pageCount - 1}
-                />
-                <SlideCanvas design={slide.design}>
-                  <CurrentPage />
-                </SlideCanvas>
-                <ClickNavZones
-                  onPrev={() => goTo(index - 1)}
-                  onNext={() => goTo(index + 1)}
-                  canPrev={index > 0}
-                  canNext={index < pageCount - 1}
-                />
-                <InspectOverlay />
-                <SaveBar />
-                <CommentWidget />
-                <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/50 px-2.5 py-0.5 text-[11px] font-medium tabular-nums text-white backdrop-blur md:hidden">
-                  {index + 1} / {pageCount}
-                </div>
-              </main>
-              <InspectorPanel />
-              <DesignPanel open={designOpen} onClose={() => setDesignOpen(false)} />
+                  <TabsList className="relative h-7 rounded-md p-0.5 group-data-[orientation=horizontal]/tabs:h-7">
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-[5px] bg-background shadow-sm transition-transform duration-200 ease-out"
+                      style={{
+                        transform: view === 'assets' ? 'translateX(100%)' : 'translateX(0)',
+                      }}
+                    />
+                    <TabsTrigger
+                      value="slides"
+                      className="relative z-10 h-6 px-3 text-xs data-[state=active]:bg-transparent data-[state=active]:shadow-none dark:data-[state=active]:bg-transparent"
+                    >
+                      Slides
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="assets"
+                      className="relative z-10 h-6 px-3 text-xs data-[state=active]:bg-transparent data-[state=active]:shadow-none dark:data-[state=active]:bg-transparent"
+                    >
+                      Assets
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              )}
             </div>
-          </DesignProvider>
-        )}
-      </div>
-    </InspectorProvider>
+
+            <div className="pointer-events-none absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-center px-2">
+              <div className="pointer-events-auto min-w-0 max-w-[min(32rem,calc(100vw-20rem))]">
+                <InlineTitleEditor title={title} onSubmit={(next) => renameSlide(slideId, next)} />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              {view === 'slides' && allowHtmlDownload && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    type="button"
+                    disabled={exporting}
+                    aria-label="Download"
+                    title="Download"
+                    className={cn(buttonVariants({ variant: 'outline', size: 'icon-sm' }))}
+                  >
+                    {exporting ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Download className="size-4" />
+                    )}
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="min-w-[180px]">
+                    <DropdownMenuItem
+                      disabled={exporting}
+                      onSelect={async () => {
+                        if (!slide || exporting) return;
+                        setExporting(true);
+                        try {
+                          await exportSlideAsHtml(slide, slideId);
+                        } catch (err) {
+                          console.error('[open-slide] export failed', err);
+                        } finally {
+                          setExporting(false);
+                        }
+                      }}
+                    >
+                      <FileCode2 />
+                      Download HTML
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={exporting}
+                      onSelect={async () => {
+                        if (!slide || exporting) return;
+                        setExporting(true);
+                        const toastId = `pdf-export-${slideId}`;
+                        toast.custom(
+                          () => (
+                            <PdfProgressToast
+                              progress={{
+                                phase: 'processing',
+                                current: 0,
+                                total: pages.length,
+                                percent: 0,
+                              }}
+                            />
+                          ),
+                          { id: toastId, duration: Infinity },
+                        );
+                        try {
+                          await exportSlideAsPdf(slide, slideId, (p) => {
+                            toast.custom(() => <PdfProgressToast progress={p} />, {
+                              id: toastId,
+                              duration: Infinity,
+                            });
+                          });
+                        } catch (err) {
+                          console.error('[open-slide] pdf export failed', err);
+                          toast.error('PDF export failed', { id: toastId, duration: 4000 });
+                        } finally {
+                          setExporting(false);
+                          toast.dismiss(toastId);
+                        }
+                      }}
+                    >
+                      <FileText />
+                      Download PDF
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              {view === 'slides' && (
+                <DesignToggleButton active={designOpen} onToggle={() => setDesignOpen((v) => !v)} />
+              )}
+              {view === 'slides' && <InspectToggleButton />}
+              {view === 'slides' && (
+                <Button size="sm" onClick={() => setPlaying(true)} className="px-2 md:px-3">
+                  <Play className="size-4" />
+                  <span className="hidden md:inline">Play</span>
+                  <kbd className="ml-1 hidden rounded bg-primary-foreground/20 px-1 text-[10px] md:inline">
+                    F
+                  </kbd>
+                </Button>
+              )}
+            </div>
+          </header>
+
+          {view === 'assets' ? (
+            <div className="min-h-0 flex-1">
+              <AssetView slideId={slideId} />
+            </div>
+          ) : (
+            <DesignProvider slideId={slideId}>
+              <div className="flex min-h-0 flex-1">
+                <div className="hidden w-[17rem] shrink-0 md:block">
+                  <ThumbnailRail
+                    pages={pages}
+                    design={slide.design}
+                    current={index}
+                    onSelect={goTo}
+                  />
+                </div>
+                <main
+                  ref={slideViewportRef}
+                  data-inspector-root
+                  className="relative min-h-0 min-w-0 flex-1 bg-background p-2 md:p-8"
+                >
+                  <SlideWheelNavigation
+                    targetRef={slideViewportRef}
+                    onPrev={() => goTo(index - 1)}
+                    onNext={() => goTo(index + 1)}
+                    canPrev={index > 0}
+                    canNext={index < pageCount - 1}
+                  />
+                  <SlideCanvas design={slide.design}>
+                    <CurrentPage />
+                  </SlideCanvas>
+                  <ClickNavZones
+                    onPrev={() => goTo(index - 1)}
+                    onNext={() => goTo(index + 1)}
+                    canPrev={index > 0}
+                    canNext={index < pageCount - 1}
+                  />
+                  <InspectOverlay />
+                  <SaveBar />
+                  <CommentWidget />
+                  <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/50 px-2.5 py-0.5 text-[11px] font-medium tabular-nums text-white backdrop-blur md:hidden">
+                    {index + 1} / {pageCount}
+                  </div>
+                </main>
+                <InspectorPanel />
+                <DesignPanel open={designOpen} onClose={() => setDesignOpen(false)} />
+              </div>
+            </DesignProvider>
+          )}
+        </div>
+      </InspectorProvider>
+    </HistoryProvider>
   );
 }
 

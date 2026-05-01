@@ -1,3 +1,4 @@
+import { useHistory } from '@/components/HistoryProvider';
 import { SaveCard } from '@/components/panel/SaveCard';
 import { useDesignPanelState } from '@/components/style-panel/DesignProvider';
 import { useInspector } from './InspectorProvider';
@@ -8,6 +9,7 @@ import { useInspector } from './InspectorProvider';
 export function SaveBar() {
   const insp = useInspector();
   const design = useDesignPanelState();
+  const history = useHistory();
 
   const inspectorCount = insp.pendingCount;
   const designCount = design.dirty ? 1 : 0;
@@ -36,6 +38,10 @@ export function SaveBar() {
       onSave={onSave}
       onDiscard={onDiscard}
       unsavedLabel={`${total} unsaved ${total === 1 ? 'change' : 'changes'}`}
+      onUndo={history.undo}
+      onRedo={history.redo}
+      canUndo={history.canUndo}
+      canRedo={history.canRedo}
     />
   );
 }

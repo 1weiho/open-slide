@@ -5,10 +5,12 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { toast } from 'sonner';
-import { defaultDesign, type DesignSystem, designToCssVars } from '../../../design';
+import { useHistory } from '@/components/HistoryProvider';
+import { type DesignSystem, defaultDesign, designToCssVars } from '../../../design';
 import { useDesign as useDesignFetch } from './useDesign';
 
 type DesignCtx = {
@@ -20,7 +22,7 @@ type DesignCtx = {
   draft: DesignSystem | null;
   dirty: boolean;
   committing: boolean;
-  update: (mut: (next: DesignSystem) => void) => void;
+  update: (mut: (next: DesignSystem) => void, coalesceKey?: string) => void;
   commit: () => Promise<void>;
   discard: () => void;
   resetToDefaults: () => void;
@@ -42,6 +44,9 @@ export function DesignProvider({ slideId, children }: { slideId: string; childre
   const { design, exists, warning, loaded, save } = useDesignFetch(slideId);
   const [draft, setDraft] = useState<DesignSystem | null>(null);
   const [committing, setCommitting] = useState(false);
+  const history = useHistory();
+  const draftRef = useRef<DesignSystem | null>(null);
+  draftRef.current = draft;
 
   // Re-seed draft whenever the saved design changes (slide switch, post-save HMR).
   useEffect(() => {
@@ -53,14 +58,21 @@ export function DesignProvider({ slideId, children }: { slideId: string; childre
     return JSON.stringify(draft) !== JSON.stringify(design);
   }, [draft, design]);
 
-  const update = useCallback((mut: (d: DesignSystem) => void) => {
-    setDraft((prev) => {
-      if (!prev) return prev;
+  const update = useCallback(
+    (mut: (d: DesignSystem) => void, coalesceKey?: string) => {
+      const prev = draftRef.current;
+      if (!prev) return;
       const next = clone(prev);
       mut(next);
-      return next;
-    });
-  }, []);
+      setDraft(next);
+      history.record({
+        coalesceKey,
+        undo: () => setDraft(prev),
+        redo: () => setDraft(next),
+      });
+    },
+    [history],
+  );
 
   const commit = useCallback(async () => {
     if (!draft) return;
@@ -68,15 +80,24 @@ export function DesignProvider({ slideId, children }: { slideId: string; childre
     const r = await save(draft);
     setCommitting(false);
     if (!r.ok) toast.error(r.error ?? 'Failed to save');
-  }, [draft, save]);
+    history.clear();
+  }, [draft, save, history]);
 
   const discard = useCallback(() => {
     if (design) setDraft(clone(design));
-  }, [design]);
+    history.clear();
+  }, [design, history]);
 
   const resetToDefaults = useCallback(() => {
-    setDraft(clone(defaultDesign));
-  }, []);
+    const prev = draftRef.current;
+    const next = clone(defaultDesign);
+    setDraft(next);
+    history.record({
+      coalesceKey: 'design:reset',
+      undo: () => setDraft(prev),
+      redo: () => setDraft(next),
+    });
+  }, [history]);
 
   // Live-preview overlay: rendered only while there are unsaved changes so the
   // canvas reflects the draft instantly, before any file write. SlideCanvas
