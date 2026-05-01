@@ -230,6 +230,24 @@ const videoUrl = new URL('./assets/intro.mp4', import.meta.url).href;
 
 Skip the `assets/` folder entirely for pure-text slides.
 
+## Image placeholders
+
+When a page genuinely needs a real image **the user has to provide** — a product screenshot, a team photo, a chart from their data — leave a typed placeholder instead of inventing a stand-in:
+
+```tsx
+import { ImagePlaceholder } from '@open-slide/core';
+
+<ImagePlaceholder hint="Product hero screenshot" width={1280} height={720} />
+```
+
+The user uploads the real file via the Assets panel, then clicks the placeholder in the inspector and picks "Replace…" — the JSX is rewritten to a real `<img>` with the import added.
+
+**Use a placeholder only when** a specific concrete image is required by the deck's topic. Examples that warrant one: a product-intro deck (product screenshot per feature), an offsite recap (team photo), a case study (customer logo, dashboard screenshot).
+
+**Do not use a placeholder** for decoration, generic "stock photo" filler, hero imagery on a text-heavy slide, or anywhere a typographic / iconographic / illustrative solution would do. If you can carry the page with type, layout, and color — do that. Empty placeholders the user has to fill are friction; only spend that friction when the alternative is worse.
+
+Size the placeholder to the slot it occupies. Pass `width`/`height` when the layout has a fixed image box; omit them when the placeholder fills a flex/grid cell. The `hint` should describe the *content* the user needs ("Q3 revenue chart") not the *role* ("hero image").
+
 ## Runtime behavior you get for free
 
 - Home page lists every folder under `slides/`.
@@ -249,6 +267,7 @@ Skip the `assets/` folder entirely for pure-text slides.
 - [ ] If the slide should be tweakable from the Design panel, it declares a top-level `const design: DesignSystem = { … }` and references `design.X` from inline styles.
 - [ ] One idea per page.
 - [ ] All imported assets exist on disk under `slides/<id>/assets/`.
+- [ ] Every `<ImagePlaceholder>` corresponds to a real image the user must supply — not decorative filler. If it could be replaced by typography or layout, it should be.
 - [ ] Nothing outside `slides/<id>/` was edited.
 
 ## Anti-patterns
@@ -265,3 +284,5 @@ Skip the `assets/` folder entirely for pure-text slides.
 - ❌ Writing CSS to a shared file. Inline styles or scoped classnames only.
 - ❌ Creating `README.md` or other prose files inside the slide folder.
 - ❌ Editing `package.json`, `open-slide.config.ts`, or other slides.
+- ❌ Sprinkling `<ImagePlaceholder>` across pages "for visual interest". Placeholders are for content the user owns; they're not stock-photo slots.
+- ❌ Using a placeholder for an icon or decorative shape — those are typography/SVG problems, not asset problems.
