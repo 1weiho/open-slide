@@ -52,6 +52,8 @@ Sketch the slide as a list of page roles before writing code. Common page types:
 
 **Rule of thumb**: one idea per page. If you're tempted to put two, split them.
 
+If the deck topic naturally calls for specific real images the user must supply (product screenshots, team photos, customer dashboards), plan where those go and use `<ImagePlaceholder>` from `@open-slide/core` — see the **Image placeholders** section in `slide-authoring`. Default is **no placeholders**: only insert one when a real image is genuinely required.
+
 ## Step 5 — Commit to a visual direction
 
 Pick one coherent palette / type scale / aesthetic and hold it across every page. The full set of constraints (palette structure, type scale, padding, aesthetic options) lives in `slide-authoring` — apply it.

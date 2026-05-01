@@ -7,12 +7,15 @@ import { type AstNode, walkJsx } from './babel-walk.ts';
 // slide source files so the inspector can map a click straight to a
 // source location, sidestepping HMR-stale `_debugSource` on fibers.
 
-function isHostJsxName(name: unknown): name is { type: string; name: string; end: number } {
+// Capitalized components that explicitly forward `data-slide-loc` to a
+// host root, so the inspector can target them like a host element.
+const FORWARDING_COMPONENTS = new Set(['ImagePlaceholder']);
+
+function isTaggableJsxName(name: unknown): name is { type: string; name: string; end: number } {
   if (!name || typeof name !== 'object') return false;
   const n = name as { type?: string; name?: string };
-  // Only lowercase tags are host elements; capitalized ones are
-  // components that may not forward arbitrary props.
-  return n.type === 'JSXIdentifier' && typeof n.name === 'string' && /^[a-z]/.test(n.name);
+  if (n.type !== 'JSXIdentifier' || typeof n.name !== 'string') return false;
+  return /^[a-z]/.test(n.name) || FORWARDING_COMPONENTS.has(n.name);
 }
 
 function alreadyTagged(opening: AstNode): boolean {
@@ -43,7 +46,7 @@ export function injectLocTags(code: string): string | null {
     const opening = (node as unknown as { openingElement?: AstNode }).openingElement;
     if (!opening) return;
     const name = (opening as unknown as { name?: unknown }).name;
-    if (!isHostJsxName(name)) return;
+    if (!isTaggableJsxName(name)) return;
     if (alreadyTagged(opening)) return;
     const loc = node.loc;
     if (!loc) return;

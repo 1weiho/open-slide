@@ -3,7 +3,8 @@ import { useCallback } from 'react';
 export type EditOp =
   | { kind: 'set-style'; key: string; value: string | null }
   | { kind: 'set-text'; value: string }
-  | { kind: 'set-attr-asset'; attr: string; assetPath: string; previewUrl: string };
+  | { kind: 'set-attr-asset'; attr: string; assetPath: string; previewUrl: string }
+  | { kind: 'replace-placeholder-with-image'; assetPath: string };
 
 export type Edit = { line: number; column: number; ops: EditOp[] };
 
