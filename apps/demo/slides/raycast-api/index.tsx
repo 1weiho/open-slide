@@ -1,5 +1,15 @@
-import type { Page, SlideMeta } from '@open-slide/core';
+import type { DesignSystem, Page, SlideMeta } from '@open-slide/core';
 import raycastIcon from './assets/raycast.svg';
+
+export const design: DesignSystem = {
+  palette: { bg: '#0E0E0E', text: '#F5F5F5', accent: '#FF6363' },
+  fonts: {
+    display: '-apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display", system-ui, sans-serif',
+    body: '-apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display", system-ui, sans-serif',
+  },
+  typeScale: { hero: 112, body: 24 },
+  radius: { md: 14 },
+};
 
 const palette = {
   bg: '#0E0E0E',
@@ -20,9 +30,9 @@ const fonts = {
 const fill = {
   width: '100%',
   height: '100%',
-  fontFamily: fonts.sans,
-  color: palette.text,
-  background: palette.bg,
+  fontFamily: 'var(--osd-font-body)',
+  color: 'var(--osd-text)',
+  background: 'var(--osd-bg)',
   position: 'relative',
   overflow: 'hidden',
 } as const;
@@ -52,7 +62,13 @@ const keyframes = `
 
 const Style = () => <style>{keyframes}</style>;
 
-const Glow = ({ x = '50%', y = '50%', size = 1200, color = palette.accent, opacity = 0.18 }) => (
+const Glow = ({
+  x = '50%',
+  y = '50%',
+  size = 1200,
+  color = 'var(--osd-accent)',
+  opacity = 0.18,
+}) => (
   <div
     className="rc-glow"
     style={{
@@ -93,8 +109,8 @@ const Eyebrow = ({ children, delay = 0 }: { children: React.ReactNode; delay?: n
         width: 8,
         height: 8,
         borderRadius: '50%',
-        background: palette.accent,
-        boxShadow: `0 0 12px ${palette.accent}`,
+        background: 'var(--osd-accent)',
+        boxShadow: `0 0 12px var(--osd-accent)`,
       }}
     />
     {children}
@@ -162,7 +178,7 @@ const CommandBar = ({
           display: 'block',
         }}
       />
-      <div style={{ fontSize: 24, fontWeight: 500, flex: 1, color: palette.text }}>
+      <div style={{ fontSize: 24, fontWeight: 500, flex: 1, color: 'var(--osd-text)' }}>
         {query}
         <span
           className="rc-caret"
@@ -170,7 +186,7 @@ const CommandBar = ({
             display: 'inline-block',
             width: 2,
             height: 24,
-            background: palette.accent,
+            background: 'var(--osd-accent)',
             marginLeft: 6,
             verticalAlign: 'middle',
           }}
@@ -285,14 +301,14 @@ const Cover: Page = () => (
             height: 64,
             display: 'block',
             marginBottom: 28,
-            filter: `drop-shadow(0 0 28px ${palette.accent})`,
+            filter: `drop-shadow(0 0 28px var(--osd-accent))`,
           }}
         />
         <Eyebrow delay={80}>Developer Platform</Eyebrow>
         <h1
           className="rc-fadeup"
           style={{
-            fontSize: 112,
+            fontSize: 'var(--osd-size-hero)',
             fontWeight: 800,
             margin: '28px 0 24px',
             lineHeight: 1.02,
@@ -302,12 +318,12 @@ const Cover: Page = () => (
         >
           Raycast
           <br />
-          <span style={{ color: palette.accent }}>Developer API</span>
+          <span style={{ color: 'var(--osd-accent)' }}>Developer API</span>
         </h1>
         <p
           className="rc-fadeup"
           style={{
-            fontSize: 24,
+            fontSize: 'var(--osd-size-body)',
             color: palette.muted,
             maxWidth: 620,
             lineHeight: 1.5,
@@ -361,7 +377,7 @@ const Pitch: Page = () => (
       >
         A platform to extend the macOS launcher you
         <br />
-        already use <span style={{ color: palette.accent }}>40 times a day.</span>
+        already use <span style={{ color: 'var(--osd-accent)' }}>40 times a day.</span>
       </h2>
       <div style={{ display: 'flex', gap: 24 }}>
         {[
@@ -375,7 +391,7 @@ const Pitch: Page = () => (
             style={{
               flex: 1,
               padding: 32,
-              borderRadius: 14,
+              borderRadius: 'var(--osd-radius-md)',
               background: palette.surface,
               border: `1px solid ${palette.border}`,
               animationDelay: `${280 + i * 100}ms`,
@@ -385,7 +401,7 @@ const Pitch: Page = () => (
               style={{
                 fontSize: 56,
                 fontWeight: 800,
-                color: palette.accent,
+                color: 'var(--osd-accent)',
                 letterSpacing: '-0.02em',
               }}
             >
@@ -443,7 +459,7 @@ const Stack: Page = () => (
             style={{
               flex: 1,
               padding: 36,
-              borderRadius: 14,
+              borderRadius: 'var(--osd-radius-md)',
               background: palette.surface,
               border: `1px solid ${palette.border}`,
               animationDelay: `${260 + i * 110}ms`,
@@ -453,7 +469,7 @@ const Stack: Page = () => (
               style={{
                 fontFamily: fonts.mono,
                 fontSize: 18,
-                color: palette.accent,
+                color: 'var(--osd-accent)',
                 letterSpacing: '0.1em',
               }}
             >
@@ -520,14 +536,16 @@ const UIPrimitives: Page = () => {
                   fontFamily: fonts.mono,
                   fontSize: 32,
                   fontWeight: 600,
-                  color: palette.accent,
+                  color: 'var(--osd-accent)',
                   width: 220,
                   whiteSpace: 'nowrap',
                 }}
               >
                 {it.name}
               </div>
-              <div style={{ fontSize: 28, color: palette.text, lineHeight: 1.4 }}>{it.desc}</div>
+              <div style={{ fontSize: 28, color: 'var(--osd-text)', lineHeight: 1.4 }}>
+                {it.desc}
+              </div>
             </div>
           ))}
         </div>
@@ -567,12 +585,12 @@ const ActionPanel: Page = () => (
         >
           ActionPanel:
           <br />
-          <span style={{ color: palette.accent }}>every action,</span> a shortcut.
+          <span style={{ color: 'var(--osd-accent)' }}>every action,</span> a shortcut.
         </h2>
         <p
           className="rc-fadeup"
           style={{
-            fontSize: 24,
+            fontSize: 'var(--osd-size-body)',
             color: palette.muted,
             lineHeight: 1.5,
             maxWidth: 600,
@@ -587,7 +605,7 @@ const ActionPanel: Page = () => (
         <div
           style={{
             width: 540,
-            borderRadius: 14,
+            borderRadius: 'var(--osd-radius-md)',
             background: palette.surface,
             border: `1px solid ${palette.border}`,
             boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
@@ -681,7 +699,7 @@ const AIApi: Page = () => (
       >
         Call any model.
         <br />
-        <span style={{ color: palette.accent }}>No keys. No setup.</span>
+        <span style={{ color: 'var(--osd-accent)' }}>No keys. No setup.</span>
       </h2>
       <div
         style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 40, alignItems: 'start' }}
@@ -691,7 +709,7 @@ const AIApi: Page = () => (
           style={{
             background: palette.surface,
             border: `1px solid ${palette.border}`,
-            borderRadius: 14,
+            borderRadius: 'var(--osd-radius-md)',
             padding: '24px 28px',
             fontFamily: fonts.mono,
             fontSize: 22,
@@ -703,7 +721,7 @@ const AIApi: Page = () => (
           <div style={{ marginTop: 8 }}>
             <span style={{ color: '#C792EA' }}>const</span> answer ={' '}
             <span style={{ color: '#C792EA' }}>await</span> AI.
-            <span style={{ color: palette.accent }}>ask</span>(
+            <span style={{ color: 'var(--osd-accent)' }}>ask</span>(
           </div>
           <div style={{ paddingLeft: 28, color: '#A5E844' }}>"Summarize my selected text",</div>
           <div style={{ paddingLeft: 28 }}>
@@ -733,10 +751,12 @@ const AIApi: Page = () => (
                 animationDelay: `${360 + i * 100}ms`,
               }}
             >
-              <div style={{ fontSize: 30, fontWeight: 800, color: palette.accent, minWidth: 100 }}>
+              <div
+                style={{ fontSize: 30, fontWeight: 800, color: 'var(--osd-accent)', minWidth: 100 }}
+              >
                 {b.k}
               </div>
-              <div style={{ fontSize: 20, color: palette.text, lineHeight: 1.4 }}>{b.v}</div>
+              <div style={{ fontSize: 20, color: 'var(--osd-text)', lineHeight: 1.4 }}>{b.v}</div>
             </div>
           ))}
         </div>
@@ -781,7 +801,7 @@ const Platform: Page = () => {
               className="rc-fadeup"
               style={{
                 padding: 28,
-                borderRadius: 14,
+                borderRadius: 'var(--osd-radius-md)',
                 background: palette.surface,
                 border: `1px solid ${palette.border}`,
                 animationDelay: `${260 + i * 70}ms`,
@@ -793,7 +813,7 @@ const Platform: Page = () => {
                   height: 44,
                   borderRadius: 10,
                   background: palette.accentSoft,
-                  color: palette.accent,
+                  color: 'var(--osd-accent)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -858,7 +878,7 @@ const DX: Page = () => (
             style={{
               flex: 1,
               padding: 32,
-              borderRadius: 14,
+              borderRadius: 'var(--osd-radius-md)',
               background: palette.surface,
               border: `1px solid ${palette.border}`,
               animationDelay: `${280 + i * 100}ms`,
@@ -868,7 +888,7 @@ const DX: Page = () => (
               style={{
                 fontSize: 32,
                 fontWeight: 700,
-                color: palette.accent,
+                color: 'var(--osd-accent)',
                 letterSpacing: '-0.02em',
               }}
             >
@@ -910,7 +930,7 @@ const Closing: Page = () => (
           height: 80,
           display: 'block',
           marginBottom: 32,
-          filter: `drop-shadow(0 0 36px ${palette.accent})`,
+          filter: `drop-shadow(0 0 36px var(--osd-accent))`,
         }}
       />
       <Eyebrow delay={80}>Start building</Eyebrow>
@@ -925,12 +945,13 @@ const Closing: Page = () => (
           animationDelay: '160ms',
         }}
       >
-        npm i <span style={{ color: palette.accent, fontFamily: fonts.mono }}>@raycast/api</span>
+        npm i{' '}
+        <span style={{ color: 'var(--osd-accent)', fontFamily: fonts.mono }}>@raycast/api</span>
       </h1>
       <p
         className="rc-fadeup"
         style={{
-          fontSize: 24,
+          fontSize: 'var(--osd-size-body)',
           color: palette.muted,
           maxWidth: 900,
           marginTop: 32,
@@ -938,10 +959,10 @@ const Closing: Page = () => (
           animationDelay: '240ms',
         }}
       >
-        Or open Raycast → <span style={{ color: palette.text }}>Create Extension</span> → pick a
-        template.
+        Or open Raycast → <span style={{ color: 'var(--osd-text)' }}>Create Extension</span> → pick
+        a template.
         <br />
-        Docs at <span style={{ color: palette.text }}>developers.raycast.com</span>
+        Docs at <span style={{ color: 'var(--osd-text)' }}>developers.raycast.com</span>
       </p>
     </div>
     <Footer index={9} total={TOTAL} />
