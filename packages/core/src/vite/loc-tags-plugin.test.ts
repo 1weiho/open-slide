@@ -79,4 +79,30 @@ describe('injectLocTags', () => {
     expect(out).not.toContain('<Layout data-slide-loc');
     expect(out).not.toContain('<SubBox data-slide-loc');
   });
+
+  it('tags <ImagePlaceholder> as a forwarding component', () => {
+    const src = ['export default [() => (', '  <ImagePlaceholder hint="hero" />', ')];', ''].join(
+      '\n',
+    );
+    const out = injectLocTags(src);
+    if (out === null) throw new Error('expected transform');
+    expect(out).toContain('<ImagePlaceholder data-slide-loc="2:2" hint="hero" />');
+  });
+
+  it('does not tag other PascalCase components alongside ImagePlaceholder', () => {
+    const src = [
+      'export default [() => (',
+      '  <Layout>',
+      '    <ImagePlaceholder hint="hero" />',
+      '    <CustomThing />',
+      '  </Layout>',
+      ')];',
+      '',
+    ].join('\n');
+    const out = injectLocTags(src);
+    if (out === null) throw new Error('expected transform');
+    expect(out).toContain('<ImagePlaceholder data-slide-loc="3:4"');
+    expect(out).not.toContain('<Layout data-slide-loc');
+    expect(out).not.toContain('<CustomThing data-slide-loc');
+  });
 });

@@ -51,11 +51,22 @@ type ElementSnapshot = {
   letterSpacing: number;
   text: string | null;
   imageSrc: string | null;
+  placeholder: { hint: string; width?: number; height?: number } | null;
 };
 
 export function InspectorPanel() {
-  const { active, slideId, selected, setSelected, bufferOps, pendingCount, comments, add, remove } =
-    useInspector();
+  const {
+    active,
+    slideId,
+    selected,
+    setSelected,
+    bufferOps,
+    pendingCount,
+    comments,
+    add,
+    remove,
+    applyEdit,
+  } = useInspector();
   const [snapshot, setSnapshot] = useState<ElementSnapshot | null>(null);
   const reloadCounter = useReloadCounter();
 
@@ -196,6 +207,21 @@ export function InspectorPanel() {
           <Separator />
           <Section title="Image">
             <ImageField slideId={slideId} src={pinSnapshot.imageSrc} apply={apply} />
+          </Section>
+        </>
+      )}
+
+      {pinSnapshot.placeholder && (
+        <>
+          <Separator />
+          <Section title="Image placeholder">
+            <PlaceholderField
+              slideId={slideId}
+              hint={pinSnapshot.placeholder.hint}
+              line={pinSelected.line}
+              column={pinSelected.column}
+              applyEdit={applyEdit}
+            />
           </Section>
         </>
       )}
@@ -613,6 +639,61 @@ function ImageField({
   );
 }
 
+function PlaceholderField({
+  slideId,
+  hint,
+  line,
+  column,
+  applyEdit,
+}: {
+  slideId: string;
+  hint: string;
+  line: number;
+  column: number;
+  applyEdit: (line: number, column: number, ops: EditOp[]) => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  return (
+    <div className="space-y-2">
+      <p className="text-[11px] leading-relaxed text-muted-foreground">
+        Hint: <span className="font-medium text-foreground">{hint}</span>
+      </p>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="w-full"
+        disabled={submitting}
+        onClick={() => setOpen(true)}
+      >
+        <ImageIcon className="size-3.5" />
+        Replace…
+      </Button>
+      {open && (
+        <AssetPickerDialog
+          slideId={slideId}
+          onClose={() => setOpen(false)}
+          onPick={async (asset) => {
+            setOpen(false);
+            setSubmitting(true);
+            try {
+              await applyEdit(line, column, [
+                {
+                  kind: 'replace-placeholder-with-image',
+                  assetPath: `./assets/${asset.name}`,
+                },
+              ]);
+            } finally {
+              setSubmitting(false);
+            }
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
 function AssetPickerDialog({
   slideId,
   onClose,
@@ -775,6 +856,15 @@ function readSnapshot(el: HTMLElement): ElementSnapshot {
     el.tagName === 'IMG'
       ? (el as HTMLImageElement).currentSrc || (el as HTMLImageElement).src || null
       : null;
+  const ph = el.dataset.slidePlaceholder ?? null;
+  const placeholder =
+    ph !== null
+      ? {
+          hint: ph,
+          width: el.dataset.placeholderW ? Number(el.dataset.placeholderW) : undefined,
+          height: el.dataset.placeholderH ? Number(el.dataset.placeholderH) : undefined,
+        }
+      : null;
 
   return {
     fontSize: parseFloat(cs.fontSize) || 16,
@@ -787,6 +877,7 @@ function readSnapshot(el: HTMLElement): ElementSnapshot {
     letterSpacing: parseLetterSpacing(cs.letterSpacing),
     text,
     imageSrc,
+    placeholder,
   };
 }
 

@@ -199,7 +199,8 @@ function offsetToLine(source: string, offset: number): number {
 export type EditOp =
   | { kind: 'set-style'; key: string; value: string | null }
   | { kind: 'set-text'; value: string }
-  | { kind: 'set-attr-asset'; attr: string; assetPath: string };
+  | { kind: 'set-attr-asset'; attr: string; assetPath: string }
+  | { kind: 'replace-placeholder-with-image'; assetPath: string };
 
 export type ApplyEditResult =
   | { ok: true; source: string }
@@ -517,6 +518,90 @@ function planAssetAttr(
   return { importSplice, attrSplice };
 }
 
+type PlaceholderEditPlan = {
+  importSplice: Splice | null;
+  elementSplice: Splice;
+};
+
+function readJsxStringAttr(opening: AstNode, name: string): string | null {
+  const attr = findJsxAttr(opening, name);
+  if (!attr) return null;
+  const value = (attr as unknown as { value?: AstNode | null }).value ?? null;
+  if (!value) return null;
+  if (value.type === 'StringLiteral') {
+    return (value as unknown as { value: string }).value;
+  }
+  if (value.type === 'JSXExpressionContainer') {
+    const expr = (value as unknown as { expression: AstNode }).expression;
+    if (expr.type === 'StringLiteral') return (expr as unknown as { value: string }).value;
+  }
+  return null;
+}
+
+function readJsxNumberAttr(opening: AstNode, name: string): number | null {
+  const attr = findJsxAttr(opening, name);
+  if (!attr) return null;
+  const value = (attr as unknown as { value?: AstNode | null }).value ?? null;
+  if (!value || value.type !== 'JSXExpressionContainer') return null;
+  const expr = (value as unknown as { expression: AstNode }).expression;
+  if (expr.type === 'NumericLiteral') {
+    const n = (expr as unknown as { value: number }).value;
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+function planReplacePlaceholder(
+  ast: AstNode,
+  element: AstNode,
+  assetPath: string,
+): PlaceholderEditPlan | { error: string } {
+  const opening = (element as unknown as { openingElement?: AstNode }).openingElement;
+  if (!opening) return { error: 'no opening element' };
+  const elName = (opening as unknown as { name?: { type?: string; name?: string } }).name;
+  if (elName?.type !== 'JSXIdentifier' || elName.name !== 'ImagePlaceholder') {
+    return { error: 'not a placeholder' };
+  }
+  if (!assetPath.startsWith('./assets/')) return { error: 'asset path must start with ./assets/' };
+
+  const hint = readJsxStringAttr(opening, 'hint') ?? '';
+  const width = readJsxNumberAttr(opening, 'width');
+  const height = readJsxNumberAttr(opening, 'height');
+
+  const imports = findImports(ast);
+  let identifier: string | null = null;
+  for (const imp of imports) {
+    if (imp.source === assetPath && imp.defaultIdent) {
+      identifier = imp.defaultIdent;
+      break;
+    }
+  }
+
+  let importSplice: Splice | null = null;
+  if (!identifier) {
+    const filename = assetPath.slice(assetPath.lastIndexOf('/') + 1);
+    const taken = collectTopLevelIdentifiers(ast);
+    identifier = safeAssetIdentifier(filename, taken);
+    const importStmt = `import ${identifier} from '${assetPath.replace(/'/g, "\\'")}';\n`;
+    const insertAt = imports.length > 0 ? imports[imports.length - 1].node.end : 0;
+    const prefix = imports.length > 0 ? '\n' : '';
+    importSplice = { from: insertAt, to: insertAt, text: prefix + importStmt };
+  }
+
+  const styleParts: string[] = [];
+  if (width != null) styleParts.push(`width: ${width}`);
+  if (height != null) styleParts.push(`height: ${height}`);
+  styleParts.push(`objectFit: 'cover'`);
+  const styleAttr = ` style={{ ${styleParts.join(', ')} }}`;
+  const altAttr = ` alt=${jsString(hint)}`;
+  const replacement = `<img src={${identifier}}${altAttr}${styleAttr} />`;
+
+  return {
+    importSplice,
+    elementSplice: { from: element.start, to: element.end, text: replacement },
+  };
+}
+
 export function applyEdit(
   source: string,
   line: number,
@@ -549,7 +634,10 @@ export function applyEdit(
   }
 
   const assetOps = ops.flatMap((op) => (op.kind === 'set-attr-asset' ? [op] : []));
-  if (assetOps.length > 0) {
+  const placeholderOps = ops.flatMap((op) =>
+    op.kind === 'replace-placeholder-with-image' ? [op] : [],
+  );
+  if (assetOps.length > 0 || placeholderOps.length > 0) {
     const ast = parseSource(source);
     if (!ast) return { ok: false, status: 422, error: 'could not parse source' };
     const importSplices: Splice[] = [];
@@ -557,6 +645,12 @@ export function applyEdit(
       const plan = planAssetAttr(ast, element, op.attr, op.assetPath);
       if ('error' in plan) return { ok: false, status: 422, error: plan.error };
       splices.push(plan.attrSplice);
+      if (plan.importSplice) importSplices.push(plan.importSplice);
+    }
+    for (const op of placeholderOps) {
+      const plan = planReplacePlaceholder(ast, element, op.assetPath);
+      if ('error' in plan) return { ok: false, status: 422, error: plan.error };
+      splices.push(plan.elementSplice);
       if (plan.importSplice) importSplices.push(plan.importSplice);
     }
     // Multiple new imports for the same edit must not overlap, but they

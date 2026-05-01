@@ -315,3 +315,86 @@ describe('applyEdit / set-attr-asset', () => {
     expect(r.error).toMatch(/\.\/assets\//);
   });
 });
+
+describe('applyEdit / replace-placeholder-with-image', () => {
+  it('rewrites <ImagePlaceholder> to <img> and adds an import', () => {
+    const src = [
+      "import { ImagePlaceholder } from '@open-slide/core';",
+      'export default [() => (',
+      '<ImagePlaceholder hint="Product hero" width={1280} height={720} />',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 3, 0, [
+      { kind: 'replace-placeholder-with-image', assetPath: './assets/hero.png' },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("import hero from './assets/hero.png';");
+    expect(r.source).toContain(
+      "<img src={hero} alt='Product hero' style={{ width: 1280, height: 720, objectFit: 'cover' }} />",
+    );
+    expect(r.source).not.toContain('<ImagePlaceholder');
+  });
+
+  it('reuses an existing import for the same asset path', () => {
+    const src = [
+      "import { ImagePlaceholder } from '@open-slide/core';",
+      "import hero from './assets/hero.png';",
+      'export default [() => (',
+      '<ImagePlaceholder hint="Hero" width={800} height={600} />',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 4, 0, [
+      { kind: 'replace-placeholder-with-image', assetPath: './assets/hero.png' },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('<img src={hero}');
+    const occurrences = r.source.match(/from '\.\/assets\/hero\.png'/g) ?? [];
+    expect(occurrences.length).toBe(1);
+  });
+
+  it('omits width/height when the placeholder did not specify them', () => {
+    const src = [
+      "import { ImagePlaceholder } from '@open-slide/core';",
+      'export default [() => (',
+      '<ImagePlaceholder hint="Logo" />',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 3, 0, [
+      { kind: 'replace-placeholder-with-image', assetPath: './assets/logo.svg' },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("<img src={logo} alt='Logo' style={{ objectFit: 'cover' }} />");
+    expect(r.source).not.toMatch(/width:\s/);
+    expect(r.source).not.toMatch(/height:\s/);
+  });
+
+  it('rejects when the targeted JSX is not an ImagePlaceholder', () => {
+    const src = ['export default [() => (', '<div>hi</div>', ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [
+      { kind: 'replace-placeholder-with-image', assetPath: './assets/a.png' },
+    ]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.status).toBe(422);
+    expect(r.error).toMatch(/placeholder/);
+  });
+
+  it('rejects asset paths outside ./assets/', () => {
+    const src = [
+      "import { ImagePlaceholder } from '@open-slide/core';",
+      'export default [() => (',
+      '<ImagePlaceholder hint="x" />',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 3, 0, [
+      { kind: 'replace-placeholder-with-image', assetPath: '../bad.png' },
+    ]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.error).toMatch(/\.\/assets\//);
+  });
+});
