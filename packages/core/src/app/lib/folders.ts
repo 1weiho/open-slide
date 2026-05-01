@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
 import buildManifest from 'virtual:open-slide/folders';
+import { useCallback, useEffect, useState } from 'react';
 import type { Folder, FolderIcon, FoldersManifest } from './sdk';
 
 const EMPTY: FoldersManifest = { folders: [], assignments: {} };

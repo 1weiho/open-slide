@@ -5,18 +5,20 @@ import { Progress } from './ui/progress';
 export function PdfProgressToast({ progress }: { progress: PdfExportProgress }) {
   const text =
     progress.phase === 'processing'
-      ? `Processing slide ${progress.current} / ${progress.total}`
+      ? `Processing page ${progress.current.toString().padStart(2, '0')} of ${progress.total.toString().padStart(2, '0')}`
       : progress.phase === 'printing'
         ? 'Opening print dialog…'
         : 'Done';
 
   return (
-    <div className="flex w-80 items-start gap-3 rounded-md border bg-popover px-4 py-3 text-popover-foreground shadow-lg">
-      <Loader2 className="mt-0.5 size-4 shrink-0 animate-spin text-primary" />
+    <div className="flex w-80 items-start gap-3 rounded-[8px] border border-border bg-popover px-3.5 py-3 text-popover-foreground shadow-floating">
+      <Loader2 className="mt-0.5 size-3.5 shrink-0 animate-spin text-brand" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">Exporting PDF</p>
-        <p className="truncate text-xs text-muted-foreground">{text}</p>
-        <Progress value={Math.round(progress.percent)} className="mt-2 h-1.5" />
+        <p className="font-heading text-[12.5px] font-semibold tracking-tight">Exporting PDF</p>
+        <p className="truncate font-mono text-[10.5px] tracking-[0.04em] text-muted-foreground">
+          {text}
+        </p>
+        <Progress value={Math.round(progress.percent)} className="mt-2 h-[3px]" />
       </div>
     </div>
   );

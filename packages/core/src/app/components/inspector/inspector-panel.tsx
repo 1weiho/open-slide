@@ -138,14 +138,16 @@ export function InspectorPanel() {
       header={
         <>
           <div className="flex min-w-0 items-center gap-2">
-            <span className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px] text-foreground">
+            <span className="font-heading text-[12px] font-semibold tracking-tight">Inspect</span>
+            <span aria-hidden className="h-3 w-px bg-hairline" />
+            <span className="rounded-[3px] border border-hairline bg-card px-1.5 py-px font-mono text-[10.5px] text-foreground/85">
               &lt;{pinSelected.anchor.tagName.toLowerCase()}&gt;
             </span>
           </div>
           <Button
             variant="ghost"
-            size="icon"
-            className="size-7 text-muted-foreground hover:text-foreground"
+            size="icon-sm"
+            className="text-muted-foreground hover:text-foreground"
             onClick={() => setSelected(null)}
             aria-label="Deselect"
           >
@@ -762,9 +764,9 @@ function CommentsSection({
   };
 
   return (
-    <Section title="Comments">
+    <Section title="Note for the agent">
       <div className="flex flex-col gap-2">
-        <div className="comment-cue rounded-md">
+        <div className="comment-cue rounded-[6px]">
           <Textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -775,17 +777,13 @@ function CommentsSection({
               }
             }}
             placeholder="Describe a change for the agent…"
-            className="min-h-16 resize-none text-xs"
+            className="min-h-16 resize-none text-[12px]"
           />
         </div>
-        <div className="flex items-center justify-end">
-          <Button
-            size="sm"
-            disabled={submitting || !draft.trim()}
-            onClick={submit}
-            className="h-7 px-2.5 text-[11px]"
-          >
-            Add comment
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-mono text-[10.5px] text-muted-foreground/70">⌘↵ to send</span>
+          <Button size="sm" variant="brand" disabled={submitting || !draft.trim()} onClick={submit}>
+            Add note
           </Button>
         </div>
       </div>

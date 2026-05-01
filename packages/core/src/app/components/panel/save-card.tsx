@@ -16,9 +16,9 @@ type SaveCardProps = {
   canRedo?: boolean;
 };
 
-// Optimistic DOM updates make the canvas *look* saved, so without
-// this affordance a user could close the tab thinking their tweaks
-// hit disk when they're still buffered in memory.
+// Optimistic DOM updates make the canvas *look* saved, so without this
+// affordance a user could close the tab thinking their tweaks hit disk
+// when they're still buffered in memory.
 export function SaveCard({
   dirty,
   committing,
@@ -34,15 +34,12 @@ export function SaveCard({
 }: SaveCardProps) {
   const [justSaved, setJustSaved] = useState(false);
 
-  // Brief "Saved" hold so the bar's disappearance feels intentional.
   useEffect(() => {
     if (!justSaved) return;
     const t = setTimeout(() => setJustSaved(false), 1200);
     return () => clearTimeout(t);
   }, [justSaved]);
 
-  // Keep the pill mounted while history has a redo to offer, even if
-  // the user has undone all the way back to a clean state.
   const visible = dirty || committing || justSaved || canUndo || canRedo;
   if (!visible) return null;
 
@@ -58,15 +55,15 @@ export function SaveCard({
   return (
     <div
       {...dataAttrs}
-      className="pointer-events-none absolute bottom-6 left-1/2 z-30 -translate-x-1/2 animate-in fade-in slide-in-from-bottom-3 duration-300 ease-out"
+      className="pointer-events-none absolute bottom-6 left-1/2 z-30 -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200 ease-out"
     >
-      <div className="pointer-events-auto flex items-center gap-1 rounded-full border bg-card py-1 pr-1 pl-1.5 shadow-lg">
+      <div className="pointer-events-auto flex h-9 items-center gap-1 rounded-[8px] border border-border bg-popover/95 py-0.5 pr-0.5 pl-1 shadow-overlay backdrop-blur-md">
         {showHistory && (
           <div className="flex items-center">
             <Button
-              size="icon"
+              size="icon-sm"
               variant="ghost"
-              className="size-7 rounded-full text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground"
               onClick={onUndo}
               disabled={committing || !canUndo}
               aria-label="Undo"
@@ -75,9 +72,9 @@ export function SaveCard({
               <Undo2 className="size-3.5" />
             </Button>
             <Button
-              size="icon"
+              size="icon-sm"
               variant="ghost"
-              className="size-7 rounded-full text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground"
               onClick={onRedo}
               disabled={committing || !canRedo}
               aria-label="Redo"
@@ -85,21 +82,30 @@ export function SaveCard({
             >
               <Redo2 className="size-3.5" />
             </Button>
+            {(justSaved || dirty || committing) && (
+              <span aria-hidden className="ml-1 mr-0.5 h-4 w-px bg-hairline" />
+            )}
           </div>
         )}
         {justSaved ? (
-          <span className="flex items-center gap-1.5 px-2 text-xs font-medium text-foreground">
-            <Check className="size-3.5 text-emerald-600" />
+          <span className="flex items-center gap-1.5 px-2.5 text-[12px] font-medium text-foreground">
+            <Check className="size-3.5 text-[oklch(0.55_0.13_165)]" strokeWidth={2.5} />
             {savedLabel}
           </span>
         ) : dirty || committing ? (
-          <span className="px-2 text-xs font-medium text-foreground">{unsavedLabel}</span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 text-[12px] font-medium text-foreground">
+            <span
+              aria-hidden
+              className="size-1.5 rounded-full bg-brand shadow-[0_0_0_3px_var(--brand-soft)]"
+            />
+            <span className="nums">{unsavedLabel}</span>
+          </span>
         ) : null}
         {!justSaved && dirty && (
           <Button
             size="sm"
             variant="ghost"
-            className="h-7 rounded-full px-2.5 text-[11px] text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground"
             onClick={onDiscard}
             disabled={committing || !dirty}
           >
@@ -109,7 +115,8 @@ export function SaveCard({
         {(dirty || committing) && (
           <Button
             size="sm"
-            className="h-7 rounded-full px-3 text-[11px]"
+            variant="brand"
+            className="h-7 px-3"
             onClick={handleSave}
             disabled={committing || !dirty}
           >

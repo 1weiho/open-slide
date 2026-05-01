@@ -129,39 +129,44 @@ export function AssetView({ slideId }: Props) {
         }
       }}
     >
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b bg-card px-6 py-3">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-hairline bg-sidebar px-6 py-3">
         <div className="min-w-0">
-          <h2 className="truncate text-base font-semibold tracking-tight">Assets</h2>
-          <p className="truncate text-xs text-muted-foreground">
-            <span className="font-mono">slides/{slideId}/assets/</span>
+          <span className="eyebrow">Assets</span>
+          <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
+            <span className="font-mono text-[11.5px]">slides/{slideId}/assets/</span>
             {!loading && (
               <>
-                <span className="mx-1.5">·</span>
-                <span>{assets.length === 1 ? '1 file' : `${assets.length} files`}</span>
+                <span className="mx-2 opacity-50">·</span>
+                <span className="folio">
+                  {assets.length.toString().padStart(2, '0')}
+                  <span className="opacity-40"> </span>
+                  {assets.length === 1 ? 'file' : 'files'}
+                </span>
               </>
             )}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5">
           <button
             type="button"
             onClick={() => setLogoSearchOpen(true)}
             className={cn(
-              'inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border bg-background px-3 text-sm font-medium transition-colors',
-              'hover:bg-muted active:translate-y-px',
+              'inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[5px] border border-border bg-card px-2.5 text-[12.5px] font-medium transition-colors',
+              'hover:bg-muted/60 hover:border-foreground/20 active:translate-y-px',
             )}
           >
-            <Search className="size-4" />
+            <Search className="size-3.5" />
             <span>Search logos</span>
           </button>
           <label
             htmlFor={inputId}
             className={cn(
-              'inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground transition-opacity',
-              'hover:opacity-90 active:translate-y-px',
+              'inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[5px] bg-foreground px-3 text-[12.5px] font-medium text-background transition-colors',
+              'shadow-[inset_0_1px_0_oklch(1_0_0/0.12),0_1px_0_oklch(0_0_0/0.12)]',
+              'hover:bg-foreground/90 active:translate-y-px',
             )}
           >
-            <Upload className="size-4" />
+            <Upload className="size-3.5" />
             <span>Upload</span>
           </label>
           <input
@@ -231,11 +236,11 @@ export function AssetView({ slideId }: Props) {
           className="pointer-events-none absolute inset-0 z-30 animate-in fade-in-0 duration-200"
           aria-hidden="true"
         >
-          <div className="absolute inset-0 bg-foreground/[0.03]" />
-          <div className="absolute inset-2 rounded-xl border border-dashed border-foreground/25" />
+          <div className="absolute inset-0 bg-brand/5" />
+          <div className="absolute inset-2 rounded-[10px] border border-dashed border-brand/40" />
           <div className="absolute inset-x-0 bottom-8 flex justify-center">
-            <div className="flex animate-in items-center gap-2 rounded-full border bg-background px-3.5 py-1.5 text-xs font-medium shadow-sm fade-in-0 slide-in-from-bottom-1 duration-300">
-              <ArrowDownToLine className="size-3.5 text-muted-foreground" />
+            <div className="flex animate-in items-center gap-2 rounded-[6px] border border-border bg-card px-3 py-1.5 text-[12px] font-medium shadow-floating fade-in-0 slide-in-from-bottom-1 duration-300">
+              <ArrowDownToLine className="size-3.5 text-brand" />
               <span>Drop to upload</span>
             </div>
           </div>
@@ -280,14 +285,15 @@ export function AssetView({ slideId }: Props) {
 
 function EmptyState() {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-3 px-6 py-16 text-center">
-      <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-        <ImageIcon className="size-6 text-muted-foreground" />
+    <div className="flex h-full flex-col items-center justify-center gap-4 px-6 py-16 text-center">
+      <div className="flex size-12 items-center justify-center rounded-full border border-hairline bg-card text-muted-foreground">
+        <ImageIcon className="size-5" />
       </div>
       <div>
-        <p className="text-sm font-medium">No assets yet</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Drop files anywhere here or click Upload to add them.
+        <p className="font-heading text-[14px] font-semibold tracking-tight">No assets yet</p>
+        <p className="mt-1 max-w-xs text-[12.5px] leading-relaxed text-muted-foreground">
+          Drop files anywhere here, or use <span className="font-mono text-foreground">Upload</span>
+          .
         </p>
       </div>
     </div>
@@ -329,12 +335,12 @@ function AssetCard({
 }) {
   const isImage = asset.mime.startsWith('image/');
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-shadow hover:shadow-md focus-within:ring-2 focus-within:ring-ring/50">
+    <div className="group relative flex flex-col overflow-hidden rounded-[6px] border border-border bg-card shadow-edge transition-shadow hover:shadow-floating focus-within:ring-2 focus-within:ring-ring/30">
       <button
         type="button"
         onClick={onPreview}
         aria-label={`Preview ${asset.name}`}
-        className="relative flex aspect-square w-full items-center justify-center overflow-hidden bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:16px_16px]"
+        className="relative flex aspect-square w-full items-center justify-center overflow-hidden border-b border-hairline bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:14px_14px]"
       >
         {isImage ? (
           <img
@@ -347,16 +353,16 @@ function AssetCard({
             }}
           />
         ) : (
-          <FileIcon className="size-10 text-muted-foreground" />
+          <FileIcon className="size-9 text-muted-foreground" />
         )}
       </button>
 
-      <div className="flex items-center gap-1 border-t bg-card px-3 py-2">
+      <div className="flex items-center gap-1 px-2.5 py-2">
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium" title={asset.name}>
+          <div className="truncate text-[12.5px] font-medium" title={asset.name}>
             {asset.name}
           </div>
-          <div className="truncate text-[11px] text-muted-foreground">{formatSize(asset.size)}</div>
+          <div className="folio truncate">{formatSize(asset.size)}</div>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -549,8 +555,10 @@ function PreviewDialog({ asset, onClose }: { asset: AssetEntry; onClose: () => v
             <span className="text-sm">No preview available</span>
           </div>
         )}
-        <div className="rounded-md border bg-muted/40 p-2 font-mono text-xs">
-          import asset from '<span className="font-semibold">{importPath}</span>';
+        <div className="rounded-[5px] border border-hairline bg-muted/50 px-3 py-2 font-mono text-[11.5px] leading-relaxed">
+          <span className="text-muted-foreground">import asset from </span>
+          <span className="text-brand">'{importPath}'</span>
+          <span className="text-muted-foreground">;</span>
         </div>
       </DialogContent>
     </Dialog>
@@ -621,13 +629,13 @@ function LogoSearchDialog({
         </DialogHeader>
 
         <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search by brand…"
-            className="w-full rounded-md border bg-background py-2 pl-8 pr-3 text-sm outline-none ring-ring/40 focus:ring-2"
+            className="h-9 w-full rounded-[6px] border border-border bg-background py-2 pl-8 pr-3 text-[13px] outline-none focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30"
           />
         </div>
 

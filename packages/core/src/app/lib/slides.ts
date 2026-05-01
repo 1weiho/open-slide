@@ -1,5 +1,5 @@
-import type { SlideModule } from './sdk';
 import { slideIds as ids, loadSlide as load } from 'virtual:open-slide/slides';
+import type { SlideModule } from './sdk';
 
 export const slideIds: string[] = ids;
 
