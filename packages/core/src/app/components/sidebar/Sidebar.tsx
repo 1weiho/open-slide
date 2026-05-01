@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import type { Folder, FolderIcon } from '@/lib/sdk';
 import { FolderItem } from './FolderItem';
 import { PRESET_COLORS } from './IconPicker';
@@ -47,8 +48,9 @@ export function Sidebar({
 
   return (
     <aside className="flex h-full w-[17rem] shrink-0 flex-col border-r bg-card/40">
-      <div className="px-5 pt-6 pb-3">
+      <div className="flex items-center justify-between px-5 pt-6 pb-3">
         <h1 className="font-heading text-lg font-bold tracking-tight">open-slide</h1>
+        <ThemeToggle />
       </div>
 
       <div className="px-2">

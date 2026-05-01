@@ -54,7 +54,7 @@ export function ThumbnailRail({ pages, design, current, onSelect }: Props) {
                 {i + 1}
               </span>
               <div
-                className="relative shrink-0 overflow-hidden rounded border bg-white shadow-sm"
+                className="relative shrink-0 overflow-hidden rounded border shadow-sm"
                 style={{ width: THUMB_WIDTH, height: THUMB_HEIGHT }}
               >
                 <SlideCanvas scale={THUMB_SCALE} center={false} flat design={design}>
