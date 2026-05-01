@@ -1,13 +1,13 @@
 import { Palette, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Field, NumberField, Section } from '@/components/panel/PanelFields';
-import { PanelShell, usePanelMount } from '@/components/panel/PanelShell';
+import { Field, NumberField, Section } from '@/components/panel/panel-fields';
+import { PanelShell, usePanelMount } from '@/components/panel/panel-shell';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Separator } from '../ui/separator';
 import { Slider } from '../ui/slider';
-import { useDesignPanelState } from './DesignProvider';
+import { useDesignPanelState } from './design-provider';
 
 const FONT_PRESETS: Array<{ label: string; value: string }> = [
   {

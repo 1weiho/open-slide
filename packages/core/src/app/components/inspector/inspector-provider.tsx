@@ -9,10 +9,10 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useHistory } from '@/components/HistoryProvider';
+import { useHistory } from '@/components/history-provider';
 import { Button } from '@/components/ui/button';
-import { type SlideComment, useComments } from '@/lib/inspector/useComments';
-import { type Edit, type EditOp, useEditor } from '@/lib/inspector/useEditor';
+import { type SlideComment, useComments } from '@/lib/inspector/use-comments';
+import { type Edit, type EditOp, useEditor } from '@/lib/inspector/use-editor';
 
 export type SelectedTarget = {
   line: number;

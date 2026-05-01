@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { InlineSlidePlayer, inlineSlideCount } from './InlineSlidePlayer';
+import { InlineSlidePlayer, inlineSlideCount } from './inline-slide-player';
 
 export function LiveDemo() {
   const [index, setIndex] = useState(0);

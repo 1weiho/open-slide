@@ -31,11 +31,11 @@
       "includes": [
         "**/slides/**",
         "apps/web/app/components/demo-slide/**",
-        "apps/web/app/components/Hero.tsx",
-        "apps/web/app/components/Anatomy.tsx",
-        "apps/web/app/components/CopyCommand.tsx",
-        "apps/web/app/components/ThemeToggle.tsx",
-        "apps/web/app/components/InlineSlidePlayer.tsx"
+        "apps/web/app/components/hero.tsx",
+        "apps/web/app/components/anatomy.tsx",
+        "apps/web/app/components/copy-command.tsx",
+        "apps/web/app/components/theme-toggle.tsx",
+        "apps/web/app/components/inline-slide-player.tsx"
       ],
       "linter": {
         "rules": {

@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { IconPicker } from './IconPicker';
+import { IconPicker } from './icon-picker';
 
 export const SLIDE_DND_MIME = 'application/x-slide-id';
 

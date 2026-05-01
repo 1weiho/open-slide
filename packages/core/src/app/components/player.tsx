@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { useWheelPageNavigation } from '@/lib/useWheelPageNavigation';
+import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import type { DesignSystem } from '../../design';
 import type { Page } from '../lib/sdk';
-import { SlideCanvas } from './SlideCanvas';
+import { SlideCanvas } from './slide-canvas';
 
 type Props = {
   pages: Page[];

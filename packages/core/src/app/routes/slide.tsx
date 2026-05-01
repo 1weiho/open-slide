@@ -3,19 +3,19 @@ import { ChevronLeft, Download, FileCode2, FileText, Loader2, Pencil, Play } fro
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { AssetView } from '@/components/AssetView';
-import { HistoryProvider } from '@/components/HistoryProvider';
-import { CommentWidget } from '@/components/inspector/CommentWidget';
-import { InspectOverlay } from '@/components/inspector/InspectOverlay';
-import { InspectorPanel } from '@/components/inspector/InspectorPanel';
+import { AssetView } from '@/components/asset-view';
+import { HistoryProvider } from '@/components/history-provider';
+import { CommentWidget } from '@/components/inspector/comment-widget';
+import { InspectOverlay } from '@/components/inspector/inspect-overlay';
+import { InspectorPanel } from '@/components/inspector/inspector-panel';
 import {
   InspectorProvider,
   InspectToggleButton,
   useInspector,
-} from '@/components/inspector/InspectorProvider';
-import { SaveBar } from '@/components/inspector/SaveBar';
-import { DesignProvider } from '@/components/style-panel/DesignProvider';
-import { DesignPanel, DesignToggleButton } from '@/components/style-panel/StylePanel';
+} from '@/components/inspector/inspector-provider';
+import { SaveBar } from '@/components/inspector/save-bar';
+import { DesignProvider } from '@/components/style-panel/design-provider';
+import { DesignPanel, DesignToggleButton } from '@/components/style-panel/style-panel';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -25,13 +25,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFolders } from '@/lib/folders';
-import { useWheelPageNavigation } from '@/lib/useWheelPageNavigation';
+import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
-import { ClickNavZones } from '../components/ClickNavZones';
-import { PdfProgressToast } from '../components/PdfProgressToast';
-import { Player } from '../components/Player';
-import { SlideCanvas } from '../components/SlideCanvas';
-import { ThumbnailRail } from '../components/ThumbnailRail';
+import { ClickNavZones } from '../components/click-nav-zones';
+import { PdfProgressToast } from '../components/pdf-progress-toast';
+import { Player } from '../components/player';
+import { SlideCanvas } from '../components/slide-canvas';
+import { ThumbnailRail } from '../components/thumbnail-rail';
 import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf } from '../lib/export-pdf';
 import type { SlideModule } from '../lib/sdk';

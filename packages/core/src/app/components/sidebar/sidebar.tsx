@@ -1,9 +1,9 @@
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
-import { ThemeToggle } from '@/components/ThemeToggle';
+import { ThemeToggle } from '@/components/theme-toggle';
 import type { Folder, FolderIcon } from '@/lib/sdk';
-import { FolderItem } from './FolderItem';
-import { PRESET_COLORS } from './IconPicker';
+import { FolderItem } from './folder-item';
+import { PRESET_COLORS } from './icon-picker';
 
 export const DRAFT_ID = 'draft';
 

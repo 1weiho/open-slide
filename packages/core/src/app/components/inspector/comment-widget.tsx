@@ -1,6 +1,6 @@
 import { MessageSquare, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
-import { useInspector } from './InspectorProvider';
+import { useInspector } from './inspector-provider';
 
 export function CommentWidget() {
   const { comments, remove, error } = useInspector();

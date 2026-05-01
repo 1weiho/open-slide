@@ -19,9 +19,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useFolders } from '@/lib/folders';
 import { cn } from '@/lib/utils';
-import { SlideCanvas } from '../components/SlideCanvas';
-import { FolderIconChip, SLIDE_DND_MIME } from '../components/sidebar/FolderItem';
-import { DRAFT_ID, Sidebar } from '../components/sidebar/Sidebar';
+import { SlideCanvas } from '../components/slide-canvas';
+import { FolderIconChip, SLIDE_DND_MIME } from '../components/sidebar/folder-item';
+import { DRAFT_ID, Sidebar } from '../components/sidebar/sidebar';
 import type { Folder, FolderIcon, SlideModule } from '../lib/sdk';
 import { loadSlide, slideIds } from '../lib/slides';
 

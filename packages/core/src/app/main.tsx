@@ -1,7 +1,7 @@
 import { ThemeProvider } from 'next-themes';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { App } from './App';
+import { App } from './app';
 import './styles.css';
 
 // biome-ignore lint/style/noNonNullAssertion: #root is guaranteed by index.html

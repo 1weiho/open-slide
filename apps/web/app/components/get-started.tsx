@@ -1,4 +1,4 @@
-import { CopyCommand } from './CopyCommand';
+import { CopyCommand } from './copy-command';
 
 export function GetStarted() {
   return (

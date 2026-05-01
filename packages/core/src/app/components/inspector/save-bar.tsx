@@ -1,7 +1,7 @@
-import { useHistory } from '@/components/HistoryProvider';
-import { SaveCard } from '@/components/panel/SaveCard';
-import { useDesignPanelState } from '@/components/style-panel/DesignProvider';
-import { useInspector } from './InspectorProvider';
+import { useHistory } from '@/components/history-provider';
+import { SaveCard } from '@/components/panel/save-card';
+import { useDesignPanelState } from '@/components/style-panel/design-provider';
+import { useInspector } from './inspector-provider';
 
 // Single save card for both inspector edits and design-token edits.
 // Counts the design draft as one unit; the user sees one combined

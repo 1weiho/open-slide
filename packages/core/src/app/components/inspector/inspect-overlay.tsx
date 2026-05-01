@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { findSlideSource, type SlideSourceHit } from '@/lib/inspector/fiber';
-import { useInspector } from './InspectorProvider';
+import { useInspector } from './inspector-provider';
 
 type Highlight = { rect: DOMRect; hit: SlideSourceHit };
 

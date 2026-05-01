@@ -1,13 +1,13 @@
-import { Agents } from './components/Agents';
-import { Anatomy } from './components/Anatomy';
-import { Assets } from './components/Assets';
-import { Footer } from './components/Footer';
-import { GetStarted } from './components/GetStarted';
-import { Hero } from './components/Hero';
-import { HowItWorks } from './components/HowItWorks';
-import { Inspector } from './components/Inspector';
-import { LiveDemo } from './components/LiveDemo';
-import { Nav } from './components/Nav';
+import { Agents } from './components/agents';
+import { Anatomy } from './components/anatomy';
+import { Assets } from './components/assets';
+import { Footer } from './components/footer';
+import { GetStarted } from './components/get-started';
+import { Hero } from './components/hero';
+import { HowItWorks } from './components/how-it-works';
+import { Inspector } from './components/inspector';
+import { LiveDemo } from './components/live-demo';
+import { Nav } from './components/nav';
 
 export default function Home() {
   return (

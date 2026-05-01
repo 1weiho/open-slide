@@ -1,4 +1,4 @@
-import { useInspector } from './inspector/InspectorProvider';
+import { useInspector } from './inspector/inspector-provider';
 
 type Props = {
   onPrev: () => void;

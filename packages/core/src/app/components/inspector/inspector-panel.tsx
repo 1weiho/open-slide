@@ -9,8 +9,8 @@ import {
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Field, NumberField, Section } from '@/components/panel/PanelFields';
-import { PANEL_TRANSITION_MS, PanelShell, useAnimatedOpen } from '@/components/panel/PanelShell';
+import { Field, NumberField, Section } from '@/components/panel/panel-fields';
+import { PANEL_TRANSITION_MS, PanelShell, useAnimatedOpen } from '@/components/panel/panel-shell';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -34,9 +34,9 @@ import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { type AssetEntry, useAssets } from '@/lib/assets';
 import { findSlideSource } from '@/lib/inspector/fiber';
-import type { EditOp } from '@/lib/inspector/useEditor';
+import type { EditOp } from '@/lib/inspector/use-editor';
 import { cn } from '@/lib/utils';
-import { type SelectedTarget, useInspector } from './InspectorProvider';
+import { type SelectedTarget, useInspector } from './inspector-provider';
 
 type ElementSnapshot = {
   fontSize: number;

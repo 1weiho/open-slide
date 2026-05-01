@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import type { DesignSystem } from '../../design';
 import type { Page } from '../lib/sdk';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
-import { SlideCanvas } from './SlideCanvas';
+import { SlideCanvas } from './slide-canvas';
 
 type Props = {
   pages: Page[];
