@@ -109,8 +109,10 @@ function PlaceholderIcon() {
       strokeLinecap="round"
       strokeLinejoin="round"
       style={{ opacity: 0.55 }}
-      aria-hidden
+      role="img"
+      aria-label="image placeholder"
     >
+      <title>image placeholder</title>
       <rect x="4" y="6" width="24" height="20" rx="2.5" />
       <circle cx="11" cy="13" r="2" />
       <path d="M4 22l7-7 6 6 4-4 7 7" />
