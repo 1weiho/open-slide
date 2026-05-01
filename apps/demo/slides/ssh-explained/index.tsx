@@ -1,4 +1,14 @@
-import type { Page, SlideMeta } from '@open-slide/core';
+import type { DesignSystem, Page, SlideMeta } from '@open-slide/core';
+
+export const design: DesignSystem = {
+  palette: { bg: '#fafaf9', text: '#1c1917', accent: '#2563eb' },
+  fonts: {
+    display: '"Times New Roman", "Georgia", serif',
+    body: '-apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display", system-ui, sans-serif',
+  },
+  typeScale: { hero: 196, body: 28 },
+  radius: { md: 16 },
+};
 
 const palette = {
   bg: '#fafaf9',
@@ -21,9 +31,9 @@ const fonts = {
 const fill = {
   width: '100%',
   height: '100%',
-  fontFamily: fonts.sans,
-  color: palette.text,
-  background: palette.bg,
+  fontFamily: 'var(--osd-font-body)',
+  color: 'var(--osd-text)',
+  background: 'var(--osd-bg)',
   position: 'relative',
   overflow: 'hidden',
 } as const;
@@ -109,8 +119,8 @@ const GridBg = () => (
         <path d="M 80 0 L 0 0 0 80" fill="none" stroke={palette.line} strokeWidth="1" />
       </pattern>
       <radialGradient id="vignette" cx="50%" cy="50%" r="60%">
-        <stop offset="0%" stopColor={palette.bg} stopOpacity="0" />
-        <stop offset="100%" stopColor={palette.bg} stopOpacity="1" />
+        <stop offset="0%" stopColor={'var(--osd-bg)'} stopOpacity="0" />
+        <stop offset="100%" stopColor={'var(--osd-bg)'} stopOpacity="1" />
       </radialGradient>
     </defs>
     <rect width="100%" height="100%" fill="url(#grid)" />
@@ -123,12 +133,12 @@ const Eyebrow = ({ children, delay = 0 }: { children: React.ReactNode; delay?: n
     className="s-fadeup"
     style={{
       animationDelay: `${delay}ms`,
-      fontFamily: fonts.sans,
+      fontFamily: 'var(--osd-font-body)',
       fontSize: 22,
       fontWeight: 500,
       letterSpacing: '0.32em',
       textTransform: 'uppercase',
-      color: palette.accent,
+      color: 'var(--osd-accent)',
     }}
   >
     {children}
@@ -141,7 +151,7 @@ const PageNumber = ({ n, total }: { n: number; total: number }) => (
       position: 'absolute',
       left: PAD_X,
       bottom: 60,
-      fontFamily: fonts.sans,
+      fontFamily: 'var(--osd-font-body)',
       fontSize: 18,
       letterSpacing: '0.3em',
       textTransform: 'uppercase',
@@ -173,16 +183,16 @@ const Cover: Page = () => (
         className="s-fadeup"
         style={{
           animationDelay: '180ms',
-          fontFamily: fonts.serif,
-          fontSize: 196,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 'var(--osd-size-hero)',
           fontWeight: 400,
           lineHeight: 1.02,
           letterSpacing: '-0.025em',
           margin: '40px 0 0',
-          color: palette.text,
+          color: 'var(--osd-text)',
         }}
       >
-        How <em style={{ fontStyle: 'italic', color: palette.accent }}>SSH</em>
+        How <em style={{ fontStyle: 'italic', color: 'var(--osd-accent)' }}>SSH</em>
         <br />
         actually works.
       </h1>
@@ -192,7 +202,7 @@ const Cover: Page = () => (
           animationDelay: '900ms',
           height: 1,
           width: 520,
-          background: palette.text,
+          background: 'var(--osd-text)',
           margin: '64px 0 32px',
         }}
       />
@@ -200,7 +210,7 @@ const Cover: Page = () => (
         className="s-fadeup"
         style={{
           animationDelay: '1100ms',
-          fontFamily: fonts.sans,
+          fontFamily: 'var(--osd-font-body)',
           fontSize: 36,
           lineHeight: 1.5,
           color: palette.muted,
@@ -214,7 +224,7 @@ const Cover: Page = () => (
           style={{
             fontFamily: fonts.mono,
             fontSize: 32,
-            color: palette.text,
+            color: 'var(--osd-text)',
             background: palette.accentSoft,
             padding: '4px 12px',
             borderRadius: 6,
@@ -246,7 +256,7 @@ const WhatIs: Page = () => (
       className="s-fadeup"
       style={{
         animationDelay: '180ms',
-        fontFamily: fonts.serif,
+        fontFamily: 'var(--osd-font-display)',
         fontSize: 88,
         fontWeight: 400,
         lineHeight: 1.1,
@@ -255,8 +265,8 @@ const WhatIs: Page = () => (
         maxWidth: 1500,
       }}
     >
-      Secure Shell is a <em style={{ color: palette.accent }}>protocol</em> — not a program — for
-      running commands on a remote machine, safely, over an untrusted network.
+      Secure Shell is a <em style={{ color: 'var(--osd-accent)' }}>protocol</em> — not a program —
+      for running commands on a remote machine, safely, over an untrusted network.
     </h2>
     <div style={{ display: 'flex', gap: 80, marginTop: 80 }}>
       {[
@@ -274,14 +284,14 @@ const WhatIs: Page = () => (
               fontSize: 22,
               letterSpacing: '0.28em',
               textTransform: 'uppercase',
-              color: palette.accent,
+              color: 'var(--osd-accent)',
               fontWeight: 500,
             }}
           >
             {it.label}
           </div>
-          <div style={{ height: 1, width: 64, background: palette.text, margin: '20px 0' }} />
-          <div style={{ fontSize: 30, lineHeight: 1.5, color: palette.text, fontWeight: 300 }}>
+          <div style={{ height: 1, width: 64, background: 'var(--osd-text)', margin: '20px 0' }} />
+          <div style={{ fontSize: 30, lineHeight: 1.5, color: 'var(--osd-text)', fontWeight: 300 }}>
             {it.body}
           </div>
         </div>
@@ -302,7 +312,7 @@ const Problem: Page = () => (
       className="s-fadeup"
       style={{
         animationDelay: '180ms',
-        fontFamily: fonts.serif,
+        fontFamily: 'var(--osd-font-display)',
         fontSize: 96,
         fontWeight: 400,
         lineHeight: 1.1,
@@ -342,7 +352,7 @@ const Problem: Page = () => (
         >
           You
         </div>
-        <div style={{ fontFamily: fonts.mono, fontSize: 36, color: palette.text }}>◐</div>
+        <div style={{ fontFamily: fonts.mono, fontSize: 36, color: 'var(--osd-text)' }}>◐</div>
       </div>
 
       {/* The wire */}
@@ -378,7 +388,7 @@ const Problem: Page = () => (
                 fontFamily: fonts.mono,
                 fontSize: 26,
                 color: palette.warn,
-                background: palette.bg,
+                background: 'var(--osd-bg)',
                 padding: '6px 14px',
                 border: `1px solid ${palette.warn}`,
                 borderRadius: 4,
@@ -427,7 +437,7 @@ const Problem: Page = () => (
         >
           Server
         </div>
-        <div style={{ fontFamily: fonts.mono, fontSize: 36, color: palette.text }}>◑</div>
+        <div style={{ fontFamily: fonts.mono, fontSize: 36, color: 'var(--osd-text)' }}>◑</div>
       </div>
     </div>
 
@@ -435,11 +445,11 @@ const Problem: Page = () => (
       className="s-fadeup"
       style={{
         animationDelay: '2200ms',
-        fontFamily: fonts.serif,
+        fontFamily: 'var(--osd-font-display)',
         fontStyle: 'italic',
         fontSize: 44,
         lineHeight: 1.4,
-        color: palette.text,
+        color: 'var(--osd-text)',
         margin: '80px 0 0',
         maxWidth: 1400,
       }}
@@ -471,7 +481,7 @@ const Overview: Page = () => (
       className="s-fadeup"
       style={{
         animationDelay: '180ms',
-        fontFamily: fonts.serif,
+        fontFamily: 'var(--osd-font-display)',
         fontSize: 96,
         fontWeight: 400,
         lineHeight: 1.08,
@@ -491,7 +501,7 @@ const Overview: Page = () => (
             flex: 1,
             background: palette.surface,
             border: `1px solid ${palette.line}`,
-            borderRadius: 16,
+            borderRadius: 'var(--osd-radius-md)',
             padding: '48px 40px',
             display: 'flex',
             flexDirection: 'column',
@@ -506,7 +516,7 @@ const Overview: Page = () => (
               left: 0,
               right: 0,
               height: 3,
-              background: palette.accent,
+              background: 'var(--osd-accent)',
               transformOrigin: 'left center',
               animation: `sLineGrow 900ms ${ease} both`,
               animationDelay: `${900 + i * 160}ms`,
@@ -514,7 +524,7 @@ const Overview: Page = () => (
           />
           <div
             style={{
-              fontFamily: fonts.serif,
+              fontFamily: 'var(--osd-font-display)',
               fontSize: 96,
               lineHeight: 1,
               color: palette.faint,
@@ -525,12 +535,12 @@ const Overview: Page = () => (
           </div>
           <div
             style={{
-              fontFamily: fonts.serif,
+              fontFamily: 'var(--osd-font-display)',
               fontSize: 44,
               fontWeight: 400,
               lineHeight: 1.15,
               margin: '40px 0 24px',
-              color: palette.text,
+              color: 'var(--osd-text)',
               letterSpacing: '-0.01em',
             }}
           >
@@ -585,7 +595,7 @@ const ProtocolDiagram = ({
           borderRadius: 10,
           fontFamily: fonts.mono,
           fontSize: 26,
-          color: palette.text,
+          color: 'var(--osd-text)',
         }}
       >
         {clientLabel}
@@ -605,7 +615,7 @@ const ProtocolDiagram = ({
           borderRadius: 10,
           fontFamily: fonts.mono,
           fontSize: 26,
-          color: palette.text,
+          color: 'var(--osd-text)',
         }}
       >
         {serverLabel}
@@ -683,7 +693,7 @@ const ArrowRow = ({
           left: 0,
           right: 0,
           height: 2,
-          background: palette.text,
+          background: 'var(--osd-text)',
           transformOrigin: isRight ? 'left center' : 'right center',
         }}
       />
@@ -699,7 +709,7 @@ const ArrowRow = ({
           height: 0,
           borderTop: '11px solid transparent',
           borderBottom: '11px solid transparent',
-          [isRight ? 'borderLeft' : 'borderRight']: `16px solid ${palette.text}`,
+          [isRight ? 'borderLeft' : 'borderRight']: `16px solid ${'var(--osd-text)'}`,
         }}
       />
       {/* label */}
@@ -714,7 +724,7 @@ const ArrowRow = ({
           textAlign: 'center',
           fontFamily: fonts.mono,
           fontSize: 26,
-          color: palette.text,
+          color: 'var(--osd-text)',
           fontWeight: 500,
         }}
       >
@@ -734,7 +744,7 @@ const ArrowRow = ({
             color: palette.muted,
             fontWeight: 300,
             fontStyle: 'italic',
-            fontFamily: fonts.serif,
+            fontFamily: 'var(--osd-font-display)',
           }}
         >
           {sub}
@@ -755,7 +765,7 @@ const TCPHandshake: Page = () => (
       className="s-fadeup"
       style={{
         animationDelay: '180ms',
-        fontFamily: fonts.serif,
+        fontFamily: 'var(--osd-font-display)',
         fontSize: 84,
         fontWeight: 400,
         lineHeight: 1.1,
@@ -769,7 +779,7 @@ const TCPHandshake: Page = () => (
       className="s-fadeup"
       style={{
         animationDelay: '320ms',
-        fontSize: 28,
+        fontSize: 'var(--osd-size-body)',
         lineHeight: 1.5,
         color: palette.muted,
         fontWeight: 300,
@@ -805,7 +815,7 @@ const KeyExchange: Page = () => (
       className="s-fadeup"
       style={{
         animationDelay: '180ms',
-        fontFamily: fonts.serif,
+        fontFamily: 'var(--osd-font-display)',
         fontSize: 84,
         fontWeight: 400,
         lineHeight: 1.1,
@@ -819,7 +829,7 @@ const KeyExchange: Page = () => (
       className="s-fadeup"
       style={{
         animationDelay: '320ms',
-        fontSize: 28,
+        fontSize: 'var(--osd-size-body)',
         lineHeight: 1.5,
         color: palette.muted,
         fontWeight: 300,
@@ -840,7 +850,7 @@ const KeyExchange: Page = () => (
           flex: 1,
           background: palette.surface,
           border: `1px solid ${palette.line}`,
-          borderRadius: 16,
+          borderRadius: 'var(--osd-radius-md)',
           padding: '40px 44px',
         }}
       >
@@ -851,17 +861,17 @@ const KeyExchange: Page = () => (
         </div>
         <div style={{ fontFamily: fonts.mono, fontSize: 30, lineHeight: 1.7 }}>
           <div className="s-faderight" style={{ animationDelay: '900ms', color: palette.muted }}>
-            private: <span style={{ color: palette.text }}>a</span>
+            private: <span style={{ color: 'var(--osd-text)' }}>a</span>
           </div>
           <div className="s-faderight" style={{ animationDelay: '1100ms', color: palette.muted }}>
             sends:&nbsp;&nbsp;&nbsp;
-            <span style={{ color: palette.accent }}>
+            <span style={{ color: 'var(--osd-accent)' }}>
               g<sup>a</sup>
             </span>
           </div>
           <div className="s-faderight" style={{ animationDelay: '2400ms', color: palette.muted }}>
             gets:&nbsp;&nbsp;&nbsp;&nbsp;
-            <span style={{ color: palette.accent }}>
+            <span style={{ color: 'var(--osd-accent)' }}>
               g<sup>b</sup>
             </span>
           </div>
@@ -877,7 +887,7 @@ const KeyExchange: Page = () => (
           >
             <span style={{ color: palette.muted, fontSize: 22 }}>computes</span>
             <br />
-            <span style={{ fontSize: 36, color: palette.accent, fontWeight: 600 }}>
+            <span style={{ fontSize: 36, color: 'var(--osd-accent)', fontWeight: 600 }}>
               (g<sup>b</sup>)<sup>a</sup> = g<sup>ab</sup>
             </span>
           </div>
@@ -890,9 +900,9 @@ const KeyExchange: Page = () => (
           className="s-fade"
           style={{
             animationDelay: '1200ms',
-            fontFamily: fonts.serif,
+            fontFamily: 'var(--osd-font-display)',
             fontStyle: 'italic',
-            fontSize: 28,
+            fontSize: 'var(--osd-size-body)',
             color: palette.muted,
           }}
         >
@@ -911,9 +921,9 @@ const KeyExchange: Page = () => (
           className="s-scale"
           style={{
             animationDelay: '3200ms',
-            fontFamily: fonts.serif,
+            fontFamily: 'var(--osd-font-display)',
             fontSize: 96,
-            color: palette.accent,
+            color: 'var(--osd-accent)',
             lineHeight: 1,
             fontWeight: 400,
           }}
@@ -943,7 +953,7 @@ const KeyExchange: Page = () => (
           flex: 1,
           background: palette.surface,
           border: `1px solid ${palette.line}`,
-          borderRadius: 16,
+          borderRadius: 'var(--osd-radius-md)',
           padding: '40px 44px',
         }}
       >
@@ -960,16 +970,16 @@ const KeyExchange: Page = () => (
         </div>
         <div style={{ fontFamily: fonts.mono, fontSize: 30, lineHeight: 1.7, textAlign: 'right' }}>
           <div className="s-faderight" style={{ animationDelay: '1000ms', color: palette.muted }}>
-            <span style={{ color: palette.text }}>b</span> :private
+            <span style={{ color: 'var(--osd-text)' }}>b</span> :private
           </div>
           <div className="s-faderight" style={{ animationDelay: '1200ms', color: palette.muted }}>
-            <span style={{ color: palette.accent }}>
+            <span style={{ color: 'var(--osd-accent)' }}>
               g<sup>b</sup>
             </span>
             &nbsp;&nbsp;&nbsp;:sends
           </div>
           <div className="s-faderight" style={{ animationDelay: '2500ms', color: palette.muted }}>
-            <span style={{ color: palette.accent }}>
+            <span style={{ color: 'var(--osd-accent)' }}>
               g<sup>a</sup>
             </span>
             &nbsp;&nbsp;&nbsp;:gets
@@ -986,7 +996,7 @@ const KeyExchange: Page = () => (
           >
             <span style={{ color: palette.muted, fontSize: 22 }}>computes</span>
             <br />
-            <span style={{ fontSize: 36, color: palette.accent, fontWeight: 600 }}>
+            <span style={{ fontSize: 36, color: 'var(--osd-accent)', fontWeight: 600 }}>
               (g<sup>a</sup>)<sup>b</sup> = g<sup>ab</sup>
             </span>
           </div>
@@ -1008,7 +1018,7 @@ const ServerAuth: Page = () => (
       className="s-fadeup"
       style={{
         animationDelay: '180ms',
-        fontFamily: fonts.serif,
+        fontFamily: 'var(--osd-font-display)',
         fontSize: 84,
         fontWeight: 400,
         lineHeight: 1.1,
@@ -1022,7 +1032,7 @@ const ServerAuth: Page = () => (
       className="s-fadeup"
       style={{
         animationDelay: '320ms',
-        fontSize: 28,
+        fontSize: 'var(--osd-size-body)',
         lineHeight: 1.5,
         color: palette.muted,
         fontWeight: 300,
@@ -1043,7 +1053,7 @@ const ServerAuth: Page = () => (
           flex: 1,
           background: palette.surface,
           border: `1px solid ${palette.line}`,
-          borderRadius: 16,
+          borderRadius: 'var(--osd-radius-md)',
           padding: 40,
           display: 'flex',
           flexDirection: 'column',
@@ -1055,21 +1065,28 @@ const ServerAuth: Page = () => (
             fontSize: 22,
             letterSpacing: '0.28em',
             textTransform: 'uppercase',
-            color: palette.accent,
+            color: 'var(--osd-accent)',
             fontWeight: 500,
           }}
         >
           Server signs
         </div>
-        <div style={{ fontFamily: fonts.mono, fontSize: 26, lineHeight: 1.7, color: palette.text }}>
-          sig = <span style={{ color: palette.accent }}>sign</span>(transcript,{' '}
+        <div
+          style={{
+            fontFamily: fonts.mono,
+            fontSize: 26,
+            lineHeight: 1.7,
+            color: 'var(--osd-text)',
+          }}
+        >
+          sig = <span style={{ color: 'var(--osd-accent)' }}>sign</span>(transcript,{' '}
           <span style={{ color: palette.warn }}>host_priv</span>)
         </div>
         <div
           style={{
-            fontFamily: fonts.serif,
+            fontFamily: 'var(--osd-font-display)',
             fontStyle: 'italic',
-            fontSize: 28,
+            fontSize: 'var(--osd-size-body)',
             color: palette.muted,
             marginTop: 'auto',
           }}
@@ -1087,7 +1104,7 @@ const ServerAuth: Page = () => (
         }}
       >
         <div className="s-fade" style={{ animationDelay: '900ms' }}>
-          <div className="s-float" style={{ fontSize: 64, color: palette.accent }}>
+          <div className="s-float" style={{ fontSize: 64, color: 'var(--osd-accent)' }}>
             →
           </div>
         </div>
@@ -1100,7 +1117,7 @@ const ServerAuth: Page = () => (
           flex: 1,
           background: palette.surface,
           border: `1px solid ${palette.line}`,
-          borderRadius: 16,
+          borderRadius: 'var(--osd-radius-md)',
           padding: 40,
           display: 'flex',
           flexDirection: 'column',
@@ -1112,15 +1129,22 @@ const ServerAuth: Page = () => (
             fontSize: 22,
             letterSpacing: '0.28em',
             textTransform: 'uppercase',
-            color: palette.accent,
+            color: 'var(--osd-accent)',
             fontWeight: 500,
           }}
         >
           Client verifies
         </div>
-        <div style={{ fontFamily: fonts.mono, fontSize: 26, lineHeight: 1.7, color: palette.text }}>
-          <span style={{ color: palette.accent }}>verify</span>(sig, transcript,{' '}
-          <span style={{ color: palette.text }}>host_pub</span>)
+        <div
+          style={{
+            fontFamily: fonts.mono,
+            fontSize: 26,
+            lineHeight: 1.7,
+            color: 'var(--osd-text)',
+          }}
+        >
+          <span style={{ color: 'var(--osd-accent)' }}>verify</span>(sig, transcript,{' '}
+          <span style={{ color: 'var(--osd-text)' }}>host_pub</span>)
         </div>
         <div
           className="s-scale"
@@ -1135,16 +1159,16 @@ const ServerAuth: Page = () => (
             alignSelf: 'flex-start',
           }}
         >
-          <span style={{ fontSize: 28, color: palette.accent, fontWeight: 600 }}>✓</span>
-          <span style={{ fontFamily: fonts.mono, fontSize: 24, color: palette.text }}>
+          <span style={{ fontSize: 28, color: 'var(--osd-accent)', fontWeight: 600 }}>✓</span>
+          <span style={{ fontFamily: fonts.mono, fontSize: 24, color: 'var(--osd-text)' }}>
             fingerprint matches
           </span>
         </div>
         <div
           style={{
-            fontFamily: fonts.serif,
+            fontFamily: 'var(--osd-font-display)',
             fontStyle: 'italic',
-            fontSize: 28,
+            fontSize: 'var(--osd-size-body)',
             color: palette.muted,
             marginTop: 'auto',
           }}
@@ -1168,7 +1192,7 @@ const UserAuth: Page = () => (
       className="s-fadeup"
       style={{
         animationDelay: '180ms',
-        fontFamily: fonts.serif,
+        fontFamily: 'var(--osd-font-display)',
         fontSize: 84,
         fontWeight: 400,
         lineHeight: 1.1,
@@ -1176,7 +1200,7 @@ const UserAuth: Page = () => (
         margin: '32px 0 50px',
       }}
     >
-      Now you prove who <em style={{ color: palette.accent }}>you</em> are.
+      Now you prove who <em style={{ color: 'var(--osd-accent)' }}>you</em> are.
     </h2>
 
     <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
@@ -1217,7 +1241,7 @@ const UserAuth: Page = () => (
             gap: 40,
             padding: '28px 40px',
             background: row.highlight ? palette.accentSoft : palette.surface,
-            border: `1px solid ${row.highlight ? palette.accent : palette.line}`,
+            border: `1px solid ${row.highlight ? 'var(--osd-accent)' : palette.line}`,
             borderRadius: 14,
           }}
         >
@@ -1227,20 +1251,22 @@ const UserAuth: Page = () => (
               width: 56,
               height: 56,
               borderRadius: '50%',
-              border: `1.5px solid ${row.highlight ? palette.accent : palette.text}`,
+              border: `1.5px solid ${row.highlight ? 'var(--osd-accent)' : 'var(--osd-text)'}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontFamily: fonts.serif,
+              fontFamily: 'var(--osd-font-display)',
               fontSize: 30,
-              color: row.highlight ? palette.accent : palette.text,
+              color: row.highlight ? 'var(--osd-accent)' : 'var(--osd-text)',
               fontWeight: 400,
             }}
           >
             {row.step}
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 30, fontWeight: 400, color: palette.text, lineHeight: 1.4 }}>
+            <div
+              style={{ fontSize: 30, fontWeight: 400, color: 'var(--osd-text)', lineHeight: 1.4 }}
+            >
               {row.label}
             </div>
             {row.mono && (
@@ -1275,7 +1301,7 @@ const EncryptedSession: Page = () => (
       className="s-fadeup"
       style={{
         animationDelay: '180ms',
-        fontFamily: fonts.serif,
+        fontFamily: 'var(--osd-font-display)',
         fontSize: 96,
         fontWeight: 400,
         lineHeight: 1.08,
@@ -1289,7 +1315,7 @@ const EncryptedSession: Page = () => (
       className="s-fadeup"
       style={{
         animationDelay: '320ms',
-        fontSize: 28,
+        fontSize: 'var(--osd-size-body)',
         lineHeight: 1.5,
         color: palette.muted,
         fontWeight: 300,
@@ -1306,7 +1332,7 @@ const EncryptedSession: Page = () => (
         flex: 1,
         background: palette.surface,
         border: `1px solid ${palette.line}`,
-        borderRadius: 16,
+        borderRadius: 'var(--osd-radius-md)',
         padding: '50px 60px',
         display: 'flex',
         alignItems: 'center',
@@ -1326,13 +1352,13 @@ const EncryptedSession: Page = () => (
             width: 100,
             height: 100,
             borderRadius: '50%',
-            border: `2px solid ${palette.accent}`,
+            border: `2px solid var(--osd-accent)`,
             margin: '0 auto 20px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: 40,
-            color: palette.accent,
+            color: 'var(--osd-accent)',
           }}
         >
           ◐
@@ -1374,10 +1400,10 @@ const EncryptedSession: Page = () => (
               left: 0,
               fontFamily: fonts.mono,
               fontSize: 20,
-              color: palette.accent,
+              color: 'var(--osd-accent)',
               padding: '4px 10px',
-              background: palette.bg,
-              border: `1px solid ${palette.accent}`,
+              background: 'var(--osd-bg)',
+              border: `1px solid var(--osd-accent)`,
               borderRadius: 4,
               ...({ '--dist': '880px' } as React.CSSProperties),
               animation: `sTravel 4.5s linear ${i * 1.1}s infinite`,
@@ -1396,10 +1422,10 @@ const EncryptedSession: Page = () => (
               right: 0,
               fontFamily: fonts.mono,
               fontSize: 20,
-              color: palette.accent,
+              color: 'var(--osd-accent)',
               padding: '4px 10px',
-              background: palette.bg,
-              border: `1px solid ${palette.accent}`,
+              background: 'var(--osd-bg)',
+              border: `1px solid var(--osd-accent)`,
               borderRadius: 4,
               ...({ '--dist': '-880px' } as React.CSSProperties),
               animation: `sTravel 4.5s linear ${0.55 + i * 1.3}s infinite`,
@@ -1426,7 +1452,7 @@ const EncryptedSession: Page = () => (
               fontSize: 22,
               letterSpacing: '0.32em',
               textTransform: 'uppercase',
-              color: palette.accent,
+              color: 'var(--osd-accent)',
               fontWeight: 500,
             }}
           >
@@ -1434,7 +1460,7 @@ const EncryptedSession: Page = () => (
           </div>
           <div
             style={{
-              fontFamily: fonts.serif,
+              fontFamily: 'var(--osd-font-display)',
               fontStyle: 'italic',
               fontSize: 26,
               color: palette.muted,
@@ -1457,13 +1483,13 @@ const EncryptedSession: Page = () => (
             width: 100,
             height: 100,
             borderRadius: '50%',
-            border: `2px solid ${palette.accent}`,
+            border: `2px solid var(--osd-accent)`,
             margin: '0 auto 20px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: 40,
-            color: palette.accent,
+            color: 'var(--osd-accent)',
             animationDelay: '1.2s',
           }}
         >
@@ -1495,7 +1521,7 @@ const Closing: Page = () => (
         className="s-fadeup"
         style={{
           animationDelay: '180ms',
-          fontFamily: fonts.serif,
+          fontFamily: 'var(--osd-font-display)',
           fontSize: 152,
           fontWeight: 400,
           lineHeight: 1.05,
@@ -1505,7 +1531,7 @@ const Closing: Page = () => (
       >
         TCP. Keys.
         <br />
-        <em style={{ color: palette.accent }}>Trust. Talk.</em>
+        <em style={{ color: 'var(--osd-accent)' }}>Trust. Talk.</em>
       </h2>
       <div
         className="s-line"
@@ -1513,7 +1539,7 @@ const Closing: Page = () => (
           animationDelay: '900ms',
           height: 1,
           width: 520,
-          background: palette.text,
+          background: 'var(--osd-text)',
           margin: '64px 0 32px',
         }}
       />
@@ -1534,7 +1560,7 @@ const Closing: Page = () => (
           style={{
             fontFamily: fonts.mono,
             fontSize: 32,
-            color: palette.text,
+            color: 'var(--osd-text)',
             background: palette.accentSoft,
             padding: '4px 12px',
             borderRadius: 6,
@@ -1551,7 +1577,7 @@ const Closing: Page = () => (
         className="s-fadeup"
         style={{
           animationDelay: '1500ms',
-          fontFamily: fonts.serif,
+          fontFamily: 'var(--osd-font-display)',
           fontStyle: 'italic',
           fontSize: 32,
           color: palette.faint,
