@@ -5,14 +5,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/*
- * "Atelier" design language for open-slide core.
- *
- * Editorial / pro-tool aesthetic: warm paper, ink foreground, vermillion
- * accent, hairline rules, serif display counterpointing a tight Geist UI.
- * Aim: feels like a designer's studio, not a SaaS dashboard. Avoids the
- * shadcn defaults (rounded-lg everywhere, cool grays, soft shadows).
- */
 @theme inline {
   --font-sans: "Geist Variable", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-heading: "Geist Variable", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
