@@ -6,7 +6,6 @@ import {
   Bold,
   ImageIcon,
   Italic,
-  Trash2,
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -35,7 +34,6 @@ import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { type AssetEntry, useAssets } from '@/lib/assets';
 import { findSlideSource } from '@/lib/inspector/fiber';
-import type { SlideComment } from '@/lib/inspector/useComments';
 import type { EditOp } from '@/lib/inspector/useEditor';
 import { cn } from '@/lib/utils';
 import { type SelectedTarget, useInspector } from './InspectorProvider';
@@ -55,18 +53,8 @@ type ElementSnapshot = {
 };
 
 export function InspectorPanel() {
-  const {
-    active,
-    slideId,
-    selected,
-    setSelected,
-    bufferOps,
-    pendingCount,
-    comments,
-    add,
-    remove,
-    applyEdit,
-  } = useInspector();
+  const { active, slideId, selected, setSelected, bufferOps, pendingCount, add, applyEdit } =
+    useInspector();
   const [snapshot, setSnapshot] = useState<ElementSnapshot | null>(null);
   const reloadCounter = useReloadCounter();
 
@@ -165,6 +153,7 @@ export function InspectorPanel() {
           </Button>
         </>
       }
+      footer={<CommentsSection selected={pinSelected} onAdd={add} />}
     >
       {pinSnapshot.text !== null && (
         <Section title="Content">
@@ -225,12 +214,6 @@ export function InspectorPanel() {
           </Section>
         </>
       )}
-
-      <Separator />
-
-      <div className="mt-auto">
-        <CommentsSection comments={comments} selected={pinSelected} onAdd={add} onRemove={remove} />
-      </div>
     </PanelShell>
   );
 }
@@ -757,15 +740,11 @@ function AssetPickerDialog({
 }
 
 function CommentsSection({
-  comments,
   selected,
   onAdd,
-  onRemove,
 }: {
-  comments: SlideComment[];
   selected: { line: number; column: number };
   onAdd: (line: number, column: number, text: string) => Promise<void>;
-  onRemove: (id: string) => Promise<void>;
 }) {
   const [draft, setDraft] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -783,22 +762,23 @@ function CommentsSection({
   };
 
   return (
-    <Section title={comments.length ? `Comments · ${comments.length}` : 'Comments'}>
+    <Section title="Comments">
       <div className="flex flex-col gap-2">
-        <Textarea
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault();
-              submit();
-            }
-          }}
-          placeholder="Describe a change for the agent…"
-          className="min-h-16 resize-none text-xs"
-        />
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] text-muted-foreground">⌘/Ctrl + Enter</span>
+        <div className="comment-cue rounded-md">
+          <Textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                submit();
+              }
+            }}
+            placeholder="Describe a change for the agent…"
+            className="min-h-16 resize-none text-xs"
+          />
+        </div>
+        <div className="flex items-center justify-end">
           <Button
             size="sm"
             disabled={submitting || !draft.trim()}
@@ -809,42 +789,6 @@ function CommentsSection({
           </Button>
         </div>
       </div>
-
-      {comments.length === 0 ? (
-        <p className="text-[11px] text-muted-foreground">No comments yet.</p>
-      ) : (
-        <>
-          <ul className="flex flex-col gap-1">
-            {comments.map((c) => (
-              <li
-                key={c.id}
-                className="group flex items-start gap-2 rounded-md border bg-background px-2.5 py-2 transition-colors hover:bg-muted/40"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="font-mono text-[10px] text-muted-foreground">line {c.line}</div>
-                  <div className="mt-0.5 text-xs leading-relaxed break-words">{c.note}</div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-6 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
-                  onClick={() => onRemove(c.id)}
-                  aria-label="Delete comment"
-                >
-                  <Trash2 className="size-3.5" />
-                </Button>
-              </li>
-            ))}
-          </ul>
-          <p className="text-[10px] text-muted-foreground">
-            Run{' '}
-            <code className="rounded bg-muted px-1 py-0.5 font-mono text-foreground">
-              /apply-comments
-            </code>{' '}
-            to apply.
-          </p>
-        </>
-      )}
     </Section>
   );
 }

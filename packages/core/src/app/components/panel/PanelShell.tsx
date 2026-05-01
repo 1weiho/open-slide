@@ -39,10 +39,18 @@ type PanelShellProps = {
   uiAttr: 'inspector' | 'design';
   header: React.ReactNode;
   banner?: React.ReactNode;
+  footer?: React.ReactNode;
   children: React.ReactNode;
 };
 
-export function PanelShell({ animVisible, uiAttr, header, banner, children }: PanelShellProps) {
+export function PanelShell({
+  animVisible,
+  uiAttr,
+  header,
+  banner,
+  footer,
+  children,
+}: PanelShellProps) {
   const dataAttrs = uiAttr === 'inspector' ? { 'data-inspector-ui': '' } : { 'data-design-ui': '' };
   return (
     <aside
@@ -62,6 +70,7 @@ export function PanelShell({ animVisible, uiAttr, header, banner, children }: Pa
         <ScrollArea className="flex flex-1 flex-col">
           <div className="flex min-h-full flex-col">{children}</div>
         </ScrollArea>
+        {footer && <div className="shrink-0 border-t">{footer}</div>}
       </div>
     </aside>
   );

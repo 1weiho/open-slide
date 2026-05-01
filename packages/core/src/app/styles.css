@@ -128,3 +128,103 @@
     @apply font-sans;
   }
 }
+
+/*
+ * Comment input cue.
+ * One-shot perimeter sheen + soft halo so the user notices this is the
+ * agent input field on first open. Plays once per selection, then settles.
+ * Restrained warm/cool palette — avoids the canonical AI purple-cyan look.
+ */
+@property --comment-cue-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.comment-cue {
+  position: relative;
+  isolation: isolate;
+}
+
+.comment-cue::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: calc(var(--radius-md) + 1px);
+  padding: 1.25px;
+  background: conic-gradient(
+    from var(--comment-cue-angle),
+    transparent 0deg,
+    transparent 250deg,
+    hsla(38, 92%, 70%, 0.55) 295deg,
+    hsla(220, 90%, 78%, 0.75) 325deg,
+    hsla(265, 85%, 78%, 0.55) 350deg,
+    transparent 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 1;
+  animation: comment-cue-trace 1500ms cubic-bezier(0.22, 0.61, 0.36, 1) 220ms 1 both;
+}
+
+.comment-cue::after {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border-radius: calc(var(--radius-md) + 10px);
+  background:
+    radial-gradient(80% 60% at 30% 50%, hsla(220, 90%, 70%, 0.18), transparent 70%),
+    radial-gradient(70% 60% at 75% 60%, hsla(38, 92%, 65%, 0.14), transparent 70%);
+  filter: blur(14px);
+  opacity: 0;
+  z-index: -1;
+  pointer-events: none;
+  animation: comment-cue-halo 1700ms ease-out 180ms 1 both;
+}
+
+@keyframes comment-cue-trace {
+  0% {
+    --comment-cue-angle: 0deg;
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  82% {
+    opacity: 1;
+  }
+  100% {
+    --comment-cue-angle: 360deg;
+    opacity: 0;
+  }
+}
+
+@keyframes comment-cue-halo {
+  0% {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.015);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .comment-cue::before,
+  .comment-cue::after {
+    animation: none;
+  }
+}
