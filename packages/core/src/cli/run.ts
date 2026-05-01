@@ -1,8 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import * as readline from 'node:readline/promises';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import { Command, Option } from 'commander';
+import { detectSkillsDrift, syncSkills } from './sync.ts';
 
 async function readVersion(): Promise<string> {
   const here = path.dirname(fileURLToPath(import.meta.url));
@@ -24,6 +26,51 @@ interface ServerFlags {
   port?: number;
   host?: string | boolean;
   open?: boolean;
+}
+
+interface DevFlags extends ServerFlags {
+  skillsCheck?: boolean;
+}
+
+async function runSkillsDriftCheck(skillsDir: string): Promise<void> {
+  if (process.env.OPEN_SLIDE_SKIP_SKILLS_CHECK === '1') return;
+
+  let drift: Awaited<ReturnType<typeof detectSkillsDrift>>;
+  try {
+    drift = await detectSkillsDrift(skillsDir);
+  } catch {
+    return;
+  }
+  const stale = drift.filter((d) => d.status !== 'unchanged');
+  if (stale.length === 0) return;
+
+  const names = stale.map((d) => d.name).join(', ');
+  const interactive = Boolean(process.stdin.isTTY && process.stdout.isTTY);
+
+  if (!interactive) {
+    process.stderr.write(
+      `${chalk.yellow('!')} Skills out of date (${names}). Run \`open-slide sync:skills\` to update.\n`,
+    );
+    return;
+  }
+
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const answer = (
+      await rl.question(
+        `${chalk.yellow('!')} Skills out of date: ${chalk.bold(names)}. Sync now? ${chalk.dim('(Y/n) ')}`,
+      )
+    )
+      .trim()
+      .toLowerCase();
+    if (answer === '' || answer === 'y' || answer === 'yes') {
+      await syncSkills(skillsDir);
+    } else {
+      process.stdout.write(chalk.dim('Skipped. Run `open-slide sync:skills` later to update.\n'));
+    }
+  } finally {
+    rl.close();
+  }
 }
 
 interface BuildFlags {
@@ -57,7 +104,11 @@ export async function run(argv: string[]): Promise<void> {
     .addOption(new Option('-p, --port <port>', 'port to listen on').argParser(parsePort))
     .addOption(new Option('--host [host]', 'expose on the network (optional host)'))
     .option('--open', 'open the browser on start')
-    .action(async (flags: ServerFlags) => {
+    .option('--no-skills-check', 'skip the built-in skills drift check')
+    .action(async (flags: DevFlags) => {
+      if (flags.skillsCheck !== false) {
+        await runSkillsDriftCheck(resolveBuiltinSkillsDir());
+      }
       const { dev } = await import('./dev.ts');
       await dev(flags);
     });

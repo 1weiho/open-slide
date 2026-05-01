@@ -8,7 +8,41 @@ export interface SyncSkillsOptions {
   dryRun?: boolean;
 }
 
-type Status = 'added' | 'updated' | 'unchanged';
+export type Status = 'added' | 'updated' | 'unchanged';
+
+export interface DriftEntry {
+  name: string;
+  status: Status;
+}
+
+export async function detectSkillsDrift(skillsDir: string): Promise<DriftEntry[]> {
+  if (!existsSync(skillsDir)) return [];
+
+  const cwd = process.cwd();
+  const agentsSkillsDir = path.join(cwd, '.agents', 'skills');
+
+  const skillNames = (await readdir(skillsDir, { withFileTypes: true }))
+    .filter((e) => e.isDirectory())
+    .map((e) => e.name)
+    .sort();
+
+  const results: DriftEntry[] = [];
+  for (const name of skillNames) {
+    const src = path.join(skillsDir, name);
+    const dst = path.join(agentsSkillsDir, name);
+
+    const srcHash = await hashDir(src);
+    const dstHash = existsSync(dst) ? await hashDir(dst) : null;
+
+    let status: Status;
+    if (dstHash === null) status = 'added';
+    else if (dstHash !== srcHash) status = 'updated';
+    else status = 'unchanged';
+
+    results.push({ name, status });
+  }
+  return results;
+}
 
 export async function syncSkills(skillsDir: string, opts: SyncSkillsOptions = {}): Promise<void> {
   const { dryRun = false } = opts;
@@ -23,31 +57,16 @@ export async function syncSkills(skillsDir: string, opts: SyncSkillsOptions = {}
   const agentsSkillsDir = path.join(cwd, '.agents', 'skills');
   const claudeSkillsDir = path.join(cwd, '.claude', 'skills');
 
-  const skillNames = (await readdir(skillsDir, { withFileTypes: true }))
-    .filter((e) => e.isDirectory())
-    .map((e) => e.name)
-    .sort();
+  const results = await detectSkillsDrift(skillsDir);
 
-  if (skillNames.length === 0) {
+  if (results.length === 0) {
     process.stdout.write(chalk.yellow('No skills found to sync.\n'));
     return;
   }
 
-  const results: Array<{ name: string; status: Status }> = [];
-
-  for (const name of skillNames) {
+  for (const { name, status } of results) {
     const src = path.join(skillsDir, name);
     const dst = path.join(agentsSkillsDir, name);
-
-    const srcHash = await hashDir(src);
-    const dstHash = existsSync(dst) ? await hashDir(dst) : null;
-
-    let status: Status;
-    if (dstHash === null) status = 'added';
-    else if (dstHash !== srcHash) status = 'updated';
-    else status = 'unchanged';
-
-    results.push({ name, status });
 
     if (dryRun) continue;
     if (status === 'unchanged') {

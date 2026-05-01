@@ -135,7 +135,8 @@ export async function init(opts: InitOptions): Promise<void> {
     packageManager === 'npm' ? 'npm run sync:skills' : `${packageManager} sync:skills`;
   process.stdout.write(
     chalk.dim(
-      `\nLater, run \`${syncCommand}\` after bumping @open-slide/core to pull skill updates.\n`,
+      `\nLater, run \`${syncCommand}\` after bumping @open-slide/core to pull skill updates.\n` +
+        '(or accept the prompt that appears when starting `dev`.)\n',
     ),
   );
 }
