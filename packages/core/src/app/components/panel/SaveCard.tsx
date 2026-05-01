@@ -1,7 +1,6 @@
 import { Check, Loader2, Save, Undo2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 type SaveCardProps = {
   dirty: boolean;
@@ -11,7 +10,6 @@ type SaveCardProps = {
   unsavedLabel: React.ReactNode;
   savedLabel?: string;
   uiAttr: 'inspector' | 'design';
-  className?: string;
 };
 
 // Optimistic DOM updates make the canvas *look* saved, so without
@@ -25,7 +23,6 @@ export function SaveCard({
   unsavedLabel,
   savedLabel = 'Saved',
   uiAttr,
-  className,
 }: SaveCardProps) {
   const [justSaved, setJustSaved] = useState(false);
 
@@ -49,12 +46,9 @@ export function SaveCard({
   return (
     <div
       {...dataAttrs}
-      className={cn(
-        'pointer-events-none absolute left-1/2 z-30 -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200',
-        className,
-      )}
+      className="pointer-events-none absolute bottom-6 left-1/2 z-30 -translate-x-1/2 animate-in fade-in slide-in-from-bottom-3 duration-300 ease-out"
     >
-      <div className="pointer-events-auto flex items-center gap-2 rounded-full border bg-card/95 py-1 pr-1 pl-3 shadow-lg backdrop-blur">
+      <div className="pointer-events-auto flex items-center gap-2 rounded-full border bg-card py-1 pr-1 pl-3 shadow-lg">
         {justSaved ? (
           <span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
             <Check className="size-3.5 text-emerald-600" />

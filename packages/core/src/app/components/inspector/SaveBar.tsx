@@ -1,18 +1,41 @@
 import { SaveCard } from '@/components/panel/SaveCard';
+import { useDesignPanelState } from '@/components/style-panel/DesignProvider';
 import { useInspector } from './InspectorProvider';
 
+// Single save card for both inspector edits and design-token edits.
+// Counts the design draft as one unit; the user sees one combined
+// "N unsaved changes" pill. Save/Discard fan out to both providers.
 export function SaveBar() {
-  const { pendingCount, commitEdits, cancelEdits, committing } = useInspector();
+  const insp = useInspector();
+  const design = useDesignPanelState();
+
+  const inspectorCount = insp.pendingCount;
+  const designCount = design.dirty ? 1 : 0;
+  const total = inspectorCount + designCount;
+
+  const dirty = total > 0;
+  const committing = insp.committing || design.committing;
+
+  const onSave = async () => {
+    const tasks: Promise<void>[] = [];
+    if (inspectorCount > 0) tasks.push(Promise.resolve(insp.commitEdits()));
+    if (designCount > 0) tasks.push(Promise.resolve(design.commit()));
+    await Promise.all(tasks);
+  };
+
+  const onDiscard = () => {
+    if (inspectorCount > 0) insp.cancelEdits();
+    if (designCount > 0) design.discard();
+  };
 
   return (
     <SaveCard
       uiAttr="inspector"
-      className="bottom-6"
-      dirty={pendingCount > 0}
+      dirty={dirty}
       committing={committing}
-      onSave={commitEdits}
-      onDiscard={cancelEdits}
-      unsavedLabel={`${pendingCount} unsaved ${pendingCount === 1 ? 'change' : 'changes'}`}
+      onSave={onSave}
+      onDiscard={onDiscard}
+      unsavedLabel={`${total} unsaved ${total === 1 ? 'change' : 'changes'}`}
     />
   );
 }
