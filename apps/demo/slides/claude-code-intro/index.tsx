@@ -1,4 +1,23 @@
-import type { Page, SlideMeta } from '@open-slide/core';
+import type { DesignSystem, Page, SlideMeta } from '@open-slide/core';
+
+export const design: DesignSystem = {
+  palette: {
+    bg: '#f5efe4',
+    text: '#1a1714',
+    accent: '#b34a2a',
+  },
+  fonts: {
+    display: '"Iowan Old Style", "Times New Roman", Georgia, serif',
+    body: '"Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
+  },
+  typeScale: {
+    hero: 220,
+    body: 28,
+  },
+  radius: {
+    md: 14,
+  },
+};
 
 /* ─────────────── Design tokens ─────────────── */
 
@@ -61,25 +80,25 @@ const Grain = () => (
 const fill = {
   width: '100%',
   height: '100%',
-  background: palette.bg,
-  color: palette.text,
+  background: 'var(--osd-bg)',
+  color: 'var(--osd-text)',
   position: 'relative',
   overflow: 'hidden',
-  fontFamily: fonts.sans,
+  fontFamily: 'var(--osd-font-body)',
 } as const;
 
 /* ─────────────── Shared atoms ─────────────── */
 
 const Eyebrow = ({
   children,
-  color = palette.accent,
+  color = 'var(--osd-accent)',
 }: {
   children: React.ReactNode;
   color?: string;
 }) => (
   <div
     style={{
-      fontFamily: fonts.sans,
+      fontFamily: 'var(--osd-font-body)',
       fontSize: 22,
       fontWeight: 500,
       letterSpacing: '0.32em',
@@ -100,7 +119,7 @@ const Footer = ({ section }: { section: string }) => (
       bottom: 72,
       display: 'flex',
       alignItems: 'baseline',
-      fontFamily: fonts.sans,
+      fontFamily: 'var(--osd-font-body)',
       fontSize: 18,
       letterSpacing: '0.28em',
       textTransform: 'uppercase',
@@ -118,7 +137,7 @@ const Mono = ({ children, accent = false }: { children: React.ReactNode; accent?
     style={{
       fontFamily: fonts.mono,
       fontSize: '0.82em',
-      color: accent ? palette.accent : palette.text,
+      color: accent ? 'var(--osd-accent)' : 'var(--osd-text)',
       background: accent ? palette.accentSoft : 'transparent',
       padding: accent ? '2px 10px' : 0,
       borderRadius: accent ? 4 : 0,
@@ -146,18 +165,18 @@ const Cover: Page = () => (
       <Eyebrow>A field guide · 2026</Eyebrow>
       <h1
         style={{
-          fontFamily: fonts.serif,
-          fontSize: 220,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 'var(--osd-size-hero)',
           fontWeight: 400,
           lineHeight: 0.98,
           letterSpacing: '-0.03em',
           margin: '36px 0 0',
-          color: palette.text,
+          color: 'var(--osd-text)',
         }}
       >
         Claude
         <br />
-        <em style={{ fontStyle: 'italic', color: palette.accent }}>Code.</em>
+        <em style={{ fontStyle: 'italic', color: 'var(--osd-accent)' }}>Code.</em>
       </h1>
       <div
         style={{
@@ -169,10 +188,10 @@ const Cover: Page = () => (
       />
       <p
         style={{
-          fontFamily: fonts.serif,
+          fontFamily: 'var(--osd-font-display)',
           fontSize: 44,
           lineHeight: 1.35,
-          color: palette.text,
+          color: 'var(--osd-text)',
           maxWidth: 1280,
           margin: 0,
           fontWeight: 400,
@@ -215,7 +234,7 @@ const WhatIs: Page = () => (
       <Eyebrow>What it is</Eyebrow>
       <h2
         style={{
-          fontFamily: fonts.serif,
+          fontFamily: 'var(--osd-font-display)',
           fontSize: 100,
           fontWeight: 400,
           lineHeight: 1.06,
@@ -225,14 +244,14 @@ const WhatIs: Page = () => (
       >
         Not autocomplete.
         <br />
-        An <em style={{ color: palette.accent }}>agent</em> that does the work.
+        An <em style={{ color: 'var(--osd-accent)' }}>agent</em> that does the work.
       </h2>
       <div style={{ height: 1, background: palette.rule, width: 320, margin: '0 0 48px' }} />
       <p
         style={{
           fontSize: 36,
           lineHeight: 1.55,
-          color: palette.text,
+          color: 'var(--osd-text)',
           maxWidth: 1300,
           fontWeight: 400,
           margin: 0,
@@ -244,7 +263,7 @@ const WhatIs: Page = () => (
       <p
         style={{
           marginTop: 36,
-          fontFamily: fonts.serif,
+          fontFamily: 'var(--osd-font-display)',
           fontStyle: 'italic',
           fontSize: 30,
           color: palette.muted,
@@ -301,7 +320,7 @@ const Capabilities: Page = () => (
       <Eyebrow>What it does</Eyebrow>
       <h2
         style={{
-          fontFamily: fonts.serif,
+          fontFamily: 'var(--osd-font-display)',
           fontSize: 88,
           fontWeight: 400,
           lineHeight: 1.08,
@@ -316,10 +335,10 @@ const Capabilities: Page = () => (
           <div key={c.n} style={{ display: 'flex', gap: 32, alignItems: 'baseline' }}>
             <div
               style={{
-                fontFamily: fonts.serif,
+                fontFamily: 'var(--osd-font-display)',
                 fontSize: 56,
                 fontStyle: 'italic',
-                color: palette.accent,
+                color: 'var(--osd-accent)',
                 lineHeight: 1,
                 width: 90,
                 flexShrink: 0,
@@ -330,12 +349,12 @@ const Capabilities: Page = () => (
             <div>
               <div
                 style={{
-                  fontFamily: fonts.serif,
+                  fontFamily: 'var(--osd-font-display)',
                   fontSize: 44,
                   fontWeight: 400,
                   lineHeight: 1.2,
                   letterSpacing: '-0.01em',
-                  color: palette.text,
+                  color: 'var(--osd-text)',
                   marginBottom: 14,
                 }}
               >
@@ -385,7 +404,7 @@ const TheLoop: Page = () => (
       <Eyebrow>How it works</Eyebrow>
       <h2
         style={{
-          fontFamily: fonts.serif,
+          fontFamily: 'var(--osd-font-display)',
           fontSize: 88,
           fontWeight: 400,
           lineHeight: 1.08,
@@ -397,7 +416,7 @@ const TheLoop: Page = () => (
       </h2>
       <p
         style={{
-          fontSize: 28,
+          fontSize: 'var(--osd-size-body)',
           lineHeight: 1.5,
           color: palette.muted,
           maxWidth: 1400,
@@ -424,7 +443,7 @@ const TheLoop: Page = () => (
               style={{
                 background: palette.surface,
                 border: `1px solid ${palette.line}`,
-                borderRadius: 14,
+                borderRadius: 'var(--osd-radius-md)',
                 padding: '40px 32px',
                 width: '100%',
                 position: 'relative',
@@ -435,12 +454,12 @@ const TheLoop: Page = () => (
                   position: 'absolute',
                   top: -12,
                   left: 24,
-                  background: palette.bg,
+                  background: 'var(--osd-bg)',
                   padding: '0 12px',
                   fontFamily: fonts.mono,
                   fontSize: 18,
                   letterSpacing: '0.2em',
-                  color: palette.accent,
+                  color: 'var(--osd-accent)',
                   textTransform: 'uppercase',
                 }}
               >
@@ -448,11 +467,11 @@ const TheLoop: Page = () => (
               </div>
               <div
                 style={{
-                  fontFamily: fonts.serif,
+                  fontFamily: 'var(--osd-font-display)',
                   fontSize: 56,
                   fontWeight: 400,
                   letterSpacing: '-0.01em',
-                  color: palette.text,
+                  color: 'var(--osd-text)',
                   marginBottom: 12,
                 }}
               >
@@ -460,7 +479,7 @@ const TheLoop: Page = () => (
               </div>
               <div
                 style={{
-                  fontFamily: fonts.serif,
+                  fontFamily: 'var(--osd-font-display)',
                   fontStyle: 'italic',
                   fontSize: 24,
                   color: palette.muted,
@@ -473,9 +492,9 @@ const TheLoop: Page = () => (
             {i < loopSteps.length - 1 && (
               <div
                 style={{
-                  fontFamily: fonts.serif,
+                  fontFamily: 'var(--osd-font-display)',
                   fontSize: 56,
-                  color: palette.accent,
+                  color: 'var(--osd-accent)',
                   margin: '0 8px',
                   flexShrink: 0,
                   lineHeight: 1,
@@ -499,9 +518,9 @@ const TheLoop: Page = () => (
       >
         <div
           style={{
-            fontFamily: fonts.serif,
+            fontFamily: 'var(--osd-font-display)',
             fontStyle: 'italic',
-            fontSize: 28,
+            fontSize: 'var(--osd-size-body)',
             color: palette.ink,
             display: 'flex',
             alignItems: 'center',
@@ -513,7 +532,7 @@ const TheLoop: Page = () => (
               fontFamily: fonts.mono,
               fontStyle: 'normal',
               fontSize: 22,
-              color: palette.accent,
+              color: 'var(--osd-accent)',
             }}
           >
             ↺
@@ -544,7 +563,7 @@ const Permissions: Page = () => (
       <Eyebrow>You stay in control</Eyebrow>
       <h2
         style={{
-          fontFamily: fonts.serif,
+          fontFamily: 'var(--osd-font-display)',
           fontSize: 88,
           fontWeight: 400,
           lineHeight: 1.08,
@@ -560,10 +579,10 @@ const Permissions: Page = () => (
           <Eyebrow color={palette.ink}>Permissions</Eyebrow>
           <div
             style={{
-              fontFamily: fonts.serif,
+              fontFamily: 'var(--osd-font-display)',
               fontSize: 38,
               lineHeight: 1.35,
-              color: palette.text,
+              color: 'var(--osd-text)',
             }}
           >
             Every tool call is gated. Allow once, allow always, or deny.
@@ -577,7 +596,7 @@ const Permissions: Page = () => (
               fontFamily: fonts.mono,
               fontSize: 22,
               lineHeight: 1.7,
-              color: palette.text,
+              color: 'var(--osd-text)',
               marginTop: 'auto',
             }}
           >
@@ -586,7 +605,8 @@ const Permissions: Page = () => (
               <span style={{ color: palette.ink }}>"permissions"</span>: {'{'}
             </div>
             <div style={{ paddingLeft: 24 }}>
-              <span style={{ color: palette.accent }}>"allow"</span>: ["Bash(npm test:*)", "Edit"]
+              <span style={{ color: 'var(--osd-accent)' }}>"allow"</span>: ["Bash(npm test:*)",
+              "Edit"]
             </div>
             <div>{'}'}</div>
           </div>
@@ -598,10 +618,10 @@ const Permissions: Page = () => (
           <Eyebrow color={palette.ink}>Hooks</Eyebrow>
           <div
             style={{
-              fontFamily: fonts.serif,
+              fontFamily: 'var(--osd-font-display)',
               fontSize: 38,
               lineHeight: 1.35,
-              color: palette.text,
+              color: 'var(--osd-text)',
             }}
           >
             Run your own scripts before or after any tool — formatters, audits, notifications,
@@ -616,7 +636,7 @@ const Permissions: Page = () => (
               fontFamily: fonts.mono,
               fontSize: 22,
               lineHeight: 1.7,
-              color: palette.text,
+              color: 'var(--osd-text)',
               marginTop: 'auto',
             }}
           >
@@ -625,10 +645,10 @@ const Permissions: Page = () => (
               <span style={{ color: palette.ink }}>PostToolUse</span>:
             </div>
             <div style={{ paddingLeft: 24 }}>
-              <span style={{ color: palette.accent }}>matcher</span>: "Edit"
+              <span style={{ color: 'var(--osd-accent)' }}>matcher</span>: "Edit"
             </div>
             <div style={{ paddingLeft: 24 }}>
-              <span style={{ color: palette.accent }}>command</span>: "biome format"
+              <span style={{ color: 'var(--osd-accent)' }}>command</span>: "biome format"
             </div>
           </div>
         </div>
@@ -667,7 +687,7 @@ const WhereItRuns: Page = () => (
       <Eyebrow>Where it runs</Eyebrow>
       <h2
         style={{
-          fontFamily: fonts.serif,
+          fontFamily: 'var(--osd-font-display)',
           fontSize: 88,
           fontWeight: 400,
           lineHeight: 1.08,
@@ -677,11 +697,11 @@ const WhereItRuns: Page = () => (
       >
         One agent.
         <br />
-        <em style={{ color: palette.accent }}>Many surfaces.</em>
+        <em style={{ color: 'var(--osd-accent)' }}>Many surfaces.</em>
       </h2>
       <p
         style={{
-          fontSize: 28,
+          fontSize: 'var(--osd-size-body)',
           lineHeight: 1.5,
           color: palette.muted,
           maxWidth: 1300,
@@ -698,7 +718,7 @@ const WhereItRuns: Page = () => (
             style={{
               background: palette.surface,
               border: `1px solid ${palette.line}`,
-              borderRadius: 14,
+              borderRadius: 'var(--osd-radius-md)',
               padding: '36px 40px',
               display: 'flex',
               alignItems: 'center',
@@ -710,7 +730,7 @@ const WhereItRuns: Page = () => (
                 fontFamily: fonts.mono,
                 fontSize: 22,
                 letterSpacing: '0.18em',
-                color: palette.accent,
+                color: 'var(--osd-accent)',
                 width: 64,
                 flexShrink: 0,
                 borderRight: `1px solid ${palette.line}`,
@@ -723,11 +743,11 @@ const WhereItRuns: Page = () => (
             <div>
               <div
                 style={{
-                  fontFamily: fonts.serif,
+                  fontFamily: 'var(--osd-font-display)',
                   fontSize: 40,
                   fontWeight: 400,
                   letterSpacing: '-0.01em',
-                  color: palette.text,
+                  color: 'var(--osd-text)',
                   marginBottom: 8,
                 }}
               >
@@ -769,7 +789,7 @@ const Different: Page = () => (
       <Eyebrow>Why it's different</Eyebrow>
       <h2
         style={{
-          fontFamily: fonts.serif,
+          fontFamily: 'var(--osd-font-display)',
           fontSize: 132,
           fontWeight: 400,
           lineHeight: 1.02,
@@ -780,7 +800,7 @@ const Different: Page = () => (
       >
         It treats your codebase as
         <br />
-        <em style={{ color: palette.accent }}>the work</em>, not the prompt.
+        <em style={{ color: 'var(--osd-accent)' }}>the work</em>, not the prompt.
       </h2>
       <div style={{ height: 1, background: palette.rule, width: 360, margin: '0 0 48px' }} />
 
@@ -802,10 +822,10 @@ const Different: Page = () => (
           <div key={it.tag} style={{ flex: 1 }}>
             <div
               style={{
-                fontFamily: fonts.serif,
+                fontFamily: 'var(--osd-font-display)',
                 fontSize: 38,
                 fontStyle: 'italic',
-                color: palette.accent,
+                color: 'var(--osd-accent)',
                 marginBottom: 20,
               }}
             >
@@ -815,7 +835,7 @@ const Different: Page = () => (
               style={{
                 fontSize: 26,
                 lineHeight: 1.55,
-                color: palette.text,
+                color: 'var(--osd-text)',
                 fontWeight: 400,
               }}
             >
@@ -860,7 +880,7 @@ const Transcript: Page = () => (
       <Eyebrow>In practice</Eyebrow>
       <h2
         style={{
-          fontFamily: fonts.serif,
+          fontFamily: 'var(--osd-font-display)',
           fontSize: 84,
           fontWeight: 400,
           lineHeight: 1.08,
@@ -876,7 +896,7 @@ const Transcript: Page = () => (
           flex: 1,
           background: palette.surface,
           border: `1px solid ${palette.line}`,
-          borderRadius: 14,
+          borderRadius: 'var(--osd-radius-md)',
           padding: '40px 48px',
           display: 'flex',
           flexDirection: 'column',
@@ -889,11 +909,11 @@ const Transcript: Page = () => (
         {transcript.map((line, i) => {
           const styles =
             line.who === 'you'
-              ? { color: palette.text, fontWeight: 500 }
+              ? { color: 'var(--osd-text)', fontWeight: 500 }
               : line.who === 'claude'
                 ? {
                     color: palette.ink,
-                    fontFamily: fonts.serif,
+                    fontFamily: 'var(--osd-font-display)',
                     fontStyle: 'italic' as const,
                     fontSize: 26,
                   }
@@ -901,9 +921,9 @@ const Transcript: Page = () => (
           const tag = line.who === 'you' ? '›' : line.who === 'claude' ? '◆' : '·';
           const tagColor =
             line.who === 'you'
-              ? palette.accent
+              ? 'var(--osd-accent)'
               : line.who === 'claude'
-                ? palette.accent
+                ? 'var(--osd-accent)'
                 : palette.faint;
 
           return (
@@ -914,7 +934,7 @@ const Transcript: Page = () => (
               <span
                 style={{
                   color: tagColor,
-                  fontFamily: fonts.serif,
+                  fontFamily: 'var(--osd-font-display)',
                   fontSize: 26,
                   width: 24,
                   flexShrink: 0,
@@ -949,7 +969,7 @@ const GetStarted: Page = () => (
       <Eyebrow>Get started</Eyebrow>
       <h2
         style={{
-          fontFamily: fonts.serif,
+          fontFamily: 'var(--osd-font-display)',
           fontSize: 168,
           fontWeight: 400,
           lineHeight: 1,
@@ -963,9 +983,9 @@ const GetStarted: Page = () => (
 
       <div
         style={{
-          background: palette.text,
-          color: palette.bg,
-          borderRadius: 14,
+          background: 'var(--osd-text)',
+          color: 'var(--osd-bg)',
+          borderRadius: 'var(--osd-radius-md)',
           padding: '40px 56px',
           fontFamily: fonts.mono,
           fontSize: 36,
@@ -989,7 +1009,7 @@ const GetStarted: Page = () => (
           display: 'flex',
           gap: 64,
           alignItems: 'baseline',
-          fontFamily: fonts.sans,
+          fontFamily: 'var(--osd-font-body)',
           fontSize: 24,
           color: palette.muted,
           letterSpacing: '0.04em',
@@ -1007,7 +1027,7 @@ const GetStarted: Page = () => (
       <div
         style={{
           marginTop: 80,
-          fontFamily: fonts.serif,
+          fontFamily: 'var(--osd-font-display)',
           fontStyle: 'italic',
           fontSize: 32,
           color: palette.faint,

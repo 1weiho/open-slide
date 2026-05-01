@@ -111,6 +111,50 @@ If `themes/<id>.md` exists at the project root and the slide is meant to follow 
 
 Themes are produced by the `create-theme` skill and are pure documentation: copy the palette and the paste-ready Title / Footer / Eyebrow components straight into your slide. If the theme's frontmatter has `mode: dark` or `mode: light`, treat that as the slide's background mode (e.g. when picking which logo variant to import).
 
+## Design system (opt-in, per-slide)
+
+A slide can declare its own typed design tokens at the top of `index.tsx`:
+
+```tsx
+import type { DesignSystem, Page } from '@open-slide/core';
+
+export const design: DesignSystem = {
+  palette: { bg: '#f7f5f0', text: '#1a1814', accent: '#6d4cff' },
+  fonts: {
+    display: 'Georgia, "Times New Roman", serif',
+    body: '-apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif',
+  },
+  typeScale: { hero: 168, body: 36 },
+  radius:    { md: 12 },
+};
+```
+
+`export` it (rather than plain `const`) so the framework can read the object and inject CSS variables at the canvas root automatically.
+
+The shape is intentionally minimal — it only covers what the Design panel can currently tweak. Anything outside this set (heading sizes, spacing, motion, extra palette colors) belongs as plain hard-coded constants in the slide file.
+
+There are **two consumption surfaces**, and you should mix them inside the same slide:
+
+- **`var(--osd-X)` for visual properties (color, font, font-size, radius)** — these get instant updates while the user drags a slider in the Design panel, before any file write.
+  ```tsx
+  <div style={{ background: 'var(--osd-bg)', color: 'var(--osd-text)', borderRadius: 'var(--osd-radius-md)', fontFamily: 'var(--osd-font-body)', fontSize: 'var(--osd-size-body)' }}>
+  ```
+  Available vars: `--osd-bg`, `--osd-text`, `--osd-accent`, `--osd-font-display`, `--osd-font-body`, `--osd-size-hero`, `--osd-size-body`, `--osd-radius-md`.
+
+- **Direct `design.X` reads** — when you need a JS number for arithmetic or to label something in the UI. These update via HMR after the panel commits the file, not while dragging.
+  ```tsx
+  <p>{design.typeScale.hero}px</p>
+  ```
+
+The dev UI has a **Design** button in the slide header (next to Inspect). Edits update an in-memory draft and the live-preview overlay; a floating Save / Discard bar at the bottom of the canvas commits or reverts. The const stays the single source of truth — production builds bake the saved values.
+
+When to use it: any time the slide should remain tweakable from the panel after generation. When to *not* use it: one-off slides whose palette is intentionally fixed (then use the local `palette` constants pattern from the starter template). Both styles can coexist across slides — the panel only operates on the *currently viewed* slide.
+
+Format constraints (for the panel's AST writer):
+- Must be `[export] const design: DesignSystem = { … }` (or `as DesignSystem` / `satisfies DesignSystem`) at module top level.
+- Object initializer must be a literal — no spreads, no helper calls. Plain values only.
+- `DesignSystem` must be imported from `@open-slide/core` (the panel adds the import automatically when creating a fresh block).
+
 ## Starter template
 
 ```tsx
@@ -202,6 +246,7 @@ Skip the `assets/` folder entirely for pure-text slides.
 - [ ] **For every page, sum (font_size × line_height × lines) + gaps + 2×padding ≤ 1080px.** If close, split the page. No `overflow: auto` escape hatches.
 - [ ] No bullet wraps to a second line at the chosen font size.
 - [ ] One coherent visual direction across every page (palette + type scale).
+- [ ] If the slide should be tweakable from the Design panel, it declares a top-level `const design: DesignSystem = { … }` and references `design.X` from inline styles.
 - [ ] One idea per page.
 - [ ] All imported assets exist on disk under `slides/<id>/assets/`.
 - [ ] Nothing outside `slides/<id>/` was edited.

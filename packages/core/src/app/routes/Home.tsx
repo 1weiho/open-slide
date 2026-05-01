@@ -263,7 +263,7 @@ function SlideCard({
         >
           <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-indigo-50 to-violet-50">
             {FirstPage ? (
-              <SlideCanvas flat>
+              <SlideCanvas flat design={slide?.design}>
                 <FirstPage />
               </SlideCanvas>
             ) : (

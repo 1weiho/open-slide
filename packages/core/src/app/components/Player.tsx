@@ -1,17 +1,19 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useWheelPageNavigation } from '@/lib/useWheelPageNavigation';
+import type { DesignSystem } from '../../design';
 import type { Page } from '../lib/sdk';
 import { SlideCanvas } from './SlideCanvas';
 
 type Props = {
   pages: Page[];
+  design?: DesignSystem;
   index: number;
   onIndexChange: (index: number) => void;
   onExit: () => void;
   allowExit?: boolean;
 };
 
-export function Player({ pages, index, onIndexChange, onExit, allowExit = true }: Props) {
+export function Player({ pages, design, index, onIndexChange, onExit, allowExit = true }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const goPrev = useCallback(() => {
     if (index > 0) onIndexChange(index - 1);
@@ -80,7 +82,9 @@ export function Player({ pages, index, onIndexChange, onExit, allowExit = true }
       ref={rootRef}
       className="relative flex h-screen w-screen items-center justify-center bg-black"
     >
-      <SlideCanvas flat>{PageComp ? <PageComp /> : null}</SlideCanvas>
+      <SlideCanvas flat design={design}>
+        {PageComp ? <PageComp /> : null}
+      </SlideCanvas>
       <button
         type="button"
         aria-label="Previous page"

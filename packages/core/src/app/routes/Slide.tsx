@@ -13,6 +13,8 @@ import {
   useInspector,
 } from '@/components/inspector/InspectorProvider';
 import { SaveBar } from '@/components/inspector/SaveBar';
+import { DesignProvider } from '@/components/style-panel/DesignProvider';
+import { DesignPanel, DesignToggleButton } from '@/components/style-panel/StylePanel';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -43,6 +45,7 @@ export function Slide() {
   const [error, setError] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [designOpen, setDesignOpen] = useState(false);
   const { renameSlide } = useFolders();
   const slideViewportRef = useRef<HTMLElement>(null);
 
@@ -150,6 +153,7 @@ export function Slide() {
     return (
       <Player
         pages={pages}
+        design={slide.design}
         index={index}
         onIndexChange={goTo}
         onExit={() => {}}
@@ -160,7 +164,13 @@ export function Slide() {
 
   if (playing) {
     return (
-      <Player pages={pages} index={index} onIndexChange={goTo} onExit={() => setPlaying(false)} />
+      <Player
+        pages={pages}
+        design={slide.design}
+        index={index}
+        onIndexChange={goTo}
+        onExit={() => setPlaying(false)}
+      />
     );
   }
 
@@ -301,6 +311,9 @@ export function Slide() {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
+            {view === 'slides' && (
+              <DesignToggleButton active={designOpen} onToggle={() => setDesignOpen((v) => !v)} />
+            )}
             {view === 'slides' && <InspectToggleButton />}
             {view === 'slides' && (
               <Button size="sm" onClick={() => setPlaying(true)} className="px-2 md:px-3">
@@ -319,40 +332,48 @@ export function Slide() {
             <AssetView slideId={slideId} />
           </div>
         ) : (
-          <div className="flex min-h-0 flex-1">
-            <div className="hidden w-[17rem] shrink-0 md:block">
-              <ThumbnailRail pages={pages} current={index} onSelect={goTo} />
-            </div>
-            <main
-              ref={slideViewportRef}
-              data-inspector-root
-              className="relative min-h-0 min-w-0 flex-1 bg-background p-2 md:p-8"
-            >
-              <SlideWheelNavigation
-                targetRef={slideViewportRef}
-                onPrev={() => goTo(index - 1)}
-                onNext={() => goTo(index + 1)}
-                canPrev={index > 0}
-                canNext={index < pageCount - 1}
-              />
-              <SlideCanvas>
-                <CurrentPage />
-              </SlideCanvas>
-              <ClickNavZones
-                onPrev={() => goTo(index - 1)}
-                onNext={() => goTo(index + 1)}
-                canPrev={index > 0}
-                canNext={index < pageCount - 1}
-              />
-              <InspectOverlay />
-              <SaveBar />
-              <CommentWidget />
-              <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/50 px-2.5 py-0.5 text-[11px] font-medium tabular-nums text-white backdrop-blur md:hidden">
-                {index + 1} / {pageCount}
+          <DesignProvider slideId={slideId}>
+            <div className="flex min-h-0 flex-1">
+              <div className="hidden w-[17rem] shrink-0 md:block">
+                <ThumbnailRail
+                  pages={pages}
+                  design={slide.design}
+                  current={index}
+                  onSelect={goTo}
+                />
               </div>
-            </main>
-            <InspectorPanel />
-          </div>
+              <main
+                ref={slideViewportRef}
+                data-inspector-root
+                className="relative min-h-0 min-w-0 flex-1 bg-background p-2 md:p-8"
+              >
+                <SlideWheelNavigation
+                  targetRef={slideViewportRef}
+                  onPrev={() => goTo(index - 1)}
+                  onNext={() => goTo(index + 1)}
+                  canPrev={index > 0}
+                  canNext={index < pageCount - 1}
+                />
+                <SlideCanvas design={slide.design}>
+                  <CurrentPage />
+                </SlideCanvas>
+                <ClickNavZones
+                  onPrev={() => goTo(index - 1)}
+                  onNext={() => goTo(index + 1)}
+                  canPrev={index > 0}
+                  canNext={index < pageCount - 1}
+                />
+                <InspectOverlay />
+                <SaveBar />
+                <CommentWidget />
+                <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/50 px-2.5 py-0.5 text-[11px] font-medium tabular-nums text-white backdrop-blur md:hidden">
+                  {index + 1} / {pageCount}
+                </div>
+              </main>
+              <InspectorPanel />
+              <DesignPanel open={designOpen} onClose={() => setDesignOpen(false)} />
+            </div>
+          </DesignProvider>
         )}
       </div>
     </InspectorProvider>

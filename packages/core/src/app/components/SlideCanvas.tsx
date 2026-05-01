@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../lib/sdk';
+import { type DesignSystem, designToCssVars } from '../../design';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
 
 type Props = {
   children: ReactNode;
@@ -11,9 +12,23 @@ type Props = {
   /** Flat mode: no rounded corners or drop shadow. */
   flat?: boolean;
   className?: string;
+  /**
+   * Per-slide design tokens. When set, the matching CSS custom properties
+   * are emitted on the canvas root so descendants can use `var(--osd-X)`
+   * regardless of which surface (editor, player, thumbnail, export) is
+   * rendering them.
+   */
+  design?: DesignSystem;
 };
 
-export function SlideCanvas({ children, scale, center = true, flat = false, className }: Props) {
+export function SlideCanvas({
+  children,
+  scale,
+  center = true,
+  flat = false,
+  className,
+  design,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [fitScale, setFitScale] = useState(1);
 
@@ -55,12 +70,16 @@ export function SlideCanvas({ children, scale, center = true, flat = false, clas
         }}
       >
         <div
-          style={{
-            width: CANVAS_WIDTH,
-            height: CANVAS_HEIGHT,
-            transform: `scale(${s})`,
-            transformOrigin: 'top left',
-          }}
+          data-osd-canvas
+          style={
+            {
+              width: CANVAS_WIDTH,
+              height: CANVAS_HEIGHT,
+              transform: `scale(${s})`,
+              transformOrigin: 'top left',
+              ...(design ? designToCssVars(design) : {}),
+            } as CSSProperties
+          }
         >
           {children}
         </div>
