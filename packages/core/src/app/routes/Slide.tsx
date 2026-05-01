@@ -367,7 +367,7 @@ export function Slide() {
                   />
                   <InspectOverlay />
                   <SaveBar />
-                  <CommentWidget />
+                  {import.meta.env.DEV && <CommentWidget />}
                   <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/50 px-2.5 py-0.5 text-[11px] font-medium tabular-nums text-white backdrop-blur md:hidden">
                     {index + 1} / {pageCount}
                   </div>
