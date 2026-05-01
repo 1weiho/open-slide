@@ -2,7 +2,7 @@
   "name": "open-slide-monorepo",
   "private": true,
   "version": "0.0.0",
-  "packageManager": "pnpm@9.0.0",
+  "packageManager": "pnpm@10.17.0",
   "scripts": {
     "dev": "turbo run dev",
     "dev:web": "turbo run dev --filter=web",
@@ -18,10 +18,14 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "core": "pnpm --filter @open-slide/core",
-    "cli": "pnpm --filter @open-slide/cli"
+    "cli": "pnpm --filter @open-slide/cli",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "turbo run build --filter=@open-slide/core --filter=@open-slide/cli && changeset publish"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.12",
+    "@changesets/cli": "^2.31.0",
     "turbo": "^2.3.0",
     "vitest": "^2.1.9"
   }
