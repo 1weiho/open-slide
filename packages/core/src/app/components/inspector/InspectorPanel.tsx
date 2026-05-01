@@ -10,6 +10,8 @@ import {
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Field, NumberField, Section } from '@/components/panel/PanelFields';
+import { PANEL_TRANSITION_MS, PanelShell, useAnimatedOpen } from '@/components/panel/PanelShell';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -19,8 +21,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -39,9 +39,6 @@ import type { SlideComment } from '@/lib/inspector/useComments';
 import type { EditOp } from '@/lib/inspector/useEditor';
 import { cn } from '@/lib/utils';
 import { type SelectedTarget, useInspector } from './InspectorProvider';
-
-const PANEL_W = 340;
-const PANEL_TRANSITION_MS = 280;
 
 type ElementSnapshot = {
   fontSize: number;
@@ -116,23 +113,14 @@ export function InspectorPanel() {
   );
 
   // `pinned` keeps the last selection rendered through the close-out
-  // animation; `animVisible` lags one frame so the width transition
-  // fires on the 0 → PANEL_W flip.
+  // animation so the panel's contents don't blank out before it collapses.
   const targetOpen = active && !!selected && !!snapshot;
   const [pinned, setPinned] = useState<{ s: SelectedTarget; n: ElementSnapshot } | null>(null);
-  const [animVisible, setAnimVisible] = useState(false);
+  const animVisible = useAnimatedOpen(targetOpen && !!pinned);
 
   useEffect(() => {
     if (selected && snapshot) setPinned({ s: selected, n: snapshot });
   }, [selected, snapshot]);
-
-  useEffect(() => {
-    if (targetOpen && pinned) {
-      const id = requestAnimationFrame(() => setAnimVisible(true));
-      return () => cancelAnimationFrame(id);
-    }
-    setAnimVisible(false);
-  }, [targetOpen, pinned]);
 
   useEffect(() => {
     if (!targetOpen && pinned) {
@@ -145,17 +133,11 @@ export function InspectorPanel() {
   const { s: pinSelected, n: pinSnapshot } = pinned;
 
   return (
-    <aside
-      data-inspector-ui
-      className="flex h-full shrink-0 justify-end overflow-hidden bg-card transition-[width,border-left-width] ease-out"
-      style={{
-        width: animVisible ? PANEL_W : 0,
-        borderLeftWidth: animVisible ? 1 : 0,
-        transitionDuration: `${PANEL_TRANSITION_MS}ms`,
-      }}
-    >
-      <div style={{ width: PANEL_W }} className="flex h-full shrink-0 flex-col">
-        <header className="flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2.5">
+    <PanelShell
+      uiAttr="inspector"
+      animVisible={animVisible}
+      header={
+        <>
           <div className="flex min-w-0 items-center gap-2">
             <span className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px] text-foreground">
               &lt;{pinSelected.anchor.tagName.toLowerCase()}&gt;
@@ -170,89 +152,60 @@ export function InspectorPanel() {
           >
             <X className="size-3.5" />
           </Button>
-        </header>
+        </>
+      }
+    >
+      {pinSnapshot.text !== null && (
+        <Section title="Content">
+          <ContentField snapshot={pinSnapshot} apply={apply} />
+        </Section>
+      )}
 
-        <ScrollArea className="flex flex-1 flex-col">
-          <div className="flex min-h-full flex-col">
-            {pinSnapshot.text !== null && (
-              <Section title="Content">
-                <ContentField snapshot={pinSnapshot} apply={apply} />
-              </Section>
-            )}
+      <Separator />
 
-            <Separator />
+      <Section title="Typography">
+        <FontSizeField snapshot={pinSnapshot} apply={apply} />
+        <FontWeightField snapshot={pinSnapshot} apply={apply} />
+        <StyleToggles snapshot={pinSnapshot} apply={apply} />
+        <LineHeightField snapshot={pinSnapshot} apply={apply} />
+        <LetterSpacingField snapshot={pinSnapshot} apply={apply} />
+        <TextAlignField snapshot={pinSnapshot} apply={apply} />
+      </Section>
 
-            <Section title="Typography">
-              <FontSizeField snapshot={pinSnapshot} apply={apply} />
-              <FontWeightField snapshot={pinSnapshot} apply={apply} />
-              <StyleToggles snapshot={pinSnapshot} apply={apply} />
-              <LineHeightField snapshot={pinSnapshot} apply={apply} />
-              <LetterSpacingField snapshot={pinSnapshot} apply={apply} />
-              <TextAlignField snapshot={pinSnapshot} apply={apply} />
-            </Section>
+      <Separator />
 
-            <Separator />
+      <Section title="Color">
+        <ColorField
+          label="Text"
+          value={pinSnapshot.color}
+          onChange={(v) => apply([{ kind: 'set-style', key: 'color', value: v }])}
+          clearable={false}
+        />
+        <ColorField
+          label="Background"
+          value={pinSnapshot.backgroundColor ?? '#ffffff'}
+          dim={!pinSnapshot.backgroundColor}
+          onChange={(v) => apply([{ kind: 'set-style', key: 'backgroundColor', value: v }])}
+          onClear={() => apply([{ kind: 'set-style', key: 'backgroundColor', value: null }])}
+          clearable
+        />
+      </Section>
 
-            <Section title="Color">
-              <ColorField
-                label="Text"
-                value={pinSnapshot.color}
-                onChange={(v) => apply([{ kind: 'set-style', key: 'color', value: v }])}
-                clearable={false}
-              />
-              <ColorField
-                label="Background"
-                value={pinSnapshot.backgroundColor ?? '#ffffff'}
-                dim={!pinSnapshot.backgroundColor}
-                onChange={(v) => apply([{ kind: 'set-style', key: 'backgroundColor', value: v }])}
-                onClear={() => apply([{ kind: 'set-style', key: 'backgroundColor', value: null }])}
-                clearable
-              />
-            </Section>
+      {pinSnapshot.imageSrc !== null && (
+        <>
+          <Separator />
+          <Section title="Image">
+            <ImageField slideId={slideId} src={pinSnapshot.imageSrc} apply={apply} />
+          </Section>
+        </>
+      )}
 
-            {pinSnapshot.imageSrc !== null && (
-              <>
-                <Separator />
-                <Section title="Image">
-                  <ImageField slideId={slideId} src={pinSnapshot.imageSrc} apply={apply} />
-                </Section>
-              </>
-            )}
+      <Separator />
 
-            <Separator />
-
-            <div className="mt-auto">
-              <CommentsSection
-                comments={comments}
-                selected={pinSelected}
-                onAdd={add}
-                onRemove={remove}
-              />
-            </div>
-          </div>
-        </ScrollArea>
+      <div className="mt-auto">
+        <CommentsSection comments={comments} selected={pinSelected} onAdd={add} onRemove={remove} />
       </div>
-    </aside>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="px-4 py-4">
-      <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-        {title}
-      </div>
-      <div className="flex flex-col gap-3">{children}</div>
-    </section>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="grid grid-cols-[80px_1fr] items-center gap-3">
-      <Label className="text-[11px] font-normal text-muted-foreground">{label}</Label>
-      <div className="flex min-w-0 items-center gap-2">{children}</div>
-    </div>
+    </PanelShell>
   );
 }
 
@@ -601,40 +554,6 @@ function ColorField({
         </Button>
       )}
     </Field>
-  );
-}
-
-function NumberField({
-  value,
-  onChange,
-  min,
-  max,
-  step = 1,
-  suffix,
-}: {
-  value: number;
-  onChange: (n: number) => void;
-  min?: number;
-  max?: number;
-  step?: number;
-  suffix?: string;
-}) {
-  return (
-    <div className="flex h-8 shrink-0 items-center rounded-md border bg-background pr-2 shadow-xs focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50">
-      <input
-        type="number"
-        value={value}
-        onChange={(e) => {
-          const n = Number(e.target.value);
-          if (Number.isFinite(n)) onChange(n);
-        }}
-        min={min}
-        max={max}
-        step={step}
-        className="h-full w-12 bg-transparent px-2 text-right text-[11px] tabular-nums outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-      />
-      {suffix && <span className="text-[10px] text-muted-foreground">{suffix}</span>}
-    </div>
   );
 }
 
