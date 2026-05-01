@@ -42,18 +42,22 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
         <>
           <div className="flex min-w-0 items-center gap-2">
             <Palette className="size-3.5 text-muted-foreground" />
-            <span className="text-xs font-semibold tracking-tight">Design</span>
+            <span className="font-heading text-[12px] font-semibold tracking-tight">
+              Design tokens
+            </span>
             {!exists && (
-              <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                not added
+              <span className="rounded-[3px] border border-hairline bg-muted/60 px-1.5 py-px font-mono text-[9.5px] uppercase tracking-[0.08em] text-muted-foreground">
+                draft
               </span>
             )}
-            {dirty && <span className="size-1.5 rounded-full bg-amber-500" aria-hidden />}
+            {dirty && (
+              <span className="size-1.5 rounded-full bg-brand" title="Unsaved" aria-hidden />
+            )}
           </div>
           <Button
             variant="ghost"
-            size="icon"
-            className="size-7 text-muted-foreground hover:text-foreground"
+            size="icon-sm"
+            className="text-muted-foreground hover:text-foreground"
             onClick={onClose}
             aria-label="Close design panel"
           >
@@ -63,8 +67,9 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
       }
       banner={
         warning && (
-          <div className="border-b bg-amber-50 px-3 py-2 text-[11px] text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-            {warning}
+          <div className="flex gap-2 border-b border-hairline bg-[oklch(0.97_0.04_85)] px-3 py-2 text-[11px] leading-relaxed text-[oklch(0.35_0.08_45)] dark:bg-[oklch(0.25_0.04_60)] dark:text-[oklch(0.85_0.08_85)]">
+            <span aria-hidden className="mt-0.5 size-1.5 shrink-0 rounded-full bg-brand" />
+            <span>{warning}</span>
           </div>
         )
       }
@@ -178,9 +183,15 @@ export function DesignToggleButton({
 }) {
   if (import.meta.env.PROD) return null;
   return (
-    <Button size="sm" variant={active ? 'default' : 'outline'} onClick={onToggle} data-design-ui>
-      <Palette className="size-4" />
-      Design
+    <Button
+      size="sm"
+      variant={active ? 'default' : 'ghost'}
+      onClick={onToggle}
+      data-design-ui
+      title="Design tokens"
+    >
+      <Palette className="size-3.5" />
+      <span className="hidden md:inline">Design</span>
     </Button>
   );
 }

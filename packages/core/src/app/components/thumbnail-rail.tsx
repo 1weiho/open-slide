@@ -13,7 +13,7 @@ type Props = {
   onSelect: (index: number) => void;
 };
 
-const THUMB_WIDTH = 200;
+const THUMB_WIDTH = 184;
 const THUMB_SCALE = THUMB_WIDTH / CANVAS_WIDTH;
 const THUMB_HEIGHT = CANVAS_HEIGHT * THUMB_SCALE;
 
@@ -26,8 +26,12 @@ export function ThumbnailRail({ pages, design, current, onSelect }: Props) {
   }, [current]);
 
   return (
-    <ScrollArea className="h-full border-r bg-card">
-      <aside className="flex flex-col gap-2.5 p-3">
+    <ScrollArea className="h-full border-r border-hairline bg-sidebar">
+      <aside className="flex flex-col gap-2 px-3 py-3">
+        <div className="flex items-baseline justify-between px-1 pb-1">
+          <span className="eyebrow">Pages</span>
+          <span className="folio">{pages.length.toString().padStart(2, '0')}</span>
+        </div>
         {pages.map((PageComp, i) => {
           const active = i === current;
           return (
@@ -40,26 +44,37 @@ export function ThumbnailRail({ pages, design, current, onSelect }: Props) {
               aria-label={`Go to page ${i + 1}`}
               aria-current={active ? 'true' : undefined}
               className={cn(
-                'flex items-center gap-2.5 rounded-lg border-2 border-transparent p-1.5 text-left transition-colors',
-                'hover:bg-muted',
-                active && 'border-primary bg-primary/5',
+                'group/thumb flex items-start gap-2.5 rounded-[6px] p-1.5 text-left transition-colors',
+                'hover:bg-muted/60',
+                active && 'bg-muted',
               )}
             >
               <span
                 className={cn(
-                  'w-5 shrink-0 text-right text-xs tabular-nums text-muted-foreground',
-                  active && 'font-semibold text-primary',
+                  'mt-1.5 w-7 shrink-0 text-right font-mono text-[10px] font-medium tracking-[0.06em] tabular-nums uppercase',
+                  active ? 'text-brand' : 'text-muted-foreground/70',
                 )}
               >
-                {i + 1}
+                {(i + 1).toString().padStart(2, '0')}
               </span>
               <div
-                className="relative shrink-0 overflow-hidden rounded border shadow-sm"
+                className={cn(
+                  'relative shrink-0 overflow-hidden rounded-[4px] border bg-card transition-all',
+                  active
+                    ? 'border-brand shadow-[0_0_0_1px_var(--brand)]'
+                    : 'border-hairline group-hover/thumb:border-foreground/25',
+                )}
                 style={{ width: THUMB_WIDTH, height: THUMB_HEIGHT }}
               >
                 <SlideCanvas scale={THUMB_SCALE} center={false} flat design={design}>
                   <PageComp />
                 </SlideCanvas>
+                {active && (
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-y-0 left-0 w-[2px] bg-brand"
+                  />
+                )}
               </div>
             </button>
           );

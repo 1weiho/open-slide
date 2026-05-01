@@ -2,7 +2,6 @@ import { FolderInput, FolderPlus, MoreHorizontal, Pencil, Trash2 } from 'lucide-
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -19,9 +18,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useFolders } from '@/lib/folders';
 import { cn } from '@/lib/utils';
-import { SlideCanvas } from '../components/slide-canvas';
 import { FolderIconChip, SLIDE_DND_MIME } from '../components/sidebar/folder-item';
 import { DRAFT_ID, Sidebar } from '../components/sidebar/sidebar';
+import { SlideCanvas } from '../components/slide-canvas';
 import type { Folder, FolderIcon, SlideModule } from '../lib/sdk';
 import { loadSlide, slideIds } from '../lib/slides';
 
@@ -67,9 +66,10 @@ export function Home() {
 
   const title = selectedFolder?.name ?? 'Draft';
   const headerIcon = selectedFolder?.icon ?? { type: 'emoji' as const, value: '📝' };
+  const isDraft = selectedId === DRAFT_ID;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden bg-background text-foreground">
       <div className="hidden md:block">
         <Sidebar
           folders={manifest.folders}
@@ -88,9 +88,12 @@ export function Home() {
         />
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
-        <div className="border-b bg-card/40 px-4 py-3 md:hidden">
-          <div className="mb-2 font-heading text-lg font-bold tracking-tight">open-slide</div>
+      <div className="paper relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-canvas">
+        {/* Mobile chrome */}
+        <div className="flex items-center justify-between border-b border-hairline bg-sidebar px-4 py-3 md:hidden">
+          <h1 className="font-heading text-lg font-bold tracking-tight">open-slide</h1>
+        </div>
+        <div className="border-b border-hairline bg-sidebar px-4 py-2 md:hidden">
           <div className="flex gap-2 overflow-x-auto pb-1">
             <MobileFolderPill
               icon={{ type: 'emoji', value: '📝' }}
@@ -112,19 +115,23 @@ export function Home() {
           </div>
         </div>
 
-        <div className="mx-auto w-full max-w-6xl px-4 py-6 md:px-8 md:py-12">
-          <header className="mb-6 flex items-center gap-3 md:mb-8">
-            <FolderIconChip icon={headerIcon} className="size-6 text-xl" />
-            <h2 className="font-heading text-xl font-bold tracking-tight md:text-2xl">{title}</h2>
-            <span className="text-sm text-muted-foreground">
-              {visibleSlides.length} slide{visibleSlides.length === 1 ? '' : 's'}
-            </span>
+        <div className="mx-auto w-full max-w-[1180px] px-5 py-8 md:px-10 md:py-12">
+          <header className="mb-8 md:mb-12">
+            <div className="flex items-center gap-3">
+              <FolderIconChip icon={headerIcon} className="size-7 text-2xl" />
+              <h1 className="font-heading text-[32px] font-semibold leading-[1.05] tracking-[-0.025em] md:text-[44px]">
+                {title}
+              </h1>
+              <span className="folio ml-1 self-end pb-2">
+                {visibleSlides.length.toString().padStart(2, '0')}
+              </span>
+            </div>
           </header>
 
           {visibleSlides.length === 0 ? (
-            <EmptyState isDraft={selectedId === DRAFT_ID} folderName={selectedFolder?.name} />
+            <EmptyState isDraft={isDraft} folderName={selectedFolder?.name} />
           ) : (
-            <ul className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4 md:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] md:gap-5">
+            <ul className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-x-6 gap-y-9 md:grid-cols-[repeat(auto-fill,minmax(300px,1fr))]">
               {visibleSlides.map((id) => (
                 <li key={id}>
                   <SlideCard
@@ -162,35 +169,39 @@ function MobileFolderPill({
     <button
       type="button"
       onClick={onClick}
-      className={
-        'flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ' +
-        (active
-          ? 'border-primary bg-primary/10 text-primary'
-          : 'border-border bg-background text-muted-foreground hover:text-foreground')
-      }
+      className={cn(
+        'flex shrink-0 items-center gap-1.5 rounded-[5px] border px-2.5 py-1 text-[11.5px] font-medium transition-colors',
+        active
+          ? 'border-foreground/40 bg-foreground text-background'
+          : 'border-border bg-card text-muted-foreground hover:text-foreground',
+      )}
     >
-      <FolderIconChip icon={icon} className="size-4 text-sm" />
+      <FolderIconChip icon={icon} className="size-3.5 text-sm" />
       <span className="truncate max-w-[8rem]">{label}</span>
-      <span className="tabular-nums opacity-70">{count}</span>
+      <span className="folio nums">{count.toString().padStart(2, '0')}</span>
     </button>
   );
 }
 
 function EmptyState({ isDraft, folderName }: { isDraft: boolean; folderName?: string }) {
   return (
-    <Card className="border-dashed">
-      <CardContent className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground">
-        <FolderPlus className="size-8 opacity-50" />
+    <div className="rounded-[10px] border border-dashed border-border bg-card/60 px-8 py-20">
+      <div className="mx-auto flex max-w-md flex-col items-center text-center">
+        <div className="flex size-12 items-center justify-center rounded-full border border-hairline bg-card text-muted-foreground">
+          <FolderPlus className="size-5" />
+        </div>
         {isDraft ? (
           <>
-            <p>No slides yet.</p>
-            <p className="text-sm">
+            <p className="mt-4 font-heading text-[15px] font-semibold tracking-tight">
+              No slides yet
+            </p>
+            <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
               Create{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+              <code className="rounded-[4px] bg-muted px-1.5 py-0.5 font-mono text-[11.5px] text-foreground">
                 slides/my-slide/index.tsx
               </code>{' '}
-              with{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+              that{' '}
+              <code className="rounded-[4px] bg-muted px-1.5 py-0.5 font-mono text-[11.5px] text-foreground">
                 export default [Page1, Page2]
               </code>
               .
@@ -198,12 +209,16 @@ function EmptyState({ isDraft, folderName }: { isDraft: boolean; folderName?: st
           </>
         ) : (
           <>
-            <p>No slides in {folderName ?? 'this folder'}.</p>
-            <p className="text-sm">Drag a slide from Draft into the sidebar folder.</p>
+            <p className="mt-4 font-heading text-[15px] font-semibold tracking-tight">
+              {folderName ?? 'This folder'} is empty
+            </p>
+            <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
+              Drag a slide from Draft into this folder in the sidebar.
+            </p>
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -259,25 +274,35 @@ function SlideCard({
       >
         <Link
           to={`/s/${id}`}
-          className="block overflow-hidden rounded-xl bg-card text-card-foreground ring-1 ring-foreground/10 transition-all duration-200 hover:-translate-y-0.5 hover:ring-foreground/20 hover:shadow-lg"
+          className={cn(
+            'block transition-transform duration-200 hover:-translate-y-1 focus-visible:outline-none',
+          )}
         >
-          <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-indigo-50 to-violet-50">
+          {/* Slide thumb — tight border, grey baseboard, no shadcn rounded-xl */}
+          <div className="relative aspect-video overflow-hidden rounded-[6px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] transition-shadow group-hover:shadow-floating">
             {FirstPage ? (
               <SlideCanvas flat design={slide?.design}>
                 <FirstPage />
               </SlideCanvas>
             ) : (
-              <div className="grid h-full w-full place-items-center text-xs tracking-widest uppercase text-muted-foreground/60">
+              <div className="grid h-full w-full place-items-center text-[10px] tracking-[0.16em] uppercase text-muted-foreground/60">
                 Loading
               </div>
             )}
           </div>
-          <div className="flex items-baseline justify-between gap-3 px-4 py-3">
-            <span className="truncate text-sm font-medium">{displayTitle}</span>
+
+          <div className="mt-3 flex items-baseline gap-2">
+            <h3 className="min-w-0 truncate font-heading text-[14px] font-medium tracking-tight">
+              {displayTitle}
+            </h3>
             {pageCount > 0 && (
-              <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                {pageCount} page{pageCount === 1 ? '' : 's'}
-              </span>
+              <>
+                <span className="h-px min-w-3 flex-1 translate-y-[-3px] bg-hairline" aria-hidden />
+                <span className="folio shrink-0">
+                  {pageCount.toString().padStart(2, '0')}
+                  <span className="opacity-40"> pp</span>
+                </span>
+              </>
             )}
           </div>
         </Link>
@@ -292,10 +317,10 @@ function SlideCard({
                     e.stopPropagation();
                     e.preventDefault();
                   }}
-                  className="flex size-7 items-center justify-center rounded-md bg-background/80 text-foreground shadow-sm ring-1 ring-foreground/10 opacity-0 backdrop-blur transition-opacity hover:bg-background group-hover:opacity-100 aria-expanded:opacity-100"
+                  className="flex size-7 items-center justify-center rounded-[5px] bg-card/90 text-foreground shadow-edge ring-1 ring-border opacity-0 backdrop-blur transition-opacity hover:bg-card group-hover:opacity-100 aria-expanded:opacity-100"
                   aria-label="Slide actions"
                 >
-                  <MoreHorizontal className="size-4" />
+                  <MoreHorizontal className="size-3.5" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-[160px]">
@@ -305,7 +330,7 @@ function SlideCard({
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setDialog('move')}>
                   <FolderInput />
-                  Move to folder
+                  Move to folder…
                 </DropdownMenuItem>
                 <DropdownMenuItem variant="destructive" onSelect={() => setDialog('delete')}>
                   <Trash2 />
@@ -394,6 +419,7 @@ function RenameDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
+          <span className="eyebrow">Rename</span>
           <DialogTitle>Rename slide</DialogTitle>
           <DialogDescription>Give this slide a new display name.</DialogDescription>
         </DialogHeader>
@@ -409,10 +435,10 @@ function RenameDialog({
           }}
           maxLength={80}
           placeholder="Slide name"
-          className="h-9 w-full rounded-md border bg-background px-3 text-sm outline-none ring-ring/40 focus:ring-2"
+          className="h-9 w-full rounded-[6px] border border-border bg-background px-3 text-[13px] outline-none focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30"
         />
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button size="sm" disabled={submitting} onClick={submit}>
@@ -466,12 +492,13 @@ function MoveDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
+          <span className="eyebrow">Move</span>
           <DialogTitle>Move slide</DialogTitle>
           <DialogDescription>
             Choose a folder for <span className="font-medium text-foreground">{slideName}</span>.
           </DialogDescription>
         </DialogHeader>
-        <div className="max-h-[320px] overflow-y-auto rounded-md border">
+        <div className="max-h-[320px] overflow-y-auto rounded-[6px] border border-border bg-background">
           <FolderOption
             icon={{ type: 'emoji', value: '📝' }}
             label="Draft"
@@ -489,7 +516,7 @@ function MoveDialog({
           ))}
         </div>
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button size="sm" disabled={submitting || selected === currentFolderId} onClick={submit}>
@@ -517,13 +544,18 @@ function FolderOption({
       type="button"
       onClick={onClick}
       className={cn(
-        'flex w-full items-center gap-2 border-b px-3 py-2 text-left text-sm last:border-b-0 transition-colors',
-        active ? 'bg-primary/10 text-primary' : 'hover:bg-muted/60',
+        'flex w-full items-center gap-2 border-b border-hairline px-3 py-2 text-left text-[13px] transition-colors last:border-b-0',
+        active ? 'bg-muted text-foreground' : 'hover:bg-muted/60',
       )}
     >
       <FolderIconChip icon={icon} />
       <span className="truncate">{label}</span>
-      {active && <span className="ml-auto text-xs tracking-wide opacity-70">Selected</span>}
+      {active && (
+        <span className="ml-auto inline-flex items-center gap-1 text-[10.5px] text-brand">
+          <span className="inline-block size-1 rounded-full bg-brand" aria-hidden />
+          Selected
+        </span>
+      )}
     </button>
   );
 }
@@ -558,6 +590,7 @@ function DeleteDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
+          <span className="eyebrow text-destructive/80">Destructive</span>
           <DialogTitle>Delete slide?</DialogTitle>
           <DialogDescription>
             This permanently removes{' '}
@@ -566,7 +599,7 @@ function DeleteDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button variant="destructive" size="sm" disabled={submitting} onClick={confirm}>

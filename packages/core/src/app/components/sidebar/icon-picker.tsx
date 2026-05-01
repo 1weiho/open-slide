@@ -1,16 +1,19 @@
 import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react';
-import type { FolderIcon } from '@/lib/sdk';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { FolderIcon } from '@/lib/sdk';
 
+// Editorial palette — restrained warm/earth tones, no shadcn defaults
+// (no #8b5cf6 violet, no #3b82f6 blue, etc.). Picked to coexist with the
+// vermillion brand accent without shouting over it.
 export const PRESET_COLORS = [
-  '#8b5cf6',
-  '#6366f1',
-  '#3b82f6',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444',
-  '#ec4899',
-  '#64748b',
+  '#c0392b', // vermillion
+  '#b8743e', // ochre
+  '#6f7a3a', // olive
+  '#2f6a4f', // forest
+  '#3a5a7c', // ink blue
+  '#6b4675', // plum
+  '#a3543b', // terracotta
+  '#3a3a3a', // graphite
 ];
 
 export function IconPicker({
@@ -47,7 +50,7 @@ export function IconPicker({
               key={c}
               type="button"
               onClick={() => onChange({ type: 'color', value: c })}
-              className="size-6 rounded-md ring-1 ring-black/10 transition-transform hover:scale-110"
+              className="size-6 rounded-[4px] ring-1 ring-foreground/10 shadow-[inset_0_1px_0_oklch(1_0_0/0.18)] transition-transform hover:scale-110"
               style={{ background: c }}
               aria-label={c}
             />

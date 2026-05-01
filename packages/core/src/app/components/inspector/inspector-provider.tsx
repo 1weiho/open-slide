@@ -452,9 +452,15 @@ export function InspectToggleButton() {
   const { active, toggle } = useInspector();
   if (import.meta.env.PROD) return null;
   return (
-    <Button size="sm" variant={active ? 'default' : 'outline'} onClick={toggle} data-inspector-ui>
-      <Crosshair className="size-4" />
-      Inspect
+    <Button
+      size="sm"
+      variant={active ? 'default' : 'ghost'}
+      onClick={toggle}
+      data-inspector-ui
+      title="Inspect"
+    >
+      <Crosshair className="size-3.5" />
+      <span className="hidden md:inline">Inspect</span>
     </Button>
   );
 }

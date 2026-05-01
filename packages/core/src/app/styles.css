@@ -5,9 +5,22 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * "Atelier" design language for open-slide core.
+ *
+ * Editorial / pro-tool aesthetic: warm paper, ink foreground, vermillion
+ * accent, hairline rules, serif display counterpointing a tight Geist UI.
+ * Aim: feels like a designer's studio, not a SaaS dashboard. Avoids the
+ * shadcn defaults (rounded-lg everywhere, cool grays, soft shadows).
+ */
 @theme inline {
-  --font-heading: var(--font-sans);
-  --font-sans: "Geist Variable", sans-serif;
+  --font-sans: "Geist Variable", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: "Geist Variable", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-serif:
+    ui-serif, "New York", "Iowan Old Style", "Apple Garamond", "Big Caslon", "Charter", Georgia,
+    serif;
+  --font-mono: ui-monospace, "JetBrains Mono", "SF Mono", "Menlo", "Cascadia Code", monospace;
+
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -24,6 +37,7 @@
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
+  --color-hairline: var(--hairline);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -37,103 +51,216 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-canvas: var(--canvas);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-soft: var(--brand-soft);
+
   --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
+  --radius-md: calc(var(--radius) * 0.85);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  --shadow-edge: 0 0 0 0.5px oklch(0 0 0 / 0.06), 0 1px 0 oklch(0 0 0 / 0.025);
+  --shadow-floating:
+    0 0 0 0.5px oklch(0 0 0 / 0.08), 0 1px 1px oklch(0 0 0 / 0.04),
+    0 4px 16px -2px oklch(0 0 0 / 0.08);
+  --shadow-overlay:
+    0 0 0 0.5px oklch(0 0 0 / 0.1), 0 8px 28px -4px oklch(0 0 0 / 0.18),
+    0 24px 64px -12px oklch(0 0 0 / 0.2);
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* Warm paper, ink foreground. Not pure white / pure black — those read as
+     "default browser"; the slight warmth gives the surface a quiet voice. */
+  --background: oklch(0.985 0.004 75);
+  --foreground: oklch(0.2 0.012 60);
+  --canvas: oklch(0.974 0.005 75);
+
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --card-foreground: oklch(0.2 0.012 60);
+  --popover: oklch(0.998 0.002 75);
+  --popover-foreground: oklch(0.2 0.012 60);
+
+  --primary: oklch(0.215 0.012 60);
+  --primary-foreground: oklch(0.985 0.004 75);
+  --secondary: oklch(0.96 0.006 75);
+  --secondary-foreground: oklch(0.215 0.012 60);
+  --muted: oklch(0.955 0.008 75);
+  --muted-foreground: oklch(0.485 0.012 60);
+  --accent: oklch(0.945 0.012 75);
+  --accent-foreground: oklch(0.215 0.012 60);
+  --destructive: oklch(0.55 0.21 27);
+
+  --border: oklch(0.895 0.008 70);
+  --hairline: oklch(0.86 0.008 70);
+  --input: oklch(0.91 0.008 70);
+  --ring: oklch(0.55 0.18 28);
+
+  /* Vermillion — refined editorial red. Single accent across the app;
+     restraint is the point. */
+  --brand: oklch(0.555 0.185 28);
+  --brand-foreground: oklch(0.985 0.004 75);
+  --brand-soft: oklch(0.555 0.185 28 / 0.1);
+
+  --chart-1: oklch(0.555 0.185 28);
+  --chart-2: oklch(0.55 0.1 60);
+  --chart-3: oklch(0.45 0.06 245);
+  --chart-4: oklch(0.55 0.12 160);
+  --chart-5: oklch(0.4 0.04 60);
+
+  /* Tight, considered radius — drops the trendy 10px squish for 6px crisp. */
+  --radius: 0.375rem;
+
+  --sidebar: oklch(0.972 0.005 75);
+  --sidebar-foreground: oklch(0.215 0.012 60);
+  --sidebar-primary: oklch(0.215 0.012 60);
+  --sidebar-primary-foreground: oklch(0.985 0.004 75);
+  --sidebar-accent: oklch(0.94 0.01 75);
+  --sidebar-accent-foreground: oklch(0.215 0.012 60);
+  --sidebar-border: oklch(0.895 0.008 70);
+  --sidebar-ring: oklch(0.55 0.18 28);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: oklch(0.155 0.005 70);
+  --foreground: oklch(0.945 0.005 80);
+  --canvas: oklch(0.135 0.005 70);
+
+  --card: oklch(0.195 0.006 70);
+  --card-foreground: oklch(0.945 0.005 80);
+  --popover: oklch(0.21 0.006 70);
+  --popover-foreground: oklch(0.945 0.005 80);
+
+  --primary: oklch(0.94 0.005 80);
+  --primary-foreground: oklch(0.18 0.008 70);
+  --secondary: oklch(0.245 0.006 70);
+  --secondary-foreground: oklch(0.945 0.005 80);
+  --muted: oklch(0.235 0.006 70);
+  --muted-foreground: oklch(0.68 0.008 75);
+  --accent: oklch(0.27 0.008 70);
+  --accent-foreground: oklch(0.945 0.005 80);
+  --destructive: oklch(0.68 0.2 25);
+
+  --border: oklch(1 0 0 / 0.1);
+  --hairline: oklch(1 0 0 / 0.06);
+  --input: oklch(1 0 0 / 0.13);
+  --ring: oklch(0.62 0.18 28);
+
+  --brand: oklch(0.66 0.19 28);
+  --brand-foreground: oklch(0.155 0.005 70);
+  --brand-soft: oklch(0.66 0.19 28 / 0.18);
+
+  --chart-1: oklch(0.66 0.19 28);
+  --chart-2: oklch(0.7 0.1 60);
+  --chart-3: oklch(0.65 0.08 245);
+  --chart-4: oklch(0.65 0.12 160);
+  --chart-5: oklch(0.6 0.04 60);
+
+  --sidebar: oklch(0.18 0.006 70);
+  --sidebar-foreground: oklch(0.945 0.005 80);
+  --sidebar-primary: oklch(0.94 0.005 80);
+  --sidebar-primary-foreground: oklch(0.18 0.008 70);
+  --sidebar-accent: oklch(0.265 0.008 70);
+  --sidebar-accent-foreground: oklch(0.945 0.005 80);
+  --sidebar-border: oklch(1 0 0 / 0.1);
+  --sidebar-ring: oklch(0.62 0.18 28);
+}
+
+/* Tabular numerics — pages, counts, hex values, slider readouts.
+   Declared as a Tailwind v4 `@utility` so it can be `@apply`d (e.g. by
+   .folio below) and used as a className token. */
+@utility nums {
+  font-feature-settings:
+    "tnum" on,
+    "cv11" on;
+  font-variant-numeric: tabular-nums;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
     @apply font-sans;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings:
+      "ss01" on,
+      "cv11" on,
+      "calt" on;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings:
+      "ss01" on,
+      "cv11" on,
+      "calt" on,
+      "tnum" off;
+    letter-spacing: -0.005em;
+  }
+  ::selection {
+    background: var(--brand-soft);
+    color: var(--foreground);
+  }
+}
+
+@layer components {
+  /*
+   * Eyebrow label — the single typographic gesture used for *every* section
+   * label across the app. Tracked-out small caps in muted ink.
+   */
+  .eyebrow {
+    @apply font-sans text-[10px] font-semibold uppercase text-muted-foreground;
+    letter-spacing: 0.14em;
+  }
+
+  /* Hairline divider — 0.5px on retina, snaps to 1px elsewhere. */
+  .hairline {
+    background: var(--hairline);
+  }
+
+  /* Subtle paper texture for "studio" surfaces (sidebar, gallery bg).
+     Pure-CSS noise via SVG; cheap, dark-mode aware via mix-blend. */
+  .paper {
+    position: relative;
+    isolation: isolate;
+  }
+  .paper::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='3'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    opacity: 0.025;
+    pointer-events: none;
+    z-index: 0;
+    mix-blend-mode: multiply;
+  }
+  .dark .paper::before {
+    opacity: 0.05;
+    mix-blend-mode: screen;
+  }
+  .paper > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Numeric folio-style page count. */
+  .folio {
+    @apply nums font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground;
   }
 }
 
 /*
- * Comment input cue.
- * One-shot perimeter sheen + soft halo so the user notices this is the
- * agent input field on first open. Plays once per selection, then settles.
- * Restrained warm/cool palette — avoids the canonical AI purple-cyan look.
+ * Comment input cue — kept from the original design but retoned to match
+ * the new palette (warm vermillion + amber instead of the AI-classic
+ * blue/violet halo). Plays once on first open, then settles.
  */
 @property --comment-cue-angle {
   syntax: "<angle>";
@@ -156,9 +283,9 @@
     from var(--comment-cue-angle),
     transparent 0deg,
     transparent 250deg,
-    hsla(38, 92%, 70%, 0.55) 295deg,
-    hsla(220, 90%, 78%, 0.75) 325deg,
-    hsla(265, 85%, 78%, 0.55) 350deg,
+    oklch(0.78 0.14 60 / 0.55) 295deg,
+    oklch(0.62 0.2 28 / 0.85) 325deg,
+    oklch(0.78 0.14 60 / 0.55) 350deg,
     transparent 360deg
   );
   -webkit-mask:
@@ -181,8 +308,8 @@
   inset: -10px;
   border-radius: calc(var(--radius-md) + 10px);
   background:
-    radial-gradient(80% 60% at 30% 50%, hsla(220, 90%, 70%, 0.18), transparent 70%),
-    radial-gradient(70% 60% at 75% 60%, hsla(38, 92%, 65%, 0.14), transparent 70%);
+    radial-gradient(80% 60% at 30% 50%, oklch(0.62 0.2 28 / 0.18), transparent 70%),
+    radial-gradient(70% 60% at 75% 60%, oklch(0.78 0.14 60 / 0.16), transparent 70%);
   filter: blur(14px);
   opacity: 0;
   z-index: -1;
@@ -226,5 +353,37 @@
   .comment-cue::before,
   .comment-cue::after {
     animation: none;
+  }
+}
+
+/*
+ * Custom scrollbar — slim, ink-on-paper. Removes the chunky default that
+ * fights the calm surfaces.
+ */
+@media (pointer: fine) {
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: oklch(0 0 0 / 0.1);
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 999px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: oklch(0 0 0 / 0.18);
+    background-clip: content-box;
+  }
+  .dark *::-webkit-scrollbar-thumb {
+    background: oklch(1 0 0 / 0.1);
+    background-clip: content-box;
+  }
+  .dark *::-webkit-scrollbar-thumb:hover {
+    background: oklch(1 0 0 / 0.18);
+    background-clip: content-box;
   }
 }

@@ -47,8 +47,8 @@ export function Sidebar({
   };
 
   return (
-    <aside className="flex h-full w-[17rem] shrink-0 flex-col border-r bg-card/40">
-      <div className="flex items-center justify-between px-5 pt-6 pb-3">
+    <aside className="paper relative flex h-full w-[16.5rem] shrink-0 flex-col border-r border-hairline bg-sidebar text-sidebar-foreground">
+      <div className="flex items-center justify-between px-4 pt-5 pb-4">
         <h1 className="font-heading text-lg font-bold tracking-tight">open-slide</h1>
         <ThemeToggle />
       </div>
@@ -63,8 +63,10 @@ export function Sidebar({
         />
       </div>
 
-      <div className="mt-4 px-4 pb-1 text-xs font-medium tracking-wide text-muted-foreground/70">
-        FOLDERS
+      <div className="mt-5 flex items-center gap-2 px-4 pb-1.5">
+        <span className="eyebrow">Folders</span>
+        <span className="h-px flex-1 bg-hairline" aria-hidden />
+        <span className="folio">{folders.length.toString().padStart(2, '0')}</span>
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 pb-2">
@@ -87,7 +89,8 @@ export function Sidebar({
 
         {import.meta.env.DEV &&
           (creating ? (
-            <div className="mt-1 flex items-center gap-2 rounded-md border border-dashed bg-background px-2 py-1.5">
+            <div className="mt-1 flex items-center gap-2 rounded-[5px] border border-dashed border-foreground/30 bg-card px-2 py-1.5">
+              <span className="size-2 shrink-0 rounded-[2px] bg-brand" aria-hidden />
               <input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
@@ -101,17 +104,17 @@ export function Sidebar({
                 }}
                 placeholder="Folder name"
                 maxLength={40}
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+                className="min-w-0 flex-1 bg-transparent text-[12.5px] outline-none placeholder:text-muted-foreground/60"
               />
             </div>
           ) : (
             <button
               type="button"
               onClick={() => setCreating(true)}
-              className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border/70 px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:border-border hover:bg-muted/40 hover:text-foreground"
+              className="mt-1 flex w-full items-center gap-2 rounded-[5px] px-2 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
             >
               <Plus className="size-3.5" />
-              Add folder
+              <span>New folder</span>
             </button>
           ))}
       </div>

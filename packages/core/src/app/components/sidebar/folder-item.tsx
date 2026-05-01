@@ -1,14 +1,14 @@
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import type { Folder, FolderIcon } from '@/lib/sdk';
-import { cn } from '@/lib/utils';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import type { Folder, FolderIcon } from '@/lib/sdk';
+import { cn } from '@/lib/utils';
 import { IconPicker } from './icon-picker';
 
 export const SLIDE_DND_MIME = 'application/x-slide-id';
@@ -18,7 +18,7 @@ export function FolderIconChip({ icon, className }: { icon: FolderIcon; classNam
     return (
       <span
         className={cn(
-          'inline-flex size-5 items-center justify-center text-base leading-none',
+          'inline-flex size-5 items-center justify-center text-[15px] leading-none',
           className,
         )}
       >
@@ -28,7 +28,10 @@ export function FolderIconChip({ icon, className }: { icon: FolderIcon; classNam
   }
   return (
     <span
-      className={cn('inline-block size-4 rounded-[4px] ring-1 ring-black/10', className)}
+      className={cn(
+        'inline-block size-3 rounded-[3px] ring-1 ring-foreground/15 shadow-[inset_0_1px_0_oklch(1_0_0/0.18)]',
+        className,
+      )}
       style={{ background: icon.value }}
     />
   );
@@ -94,9 +97,13 @@ export function FolderItem({
     // biome-ignore lint/a11y/noStaticElementInteractions: drag-and-drop target wraps interactive children
     <div
       className={cn(
-        'group relative flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
-        selected ? 'bg-muted text-foreground' : 'text-foreground/80 hover:bg-muted/60',
-        dragOver && 'ring-2 ring-primary ring-offset-1 ring-offset-background',
+        'group relative flex items-center gap-2.5 rounded-[5px] px-2 py-[5px] text-[12.5px] transition-colors',
+        // Editorial selected state: subtle warm tint + a thin vermillion
+        // ink-mark on the leading edge. Avoids the heavy "filled pill" look.
+        selected
+          ? 'bg-muted text-foreground before:absolute before:inset-y-1.5 before:-left-0.5 before:w-[2px] before:rounded-full before:bg-brand'
+          : 'text-foreground/70 hover:bg-muted/60 hover:text-foreground',
+        dragOver && 'ring-1 ring-brand ring-offset-1 ring-offset-sidebar',
       )}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -137,7 +144,7 @@ export function FolderItem({
             }
           }}
           maxLength={40}
-          className="min-w-0 flex-1 rounded-sm bg-background px-1 text-sm outline-none ring-1 ring-ring/40"
+          className="min-w-0 flex-1 rounded-[3px] bg-card px-1 text-[12.5px] outline-none ring-1 ring-foreground/20"
         />
       ) : (
         <button type="button" onClick={onSelect} className="min-w-0 flex-1 truncate text-left">
@@ -145,13 +152,8 @@ export function FolderItem({
         </button>
       )}
 
-      <span
-        className={cn(
-          'shrink-0 text-xs tabular-nums text-muted-foreground',
-          count === 0 && 'opacity-0 group-hover:opacity-100',
-        )}
-      >
-        {count}
+      <span className={cn('folio shrink-0', count === 0 && 'opacity-0 group-hover:opacity-100')}>
+        {count.toString().padStart(2, '0')}
       </span>
 
       {row.kind === 'folder' && import.meta.env.DEV && (
@@ -160,7 +162,7 @@ export function FolderItem({
             <button
               type="button"
               onClick={(e) => e.stopPropagation()}
-              className="size-5 shrink-0 rounded opacity-0 transition-opacity hover:bg-muted-foreground/10 group-hover:opacity-100 aria-expanded:opacity-100"
+              className="size-5 shrink-0 rounded opacity-0 transition-opacity hover:bg-foreground/10 group-hover:opacity-100 aria-expanded:opacity-100"
               aria-label="Folder actions"
             >
               <MoreHorizontal className="mx-auto size-3.5" />

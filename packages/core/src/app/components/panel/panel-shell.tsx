@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-export const PANEL_W = 340;
-export const PANEL_TRANSITION_MS = 280;
+export const PANEL_W = 320;
+export const PANEL_TRANSITION_MS = 240;
 
 // Defer the width expansion to the next frame so the browser paints once
 // at width=0 first; otherwise the transition has no starting frame.
@@ -55,22 +55,23 @@ export function PanelShell({
   return (
     <aside
       {...dataAttrs}
-      className="flex h-full shrink-0 justify-end overflow-hidden bg-card transition-[width,border-left-width] ease-out"
+      className="flex h-full shrink-0 justify-end overflow-hidden bg-sidebar transition-[width,border-left-width] ease-out"
       style={{
         width: animVisible ? PANEL_W : 0,
         borderLeftWidth: animVisible ? 1 : 0,
+        borderLeftColor: 'var(--hairline)',
         transitionDuration: `${PANEL_TRANSITION_MS}ms`,
       }}
     >
       <div style={{ width: PANEL_W }} className="flex h-full shrink-0 flex-col">
-        <header className="flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2.5">
+        <header className="flex h-9 shrink-0 items-center justify-between gap-2 border-b border-hairline px-3">
           {header}
         </header>
         {banner}
         <ScrollArea className="flex flex-1 flex-col">
           <div className="flex min-h-full flex-col">{children}</div>
         </ScrollArea>
-        {footer && <div className="shrink-0 border-t">{footer}</div>}
+        {footer && <div className="shrink-0 border-t border-hairline">{footer}</div>}
       </div>
     </aside>
   );

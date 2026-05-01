@@ -27,9 +27,19 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-bg": "var(--popover)",
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)",
+          "--border-radius": "8px",
+          "--font-family":
+            "Geist Variable, -apple-system, BlinkMacSystemFont, sans-serif",
         } as React.CSSProperties
       }
+      toastOptions={{
+        classNames: {
+          toast:
+            "!font-sans !text-[12.5px] !shadow-floating !border-border !rounded-[8px]",
+          title: "!font-medium !text-[12.5px] !tracking-tight",
+          description: "!text-[12px] !text-muted-foreground",
+        },
+      }}
       {...props}
     />
   )

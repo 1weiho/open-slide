@@ -1,5 +1,5 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import config from 'virtual:open-slide/config';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Toaster } from './components/ui/sonner';
 import { Home } from './routes/home';
 import { Slide } from './routes/slide';
@@ -19,10 +19,10 @@ export function App() {
 
 function NotFound() {
   return (
-    <div className="grid h-screen place-items-center bg-background px-6 text-center">
+    <div className="grid h-screen place-items-center bg-background px-6 text-center text-foreground">
       <div>
-        <p className="font-mono text-sm tracking-widest text-muted-foreground uppercase">404</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">Page not found</h1>
+        <p className="folio">404 · not found</p>
+        <h1 className="mt-2 font-heading text-2xl font-semibold tracking-tight">Page not found</h1>
       </div>
     </div>
   );
