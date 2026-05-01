@@ -132,22 +132,40 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
       return null;
     },
     configureServer(server) {
-      const reload = () => {
-        const mod = server.moduleGraph.getModuleById(resolved(SLIDES_VMOD));
-        if (mod) server.moduleGraph.invalidateModule(mod);
-        server.ws.send({ type: 'full-reload' });
+      const isSlideEntry = (p: string) => {
+        const rel = path.relative(slidesRoot, p);
+        if (rel.startsWith('..') || path.isAbsolute(rel)) return false;
+        const parts = rel.split(path.sep);
+        if (parts.length !== 2) return false;
+        return /^index\.(tsx|jsx|ts|js)$/.test(parts[1]);
       };
-      server.watcher.add(path.join(slidesRoot, '*'));
+
+      let reloadTimer: ReturnType<typeof setTimeout> | null = null;
+      const reload = () => {
+        if (reloadTimer) clearTimeout(reloadTimer);
+        reloadTimer = setTimeout(() => {
+          reloadTimer = null;
+          const mod = server.moduleGraph.getModuleById(resolved(SLIDES_VMOD));
+          if (mod) server.moduleGraph.invalidateModule(mod);
+          server.ws.send({ type: 'full-reload' });
+        }, 150);
+      };
+      server.watcher.add(path.join(slidesRoot, '*/index.{tsx,jsx,ts,js}'));
       server.watcher.on('add', (p) => {
-        if (p.startsWith(slidesRoot)) reload();
+        if (isSlideEntry(p)) reload();
       });
       server.watcher.on('unlink', (p) => {
-        if (p.startsWith(slidesRoot)) reload();
+        if (isSlideEntry(p)) reload();
       });
 
+      let foldersTimer: ReturnType<typeof setTimeout> | null = null;
       const invalidateFolders = () => {
-        const mod = server.moduleGraph.getModuleById(resolved(FOLDERS_VMOD));
-        if (mod) server.moduleGraph.invalidateModule(mod);
+        if (foldersTimer) clearTimeout(foldersTimer);
+        foldersTimer = setTimeout(() => {
+          foldersTimer = null;
+          const mod = server.moduleGraph.getModuleById(resolved(FOLDERS_VMOD));
+          if (mod) server.moduleGraph.invalidateModule(mod);
+        }, 100);
       };
       server.watcher.add(foldersManifestPath);
       server.watcher.on('change', (p) => {
