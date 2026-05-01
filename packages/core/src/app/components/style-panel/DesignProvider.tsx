@@ -8,12 +8,7 @@ import {
   useState,
 } from 'react';
 import { toast } from 'sonner';
-import {
-  cssVarsToString,
-  defaultDesign,
-  type DesignSystem,
-  designToCssVars,
-} from '../../../design';
+import { defaultDesign, type DesignSystem, designToCssVars } from '../../../design';
 import { useDesign as useDesignFetch } from './useDesign';
 
 type DesignCtx = {
@@ -83,11 +78,17 @@ export function DesignProvider({ slideId, children }: { slideId: string; childre
     setDraft(clone(defaultDesign));
   }, []);
 
-  // Live-preview overlay: rendered only while there are unsaved changes, so the
-  // canvas reflects the draft instantly, before any file write.
+  // Live-preview overlay: rendered only while there are unsaved changes so the
+  // canvas reflects the draft instantly, before any file write. SlideCanvas
+  // emits its own CSS variables inline on the canvas root (so home thumbnails,
+  // player, and exports work without any extra plumbing). Inline styles win
+  // against external rules, so the overlay must use `!important` to override.
   const previewCss = useMemo(() => {
     if (!dirty || !draft) return '';
-    return `[data-osd-canvas] {\n${cssVarsToString(designToCssVars(draft))}\n}`;
+    const lines = Object.entries(designToCssVars(draft))
+      .map(([k, v]) => `  ${k}: ${v} !important;`)
+      .join('\n');
+    return `[data-osd-canvas] {\n${lines}\n}`;
   }, [dirty, draft]);
 
   const value: DesignCtx = {

@@ -1,12 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import type { DesignSystem } from '../../design';
 import type { Page } from '../lib/sdk';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
 import { SlideCanvas } from './SlideCanvas';
 
 type Props = {
   pages: Page[];
+  design?: DesignSystem;
   current: number;
   onSelect: (index: number) => void;
 };
@@ -15,7 +17,7 @@ const THUMB_WIDTH = 200;
 const THUMB_SCALE = THUMB_WIDTH / CANVAS_WIDTH;
 const THUMB_HEIGHT = CANVAS_HEIGHT * THUMB_SCALE;
 
-export function ThumbnailRail({ pages, current, onSelect }: Props) {
+export function ThumbnailRail({ pages, design, current, onSelect }: Props) {
   const activeRef = useRef<HTMLButtonElement | null>(null);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: `current` triggers re-scroll on selection change
@@ -55,7 +57,7 @@ export function ThumbnailRail({ pages, current, onSelect }: Props) {
                 className="relative shrink-0 overflow-hidden rounded border bg-white shadow-sm"
                 style={{ width: THUMB_WIDTH, height: THUMB_HEIGHT }}
               >
-                <SlideCanvas scale={THUMB_SCALE} center={false} flat>
+                <SlideCanvas scale={THUMB_SCALE} center={false} flat design={design}>
                   <PageComp />
                 </SlideCanvas>
               </div>

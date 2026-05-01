@@ -32,7 +32,6 @@ import { PdfProgressToast } from '../components/PdfProgressToast';
 import { Player } from '../components/Player';
 import { SlideCanvas } from '../components/SlideCanvas';
 import { ThumbnailRail } from '../components/ThumbnailRail';
-import { cssVarsToString, designToCssVars } from '../../design';
 import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf } from '../lib/export-pdf';
 import type { SlideModule } from '../lib/sdk';
@@ -155,6 +154,7 @@ export function Slide() {
     return (
       <Player
         pages={pages}
+        design={slide.design}
         index={index}
         onIndexChange={goTo}
         onExit={() => {}}
@@ -165,22 +165,21 @@ export function Slide() {
 
   if (playing) {
     return (
-      <Player pages={pages} index={index} onIndexChange={goTo} onExit={() => setPlaying(false)} />
+      <Player
+        pages={pages}
+        design={slide.design}
+        index={index}
+        onIndexChange={goTo}
+        onExit={() => setPlaying(false)}
+      />
     );
   }
 
   const CurrentPage = pages[index];
   const title = slide.meta?.title ?? slideId;
-  const designCss = slide.design
-    ? `[data-osd-canvas] {\n${cssVarsToString(designToCssVars(slide.design))}\n}`
-    : null;
 
   return (
     <InspectorProvider slideId={slideId}>
-      {designCss && (
-        // biome-ignore lint/security/noDangerouslySetInnerHtml: trusted local css from slide.design.
-        <style dangerouslySetInnerHTML={{ __html: designCss }} />
-      )}
       <div className="flex h-screen flex-col overflow-hidden bg-background">
         <header className="relative flex shrink-0 items-center justify-between border-b bg-card px-3 py-2 md:px-5 md:py-3">
           <div className="flex items-center gap-2 md:gap-3">
@@ -337,7 +336,12 @@ export function Slide() {
           <DesignProvider slideId={slideId}>
             <div className="flex min-h-0 flex-1">
               <div className="hidden w-[17rem] shrink-0 md:block">
-                <ThumbnailRail pages={pages} current={index} onSelect={goTo} />
+                <ThumbnailRail
+                  pages={pages}
+                  design={slide.design}
+                  current={index}
+                  onSelect={goTo}
+                />
               </div>
               <main
                 ref={slideViewportRef}
@@ -351,7 +355,7 @@ export function Slide() {
                   canPrev={index > 0}
                   canNext={index < pageCount - 1}
                 />
-                <SlideCanvas>
+                <SlideCanvas design={slide.design}>
                   <CurrentPage />
                 </SlideCanvas>
                 <ClickNavZones
