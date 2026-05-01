@@ -2,20 +2,23 @@ import { Label } from '@/components/ui/label';
 
 export function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="px-4 py-4">
-      <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-        {title}
+    <section className="px-4 py-3.5">
+      <div className="mb-2.5 flex items-center gap-2">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          {title}
+        </span>
+        <span aria-hidden className="h-px flex-1 bg-border/70" />
       </div>
-      <div className="flex flex-col gap-3">{children}</div>
+      <div className="flex flex-col gap-2.5">{children}</div>
     </section>
   );
 }
 
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[80px_1fr] items-center gap-3">
-      <Label className="text-[11px] font-normal text-muted-foreground">{label}</Label>
-      <div className="flex min-w-0 items-center gap-2">{children}</div>
+    <div className="grid grid-cols-[76px_1fr] items-center gap-3">
+      <Label className="truncate text-[11px] font-medium text-muted-foreground">{label}</Label>
+      <div className="flex min-w-0 items-center gap-1.5">{children}</div>
     </div>
   );
 }

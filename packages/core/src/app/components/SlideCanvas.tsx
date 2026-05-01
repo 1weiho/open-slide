@@ -54,7 +54,8 @@ export function SlideCanvas({
       <div
         className={cn(
           'overflow-hidden bg-white text-black',
-          !flat && 'rounded-md shadow-xl ring-1 ring-black/5',
+          !flat &&
+            'rounded-lg shadow-[0_1px_2px_rgba(0,0,0,0.06),0_24px_48px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.06]',
         )}
         style={{
           width: scaledW,

@@ -117,7 +117,7 @@ function FrameOverlay({
     <div ref={overlayRef} data-inspector-ui className="pointer-events-none absolute inset-0 z-30">
       {rect && (
         <div
-          className="absolute"
+          className="absolute rounded-[3px]"
           style={{
             left: rect.left,
             top: rect.top,
@@ -125,8 +125,9 @@ function FrameOverlay({
             height: rect.height,
             opacity: visible ? 1 : 0,
             transition,
-            outline: '2px solid #3b82f6',
-            background: 'rgba(59,130,246,0.1)',
+            boxShadow:
+              '0 0 0 1px rgba(255,255,255,0.85), 0 0 0 2px #3b82f6, 0 0 0 5px rgba(59,130,246,0.18)',
+            background: 'rgba(59,130,246,0.08)',
           }}
         />
       )}

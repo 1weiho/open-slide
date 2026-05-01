@@ -180,15 +180,18 @@ export function Slide() {
   return (
     <InspectorProvider slideId={slideId}>
       <div className="flex h-screen flex-col overflow-hidden bg-background">
-        <header className="relative flex shrink-0 items-center justify-between border-b bg-card px-3 py-2 md:px-5 md:py-3">
-          <div className="flex items-center gap-2 md:gap-3">
+        <header className="relative z-20 flex h-12 shrink-0 items-center justify-between gap-2 border-b bg-card/95 px-2.5 backdrop-blur supports-[backdrop-filter]:bg-card/80 md:px-4">
+          <div className="flex min-w-0 items-center gap-1 md:gap-1.5">
             {showSlideBrowser && (
-              <Button asChild variant="ghost" size="sm" className="px-2 md:px-3">
+              <Button asChild variant="ghost" size="sm" className="px-2 text-muted-foreground hover:text-foreground md:px-2.5">
                 <Link to="/">
                   <ChevronLeft className="size-4" />
                   <span className="hidden md:inline">Home</span>
                 </Link>
               </Button>
+            )}
+            {import.meta.env.DEV && showSlideBrowser && (
+              <span aria-hidden className="toolbar-divider mx-1 hidden md:block" />
             )}
             {import.meta.env.DEV && (
               <Tabs
@@ -231,12 +234,12 @@ export function Slide() {
           </div>
 
           <div className="pointer-events-none absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-center px-2">
-            <div className="pointer-events-auto min-w-0 max-w-[min(32rem,calc(100vw-20rem))]">
+            <div className="pointer-events-auto min-w-0 max-w-[min(34rem,calc(100vw-22rem))]">
               <InlineTitleEditor title={title} onSubmit={(next) => renameSlide(slideId, next)} />
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex shrink-0 items-center gap-1">
             {view === 'slides' && allowHtmlDownload && (
               <DropdownMenu>
                 <DropdownMenuTrigger
@@ -316,10 +319,17 @@ export function Slide() {
             )}
             {view === 'slides' && <InspectToggleButton />}
             {view === 'slides' && (
-              <Button size="sm" onClick={() => setPlaying(true)} className="px-2 md:px-3">
-                <Play className="size-4" />
+              <span aria-hidden className="toolbar-divider mx-1 hidden md:block" />
+            )}
+            {view === 'slides' && (
+              <Button
+                size="sm"
+                onClick={() => setPlaying(true)}
+                className="gap-1.5 px-2.5 shadow-sm md:px-3"
+              >
+                <Play className="size-3.5" fill="currentColor" />
                 <span className="hidden md:inline">Play</span>
-                <kbd className="ml-1 hidden rounded bg-primary-foreground/20 px-1 text-[10px] md:inline">
+                <kbd className="ml-0.5 hidden h-4 items-center rounded-[4px] bg-primary-foreground/15 px-1 font-mono text-[10px] font-medium tracking-wide text-primary-foreground/80 md:inline-flex">
                   F
                 </kbd>
               </Button>
@@ -345,7 +355,7 @@ export function Slide() {
               <main
                 ref={slideViewportRef}
                 data-inspector-root
-                className="relative min-h-0 min-w-0 flex-1 bg-background p-2 md:p-8"
+                className="editor-canvas-surface relative min-h-0 min-w-0 flex-1 p-2 md:p-10"
               >
                 <SlideWheelNavigation
                   targetRef={slideViewportRef}
@@ -366,7 +376,15 @@ export function Slide() {
                 <InspectOverlay />
                 <SaveBar />
                 <CommentWidget />
-                <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/50 px-2.5 py-0.5 text-[11px] font-medium tabular-nums text-white backdrop-blur md:hidden">
+                <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-1.5 rounded-full border border-white/10 bg-black/55 px-2.5 py-1 text-[11px] font-medium tabular-nums text-white shadow-lg backdrop-blur-md md:bottom-4 md:flex">
+                  <span className="size-1.5 rounded-full bg-emerald-400/90" aria-hidden />
+                  <span className="text-white/95">
+                    {index + 1}
+                    <span className="mx-1 text-white/50">/</span>
+                    {pageCount}
+                  </span>
+                </div>
+                <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/55 px-2.5 py-0.5 text-[11px] font-medium tabular-nums text-white backdrop-blur md:hidden">
                   {index + 1} / {pageCount}
                 </div>
               </main>
@@ -474,26 +492,25 @@ function InlineTitleEditor({
             }
           }}
           maxLength={80}
-          className="min-w-0 max-w-[min(32rem,90%)] rounded-md border bg-background px-2 py-0.5 text-center text-xs font-semibold tracking-tight outline-none ring-ring/40 focus:ring-2 md:text-sm"
+          className="h-7 min-w-0 max-w-[min(34rem,90%)] rounded-md border bg-background px-2.5 text-center text-xs font-semibold tracking-tight outline-none ring-ring/40 focus:ring-2 md:text-[13px]"
         />
       </div>
     );
   }
 
   return (
-    <div className="group/title flex flex-1 items-center justify-center gap-1.5 min-w-0">
-      <h1 className="truncate text-xs font-semibold tracking-tight md:text-sm">{title}</h1>
-      <button
-        type="button"
-        onClick={() => setEditing(true)}
-        aria-label="Rename slide"
-        className={cn(
-          'flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-opacity hover:bg-muted hover:text-foreground',
-          'opacity-0 group-hover/title:opacity-100 focus-visible:opacity-100',
-        )}
-      >
-        <Pencil className="size-3.5" />
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      aria-label="Rename slide"
+      title="Rename slide"
+      className={cn(
+        'group/title relative flex h-7 min-w-0 max-w-full items-center gap-1.5 rounded-md px-2.5 text-foreground transition-colors',
+        'hover:bg-muted/70 focus-visible:bg-muted focus-visible:outline-none',
+      )}
+    >
+      <h1 className="truncate text-xs font-semibold tracking-tight md:text-[13px]">{title}</h1>
+      <Pencil className="size-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/title:opacity-100" />
+    </button>
   );
 }

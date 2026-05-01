@@ -139,7 +139,10 @@ export function InspectorPanel() {
       header={
         <>
           <div className="flex min-w-0 items-center gap-2">
-            <span className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px] text-foreground">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              Element
+            </span>
+            <span className="rounded-md border bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] font-medium text-foreground">
               &lt;{pinSelected.anchor.tagName.toLowerCase()}&gt;
             </span>
           </div>

@@ -10,7 +10,7 @@ export function CommentWidget() {
   return (
     <div data-inspector-ui className="absolute right-4 bottom-4 z-20 flex flex-col items-end gap-2">
       {open && (
-        <div className="w-80 rounded-md border bg-card shadow-xl animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
+        <div className="w-80 overflow-hidden rounded-xl border border-border/80 bg-card/95 shadow-[0_1px_2px_rgba(0,0,0,0.06),0_24px_48px_-12px_rgba(0,0,0,0.28)] backdrop-blur-md animate-in fade-in-0 slide-in-from-bottom-2 duration-200 supports-[backdrop-filter]:bg-card/85">
           <div className="flex items-center justify-between border-b px-3 py-2">
             <span className="text-xs font-semibold">
               {count} comment{count === 1 ? '' : 's'}
@@ -67,10 +67,18 @@ export function CommentWidget() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 rounded-full border bg-card px-3 py-2 text-xs font-medium shadow-lg hover:bg-muted"
+        aria-expanded={open}
+        aria-label={`${count} comment${count === 1 ? '' : 's'}`}
+        className="group/comment relative flex h-9 items-center gap-1.5 rounded-full border border-border/80 bg-card/85 px-3 text-xs font-medium shadow-[0_1px_2px_rgba(0,0,0,0.06),0_8px_24px_-12px_rgba(0,0,0,0.25)] backdrop-blur-md transition-colors hover:bg-muted aria-expanded:bg-muted supports-[backdrop-filter]:bg-card/75"
       >
-        <MessageSquare className="size-4" />
-        {count}
+        <MessageSquare className="size-4 text-muted-foreground group-hover/comment:text-foreground" />
+        <span className="tabular-nums">{count}</span>
+        {count > 0 && (
+          <span
+            className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-amber-500 ring-2 ring-card"
+            aria-hidden
+          />
+        )}
       </button>
     </div>
   );

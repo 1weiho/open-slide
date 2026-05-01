@@ -41,14 +41,21 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
       header={
         <>
           <div className="flex min-w-0 items-center gap-2">
-            <Palette className="size-3.5 text-muted-foreground" />
-            <span className="text-xs font-semibold tracking-tight">Design</span>
+            <span className="flex size-6 items-center justify-center rounded-md bg-muted/70 text-foreground/80">
+              <Palette className="size-3.5" />
+            </span>
+            <span className="text-[13px] font-semibold tracking-tight">Design</span>
             {!exists && (
-              <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+              <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                 not added
               </span>
             )}
-            {dirty && <span className="size-1.5 rounded-full bg-amber-500" aria-hidden />}
+            {dirty && (
+              <span
+                className="size-1.5 animate-pulse rounded-full bg-amber-500 shadow-[0_0_0_3px_rgba(245,158,11,0.18)]"
+                aria-hidden
+              />
+            )}
           </div>
           <Button
             variant="ghost"
@@ -69,6 +76,13 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
         )
       }
     >
+      <PalettePreview
+        bg={draft.palette.bg}
+        text={draft.palette.text}
+        accent={draft.palette.accent}
+        font={draft.fonts.display}
+      />
+
       <Section title="Colors">
         <ColorField
           label="Background"
@@ -182,6 +196,61 @@ export function DesignToggleButton({
       <Palette className="size-4" />
       Design
     </Button>
+  );
+}
+
+function PalettePreview({
+  bg,
+  text,
+  accent,
+  font,
+}: {
+  bg: string;
+  text: string;
+  accent: string;
+  font: string;
+}) {
+  return (
+    <div className="px-4 pt-4">
+      <div
+        className="relative overflow-hidden rounded-lg border shadow-sm"
+        style={{ backgroundColor: bg }}
+      >
+        <div className="flex items-center justify-between gap-3 px-3.5 py-3">
+          <div className="min-w-0">
+            <div
+              className="truncate text-[15px] font-semibold leading-tight tracking-tight"
+              style={{ color: text, fontFamily: font }}
+            >
+              Aa Display
+            </div>
+            <div
+              className="mt-0.5 text-[10px] leading-snug opacity-70"
+              style={{ color: text, fontFamily: font }}
+            >
+              The quick brown fox
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <span
+              className="size-5 rounded-full ring-1 ring-black/10"
+              style={{ backgroundColor: bg }}
+              aria-label="Background"
+            />
+            <span
+              className="size-5 rounded-full ring-1 ring-black/10"
+              style={{ backgroundColor: text }}
+              aria-label="Text"
+            />
+            <span
+              className="size-5 rounded-full ring-1 ring-black/10"
+              style={{ backgroundColor: accent }}
+              aria-label="Accent"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

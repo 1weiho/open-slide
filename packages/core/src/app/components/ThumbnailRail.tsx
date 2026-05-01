@@ -26,45 +26,60 @@ export function ThumbnailRail({ pages, design, current, onSelect }: Props) {
   }, [current]);
 
   return (
-    <ScrollArea className="h-full border-r bg-card">
-      <aside className="flex flex-col gap-2.5 p-3">
-        {pages.map((PageComp, i) => {
-          const active = i === current;
-          return (
-            <button
-              // biome-ignore lint/suspicious/noArrayIndexKey: pages list is render-stable
-              key={i}
-              type="button"
-              ref={active ? activeRef : undefined}
-              onClick={() => onSelect(i)}
-              aria-label={`Go to page ${i + 1}`}
-              aria-current={active ? 'true' : undefined}
-              className={cn(
-                'flex items-center gap-2.5 rounded-lg border-2 border-transparent p-1.5 text-left transition-colors',
-                'hover:bg-muted',
-                active && 'border-primary bg-primary/5',
-              )}
-            >
-              <span
+    <aside className="flex h-full flex-col border-r bg-card">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b px-3.5 py-2.5">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          Pages
+        </span>
+        <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
+          {pages.length}
+        </span>
+      </div>
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="flex flex-col gap-2 p-2.5">
+          {pages.map((PageComp, i) => {
+            const active = i === current;
+            return (
+              <button
+                // biome-ignore lint/suspicious/noArrayIndexKey: pages list is render-stable
+                key={i}
+                type="button"
+                ref={active ? activeRef : undefined}
+                onClick={() => onSelect(i)}
+                aria-label={`Go to page ${i + 1}`}
+                aria-current={active ? 'true' : undefined}
                 className={cn(
-                  'w-5 shrink-0 text-right text-xs tabular-nums text-muted-foreground',
-                  active && 'font-semibold text-primary',
+                  'group relative flex items-center gap-2.5 rounded-lg p-1.5 text-left outline-none transition-[background-color,box-shadow,transform]',
+                  'hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/50',
+                  active && 'bg-primary/[0.06]',
                 )}
               >
-                {i + 1}
-              </span>
-              <div
-                className="relative shrink-0 overflow-hidden rounded border bg-white shadow-sm"
-                style={{ width: THUMB_WIDTH, height: THUMB_HEIGHT }}
-              >
-                <SlideCanvas scale={THUMB_SCALE} center={false} flat design={design}>
-                  <PageComp />
-                </SlideCanvas>
-              </div>
-            </button>
-          );
-        })}
-      </aside>
-    </ScrollArea>
+                <span
+                  className={cn(
+                    'w-5 shrink-0 text-right font-mono text-[10px] tabular-nums text-muted-foreground/80 transition-colors',
+                    active && 'font-semibold text-primary',
+                  )}
+                >
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <div
+                  className={cn(
+                    'relative shrink-0 overflow-hidden rounded-md bg-white shadow-sm transition-shadow',
+                    'ring-1 ring-black/[0.06] group-hover:shadow-md',
+                    active &&
+                      'shadow-md ring-2 ring-primary/80 ring-offset-2 ring-offset-card',
+                  )}
+                  style={{ width: THUMB_WIDTH, height: THUMB_HEIGHT }}
+                >
+                  <SlideCanvas scale={THUMB_SCALE} center={false} flat design={design}>
+                    <PageComp />
+                  </SlideCanvas>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </ScrollArea>
+    </aside>
   );
 }

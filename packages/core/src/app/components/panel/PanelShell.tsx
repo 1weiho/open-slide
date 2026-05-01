@@ -55,7 +55,7 @@ export function PanelShell({ animVisible, uiAttr, header, banner, children }: Pa
       }}
     >
       <div style={{ width: PANEL_W }} className="flex h-full shrink-0 flex-col">
-        <header className="flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2.5">
+        <header className="flex h-11 shrink-0 items-center justify-between gap-2 border-b px-3.5">
           {header}
         </header>
         {banner}

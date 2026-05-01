@@ -48,14 +48,20 @@ export function SaveCard({
       {...dataAttrs}
       className="pointer-events-none absolute bottom-6 left-1/2 z-30 -translate-x-1/2 animate-in fade-in slide-in-from-bottom-3 duration-300 ease-out"
     >
-      <div className="pointer-events-auto flex items-center gap-2 rounded-full border bg-card py-1 pr-1 pl-3 shadow-lg">
+      <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-border/80 bg-card/80 py-1 pr-1 pl-3 shadow-[0_1px_2px_rgba(0,0,0,0.06),0_18px_36px_-12px_rgba(0,0,0,0.28)] backdrop-blur-md supports-[backdrop-filter]:bg-card/70">
         {justSaved ? (
           <span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
             <Check className="size-3.5 text-emerald-600" />
             {savedLabel}
           </span>
         ) : (
-          <span className="text-xs font-medium text-foreground">{unsavedLabel}</span>
+          <span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+            <span
+              className="size-1.5 rounded-full bg-amber-500 shadow-[0_0_0_3px_rgba(245,158,11,0.18)]"
+              aria-hidden
+            />
+            {unsavedLabel}
+          </span>
         )}
         {!justSaved && (
           <Button
@@ -71,7 +77,7 @@ export function SaveCard({
         )}
         <Button
           size="sm"
-          className="h-7 rounded-full px-3 text-[11px]"
+          className="h-7 rounded-full px-3 text-[11px] shadow-sm"
           onClick={handleSave}
           disabled={committing || !dirty}
         >
