@@ -6,25 +6,89 @@ import type { Page } from '../lib/sdk';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
 import { SlideCanvas } from './slide-canvas';
 
+type Orientation = 'vertical' | 'horizontal';
+
 type Props = {
   pages: Page[];
   design?: DesignSystem;
   current: number;
   onSelect: (index: number) => void;
+  orientation?: Orientation;
 };
 
-const THUMB_WIDTH = 184;
-const THUMB_SCALE = THUMB_WIDTH / CANVAS_WIDTH;
-const THUMB_HEIGHT = CANVAS_HEIGHT * THUMB_SCALE;
+const VERTICAL_THUMB_WIDTH = 184;
+const HORIZONTAL_THUMB_HEIGHT = 64;
 
-export function ThumbnailRail({ pages, design, current, onSelect }: Props) {
+export function ThumbnailRail({
+  pages,
+  design,
+  current,
+  onSelect,
+  orientation = 'vertical',
+}: Props) {
   const activeRef = useRef<HTMLButtonElement | null>(null);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: `current` triggers re-scroll on selection change
   useEffect(() => {
-    activeRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    activeRef.current?.scrollIntoView({
+      block: 'nearest',
+      inline: 'nearest',
+      behavior: 'smooth',
+    });
   }, [current]);
 
+  if (orientation === 'horizontal') {
+    const scale = HORIZONTAL_THUMB_HEIGHT / CANVAS_HEIGHT;
+    const width = CANVAS_WIDTH * scale;
+    return (
+      <div className="bg-sidebar">
+        <div className="overflow-x-auto overflow-y-hidden">
+          <div className="flex items-center gap-2 px-3 py-2.5">
+            {pages.map((PageComp, i) => {
+              const active = i === current;
+              return (
+                <button
+                  // biome-ignore lint/suspicious/noArrayIndexKey: pages list is render-stable
+                  key={i}
+                  type="button"
+                  ref={active ? activeRef : undefined}
+                  onClick={() => onSelect(i)}
+                  aria-label={`Go to page ${i + 1}`}
+                  aria-current={active ? 'true' : undefined}
+                  className={cn('group/thumb relative flex shrink-0 flex-col items-center gap-1.5')}
+                >
+                  <span
+                    className={cn(
+                      'font-mono text-[9.5px] font-medium tracking-[0.06em] tabular-nums uppercase',
+                      active ? 'text-brand' : 'text-muted-foreground/70',
+                    )}
+                  >
+                    {(i + 1).toString().padStart(2, '0')}
+                  </span>
+                  <div
+                    className={cn(
+                      'relative shrink-0 overflow-hidden rounded-[4px] border bg-card transition-all',
+                      active
+                        ? 'border-brand shadow-[0_0_0_1px_var(--brand)]'
+                        : 'border-hairline group-hover/thumb:border-foreground/25',
+                    )}
+                    style={{ width, height: HORIZONTAL_THUMB_HEIGHT }}
+                  >
+                    <SlideCanvas scale={scale} center={false} flat design={design}>
+                      <PageComp />
+                    </SlideCanvas>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const scale = VERTICAL_THUMB_WIDTH / CANVAS_WIDTH;
+  const height = CANVAS_HEIGHT * scale;
   return (
     <ScrollArea className="h-full border-r border-hairline bg-sidebar">
       <aside className="flex flex-col gap-2 px-3 py-3">
@@ -64,9 +128,9 @@ export function ThumbnailRail({ pages, design, current, onSelect }: Props) {
                     ? 'border-brand shadow-[0_0_0_1px_var(--brand)]'
                     : 'border-hairline group-hover/thumb:border-foreground/25',
                 )}
-                style={{ width: THUMB_WIDTH, height: THUMB_HEIGHT }}
+                style={{ width: VERTICAL_THUMB_WIDTH, height }}
               >
-                <SlideCanvas scale={THUMB_SCALE} center={false} flat design={design}>
+                <SlideCanvas scale={scale} center={false} flat design={design}>
                   <PageComp />
                 </SlideCanvas>
                 {active && (

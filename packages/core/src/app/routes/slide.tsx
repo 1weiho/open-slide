@@ -335,7 +335,7 @@ export function Slide() {
             </div>
           ) : (
             <DesignProvider slideId={slideId}>
-              <div className="flex min-h-0 flex-1">
+              <div className="flex min-h-0 flex-1 flex-col md:flex-row">
                 <div className="hidden w-[16.5rem] shrink-0 md:block">
                   <ThumbnailRail
                     pages={pages}
@@ -368,16 +368,21 @@ export function Slide() {
                   <InspectOverlay />
                   <SaveBar />
                   {import.meta.env.DEV && <CommentWidget />}
-                  {/* Safe-area aware so Safari's URL bar can't cover the folio. */}
-                  <div
-                    className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded-[5px] border border-foreground/10 bg-foreground/85 px-2 py-0.5 font-mono text-[10.5px] font-medium tracking-[0.06em] text-background backdrop-blur md:hidden"
-                    style={{ bottom: 'max(0.75rem, calc(env(safe-area-inset-bottom) + 0.5rem))' }}
-                  >
-                    {(index + 1).toString().padStart(2, '0')}
-                    <span className="opacity-50"> / </span>
-                    {pageCount.toString().padStart(2, '0')}
-                  </div>
                 </main>
+                {/* Mobile-only horizontal rail. Sits below the canvas and
+                    pads its bottom for the iOS home indicator / Safari URL bar. */}
+                <div
+                  className="shrink-0 border-t border-hairline md:hidden"
+                  style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+                >
+                  <ThumbnailRail
+                    pages={pages}
+                    design={slide.design}
+                    current={index}
+                    onSelect={goTo}
+                    orientation="horizontal"
+                  />
+                </div>
                 <InspectorPanel />
                 <DesignPanel open={designOpen} onClose={() => setDesignOpen(false)} />
               </div>
