@@ -58,7 +58,7 @@ If the deck topic naturally calls for specific real images the user must supply 
 
 Pick one coherent palette / type scale / aesthetic and hold it across every page. The full set of constraints (palette structure, type scale, padding, aesthetic options) lives in `slide-authoring` — apply it.
 
-If the user wants the slide to remain tweakable from the Design panel afterwards, declare a top-level `const design: DesignSystem = { … }` at the top of `index.tsx` (after imports) using the chosen palette / type scale, and reference `design.X` from inline styles. The "Design system" section of `slide-authoring` covers the format and available tokens.
+**Default: declare a top-level `export const design: DesignSystem = { … }`** at the top of `index.tsx` (after imports) using the chosen palette / type scale, and reference the values via `var(--osd-X)` from inline styles. This keeps the slide tweakable from the Design panel after generation, which is what the user almost always wants. Only skip the `design` const for a one-off slide whose palette is intentionally locked and not meant to be re-themed — in that case, fall back to the local `palette` constants pattern. The "Design system" section of `slide-authoring` covers the format and available tokens.
 
 Consult the `frontend-design` skill for deeper aesthetic guidance if the user wants something bold.
 

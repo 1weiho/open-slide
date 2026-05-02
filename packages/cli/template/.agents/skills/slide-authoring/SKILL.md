@@ -148,7 +148,7 @@ There are **two consumption surfaces**, and you should mix them inside the same 
 
 The dev UI has a **Design** button in the slide header (next to Inspect). Edits update an in-memory draft and the live-preview overlay; a floating Save / Discard bar at the bottom of the canvas commits or reverts. The const stays the single source of truth — production builds bake the saved values.
 
-When to use it: any time the slide should remain tweakable from the panel after generation. When to *not* use it: one-off slides whose palette is intentionally fixed (then use the local `palette` constants pattern from the starter template). Both styles can coexist across slides — the panel only operates on the *currently viewed* slide.
+**Default to using it.** Every new slide should declare a `design` const so it stays tweakable from the panel after generation — this is the expected baseline. Only fall back to the local `palette` constants pattern (see starter template) for a one-off slide whose palette is intentionally locked and not meant to be re-themed. Both styles can coexist across slides — the panel only operates on the *currently viewed* slide.
 
 Format constraints (for the panel's AST writer):
 - Must be `[export] const design: DesignSystem = { … }` (or `as DesignSystem` / `satisfies DesignSystem`) at module top level.
@@ -158,49 +158,64 @@ Format constraints (for the panel's AST writer):
 ## Starter template
 
 ```tsx
-import type { Page, SlideMeta } from '@open-slide/core';
+import type { DesignSystem, Page, SlideMeta } from '@open-slide/core';
 
-const palette = {
-  bg: '#0f172a',
-  text: '#f8fafc',
-  accent: '#fbbf24',
-  muted: '#94a3b8',
+export const design: DesignSystem = {
+  palette: { bg: '#0f172a', text: '#f8fafc', accent: '#fbbf24' },
+  fonts: {
+    display: 'system-ui, -apple-system, sans-serif',
+    body: 'system-ui, -apple-system, sans-serif',
+  },
+  typeScale: { hero: 180, body: 40 },
 };
+
+// Extra colors / sizes outside the DesignSystem shape stay as plain consts.
+const muted = '#94a3b8';
 
 const fill = {
   width: '100%',
   height: '100%',
-  fontFamily: 'system-ui, -apple-system, sans-serif',
+  fontFamily: 'var(--osd-font-body)',
 } as const;
 
 const Cover: Page = () => (
   <div
     style={{
       ...fill,
-      background: palette.bg,
-      color: palette.text,
+      background: 'var(--osd-bg)',
+      color: 'var(--osd-text)',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
       padding: '0 160px',
     }}
   >
-    <div style={{ fontSize: 28, color: palette.accent, letterSpacing: '0.2em' }}>
+    <div style={{ fontSize: 28, color: 'var(--osd-accent)', letterSpacing: '0.2em' }}>
       CHAPTER 01
     </div>
-    <h1 style={{ fontSize: 180, fontWeight: 900, margin: '32px 0', lineHeight: 1.05 }}>
+    <h1
+      style={{
+        fontFamily: 'var(--osd-font-display)',
+        fontSize: 'var(--osd-size-hero)',
+        fontWeight: 900,
+        margin: '32px 0',
+        lineHeight: 1.05,
+      }}
+    >
       The Big Idea
     </h1>
-    <p style={{ fontSize: 40, color: palette.muted, maxWidth: 1200 }}>
+    <p style={{ fontSize: 'var(--osd-size-body)', color: muted, maxWidth: 1200 }}>
       A short subtitle that explains what this slide is about.
     </p>
   </div>
 );
 
 const Content: Page = () => (
-  <div style={{ ...fill, background: palette.bg, color: palette.text, padding: 120 }}>
-    <h2 style={{ fontSize: 80, fontWeight: 800, margin: 0 }}>Section heading</h2>
-    <ul style={{ fontSize: 40, lineHeight: 1.6, marginTop: 64, paddingLeft: 48 }}>
+  <div style={{ ...fill, background: 'var(--osd-bg)', color: 'var(--osd-text)', padding: 120 }}>
+    <h2 style={{ fontFamily: 'var(--osd-font-display)', fontSize: 80, fontWeight: 800, margin: 0 }}>
+      Section heading
+    </h2>
+    <ul style={{ fontSize: 'var(--osd-size-body)', lineHeight: 1.6, marginTop: 64, paddingLeft: 48 }}>
       <li>One clear point per line</li>
       <li>Keep to 3–5 bullets</li>
       <li>Let the space breathe</li>
@@ -264,7 +279,7 @@ Size the placeholder to the slot it occupies. Pass `width`/`height` when the lay
 - [ ] **For every page, sum (font_size × line_height × lines) + gaps + 2×padding ≤ 1080px.** If close, split the page. No `overflow: auto` escape hatches.
 - [ ] No bullet wraps to a second line at the chosen font size.
 - [ ] One coherent visual direction across every page (palette + type scale).
-- [ ] If the slide should be tweakable from the Design panel, it declares a top-level `const design: DesignSystem = { … }` and references `design.X` from inline styles.
+- [ ] Slide declares a top-level `export const design: DesignSystem = { … }` and references the values via `var(--osd-X)` (use `design.X` only when you need a JS number for arithmetic). Only omit the `design` const for a one-off slide whose palette is intentionally locked.
 - [ ] One idea per page.
 - [ ] All imported assets exist on disk under `slides/<id>/assets/`.
 - [ ] Every `<ImagePlaceholder>` corresponds to a real image the user must supply — not decorative filler. If it could be replaced by typography or layout, it should be.
