@@ -1,0 +1,43 @@
+---
+title: The workflow
+description: Init → author → iterate.
+---
+
+open-slide is built around a tight three-step loop.
+
+## 01 · Init
+
+```bash
+npx @open-slide/cli init my-deck
+```
+
+One command spins up `slides/`, `open-slide.config.ts`, the agent skills,
+and a hot-reloading dev server. No templates, no themes, no assumptions.
+
+## 02 · Author
+
+Open the workspace in your agent. Skills are pre-installed:
+
+- `/create-slide` — drafts a deck end-to-end. Asks four scoping questions
+  (topic & aesthetic, page count, density, motion vs. static), picks an id,
+  plans the structure, writes the pages.
+- `/slide-authoring` — the technical reference the agent reads before
+  writing. Canvas rules, type scale, palette, layout do's and don'ts.
+
+## 03 · Iterate
+
+In the dev server:
+
+1. Toggle inspect.
+2. Click an element to tweak its text, font, weight, colour, or `src`.
+3. Drop a `@slide-comment` for anything visual you can describe but don't
+   want to type.
+4. Save. Edits lands as a single HMR write.
+5. `/apply-comments` — the agent rewrites exactly what you flagged and
+   clears the markers.
+
+Repeat until the deck looks right.
+
+```text
+present  →  click to comment  →  /apply-comments  →  repeat
+```

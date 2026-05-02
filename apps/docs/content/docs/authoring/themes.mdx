@@ -1,0 +1,58 @@
+---
+title: Themes
+description: Reusable design systems shared across decks.
+---
+
+A theme is a markdown file under `themes/<id>.md`. The `create-slide` skill
+reads a theme before authoring so the agent matches the visual system you
+want.
+
+## Why themes
+
+If you author more than two decks you'll want them to look related. A theme
+captures the *recipe* — palette, type stack, layout vocabulary, motion
+language — in one place that any deck can reference.
+
+## File layout
+
+```text
+themes/
+├── corporate.md
+├── editorial.md
+└── retro-print.md
+```
+
+Each file is free-form markdown. A useful template:
+
+```md title="themes/corporate.md"
+# Corporate
+
+## Palette
+- ink: #0a0a0c
+- accent: #4a52b5
+- mint: #1f8458
+
+## Typography
+- display: 'Söhne', system-ui
+- mono: 'JetBrains Mono'
+
+## Voice
+- Tight, declarative, never coy.
+- One concept per slide.
+```
+
+## Using a theme
+
+When you call `/create-slide`, mention the theme by name:
+
+```text
+/create-slide for "Q3 board update — use the corporate theme"
+```
+
+The agent loads `themes/corporate.md`, applies the palette and type stack,
+and writes pages that match.
+
+## Extracting a theme
+
+Already have a deck whose look you like? Use `/create-theme` to extract its
+design tokens into a reusable theme file.

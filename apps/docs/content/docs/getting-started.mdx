@@ -1,0 +1,75 @@
+---
+title: Getting started
+description: Spin up your first deck in under a minute.
+---
+
+## Install
+
+```bash
+npx @open-slide/cli init my-deck
+cd my-deck
+pnpm install
+pnpm dev
+```
+
+The scaffolder generates a minimal workspace:
+
+```text
+my-deck/
+├── slides/
+│   └── getting-started/
+│       └── index.tsx       # your first slide
+├── themes/                 # optional, shared design systems
+├── open-slide.config.ts    # framework config
+├── CLAUDE.md               # agent rules
+├── AGENTS.md               # mirrors CLAUDE.md
+└── package.json
+```
+
+`pnpm dev` boots the dev server on `http://localhost:5173` (or the next free
+port) with hot module reload, the inspector, and the assets panel.
+
+## Author with an agent
+
+Open the workspace in any agent-aware editor — Claude Code, Codex, Cursor,
+Windsurf, Zed, etc. From the agent prompt:
+
+```text
+/create-slide for "Q2 launch — 3 chapters, mixed text density,
+                   subtle motion, dark aesthetic"
+```
+
+The skill walks the agent through scoping (topic & aesthetic, page count,
+density, motion), picks an id, plans the structure, and writes the pages
+under `slides/<id>/index.tsx`.
+
+## Iterate visually
+
+1. Click any element in the browser preview.
+2. Pick **Comment** and type a note — *"use the accent colour on this
+   title"*, *"shrink to 88px"*, *"swap to assets/cover.png"*.
+3. Save. Comments are persisted as `@slide-comment` markers in the source.
+4. Run `/apply-comments` in your agent. It rewrites exactly the flagged
+   regions and clears the markers.
+
+You can also edit text, font, weight, and colour directly from the inspector
+property panel — all edits buffer in memory until you press **Save**, so a
+batch lands as a single HMR write.
+
+## Build & deploy
+
+```bash
+pnpm build      # static build to dist/
+pnpm preview    # preview the static build locally
+```
+
+The output is a plain static site — deploy to Vercel, Cloudflare Pages,
+Zeabur, Netlify, or any static host.
+
+## What's next
+
+<Cards>
+  <Card title="A slide is a file" href="/docs/concepts/slide-as-code" />
+  <Card title="The 1920 × 1080 canvas" href="/docs/concepts/canvas" />
+  <Card title="Agent skills" href="/docs/agents/skills" />
+</Cards>

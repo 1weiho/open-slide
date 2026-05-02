@@ -1,0 +1,45 @@
+---
+title: Creating a slide
+description: From empty folder to first page.
+---
+
+## With an agent
+
+The recommended path — open your editor, ask:
+
+```text
+/create-slide for "intro to vector databases — 6 pages, dense
+                   text, dark aesthetic, subtle motion"
+```
+
+`/create-slide` asks four scoping questions, picks a deck id, plans the
+structure, and writes pages under `slides/<id>/index.tsx`.
+
+## By hand
+
+Create a folder, add an `index.tsx`, default-export an array of components.
+
+```tsx title="slides/intro/index.tsx"
+import type { Page, SlideMeta } from '@open-slide/core';
+
+const Cover: Page = () => (
+  <div style={{ width: '100%', height: '100%', background: '#0a0a0c', color: '#f6f5f0' }}>
+    {/* anything you can render */}
+  </div>
+);
+
+const Outline: Page = () => <div>{/* ... */}</div>;
+
+export const meta: SlideMeta = { title: 'Intro', theme: 'dark' };
+
+export default [Cover, Outline] satisfies Page[];
+```
+
+The dev server picks it up and adds it to the slide browser automatically.
+
+## Conventions
+
+- IDs are kebab-case: `q2-launch`, `intro-to-rag`, `2026-roadmap`.
+- One folder per deck. Co-locate everything that deck needs.
+- Don't touch `package.json`, `open-slide.config.ts`, or other slides
+  from inside a deck folder.

@@ -1,0 +1,54 @@
+---
+title: A slide is a file
+description: No DSL, no templates — just a React component on a fixed canvas.
+---
+
+A slide in open-slide is a React component. The runtime renders one component
+at a time onto a fixed 1920×1080 canvas, scales it to fit the viewport, and
+hands you the navigation, hot reload, and present mode.
+
+## File contract
+
+Each deck lives under `slides/<kebab-case-id>/`. The entry is
+`slides/<id>/index.tsx`. Assets (images, video, fonts) sit alongside in
+`slides/<id>/assets/`.
+
+```tsx title="slides/getting-started/index.tsx"
+import type { Page, SlideMeta } from '@open-slide/core';
+
+const Cover: Page = () => (
+  <div
+    style={{
+      width: '100%',
+      height: '100%',
+      background: '#08090a',
+      color: '#f7f8f8',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}
+  >
+    <h1 style={{ fontSize: 188, letterSpacing: '-0.04em' }}>
+      Hello, <em style={{ color: '#7170ff' }}>open-slide</em>.
+    </h1>
+  </div>
+);
+
+export const meta: SlideMeta = {
+  title: 'Getting started',
+  theme: 'dark',
+};
+
+export default [Cover] satisfies Page[];
+```
+
+## Just React
+
+There are only two rules:
+
+1. The default export is an array of React components — one per page.
+2. Each component fills its container. Use `width: '100%'` /
+   `height: '100%'` and you can lay out anything you want inside.
+
+That's it. There's no slide DSL, no markdown frontmatter chain, no templating
+language. If you can build it as a React component, it's a slide.

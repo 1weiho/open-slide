@@ -1,0 +1,56 @@
+---
+title: open-slide.config.ts
+description: Workspace-level configuration.
+---
+
+The config lives at the workspace root and is fully optional — every field
+has a sensible default.
+
+```ts title="open-slide.config.ts"
+import type { OpenSlideConfig } from '@open-slide/core';
+
+const config: OpenSlideConfig = {};
+
+export default config;
+```
+
+## Schema
+
+```ts
+type OpenSlideBuildConfig = {
+  /** Show the deck index (the slide browser) in the static build. */
+  showSlideBrowser?: boolean;
+  /** Show on-canvas UI (toolbar, hints) in the static build. */
+  showSlideUi?: boolean;
+  /** Show the "download as HTML" button in the static build. */
+  allowHtmlDownload?: boolean;
+};
+
+type OpenSlideConfig = {
+  /** Folder that contains your decks. Default: 'slides'. */
+  slidesDir?: string;
+  /** Dev server port. Default: first free port from 5173 upward. */
+  port?: number;
+  /** Build-time UI toggles. */
+  build?: OpenSlideBuildConfig;
+};
+```
+
+## Common recipes
+
+### Public share
+
+```ts
+const config: OpenSlideConfig = {
+  build: {
+    showSlideBrowser: false,
+    showSlideUi: false,
+    allowHtmlDownload: false,
+  },
+};
+```
+
+### Multiple deck folders
+
+`slidesDir` is a single path today. If you want multiple roots, group them
+under one folder and use subfolder ids.

@@ -1,0 +1,38 @@
+---
+title: open-slide init
+description: Scaffold a new workspace.
+---
+
+```bash
+npx @open-slide/cli init [directory]
+```
+
+If `directory` is omitted, the scaffolder uses the current folder. If it's
+provided and doesn't exist, it's created.
+
+## What it generates
+
+```text
+my-deck/
+├── slides/
+│   └── getting-started/
+│       └── index.tsx       # starter slide
+├── themes/                 # empty
+├── open-slide.config.ts    # framework config
+├── CLAUDE.md               # agent rules
+├── AGENTS.md               # mirror of CLAUDE.md
+├── package.json
+├── tsconfig.json
+└── netlify.toml / vercel.json   # one-click deploy configs
+```
+
+## After init
+
+```bash
+cd my-deck
+pnpm install
+pnpm dev
+```
+
+The dev server boots, opens the slide browser, and you're ready for your
+agent to take over.

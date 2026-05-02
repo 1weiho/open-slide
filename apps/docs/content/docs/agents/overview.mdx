@@ -1,0 +1,36 @@
+---
+title: Overview
+description: How open-slide and your coding agent work together.
+---
+
+open-slide treats your coding agent as a first-class user. Decks are React,
+agents are great at React, the gap between *"make slides about X"* and a
+polished deck is mostly the runtime — which open-slide provides.
+
+## What ships in the workspace
+
+`npx @open-slide/cli init` generates a `CLAUDE.md` (and `AGENTS.md`) at the
+root with the framework's hard rules, plus a `skills/` folder with four
+skills the agent invokes by name:
+
+- [`/create-slide`](/docs/agents/skills#create-slide)
+- [`/slide-authoring`](/docs/agents/skills#slide-authoring)
+- [`/apply-comments`](/docs/agents/skills#apply-comments)
+- [`/create-theme`](/docs/agents/skills#create-theme)
+
+The skills are kept inside the workspace (not the agent's global config) so
+they version with the project. `open-slide sync:skills` re-syncs them from
+the package if you upgrade.
+
+## The hard rules (`CLAUDE.md`)
+
+Short, intentional, machine-readable:
+
+- Slides go under `slides/<kebab-case-id>/`.
+- Entry is `slides/<id>/index.tsx`.
+- Assets sit in `slides/<id>/assets/`.
+- Don't touch `package.json`, `open-slide.config.ts`, or other slides.
+- Don't add dependencies. Use only React and standard web APIs.
+
+These constraints protect the agent from itself: it can't accidentally
+install a UI library, rewrite global config, or stomp on another deck.

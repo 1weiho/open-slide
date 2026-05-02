@@ -35,7 +35,8 @@
         "apps/web/app/components/anatomy.tsx",
         "apps/web/app/components/copy-command.tsx",
         "apps/web/app/components/theme-toggle.tsx",
-        "apps/web/app/components/inline-slide-player.tsx"
+        "apps/web/app/components/inline-slide-player.tsx",
+        "apps/docs/components/landing/**"
       ],
       "linter": {
         "rules": {
