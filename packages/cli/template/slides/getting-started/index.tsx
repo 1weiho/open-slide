@@ -1,4 +1,4 @@
-import type { Page, SlideMeta } from '@open-slide/core';
+import type { DesignSystem, Page, SlideMeta } from '@open-slide/core';
 
 import claudeLogo from './assets/claude.svg';
 import cloudflareLogo from './assets/cloudflare.svg';
@@ -8,19 +8,43 @@ import opencodeLogo from './assets/opencode.svg';
 import vercelLogo from './assets/vercel.svg';
 import zeaburLogo from './assets/zeabur.svg';
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
+// ─── Panel-tweakable design tokens ────────────────────────────────────────────
+// Edit live from the Design panel; consumed via `var(--osd-*)` in inline styles.
+export const design: DesignSystem = {
+  palette: {
+    bg: '#08090a',
+    text: '#f7f8f8',
+    accent: '#7170ff',
+  },
+  fonts: {
+    display: '"Inter", "SF Pro Display", system-ui, -apple-system, sans-serif',
+    body: '"Inter", "SF Pro Display", system-ui, -apple-system, sans-serif',
+  },
+  typeScale: {
+    hero: 168,
+    body: 36,
+  },
+  radius: {
+    md: 16,
+  },
+};
+
+// ─── Local (non-tweakable) constants ──────────────────────────────────────────
+// Mirrors of the panel tokens for template-string / arithmetic use, plus the
+// secondary palette and the mono font (kept hard-coded — outside what the
+// Design panel currently exposes).
 const palette = {
-  bg: '#08090a',
+  bg: design.palette.bg,
+  text: design.palette.text,
+  accent: design.palette.accent,
   surface: '#0e0f12',
   surfaceHi: '#14161a',
   surfaceMax: '#1a1c21',
-  text: '#f7f8f8',
   textSoft: '#c7c9d1',
   muted: '#6f727c',
   dim: '#3e4048',
   border: 'rgba(255,255,255,0.07)',
   borderBright: 'rgba(255,255,255,0.14)',
-  accent: '#7170ff',
   accentSoft: '#a3a0ff',
   accent2: '#5e6ad2',
   mint: '#68cc9a',
@@ -30,16 +54,17 @@ const palette = {
 };
 
 const font = {
-  sans: '"Inter", "SF Pro Display", system-ui, -apple-system, sans-serif',
+  sans: design.fonts.body,
+  display: design.fonts.display,
   mono: '"JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace',
 };
 
 const fill = {
   width: '100%',
   height: '100%',
-  background: palette.bg,
-  color: palette.text,
-  fontFamily: font.sans,
+  background: 'var(--osd-bg)',
+  color: 'var(--osd-text)',
+  fontFamily: 'var(--osd-font-body)',
   letterSpacing: '-0.015em',
   overflow: 'hidden',
   position: 'relative' as const,
@@ -209,7 +234,7 @@ const WindowShell = ({
     style={{
       background: palette.surface,
       border: `1px solid ${palette.border}`,
-      borderRadius: 16,
+      borderRadius: 'var(--osd-radius-md)',
       boxShadow: '0 40px 80px -30px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.02)',
       overflow: 'hidden',
       display: 'flex',
@@ -337,7 +362,7 @@ const LogoCard = ({
       flex: 1,
       background: palette.surface,
       border: `1px solid ${palette.border}`,
-      borderRadius: 16,
+      borderRadius: 'var(--osd-radius-md)',
       padding: '40px 28px 32px',
       display: 'flex',
       flexDirection: 'column',
@@ -413,7 +438,8 @@ const Cover: Page = () => (
         <h1
           className="es-fadeUp"
           style={{
-            fontSize: 168,
+            fontFamily: 'var(--osd-font-display)',
+            fontSize: 'var(--osd-size-hero)',
             lineHeight: 0.98,
             fontWeight: 600,
             margin: 0,
@@ -425,7 +451,7 @@ const Cover: Page = () => (
           <br />
           <span
             style={{
-              background: `linear-gradient(90deg, ${palette.accentSoft}, ${palette.accent})`,
+              background: `linear-gradient(90deg, ${palette.accentSoft}, var(--osd-accent))`,
               WebkitBackgroundClip: 'text',
               backgroundClip: 'text',
               color: 'transparent',
@@ -439,7 +465,7 @@ const Cover: Page = () => (
           style={{
             marginTop: 48,
             maxWidth: 1100,
-            fontSize: 36,
+            fontSize: 'var(--osd-size-body)',
             lineHeight: 1.35,
             color: palette.textSoft,
             animationDelay: '0.35s',
@@ -557,6 +583,7 @@ const Init: Page = () => {
             style={{
               marginTop: 20,
               marginBottom: 0,
+              fontFamily: 'var(--osd-font-display)',
               fontSize: 88,
               fontWeight: 600,
               letterSpacing: '-0.035em',
@@ -653,6 +680,7 @@ const Prompt: Page = () => {
             style={{
               marginTop: 20,
               marginBottom: 0,
+              fontFamily: 'var(--osd-font-display)',
               fontSize: 88,
               fontWeight: 600,
               letterSpacing: '-0.035em',
@@ -920,6 +948,7 @@ const VisualEdit: Page = () => {
             style={{
               marginTop: 20,
               marginBottom: 0,
+              fontFamily: 'var(--osd-font-display)',
               fontSize: 88,
               fontWeight: 600,
               letterSpacing: '-0.035em',
@@ -1390,6 +1419,7 @@ const AssetsManager: Page = () => {
             style={{
               marginTop: 20,
               marginBottom: 0,
+              fontFamily: 'var(--osd-font-display)',
               fontSize: 88,
               fontWeight: 600,
               letterSpacing: '-0.035em',
@@ -1857,6 +1887,7 @@ const Inspect: Page = () => (
           style={{
             marginTop: 20,
             marginBottom: 0,
+            fontFamily: 'var(--osd-font-display)',
             fontSize: 88,
             fontWeight: 600,
             letterSpacing: '-0.035em',
@@ -2144,6 +2175,7 @@ const Apply: Page = () => (
           style={{
             marginTop: 20,
             marginBottom: 0,
+            fontFamily: 'var(--osd-font-display)',
             fontSize: 88,
             fontWeight: 600,
             letterSpacing: '-0.035em',
@@ -2554,6 +2586,7 @@ const Recap: Page = () => {
         <div className="es-fadeUp" style={{ animationDelay: '0.15s' }}>
           <h2
             style={{
+              fontFamily: 'var(--osd-font-display)',
               fontSize: 160,
               fontWeight: 600,
               letterSpacing: '-0.045em',
@@ -2681,6 +2714,7 @@ const AgentAgnostic: Page = () => {
             style={{
               marginTop: 24,
               marginBottom: 0,
+              fontFamily: 'var(--osd-font-display)',
               fontSize: 120,
               fontWeight: 600,
               letterSpacing: '-0.04em',
@@ -2984,6 +3018,7 @@ const FreeLayout: Page = () => {
             style={{
               marginTop: 24,
               marginBottom: 0,
+              fontFamily: 'var(--osd-font-display)',
               fontSize: 120,
               fontWeight: 600,
               letterSpacing: '-0.04em',
@@ -3084,6 +3119,7 @@ const GitTracked: Page = () => {
             style={{
               marginTop: 20,
               marginBottom: 0,
+              fontFamily: 'var(--osd-font-display)',
               fontSize: 104,
               fontWeight: 600,
               letterSpacing: '-0.04em',
@@ -3271,6 +3307,7 @@ const DeployAnywhere: Page = () => {
             style={{
               marginTop: 24,
               marginBottom: 0,
+              fontFamily: 'var(--osd-font-display)',
               fontSize: 104,
               fontWeight: 600,
               letterSpacing: '-0.04em',
