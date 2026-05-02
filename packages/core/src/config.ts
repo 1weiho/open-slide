@@ -1,3 +1,5 @@
+import type { Locale } from './locale/types';
+
 export type OpenSlideBuildConfig = {
   showSlideBrowser?: boolean;
   showSlideUi?: boolean;
@@ -7,5 +9,6 @@ export type OpenSlideBuildConfig = {
 export type OpenSlideConfig = {
   slidesDir?: string;
   port?: number;
+  locale?: Locale;
   build?: OpenSlideBuildConfig;
 };

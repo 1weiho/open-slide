@@ -1,18 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-
-const SHORTCUTS: Array<{ keys: string[]; label: string }> = [
-  { keys: ['→', '↓', 'Space', 'PgDn'], label: 'Next slide' },
-  { keys: ['←', '↑', 'PgUp'], label: 'Previous slide' },
-  { keys: ['Home', 'End'], label: 'First / last slide' },
-  { keys: ['1–9', 'Enter'], label: 'Jump to slide' },
-  { keys: ['O'], label: 'Slide overview' },
-  { keys: ['B'], label: 'Black screen' },
-  { keys: ['W'], label: 'White screen' },
-  { keys: ['L'], label: 'Laser pointer' },
-  { keys: ['P'], label: 'Open Presenter View' },
-  { keys: ['?', 'H'], label: 'Toggle this help' },
-  { keys: ['Esc'], label: 'Close overlay / exit' },
-];
+import { useLocale } from '@/lib/use-locale';
 
 type Props = {
   open: boolean;
@@ -23,15 +10,29 @@ type Props = {
 };
 
 export function PresentHelpOverlay({ open, onOpenChange, container }: Props) {
+  const t = useLocale();
+  const shortcuts: Array<{ keys: string[]; label: string }> = [
+    { keys: ['→', '↓', 'Space', 'PgDn'], label: t.present.shortcutNext },
+    { keys: ['←', '↑', 'PgUp'], label: t.present.shortcutPrev },
+    { keys: ['Home', 'End'], label: t.present.shortcutFirstLast },
+    { keys: ['1–9', 'Enter'], label: t.present.shortcutJump },
+    { keys: ['O'], label: t.present.shortcutOverview },
+    { keys: ['B'], label: t.present.shortcutBlack },
+    { keys: ['W'], label: t.present.shortcutWhite },
+    { keys: ['L'], label: t.present.shortcutLaser },
+    { keys: ['P'], label: t.present.shortcutPresenter },
+    { keys: ['?', 'H'], label: t.present.shortcutToggleHelp },
+    { keys: ['Esc'], label: t.present.shortcutCloseExit },
+  ];
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent container={container ?? undefined} className="max-w-lg sm:max-w-lg">
         <DialogHeader>
-          <span className="eyebrow">Present mode</span>
-          <DialogTitle>Keyboard shortcuts</DialogTitle>
+          <span className="eyebrow">{t.present.helpEyebrow}</span>
+          <DialogTitle>{t.present.helpTitle}</DialogTitle>
         </DialogHeader>
         <div className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
-          {SHORTCUTS.map((row) => (
+          {shortcuts.map((row) => (
             <div
               key={row.label}
               className="flex items-center justify-between gap-3 border-b border-hairline py-1.5 last:border-0"

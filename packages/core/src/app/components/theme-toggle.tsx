@@ -8,11 +8,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const t = useLocale();
 
   useEffect(() => {
     setMounted(true);
@@ -22,8 +24,8 @@ export function ThemeToggle() {
     <DropdownMenu>
       <DropdownMenuTrigger
         type="button"
-        aria-label="Toggle theme"
-        title="Theme"
+        aria-label={t.themeToggle.toggleAria}
+        title={t.themeToggle.title}
         className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }), 'relative')}
       >
         <Sun className="size-3.5 scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
@@ -35,21 +37,21 @@ export function ThemeToggle() {
           data-active={mounted && theme === 'light'}
         >
           <Sun />
-          Light
+          {t.themeToggle.light}
         </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={() => setTheme('dark')}
           data-active={mounted && theme === 'dark'}
         >
           <Moon />
-          Dark
+          {t.themeToggle.dark}
         </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={() => setTheme('system')}
           data-active={mounted && theme === 'system'}
         >
           <Monitor />
-          System
+          {t.themeToggle.system}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

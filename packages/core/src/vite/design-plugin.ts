@@ -3,7 +3,7 @@ import type { ServerResponse } from 'node:http';
 import path from 'node:path';
 import { parse as babelParse } from '@babel/parser';
 import type { Connect, Plugin, ViteDevServer } from 'vite';
-import { defaultDesign, type DesignSystem } from '../app/lib/design.ts';
+import { type DesignSystem, defaultDesign } from '../app/lib/design.ts';
 import type { AstNode } from './babel-walk.ts';
 
 const SLIDE_ID_RE = /^[a-z0-9_-]+$/i;

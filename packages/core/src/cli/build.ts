@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { build as viteBuild, mergeConfig } from 'vite';
+import { mergeConfig, build as viteBuild } from 'vite';
 import { createViteConfig } from '../vite/config.ts';
 
 export interface BuildOptions {

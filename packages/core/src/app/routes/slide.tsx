@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFolders } from '@/lib/folders';
+import { useLocale } from '@/lib/use-locale';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
 import { ClickNavZones } from '../components/click-nav-zones';
@@ -49,6 +50,7 @@ export function Slide() {
   const [designOpen, setDesignOpen] = useState(false);
   const { renameSlide } = useFolders();
   const slideViewportRef = useRef<HTMLElement>(null);
+  const t = useLocale();
 
   useEffect(() => {
     let cancelled = false;
@@ -110,12 +112,12 @@ export function Slide() {
       <div className="mx-auto max-w-3xl px-8 py-16 text-muted-foreground">
         {showSlideBrowser && (
           <Link to="/" className="text-[12px] font-medium text-foreground/70 hover:text-foreground">
-            ← Home
+            ← {t.common.home}
           </Link>
         )}
-        <span className="mt-6 block eyebrow text-destructive/80">Load failed</span>
+        <span className="mt-6 block eyebrow text-destructive/80">{t.common.loadFailed}</span>
         <h2 className="mt-2 font-heading text-xl font-semibold tracking-tight text-foreground">
-          Failed to load slide
+          {t.common.failedToLoadSlide}
         </h2>
         <pre className="mt-4 overflow-auto rounded-[6px] border border-border bg-card p-4 text-[11.5px] leading-relaxed whitespace-pre-wrap shadow-edge">
           {error}
@@ -127,7 +129,7 @@ export function Slide() {
   if (!slide) {
     return (
       <div className="mx-auto max-w-3xl px-8 py-16 text-[12.5px] text-muted-foreground">
-        <span className="eyebrow">Loading</span>
+        <span className="eyebrow">{t.slide.loadingEyebrow}</span>
         <p className="mt-2 font-mono">{slideId}</p>
       </div>
     );
@@ -138,22 +140,22 @@ export function Slide() {
       <div className="mx-auto max-w-3xl px-8 py-16 text-muted-foreground">
         {showSlideBrowser && (
           <Link to="/" className="text-[12px] font-medium text-foreground/70 hover:text-foreground">
-            ← Home
+            ← {t.common.home}
           </Link>
         )}
-        <span className="mt-6 block eyebrow">Empty</span>
+        <span className="mt-6 block eyebrow">{t.slide.emptyEyebrow}</span>
         <h2 className="mt-2 font-heading text-xl font-semibold tracking-tight text-foreground">
-          Nothing to show.
+          {t.slide.nothingToShow}
         </h2>
         <p className="mt-3 text-[13px] leading-relaxed">
           <code className="rounded-[4px] bg-muted px-1.5 py-0.5 font-mono text-[11.5px]">
             slides/{slideId}/index.tsx
-          </code>{' '}
-          must{' '}
+          </code>
+          {t.slide.emptyHintMust}
           <code className="rounded-[4px] bg-muted px-1.5 py-0.5 font-mono text-[11.5px]">
             export default
-          </code>{' '}
-          a non-empty array of components.
+          </code>
+          {t.slide.emptyHintSuffix}
         </p>
       </div>
     );
@@ -197,8 +199,8 @@ export function Slide() {
           <header className="relative flex h-12 shrink-0 items-center justify-between border-b border-hairline bg-sidebar/85 px-2 backdrop-blur-md md:px-3">
             <div className="flex items-center gap-1.5 md:gap-2">
               {showSlideBrowser && (
-                <Button asChild variant="ghost" size="icon-sm" title="Home">
-                  <Link to="/" aria-label="Back to home">
+                <Button asChild variant="ghost" size="icon-sm" title={t.slide.home}>
+                  <Link to="/" aria-label={t.slide.backToHome}>
                     <ChevronLeft className="size-4" />
                   </Link>
                 </Button>
@@ -220,8 +222,8 @@ export function Slide() {
                   }}
                 >
                   <TabsList>
-                    <TabsTrigger value="slides">Slides</TabsTrigger>
-                    <TabsTrigger value="assets">Assets</TabsTrigger>
+                    <TabsTrigger value="slides">{t.slide.slidesTab}</TabsTrigger>
+                    <TabsTrigger value="assets">{t.slide.assetsTab}</TabsTrigger>
                   </TabsList>
                 </Tabs>
               )}
@@ -240,8 +242,8 @@ export function Slide() {
                   <DropdownMenuTrigger
                     type="button"
                     disabled={exporting}
-                    aria-label="Download"
-                    title="Download"
+                    aria-label={t.slide.download}
+                    title={t.slide.download}
                     className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}
                   >
                     {exporting ? (
@@ -266,7 +268,7 @@ export function Slide() {
                       }}
                     >
                       <FileCode2 />
-                      Export as HTML
+                      {t.slide.exportAsHtml}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       disabled={exporting}
@@ -296,7 +298,7 @@ export function Slide() {
                           });
                         } catch (err) {
                           console.error('[open-slide] pdf export failed', err);
-                          toast.error('PDF export failed', { id: toastId, duration: 4000 });
+                          toast.error(t.slide.pdfExportFailed, { id: toastId, duration: 4000 });
                         } finally {
                           setExporting(false);
                           toast.dismiss(toastId);
@@ -304,7 +306,7 @@ export function Slide() {
                       }}
                     >
                       <FileText />
-                      Export as PDF
+                      {t.slide.exportAsPdf}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -322,7 +324,7 @@ export function Slide() {
                   className="px-2.5 md:px-3"
                 >
                   <Play className="size-3.5 fill-current" />
-                  <span className="hidden md:inline">Present</span>
+                  <span className="hidden md:inline">{t.slide.present}</span>
                   <kbd className="ml-1 hidden rounded-[3px] bg-brand-foreground/15 px-1 font-mono text-[9.5px] tracking-[0.04em] md:inline">
                     F
                   </kbd>
@@ -434,6 +436,7 @@ function InlineTitleEditor({
   const [value, setValue] = useState(title);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const t = useLocale();
 
   useEffect(() => {
     if (!editing) setValue(title);
@@ -505,7 +508,7 @@ function InlineTitleEditor({
         <button
           type="button"
           onClick={() => setEditing(true)}
-          aria-label="Rename slide"
+          aria-label={t.slide.renameSlide}
           className={cn(
             'flex size-5 shrink-0 items-center justify-center rounded-[4px] text-muted-foreground transition-opacity hover:bg-muted hover:text-foreground',
             'opacity-0 group-hover/title:opacity-100 focus-visible:opacity-100',

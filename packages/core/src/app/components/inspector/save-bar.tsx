@@ -1,6 +1,7 @@
 import { useHistory } from '@/components/history-provider';
 import { SaveCard } from '@/components/panel/save-card';
 import { useDesignPanelState } from '@/components/style-panel/design-provider';
+import { format, plural, useLocale } from '@/lib/use-locale';
 import { useInspector } from './inspector-provider';
 
 // Single save card for both inspector edits and design-token edits.
@@ -10,6 +11,7 @@ export function SaveBar() {
   const insp = useInspector();
   const design = useDesignPanelState();
   const history = useHistory();
+  const t = useLocale();
 
   const inspectorCount = insp.pendingCount;
   const designCount = design.dirty ? 1 : 0;
@@ -37,7 +39,7 @@ export function SaveBar() {
       committing={committing}
       onSave={onSave}
       onDiscard={onDiscard}
-      unsavedLabel={`${total} unsaved ${total === 1 ? 'change' : 'changes'}`}
+      unsavedLabel={format(plural(total, t.inspector.unsavedChanges), { count: total })}
       onUndo={history.undo}
       onRedo={history.redo}
       canUndo={history.canUndo}

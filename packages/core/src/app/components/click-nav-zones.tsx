@@ -1,3 +1,4 @@
+import { useLocale } from '@/lib/use-locale';
 import { useInspector } from './inspector/inspector-provider';
 
 type Props = {
@@ -9,13 +10,14 @@ type Props = {
 
 export function ClickNavZones({ onPrev, onNext, canPrev, canNext }: Props) {
   const { active } = useInspector();
+  const t = useLocale();
   if (active) return null;
 
   return (
     <>
       <button
         type="button"
-        aria-label="Previous page"
+        aria-label={t.clickNav.prevAria}
         onClick={onPrev}
         disabled={!canPrev}
         data-inspector-ui
@@ -23,7 +25,7 @@ export function ClickNavZones({ onPrev, onNext, canPrev, canNext }: Props) {
       />
       <button
         type="button"
-        aria-label="Next page"
+        aria-label={t.clickNav.nextAria}
         onClick={onNext}
         disabled={!canNext}
         data-inspector-ui

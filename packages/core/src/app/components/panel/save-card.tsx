@@ -1,6 +1,7 @@
 import { Check, Loader2, Redo2, Save, Undo2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useLocale } from '@/lib/use-locale';
 
 type SaveCardProps = {
   dirty: boolean;
@@ -25,14 +26,16 @@ export function SaveCard({
   onSave,
   onDiscard,
   unsavedLabel,
-  savedLabel = 'Saved',
+  savedLabel,
   uiAttr,
   onUndo,
   onRedo,
   canUndo = false,
   canRedo = false,
 }: SaveCardProps) {
+  const t = useLocale();
   const [justSaved, setJustSaved] = useState(false);
+  const resolvedSavedLabel = savedLabel ?? t.common.saved;
 
   useEffect(() => {
     if (!justSaved) return;
@@ -66,8 +69,8 @@ export function SaveCard({
               className="text-muted-foreground hover:text-foreground"
               onClick={onUndo}
               disabled={committing || !canUndo}
-              aria-label="Undo"
-              title="Undo"
+              aria-label={t.common.undo}
+              title={t.common.undo}
             >
               <Undo2 className="size-3.5" />
             </Button>
@@ -77,8 +80,8 @@ export function SaveCard({
               className="text-muted-foreground hover:text-foreground"
               onClick={onRedo}
               disabled={committing || !canRedo}
-              aria-label="Redo"
-              title="Redo"
+              aria-label={t.common.redo}
+              title={t.common.redo}
             >
               <Redo2 className="size-3.5" />
             </Button>
@@ -90,7 +93,7 @@ export function SaveCard({
         {justSaved ? (
           <span className="flex items-center gap-1.5 px-2.5 text-[12px] font-medium text-foreground">
             <Check className="size-3.5 text-[oklch(0.55_0.13_165)]" strokeWidth={2.5} />
-            {savedLabel}
+            {resolvedSavedLabel}
           </span>
         ) : dirty || committing ? (
           <span className="inline-flex items-center gap-1.5 px-2.5 text-[12px] font-medium text-foreground">
@@ -109,7 +112,7 @@ export function SaveCard({
             onClick={onDiscard}
             disabled={committing || !dirty}
           >
-            Discard
+            {t.common.discard}
           </Button>
         )}
         {(dirty || committing) && (
@@ -123,12 +126,12 @@ export function SaveCard({
             {committing ? (
               <>
                 <Loader2 className="size-3.5 animate-spin" />
-                Saving
+                {t.common.saving}
               </>
             ) : (
               <>
                 <Save className="size-3.5" />
-                Save
+                {t.common.save}
               </>
             )}
           </Button>

@@ -5,9 +5,12 @@ declare module 'virtual:open-slide/slides' {
 }
 
 declare module 'virtual:open-slide/config' {
+  import type { Locale } from '../locale/types';
+
   const config: {
     slidesDir?: string;
     port?: number;
+    locale?: Locale;
     build: {
       showSlideBrowser: boolean;
       showSlideUi: boolean;
@@ -19,6 +22,7 @@ declare module 'virtual:open-slide/config' {
 
 declare module 'virtual:open-slide/folders' {
   import type { FoldersManifest } from './lib/sdk';
+
   const manifest: FoldersManifest;
   export default manifest;
 }

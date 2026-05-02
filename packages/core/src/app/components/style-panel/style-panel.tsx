@@ -2,6 +2,7 @@ import { Palette, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Field, NumberField, Section } from '@/components/panel/panel-fields';
 import { PanelShell, usePanelMount } from '@/components/panel/panel-shell';
+import { useLocale } from '@/lib/use-locale';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -29,6 +30,7 @@ type DesignPanelProps = {
 export function DesignPanel({ open, onClose }: DesignPanelProps) {
   const { draft, exists, warning, loaded, dirty, update } = useDesignPanelState();
   const { mounted, animVisible } = usePanelMount(open);
+  const t = useLocale();
 
   if (!loaded) return null;
   if (!mounted) return null;
@@ -43,15 +45,19 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
           <div className="flex min-w-0 items-center gap-2">
             <Palette className="size-3.5 text-muted-foreground" />
             <span className="font-heading text-[12px] font-semibold tracking-tight">
-              Design tokens
+              {t.stylePanel.designTokens}
             </span>
             {!exists && (
               <span className="rounded-[3px] border border-hairline bg-muted/60 px-1.5 py-px font-mono text-[9.5px] uppercase tracking-[0.08em] text-muted-foreground">
-                draft
+                {t.stylePanel.draftBadge}
               </span>
             )}
             {dirty && (
-              <span className="size-1.5 rounded-full bg-brand" title="Unsaved" aria-hidden />
+              <span
+                className="size-1.5 rounded-full bg-brand"
+                title={t.stylePanel.unsavedTitle}
+                aria-hidden
+              />
             )}
           </div>
           <Button
@@ -59,7 +65,7 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
             size="icon-sm"
             className="text-muted-foreground hover:text-foreground"
             onClick={onClose}
-            aria-label="Close design panel"
+            aria-label={t.stylePanel.closePanelAria}
           >
             <X className="size-3.5" />
           </Button>
@@ -74,9 +80,9 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
         )
       }
     >
-      <Section title="Colors">
+      <Section title={t.stylePanel.colorsSection}>
         <ColorField
-          label="Background"
+          label={t.stylePanel.backgroundLabel}
           value={draft.palette.bg}
           onChange={(v) =>
             update((d) => {
@@ -85,7 +91,7 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
           }
         />
         <ColorField
-          label="Text"
+          label={t.stylePanel.textLabel}
           value={draft.palette.text}
           onChange={(v) =>
             update((d) => {
@@ -94,7 +100,7 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
           }
         />
         <ColorField
-          label="Accent"
+          label={t.stylePanel.accentLabel}
           value={draft.palette.accent}
           onChange={(v) =>
             update((d) => {
@@ -106,9 +112,9 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
 
       <Separator />
 
-      <Section title="Typography">
+      <Section title={t.stylePanel.typographySection}>
         <FontField
-          label="Display"
+          label={t.stylePanel.displayFontLabel}
           value={draft.fonts.display}
           onChange={(v) =>
             update((d) => {
@@ -117,7 +123,7 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
           }
         />
         <FontField
-          label="Body"
+          label={t.stylePanel.bodyFontLabel}
           value={draft.fonts.body}
           onChange={(v) =>
             update((d) => {
@@ -126,7 +132,7 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
           }
         />
         <SliderField
-          label="Hero"
+          label={t.stylePanel.heroLabel}
           value={draft.typeScale.hero}
           min={48}
           max={240}
@@ -139,7 +145,7 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
           }
         />
         <SliderField
-          label="Body"
+          label={t.stylePanel.bodyLabel}
           value={draft.typeScale.body}
           min={16}
           max={72}
@@ -155,9 +161,9 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
 
       <Separator />
 
-      <Section title="Shape">
+      <Section title={t.stylePanel.shapeSection}>
         <SliderField
-          label="Radius"
+          label={t.stylePanel.radiusLabel}
           value={draft.radius}
           min={0}
           max={80}
@@ -181,6 +187,7 @@ export function DesignToggleButton({
   active: boolean;
   onToggle: () => void;
 }) {
+  const t = useLocale();
   if (import.meta.env.PROD) return null;
   return (
     <Button
@@ -188,10 +195,10 @@ export function DesignToggleButton({
       variant={active ? 'default' : 'ghost'}
       onClick={onToggle}
       data-design-ui
-      title="Design tokens"
+      title={t.stylePanel.designToggleTitle}
     >
       <Palette className="size-3.5" />
-      <span className="hidden md:inline">Design</span>
+      <span className="hidden md:inline">{t.stylePanel.designToggle}</span>
     </Button>
   );
 }
@@ -247,6 +254,7 @@ function FontField({
   onChange: (v: string) => void;
 }) {
   const matched = FONT_PRESETS.find((p) => p.value === value);
+  const tFont = useLocale();
   return (
     <Field label={label}>
       <Select
@@ -266,7 +274,7 @@ function FontField({
           ))}
           {!matched && (
             <SelectItem value="__custom__" className="text-xs">
-              Custom…
+              {tFont.stylePanel.fontPresetCustom}
             </SelectItem>
           )}
         </SelectContent>

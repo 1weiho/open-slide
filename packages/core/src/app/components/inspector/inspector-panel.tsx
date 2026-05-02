@@ -35,7 +35,9 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { type AssetEntry, useAssets } from '@/lib/assets';
 import { findSlideSource } from '@/lib/inspector/fiber';
 import type { EditOp } from '@/lib/inspector/use-editor';
+import { useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
+import type { Locale } from '../../../locale/types';
 import { type SelectedTarget, useInspector } from './inspector-provider';
 
 type ElementSnapshot = {
@@ -57,6 +59,7 @@ export function InspectorPanel() {
     useInspector();
   const [snapshot, setSnapshot] = useState<ElementSnapshot | null>(null);
   const reloadCounter = useReloadCounter();
+  const t = useLocale();
 
   useEffect(() => {
     void reloadCounter;
@@ -138,7 +141,9 @@ export function InspectorPanel() {
       header={
         <>
           <div className="flex min-w-0 items-center gap-2">
-            <span className="font-heading text-[12px] font-semibold tracking-tight">Inspect</span>
+            <span className="font-heading text-[12px] font-semibold tracking-tight">
+              {t.inspector.inspect}
+            </span>
             <span aria-hidden className="h-3 w-px bg-hairline" />
             <span className="rounded-[3px] border border-hairline bg-card px-1.5 py-px font-mono text-[10.5px] text-foreground/85">
               &lt;{pinSelected.anchor.tagName.toLowerCase()}&gt;
@@ -149,7 +154,7 @@ export function InspectorPanel() {
             size="icon-sm"
             className="text-muted-foreground hover:text-foreground"
             onClick={() => setSelected(null)}
-            aria-label="Deselect"
+            aria-label={t.inspector.deselect}
           >
             <X className="size-3.5" />
           </Button>
@@ -158,14 +163,14 @@ export function InspectorPanel() {
       footer={<CommentsSection selected={pinSelected} onAdd={add} />}
     >
       {pinSnapshot.text !== null && (
-        <Section title="Content">
+        <Section title={t.inspector.contentSection}>
           <ContentField snapshot={pinSnapshot} apply={apply} />
         </Section>
       )}
 
       <Separator />
 
-      <Section title="Typography">
+      <Section title={t.inspector.typographySection}>
         <FontSizeField snapshot={pinSnapshot} apply={apply} />
         <FontWeightField snapshot={pinSnapshot} apply={apply} />
         <StyleToggles snapshot={pinSnapshot} apply={apply} />
@@ -176,15 +181,15 @@ export function InspectorPanel() {
 
       <Separator />
 
-      <Section title="Color">
+      <Section title={t.inspector.colorSection}>
         <ColorField
-          label="Text"
+          label={t.inspector.textColor}
           value={pinSnapshot.color}
           onChange={(v) => apply([{ kind: 'set-style', key: 'color', value: v }])}
           clearable={false}
         />
         <ColorField
-          label="Background"
+          label={t.inspector.backgroundColor}
           value={pinSnapshot.backgroundColor ?? '#ffffff'}
           dim={!pinSnapshot.backgroundColor}
           onChange={(v) => apply([{ kind: 'set-style', key: 'backgroundColor', value: v }])}
@@ -196,7 +201,7 @@ export function InspectorPanel() {
       {pinSnapshot.imageSrc !== null && (
         <>
           <Separator />
-          <Section title="Image">
+          <Section title={t.inspector.imageSection}>
             <ImageField slideId={slideId} src={pinSnapshot.imageSrc} apply={apply} />
           </Section>
         </>
@@ -205,7 +210,7 @@ export function InspectorPanel() {
       {pinSnapshot.placeholder && (
         <>
           <Separator />
-          <Section title="Image placeholder">
+          <Section title={t.inspector.imagePlaceholderSection}>
             <PlaceholderField
               slideId={slideId}
               hint={pinSnapshot.placeholder.hint}
@@ -246,6 +251,7 @@ function ContentField({
   // candidates (Bopomofo/Pinyin only commit on candidate selection).
   const [local, setLocal] = useState(snapshot.text ?? '');
   const composingRef = useRef(false);
+  const t = useLocale();
 
   useEffect(() => {
     if (!composingRef.current) setLocal(snapshot.text ?? '');
@@ -272,7 +278,7 @@ function ContentField({
       }}
       rows={3}
       className="min-h-16 resize-none text-xs"
-      placeholder="Element text"
+      placeholder={t.inspector.elementTextPlaceholder}
     />
   );
 }
@@ -287,8 +293,9 @@ function FontSizeField({
   const set = (px: number) => {
     apply([{ kind: 'set-style', key: 'fontSize', value: `${Math.round(px)}px` }]);
   };
+  const t = useLocale();
   return (
-    <Field label="Size">
+    <Field label={t.inspector.sizeLabel}>
       <Slider
         min={8}
         max={200}
@@ -308,14 +315,16 @@ function FontSizeField({
   );
 }
 
-const WEIGHT_OPTIONS: { value: string; label: string }[] = [
-  { value: '300', label: 'Light · 300' },
-  { value: '400', label: 'Regular · 400' },
-  { value: '500', label: 'Medium · 500' },
-  { value: '600', label: 'Semibold · 600' },
-  { value: '700', label: 'Bold · 700' },
-  { value: '800', label: 'Extrabold · 800' },
-];
+function getWeightOptions(t: Locale): { value: string; label: string }[] {
+  return [
+    { value: '300', label: t.inspector.weightLight },
+    { value: '400', label: t.inspector.weightRegular },
+    { value: '500', label: t.inspector.weightMedium },
+    { value: '600', label: t.inspector.weightSemibold },
+    { value: '700', label: t.inspector.weightBold },
+    { value: '800', label: t.inspector.weightExtrabold },
+  ];
+}
 
 function FontWeightField({
   snapshot,
@@ -324,8 +333,10 @@ function FontWeightField({
   snapshot: ElementSnapshot;
   apply: (ops: EditOp[]) => void;
 }) {
+  const t = useLocale();
+  const weightOptions = getWeightOptions(t);
   return (
-    <Field label="Weight">
+    <Field label={t.inspector.weightLabel}>
       <Select
         value={String(snapshot.fontWeight)}
         onValueChange={(value) => {
@@ -343,7 +354,7 @@ function FontWeightField({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {WEIGHT_OPTIONS.map((opt) => (
+          {weightOptions.map((opt) => (
             <SelectItem key={opt.value} value={opt.value} className="text-xs">
               {opt.label}
             </SelectItem>
@@ -361,8 +372,9 @@ function StyleToggles({
   snapshot: ElementSnapshot;
   apply: (ops: EditOp[]) => void;
 }) {
+  const t = useLocale();
   return (
-    <Field label="Style">
+    <Field label={t.inspector.styleLabel}>
       <Toggle
         size="sm"
         variant="outline"
@@ -370,7 +382,7 @@ function StyleToggles({
         onPressedChange={(v) =>
           apply([{ kind: 'set-style', key: 'fontWeight', value: v ? '700' : null }])
         }
-        aria-label="Bold"
+        aria-label={t.inspector.boldAria}
       >
         <Bold className="size-3.5" />
       </Toggle>
@@ -381,7 +393,7 @@ function StyleToggles({
         onPressedChange={(v) =>
           apply([{ kind: 'set-style', key: 'fontStyle', value: v ? 'italic' : null }])
         }
-        aria-label="Italic"
+        aria-label={t.inspector.italicAria}
       >
         <Italic className="size-3.5" />
       </Toggle>
@@ -400,8 +412,9 @@ function LineHeightField({
   const set = (n: number) => {
     apply([{ kind: 'set-style', key: 'lineHeight', value: String(round2(n)) }]);
   };
+  const t = useLocale();
   return (
-    <Field label="Line height">
+    <Field label={t.inspector.lineHeightLabel}>
       <Slider
         min={0.8}
         max={3}
@@ -431,8 +444,9 @@ function LetterSpacingField({
       },
     ]);
   };
+  const t = useLocale();
   return (
-    <Field label="Tracking">
+    <Field label={t.inspector.trackingLabel}>
       <Slider
         min={-5}
         max={20}
@@ -467,8 +481,9 @@ function TextAlignField({
   snapshot: ElementSnapshot;
   apply: (ops: EditOp[]) => void;
 }) {
+  const t = useLocale();
   return (
-    <Field label="Align">
+    <Field label={t.inspector.alignLabel}>
       <ToggleGroup
         type="single"
         size="sm"
@@ -513,6 +528,7 @@ function ColorField({
   // Buffer the text input so intermediate hex like "#a" doesn't
   // commit until it parses as a full color.
   const [draft, setDraft] = useState(value);
+  const tColor = useLocale();
   useEffect(() => setDraft(value), [value]);
 
   const commitHex = (hex: string) => {
@@ -559,7 +575,7 @@ function ColorField({
           size="icon"
           className="size-8 text-muted-foreground hover:text-foreground"
           onClick={onClear}
-          aria-label="Clear"
+          aria-label={tColor.inspector.clearAria}
         >
           <X className="size-3.5" />
         </Button>
@@ -578,6 +594,7 @@ function ImageField({
   apply: (ops: EditOp[]) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const t = useLocale();
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-3">
@@ -600,7 +617,7 @@ function ImageField({
           onClick={() => setOpen(true)}
         >
           <ImageIcon className="size-3.5" />
-          Replace…
+          {t.inspector.replace}
         </Button>
       </div>
       {open && (
@@ -639,10 +656,12 @@ function PlaceholderField({
 }) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const t = useLocale();
   return (
     <div className="space-y-2">
       <p className="text-[11px] leading-relaxed text-muted-foreground">
-        Hint: <span className="font-medium text-foreground">{hint}</span>
+        {t.inspector.placeholderHintLabel}{' '}
+        <span className="font-medium text-foreground">{hint}</span>
       </p>
       <Button
         type="button"
@@ -653,7 +672,7 @@ function PlaceholderField({
         onClick={() => setOpen(true)}
       >
         <ImageIcon className="size-3.5" />
-        Replace…
+        {t.inspector.replace}
       </Button>
       {open && (
         <AssetPickerDialog
@@ -690,21 +709,28 @@ function AssetPickerDialog({
 }) {
   const { assets, loading } = useAssets(slideId);
   const images = assets.filter((a) => a.mime.startsWith('image/'));
+  const t = useLocale();
+  const path = `slides/${slideId}/assets/`;
+  const [descPrefix, descSuffix] = t.inspector.replaceImageDescription.split('{path}');
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Replace image</DialogTitle>
+          <DialogTitle>{t.inspector.replaceImageDialogTitle}</DialogTitle>
           <DialogDescription>
-            Pick an asset from <span className="font-mono">slides/{slideId}/assets/</span>.
+            {descPrefix}
+            <span className="font-mono">{path}</span>
+            {descSuffix}
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[60vh] overflow-y-auto">
           {loading ? (
-            <p className="px-1 py-6 text-center text-xs text-muted-foreground">Loading…</p>
+            <p className="px-1 py-6 text-center text-xs text-muted-foreground">
+              {t.inspector.pickerLoading}
+            </p>
           ) : images.length === 0 ? (
             <p className="px-1 py-6 text-center text-xs text-muted-foreground">
-              No images in this slide's assets folder yet. Add some from the Assets tab.
+              {t.inspector.pickerEmpty}
             </p>
           ) : (
             <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-3">
@@ -750,6 +776,7 @@ function CommentsSection({
 }) {
   const [draft, setDraft] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const t = useLocale();
 
   const submit = async () => {
     const trimmed = draft.trim();
@@ -764,7 +791,7 @@ function CommentsSection({
   };
 
   return (
-    <Section title="Note for the agent">
+    <Section title={t.inspector.noteForAgent}>
       <div className="flex flex-col gap-2">
         <div className="comment-cue rounded-[6px]">
           <Textarea
@@ -776,14 +803,16 @@ function CommentsSection({
                 submit();
               }
             }}
-            placeholder="Describe a change for the agent…"
+            placeholder={t.inspector.noteAgentPlaceholder}
             className="min-h-16 resize-none text-[12px]"
           />
         </div>
         <div className="flex items-center justify-between gap-2">
-          <span className="font-mono text-[10.5px] text-muted-foreground/70">⌘↵ to send</span>
+          <span className="font-mono text-[10.5px] text-muted-foreground/70">
+            {t.inspector.noteShortcutHint}
+          </span>
           <Button size="sm" variant="brand" disabled={submitting || !draft.trim()} onClick={submit}>
-            Add note
+            {t.inspector.addNote}
           </Button>
         </div>
       </div>
