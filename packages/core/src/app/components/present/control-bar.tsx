@@ -53,10 +53,12 @@ export function PresentControlBar({
       data-state={visible ? 'visible' : 'hidden'}
       className={cn(
         'pointer-events-none absolute inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-4',
-        'motion-safe:transition-[opacity,transform] motion-safe:duration-200 motion-safe:ease-out',
+        'will-change-[translate,scale,opacity,filter]',
+        'motion-safe:transition-[translate,scale,opacity,filter]',
+        'motion-safe:duration-[420ms] motion-safe:[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]',
         visible
-          ? 'translate-y-0 opacity-100'
-          : 'pointer-events-none translate-y-2 opacity-0',
+          ? 'translate-y-0 scale-100 opacity-100 blur-none'
+          : 'translate-y-8 scale-90 opacity-0 blur-md',
       )}
     >
       <TooltipProvider delayDuration={300}>
