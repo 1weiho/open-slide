@@ -29,7 +29,6 @@ const palette = {
   purple: '#7928ca',
 };
 
-const fontSans = "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif";
 const fontMono = "'Geist Mono', 'SF Mono', Menlo, Consolas, monospace";
 
 const fill = {

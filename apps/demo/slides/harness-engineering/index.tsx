@@ -25,8 +25,6 @@ const palette = {
   warn: '#ff7b72',
 };
 
-const mono = "'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace";
-
 const PAD_X = 100;
 const PAD_Y = 80;
 const TOTAL = 8;
