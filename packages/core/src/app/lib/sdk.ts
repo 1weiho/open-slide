@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import type { DesignSystem } from '../../design.ts';
+import type { DesignSystem } from './design.ts';
 
 export type Page = ComponentType;
 

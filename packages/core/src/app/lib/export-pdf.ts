@@ -5,7 +5,7 @@
 
 import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { designToCssVars } from '../../design';
+import { designToCssVars } from './design';
 import { isFrameAnimationSettled, waitForDataWaitfor, waitForFonts } from './print-ready';
 import type { SlideModule } from './sdk';
 

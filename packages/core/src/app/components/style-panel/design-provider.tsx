@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { toast } from 'sonner';
 import { useHistory } from '@/components/history-provider';
-import { type DesignSystem, defaultDesign, designToCssVars } from '../../../design';
+import { type DesignSystem, defaultDesign, designToCssVars } from '../../lib/design';
 import { useDesign as useDesignFetch } from './use-design';
 
 type DesignCtx = {

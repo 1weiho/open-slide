@@ -5,7 +5,7 @@
 
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { designToCssVars } from '../../design';
+import { designToCssVars } from './design';
 import type { SlideModule } from './sdk';
 
 type AssetEntry = { name: string; bytes: Uint8Array };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { defaultDesign, type DesignSystem } from '../design.ts';
+import { defaultDesign, type DesignSystem } from '../app/lib/design.ts';
 import {
   applyDesignWrite,
   mergeDesign,

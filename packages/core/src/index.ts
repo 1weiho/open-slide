@@ -9,5 +9,6 @@ export type {
   DesignRadius,
   DesignSystem,
   DesignTypeScale,
-} from './design.ts';
-export { cssVarsToString, defaultDesign, designToCssVars } from './design.ts';
+} from './app/lib/design.ts';
+export { cssVarsToString, defaultDesign, designToCssVars } from './app/lib/design.ts';
+

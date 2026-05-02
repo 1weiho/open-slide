@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { DesignSystem } from '../../../design';
+import type { DesignSystem } from '../../lib/design';
 
 type FetchedState = {
   design: DesignSystem | null;

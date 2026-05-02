@@ -1,6 +1,6 @@
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { type DesignSystem, designToCssVars } from '../../design';
+import { type DesignSystem, designToCssVars } from '../lib/design';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
 
 type Props = {
