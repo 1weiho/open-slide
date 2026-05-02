@@ -3,12 +3,10 @@ import type { CSSProperties } from 'react';
 import type { DesignSystem, Page, SlideMeta } from '@open-slide/core';
 import openSlide from './assets/open-slide.png';
 
-
 export const design: DesignSystem = {
   palette: { bg: '#f6f3ec', text: '#0a0a0a', accent: '#ff4f1a' },
   fonts: {
-    display:
-      "'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+    display: "'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
     body: "'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
   },
   typeScale: { hero: 320, body: 40 },
@@ -101,10 +99,7 @@ const Letters = ({
   anim?: 'mSlamUp' | 'mSlamDown' | 'mSlamL' | 'mSlamR' | 'mPop';
   style?: CSSProperties;
 }) => (
-  <span
-    className={className}
-    style={{ display: 'inline-flex', whiteSpace: 'pre', ...style }}
-  >
+  <span className={className} style={{ display: 'inline-flex', whiteSpace: 'pre', ...style }}>
     {[...text].map((c, i) => (
       <span
         key={i}
@@ -207,7 +202,11 @@ const Cover: Page = () => (
           animation: 'mPop 800ms cubic-bezier(0.2, 1.1, 0.3, 1) 520ms both',
         }}
       >
-        <img src={openSlide} alt='open-slide square logo mark' style={{ width: 260, height: 260, objectFit: 'cover' }} />
+        <img
+          src={openSlide}
+          alt="open-slide square logo mark"
+          style={{ width: 260, height: 260, objectFit: 'cover' }}
+        />
       </div>
 
       <div
@@ -266,7 +265,6 @@ const Cover: Page = () => (
         </span>
       </div>
     </div>
-
   </div>
 );
 
@@ -338,15 +336,19 @@ const Skill: Page = () => (
 
     {/* Hero command */}
     <div
-      style={{ fontFamily: tokens.mono, fontSize: '180px', fontWeight: 700, letterSpacing: '-0.05em', lineHeight: 1, margin: 0, display: 'flex', alignItems: 'baseline', gap: 8 }}
+      style={{
+        fontFamily: tokens.mono,
+        fontSize: '180px',
+        fontWeight: 700,
+        letterSpacing: '-0.05em',
+        lineHeight: 1,
+        margin: 0,
+        display: 'flex',
+        alignItems: 'baseline',
+        gap: 8,
+      }}
     >
-      <Letters
-        text="/create-slide"
-        delay={520}
-        step={48}
-        duration={780}
-        anim="mSlamUp"
-      />
+      <Letters text="/create-slide" delay={520} step={48} duration={780} anim="mSlamUp" />
       <span
         style={{
           display: 'inline-block',
@@ -354,8 +356,7 @@ const Skill: Page = () => (
           height: 180,
           background: tokens.accent,
           marginLeft: 18,
-          animation:
-            'mFade 220ms ease 1400ms both, mBlink 1s steps(1) 1600ms infinite',
+          animation: 'mFade 220ms ease 1400ms both, mBlink 1s steps(1) 1600ms infinite',
         }}
       />
     </div>
@@ -623,12 +624,14 @@ const Visual: Page = () => (
     </div>
 
     {/* Selection corner marks pinned to the canvas corners, clear of the bars */}
-    {([
-      [40, 40, '0deg'],
-      [1880, 40, '90deg'],
-      [40, 1040, '270deg'],
-      [1880, 1040, '180deg'],
-    ] as const).map(([x, y, rot], i) => (
+    {(
+      [
+        [40, 40, '0deg'],
+        [1880, 40, '90deg'],
+        [40, 1040, '270deg'],
+        [1880, 1040, '180deg'],
+      ] as const
+    ).map(([x, y, rot], i) => (
       <span
         key={i}
         style={{
@@ -640,9 +643,7 @@ const Visual: Page = () => (
           borderTop: `6px solid ${tokens.ink}`,
           borderLeft: `6px solid ${tokens.ink}`,
           transform: `rotate(${rot})`,
-          animation: `mPop 500ms cubic-bezier(0.2, 1.1, 0.3, 1) ${
-            1700 + i * 90
-          }ms both`,
+          animation: `mPop 500ms cubic-bezier(0.2, 1.1, 0.3, 1) ${1700 + i * 90}ms both`,
         }}
       />
     ))}
@@ -680,9 +681,7 @@ const DesignPanel: Page = () => {
               color: s.text,
               position: 'relative',
               transformOrigin: 'bottom',
-              animation: `mSweepY 720ms cubic-bezier(0.7, 0, 0.2, 1) ${
-                100 + i * 110
-              }ms both`,
+              animation: `mSweepY 720ms cubic-bezier(0.7, 0, 0.2, 1) ${100 + i * 110}ms both`,
             }}
           >
             <div
@@ -695,9 +694,7 @@ const DesignPanel: Page = () => {
                 fontSize: 22,
                 letterSpacing: '0.32em',
                 textTransform: 'uppercase',
-                animation: `mWipeR 600ms cubic-bezier(0.7, 0, 0.2, 1) ${
-                  700 + i * 110
-                }ms both`,
+                animation: `mWipeR 600ms cubic-bezier(0.7, 0, 0.2, 1) ${700 + i * 110}ms both`,
               }}
             >
               {s.name}
@@ -711,9 +708,7 @@ const DesignPanel: Page = () => {
                 fontFamily: tokens.mono,
                 fontSize: 28,
                 fontWeight: 600,
-                animation: `mSlamUp 600ms cubic-bezier(0.2, 0.9, 0.25, 1) ${
-                  900 + i * 110
-                }ms both`,
+                animation: `mSlamUp 600ms cubic-bezier(0.2, 0.9, 0.25, 1) ${900 + i * 110}ms both`,
               }}
             >
               {s.value}
@@ -773,14 +768,94 @@ const DesignPanel: Page = () => {
 
 const Assets: Page = () => {
   const blocks = [
-    { x: 140, y: 120, w: 360, h: 220, color: tokens.accent, dx: '-200px', dy: '-200px', r: '-12deg', delay: 200 },
-    { x: 540, y: 90, w: 480, h: 280, color: '#f5b85a', dx: '0px', dy: '-260px', r: '8deg', delay: 320 },
-    { x: 1060, y: 130, w: 420, h: 300, color: tokens.paper, dx: '240px', dy: '-220px', r: '-6deg', delay: 440 },
-    { x: 1520, y: 110, w: 280, h: 260, color: tokens.cream, dx: '320px', dy: '-180px', r: '14deg', delay: 560 },
-    { x: 180, y: 700, w: 320, h: 260, color: tokens.cream, dx: '-280px', dy: '260px', r: '12deg', delay: 380 },
-    { x: 560, y: 720, w: 360, h: 240, color: tokens.accent, dx: '-100px', dy: '300px', r: '-10deg', delay: 500 },
-    { x: 980, y: 700, w: 460, h: 260, color: tokens.paper, dx: '120px', dy: '300px', r: '6deg', delay: 620 },
-    { x: 1480, y: 720, w: 300, h: 240, color: '#f5b85a', dx: '320px', dy: '260px', r: '-14deg', delay: 740 },
+    {
+      x: 140,
+      y: 120,
+      w: 360,
+      h: 220,
+      color: tokens.accent,
+      dx: '-200px',
+      dy: '-200px',
+      r: '-12deg',
+      delay: 200,
+    },
+    {
+      x: 540,
+      y: 90,
+      w: 480,
+      h: 280,
+      color: '#f5b85a',
+      dx: '0px',
+      dy: '-260px',
+      r: '8deg',
+      delay: 320,
+    },
+    {
+      x: 1060,
+      y: 130,
+      w: 420,
+      h: 300,
+      color: tokens.paper,
+      dx: '240px',
+      dy: '-220px',
+      r: '-6deg',
+      delay: 440,
+    },
+    {
+      x: 1520,
+      y: 110,
+      w: 280,
+      h: 260,
+      color: tokens.cream,
+      dx: '320px',
+      dy: '-180px',
+      r: '14deg',
+      delay: 560,
+    },
+    {
+      x: 180,
+      y: 700,
+      w: 320,
+      h: 260,
+      color: tokens.cream,
+      dx: '-280px',
+      dy: '260px',
+      r: '12deg',
+      delay: 380,
+    },
+    {
+      x: 560,
+      y: 720,
+      w: 360,
+      h: 240,
+      color: tokens.accent,
+      dx: '-100px',
+      dy: '300px',
+      r: '-10deg',
+      delay: 500,
+    },
+    {
+      x: 980,
+      y: 700,
+      w: 460,
+      h: 260,
+      color: tokens.paper,
+      dx: '120px',
+      dy: '300px',
+      r: '6deg',
+      delay: 620,
+    },
+    {
+      x: 1480,
+      y: 720,
+      w: 300,
+      h: 240,
+      color: '#f5b85a',
+      dx: '320px',
+      dy: '260px',
+      r: '-14deg',
+      delay: 740,
+    },
   ];
 
   return (
@@ -818,7 +893,8 @@ const Assets: Page = () => {
               fontSize: 16,
               letterSpacing: '0.28em',
               textTransform: 'uppercase',
-              color: b.color === tokens.ink || b.color === tokens.accent ? tokens.paper : tokens.ink,
+              color:
+                b.color === tokens.ink || b.color === tokens.accent ? tokens.paper : tokens.ink,
               opacity: 0.85,
               animation: `mFade 500ms ease ${b.delay + 600}ms both`,
             }}
@@ -929,7 +1005,17 @@ const Cli: Page = () => (
 
     {/* Hero command line */}
     <div
-      style={{ fontFamily: tokens.mono, fontSize: '100px', fontWeight: 700, letterSpacing: '-0.04em', lineHeight: 1, display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: 12 }}
+      style={{
+        fontFamily: tokens.mono,
+        fontSize: '100px',
+        fontWeight: 700,
+        letterSpacing: '-0.04em',
+        lineHeight: 1,
+        display: 'flex',
+        alignItems: 'baseline',
+        flexWrap: 'wrap',
+        gap: 12,
+      }}
     >
       <span
         style={{
@@ -954,8 +1040,7 @@ const Cli: Page = () => (
           background: tokens.ink,
           marginLeft: 8,
           alignSelf: 'center',
-          animation:
-            'mFade 220ms ease 1900ms both, mBlink 1s steps(1) 2100ms infinite',
+          animation: 'mFade 220ms ease 1900ms both, mBlink 1s steps(1) 2100ms infinite',
         }}
       />
     </div>
@@ -1012,12 +1097,4 @@ const Cli: Page = () => (
 );
 
 export const meta: SlideMeta = { title: 'open-slide — Launch Motion' };
-export default [
-  Cover,
-  Skill,
-  Inspect,
-  Visual,
-  DesignPanel,
-  Assets,
-  Cli,
-] satisfies Page[];
+export default [Cover, Skill, Inspect, Visual, DesignPanel, Assets, Cli] satisfies Page[];
