@@ -2,6 +2,7 @@ import config from 'virtual:open-slide/config';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Toaster } from './components/ui/sonner';
 import { Home } from './routes/home';
+import { Presenter } from './routes/presenter';
 import { Slide } from './routes/slide';
 
 export function App() {
@@ -10,6 +11,7 @@ export function App() {
       <Routes>
         <Route path="/" element={config.build.showSlideBrowser ? <Home /> : <NotFound />} />
         <Route path="/s/:slideId" element={<Slide />} />
+        <Route path="/s/:slideId/presenter" element={<Presenter />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster />
