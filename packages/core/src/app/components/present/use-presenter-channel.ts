@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 export type PresenterState = {
   index: number;
@@ -18,23 +18,30 @@ export type PresenterCommand =
 
 type Handler = (msg: PresenterCommand) => void;
 
+const SUPPORTED = typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined';
+
 /**
  * BroadcastChannel wrapper used by both the projection window (Player) and
  * the Presenter View. The channel is keyed by slideId so multiple decks
  * open in different tabs do not cross-talk. Falls back to no-op when the
  * API is missing (older browsers, SSR).
+ *
+ * The channel is owned by the effect (not useMemo) so React 18 StrictMode's
+ * double-invoke creates a fresh channel on the second mount instead of
+ * leaving a closed one behind that throws on the next `send()`.
  */
 export function usePresenterChannel(slideId: string, onMessage?: Handler) {
   const onMessageRef = useRef(onMessage);
   onMessageRef.current = onMessage;
 
-  const channel = useMemo(() => {
-    if (typeof window === 'undefined' || typeof BroadcastChannel === 'undefined') return null;
-    return new BroadcastChannel(`open-slide:presenter:${slideId}`);
-  }, [slideId]);
+  const channelRef = useRef<BroadcastChannel | null>(null);
+  const [available, setAvailable] = useState(false);
 
   useEffect(() => {
-    if (!channel) return;
+    if (!SUPPORTED) return;
+    const channel = new BroadcastChannel(`open-slide:presenter:${slideId}`);
+    channelRef.current = channel;
+    setAvailable(true);
     const handler = (e: MessageEvent<PresenterCommand>) => {
       onMessageRef.current?.(e.data);
     };
@@ -42,16 +49,23 @@ export function usePresenterChannel(slideId: string, onMessage?: Handler) {
     return () => {
       channel.removeEventListener('message', handler);
       channel.close();
+      if (channelRef.current === channel) channelRef.current = null;
+      setAvailable(false);
     };
-  }, [channel]);
+  }, [slideId]);
 
   return useMemo(
     () => ({
       send(msg: PresenterCommand) {
-        channel?.postMessage(msg);
+        try {
+          channelRef.current?.postMessage(msg);
+        } catch {
+          // Channel may have been closed between the availability check
+          // and the send (e.g. StrictMode unmount mid-flush). Treat as no-op.
+        }
       },
-      available: channel !== null,
+      available,
     }),
-    [channel],
+    [available],
   );
 }
