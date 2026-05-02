@@ -11,6 +11,8 @@ type Props = {
   center?: boolean;
   /** Flat mode: no rounded corners or drop shadow. */
   flat?: boolean;
+  /** Freeze descendant animations and transitions, useful for thumbnail previews. */
+  freezeMotion?: boolean;
   className?: string;
   /**
    * Per-slide design tokens. When set, the matching CSS custom properties
@@ -26,6 +28,7 @@ export function SlideCanvas({
   scale,
   center = true,
   flat = false,
+  freezeMotion = false,
   className,
   design,
 }: Props) {
@@ -73,6 +76,7 @@ export function SlideCanvas({
       >
         <div
           data-osd-canvas
+          data-osd-freeze-motion={freezeMotion ? '' : undefined}
           style={
             {
               width: CANVAS_WIDTH,
