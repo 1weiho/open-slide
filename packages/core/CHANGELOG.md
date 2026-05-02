@@ -1,5 +1,11 @@
 # @open-slide/core
 
+## 1.0.2
+
+### Patch Changes
+
+- 39780b1: Flatten `DesignSystem.radius` from `{ md: number }` to `number`. CSS var renamed `--osd-radius-md` → `--osd-radius`; `DesignRadius` type removed.
+
 ## 1.0.1
 
 ### Patch Changes
