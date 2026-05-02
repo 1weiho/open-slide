@@ -1,11 +1,11 @@
 import {
   ChevronLeft,
   ChevronRight,
+  Crosshair,
   Grid2x2,
   Keyboard,
   LogOut,
   MonitorSpeaker,
-  Pointer,
   Square,
   Sun,
 } from 'lucide-react';
@@ -112,7 +112,7 @@ export function PresentControlBar({
             <Sun className="size-4" />
           </BarButton>
           <BarButton label="Laser pointer (L)" onClick={onLaser} active={laser}>
-            <Pointer className="size-4" />
+            <Crosshair className="size-4" />
           </BarButton>
           <BarButton label="Presenter view (P)" onClick={onPresenter}>
             <MonitorSpeaker className="size-4" />
