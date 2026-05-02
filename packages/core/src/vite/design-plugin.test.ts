@@ -20,7 +20,7 @@ const design: DesignSystem = {
     body: 'system-ui, sans-serif',
   },
   typeScale: { hero: 168, body: 36 },
-  radius: { md: 12 },
+  radius: 12,
 };
 
 const Cover: Page = () => (
@@ -47,7 +47,7 @@ describe('parseSlideDesign', () => {
     if (!r.ok) throw new Error('expected ok');
     expect(r.design.palette.accent).toBe('#6d4cff');
     expect(r.design.typeScale.hero).toBe(168);
-    expect(r.design.radius.md).toBe(12);
+    expect(r.design.radius).toBe(12);
   });
 
   it('reports exists:false for a slide with no design const', () => {
@@ -69,7 +69,7 @@ describe('parseSlideDesign', () => {
     const src = `const design = ${serializeDesign(defaultDesign)} satisfies DesignSystem;`;
     const r = parseSlideDesign(src);
     if (!r.ok) throw new Error('expected ok');
-    expect(r.design.radius.md).toBe(defaultDesign.radius.md);
+    expect(r.design.radius).toBe(defaultDesign.radius);
   });
 });
 

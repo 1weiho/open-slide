@@ -6,7 +6,6 @@ export type { OpenSlideConfig } from './config.ts';
 export type {
   DesignFonts,
   DesignPalette,
-  DesignRadius,
   DesignSystem,
   DesignTypeScale,
 } from './app/lib/design.ts';

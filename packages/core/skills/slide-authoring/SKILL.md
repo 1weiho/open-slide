@@ -125,7 +125,7 @@ export const design: DesignSystem = {
     body: '-apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif',
   },
   typeScale: { hero: 168, body: 36 },
-  radius:    { md: 12 },
+  radius:    12,
 };
 ```
 
@@ -137,9 +137,9 @@ There are **two consumption surfaces**, and you should mix them inside the same 
 
 - **`var(--osd-X)` for visual properties (color, font, font-size, radius)** — these get instant updates while the user drags a slider in the Design panel, before any file write.
   ```tsx
-  <div style={{ background: 'var(--osd-bg)', color: 'var(--osd-text)', borderRadius: 'var(--osd-radius-md)', fontFamily: 'var(--osd-font-body)', fontSize: 'var(--osd-size-body)' }}>
+  <div style={{ background: 'var(--osd-bg)', color: 'var(--osd-text)', borderRadius: 'var(--osd-radius)', fontFamily: 'var(--osd-font-body)', fontSize: 'var(--osd-size-body)' }}>
   ```
-  Available vars: `--osd-bg`, `--osd-text`, `--osd-accent`, `--osd-font-display`, `--osd-font-body`, `--osd-size-hero`, `--osd-size-body`, `--osd-radius-md`.
+  Available vars: `--osd-bg`, `--osd-text`, `--osd-accent`, `--osd-font-display`, `--osd-font-body`, `--osd-size-hero`, `--osd-size-body`, `--osd-radius`.
 
 - **Direct `design.X` reads** — when you need a JS number for arithmetic or to label something in the UI. These update via HMR after the panel commits the file, not while dragging.
   ```tsx

@@ -8,7 +8,7 @@ export const design: DesignSystem = {
     body: '-apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display", system-ui, sans-serif',
   },
   typeScale: { hero: 112, body: 24 },
-  radius: { md: 14 },
+  radius: 14,
 };
 
 const palette = {
@@ -391,7 +391,7 @@ const Pitch: Page = () => (
             style={{
               flex: 1,
               padding: 32,
-              borderRadius: 'var(--osd-radius-md)',
+              borderRadius: 'var(--osd-radius)',
               background: palette.surface,
               border: `1px solid ${palette.border}`,
               animationDelay: `${280 + i * 100}ms`,
@@ -459,7 +459,7 @@ const Stack: Page = () => (
             style={{
               flex: 1,
               padding: 36,
-              borderRadius: 'var(--osd-radius-md)',
+              borderRadius: 'var(--osd-radius)',
               background: palette.surface,
               border: `1px solid ${palette.border}`,
               animationDelay: `${260 + i * 110}ms`,
@@ -605,7 +605,7 @@ const ActionPanel: Page = () => (
         <div
           style={{
             width: 540,
-            borderRadius: 'var(--osd-radius-md)',
+            borderRadius: 'var(--osd-radius)',
             background: palette.surface,
             border: `1px solid ${palette.border}`,
             boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
@@ -709,7 +709,7 @@ const AIApi: Page = () => (
           style={{
             background: palette.surface,
             border: `1px solid ${palette.border}`,
-            borderRadius: 'var(--osd-radius-md)',
+            borderRadius: 'var(--osd-radius)',
             padding: '24px 28px',
             fontFamily: fonts.mono,
             fontSize: 22,
@@ -801,7 +801,7 @@ const Platform: Page = () => {
               className="rc-fadeup"
               style={{
                 padding: 28,
-                borderRadius: 'var(--osd-radius-md)',
+                borderRadius: 'var(--osd-radius)',
                 background: palette.surface,
                 border: `1px solid ${palette.border}`,
                 animationDelay: `${260 + i * 70}ms`,
@@ -878,7 +878,7 @@ const DX: Page = () => (
             style={{
               flex: 1,
               padding: 32,
-              borderRadius: 'var(--osd-radius-md)',
+              borderRadius: 'var(--osd-radius)',
               background: palette.surface,
               border: `1px solid ${palette.border}`,
               animationDelay: `${280 + i * 100}ms`,

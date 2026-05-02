@@ -7,7 +7,7 @@ export const design: DesignSystem = {
     body: "'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace",
   },
   typeScale: { hero: 156, body: 24 },
-  radius: { md: 0 },
+  radius: 0,
 };
 
 /* ─────────────── Design tokens (neon-terminal) ─────────────── */
