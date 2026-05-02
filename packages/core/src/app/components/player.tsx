@@ -11,6 +11,7 @@ import { PresentLaserPointer } from './present/laser-pointer';
 import { PresentOverviewGrid } from './present/overview-grid';
 import { PresentProgressBar } from './present/progress-bar';
 import { useIdle } from './present/use-idle';
+import { usePointerNearBottom } from './present/use-pointer-near-bottom';
 import {
   type PresenterCommand,
   type PresenterState,
@@ -20,6 +21,10 @@ import { useTouchSwipe } from './present/use-touch-swipe';
 import { SlideCanvas } from './slide-canvas';
 
 const IDLE_HIDE_MS = 2000;
+// Bottom band of the viewport that reveals the control bar + progress bar.
+// Generous enough to feel forgiving with a trackpad, tight enough not to
+// flash on incidental cursor moves.
+const BAR_HOTZONE_PX = 160;
 
 type Props = {
   pages: Page[];
@@ -243,9 +248,14 @@ export function Player({
     slideId,
   ]);
 
-  // ── Idle / cursor ──────────────────────────────────────────────────────
+  // ── Chrome visibility / cursor ─────────────────────────────────────────
+  // The control bar + progress strip only surface when the pointer is in
+  // the bottom hot zone. Keyboard nav (arrows / space / PgDn) never
+  // reveals them — that's intentional so the deck stays clean.
+  const pointerNearBottom = usePointerNearBottom(BAR_HOTZONE_PX, controls && !overlayActive);
+  const chromeVisible = pointerNearBottom || overlayActive;
   const idle = useIdle(IDLE_HIDE_MS, controls && !overlayActive);
-  const hideCursor = controls && (laser || (idle && !overlayActive));
+  const hideCursor = controls && (laser || (idle && !overlayActive && !pointerNearBottom));
 
   const PageComp = pages[index];
 
@@ -279,14 +289,14 @@ export function Player({
 
       {controls && (
         <>
-          <PresentProgressBar index={index} total={pages.length} />
+          <PresentProgressBar index={index} total={pages.length} visible={chromeVisible} />
           <PresentBlackoutOverlay mode={blackout} />
           <PresentJumpInput pageCount={pages.length} onJump={onIndexChange} />
           <PresentLaserPointer enabled={laser} />
           <PresentControlBar
             index={index}
             total={pages.length}
-            visible={!idle || overlayActive}
+            visible={chromeVisible}
             startedAt={startedAt}
             blackout={blackout}
             laser={laser}
