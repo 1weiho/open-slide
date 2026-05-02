@@ -56,6 +56,14 @@ export function Player({
   slideId,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
+  // Mirrored as state so children that need to portal *into* the player
+  // (tooltips, popovers — the body is outside the fullscreen subtree and
+  // therefore invisible) can subscribe and re-render once the node mounts.
+  const [rootEl, setRootEl] = useState<HTMLDivElement | null>(null);
+  const setRoot = useCallback((el: HTMLDivElement | null) => {
+    rootRef.current = el;
+    setRootEl(el);
+  }, []);
 
   // ── Overlay state (only meaningful when `controls` is true) ────────────
   const [overviewOpen, setOverviewOpen] = useState(false);
@@ -261,7 +269,7 @@ export function Player({
 
   return (
     <div
-      ref={rootRef}
+      ref={setRoot}
       className={cn(
         'relative flex h-dvh w-screen items-center justify-center bg-black',
         hideCursor && 'cursor-none',
@@ -294,6 +302,7 @@ export function Player({
           <PresentJumpInput pageCount={pages.length} onJump={onIndexChange} />
           <PresentLaserPointer enabled={laser} />
           <PresentControlBar
+            tooltipContainer={rootEl}
             index={index}
             total={pages.length}
             visible={chromeVisible}

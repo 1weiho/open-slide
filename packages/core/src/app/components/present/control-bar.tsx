@@ -9,9 +9,11 @@ import {
   Square,
   Sun,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+
+const TooltipContainerCtx = createContext<HTMLElement | null>(null);
 
 type Props = {
   index: number;
@@ -29,6 +31,12 @@ type Props = {
   onPresenter: () => void;
   onHelp: () => void;
   onExit: () => void;
+  /**
+   * Where to portal tooltips. Required because the Player runs fullscreen
+   * — the default `document.body` portal is outside the fullscreen element
+   * and therefore invisible. Pass the player root.
+   */
+  tooltipContainer?: HTMLElement | null;
 };
 
 export function PresentControlBar({
@@ -47,6 +55,7 @@ export function PresentControlBar({
   onPresenter,
   onHelp,
   onExit,
+  tooltipContainer,
 }: Props) {
   return (
     <div
@@ -62,6 +71,7 @@ export function PresentControlBar({
       )}
     >
       <TooltipProvider delayDuration={300}>
+        <TooltipContainerCtx.Provider value={tooltipContainer ?? null}>
         <div className="pointer-events-auto flex h-11 items-center gap-1 rounded-full border border-white/10 bg-black/55 px-2 text-white/85 shadow-[0_8px_30px_-8px_oklch(0_0_0/0.6)] backdrop-blur-md">
           <BarButton label="Previous slide (←)" onClick={onPrev} disabled={index === 0}>
             <ChevronLeft className="size-4" />
@@ -120,6 +130,7 @@ export function PresentControlBar({
             </>
           )}
         </div>
+        </TooltipContainerCtx.Provider>
       </TooltipProvider>
     </div>
   );
@@ -138,6 +149,7 @@ function BarButton({
   disabled?: boolean;
   active?: boolean;
 }) {
+  const container = useContext(TooltipContainerCtx);
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -156,7 +168,12 @@ function BarButton({
           {children}
         </button>
       </TooltipTrigger>
-      <TooltipContent side="top" sideOffset={6} className="bg-black/85 text-white">
+      <TooltipContent
+        container={container ?? undefined}
+        side="top"
+        sideOffset={6}
+        className="bg-black/85 text-white"
+      >
         {label}
       </TooltipContent>
     </Tooltip>
