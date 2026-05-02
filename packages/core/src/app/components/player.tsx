@@ -327,7 +327,7 @@ export function Player({
             onClose={() => setOverviewOpen(false)}
             onSelect={onIndexChange}
           />
-          <PresentHelpOverlay open={helpOpen} onOpenChange={setHelpOpen} />
+          <PresentHelpOverlay open={helpOpen} onOpenChange={setHelpOpen} container={rootEl} />
         </>
       )}
     </div>

@@ -17,12 +17,15 @@ const SHORTCUTS: Array<{ keys: string[]; label: string }> = [
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Portal target — pass the player root so the dialog renders inside
+   *  the fullscreen subtree (otherwise it paints invisibly under it). */
+  container?: HTMLElement | null;
 };
 
-export function PresentHelpOverlay({ open, onOpenChange }: Props) {
+export function PresentHelpOverlay({ open, onOpenChange, container }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg sm:max-w-lg">
+      <DialogContent container={container ?? undefined} className="max-w-lg sm:max-w-lg">
         <DialogHeader>
           <span className="eyebrow">Present mode</span>
           <DialogTitle>Keyboard shortcuts</DialogTitle>
