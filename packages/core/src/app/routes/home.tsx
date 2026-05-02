@@ -1,5 +1,13 @@
-import { FolderInput, FolderPlus, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  FolderInput,
+  FolderPlus,
+  MoreHorizontal,
+  Pencil,
+  Search,
+  Trash2,
+  X,
+} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -68,6 +76,23 @@ export function Home() {
   const headerIcon = selectedFolder?.icon ?? { type: 'emoji' as const, value: '📝' };
   const isDraft = selectedId === DRAFT_ID;
 
+  const [query, setQuery] = useState('');
+  const [titleMap, setTitleMap] = useState<Record<string, string>>({});
+  const reportTitle = useCallback((slideId: string, slideTitle: string) => {
+    setTitleMap((prev) => (prev[slideId] === slideTitle ? prev : { ...prev, [slideId]: slideTitle }));
+  }, []);
+
+  const trimmedQuery = query.trim().toLowerCase();
+  const filteredSlides = useMemo(() => {
+    if (!trimmedQuery) return visibleSlides;
+    return visibleSlides.filter((id) => {
+      if (id.toLowerCase().includes(trimmedQuery)) return true;
+      const t = titleMap[id]?.toLowerCase();
+      return t ? t.includes(trimmedQuery) : false;
+    });
+  }, [visibleSlides, titleMap, trimmedQuery]);
+  const isSearching = trimmedQuery.length > 0;
+
   return (
     <div className="flex h-dvh overflow-hidden bg-background text-foreground">
       <div className="hidden md:block">
@@ -117,22 +142,32 @@ export function Home() {
 
         <div className="mx-auto w-full max-w-[1180px] px-5 py-8 md:px-10 md:py-12">
           <header className="mb-8 md:mb-12">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <FolderIconChip icon={headerIcon} className="size-7 text-2xl" />
               <h1 className="font-heading text-[32px] font-semibold leading-[1.05] tracking-[-0.025em] md:text-[44px]">
                 {title}
               </h1>
               <span className="folio ml-1 self-end pb-2">
-                {visibleSlides.length.toString().padStart(2, '0')}
+                {(isSearching ? filteredSlides.length : visibleSlides.length)
+                  .toString()
+                  .padStart(2, '0')}
+                {isSearching && (
+                  <span className="opacity-40">/{visibleSlides.length.toString().padStart(2, '0')}</span>
+                )}
               </span>
+              <div className="ml-auto w-full md:w-auto">
+                <SearchInput value={query} onChange={setQuery} />
+              </div>
             </div>
           </header>
 
           {visibleSlides.length === 0 ? (
             <EmptyState isDraft={isDraft} folderName={selectedFolder?.name} />
+          ) : filteredSlides.length === 0 ? (
+            <NoResultsState query={query} onClear={() => setQuery('')} />
           ) : (
             <ul className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-x-6 gap-y-9 md:grid-cols-[repeat(auto-fill,minmax(300px,1fr))]">
-              {visibleSlides.map((id) => (
+              {filteredSlides.map((id) => (
                 <li key={id}>
                   <SlideCard
                     id={id}
@@ -141,6 +176,7 @@ export function Home() {
                     onRename={(name) => renameSlide(id, name)}
                     onMove={(folderId) => assign(id, folderId)}
                     onDelete={() => deleteSlide(id)}
+                    onTitleResolved={reportTitle}
                   />
                 </li>
               ))}
@@ -180,6 +216,60 @@ function MobileFolderPill({
       <span className="truncate max-w-[8rem]">{label}</span>
       <span className="folio nums">{count.toString().padStart(2, '0')}</span>
     </button>
+  );
+}
+
+function SearchInput({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="relative w-full md:w-[240px]">
+      <Search
+        className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
+        aria-hidden
+      />
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Search slides"
+        className="h-8 w-full rounded-[6px] border border-border bg-background pl-8 pr-7 text-[12.5px] outline-none placeholder:text-muted-foreground/70 focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30"
+      />
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange('')}
+          aria-label="Clear search"
+          className="absolute right-1.5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-[4px] text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <X className="size-3" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function NoResultsState({ query, onClear }: { query: string; onClear: () => void }) {
+  return (
+    <div className="rounded-[10px] border border-dashed border-border bg-card/60 px-8 py-20">
+      <div className="mx-auto flex max-w-md flex-col items-center text-center">
+        <div className="flex size-12 items-center justify-center rounded-full border border-hairline bg-card text-muted-foreground">
+          <Search className="size-5" />
+        </div>
+        <p className="mt-4 font-heading text-[15px] font-semibold tracking-tight">No matches</p>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
+          Nothing matches{' '}
+          <span className="font-medium text-foreground">&ldquo;{query}&rdquo;</span> in this folder.
+        </p>
+        <Button variant="ghost" size="sm" className="mt-4" onClick={onClear}>
+          Clear search
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -231,6 +321,7 @@ function SlideCard({
   onRename,
   onMove,
   onDelete,
+  onTitleResolved,
 }: {
   id: string;
   folders: Folder[];
@@ -238,6 +329,7 @@ function SlideCard({
   onRename: (name: string) => Promise<void> | void;
   onMove: (folderId: string | null) => Promise<void> | void;
   onDelete: () => Promise<void> | void;
+  onTitleResolved?: (id: string, title: string) => void;
 }) {
   const [slide, setSlide] = useState<SlideModule | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -257,6 +349,10 @@ function SlideCard({
 
   const FirstPage = slide?.default[0];
   const displayTitle = slide?.meta?.title ?? id;
+
+  useEffect(() => {
+    if (slide && onTitleResolved) onTitleResolved(id, displayTitle);
+  }, [id, slide, displayTitle, onTitleResolved]);
 
   return (
     <>
