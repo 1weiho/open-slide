@@ -20,10 +20,12 @@ type Props = {
    */
   design?: DesignSystem;
   /**
-   * Mark this canvas as a thumbnail. Emits `data-osd-thumb` so global CSS
-   * can pause animations and disable expensive filters, and adds
-   * `content-visibility` / `contain` hints so the browser skips paint &
-   * layout work for off-screen thumbnails (critical on iOS Safari).
+   * Mark this canvas as a thumbnail. In thumbnail mode the canvas uses
+   * CSS `zoom` instead of `transform: scale`, so the browser actually
+   * rasterises at the displayed (~1/16) resolution rather than at the
+   * full 1920×1080 — orders of magnitude less GPU memory, which is what
+   * keeps iOS Safari from killing the tab on decks with many slides.
+   * Also emits `data-osd-thumb` so global CSS can pause animations.
    */
   thumbnail?: boolean;
 };
@@ -57,20 +59,30 @@ export function SlideCanvas({
   const scaledW = CANVAS_WIDTH * s;
   const scaledH = CANVAS_HEIGHT * s;
 
-  const containerStyle: CSSProperties = thumbnail
+  const canvasStyle: CSSProperties = thumbnail
     ? {
-        contentVisibility: 'auto',
-        contain: 'layout paint style',
-        containIntrinsicSize: `${Math.round(scaledW) || 1} ${Math.round(scaledH) || 1}`,
+        width: CANVAS_WIDTH,
+        height: CANVAS_HEIGHT,
+        // `zoom` resizes the element in real layout space, so the browser
+        // rasterises at the small displayed size instead of allocating a
+        // 1920×1080 GPU surface per thumbnail. Chrome / Safari / FF all
+        // support `zoom` (it predates the standard).
+        zoom: s,
+        ...(design ? designToCssVars(design) : {}),
       }
-    : {};
+    : {
+        width: CANVAS_WIDTH,
+        height: CANVAS_HEIGHT,
+        transform: `scale(${s})`,
+        transformOrigin: 'top left',
+        ...(design ? designToCssVars(design) : {}),
+      };
 
   return (
     <div
       ref={containerRef}
       className={cn('relative h-full w-full overflow-hidden', className)}
       data-osd-thumb={thumbnail ? 'true' : undefined}
-      style={containerStyle}
     >
       <div
         className={cn(
@@ -92,18 +104,7 @@ export function SlideCanvas({
             : {}),
         }}
       >
-        <div
-          data-osd-canvas
-          style={
-            {
-              width: CANVAS_WIDTH,
-              height: CANVAS_HEIGHT,
-              transform: `scale(${s})`,
-              transformOrigin: 'top left',
-              ...(design ? designToCssVars(design) : {}),
-            } as CSSProperties
-          }
-        >
+        <div data-osd-canvas style={canvasStyle as CSSProperties}>
           {children}
         </div>
       </div>
