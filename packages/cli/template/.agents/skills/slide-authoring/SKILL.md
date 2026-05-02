@@ -111,6 +111,50 @@ If `themes/<id>.md` exists at the project root and the slide is meant to follow 
 
 Themes are produced by the `create-theme` skill and are pure documentation: copy the palette and the paste-ready Title / Footer / Eyebrow components straight into your slide. If the theme's frontmatter has `mode: dark` or `mode: light`, treat that as the slide's background mode (e.g. when picking which logo variant to import).
 
+## Design system (opt-in, per-slide)
+
+A slide can declare its own typed design tokens at the top of `index.tsx`:
+
+```tsx
+import type { DesignSystem, Page } from '@open-slide/core';
+
+export const design: DesignSystem = {
+  palette: { bg: '#f7f5f0', text: '#1a1814', accent: '#6d4cff' },
+  fonts: {
+    display: 'Georgia, "Times New Roman", serif',
+    body: '-apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif',
+  },
+  typeScale: { hero: 168, body: 36 },
+  radius:    { md: 12 },
+};
+```
+
+`export` it (rather than plain `const`) so the framework can read the object and inject CSS variables at the canvas root automatically.
+
+The shape is intentionally minimal — it only covers what the Design panel can currently tweak. Anything outside this set (heading sizes, spacing, motion, extra palette colors) belongs as plain hard-coded constants in the slide file.
+
+There are **two consumption surfaces**, and you should mix them inside the same slide:
+
+- **`var(--osd-X)` for visual properties (color, font, font-size, radius)** — these get instant updates while the user drags a slider in the Design panel, before any file write.
+  ```tsx
+  <div style={{ background: 'var(--osd-bg)', color: 'var(--osd-text)', borderRadius: 'var(--osd-radius-md)', fontFamily: 'var(--osd-font-body)', fontSize: 'var(--osd-size-body)' }}>
+  ```
+  Available vars: `--osd-bg`, `--osd-text`, `--osd-accent`, `--osd-font-display`, `--osd-font-body`, `--osd-size-hero`, `--osd-size-body`, `--osd-radius-md`.
+
+- **Direct `design.X` reads** — when you need a JS number for arithmetic or to label something in the UI. These update via HMR after the panel commits the file, not while dragging.
+  ```tsx
+  <p>{design.typeScale.hero}px</p>
+  ```
+
+The dev UI has a **Design** button in the slide header (next to Inspect). Edits update an in-memory draft and the live-preview overlay; a floating Save / Discard bar at the bottom of the canvas commits or reverts. The const stays the single source of truth — production builds bake the saved values.
+
+When to use it: any time the slide should remain tweakable from the panel after generation. When to *not* use it: one-off slides whose palette is intentionally fixed (then use the local `palette` constants pattern from the starter template). Both styles can coexist across slides — the panel only operates on the *currently viewed* slide.
+
+Format constraints (for the panel's AST writer):
+- Must be `[export] const design: DesignSystem = { … }` (or `as DesignSystem` / `satisfies DesignSystem`) at module top level.
+- Object initializer must be a literal — no spreads, no helper calls. Plain values only.
+- `DesignSystem` must be imported from `@open-slide/core` (the panel adds the import automatically when creating a fresh block).
+
 ## Starter template
 
 ```tsx
@@ -186,6 +230,24 @@ const videoUrl = new URL('./assets/intro.mp4', import.meta.url).href;
 
 Skip the `assets/` folder entirely for pure-text slides.
 
+## Image placeholders
+
+When a page genuinely needs a real image **the user has to provide** — a product screenshot, a team photo, a chart from their data — leave a typed placeholder instead of inventing a stand-in:
+
+```tsx
+import { ImagePlaceholder } from '@open-slide/core';
+
+<ImagePlaceholder hint="Product hero screenshot" width={1280} height={720} />
+```
+
+The user uploads the real file via the Assets panel, then clicks the placeholder in the inspector and picks "Replace…" — the JSX is rewritten to a real `<img>` with the import added.
+
+**Use a placeholder only when** a specific concrete image is required by the deck's topic. Examples that warrant one: a product-intro deck (product screenshot per feature), an offsite recap (team photo), a case study (customer logo, dashboard screenshot).
+
+**Do not use a placeholder** for decoration, generic "stock photo" filler, hero imagery on a text-heavy slide, or anywhere a typographic / iconographic / illustrative solution would do. If you can carry the page with type, layout, and color — do that. Empty placeholders the user has to fill are friction; only spend that friction when the alternative is worse.
+
+Size the placeholder to the slot it occupies. Pass `width`/`height` when the layout has a fixed image box; omit them when the placeholder fills a flex/grid cell. The `hint` should describe the *content* the user needs ("Q3 revenue chart") not the *role* ("hero image").
+
 ## Runtime behavior you get for free
 
 - Home page lists every folder under `slides/`.
@@ -202,8 +264,10 @@ Skip the `assets/` folder entirely for pure-text slides.
 - [ ] **For every page, sum (font_size × line_height × lines) + gaps + 2×padding ≤ 1080px.** If close, split the page. No `overflow: auto` escape hatches.
 - [ ] No bullet wraps to a second line at the chosen font size.
 - [ ] One coherent visual direction across every page (palette + type scale).
+- [ ] If the slide should be tweakable from the Design panel, it declares a top-level `const design: DesignSystem = { … }` and references `design.X` from inline styles.
 - [ ] One idea per page.
 - [ ] All imported assets exist on disk under `slides/<id>/assets/`.
+- [ ] Every `<ImagePlaceholder>` corresponds to a real image the user must supply — not decorative filler. If it could be replaced by typography or layout, it should be.
 - [ ] Nothing outside `slides/<id>/` was edited.
 
 ## Anti-patterns
@@ -220,3 +284,5 @@ Skip the `assets/` folder entirely for pure-text slides.
 - ❌ Writing CSS to a shared file. Inline styles or scoped classnames only.
 - ❌ Creating `README.md` or other prose files inside the slide folder.
 - ❌ Editing `package.json`, `open-slide.config.ts`, or other slides.
+- ❌ Sprinkling `<ImagePlaceholder>` across pages "for visual interest". Placeholders are for content the user owns; they're not stock-photo slots.
+- ❌ Using a placeholder for an icon or decorative shape — those are typography/SVG problems, not asset problems.
