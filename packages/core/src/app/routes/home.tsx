@@ -312,6 +312,49 @@ function EmptyState({ isDraft, folderName }: { isDraft: boolean; folderName?: st
   );
 }
 
+function createDragChip(title: string): HTMLElement | null {
+  if (typeof document === 'undefined') return null;
+  const chip = document.createElement('div');
+  chip.style.cssText = [
+    'position: fixed',
+    'top: -9999px',
+    'left: -9999px',
+    'display: inline-flex',
+    'align-items: center',
+    'gap: 8px',
+    'padding: 6px 10px 6px 6px',
+    'border-radius: 6px',
+    'background: var(--card)',
+    'color: var(--foreground)',
+    'border: 1px solid var(--border)',
+    'box-shadow: 0 12px 32px -8px rgba(0,0,0,0.25), 0 2px 6px rgba(0,0,0,0.08)',
+    'font: 500 12.5px/1 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif',
+    'white-space: nowrap',
+    'pointer-events: none',
+    'z-index: 9999',
+  ].join(';');
+
+  const thumb = document.createElement('span');
+  thumb.style.cssText = [
+    'display: inline-block',
+    'width: 30px',
+    'height: 18px',
+    'border-radius: 3px',
+    'background: var(--muted)',
+    'border: 1px solid var(--border)',
+    'flex: 0 0 auto',
+  ].join(';');
+
+  const label = document.createElement('span');
+  label.textContent = title;
+  label.style.cssText = 'overflow: hidden; text-overflow: ellipsis; max-width: 220px;';
+
+  chip.appendChild(thumb);
+  chip.appendChild(label);
+  document.body.appendChild(chip);
+  return chip;
+}
+
 type DialogKind = null | 'rename' | 'move' | 'delete';
 
 function SlideCard({
@@ -362,10 +405,18 @@ function SlideCard({
         onDragStart={(e) => {
           e.dataTransfer.setData(SLIDE_DND_MIME, id);
           e.dataTransfer.effectAllowed = 'move';
+          const chip = createDragChip(displayTitle);
+          if (chip) {
+            e.dataTransfer.setDragImage(chip, 14, 14);
+            setTimeout(() => chip.remove(), 0);
+          }
           setDragging(true);
         }}
         onDragEnd={() => setDragging(false)}
-        className={cn('group relative', dragging && 'opacity-50')}
+        className={cn(
+          'group relative motion-safe:transition-opacity',
+          dragging && 'opacity-40',
+        )}
       >
         <Link to={`/s/${id}`} className="block focus-visible:outline-none">
           {/* Slide thumb — tight border, grey baseboard, no shadcn rounded-xl */}

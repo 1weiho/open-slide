@@ -1,5 +1,5 @@
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +12,25 @@ import { cn } from '@/lib/utils';
 import { IconPicker } from './icon-picker';
 
 export const SLIDE_DND_MIME = 'application/x-slide-id';
+
+function useSlideDragActive() {
+  const [active, setActive] = useState(false);
+  useEffect(() => {
+    const onStart = (e: DragEvent) => {
+      if (e.dataTransfer?.types?.includes(SLIDE_DND_MIME)) setActive(true);
+    };
+    const onEnd = () => setActive(false);
+    document.addEventListener('dragstart', onStart);
+    document.addEventListener('dragend', onEnd);
+    document.addEventListener('drop', onEnd);
+    return () => {
+      document.removeEventListener('dragstart', onStart);
+      document.removeEventListener('dragend', onEnd);
+      document.removeEventListener('drop', onEnd);
+    };
+  }, []);
+  return active;
+}
 
 export function FolderIconChip({ icon, className }: { icon: FolderIcon; className?: string }) {
   if (icon.type === 'emoji') {
@@ -64,18 +83,29 @@ export function FolderItem({
 }) {
   const [renaming, setRenaming] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const dragDepth = useRef(0);
   const [draftName, setDraftName] = useState(row.kind === 'folder' ? row.folder.name : '');
+  const slideDragActive = useSlideDragActive();
 
-  const handleDragOver = (e: React.DragEvent) => {
-    if (e.dataTransfer.types.includes(SLIDE_DND_MIME)) {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      setDragOver(true);
-    }
+  const isSlideDrag = (e: React.DragEvent) => e.dataTransfer.types.includes(SLIDE_DND_MIME);
+  const handleDragEnter = (e: React.DragEvent) => {
+    if (!isSlideDrag(e)) return;
+    dragDepth.current += 1;
+    if (dragDepth.current === 1) setDragOver(true);
   };
-  const handleDragLeave = () => setDragOver(false);
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!isSlideDrag(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (!isSlideDrag(e)) return;
+    dragDepth.current = Math.max(0, dragDepth.current - 1);
+    if (dragDepth.current === 0) setDragOver(false);
+  };
   const handleDrop = (e: React.DragEvent) => {
     const slideId = e.dataTransfer.getData(SLIDE_DND_MIME);
+    dragDepth.current = 0;
     setDragOver(false);
     if (!slideId) return;
     e.preventDefault();
@@ -103,8 +133,11 @@ export function FolderItem({
         selected
           ? 'bg-muted text-foreground before:absolute before:inset-y-1.5 before:-left-0.5 before:w-[2px] before:rounded-full before:bg-brand'
           : 'text-foreground/70 hover:bg-muted/60 hover:text-foreground',
-        dragOver && 'ring-1 ring-brand ring-offset-1 ring-offset-sidebar',
+        slideDragActive && !dragOver && 'ring-1 ring-foreground/10',
+        dragOver &&
+          'bg-brand/10 text-foreground ring-1 ring-brand ring-offset-1 ring-offset-sidebar motion-safe:scale-[1.01] motion-safe:transition-transform',
       )}
+      onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
