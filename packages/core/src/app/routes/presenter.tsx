@@ -1,11 +1,4 @@
-import {
-  ChevronLeft,
-  ChevronRight,
-  Loader2,
-  RotateCcw,
-  Square,
-  Sun,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, RotateCcw, Square, Sun } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -71,14 +64,8 @@ export function Presenter() {
   const goPrev = useCallback(() => send({ type: 'prev' }), [send]);
   const goNext = useCallback(() => send({ type: 'next' }), [send]);
   const goTo = useCallback((i: number) => send({ type: 'goto', index: i }), [send]);
-  const toggleBlack = useCallback(
-    () => send({ type: 'toggle-blackout', mode: 'black' }),
-    [send],
-  );
-  const toggleWhite = useCallback(
-    () => send({ type: 'toggle-blackout', mode: 'white' }),
-    [send],
-  );
+  const toggleBlack = useCallback(() => send({ type: 'toggle-blackout', mode: 'black' }), [send]);
+  const toggleWhite = useCallback(() => send({ type: 'toggle-blackout', mode: 'white' }), [send]);
 
   // Local-window key bindings mirror the projection's main shortcuts so the
   // presenter can drive without the mouse.
@@ -368,10 +355,7 @@ function Clock() {
     return () => clearInterval(id);
   }, []);
   return (
-    <time
-      title="Current time"
-      className="font-mono text-[12px] tabular-nums text-white/55"
-    >
+    <time title="Current time" className="font-mono text-[12px] tabular-nums text-white/55">
       {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
     </time>
   );
@@ -397,4 +381,3 @@ function ElapsedClock({ startedAt }: { startedAt: number }) {
     </time>
   );
 }
-

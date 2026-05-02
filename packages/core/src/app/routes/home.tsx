@@ -1,12 +1,4 @@
-import {
-  FolderInput,
-  FolderPlus,
-  MoreHorizontal,
-  Pencil,
-  Search,
-  Trash2,
-  X,
-} from 'lucide-react';
+import { FolderInput, FolderPlus, MoreHorizontal, Pencil, Search, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -79,7 +71,9 @@ export function Home() {
   const [query, setQuery] = useState('');
   const [titleMap, setTitleMap] = useState<Record<string, string>>({});
   const reportTitle = useCallback((slideId: string, slideTitle: string) => {
-    setTitleMap((prev) => (prev[slideId] === slideTitle ? prev : { ...prev, [slideId]: slideTitle }));
+    setTitleMap((prev) =>
+      prev[slideId] === slideTitle ? prev : { ...prev, [slideId]: slideTitle },
+    );
   }, []);
 
   const trimmedQuery = query.trim().toLowerCase();
@@ -152,7 +146,9 @@ export function Home() {
                   .toString()
                   .padStart(2, '0')}
                 {isSearching && (
-                  <span className="opacity-40">/{visibleSlides.length.toString().padStart(2, '0')}</span>
+                  <span className="opacity-40">
+                    /{visibleSlides.length.toString().padStart(2, '0')}
+                  </span>
                 )}
               </span>
               <div className="ml-auto w-full md:w-auto">
@@ -219,13 +215,7 @@ function MobileFolderPill({
   );
 }
 
-function SearchInput({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-}) {
+function SearchInput({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
     <div className="relative w-full md:w-[240px]">
       <Search
@@ -262,8 +252,8 @@ function NoResultsState({ query, onClear }: { query: string; onClear: () => void
         </div>
         <p className="mt-4 font-heading text-[15px] font-semibold tracking-tight">No matches</p>
         <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-          Nothing matches{' '}
-          <span className="font-medium text-foreground">&ldquo;{query}&rdquo;</span> in this folder.
+          Nothing matches <span className="font-medium text-foreground">&ldquo;{query}&rdquo;</span>{' '}
+          in this folder.
         </p>
         <Button variant="ghost" size="sm" className="mt-4" onClick={onClear}>
           Clear search
@@ -413,10 +403,7 @@ function SlideCard({
           setDragging(true);
         }}
         onDragEnd={() => setDragging(false)}
-        className={cn(
-          'group relative motion-safe:transition-opacity',
-          dragging && 'opacity-40',
-        )}
+        className={cn('group relative motion-safe:transition-opacity', dragging && 'opacity-40')}
       >
         <Link to={`/s/${id}`} className="block focus-visible:outline-none">
           {/* Slide thumb — tight border, grey baseboard, no shadcn rounded-xl */}

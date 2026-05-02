@@ -22,14 +22,7 @@ type Props = {
  * so each preview is rendered with the slide's design tokens but with
  * motion frozen. Arrow keys move focus; Enter/click jumps and closes.
  */
-export function PresentOverviewGrid({
-  pages,
-  design,
-  open,
-  current,
-  onClose,
-  onSelect,
-}: Props) {
+export function PresentOverviewGrid({ pages, design, open, current, onClose, onSelect }: Props) {
   const [focused, setFocused] = useState(current);
   const gridRef = useRef<HTMLDivElement>(null);
   const focusedRef = useRef<HTMLButtonElement | null>(null);
