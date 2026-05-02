@@ -42,6 +42,11 @@
     "vite"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/1weiho/open-slide.git",
+    "directory": "packages/core"
+  },
   "publishConfig": {
     "access": "public"
   },
