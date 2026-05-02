@@ -20,12 +20,11 @@ type Props = {
    */
   design?: DesignSystem;
   /**
-   * Mark this canvas as a thumbnail. In thumbnail mode the canvas uses
-   * CSS `zoom` instead of `transform: scale`, so the browser actually
-   * rasterises at the displayed (~1/16) resolution rather than at the
-   * full 1920×1080 — orders of magnitude less GPU memory, which is what
-   * keeps iOS Safari from killing the tab on decks with many slides.
-   * Also emits `data-osd-thumb` so global CSS can pause animations.
+   * Mark this canvas as a thumbnail. Emits `data-osd-thumb` so global CSS
+   * can pause animations off-screen. The bigger GPU-memory win on iOS
+   * Safari (where rasterising many 1920×1080 trees can kill the tab) is
+   * handled upstream by `ThumbnailRail`, which only mounts a small
+   * window of nearby thumbnails at any time.
    */
   thumbnail?: boolean;
 };
@@ -59,25 +58,6 @@ export function SlideCanvas({
   const scaledW = CANVAS_WIDTH * s;
   const scaledH = CANVAS_HEIGHT * s;
 
-  const canvasStyle: CSSProperties = thumbnail
-    ? {
-        width: CANVAS_WIDTH,
-        height: CANVAS_HEIGHT,
-        // `zoom` resizes the element in real layout space, so the browser
-        // rasterises at the small displayed size instead of allocating a
-        // 1920×1080 GPU surface per thumbnail. Chrome / Safari / FF all
-        // support `zoom` (it predates the standard).
-        zoom: s,
-        ...(design ? designToCssVars(design) : {}),
-      }
-    : {
-        width: CANVAS_WIDTH,
-        height: CANVAS_HEIGHT,
-        transform: `scale(${s})`,
-        transformOrigin: 'top left',
-        ...(design ? designToCssVars(design) : {}),
-      };
-
   return (
     <div
       ref={containerRef}
@@ -104,7 +84,18 @@ export function SlideCanvas({
             : {}),
         }}
       >
-        <div data-osd-canvas style={canvasStyle as CSSProperties}>
+        <div
+          data-osd-canvas
+          style={
+            {
+              width: CANVAS_WIDTH,
+              height: CANVAS_HEIGHT,
+              transform: `scale(${s})`,
+              transformOrigin: 'top left',
+              ...(design ? designToCssVars(design) : {}),
+            } as CSSProperties
+          }
+        >
           {children}
         </div>
       </div>

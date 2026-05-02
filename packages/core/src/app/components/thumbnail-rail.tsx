@@ -96,7 +96,7 @@ export function ThumbnailRail({
                     )}
                     style={{ width, height: HORIZONTAL_THUMB_HEIGHT }}
                   >
-                    <LazyThumbnail>
+                    <LazyThumbnail sticky={false} forceMount={active}>
                       <ThumbnailContent PageComp={PageComp} scale={scale} design={design} />
                     </LazyThumbnail>
                   </div>
@@ -152,7 +152,7 @@ export function ThumbnailRail({
                 )}
                 style={{ width: VERTICAL_THUMB_WIDTH, height }}
               >
-                <LazyThumbnail>
+                <LazyThumbnail sticky={false} forceMount={active}>
                   <ThumbnailContent PageComp={PageComp} scale={scale} design={design} />
                 </LazyThumbnail>
                 {active && (
