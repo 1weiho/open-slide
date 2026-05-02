@@ -348,6 +348,26 @@
   }
 }
 
+[data-osd-freeze-motion],
+[data-osd-freeze-motion] *,
+[data-osd-freeze-motion] *::before,
+[data-osd-freeze-motion] *::after {
+  /* biome-ignore lint/complexity/noImportantStyles: Thumbnail previews must override arbitrary slide-authored motion, including inline styles. */
+  animation-duration: 1ms !important;
+  /* biome-ignore lint/complexity/noImportantStyles: Thumbnail previews must override arbitrary slide-authored motion, including inline styles. */
+  animation-delay: 0s !important;
+  /* biome-ignore lint/complexity/noImportantStyles: Thumbnail previews must override arbitrary slide-authored motion, including inline styles. */
+  animation-iteration-count: 1 !important;
+  /* biome-ignore lint/complexity/noImportantStyles: Thumbnail previews must override arbitrary slide-authored motion, including inline styles. */
+  animation-fill-mode: forwards !important;
+  /* biome-ignore lint/complexity/noImportantStyles: Thumbnail previews must override arbitrary slide-authored motion, including inline styles. */
+  transition: none !important;
+  /* biome-ignore lint/complexity/noImportantStyles: Thumbnail previews must override arbitrary slide-authored motion, including inline styles. */
+  scroll-behavior: auto !important;
+  /* biome-ignore lint/complexity/noImportantStyles: Thumbnail previews must override arbitrary slide-authored motion, including inline styles. */
+  view-transition-name: none !important;
+}
+
 /*
  * Custom scrollbar — slim, ink-on-paper. Removes the chunky default that
  * fights the calm surfaces.

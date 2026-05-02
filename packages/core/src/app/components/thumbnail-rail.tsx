@@ -30,10 +30,12 @@ export function ThumbnailRail({
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: `current` triggers re-scroll on selection change
   useEffect(() => {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     activeRef.current?.scrollIntoView({
       block: 'nearest',
       inline: 'nearest',
-      behavior: 'smooth',
+      behavior: reduceMotion ? 'auto' : 'smooth',
     });
   }, [current]);
 
@@ -67,14 +69,14 @@ export function ThumbnailRail({
                   </span>
                   <div
                     className={cn(
-                      'relative shrink-0 overflow-hidden rounded-[4px] border bg-card transition-all',
+                      'relative shrink-0 overflow-hidden rounded-[4px] border bg-card motion-safe:transition-all',
                       active
                         ? 'border-brand shadow-[0_0_0_1px_var(--brand)]'
                         : 'border-hairline group-hover/thumb:border-foreground/25',
                     )}
                     style={{ width, height: HORIZONTAL_THUMB_HEIGHT }}
                   >
-                    <SlideCanvas scale={scale} center={false} flat design={design}>
+                    <SlideCanvas scale={scale} center={false} flat freezeMotion design={design}>
                       <PageComp />
                     </SlideCanvas>
                   </div>
@@ -108,7 +110,7 @@ export function ThumbnailRail({
               aria-label={`Go to page ${i + 1}`}
               aria-current={active ? 'true' : undefined}
               className={cn(
-                'group/thumb flex items-start gap-2.5 rounded-[6px] p-1.5 text-left transition-colors',
+                'group/thumb flex items-start gap-2.5 rounded-[6px] p-1.5 text-left motion-safe:transition-colors',
                 'hover:bg-muted/60',
                 active && 'bg-muted',
               )}
@@ -123,14 +125,14 @@ export function ThumbnailRail({
               </span>
               <div
                 className={cn(
-                  'relative shrink-0 overflow-hidden rounded-[4px] border bg-card transition-all',
+                  'relative shrink-0 overflow-hidden rounded-[4px] border bg-card motion-safe:transition-all',
                   active
                     ? 'border-brand shadow-[0_0_0_1px_var(--brand)]'
                     : 'border-hairline group-hover/thumb:border-foreground/25',
                 )}
                 style={{ width: VERTICAL_THUMB_WIDTH, height }}
               >
-                <SlideCanvas scale={scale} center={false} flat design={design}>
+                <SlideCanvas scale={scale} center={false} flat freezeMotion design={design}>
                   <PageComp />
                 </SlideCanvas>
                 {active && (

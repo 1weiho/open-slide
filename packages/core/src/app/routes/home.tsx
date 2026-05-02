@@ -275,13 +275,13 @@ function SlideCard({
         <Link
           to={`/s/${id}`}
           className={cn(
-            'block transition-transform duration-200 hover:-translate-y-1 focus-visible:outline-none',
+            'block focus-visible:outline-none motion-safe:transition-transform motion-safe:duration-200 motion-safe:hover:-translate-y-1',
           )}
         >
           {/* Slide thumb — tight border, grey baseboard, no shadcn rounded-xl */}
-          <div className="relative aspect-video overflow-hidden rounded-[6px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] transition-shadow group-hover:shadow-floating">
+          <div className="relative aspect-video overflow-hidden rounded-[6px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] group-hover:shadow-floating motion-safe:transition-shadow">
             {FirstPage ? (
-              <SlideCanvas flat design={slide?.design}>
+              <SlideCanvas flat freezeMotion design={slide?.design}>
                 <FirstPage />
               </SlideCanvas>
             ) : (
@@ -317,7 +317,7 @@ function SlideCard({
                     e.stopPropagation();
                     e.preventDefault();
                   }}
-                  className="flex size-7 items-center justify-center rounded-[5px] bg-card/90 text-foreground shadow-edge ring-1 ring-border opacity-0 backdrop-blur transition-opacity hover:bg-card group-hover:opacity-100 aria-expanded:opacity-100"
+                  className="flex size-7 items-center justify-center rounded-[5px] bg-card/90 text-foreground shadow-edge ring-1 ring-border opacity-0 backdrop-blur hover:bg-card group-hover:opacity-100 aria-expanded:opacity-100 motion-safe:transition-opacity"
                   aria-label="Slide actions"
                 >
                   <MoreHorizontal className="size-3.5" />
