@@ -12,22 +12,29 @@ export const design: DesignSystem = {
 
 /* ─────────────── Design tokens (neon-terminal) ─────────────── */
 
-const palette = {
-  bg: '#05070a',
-  surface: '#0d1117',
-  surfaceHi: '#161c25',
-  line: '#1a2230',
-  text: '#e6edf3',
-  muted: '#7a8794',
-  faint: '#4a5560',
-  accent: '#39ff88',
-  accent2: '#5cd0ff',
-  warn: '#ff7b72',
-};
-
-const PAD_X = 100;
-const PAD_Y = 80;
-const TOTAL = 8;
+/**
+ * Tokens that aren't part of the panel-tweakable `design` surface above.
+ * The bg / text / accent / fonts / hero / body / radius come in via
+ * `var(--osd-*)` so the Design panel can update them live; everything else
+ * (extended palette, spacing, page counts) lives here as a flat token set.
+ */
+const tokens = {
+  color: {
+    surface: '#0d1117',
+    line: '#1a2230',
+    muted: '#7a8794',
+    faint: '#4a5560',
+    accent2: '#5cd0ff',
+    warn: '#ff7b72',
+  },
+  space: {
+    padX: 100,
+    padY: 80,
+  },
+  meta: {
+    totalPages: 8,
+  },
+} as const;
 
 const fill = {
   width: '100%',
@@ -37,7 +44,7 @@ const fill = {
   fontFamily: 'var(--osd-font-body)',
   position: 'relative',
   overflow: 'hidden',
-  border: `1px solid ${palette.line}`,
+  border: `1px solid ${tokens.color.line}`,
   boxSizing: 'border-box',
 } as const;
 
@@ -118,24 +125,24 @@ const Footer = ({ pageNum, section }: { pageNum: number; section?: string }) => 
   <div
     style={{
       position: 'absolute',
-      left: PAD_X,
-      right: PAD_X,
+      left: tokens.space.padX,
+      right: tokens.space.padX,
       bottom: 36,
       display: 'flex',
       justifyContent: 'space-between',
       fontFamily: 'var(--osd-font-body)',
       fontSize: 20,
-      color: palette.faint,
-      borderTop: `1px solid ${palette.line}`,
+      color: tokens.color.faint,
+      borderTop: `1px solid ${tokens.color.line}`,
       paddingTop: 14,
     }}
   >
     <span>
       <span style={{ color: 'var(--osd-accent)' }}>●</span> {section ?? 'main'} ·{' '}
-      <span style={{ color: palette.accent2 }}>~/deck/harness-engineering</span>
+      <span style={{ color: tokens.color.accent2 }}>~/deck/harness-engineering</span>
     </span>
     <span>
-      {String(pageNum).padStart(2, '0')}/{String(TOTAL).padStart(2, '0')}
+      {String(pageNum).padStart(2, '0')}/{String(tokens.meta.totalPages).padStart(2, '0')}
     </span>
   </div>
 );
@@ -160,7 +167,7 @@ const Cover: Page = () => (
   <div
     style={{
       ...fill,
-      padding: `${PAD_Y}px ${PAD_X}px`,
+      padding: `${tokens.space.padY}px ${tokens.space.padX}px`,
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
@@ -217,7 +224,7 @@ const Cover: Page = () => (
         fontFamily: 'var(--osd-font-body)',
         fontSize: 36,
         lineHeight: 1.5,
-        color: palette.muted,
+        color: tokens.color.muted,
         maxWidth: 1500,
         margin: 0,
         position: 'relative',
@@ -232,7 +239,7 @@ const Cover: Page = () => (
         animationDelay: '2000ms',
         fontFamily: 'var(--osd-font-body)',
         fontSize: 22,
-        color: palette.faint,
+        color: tokens.color.faint,
         position: 'relative',
         zIndex: 1,
       }}
@@ -265,8 +272,8 @@ const ShiftColumn = ({
     style={{
       animationDelay: `${delay}ms`,
       flex: 1,
-      background: palette.surface,
-      border: `1px solid ${tone === 'bright' ? 'var(--osd-accent)' : palette.line}`,
+      background: tokens.color.surface,
+      border: `1px solid ${tone === 'bright' ? 'var(--osd-accent)' : tokens.color.line}`,
       boxShadow: tone === 'bright' ? '0 0 32px rgba(57,255,136,0.15)' : 'none',
       padding: '32px 36px',
       display: 'flex',
@@ -277,7 +284,7 @@ const ShiftColumn = ({
     <div
       style={{
         fontSize: 22,
-        color: tone === 'bright' ? 'var(--osd-accent)' : palette.muted,
+        color: tone === 'bright' ? 'var(--osd-accent)' : tokens.color.muted,
         letterSpacing: '0.18em',
       }}
     >
@@ -294,20 +301,20 @@ const ShiftColumn = ({
     >
       {verb}
     </div>
-    <div style={{ height: 1, background: palette.line }} />
+    <div style={{ height: 1, background: tokens.color.line }} />
     <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
       {bullets.map((b) => (
         <li
           key={b}
           style={{
             fontSize: 26,
-            color: palette.muted,
+            color: tokens.color.muted,
             lineHeight: 1.7,
           }}
         >
           <span
             style={{
-              color: tone === 'bright' ? 'var(--osd-accent)' : palette.faint,
+              color: tone === 'bright' ? 'var(--osd-accent)' : tokens.color.faint,
               marginRight: 14,
             }}
           >
@@ -324,7 +331,7 @@ const Shift: Page = () => (
   <div
     style={{
       ...fill,
-      padding: `${PAD_Y}px ${PAD_X}px`,
+      padding: `${tokens.space.padY}px ${tokens.space.padX}px`,
       display: 'flex',
       flexDirection: 'column',
     }}
@@ -375,7 +382,7 @@ const Shift: Page = () => (
       <div style={{ fontSize: 26, lineHeight: 1.5, color: 'var(--osd-text)', fontStyle: 'italic' }}>
         "a decent model with a great harness beats a great model with a bad harness."
       </div>
-      <div style={{ fontSize: 20, color: palette.muted, marginTop: 8 }}>
+      <div style={{ fontSize: 20, color: tokens.color.muted, marginTop: 8 }}>
         — addy osmani · 19 apr 2026
       </div>
     </div>
@@ -389,7 +396,7 @@ const Definition: Page = () => (
   <div
     style={{
       ...fill,
-      padding: `${PAD_Y}px ${PAD_X}px`,
+      padding: `${tokens.space.padY}px ${tokens.space.padX}px`,
       display: 'flex',
       flexDirection: 'column',
     }}
@@ -410,7 +417,7 @@ const Definition: Page = () => (
       }}
     >
       an <span style={{ color: 'var(--osd-accent)' }}>agent harness</span> is{' '}
-      <span style={{ color: palette.muted, fontWeight: 400 }}>
+      <span style={{ color: tokens.color.muted, fontWeight: 400 }}>
         "everything in an AI agent except the model itself."
       </span>
     </h2>
@@ -419,7 +426,7 @@ const Definition: Page = () => (
       style={{
         animationDelay: '380ms',
         fontSize: 22,
-        color: palette.faint,
+        color: tokens.color.faint,
         marginBottom: 40,
       }}
     >
@@ -466,7 +473,7 @@ const Definition: Page = () => (
           style={{
             display: 'flex',
             justifyContent: 'space-between',
-            color: palette.muted,
+            color: tokens.color.muted,
             fontSize: 22,
             marginBottom: 28,
           }}
@@ -482,11 +489,11 @@ const Definition: Page = () => (
         <div
           className="h-pulse"
           style={{
-            border: `1.5px solid ${palette.accent2}`,
+            border: `1.5px solid ${tokens.color.accent2}`,
             padding: '34px 24px',
             textAlign: 'center',
-            background: palette.surface,
-            color: palette.accent2,
+            background: tokens.color.surface,
+            color: tokens.color.accent2,
             fontSize: 56,
             fontWeight: 700,
             letterSpacing: '0.18em',
@@ -498,7 +505,7 @@ const Definition: Page = () => (
           style={{
             display: 'flex',
             justifyContent: 'space-between',
-            color: palette.muted,
+            color: tokens.color.muted,
             fontSize: 22,
             marginTop: 28,
           }}
@@ -556,7 +563,7 @@ const Anatomy: Page = () => (
   <div
     style={{
       ...fill,
-      padding: `${PAD_Y}px ${PAD_X}px`,
+      padding: `${tokens.space.padY}px ${tokens.space.padX}px`,
       display: 'flex',
       flexDirection: 'column',
     }}
@@ -592,8 +599,8 @@ const Anatomy: Page = () => (
           className="h-fadeup"
           style={{
             animationDelay: `${380 + i * 90}ms`,
-            background: palette.surface,
-            border: `1px solid ${palette.line}`,
+            background: tokens.color.surface,
+            border: `1px solid ${tokens.color.line}`,
             padding: '28px 30px',
             display: 'flex',
             flexDirection: 'column',
@@ -616,7 +623,7 @@ const Anatomy: Page = () => (
           <div
             style={{
               fontSize: 22,
-              color: palette.faint,
+              color: tokens.color.faint,
               letterSpacing: '0.18em',
             }}
           >
@@ -636,7 +643,7 @@ const Anatomy: Page = () => (
           <div
             style={{
               fontSize: 22,
-              color: palette.muted,
+              color: tokens.color.muted,
               lineHeight: 1.55,
             }}
           >
@@ -661,7 +668,9 @@ const Annotation = ({ label, body, delay }: { label: string; body: string; delay
     }}
   >
     <div style={{ fontSize: 20, color: 'var(--osd-accent)', letterSpacing: '0.16em' }}>{label}</div>
-    <div style={{ fontSize: 22, color: palette.muted, lineHeight: 1.55, marginTop: 4 }}>{body}</div>
+    <div style={{ fontSize: 22, color: tokens.color.muted, lineHeight: 1.55, marginTop: 4 }}>
+      {body}
+    </div>
   </div>
 );
 
@@ -669,7 +678,7 @@ const ClaudeCodeExample: Page = () => (
   <div
     style={{
       ...fill,
-      padding: `${PAD_Y}px ${PAD_X}px`,
+      padding: `${tokens.space.padY}px ${tokens.space.padX}px`,
       display: 'flex',
       flexDirection: 'column',
     }}
@@ -695,7 +704,7 @@ const ClaudeCodeExample: Page = () => (
       style={{
         animationDelay: '320ms',
         fontSize: 'var(--osd-size-body)',
-        color: palette.muted,
+        color: tokens.color.muted,
         lineHeight: 1.55,
         margin: '0 0 40px',
         maxWidth: 1500,
@@ -713,8 +722,8 @@ const ClaudeCodeExample: Page = () => (
         style={{
           animationDelay: '500ms',
           flex: 1.4,
-          background: palette.surface,
-          border: `1px solid ${palette.line}`,
+          background: tokens.color.surface,
+          border: `1px solid ${tokens.color.line}`,
           padding: '20px 26px 22px',
           display: 'flex',
           flexDirection: 'column',
@@ -728,8 +737,8 @@ const ClaudeCodeExample: Page = () => (
           style={{
             display: 'flex',
             justifyContent: 'space-between',
-            color: palette.faint,
-            borderBottom: `1px solid ${palette.line}`,
+            color: tokens.color.faint,
+            borderBottom: `1px solid ${tokens.color.line}`,
             paddingBottom: 10,
             fontSize: 17,
           }}
@@ -737,29 +746,29 @@ const ClaudeCodeExample: Page = () => (
           <span>~ claude-code · session</span>
           <span style={{ color: 'var(--osd-accent)' }}>● connected</span>
         </div>
-        <div style={{ color: palette.muted }}>
+        <div style={{ color: tokens.color.muted }}>
           <span style={{ color: 'var(--osd-accent)' }}>›</span> tools{' '}
-          <span style={{ color: palette.faint }}>(permission-gated)</span>
+          <span style={{ color: tokens.color.faint }}>(permission-gated)</span>
         </div>
-        <div style={{ color: palette.accent2, paddingLeft: 22 }}>
+        <div style={{ color: tokens.color.accent2, paddingLeft: 22 }}>
           Read · Edit · Write · Bash · Grep · WebFetch · TodoWrite · Agent · Skill
         </div>
-        <div style={{ color: palette.muted, marginTop: 8 }}>
+        <div style={{ color: tokens.color.muted, marginTop: 8 }}>
           <span style={{ color: 'var(--osd-accent)' }}>›</span> loop
         </div>
         <div style={{ color: 'var(--osd-text)', paddingLeft: 22 }}>
           think → call tool → read result → decide → repeat
         </div>
-        <div style={{ color: palette.muted, marginTop: 8 }}>
+        <div style={{ color: tokens.color.muted, marginTop: 8 }}>
           <span style={{ color: 'var(--osd-accent)' }}>›</span> state
         </div>
         <div style={{ color: 'var(--osd-text)', paddingLeft: 22 }}>
           TodoWrite · plan files · CLAUDE.md · git commits
         </div>
-        <div style={{ color: palette.muted, marginTop: 8 }}>
+        <div style={{ color: tokens.color.muted, marginTop: 8 }}>
           <span style={{ color: 'var(--osd-accent)' }}>›</span> approval
         </div>
-        <div style={{ color: palette.warn, paddingLeft: 22 }}>
+        <div style={{ color: tokens.color.warn, paddingLeft: 22 }}>
           ? run `pnpm dev` — [y/N]
           <span
             className="h-cursor"
@@ -849,7 +858,7 @@ const Principles: Page = () => (
   <div
     style={{
       ...fill,
-      padding: `${PAD_Y}px ${PAD_X}px`,
+      padding: `${tokens.space.padY}px ${tokens.space.padX}px`,
       display: 'flex',
       flexDirection: 'column',
     }}
@@ -888,8 +897,8 @@ const Principles: Page = () => (
             alignItems: 'baseline',
             gap: 28,
             padding: '18px 26px',
-            background: i % 2 === 0 ? palette.surface : 'transparent',
-            border: `1px solid ${palette.line}`,
+            background: i % 2 === 0 ? tokens.color.surface : 'transparent',
+            border: `1px solid ${tokens.color.line}`,
           }}
         >
           <div
@@ -914,7 +923,7 @@ const Principles: Page = () => (
           >
             {p.title}
           </div>
-          <div style={{ fontSize: 22, color: palette.muted, lineHeight: 1.55, flex: 1 }}>
+          <div style={{ fontSize: 22, color: tokens.color.muted, lineHeight: 1.55, flex: 1 }}>
             {p.body}
           </div>
         </div>
@@ -956,7 +965,7 @@ const Layers: Page = () => (
   <div
     style={{
       ...fill,
-      padding: `${PAD_Y}px ${PAD_X}px`,
+      padding: `${tokens.space.padY}px ${tokens.space.padX}px`,
       display: 'flex',
       flexDirection: 'column',
     }}
@@ -982,7 +991,7 @@ const Layers: Page = () => (
       style={{
         animationDelay: '320ms',
         fontSize: 'var(--osd-size-body)',
-        color: palette.muted,
+        color: tokens.color.muted,
         lineHeight: 1.55,
         margin: '0 0 44px',
         maxWidth: 1500,
@@ -1000,7 +1009,7 @@ const Layers: Page = () => (
           display: 'flex',
           gap: 32,
           padding: '0 26px',
-          color: palette.faint,
+          color: tokens.color.faint,
           fontSize: 20,
           letterSpacing: '0.18em',
         }}
@@ -1015,8 +1024,8 @@ const Layers: Page = () => (
           l.tone === 'bright'
             ? 'var(--osd-accent)'
             : l.tone === 'mid'
-              ? palette.accent2
-              : palette.muted;
+              ? tokens.color.accent2
+              : tokens.color.muted;
         return (
           <div
             key={l.name}
@@ -1027,8 +1036,8 @@ const Layers: Page = () => (
               gap: 32,
               alignItems: 'center',
               padding: '24px 26px',
-              background: l.tone === 'bright' ? 'rgba(57,255,136,0.05)' : palette.surface,
-              border: `1px solid ${l.tone === 'bright' ? 'var(--osd-accent)' : palette.line}`,
+              background: l.tone === 'bright' ? 'rgba(57,255,136,0.05)' : tokens.color.surface,
+              border: `1px solid ${l.tone === 'bright' ? 'var(--osd-accent)' : tokens.color.line}`,
               boxShadow: l.tone === 'bright' ? '0 0 28px rgba(57,255,136,0.12)' : 'none',
             }}
           >
@@ -1046,7 +1055,7 @@ const Layers: Page = () => (
             <div style={{ flex: 1, fontSize: 'var(--osd-size-body)', color: 'var(--osd-text)' }}>
               {l.artifact}
             </div>
-            <div style={{ flex: 1, fontSize: 'var(--osd-size-body)', color: palette.muted }}>
+            <div style={{ flex: 1, fontSize: 'var(--osd-size-body)', color: tokens.color.muted }}>
               {l.scope}
             </div>
           </div>
@@ -1083,7 +1092,7 @@ const Closing: Page = () => (
   <div
     style={{
       ...fill,
-      padding: `${PAD_Y}px ${PAD_X}px`,
+      padding: `${tokens.space.padY}px ${tokens.space.padX}px`,
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
@@ -1118,7 +1127,7 @@ const Closing: Page = () => (
           animationDelay: '900ms',
         }}
       >
-        <span style={{ color: palette.muted }}>is</span>{' '}
+        <span style={{ color: tokens.color.muted }}>is</span>{' '}
         <span style={{ color: 'var(--osd-accent)', textShadow: '0 0 22px rgba(57,255,136,0.5)' }}>
           the product.
         </span>
@@ -1154,14 +1163,16 @@ const Closing: Page = () => (
             display: 'flex',
             gap: 24,
             fontSize: 20,
-            color: palette.muted,
+            color: tokens.color.muted,
             lineHeight: 1.5,
           }}
         >
           <span style={{ color: 'var(--osd-accent)', minWidth: 32 }}>›</span>
-          <span style={{ color: palette.accent2, minWidth: 240 }}>{s.who}</span>
+          <span style={{ color: tokens.color.accent2, minWidth: 240 }}>{s.who}</span>
           <span style={{ flex: 1, color: 'var(--osd-text)' }}>{s.what}</span>
-          <span style={{ color: palette.faint, minWidth: 110, textAlign: 'right' }}>{s.date}</span>
+          <span style={{ color: tokens.color.faint, minWidth: 110, textAlign: 'right' }}>
+            {s.date}
+          </span>
         </div>
       ))}
     </div>
