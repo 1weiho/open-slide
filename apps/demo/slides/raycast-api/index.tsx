@@ -58,6 +58,12 @@ const keyframes = `
 .rc-fade { animation: rcFade 800ms ease-out both; }
 .rc-caret { animation: rcCaret 1.1s steps(1) infinite; }
 .rc-glow { animation: rcGlow 4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .rc-fadeup, .rc-fade, .rc-caret, .rc-glow { animation: none !important; }
+}
+@supports (-webkit-touch-callout: none) {
+  .rc-fadeup, .rc-fade, .rc-caret, .rc-glow { animation: none !important; }
+}
 `;
 
 const Style = () => <style>{keyframes}</style>;
@@ -80,7 +86,6 @@ const Glow = ({
       transform: 'translate(-50%, -50%)',
       background: `radial-gradient(circle, ${color} 0%, transparent 60%)`,
       opacity,
-      filter: 'blur(40px)',
       pointerEvents: 'none',
     }}
   />
@@ -110,7 +115,7 @@ const Eyebrow = ({ children, delay = 0 }: { children: React.ReactNode; delay?: n
         height: 8,
         borderRadius: '50%',
         background: 'var(--osd-accent)',
-        boxShadow: `0 0 12px var(--osd-accent)`,
+        boxShadow: `0 0 8px var(--osd-accent)`,
       }}
     />
     {children}
@@ -156,7 +161,7 @@ const CommandBar = ({
       borderRadius: 16,
       background: palette.surface,
       border: `1px solid ${palette.border}`,
-      boxShadow: '0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03) inset',
+      boxShadow: '0 12px 32px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.03) inset',
       overflow: 'hidden',
     }}
   >
@@ -301,7 +306,6 @@ const Cover: Page = () => (
             height: 64,
             display: 'block',
             marginBottom: 28,
-            filter: `drop-shadow(0 0 28px var(--osd-accent))`,
           }}
         />
         <Eyebrow delay={80}>Developer Platform</Eyebrow>
@@ -608,7 +612,7 @@ const ActionPanel: Page = () => (
             borderRadius: 'var(--osd-radius-md)',
             background: palette.surface,
             border: `1px solid ${palette.border}`,
-            boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
+            boxShadow: '0 10px 28px rgba(0,0,0,0.32)',
             padding: 14,
           }}
         >
@@ -930,7 +934,6 @@ const Closing: Page = () => (
           height: 80,
           display: 'block',
           marginBottom: 32,
-          filter: `drop-shadow(0 0 36px var(--osd-accent))`,
         }}
       />
       <Eyebrow delay={80}>Start building</Eyebrow>
