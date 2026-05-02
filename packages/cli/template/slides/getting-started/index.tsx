@@ -24,9 +24,7 @@ export const design: DesignSystem = {
     hero: 168,
     body: 36,
   },
-  radius: {
-    md: 16,
-  },
+  radius: 16,
 };
 
 // ─── Local (non-tweakable) constants ──────────────────────────────────────────
@@ -234,7 +232,7 @@ const WindowShell = ({
     style={{
       background: palette.surface,
       border: `1px solid ${palette.border}`,
-      borderRadius: 'var(--osd-radius-md)',
+      borderRadius: 'var(--osd-radius)',
       boxShadow: '0 40px 80px -30px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.02)',
       overflow: 'hidden',
       display: 'flex',
@@ -362,7 +360,7 @@ const LogoCard = ({
       flex: 1,
       background: palette.surface,
       border: `1px solid ${palette.border}`,
-      borderRadius: 'var(--osd-radius-md)',
+      borderRadius: 'var(--osd-radius)',
       padding: '40px 28px 32px',
       display: 'flex',
       flexDirection: 'column',

@@ -7,7 +7,7 @@ export const design: DesignSystem = {
     body: '-apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display", system-ui, sans-serif',
   },
   typeScale: { hero: 196, body: 28 },
-  radius: { md: 16 },
+  radius: 16,
 };
 
 /* ─────────────── Tokens & primitives ─────────────── */
@@ -364,7 +364,7 @@ const WhatIsToken: Page = () => (
         animationDelay: '600ms',
         background: palette.surface,
         border: `1px solid ${palette.line}`,
-        borderRadius: 'var(--osd-radius-md)',
+        borderRadius: 'var(--osd-radius)',
         padding: '50px 60px',
       }}
     >
@@ -486,7 +486,7 @@ const Tokenization: Page = () => (
             flex: 1,
             background: palette.surface,
             border: `1px solid ${palette.line}`,
-            borderRadius: 'var(--osd-radius-md)',
+            borderRadius: 'var(--osd-radius)',
             padding: 40,
             display: 'flex',
             flexDirection: 'column',
@@ -582,7 +582,7 @@ const VocabSize: Page = () => (
             flex: 1,
             background: palette.surface,
             border: `1px solid ${palette.line}`,
-            borderRadius: 'var(--osd-radius-md)',
+            borderRadius: 'var(--osd-radius)',
             padding: 48,
             display: 'flex',
             flexDirection: 'column',
@@ -686,7 +686,7 @@ const ContextWindow: Page = () => {
           animationDelay: '600ms',
           background: palette.surface,
           border: `1px solid ${palette.line}`,
-          borderRadius: 'var(--osd-radius-md)',
+          borderRadius: 'var(--osd-radius)',
           padding: '50px 60px',
           marginBottom: 40,
           position: 'relative',
@@ -875,7 +875,7 @@ const Attention: Page = () => {
           animationDelay: '600ms',
           background: palette.surface,
           border: `1px solid ${palette.line}`,
-          borderRadius: 'var(--osd-radius-md)',
+          borderRadius: 'var(--osd-radius)',
           padding: '40px 30px',
         }}
       >
@@ -1104,7 +1104,7 @@ const Sampling: Page = () => (
           flex: 1.4,
           background: palette.surface,
           border: `1px solid ${palette.line}`,
-          borderRadius: 'var(--osd-radius-md)',
+          borderRadius: 'var(--osd-radius)',
           padding: 40,
         }}
       >
@@ -1318,7 +1318,7 @@ const Hallucinate: Page = () => (
             flex: 1,
             background: palette.surface,
             border: `1px solid ${palette.line}`,
-            borderRadius: 'var(--osd-radius-md)',
+            borderRadius: 'var(--osd-radius)',
             padding: 50,
             display: 'flex',
             flexDirection: 'column',
@@ -1408,7 +1408,7 @@ const Practical: Page = () => (
             padding: '36px 44px',
             background: palette.surface,
             border: `1px solid ${palette.line}`,
-            borderRadius: 'var(--osd-radius-md)',
+            borderRadius: 'var(--osd-radius)',
           }}
         >
           <div

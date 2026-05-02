@@ -7,7 +7,7 @@ export const design: DesignSystem = {
     body: '-apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display", system-ui, sans-serif',
   },
   typeScale: { hero: 196, body: 28 },
-  radius: { md: 16 },
+  radius: 16,
 };
 
 const palette = {
@@ -501,7 +501,7 @@ const Overview: Page = () => (
             flex: 1,
             background: palette.surface,
             border: `1px solid ${palette.line}`,
-            borderRadius: 'var(--osd-radius-md)',
+            borderRadius: 'var(--osd-radius)',
             padding: '48px 40px',
             display: 'flex',
             flexDirection: 'column',
@@ -850,7 +850,7 @@ const KeyExchange: Page = () => (
           flex: 1,
           background: palette.surface,
           border: `1px solid ${palette.line}`,
-          borderRadius: 'var(--osd-radius-md)',
+          borderRadius: 'var(--osd-radius)',
           padding: '40px 44px',
         }}
       >
@@ -953,7 +953,7 @@ const KeyExchange: Page = () => (
           flex: 1,
           background: palette.surface,
           border: `1px solid ${palette.line}`,
-          borderRadius: 'var(--osd-radius-md)',
+          borderRadius: 'var(--osd-radius)',
           padding: '40px 44px',
         }}
       >
@@ -1053,7 +1053,7 @@ const ServerAuth: Page = () => (
           flex: 1,
           background: palette.surface,
           border: `1px solid ${palette.line}`,
-          borderRadius: 'var(--osd-radius-md)',
+          borderRadius: 'var(--osd-radius)',
           padding: 40,
           display: 'flex',
           flexDirection: 'column',
@@ -1117,7 +1117,7 @@ const ServerAuth: Page = () => (
           flex: 1,
           background: palette.surface,
           border: `1px solid ${palette.line}`,
-          borderRadius: 'var(--osd-radius-md)',
+          borderRadius: 'var(--osd-radius)',
           padding: 40,
           display: 'flex',
           flexDirection: 'column',
@@ -1332,7 +1332,7 @@ const EncryptedSession: Page = () => (
         flex: 1,
         background: palette.surface,
         border: `1px solid ${palette.line}`,
-        borderRadius: 'var(--osd-radius-md)',
+        borderRadius: 'var(--osd-radius)',
         padding: '50px 60px',
         display: 'flex',
         alignItems: 'center',

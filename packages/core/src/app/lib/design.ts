@@ -14,15 +14,11 @@ export type DesignTypeScale = {
   body: number;
 };
 
-export type DesignRadius = {
-  md: number;
-};
-
 export type DesignSystem = {
   palette: DesignPalette;
   fonts: DesignFonts;
   typeScale: DesignTypeScale;
-  radius: DesignRadius;
+  radius: number;
 };
 
 export function designToCssVars(d: DesignSystem): Record<string, string> {
@@ -34,7 +30,7 @@ export function designToCssVars(d: DesignSystem): Record<string, string> {
     '--osd-font-body': d.fonts.body,
     '--osd-size-hero': `${d.typeScale.hero}px`,
     '--osd-size-body': `${d.typeScale.body}px`,
-    '--osd-radius-md': `${d.radius.md}px`,
+    '--osd-radius': `${d.radius}px`,
   };
 }
 
@@ -58,7 +54,5 @@ export const defaultDesign: DesignSystem = {
     hero: 168,
     body: 36,
   },
-  radius: {
-    md: 12,
-  },
+  radius: 12,
 };

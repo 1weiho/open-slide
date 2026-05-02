@@ -10,7 +10,7 @@ export const design: DesignSystem = {
     body: "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
   },
   typeScale: { hero: 176, body: 28 },
-  radius: { md: 12 },
+  radius: 12,
 };
 
 const palette = {
@@ -160,7 +160,7 @@ const Code = ({ children, fontSize = 20 }: { children: ReactNode; fontSize?: num
       padding: 24,
       background: palette.surface,
       border: `1px solid ${palette.border}`,
-      borderRadius: 'var(--osd-radius-md)',
+      borderRadius: 'var(--osd-radius)',
       fontFamily: fontMono,
       fontSize,
       lineHeight: 1.45,
@@ -459,7 +459,7 @@ const PPRConcept: Page = () => {
         left,
         width,
         height,
-        borderRadius: 'var(--osd-radius-md)',
+        borderRadius: 'var(--osd-radius)',
         background: `linear-gradient(110deg, ${palette.surface} 8%, #f0f0f0 18%, ${palette.surface} 33%)`,
         backgroundSize: '200% 100%',
         border: `1.5px dashed ${palette.pink}`,
@@ -651,7 +651,7 @@ const PPRConcept: Page = () => {
               padding: 20,
               background: palette.surface,
               border: `1px solid ${palette.border}`,
-              borderRadius: 'var(--osd-radius-md)',
+              borderRadius: 'var(--osd-radius)',
               fontSize: 24,
               fontFamily: fontMono,
               color: palette.muted,

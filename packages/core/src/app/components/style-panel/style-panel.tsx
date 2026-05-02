@@ -158,15 +158,15 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
       <Section title="Shape">
         <SliderField
           label="Radius"
-          value={draft.radius.md}
+          value={draft.radius}
           min={0}
           max={80}
           step={1}
           suffix="px"
           onChange={(n) =>
             update((d) => {
-              d.radius.md = n;
-            }, 'design:radius.md')
+              d.radius = n;
+            }, 'design:radius')
           }
         />
       </Section>

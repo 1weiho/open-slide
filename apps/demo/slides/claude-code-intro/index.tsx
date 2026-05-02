@@ -14,9 +14,7 @@ export const design: DesignSystem = {
     hero: 220,
     body: 28,
   },
-  radius: {
-    md: 14,
-  },
+  radius: 14,
 };
 
 /* ─────────────── Design tokens ─────────────── */
@@ -443,7 +441,7 @@ const TheLoop: Page = () => (
               style={{
                 background: palette.surface,
                 border: `1px solid ${palette.line}`,
-                borderRadius: 'var(--osd-radius-md)',
+                borderRadius: 'var(--osd-radius)',
                 padding: '40px 32px',
                 width: '100%',
                 position: 'relative',
@@ -718,7 +716,7 @@ const WhereItRuns: Page = () => (
             style={{
               background: palette.surface,
               border: `1px solid ${palette.line}`,
-              borderRadius: 'var(--osd-radius-md)',
+              borderRadius: 'var(--osd-radius)',
               padding: '36px 40px',
               display: 'flex',
               alignItems: 'center',
@@ -896,7 +894,7 @@ const Transcript: Page = () => (
           flex: 1,
           background: palette.surface,
           border: `1px solid ${palette.line}`,
-          borderRadius: 'var(--osd-radius-md)',
+          borderRadius: 'var(--osd-radius)',
           padding: '40px 48px',
           display: 'flex',
           flexDirection: 'column',
@@ -985,7 +983,7 @@ const GetStarted: Page = () => (
         style={{
           background: 'var(--osd-text)',
           color: 'var(--osd-bg)',
-          borderRadius: 'var(--osd-radius-md)',
+          borderRadius: 'var(--osd-radius)',
           padding: '40px 56px',
           fontFamily: fonts.mono,
           fontSize: 36,
