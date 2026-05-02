@@ -180,6 +180,8 @@ export function Slide() {
         index={index}
         onIndexChange={goTo}
         onExit={() => setPlaying(false)}
+        controls
+        slideId={slideId}
       />
     );
   }
