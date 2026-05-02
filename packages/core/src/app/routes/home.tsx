@@ -257,7 +257,6 @@ function SlideCard({
 
   const FirstPage = slide?.default[0];
   const displayTitle = slide?.meta?.title ?? id;
-  const pageCount = slide?.default.length ?? 0;
 
   return (
     <>
@@ -272,18 +271,15 @@ function SlideCard({
         onDragEnd={() => setDragging(false)}
         className={cn('group relative', dragging && 'opacity-50')}
       >
-        <Link
-          to={`/s/${id}`}
-          className={cn(
-            'block focus-visible:outline-none motion-safe:transition-transform motion-safe:duration-200 motion-safe:hover:-translate-y-1',
-          )}
-        >
+        <Link to={`/s/${id}`} className="block focus-visible:outline-none">
           {/* Slide thumb — tight border, grey baseboard, no shadcn rounded-xl */}
-          <div className="relative aspect-video overflow-hidden rounded-[6px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] group-hover:shadow-floating motion-safe:transition-shadow">
+          <div className="relative aspect-video overflow-hidden rounded-[6px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] group-hover:shadow-floating group-hover:ring-foreground/20 motion-safe:transition-[box-shadow,--tw-ring-color] motion-safe:duration-200">
             {FirstPage ? (
-              <SlideCanvas flat freezeMotion design={slide?.design}>
-                <FirstPage />
-              </SlideCanvas>
+              <div className="h-full w-full motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-[1.03]">
+                <SlideCanvas flat freezeMotion design={slide?.design}>
+                  <FirstPage />
+                </SlideCanvas>
+              </div>
             ) : (
               <div className="grid h-full w-full place-items-center text-[10px] tracking-[0.16em] uppercase text-muted-foreground/60">
                 Loading
@@ -291,19 +287,10 @@ function SlideCard({
             )}
           </div>
 
-          <div className="mt-3 flex items-baseline gap-2">
+          <div className="mt-3">
             <h3 className="min-w-0 truncate font-heading text-[14px] font-medium tracking-tight">
               {displayTitle}
             </h3>
-            {pageCount > 0 && (
-              <>
-                <span className="h-px min-w-3 flex-1 translate-y-[-3px] bg-hairline" aria-hidden />
-                <span className="folio shrink-0">
-                  {pageCount.toString().padStart(2, '0')}
-                  <span className="opacity-40"> pp</span>
-                </span>
-              </>
-            )}
           </div>
         </Link>
 
