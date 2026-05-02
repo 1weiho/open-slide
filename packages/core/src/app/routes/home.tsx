@@ -17,12 +17,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useFolders } from '@/lib/folders';
+import { useInViewport } from '@/lib/use-in-viewport';
 import { cn } from '@/lib/utils';
 import { FolderIconChip, SLIDE_DND_MIME } from '../components/sidebar/folder-item';
 import { DRAFT_ID, Sidebar } from '../components/sidebar/sidebar';
 import { SlideCanvas } from '../components/slide-canvas';
 import type { Folder, FolderIcon, SlideModule } from '../lib/sdk';
-import { loadSlide, slideIds } from '../lib/slides';
+import { loadSlidePreview, slideIds } from '../lib/slides';
 
 export function Home() {
   const { manifest, create, update, remove, assign, renameSlide, deleteSlide } = useFolders();
@@ -242,10 +243,14 @@ function SlideCard({
   const [slide, setSlide] = useState<SlideModule | null>(null);
   const [dragging, setDragging] = useState(false);
   const [dialog, setDialog] = useState<DialogKind>(null);
+  const [cardRef, shouldLoadPreview] = useInViewport<HTMLDivElement>({ rootMargin: '700px 0px' });
 
   useEffect(() => {
     let cancelled = false;
-    loadSlide(id)
+    setSlide(null);
+    if (!shouldLoadPreview) return;
+
+    loadSlidePreview(id)
       .then((mod) => {
         if (!cancelled) setSlide(mod);
       })
@@ -253,7 +258,7 @@ function SlideCard({
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, shouldLoadPreview]);
 
   const FirstPage = slide?.default[0];
   const displayTitle = slide?.meta?.title ?? id;
@@ -263,6 +268,7 @@ function SlideCard({
     <>
       {/* biome-ignore lint/a11y/noStaticElementInteractions: drag source wraps an interactive Link */}
       <div
+        ref={cardRef}
         draggable
         onDragStart={(e) => {
           e.dataTransfer.setData(SLIDE_DND_MIME, id);
@@ -270,7 +276,10 @@ function SlideCard({
           setDragging(true);
         }}
         onDragEnd={() => setDragging(false)}
-        className={cn('group relative', dragging && 'opacity-50')}
+        className={cn(
+          'group relative [contain-intrinsic-size:260px] [content-visibility:auto]',
+          dragging && 'opacity-50',
+        )}
       >
         <Link
           to={`/s/${id}`}
@@ -342,35 +351,41 @@ function SlideCard({
         )}
       </div>
 
-      <RenameDialog
-        open={dialog === 'rename'}
-        initialName={displayTitle}
-        onOpenChange={(v) => setDialog(v ? 'rename' : null)}
-        onSubmit={async (name) => {
-          await onRename(name);
-          setDialog(null);
-        }}
-      />
-      <MoveDialog
-        open={dialog === 'move'}
-        slideName={displayTitle}
-        folders={folders}
-        currentFolderId={currentFolderId}
-        onOpenChange={(v) => setDialog(v ? 'move' : null)}
-        onSubmit={async (folderId) => {
-          await onMove(folderId);
-          setDialog(null);
-        }}
-      />
-      <DeleteDialog
-        open={dialog === 'delete'}
-        slideName={displayTitle}
-        onOpenChange={(v) => setDialog(v ? 'delete' : null)}
-        onConfirm={async () => {
-          await onDelete();
-          setDialog(null);
-        }}
-      />
+      {dialog === 'rename' && (
+        <RenameDialog
+          open
+          initialName={displayTitle}
+          onOpenChange={(v) => setDialog(v ? 'rename' : null)}
+          onSubmit={async (name) => {
+            await onRename(name);
+            setDialog(null);
+          }}
+        />
+      )}
+      {dialog === 'move' && (
+        <MoveDialog
+          open
+          slideName={displayTitle}
+          folders={folders}
+          currentFolderId={currentFolderId}
+          onOpenChange={(v) => setDialog(v ? 'move' : null)}
+          onSubmit={async (folderId) => {
+            await onMove(folderId);
+            setDialog(null);
+          }}
+        />
+      )}
+      {dialog === 'delete' && (
+        <DeleteDialog
+          open
+          slideName={displayTitle}
+          onOpenChange={(v) => setDialog(v ? 'delete' : null)}
+          onConfirm={async () => {
+            await onDelete();
+            setDialog(null);
+          }}
+        />
+      )}
     </>
   );
 }
