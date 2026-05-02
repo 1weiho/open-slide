@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import posthog from 'posthog-js';
 import { ThemeToggle } from './theme-toggle';
 
 export function Nav() {
@@ -37,6 +40,7 @@ export function Nav() {
             href="https://demo.open-slide.dev/"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => posthog.capture('nav_external_link_clicked', { label: 'demo' })}
             className="hidden md:inline text-[color:var(--color-muted)] hover:text-[color:var(--color-text)] transition-colors"
           >
             Demo ↗
@@ -45,6 +49,7 @@ export function Nav() {
             href="https://github.com/1weiho/open-slide"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => posthog.capture('nav_external_link_clicked', { label: 'github' })}
             className="hidden md:inline text-[color:var(--color-muted)] hover:text-[color:var(--color-text)] transition-colors"
           >
             GitHub ↗

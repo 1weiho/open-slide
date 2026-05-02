@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import posthog from 'posthog-js';
 import { InlineSlidePlayer, inlineSlideCount } from './inline-slide-player';
 
 export function LiveDemo() {
@@ -9,6 +10,18 @@ export function LiveDemo() {
   const clamp = (i: number) => Math.max(0, Math.min(count - 1, i));
   const atStart = index === 0;
   const atEnd = index === count - 1;
+
+  const handlePrev = () => {
+    const next = clamp(index - 1);
+    setIndex(next);
+    posthog.capture('demo_slide_navigated', { direction: 'prev', slide_index: next });
+  };
+
+  const handleNext = () => {
+    const next = clamp(index + 1);
+    setIndex(next);
+    posthog.capture('demo_slide_navigated', { direction: 'next', slide_index: next });
+  };
 
   return (
     <section id="demo" className="relative">
@@ -36,7 +49,7 @@ export function LiveDemo() {
             <span className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => setIndex((i) => clamp(i - 1))}
+                onClick={handlePrev}
                 disabled={atStart}
                 aria-label="Previous slide"
                 className="px-1.5 py-0.5 rounded border border-[color:var(--color-rule)] text-[color:var(--color-text-soft)] hover:border-[color:var(--color-text)] hover:text-[color:var(--color-text)] transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[color:var(--color-rule)] disabled:hover:text-[color:var(--color-text-soft)]"
@@ -45,7 +58,7 @@ export function LiveDemo() {
               </button>
               <button
                 type="button"
-                onClick={() => setIndex((i) => clamp(i + 1))}
+                onClick={handleNext}
                 disabled={atEnd}
                 aria-label="Next slide"
                 className="px-1.5 py-0.5 rounded border border-[color:var(--color-rule)] text-[color:var(--color-text-soft)] hover:border-[color:var(--color-text)] hover:text-[color:var(--color-text)] transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[color:var(--color-rule)] disabled:hover:text-[color:var(--color-text-soft)]"
@@ -61,6 +74,7 @@ export function LiveDemo() {
             href="https://demo.open-slide.dev/"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => posthog.capture('view_more_demos_clicked')}
             className="inline-flex items-center gap-2 font-[family-name:var(--font-mono)] text-[12px] tracking-[0.12em] uppercase text-[color:var(--color-muted)] hover:text-[color:var(--color-accent)] transition-colors"
           >
             View more demos

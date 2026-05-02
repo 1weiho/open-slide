@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import posthog from 'posthog-js';
 
 export function CopyCommand({ command, size = 'lg' }: { command: string; size?: 'lg' | 'md' }) {
   const [copied, setCopied] = useState(false);
@@ -10,6 +11,7 @@ export function CopyCommand({ command, size = 'lg' }: { command: string; size?: 
       await navigator.clipboard.writeText(command);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
+      posthog.capture('command_copied', { command });
     } catch {
       /* ignore */
     }
