@@ -1,6 +1,23 @@
 import config from 'virtual:open-slide/config';
-import { ChevronLeft, Download, FileCode2, FileText, Loader2, Pencil, Play } from 'lucide-react';
-import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ChevronLeft,
+  Download,
+  FileCode2,
+  FileText,
+  Loader2,
+  Pencil,
+  Play,
+  Presentation,
+} from 'lucide-react';
+import {
+  type ReactNode,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AssetView } from '@/components/asset-view';
@@ -34,6 +51,11 @@ import { SlideCanvas } from '../components/slide-canvas';
 import { ThumbnailRail } from '../components/thumbnail-rail';
 import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf } from '../lib/export-pdf';
+import {
+  isFrameAnimationSettled,
+  waitForDataWaitfor,
+  waitForFonts,
+} from '../lib/print-ready';
 import type { SlideModule } from '../lib/sdk';
 import { loadSlide } from '../lib/slides';
 
@@ -156,6 +178,21 @@ export function Slide() {
           a non-empty array of components.
         </p>
       </div>
+    );
+  }
+
+  if (searchParams.get('pptx') === '1') {
+    const PageComp = pages[index];
+    return (
+      <PptxCaptureFrame
+        pageCount={pageCount}
+        title={slide.meta?.title ?? slideId}
+        pageIndex={index}
+      >
+        <SlideCanvas flat design={slide.design}>
+          {PageComp ? <PageComp /> : null}
+        </SlideCanvas>
+      </PptxCaptureFrame>
     );
   }
 
@@ -304,6 +341,21 @@ export function Slide() {
                       <FileText />
                       Export as PDF
                     </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        const cmd = `npx open-slide export pptx --slide ${slideId}`;
+                        if (navigator.clipboard?.writeText) {
+                          navigator.clipboard.writeText(cmd).catch(() => {});
+                        }
+                        toast.message('PPTX export runs from the CLI', {
+                          description: cmd,
+                          duration: 8000,
+                        });
+                      }}
+                    >
+                      <Presentation />
+                      Export as PPTX
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
@@ -391,6 +443,87 @@ export function Slide() {
         </div>
       </InspectorProvider>
     </HistoryProvider>
+  );
+}
+
+// Bare-canvas wrapper used by `npx open-slide export pptx`. Renders a single
+// page at logical 1920×1080 (no toolbar, no thumbnails, no inspector) and
+// signals readiness to the headless driver via window globals once fonts and
+// finite-iteration animations have settled.
+function PptxCaptureFrame({
+  children,
+  pageCount,
+  title,
+  pageIndex,
+}: {
+  children: ReactNode;
+  pageCount: number;
+  title: string;
+  pageIndex: number;
+}) {
+  useEffect(() => {
+    type W = {
+      __OPEN_SLIDE_READY?: boolean;
+      __OPEN_SLIDE_PAGE_COUNT?: number;
+      __OPEN_SLIDE_TITLE?: string;
+      __OPEN_SLIDE_WARNINGS?: string[];
+    };
+    const w = window as unknown as W;
+    w.__OPEN_SLIDE_READY = false;
+    w.__OPEN_SLIDE_PAGE_COUNT = pageCount;
+    w.__OPEN_SLIDE_TITLE = title;
+    w.__OPEN_SLIDE_WARNINGS = [];
+
+    let cancelled = false;
+    (async () => {
+      await waitForFonts();
+      const deadline = performance.now() + 15_000;
+      while (!cancelled && performance.now() < deadline) {
+        const root = document.querySelector('[data-osd-canvas]');
+        if (root && isFrameAnimationSettled(root)) break;
+        await new Promise<void>((r) => requestAnimationFrame(() => r()));
+      }
+      if (cancelled) return;
+      const root = document.querySelector('[data-osd-canvas]');
+      if (root) {
+        if (typeof document.getAnimations === 'function') {
+          const infinite = document
+            .getAnimations()
+            .filter((a) => {
+              const t = (a.effect as KeyframeEffect | null)?.target as Element | null;
+              if (!t || !root.contains(t)) return false;
+              return a.effect?.getComputedTiming().iterations === Infinity;
+            }).length;
+          if (infinite > 0) {
+            w.__OPEN_SLIDE_WARNINGS?.push(
+              `${infinite} infinite animation(s) captured at current frame`,
+            );
+          }
+        }
+        await waitForDataWaitfor(root as HTMLElement);
+      }
+      // One more rAF to flush layout after settling.
+      await new Promise<void>((r) => requestAnimationFrame(() => r()));
+      if (!cancelled) w.__OPEN_SLIDE_READY = true;
+    })();
+    return () => {
+      cancelled = true;
+      w.__OPEN_SLIDE_READY = false;
+    };
+  }, [pageIndex, pageCount, title]);
+
+  return (
+    <div
+      data-osd-pptx-frame
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: '#fff',
+        overflow: 'hidden',
+      }}
+    >
+      {children}
+    </div>
   );
 }
 

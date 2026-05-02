@@ -81,6 +81,11 @@ interface SyncFlags {
   dryRun?: boolean;
 }
 
+interface ExportFlags {
+  slide?: string;
+  out?: string;
+}
+
 function resolveBuiltinSkillsDir(): string {
   // dist/cli/bin.js → ../../skills (package root + /skills)
   const here = path.dirname(fileURLToPath(import.meta.url));
@@ -131,6 +136,19 @@ export async function run(argv: string[]): Promise<void> {
     .action(async (flags: ServerFlags) => {
       const { preview } = await import('./preview.ts');
       await preview(flags);
+    });
+
+  program
+    .command('export <format>')
+    .description('Export the deck (formats: pptx)')
+    .option('--slide <id>', 'export a single slide (default: all)')
+    .option('--out <path>', 'output file (single slide) or directory (all)')
+    .action(async (format: string, flags: ExportFlags) => {
+      if (format !== 'pptx') {
+        throw new Error(`Unknown export format: ${format}. Supported: pptx`);
+      }
+      const { exportPptx } = await import('./export-pptx.ts');
+      await exportPptx({ slideId: flags.slide, out: flags.out });
     });
 
   program
