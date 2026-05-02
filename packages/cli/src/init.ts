@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
@@ -33,6 +33,37 @@ async function readCliVersion(): Promise<string> {
   return pkg.version;
 }
 
+async function linkOrCopy(relSrc: string, dst: string): Promise<void> {
+  await rm(dst, { recursive: true, force: true });
+  if (IS_WINDOWS) {
+    await cp(resolve(dirname(dst), relSrc), dst, { recursive: true });
+    return;
+  }
+  await symlink(relSrc, dst);
+}
+
+async function materializeTemplateLinks(target: string): Promise<void> {
+  const claudeMd = join(target, 'CLAUDE.md');
+  if (!existsSync(claudeMd) && existsSync(join(target, 'AGENTS.md'))) {
+    await linkOrCopy('AGENTS.md', claudeMd);
+  }
+
+  const agentsSkills = join(target, '.agents', 'skills');
+  if (!existsSync(agentsSkills)) return;
+
+  const claudeSkills = join(target, '.claude', 'skills');
+  await mkdir(claudeSkills, { recursive: true });
+
+  const entries = await readdir(agentsSkills, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    await linkOrCopy(
+      join('..', '..', '.agents', 'skills', entry.name),
+      join(claudeSkills, entry.name),
+    );
+  }
+}
+
 async function runInstall(pm: PackageManager, cwd: string): Promise<void> {
   await new Promise<void>((res, rej) => {
     const child = spawn(pm, ['install'], { cwd, stdio: 'inherit', shell: IS_WINDOWS });
@@ -60,6 +91,7 @@ export async function init(opts: InitOptions): Promise<void> {
   }
 
   await cp(TEMPLATE_DIR, target, { recursive: true });
+  await materializeTemplateLinks(target);
 
   const pkgPath = join(target, 'package.json');
   if (existsSync(pkgPath)) {
