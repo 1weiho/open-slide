@@ -1,5 +1,12 @@
 # @open-slide/cli
 
+## 1.0.4
+
+### Patch Changes
+
+- 05fb7ca: Make the `create-slide` skill propose aesthetic options tailored to the deck's topic instead of a fixed preset list. Step 2 now requires gathering the topic first and brainstorming three concrete, distinct visual directions for that topic (vibe + palette/typography/motif), so users can actually picture each choice.
+- 2f84f47: Add `vite` to the scaffolded template's `devDependencies` so projects created via `open-slide init` are auto-detected as Vite projects on Vercel. Vercel's framework detector regex-matches `"vite"` in `package.json` dependencies, and previously the template only declared `@open-slide/core`, leaving vite transitive and undetected. The existing `build` script (`open-slide build`) and `dist` output directory already match Vercel's Vite preset defaults.
+
 ## 1.0.3
 
 ### Patch Changes
