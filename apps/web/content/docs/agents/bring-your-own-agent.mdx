@@ -11,7 +11,7 @@ Code, Codex, Cursor, Gemini CLI, OpenCode, Windsurf, Zed.
 
 To author cleanly, the agent needs to:
 
-1. **Read the rules.** `CLAUDE.md` (and `AGENTS.md`) at the workspace root
+1. **Read the rules.** `AGENTS.md` (and `CLAUDE.md`) at the workspace root
    define the file contract and constraints.
 2. **Find the skills.** `/create-slide`, `/slide-authoring`,
    `/apply-comments`, `/create-theme` live under `skills/` (or wherever
@@ -22,8 +22,11 @@ If your agent of choice doesn't have a skills system, you can paste the
 `slide-authoring` skill into context manually and ask the agent to follow
 its rules.
 
-## Mirroring `CLAUDE.md` for other agents
+## Mirroring `AGENTS.md` for Claude Code
 
-`AGENTS.md` is generated alongside `CLAUDE.md` so editors that look for that
-filename (Codex, some Cursor configurations) pick the rules up automatically.
-The two files are kept in sync by the scaffolder.
+`AGENTS.md` is the canonical rules file — it follows the cross-tool
+convention that Codex, Cursor, Gemini CLI, OpenCode, Windsurf, and Zed
+already look for. `CLAUDE.md` is generated alongside it so Claude Code
+picks the rules up automatically. The two files are kept in sync by the
+scaffolder; edit `AGENTS.md` and re-run `open-slide sync:skills` if you
+want the mirror refreshed.
