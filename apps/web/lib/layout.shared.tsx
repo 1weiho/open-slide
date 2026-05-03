@@ -6,12 +6,7 @@ export function baseOptions(): BaseLayoutProps {
     nav: {
       title: (
         <>
-          <img
-            src="/open-slide.png"
-            alt=""
-            aria-hidden
-            className="h-6 w-6 rounded-[4px]"
-          />
+          <img src="/open-slide.png" alt="" aria-hidden className="h-6 w-6 rounded-[4px]" />
           <span>{appName}</span>
         </>
       ),
