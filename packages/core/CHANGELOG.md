@@ -1,5 +1,11 @@
 # @open-slide/core
 
+## 1.0.3
+
+### Patch Changes
+
+- 802fd51: Add the required `radius` field to the `slide-authoring` skill's starter template. Without it, slides scaffolded from the template fail TypeScript because `DesignSystem` requires `radius: number`.
+
 ## 1.0.2
 
 ### Patch Changes

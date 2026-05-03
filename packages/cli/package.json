@@ -1,6 +1,6 @@
 {
   "name": "@open-slide/cli",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Scaffold an open-slide workspace with Claude Code skills preconfigured.",
   "type": "module",
   "bin": {
