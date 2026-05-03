@@ -28,6 +28,7 @@
     "dist",
     "env.d.ts",
     "src/app",
+    "src/locale",
     "skills",
     "README.md"
   ],
