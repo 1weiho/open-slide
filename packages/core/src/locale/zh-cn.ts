@@ -42,6 +42,8 @@ export const zhCN: Locale = {
     newFolder: '新建文件夹',
     folderName: '文件夹名称',
     changeIcon: '更换图标',
+    iconEmojiTab: 'Emoji',
+    iconColorTab: '颜色',
     folderActions: '文件夹操作',
     searchPlaceholder: '搜索幻灯片',
     clearSearch: '清除搜索',

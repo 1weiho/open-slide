@@ -42,6 +42,8 @@ export const zhTW: Locale = {
     newFolder: '新增資料夾',
     folderName: '資料夾名稱',
     changeIcon: '變更圖示',
+    iconEmojiTab: 'Emoji',
+    iconColorTab: '顏色',
     folderActions: '資料夾操作',
     searchPlaceholder: '搜尋投影片',
     clearSearch: '清除搜尋',

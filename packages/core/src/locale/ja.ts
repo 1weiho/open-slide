@@ -42,6 +42,8 @@ export const ja: Locale = {
     newFolder: '新規フォルダ',
     folderName: 'フォルダ名',
     changeIcon: 'アイコンを変更',
+    iconEmojiTab: '絵文字',
+    iconColorTab: 'カラー',
     folderActions: 'フォルダ操作',
     searchPlaceholder: 'スライドを検索',
     clearSearch: '検索をクリア',

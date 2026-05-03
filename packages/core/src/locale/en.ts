@@ -42,6 +42,8 @@ export const en: Locale = {
     newFolder: 'New folder',
     folderName: 'Folder name',
     changeIcon: 'Change icon',
+    iconEmojiTab: 'Emoji',
+    iconColorTab: 'Color',
     folderActions: 'Folder actions',
     searchPlaceholder: 'Search slides',
     clearSearch: 'Clear search',

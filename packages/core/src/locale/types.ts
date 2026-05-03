@@ -42,6 +42,8 @@ export type Locale = {
     newFolder: string;
     folderName: string;
     changeIcon: string;
+    iconEmojiTab: string;
+    iconColorTab: string;
     folderActions: string;
     searchPlaceholder: string;
     clearSearch: string;
