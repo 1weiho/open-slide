@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import type { DesignSystem } from '../lib/design';
 import type { Page } from '../lib/sdk';
@@ -27,6 +28,7 @@ export function ThumbnailRail({
   orientation = 'vertical',
 }: Props) {
   const activeRef = useRef<HTMLButtonElement | null>(null);
+  const t = useLocale();
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: `current` triggers re-scroll on selection change
   useEffect(() => {
@@ -55,7 +57,7 @@ export function ThumbnailRail({
                   type="button"
                   ref={active ? activeRef : undefined}
                   onClick={() => onSelect(i)}
-                  aria-label={`Go to page ${i + 1}`}
+                  aria-label={format(t.thumbnailRail.goToPageAria, { n: i + 1 })}
                   aria-current={active ? 'true' : undefined}
                   className={cn('group/thumb relative flex shrink-0 flex-col items-center gap-1.5')}
                 >
@@ -95,7 +97,7 @@ export function ThumbnailRail({
     <ScrollArea className="h-full border-r border-hairline bg-sidebar">
       <aside className="flex flex-col gap-2 px-3 py-3">
         <div className="flex items-baseline justify-between px-1 pb-1">
-          <span className="eyebrow">Pages</span>
+          <span className="eyebrow">{t.thumbnailRail.pages}</span>
           <span className="folio">{pages.length.toString().padStart(2, '0')}</span>
         </div>
         {pages.map((PageComp, i) => {

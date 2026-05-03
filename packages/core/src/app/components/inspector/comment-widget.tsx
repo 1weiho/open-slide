@@ -1,8 +1,10 @@
 import { MessageSquare, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
+import { format, plural, useLocale } from '@/lib/use-locale';
 import { useInspector } from './inspector-provider';
 
 export function CommentWidget() {
+  const t = useLocale();
   const { comments, remove, error } = useInspector();
   const [open, setOpen] = useState(false);
   const count = comments.length;
@@ -13,7 +15,7 @@ export function CommentWidget() {
         <div className="w-80 rounded-md border bg-card shadow-xl animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
           <div className="flex items-center justify-between border-b px-3 py-2">
             <span className="text-xs font-semibold">
-              {count} comment{count === 1 ? '' : 's'}
+              {format(plural(count, t.inspector.commentsCount), { count })}
             </span>
             <button
               type="button"
@@ -26,7 +28,7 @@ export function CommentWidget() {
           {error && <p className="px-3 py-2 text-xs text-red-600">{error}</p>}
           {count === 0 ? (
             <p className="px-3 py-6 text-center text-xs text-muted-foreground">
-              No comments yet. Toggle Inspect and click a slide element.
+              {t.inspector.commentsEmpty}
             </p>
           ) : (
             <>
@@ -38,7 +40,7 @@ export function CommentWidget() {
                   >
                     <div className="min-w-0 flex-1">
                       <div className="text-[10px] font-mono text-muted-foreground">
-                        line {c.line}
+                        {format(t.inspector.commentLineLabel, { n: c.line })}
                       </div>
                       <div className="mt-0.5 text-xs break-words">{c.note}</div>
                     </div>
@@ -46,7 +48,7 @@ export function CommentWidget() {
                       type="button"
                       onClick={() => remove(c.id)}
                       className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-red-600"
-                      title="Delete"
+                      title={t.inspector.commentDeleteAria}
                     >
                       <Trash2 className="size-3.5" />
                     </button>
@@ -54,11 +56,11 @@ export function CommentWidget() {
                 ))}
               </ul>
               <div className="border-t px-3 py-2 text-[11px] text-muted-foreground">
-                Run{' '}
+                {t.inspector.commentsApplyHintPrefix}
                 <code className="rounded bg-muted px-1 py-0.5 font-mono text-foreground">
                   /apply-comments
-                </code>{' '}
-                in your agent to apply these.
+                </code>
+                {t.inspector.commentsApplyHintSuffix}
               </div>
             </>
           )}

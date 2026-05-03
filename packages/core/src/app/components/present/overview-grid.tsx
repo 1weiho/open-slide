@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import type { DesignSystem } from '../../lib/design';
 import type { Page } from '../../lib/sdk';
@@ -26,6 +27,7 @@ export function PresentOverviewGrid({ pages, design, open, current, onClose, onS
   const [focused, setFocused] = useState(current);
   const gridRef = useRef<HTMLDivElement>(null);
   const focusedRef = useRef<HTMLButtonElement | null>(null);
+  const t = useLocale();
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: only re-sync on open transition
   useEffect(() => {
@@ -88,11 +90,11 @@ export function PresentOverviewGrid({ pages, design, open, current, onClose, onS
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Slide overview"
+      aria-label={t.present.overviewDialogAria}
       className="absolute inset-0 z-50 flex flex-col bg-black/95 backdrop-blur-sm"
     >
       <div className="flex shrink-0 items-baseline justify-between px-8 pt-6 pb-3">
-        <span className="eyebrow text-white/55">Overview</span>
+        <span className="eyebrow text-white/55">{t.present.overviewEyebrow}</span>
         <span className="font-mono text-[11px] text-white/55 tabular-nums">
           {(focused + 1).toString().padStart(2, '0')} · {pages.length.toString().padStart(2, '0')}
         </span>
@@ -118,7 +120,7 @@ export function PresentOverviewGrid({ pages, design, open, current, onClose, onS
                   onClose();
                 }}
                 onMouseEnter={() => setFocused(i)}
-                aria-label={`Go to slide ${i + 1}`}
+                aria-label={format(t.present.overviewGoToAria, { n: i + 1 })}
                 aria-current={isCurrent ? 'true' : undefined}
                 className={cn(
                   'group/thumb flex flex-col items-start gap-2 rounded-[6px] p-1.5 outline-none transition-colors',
@@ -146,7 +148,7 @@ export function PresentOverviewGrid({ pages, design, open, current, onClose, onS
                       aria-hidden
                       className="pointer-events-none absolute top-1.5 right-1.5 rounded-[3px] bg-[var(--brand,#ef4444)] px-1.5 py-0.5 font-mono text-[9.5px] tracking-[0.06em] uppercase text-white"
                     >
-                      Now
+                      {t.present.nowBadge}
                     </span>
                   )}
                 </div>

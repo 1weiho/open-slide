@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 
 const TooltipContainerCtx = createContext<HTMLElement | null>(null);
@@ -57,6 +58,7 @@ export function PresentControlBar({
   onExit,
   tooltipContainer,
 }: Props) {
+  const t = useLocale();
   return (
     <div
       data-state={visible ? 'visible' : 'hidden'}
@@ -73,10 +75,14 @@ export function PresentControlBar({
       <TooltipProvider delayDuration={300}>
         <TooltipContainerCtx.Provider value={tooltipContainer ?? null}>
           <div className="pointer-events-auto flex h-11 items-center gap-1 rounded-full border border-white/10 bg-black/55 px-2 text-white/85 shadow-[0_8px_30px_-8px_oklch(0_0_0/0.6)] backdrop-blur-md">
-            <BarButton label="Previous slide (←)" onClick={onPrev} disabled={index === 0}>
+            <BarButton label={t.present.prevSlideAria} onClick={onPrev} disabled={index === 0}>
               <ChevronLeft className="size-4" />
             </BarButton>
-            <BarButton label="Next slide (→)" onClick={onNext} disabled={index >= total - 1}>
+            <BarButton
+              label={t.present.nextSlideAria}
+              onClick={onNext}
+              disabled={index >= total - 1}
+            >
               <ChevronRight className="size-4" />
             </BarButton>
 
@@ -94,37 +100,37 @@ export function PresentControlBar({
 
             <Divider />
 
-            <BarButton label="Slide overview (O)" onClick={onOverview}>
+            <BarButton label={t.present.overviewAria} onClick={onOverview}>
               <Grid2x2 className="size-4" />
             </BarButton>
             <BarButton
-              label="Black screen (B)"
+              label={t.present.blackoutAria}
               onClick={() => onBlackout('black')}
               active={blackout === 'black'}
             >
               <Square className="size-4 fill-current" />
             </BarButton>
             <BarButton
-              label="White screen (W)"
+              label={t.present.whiteoutAria}
               onClick={() => onBlackout('white')}
               active={blackout === 'white'}
             >
               <Sun className="size-4" />
             </BarButton>
-            <BarButton label="Laser pointer (L)" onClick={onLaser} active={laser}>
+            <BarButton label={t.present.laserAria} onClick={onLaser} active={laser}>
               <Crosshair className="size-4" />
             </BarButton>
-            <BarButton label="Presenter view (P)" onClick={onPresenter}>
+            <BarButton label={t.present.presenterAria} onClick={onPresenter}>
               <MonitorSpeaker className="size-4" />
             </BarButton>
-            <BarButton label="Keyboard shortcuts (?)" onClick={onHelp}>
+            <BarButton label={t.present.helpAria} onClick={onHelp}>
               <Keyboard className="size-4" />
             </BarButton>
 
             {allowExit && (
               <>
                 <Divider />
-                <BarButton label="Exit (Esc)" onClick={onExit}>
+                <BarButton label={t.present.exitAria} onClick={onExit}>
                   <LogOut className="size-4" />
                 </BarButton>
               </>
@@ -186,6 +192,7 @@ function Divider() {
 
 function ElapsedClock({ startedAt }: { startedAt: number }) {
   const [now, setNow] = useState(() => Date.now());
+  const t = useLocale();
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
@@ -195,7 +202,7 @@ function ElapsedClock({ startedAt }: { startedAt: number }) {
   const s = elapsed % 60;
   return (
     <time
-      title="Elapsed time"
+      title={t.present.elapsedTime}
       className="px-2 font-mono text-[11.5px] tracking-[0.08em] tabular-nums uppercase select-none text-white/70"
     >
       {m.toString().padStart(2, '0')}:{s.toString().padStart(2, '0')}

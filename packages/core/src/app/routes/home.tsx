@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useFolders } from '@/lib/folders';
+import { useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import { FolderIconChip, SLIDE_DND_MIME } from '../components/sidebar/folder-item';
 import { DRAFT_ID, Sidebar } from '../components/sidebar/sidebar';
@@ -28,6 +29,7 @@ export function Home() {
   const { manifest, create, update, remove, assign, renameSlide, deleteSlide } = useFolders();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedId = searchParams.get('f') ?? DRAFT_ID;
+  const t = useLocale();
 
   const selectFolder = (id: string) => {
     setSearchParams(
@@ -64,7 +66,7 @@ export function Home() {
     selectedId === DRAFT_ID ? null : (manifest.folders.find((f) => f.id === selectedId) ?? null);
   const visibleSlides = selectedId === DRAFT_ID ? draftSlides : (slidesByFolder[selectedId] ?? []);
 
-  const title = selectedFolder?.name ?? 'Draft';
+  const title = selectedFolder?.name ?? t.home.draft;
   const headerIcon = selectedFolder?.icon ?? { type: 'emoji' as const, value: '📝' };
   const isDraft = selectedId === DRAFT_ID;
 
@@ -110,13 +112,13 @@ export function Home() {
       <div className="paper relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-canvas">
         {/* Mobile chrome */}
         <div className="flex items-center justify-between border-b border-hairline bg-sidebar px-4 py-3 md:hidden">
-          <h1 className="font-heading text-lg font-bold tracking-tight">open-slide</h1>
+          <h1 className="font-heading text-lg font-bold tracking-tight">{t.home.appTitle}</h1>
         </div>
         <div className="border-b border-hairline bg-sidebar px-4 py-2 md:hidden">
           <div className="flex gap-2 overflow-x-auto pb-1">
             <MobileFolderPill
               icon={{ type: 'emoji', value: '📝' }}
-              label="Draft"
+              label={t.home.draft}
               count={countFor(null)}
               active={selectedId === DRAFT_ID}
               onClick={() => selectFolder(DRAFT_ID)}
@@ -216,6 +218,7 @@ function MobileFolderPill({
 }
 
 function SearchInput({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const t = useLocale();
   return (
     <div className="relative w-full md:w-[240px]">
       <Search
@@ -226,14 +229,14 @@ function SearchInput({ value, onChange }: { value: string; onChange: (value: str
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Search slides"
+        placeholder={t.home.searchPlaceholder}
         className="h-8 w-full rounded-[6px] border border-border bg-background pl-8 pr-7 text-[12.5px] outline-none placeholder:text-muted-foreground/70 focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30"
       />
       {value && (
         <button
           type="button"
           onClick={() => onChange('')}
-          aria-label="Clear search"
+          aria-label={t.home.clearSearch}
           className="absolute right-1.5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-[4px] text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           <X className="size-3" />
@@ -244,19 +247,23 @@ function SearchInput({ value, onChange }: { value: string; onChange: (value: str
 }
 
 function NoResultsState({ query, onClear }: { query: string; onClear: () => void }) {
+  const t = useLocale();
   return (
     <div className="rounded-[10px] border border-dashed border-border bg-card/60 px-8 py-20">
       <div className="mx-auto flex max-w-md flex-col items-center text-center">
         <div className="flex size-12 items-center justify-center rounded-full border border-hairline bg-card text-muted-foreground">
           <Search className="size-5" />
         </div>
-        <p className="mt-4 font-heading text-[15px] font-semibold tracking-tight">No matches</p>
+        <p className="mt-4 font-heading text-[15px] font-semibold tracking-tight">
+          {t.home.noMatches}
+        </p>
         <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-          Nothing matches <span className="font-medium text-foreground">&ldquo;{query}&rdquo;</span>{' '}
-          in this folder.
+          {t.home.nothingMatchesPrefix}
+          <span className="font-medium text-foreground">&ldquo;{query}&rdquo;</span>
+          {t.home.nothingMatchesSuffix}
         </p>
         <Button variant="ghost" size="sm" className="mt-4" onClick={onClear}>
-          Clear search
+          {t.home.clearSearch}
         </Button>
       </div>
     </div>
@@ -264,6 +271,11 @@ function NoResultsState({ query, onClear }: { query: string; onClear: () => void
 }
 
 function EmptyState({ isDraft, folderName }: { isDraft: boolean; folderName?: string }) {
+  const t = useLocale();
+  const folderEmptyTitle = t.home.folderEmptyTitle.replace(
+    '{name}',
+    folderName ?? t.home.folderEmptyTitle,
+  );
   return (
     <div className="rounded-[10px] border border-dashed border-border bg-card/60 px-8 py-20">
       <div className="mx-auto flex max-w-md flex-col items-center text-center">
@@ -273,27 +285,27 @@ function EmptyState({ isDraft, folderName }: { isDraft: boolean; folderName?: st
         {isDraft ? (
           <>
             <p className="mt-4 font-heading text-[15px] font-semibold tracking-tight">
-              No slides yet
+              {t.home.noSlidesYet}
             </p>
             <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-              Create{' '}
+              {t.home.createSlideHintPrefix}
               <code className="rounded-[4px] bg-muted px-1.5 py-0.5 font-mono text-[11.5px] text-foreground">
                 slides/my-slide/index.tsx
-              </code>{' '}
-              that{' '}
+              </code>
+              {t.home.createSlideHintMid}
               <code className="rounded-[4px] bg-muted px-1.5 py-0.5 font-mono text-[11.5px] text-foreground">
                 export default [Page1, Page2]
               </code>
-              .
+              {t.home.createSlideHintSuffix}
             </p>
           </>
         ) : (
           <>
             <p className="mt-4 font-heading text-[15px] font-semibold tracking-tight">
-              {folderName ?? 'This folder'} is empty
+              {folderEmptyTitle}
             </p>
             <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-              Drag a slide from Draft into this folder in the sidebar.
+              {t.home.folderEmptyHint}
             </p>
           </>
         )}
@@ -367,6 +379,7 @@ function SlideCard({
   const [slide, setSlide] = useState<SlideModule | null>(null);
   const [dragging, setDragging] = useState(false);
   const [dialog, setDialog] = useState<DialogKind>(null);
+  const tCard = useLocale();
 
   useEffect(() => {
     let cancelled = false;
@@ -416,7 +429,7 @@ function SlideCard({
               </div>
             ) : (
               <div className="grid h-full w-full place-items-center text-[10px] tracking-[0.16em] uppercase text-muted-foreground/60">
-                Loading
+                {tCard.common.loading}
               </div>
             )}
           </div>
@@ -439,7 +452,7 @@ function SlideCard({
                     e.preventDefault();
                   }}
                   className="flex size-7 items-center justify-center rounded-[5px] bg-card/90 text-foreground shadow-edge ring-1 ring-border opacity-0 backdrop-blur hover:bg-card group-hover:opacity-100 aria-expanded:opacity-100 motion-safe:transition-opacity"
-                  aria-label="Slide actions"
+                  aria-label={tCard.home.slideActions}
                 >
                   <MoreHorizontal className="size-3.5" />
                 </button>
@@ -447,15 +460,15 @@ function SlideCard({
               <DropdownMenuContent align="end" className="min-w-[160px]">
                 <DropdownMenuItem onSelect={() => setDialog('rename')}>
                   <Pencil />
-                  Rename
+                  {tCard.common.rename}
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setDialog('move')}>
                   <FolderInput />
-                  Move to folder…
+                  {tCard.home.moveToFolder}
                 </DropdownMenuItem>
                 <DropdownMenuItem variant="destructive" onSelect={() => setDialog('delete')}>
                   <Trash2 />
-                  Delete
+                  {tCard.common.delete}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -510,6 +523,7 @@ function RenameDialog({
   const [value, setValue] = useState(initialName);
   const [submitting, setSubmitting] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const t = useLocale();
 
   useEffect(() => {
     if (open) {
@@ -540,9 +554,9 @@ function RenameDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <span className="eyebrow">Rename</span>
-          <DialogTitle>Rename slide</DialogTitle>
-          <DialogDescription>Give this slide a new display name.</DialogDescription>
+          <span className="eyebrow">{t.home.renameDialogEyebrow}</span>
+          <DialogTitle>{t.home.renameDialogTitle}</DialogTitle>
+          <DialogDescription>{t.home.renameDialogDescription}</DialogDescription>
         </DialogHeader>
         <input
           ref={inputRef}
@@ -555,15 +569,15 @@ function RenameDialog({
             }
           }}
           maxLength={80}
-          placeholder="Slide name"
+          placeholder={t.home.slideNamePlaceholder}
           className="h-9 w-full rounded-[6px] border border-border bg-background px-3 text-[13px] outline-none focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30"
         />
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t.common.cancel}
           </Button>
           <Button size="sm" disabled={submitting} onClick={submit}>
-            Save
+            {t.common.save}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -588,6 +602,7 @@ function MoveDialog({
 }) {
   const [selected, setSelected] = useState<string | null>(currentFolderId);
   const [submitting, setSubmitting] = useState(false);
+  const t = useLocale();
 
   useEffect(() => {
     if (open) {
@@ -613,16 +628,18 @@ function MoveDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <span className="eyebrow">Move</span>
-          <DialogTitle>Move slide</DialogTitle>
+          <span className="eyebrow">{t.home.moveDialogEyebrow}</span>
+          <DialogTitle>{t.home.moveDialogTitle}</DialogTitle>
           <DialogDescription>
-            Choose a folder for <span className="font-medium text-foreground">{slideName}</span>.
+            {t.home.moveDialogDescriptionPrefix}
+            <span className="font-medium text-foreground">{slideName}</span>
+            {t.home.moveDialogDescriptionSuffix}
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[320px] overflow-y-auto rounded-[6px] border border-border bg-background">
           <FolderOption
             icon={{ type: 'emoji', value: '📝' }}
-            label="Draft"
+            label={t.home.draft}
             active={selected === null}
             onClick={() => setSelected(null)}
           />
@@ -638,10 +655,10 @@ function MoveDialog({
         </div>
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t.common.cancel}
           </Button>
           <Button size="sm" disabled={submitting || selected === currentFolderId} onClick={submit}>
-            Move
+            {t.common.move}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -660,6 +677,7 @@ function FolderOption({
   active: boolean;
   onClick: () => void;
 }) {
+  const tOpt = useLocale();
   return (
     <button
       type="button"
@@ -674,7 +692,7 @@ function FolderOption({
       {active && (
         <span className="ml-auto inline-flex items-center gap-1 text-[10.5px] text-brand">
           <span className="inline-block size-1 rounded-full bg-brand" aria-hidden />
-          Selected
+          {tOpt.common.selected}
         </span>
       )}
     </button>
@@ -693,6 +711,7 @@ function DeleteDialog({
   onConfirm: () => Promise<void> | void;
 }) {
   const [submitting, setSubmitting] = useState(false);
+  const t = useLocale();
 
   useEffect(() => {
     if (open) setSubmitting(false);
@@ -711,20 +730,21 @@ function DeleteDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <span className="eyebrow text-destructive/80">Destructive</span>
-          <DialogTitle>Delete slide?</DialogTitle>
+          <span className="eyebrow text-destructive/80">{t.home.deleteDialogEyebrow}</span>
+          <DialogTitle>{t.home.deleteDialogTitle}</DialogTitle>
           <DialogDescription>
-            This permanently removes{' '}
-            <span className="font-medium text-foreground">{slideName}</span> and its files from
-            disk. This action cannot be undone.
+            {t.home.deleteDialogDescriptionPrefix}
+            <span className="font-medium text-foreground">{slideName}</span>
+            {t.home.deleteDialogDescriptionMid}
+            {t.home.deleteDialogDescriptionSuffix}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t.common.cancel}
           </Button>
           <Button variant="destructive" size="sm" disabled={submitting} onClick={confirm}>
-            Delete
+            {t.common.delete}
           </Button>
         </DialogFooter>
       </DialogContent>

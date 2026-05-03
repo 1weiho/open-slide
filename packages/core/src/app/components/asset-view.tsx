@@ -37,6 +37,7 @@ import {
   searchSvgl,
   useAssets,
 } from '@/lib/assets';
+import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 
 type Props = { slideId: string };
@@ -56,6 +57,7 @@ export function AssetView({ slideId }: Props) {
   const [logoSearchOpen, setLogoSearchOpen] = useState(false);
   const dragDepth = useRef(0);
   const inputId = useId();
+  const t = useLocale();
 
   const existingNames = new Set(assets.map((a) => a.name));
 
@@ -68,19 +70,19 @@ export function AssetView({ slideId }: Props) {
       if (decision === 'cancel') return;
       if (decision === 'replace') {
         const res = await upload(file, { overwrite: true });
-        if (!res.ok) toast.error(`Upload failed (${res.status})`);
-        else toast.success(`Replaced ${file.name}`);
+        if (!res.ok) toast.error(format(t.asset.toastUploadFailed, { status: res.status }));
+        else toast.success(format(t.asset.toastReplaced, { name: file.name }));
         return;
       }
       const next = renamedCopy(file, existingNames);
       const res = await upload(next, { overwrite: false });
-      if (!res.ok) toast.error(`Upload failed (${res.status})`);
-      else toast.success(`Uploaded as ${next.name}`);
+      if (!res.ok) toast.error(format(t.asset.toastUploadFailed, { status: res.status }));
+      else toast.success(format(t.asset.toastUploadedAs, { name: next.name }));
       return;
     }
     const res = await upload(file);
-    if (!res.ok) toast.error(`Upload failed (${res.status})`);
-    else toast.success(`Uploaded ${file.name}`);
+    if (!res.ok) toast.error(format(t.asset.toastUploadFailed, { status: res.status }));
+    else toast.success(format(t.asset.toastUploaded, { name: file.name }));
   }
 
   async function handleFiles(files: FileList | File[]) {
@@ -95,14 +97,14 @@ export function AssetView({ slideId }: Props) {
   if (!available) {
     return (
       <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground">
-        Asset management is only available in dev mode.
+        {t.asset.devOnlyMessage}
       </div>
     );
   }
 
   return (
     <section
-      aria-label="Slide assets"
+      aria-label={t.asset.sectionAria}
       className={cn('relative flex h-full flex-col bg-background')}
       onDragEnter={(e) => {
         if (!hasFiles(e)) return;
@@ -131,16 +133,16 @@ export function AssetView({ slideId }: Props) {
     >
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-hairline bg-sidebar px-6 py-3">
         <div className="min-w-0">
-          <span className="eyebrow">Assets</span>
+          <span className="eyebrow">{t.asset.eyebrow}</span>
           <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
             <span className="font-mono text-[11.5px]">slides/{slideId}/assets/</span>
             {!loading && (
               <>
                 <span className="mx-2 opacity-50">·</span>
                 <span className="folio">
-                  {assets.length.toString().padStart(2, '0')}
-                  <span className="opacity-40"> </span>
-                  {assets.length === 1 ? 'file' : 'files'}
+                  {format(assets.length === 1 ? t.asset.fileCount.one : t.asset.fileCount.other, {
+                    count: assets.length.toString().padStart(2, '0'),
+                  })}
                 </span>
               </>
             )}
@@ -156,7 +158,7 @@ export function AssetView({ slideId }: Props) {
             )}
           >
             <Search className="size-3.5" />
-            <span>Search logos</span>
+            <span>{t.asset.searchLogos}</span>
           </button>
           <label
             htmlFor={inputId}
@@ -167,7 +169,7 @@ export function AssetView({ slideId }: Props) {
             )}
           >
             <Upload className="size-3.5" />
-            <span>Upload</span>
+            <span>{t.asset.upload}</span>
           </label>
           <input
             id={inputId}
@@ -187,7 +189,7 @@ export function AssetView({ slideId }: Props) {
       <div className="min-h-0 flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            Loading…
+            {t.asset.loading}
           </div>
         ) : assets.length === 0 ? (
           <EmptyState />
@@ -205,15 +207,15 @@ export function AssetView({ slideId }: Props) {
                       return;
                     }
                     if (existingNames.has(next)) {
-                      toast.error('A file with that name already exists.');
+                      toast.error(t.asset.nameAlreadyExists);
                       return;
                     }
                     const res = await rename(asset.name, next);
                     if (!res.ok) {
-                      toast.error(`Rename failed (${res.status})`);
+                      toast.error(format(t.asset.toastRenameFailed, { status: res.status }));
                       return;
                     }
-                    toast.success(`Renamed to ${next}`);
+                    toast.success(format(t.asset.toastRenamed, { name: next }));
                     setRenaming(null);
                   }}
                 />
@@ -241,7 +243,7 @@ export function AssetView({ slideId }: Props) {
           <div className="absolute inset-x-0 bottom-8 flex justify-center">
             <div className="flex animate-in items-center gap-2 rounded-[6px] border border-border bg-card px-3 py-1.5 text-[12px] font-medium shadow-floating fade-in-0 slide-in-from-bottom-1 duration-300">
               <ArrowDownToLine className="size-3.5 text-brand" />
-              <span>Drop to upload</span>
+              <span>{t.asset.dropToUpload}</span>
             </div>
           </div>
         </div>
@@ -265,8 +267,8 @@ export function AssetView({ slideId }: Props) {
             const target = confirmDelete;
             setConfirmDelete(null);
             const res = await remove(target.name);
-            if (!res.ok) toast.error(`Delete failed (${res.status})`);
-            else toast.success(`Deleted ${target.name}`);
+            if (!res.ok) toast.error(format(t.asset.toastDeleteFailed, { status: res.status }));
+            else toast.success(format(t.asset.toastDeleted, { name: target.name }));
           }}
         />
       )}
@@ -284,16 +286,20 @@ export function AssetView({ slideId }: Props) {
 }
 
 function EmptyState() {
+  const t = useLocale();
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 px-6 py-16 text-center">
       <div className="flex size-12 items-center justify-center rounded-full border border-hairline bg-card text-muted-foreground">
         <ImageIcon className="size-5" />
       </div>
       <div>
-        <p className="font-heading text-[14px] font-semibold tracking-tight">No assets yet</p>
+        <p className="font-heading text-[14px] font-semibold tracking-tight">
+          {t.asset.noAssetsYet}
+        </p>
         <p className="mt-1 max-w-xs text-[12.5px] leading-relaxed text-muted-foreground">
-          Drop files anywhere here, or use <span className="font-mono text-foreground">Upload</span>
-          .
+          {t.asset.noAssetsHintPrefix}
+          <span className="font-mono text-foreground">{t.asset.upload}</span>
+          {t.asset.noAssetsHintSuffix}
         </p>
       </div>
     </div>
@@ -334,12 +340,13 @@ function AssetCard({
   onDelete: () => void;
 }) {
   const isImage = asset.mime.startsWith('image/');
+  const t = useLocale();
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-[6px] border border-border bg-card shadow-edge transition-shadow hover:shadow-floating focus-within:ring-2 focus-within:ring-ring/30">
       <button
         type="button"
         onClick={onPreview}
-        aria-label={`Preview ${asset.name}`}
+        aria-label={format(t.asset.previewAria, { name: asset.name })}
         className="relative flex aspect-square w-full items-center justify-center overflow-hidden border-b border-hairline bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:14px_14px]"
       >
         {isImage ? (
@@ -367,7 +374,7 @@ function AssetCard({
         <DropdownMenu>
           <DropdownMenuTrigger
             type="button"
-            aria-label={`Actions for ${asset.name}`}
+            aria-label={format(t.asset.actionsAria, { name: asset.name })}
             className={cn(
               buttonVariants({ variant: 'ghost', size: 'icon-xs' }),
               'opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 aria-expanded:opacity-100',
@@ -378,15 +385,15 @@ function AssetCard({
           <DropdownMenuContent align="end" className="min-w-[160px]">
             <DropdownMenuItem onSelect={onPreview}>
               <ImageIcon />
-              Preview
+              {t.asset.previewMenuItem}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={onRename}>
               <Pencil />
-              Rename
+              {t.asset.renameMenuItem}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={onDelete}>
               <Trash2 />
-              Delete
+              {t.asset.deleteMenuItem}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -474,23 +481,27 @@ function ConflictDialog({
   file: File;
   onChoose: (decision: 'replace' | 'rename' | 'cancel') => void;
 }) {
+  const t = useLocale();
+  const [descPrefix, descSuffix] = t.asset.conflictDescription.split('{name}');
   return (
     <Dialog open onOpenChange={(open) => !open && onChoose('cancel')}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>File already exists</DialogTitle>
+          <DialogTitle>{t.asset.conflictTitle}</DialogTitle>
           <DialogDescription>
-            <span className="font-mono">{file.name}</span> is already in this slide's assets folder.
+            {descPrefix}
+            <span className="font-mono">{file.name}</span>
+            {descSuffix}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => onChoose('cancel')}>
-            Cancel
+            {t.common.cancel}
           </Button>
           <Button variant="outline" onClick={() => onChoose('rename')}>
-            Rename copy
+            {t.asset.conflictRenameCopy}
           </Button>
-          <Button onClick={() => onChoose('replace')}>Replace</Button>
+          <Button onClick={() => onChoose('replace')}>{t.asset.conflictReplace}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -506,22 +517,25 @@ function DeleteDialog({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const t = useLocale();
+  const [descPrefix, descSuffix] = t.asset.deleteAssetDescription.split('{name}');
   return (
     <Dialog open onOpenChange={(open) => !open && onCancel()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete asset</DialogTitle>
+          <DialogTitle>{t.asset.deleteAssetTitle}</DialogTitle>
           <DialogDescription>
-            Delete <span className="font-mono">{asset.name}</span>? Imports referencing this file in
-            the slide will break.
+            {descPrefix}
+            <span className="font-mono">{asset.name}</span>
+            {descSuffix}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={onCancel}>
-            Cancel
+            {t.common.cancel}
           </Button>
           <Button variant="destructive" onClick={onConfirm}>
-            Delete
+            {t.common.delete}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -529,9 +543,21 @@ function DeleteDialog({
   );
 }
 
+function NoResultsMessage({ query, t }: { query: string; t: ReturnType<typeof useLocale> }) {
+  const [prefix, suffix] = t.asset.logoSearchNoResults.split('{query}');
+  return (
+    <>
+      {prefix}
+      <span className="font-mono text-foreground">{query}</span>
+      {suffix}
+    </>
+  );
+}
+
 function PreviewDialog({ asset, onClose }: { asset: AssetEntry; onClose: () => void }) {
   const isImage = asset.mime.startsWith('image/');
   const importPath = `./assets/${asset.name}`;
+  const t = useLocale();
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-2xl">
@@ -552,13 +578,13 @@ function PreviewDialog({ asset, onClose }: { asset: AssetEntry; onClose: () => v
         ) : (
           <div className="flex items-center justify-center rounded-md border bg-muted/40 py-12 text-muted-foreground">
             <FileImage className="mr-2 size-5" />
-            <span className="text-sm">No preview available</span>
+            <span className="text-sm">{t.asset.noPreview}</span>
           </div>
         )}
         <div className="rounded-[5px] border border-hairline bg-muted/50 px-3 py-2 font-mono text-[11.5px] leading-relaxed">
-          <span className="text-muted-foreground">import asset from </span>
+          <span className="text-muted-foreground">{t.asset.importHintComment}</span>
           <span className="text-brand">'{importPath}'</span>
-          <span className="text-muted-foreground">;</span>
+          <span className="text-muted-foreground">{t.asset.importHintSemi}</span>
         </div>
       </DialogContent>
     </Dialog>
@@ -581,6 +607,7 @@ function LogoSearchDialog({
   const [pending, setPending] = useState<Set<number>>(() => new Set());
   const [retryToken, setRetryToken] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const t = useLocale();
 
   useEffect(() => {
     queueMicrotask(() => inputRef.current?.focus());
@@ -599,7 +626,7 @@ function LogoSearchDialog({
         })
         .catch((err: unknown) => {
           if (ctrl.signal.aborted) return;
-          setError(err instanceof Error ? err.message : 'Search failed');
+          setError(err instanceof Error ? err.message : t.asset.toastSearchFailed);
           setLoading(false);
         });
     }, 200);
@@ -613,9 +640,9 @@ function LogoSearchDialog({
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Search logos</DialogTitle>
+          <DialogTitle>{t.asset.logoSearchTitle}</DialogTitle>
           <DialogDescription>
-            Powered by{' '}
+            {t.asset.logoSearchPoweredByPrefix}
             <a
               href="https://svgl.app"
               target="_blank"
@@ -634,7 +661,7 @@ function LogoSearchDialog({
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by brand…"
+            placeholder={t.asset.logoSearchPlaceholder}
             className="h-9 w-full rounded-[6px] border border-border bg-background py-2 pl-8 pr-3 text-[13px] outline-none focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30"
           />
         </div>
@@ -646,10 +673,8 @@ function LogoSearchDialog({
                 <CloudOff className="size-5 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-sm font-medium">Couldn't reach svgl</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Check your connection and try again.
-                </p>
+                <p className="text-sm font-medium">{t.asset.logoSearchErrorTitle}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t.asset.logoSearchErrorBody}</p>
               </div>
               <Button
                 variant="outline"
@@ -658,7 +683,7 @@ function LogoSearchDialog({
                 className="gap-1.5"
               >
                 <RotateCw className="size-3.5" />
-                Try again
+                {t.common.tryAgain}
               </Button>
             </div>
           ) : loading && !results ? (
@@ -678,16 +703,13 @@ function LogoSearchDialog({
               <div>
                 <p className="text-sm font-medium">
                   {query.trim() ? (
-                    <>
-                      No logos for{' '}
-                      <span className="font-mono text-foreground">"{query.trim()}"</span>
-                    </>
+                    <NoResultsMessage query={query.trim()} t={t} />
                   ) : (
-                    'No logos available'
+                    t.asset.logoSearchEmpty
                   )}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Try a different brand name, or browse the full catalog at{' '}
+                  {t.asset.logoSearchEmptyHintPrefix}
                   <a
                     href="https://svgl.app"
                     target="_blank"
@@ -696,7 +718,7 @@ function LogoSearchDialog({
                   >
                     svgl.app
                   </a>
-                  .
+                  {t.asset.logoSearchEmptyHintSuffix}
                 </p>
               </div>
             </div>
@@ -716,7 +738,7 @@ function LogoSearchDialog({
                     try {
                       await onPick(file);
                     } catch (err) {
-                      toast.error(err instanceof Error ? err.message : 'Failed to download logo');
+                      toast.error(err instanceof Error ? err.message : t.asset.toastDownloadFailed);
                     } finally {
                       setPending((prev) => {
                         const next = new Set(prev);
@@ -733,7 +755,7 @@ function LogoSearchDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Done
+            {t.common.done}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -752,6 +774,7 @@ function LogoResultCard({
 }) {
   const hasVariants = typeof item.route === 'object' && item.route !== null;
   const [variant, setVariant] = useState<'light' | 'dark'>('light');
+  const t = useLocale();
 
   const previewUrl = useMemo(() => {
     if (typeof item.route === 'string') return item.route;
@@ -796,7 +819,7 @@ function LogoResultCard({
                   variant === 'light' ? 'bg-foreground text-background' : 'hover:bg-muted',
                 )}
               >
-                Light
+                {t.asset.logoVariantLight}
               </button>
               <button
                 type="button"
@@ -806,7 +829,7 @@ function LogoResultCard({
                   variant === 'dark' ? 'bg-foreground text-background' : 'hover:bg-muted',
                 )}
               >
-                Dark
+                {t.asset.logoVariantDark}
               </button>
             </div>
           ) : null}
@@ -819,12 +842,12 @@ function LogoResultCard({
                 const file = await fetchSvgAsFile(previewUrl, filename);
                 await onAdd(file);
               } catch (err) {
-                toast.error(err instanceof Error ? err.message : 'Failed to download logo');
+                toast.error(err instanceof Error ? err.message : t.asset.toastDownloadFailed);
               }
             }}
             className="ml-auto h-6 px-2 text-[11px]"
           >
-            {pending ? <Loader2 className="size-3 animate-spin" /> : 'Add'}
+            {pending ? <Loader2 className="size-3 animate-spin" /> : t.common.add}
           </Button>
         </div>
       </div>

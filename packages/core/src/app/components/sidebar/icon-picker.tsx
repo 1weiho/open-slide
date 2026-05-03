@@ -1,5 +1,6 @@
 import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useLocale } from '@/lib/use-locale';
 import type { FolderIcon } from '@/lib/sdk';
 
 // Editorial palette — restrained warm/earth tones, no shadcn defaults
@@ -23,11 +24,12 @@ export function IconPicker({
   value: FolderIcon;
   onChange: (icon: FolderIcon) => void;
 }) {
+  const t = useLocale();
   return (
     <Tabs defaultValue={value.type} className="w-[320px]">
       <TabsList className="w-full">
-        <TabsTrigger value="emoji">Emoji</TabsTrigger>
-        <TabsTrigger value="color">Color</TabsTrigger>
+        <TabsTrigger value="emoji">{t.home.iconEmojiTab}</TabsTrigger>
+        <TabsTrigger value="color">{t.home.iconColorTab}</TabsTrigger>
       </TabsList>
 
       <TabsContent value="emoji">

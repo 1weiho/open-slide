@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { Folder, FolderIcon } from '@/lib/sdk';
+import { useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import { IconPicker } from './icon-picker';
 
@@ -86,6 +87,7 @@ export function FolderItem({
   const dragDepth = useRef(0);
   const [draftName, setDraftName] = useState(row.kind === 'folder' ? row.folder.name : '');
   const slideDragActive = useSlideDragActive();
+  const t = useLocale();
 
   const isSlideDrag = (e: React.DragEvent) => e.dataTransfer.types.includes(SLIDE_DND_MIME);
   const handleDragEnter = (e: React.DragEvent) => {
@@ -114,7 +116,7 @@ export function FolderItem({
 
   const icon =
     row.kind === 'draft' ? ({ type: 'emoji', value: '📝' } satisfies FolderIcon) : row.folder.icon;
-  const label = row.kind === 'draft' ? 'Draft' : row.folder.name;
+  const label = row.kind === 'draft' ? t.home.draft : row.folder.name;
 
   const commitRename = () => {
     if (row.kind !== 'folder') return;
@@ -148,7 +150,7 @@ export function FolderItem({
             <button
               type="button"
               className="flex size-5 shrink-0 items-center justify-center rounded transition-transform hover:scale-110"
-              aria-label="Change icon"
+              aria-label={t.home.changeIcon}
               onClick={(e) => e.stopPropagation()}
             >
               <FolderIconChip icon={icon} />
@@ -196,7 +198,7 @@ export function FolderItem({
               type="button"
               onClick={(e) => e.stopPropagation()}
               className="size-5 shrink-0 rounded opacity-0 transition-opacity hover:bg-foreground/10 group-hover:opacity-100 aria-expanded:opacity-100"
-              aria-label="Folder actions"
+              aria-label={t.home.folderActions}
             >
               <MoreHorizontal className="mx-auto size-3.5" />
             </button>
@@ -209,11 +211,11 @@ export function FolderItem({
               }}
             >
               <Pencil />
-              Rename
+              {t.common.rename}
             </DropdownMenuItem>
             <DropdownMenuItem variant="destructive" onSelect={() => row.onDelete()}>
               <Trash2 />
-              Delete
+              {t.common.delete}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

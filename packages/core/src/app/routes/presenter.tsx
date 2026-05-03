@@ -2,14 +2,15 @@ import { ChevronLeft, ChevronRight, Loader2, RotateCcw, Square, Sun } from 'luci
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import {
   type PresenterState,
   usePresenterChannel,
 } from '../components/present/use-presenter-channel';
 import { SlideCanvas } from '../components/slide-canvas';
-import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
 import type { SlideModule } from '../lib/sdk';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
 import { loadSlide } from '../lib/slides';
 
 export function Presenter() {
@@ -26,6 +27,7 @@ export function Presenter() {
   const [localStart] = useState(() => Date.now());
   const [hasProjection, setHasProjection] = useState(false);
   const requestedRef = useRef(false);
+  const t = useLocale();
 
   useEffect(() => {
     let cancelled = false;
@@ -100,8 +102,8 @@ export function Presenter() {
     return (
       <div className="grid h-dvh place-items-center bg-zinc-950 p-8 text-zinc-300">
         <div className="max-w-md text-center">
-          <span className="eyebrow text-red-300/80">Load failed</span>
-          <h2 className="mt-2 font-heading text-xl font-semibold">Failed to load slide</h2>
+          <span className="eyebrow text-red-300/80">{t.common.loadFailed}</span>
+          <h2 className="mt-2 font-heading text-xl font-semibold">{t.common.failedToLoadSlide}</h2>
           <pre className="mt-4 overflow-auto rounded-[6px] border border-white/10 bg-black/40 p-4 text-left text-[11.5px] whitespace-pre-wrap">
             {error}
           </pre>
@@ -114,7 +116,8 @@ export function Presenter() {
     return (
       <div className="grid h-dvh place-items-center bg-zinc-950 text-zinc-400">
         <div className="flex items-center gap-2 text-[12.5px]">
-          <Loader2 className="size-4 animate-spin" /> Loading {slideId}…
+          <Loader2 className="size-4 animate-spin" />{' '}
+          {format(t.presenter.loadingSlide, { slideId })}
         </div>
       </div>
     );
@@ -145,7 +148,7 @@ export function Presenter() {
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 px-6 pb-4 lg:grid-cols-[2fr_1fr]">
         {/* Now-showing */}
         <section className="flex min-h-0 flex-col gap-3">
-          <SectionLabel>Now showing</SectionLabel>
+          <SectionLabel>{t.presenter.nowShowing}</SectionLabel>
           <div className="relative min-h-0 flex-1 overflow-hidden rounded-[8px] bg-black ring-1 ring-white/10">
             <SlideCanvas flat design={slide.design}>
               <CurrentPage />
@@ -158,7 +161,7 @@ export function Presenter() {
                   blackout === 'black' ? 'bg-black text-white/35' : 'bg-white text-black/35',
                 )}
               >
-                {blackout === 'black' ? 'Black screen' : 'White screen'}
+                {blackout === 'black' ? t.presenter.blackScreen : t.presenter.whiteScreen}
               </div>
             )}
           </div>
@@ -167,7 +170,7 @@ export function Presenter() {
         {/* Next + notes */}
         <aside className="flex min-h-0 flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <SectionLabel>{hasNext ? 'Up next' : 'Last slide'}</SectionLabel>
+            <SectionLabel>{hasNext ? t.presenter.upNext : t.presenter.lastSlide}</SectionLabel>
             <div
               className="relative w-full overflow-hidden rounded-[6px] bg-black ring-1 ring-white/10"
               style={{ aspectRatio: `${CANVAS_WIDTH}/${CANVAS_HEIGHT}` }}
@@ -178,24 +181,24 @@ export function Presenter() {
                 </SlideCanvas>
               ) : (
                 <div className="grid h-full place-items-center text-[11.5px] text-white/40">
-                  End of deck
+                  {t.presenter.endOfDeck}
                 </div>
               )}
             </div>
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col gap-2">
-            <SectionLabel>Speaker notes</SectionLabel>
+            <SectionLabel>{t.presenter.speakerNotes}</SectionLabel>
             <div className="min-h-0 flex-1 overflow-y-auto rounded-[6px] border border-white/10 bg-black/40 p-3 text-[13.5px] leading-relaxed whitespace-pre-wrap text-white/85">
               {note?.trim() ? (
                 note
               ) : (
                 <span className="text-white/40">
-                  No speaker notes for this slide. Add{' '}
+                  {t.presenter.noNotesPrefix}
                   <code className="rounded-[3px] bg-white/10 px-1 py-0.5 font-mono text-[12px]">
                     export const notes = […]
-                  </code>{' '}
-                  to your slide module to see notes here.
+                  </code>
+                  {t.presenter.noNotesSuffix}
                 </span>
               )}
             </div>
@@ -231,16 +234,17 @@ function PresenterTopBar({
   slideTitle: string;
   connected: boolean;
 }) {
+  const t = useLocale();
   return (
     <header className="flex shrink-0 items-center justify-between border-b border-white/10 px-6 py-3">
       <div className="flex items-baseline gap-3">
-        <span className="eyebrow text-white/45">Presenter</span>
+        <span className="eyebrow text-white/45">{t.presenter.eyebrow}</span>
         <span className="truncate font-heading text-[14px] font-semibold tracking-tight">
           {slideTitle}
         </span>
         {!connected && (
           <span className="rounded-[3px] border border-amber-300/30 bg-amber-300/10 px-1.5 py-0.5 font-mono text-[10px] tracking-[0.06em] uppercase text-amber-200/85">
-            Not linked
+            {t.presenter.notLinked}
           </span>
         )}
       </div>
@@ -274,14 +278,15 @@ function PresenterBottomBar({
   onBlackout: () => void;
   onWhiteout: () => void;
 }) {
+  const t = useLocale();
   return (
     <footer className="flex shrink-0 items-center justify-between gap-3 border-t border-white/10 px-6 py-3">
       <div className="flex items-center gap-2">
         <Button variant="outline" onClick={onPrev} disabled={index === 0}>
-          <ChevronLeft className="size-4" /> Prev
+          <ChevronLeft className="size-4" /> {t.presenter.prev}
         </Button>
         <Button variant="outline" onClick={onNext} disabled={index >= total - 1}>
-          Next <ChevronRight className="size-4" />
+          {t.presenter.next} <ChevronRight className="size-4" />
         </Button>
       </div>
       <div className="flex items-center gap-2">
@@ -290,17 +295,21 @@ function PresenterBottomBar({
           onClick={onBlackout}
           aria-pressed={blackout === 'black'}
         >
-          <Square className="size-4 fill-current" /> Black
+          <Square className="size-4 fill-current" /> {t.presenter.black}
         </Button>
         <Button
           variant={blackout === 'white' ? 'brand' : 'outline'}
           onClick={onWhiteout}
           aria-pressed={blackout === 'white'}
         >
-          <Sun className="size-4" /> White
+          <Sun className="size-4" /> {t.presenter.white}
         </Button>
-        <Button variant="ghost" onClick={() => window.location.reload()} title="Reset timer">
-          <RotateCcw className="size-4" /> Reset
+        <Button
+          variant="ghost"
+          onClick={() => window.location.reload()}
+          title={t.presenter.resetTimer}
+        >
+          <RotateCcw className="size-4" /> {t.presenter.reset}
         </Button>
       </div>
     </footer>
@@ -317,6 +326,7 @@ function PresenterJumpControl({
   onJump: (index: number) => void;
 }) {
   const [value, setValue] = useState('');
+  const t = useLocale();
   return (
     <form
       onSubmit={(e) => {
@@ -329,7 +339,7 @@ function PresenterJumpControl({
       }}
       className="flex items-center gap-2"
     >
-      <SectionLabel>Jump</SectionLabel>
+      <SectionLabel>{t.presenter.jump}</SectionLabel>
       <input
         type="number"
         min={1}
@@ -350,12 +360,16 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function Clock() {
   const [now, setNow] = useState(() => new Date());
+  const t = useLocale();
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
   return (
-    <time title="Current time" className="font-mono text-[12px] tabular-nums text-white/55">
+    <time
+      title={t.presenter.currentTime}
+      className="font-mono text-[12px] tabular-nums text-white/55"
+    >
       {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
     </time>
   );
@@ -363,6 +377,7 @@ function Clock() {
 
 function ElapsedClock({ startedAt }: { startedAt: number }) {
   const [now, setNow] = useState(() => Date.now());
+  const t = useLocale();
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
@@ -376,7 +391,7 @@ function ElapsedClock({ startedAt }: { startedAt: number }) {
       ? `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
       : `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   return (
-    <time title="Elapsed" className="font-mono text-[18px] tabular-nums text-white">
+    <time title={t.presenter.elapsed} className="font-mono text-[18px] tabular-nums text-white">
       {text}
     </time>
   );

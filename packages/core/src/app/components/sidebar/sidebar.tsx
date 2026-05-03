@@ -2,6 +2,7 @@ import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import type { Folder, FolderIcon } from '@/lib/sdk';
+import { useLocale } from '@/lib/use-locale';
 import { FolderItem } from './folder-item';
 import { PRESET_COLORS } from './icon-picker';
 
@@ -32,6 +33,7 @@ export function Sidebar({
 }) {
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
+  const t = useLocale();
 
   const commitCreate = () => {
     const trimmed = newName.trim();
@@ -49,7 +51,7 @@ export function Sidebar({
   return (
     <aside className="paper relative flex h-full w-[16.5rem] shrink-0 flex-col border-r border-hairline bg-sidebar text-sidebar-foreground">
       <div className="flex items-center justify-between px-4 pt-5 pb-4">
-        <h1 className="font-heading text-lg font-bold tracking-tight">open-slide</h1>
+        <h1 className="font-heading text-lg font-bold tracking-tight">{t.home.appTitle}</h1>
         <ThemeToggle />
       </div>
 
@@ -64,7 +66,7 @@ export function Sidebar({
       </div>
 
       <div className="mt-5 flex items-center gap-2 px-4 pb-1.5">
-        <span className="eyebrow">Folders</span>
+        <span className="eyebrow">{t.home.folders}</span>
         <span className="h-px flex-1 bg-hairline" aria-hidden />
         <span className="folio">{folders.length.toString().padStart(2, '0')}</span>
       </div>
@@ -102,7 +104,7 @@ export function Sidebar({
                     setNewName('');
                   }
                 }}
-                placeholder="Folder name"
+                placeholder={t.home.folderName}
                 maxLength={40}
                 className="min-w-0 flex-1 bg-transparent text-[12.5px] outline-none placeholder:text-muted-foreground/60"
               />
@@ -114,7 +116,7 @@ export function Sidebar({
               className="mt-1 flex w-full items-center gap-2 rounded-[5px] px-2 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
             >
               <Plus className="size-3.5" />
-              <span>New folder</span>
+              <span>{t.home.newFolder}</span>
             </button>
           ))}
       </div>
