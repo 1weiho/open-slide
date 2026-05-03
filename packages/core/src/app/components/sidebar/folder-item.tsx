@@ -187,7 +187,14 @@ export function FolderItem({
         </button>
       )}
 
-      <span className={cn('folio shrink-0', count === 0 && 'opacity-0 group-hover:opacity-100')}>
+      <span
+        className={cn(
+          'folio ml-auto shrink-0 transition-opacity',
+          row.kind === 'folder' &&
+            import.meta.env.DEV &&
+            'group-hover:opacity-0 group-has-[[aria-expanded=true]]:opacity-0',
+        )}
+      >
         {count.toString().padStart(2, '0')}
       </span>
 
@@ -197,7 +204,7 @@ export function FolderItem({
             <button
               type="button"
               onClick={(e) => e.stopPropagation()}
-              className="size-5 shrink-0 rounded opacity-0 transition-opacity hover:bg-foreground/10 group-hover:opacity-100 aria-expanded:opacity-100"
+              className="absolute right-2 top-1/2 size-5 -translate-y-1/2 rounded opacity-0 transition-opacity hover:bg-foreground/10 group-hover:opacity-100 aria-expanded:opacity-100"
               aria-label={t.home.folderActions}
             >
               <MoreHorizontal className="mx-auto size-3.5" />

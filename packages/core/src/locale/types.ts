@@ -71,6 +71,16 @@ export type Locale = {
     deleteDialogDescriptionPrefix: string;
     deleteDialogDescriptionMid: string;
     deleteDialogDescriptionSuffix: string;
+    /** template: "Created folder “{name}”" */
+    toastFolderCreated: string;
+    toastFolderCreateFailed: string;
+    /** template: "Moved “{slide}” to {folder}" */
+    toastSlideMoved: string;
+    toastSlideMoveFailed: string;
+    /** template: "Deleted folder “{name}”" */
+    toastFolderDeleted: string;
+    toastFolderDeleteFailed: string;
+    pickIcon: string;
   };
 
   slide: {
