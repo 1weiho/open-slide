@@ -1,6 +1,6 @@
 {
   "name": "@open-slide/core",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Runtime and CLI for open-slide — write slides in slides/, we handle the rest.",
   "type": "module",
   "exports": {
