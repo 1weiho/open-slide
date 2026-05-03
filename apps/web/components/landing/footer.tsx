@@ -9,7 +9,7 @@ export function Footer() {
               src="/open-slide.png"
               alt=""
               aria-hidden
-              className="h-6 w-6 rounded-[5px]"
+              className="h-6 w-6 rounded-[4px]"
             />
             <span className="tracking-[-0.01em]">open-slide</span>
           </div>

@@ -115,7 +115,7 @@ export function HowItWorks() {
           </div>
         </div>
 
-        <ol className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[22px] overflow-hidden">
+        <ol className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[6px] overflow-hidden">
           {steps.map((s) => (
             <li
               key={s.num}
@@ -137,7 +137,7 @@ export function HowItWorks() {
                 </p>
               </div>
 
-              <div className="mt-auto rounded-[10px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] p-4 font-[family-name:var(--font-mono)] text-[13px]">
+              <div className="mt-auto rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] p-4 font-[family-name:var(--font-mono)] text-[13px]">
                 <div className="flex items-center gap-2">
                   <span className="text-[color:var(--color-accent)]">
                     {s.code.prompt}

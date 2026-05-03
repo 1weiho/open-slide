@@ -86,7 +86,7 @@ export function Assets() {
           </div>
 
           {/* side callouts */}
-          <div className="lg:col-span-4 flex flex-col gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[18px] overflow-hidden">
+          <div className="lg:col-span-4 flex flex-col gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[6px] overflow-hidden">
             {callouts.map((c) => (
               <div
                 key={c.eyebrow}
@@ -110,7 +110,7 @@ export function Assets() {
 
 function AssetManagerMock() {
   return (
-    <div className="relative rounded-[18px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden">
+    <div className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden">
       {/* window header */}
       <div className="flex items-center px-5 h-11 border-b border-[color:var(--color-rule)] font-[family-name:var(--font-mono)] text-[12px] text-[color:var(--color-muted)]">
         <div className="flex items-center gap-2">
@@ -136,7 +136,7 @@ function AssetManagerMock() {
             Assets
           </span>
         </div>
-        <span className="inline-flex items-center gap-2 rounded-[8px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] px-3.5 py-1.5 font-[family-name:var(--font-sans)] text-[13px] text-[color:var(--color-text)]">
+        <span className="inline-flex items-center gap-2 rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] px-3.5 py-1.5 font-[family-name:var(--font-sans)] text-[13px] text-[color:var(--color-text)]">
           <span className="text-[color:var(--color-accent-soft)]">↑</span>
           Upload
         </span>
@@ -151,12 +151,12 @@ function AssetManagerMock() {
         </div>
 
         {/* svgl Logo Search dialog */}
-        <div className="absolute right-5 bottom-5 w-[64%] max-w-[420px] rounded-[14px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] shadow-[0_28px_60px_-20px_rgba(0,0,0,0.55)] p-4">
+        <div className="absolute right-5 bottom-5 w-[64%] max-w-[420px] rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] shadow-[0_10px_28px_-14px_rgba(0,0,0,0.35)] p-4">
           <div className="flex items-center justify-between mb-3 font-[family-name:var(--font-mono)] text-[11px] text-[color:var(--color-muted)]">
             <span>Search svgl</span>
             <span className="text-[color:var(--color-dim)]">✕</span>
           </div>
-          <div className="flex items-center gap-2 rounded-[8px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] px-3 py-2 mb-3 font-[family-name:var(--font-mono)] text-[13px] text-[color:var(--color-text)]">
+          <div className="flex items-center gap-2 rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] px-3 py-2 mb-3 font-[family-name:var(--font-mono)] text-[13px] text-[color:var(--color-text)]">
             <span className="text-[color:var(--color-muted)]">⌕</span>
             <span>vercel</span>
             <span className="caret" aria-hidden />
@@ -165,7 +165,7 @@ function AssetManagerMock() {
             {svglResults.map((r, i) => (
               <div
                 key={r.name}
-                className={`rounded-[10px] border ${
+                className={`rounded-[6px] border ${
                   i === 0
                     ? "border-[color:var(--color-accent)] bg-[color:var(--color-accent)]/[0.06]"
                     : "border-[color:var(--color-rule)] bg-[color:var(--color-panel)]"
@@ -193,7 +193,7 @@ function AssetManagerMock() {
 
 function AssetCard({ asset }: { asset: AssetMock }) {
   return (
-    <div className="rounded-[12px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] overflow-hidden flex flex-col">
+    <div className="rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] overflow-hidden flex flex-col">
       <div
         className="h-[120px] flex items-center justify-center"
         style={{

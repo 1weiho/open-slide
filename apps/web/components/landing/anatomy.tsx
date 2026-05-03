@@ -84,7 +84,7 @@ export function Anatomy() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* code pane */}
           <div className="lg:col-span-7">
-            <div className="relative rounded-[18px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden">
+            <div className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden">
               <div className="flex items-center justify-between px-5 h-11 border-b border-[color:var(--color-rule)] font-[family-name:var(--font-mono)] text-[12px] text-[color:var(--color-muted)]">
                 <div className="flex items-center gap-3">
                   <span
@@ -119,7 +119,7 @@ export function Anatomy() {
 
           {/* preview pane */}
           <div className="lg:col-span-5">
-            <div className="relative rounded-[18px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-5">
+            <div className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-5">
               <div className="flex items-center justify-between font-[family-name:var(--font-mono)] text-[11px] tracking-[0.14em] uppercase text-[color:var(--color-muted)] mb-4">
                 <span>rendered output</span>
                 <span className="flex items-center gap-2">
@@ -132,7 +132,7 @@ export function Anatomy() {
               </div>
 
               <div
-                className="relative rounded-[10px] overflow-hidden border border-[color:var(--color-rule)]"
+                className="relative rounded-[6px] overflow-hidden border border-[color:var(--color-rule)]"
                 style={{ aspectRatio: "16 / 9", containerType: "inline-size" }}
               >
                 <SlidePreview variant={v} index={i} />

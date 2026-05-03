@@ -3,14 +3,7 @@ import { CopyCommand } from "./copy-command";
 export function GetStarted() {
   return (
     <section id="install" className="relative overflow-hidden">
-      <div
-        aria-hidden
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(900px 640px at 80% 20%, color-mix(in oklab, var(--color-accent) 22%, transparent) 0%, transparent 62%), radial-gradient(1100px 800px at 20% 90%, color-mix(in oklab, var(--color-warm) 12%, transparent) 0%, transparent 60%)",
-        }}
-      />
+      <div aria-hidden className="hair absolute inset-x-0 top-0" />
       <div className="relative mx-auto max-w-[1360px] px-8 lg:px-12 py-28 lg:py-40">
         <div>
           <div className="flex flex-col gap-10">

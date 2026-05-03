@@ -33,19 +33,19 @@ export function LiveDemo() {
     <section id="demo" className="relative">
       <div className="mx-auto max-w-[1360px] px-8 lg:px-12 pt-12 lg:pt-20 pb-24">
         {/* specimen frame */}
-        <div className="relative specimen p-4 sm:p-6 lg:p-8 rounded-[22px] border border-[color:var(--color-rule)] bg-gradient-to-b from-[color:var(--color-panel)] to-[color:var(--color-ink)]">
+        <div className="relative specimen p-4 sm:p-6 lg:p-8 rounded-[6px] border border-[color:var(--color-rule)] bg-gradient-to-b from-[color:var(--color-panel)] to-[color:var(--color-ink)]">
           <SpecimenCorners />
 
           <div className="flex items-center justify-between mb-4 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.14em] uppercase text-[color:var(--color-muted)]">
             <span className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-accent)] shadow-[0_0_10px_var(--color-accent)]" />
+              <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-accent)]" />
               open-slide · live demo
             </span>
             <span>1920 × 1080 · 16 : 9</span>
           </div>
 
           <div
-            className="relative block w-full overflow-hidden rounded-[14px] border border-[color:var(--color-rule)] bg-black"
+            className="relative block w-full overflow-hidden rounded-[6px] border border-[color:var(--color-rule)] bg-black"
             style={{ aspectRatio: "16 / 9" }}
           >
             <InlineSlidePlayer index={index} onIndexChange={setIndex} />
@@ -99,19 +99,19 @@ function SpecimenCorners() {
     <>
       <span
         aria-hidden
-        className={`${corner} -top-px -left-px border-t border-l rounded-tl-[22px]`}
+        className={`${corner} -top-px -left-px border-t border-l rounded-tl-[12px]`}
       />
       <span
         aria-hidden
-        className={`${corner} -top-px -right-px border-t border-r rounded-tr-[22px]`}
+        className={`${corner} -top-px -right-px border-t border-r rounded-tr-[12px]`}
       />
       <span
         aria-hidden
-        className={`${corner} -bottom-px -left-px border-b border-l rounded-bl-[22px]`}
+        className={`${corner} -bottom-px -left-px border-b border-l rounded-bl-[12px]`}
       />
       <span
         aria-hidden
-        className={`${corner} -bottom-px -right-px border-b border-r rounded-br-[22px]`}
+        className={`${corner} -bottom-px -right-px border-b border-r rounded-br-[12px]`}
       />
     </>
   );

@@ -6,23 +6,7 @@ import { CopyCommand } from "./copy-command";
 export function Hero() {
   return (
     <section className="relative overflow-hidden">
-      <div
-        aria-hidden
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(1200px 720px at 18% 30%, color-mix(in oklab, var(--color-accent) 18%, transparent) 0%, transparent 62%), radial-gradient(900px 600px at 88% 82%, color-mix(in oklab, var(--color-warm) 12%, transparent) 0%, transparent 60%)",
-        }}
-      />
-
-      <div
-        aria-hidden
-        className="absolute inset-x-0 top-0 h-px"
-        style={{
-          background:
-            "linear-gradient(90deg, transparent, color-mix(in oklab, var(--color-accent) 70%, transparent), transparent)",
-        }}
-      />
+      <div aria-hidden className="hair absolute inset-x-0 top-0" />
 
       <div className="relative mx-auto max-w-[1360px] px-8 lg:px-12 pt-20 lg:pt-32 pb-24">
         <div>
@@ -32,32 +16,16 @@ export function Hero() {
             </div>
 
             <h1
-              className="text-[64px] sm:text-[84px] lg:text-[128px] leading-[0.94] tracking-[-0.035em] rise"
+              className="text-[52px] sm:text-[68px] lg:text-[96px] leading-[0.98] tracking-[-0.03em] rise"
               style={{ animationDelay: "120ms" }}
             >
               <span className="font-[family-name:var(--font-sans)] font-medium text-[color:var(--color-text)]">
-                Slides as code.
+                The slide framework
               </span>
               <br />
               <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-paper)]">
-                Crafted by{" "}
-                <span className="text-[color:var(--color-accent)] relative">
-                  agents
-                  <svg
-                    aria-hidden
-                    viewBox="0 0 260 16"
-                    className="absolute left-0 right-0 -bottom-2 w-full h-[12px] text-[color:var(--color-accent)]"
-                    preserveAspectRatio="none"
-                  >
-                    <path
-                      d="M2 10 C 60 2, 140 14, 258 4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </span>
+                built for{" "}
+                <span className="text-[color:var(--color-accent)]">agents</span>
                 .
               </span>
             </h1>
@@ -89,7 +57,7 @@ export function Hero() {
                 onClick={() =>
                   posthog.capture("github_link_clicked", { location: "hero" })
                 }
-                className="group inline-flex items-center gap-2 h-[52px] px-5 rounded-[10px] border border-[color:var(--color-rule)] text-[14px] font-[family-name:var(--font-mono)] text-[color:var(--color-text)] hover:border-[color:var(--color-text)] transition"
+                className="group inline-flex items-center gap-2 h-[52px] px-5 rounded-[6px] border border-[color:var(--color-rule)] text-[14px] font-[family-name:var(--font-mono)] text-[color:var(--color-text)] hover:border-[color:var(--color-text)] transition"
               >
                 <GithubGlyph />
                 <span>1weiho/open-slide</span>

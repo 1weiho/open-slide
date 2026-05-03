@@ -17,7 +17,7 @@ export function Nav() {
             src="/open-slide.png"
             alt=""
             aria-hidden
-            className="block h-6 w-6 rounded-[5px]"
+            className="block h-6 w-6 rounded-[4px]"
           />
           <span className="text-[color:var(--color-text)]">open-slide</span>
         </Link>
