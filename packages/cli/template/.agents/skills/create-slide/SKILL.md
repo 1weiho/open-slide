@@ -13,23 +13,33 @@ You only write files under `slides/<id>/`. Never modify `package.json`, `open-sl
 
 List files under `themes/`. If any theme markdown files exist (anything other than `README.md`), call `AskUserQuestion` with each theme id as an option plus a final **"no theme — design from scratch"** option.
 
-- If the user picks a theme: read `themes/<id>.md` end-to-end. The theme's palette, typography, layout, and Title/Footer components are now authoritative — copy them directly into the slide. In Step 2, you can skip the **topic & aesthetic** question (the theme already commits to one direction); still ask about page count, text density, and motion since those are independent of theme.
+- If the user picks a theme: read `themes/<id>.md` end-to-end. The theme's palette, typography, layout, and Title/Footer components are now authoritative — copy them directly into the slide. In Step 2, skip the **aesthetic direction** question (the theme already commits to one direction); you still need the topic itself, so confirm it before moving on. Page count, text density, and motion are independent of theme — ask those normally.
 - If the user picks "no theme", or `themes/` is empty (or contains only `README.md`): proceed to Step 2 unchanged.
 
 If you skip the aesthetic question because a theme was picked, restate the theme name in Step 2 so the user can correct course before you start writing.
 
 ## Step 2 — Clarify requirements (MUST ask before writing code)
 
-**Before doing anything else, call `AskUserQuestion` to confirm the four key style decisions below.** These shape every downstream choice (layout, type scale, asset needs, motion code), so locking them in up front avoids rework. Only skip a question when the user's original message already gave an unambiguous answer for it — and if you skip, restate your assumption so they can correct it.
+**Before writing any code, lock in the four key style decisions below via `AskUserQuestion`.** They shape every downstream choice (layout, type scale, asset needs, motion code), so locking them in up front avoids rework. Only skip a question when the user's original message already gave an unambiguous answer for it — and if you skip, restate your assumption so they can correct it.
 
-Ask these four in a single `AskUserQuestion` call (multi-question form):
+**Topic comes first.** A meaningful aesthetic recommendation requires knowing what the deck is about. If the user's initial request is thin ("make me a deck", "draft some slides"), make a *separate* `AskUserQuestion` call first to gather topic, audience, and any draft outline. Skip this only if the topic is already clear from the user's message — in which case restate your reading of the topic in the next call so they can correct course.
 
-1. **Topic & aesthetic** — what is this slide about, and what visual direction? Offer options like: minimal editorial, playful, corporate-clean, retro, brutalist, soft/pastel, dark neon. If they have no preference, propose one.
+Then ask these four in a single `AskUserQuestion` call (multi-question form):
+
+1. **Aesthetic direction** — propose 3 visual directions tailored to *this* topic. Do **not** pull from a fixed preset list. Each option must combine a vibe word + a concrete visual cue (palette, typography, motif) so the user can picture it; bare labels like "minimal" or "corporate" alone are too vague. The three options should feel meaningfully different from each other — not three flavors of the same idea.
+
+   How options should shift with topic:
+   - *"Intro to Rust for backend engineers"* → **rust-orange technical editorial** (warm rust/charcoal, mono headings, code-grid layout) · **blueprint dev-doc** (cyan grid on near-black, monospace, schematic feel) · **brutalist terminal** (lime-on-black, ASCII rules, no-nonsense)
+   - *"Q2 product roadmap for stakeholders"* → **calm corporate clean** (off-white, single accent, generous whitespace) · **confident editorial** (large display serif, tight grid, one bold accent) · **data-forward dashboard** (charts as hero, muted neutrals + status colors)
+   - *"Kindergarten parent night"* → **playful crayon** (paper texture, hand-drawn accents, primary colors) · **soft pastel storybook** (peach/mint, rounded type, illustrated icons) · **warm photo-led** (full-bleed kid photos, simple captions)
+
+   Mark the option that best fits the topic and audience as "(Recommended)" so the user has a sensible default. (`AskUserQuestion` already auto-adds "Other" — don't add a generic catch-all yourself.)
+
 2. **Page count** — rough length. Offer brackets: 3–5 (short), 6–10 (standard), 11–20 (deep dive), custom.
 3. **Text density per page** — how much copy lives on each page? Offer: minimal (one line / big number), light (heading + 2–3 bullets), standard (heading + 4–5 bullets or short paragraph), dense (multi-column / detailed). This directly drives type scale and layout.
 4. **Motion** — does the user want CSS/React animations and transitions, or a fully static deck? Offer: static (no motion), subtle (fades / entrance only), rich (keyframes, staggered reveals, looping visuals). If animated, plan to use CSS `@keyframes` / inline `style` + `useEffect`; no extra libraries.
 
-After those four, ask follow-ups **only if still unclear**: audience, any drafted outline/content, brand colors, required assets. Don't pad the conversation with questions already answered.
+After those four, ask follow-ups **only if still unclear**: brand colors, required assets. Don't pad the conversation with questions already answered.
 
 ## Step 3 — Pick a slide id
 
