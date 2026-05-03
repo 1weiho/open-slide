@@ -31,6 +31,8 @@ type OpenSlideConfig = {
   slidesDir?: string;
   /** Dev server port. Default: first free port from 5173 upward. */
   port?: number;
+  /** UI language for the runtime (home, inspector, presenter, etc.). */
+  locale?: Locale;
   /** Build-time UI toggles. */
   build?: OpenSlideBuildConfig;
 };
@@ -54,3 +56,16 @@ const config: OpenSlideConfig = {
 
 `slidesDir` is a single path today. If you want multiple roots, group them
 under one folder and use subfolder ids.
+
+### Switch the UI language
+
+```ts
+import { zhTW } from '@open-slide/core/locale';
+
+const config: OpenSlideConfig = {
+  locale: zhTW,
+};
+```
+
+See [Locale](/docs/reference/locale) for the full list of presets and how to
+ship your own dictionary.

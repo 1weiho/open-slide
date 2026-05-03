@@ -1,0 +1,97 @@
+---
+title: Locale
+description: Translate the runtime UI — home, inspector, presenter, toasts.
+---
+
+The runtime ships with four built-in dictionaries. Pick one in
+`open-slide.config.ts`, or pass your own object that satisfies the `Locale`
+type.
+
+The locale only affects the **runtime UI** that open-slide renders around
+your slides (the home screen, slide browser, inspector, asset panel,
+presenter mode, toasts, etc.). It does **not** translate slide content —
+that lives in your own React code.
+
+## Presets
+
+```ts title="open-slide.config.ts"
+import type { OpenSlideConfig } from '@open-slide/core';
+import { zhTW } from '@open-slide/core/locale';
+
+const config: OpenSlideConfig = {
+  locale: zhTW,
+};
+
+export default config;
+```
+
+| Import   | `id`      | Language            |
+| -------- | --------- | ------------------- |
+| `en`     | `'en'`    | English (default)   |
+| `zhTW`   | `'zh-TW'` | 繁體中文            |
+| `zhCN`   | `'zh-CN'` | 简体中文            |
+| `ja`     | `'ja'`    | 日本語              |
+
+All presets are re-exported from the `@open-slide/core/locale` subpath:
+
+```ts
+import { en, zhTW, zhCN, ja } from '@open-slide/core/locale';
+```
+
+If `locale` is omitted, the runtime falls back to `en`.
+
+## Custom dictionaries
+
+A locale is plain data — no functions, no JSX — so it serializes through
+the build cleanly. Provide your own object as long as it matches the
+`Locale` type from `@open-slide/core`.
+
+```ts title="open-slide.config.ts"
+import type { OpenSlideConfig, Locale } from '@open-slide/core';
+import { en } from '@open-slide/core/locale';
+
+const fr: Locale = {
+  ...en,
+  id: 'en', // pick the closest built-in id
+  common: {
+    ...en.common,
+    save: 'Enregistrer',
+    cancel: 'Annuler',
+    // …override the rest
+  },
+};
+
+const config: OpenSlideConfig = { locale: fr };
+export default config;
+```
+
+The `id` field today only has to be one of the built-in ids
+(`'en' | 'zh-TW' | 'zh-CN' | 'ja'`); it is reserved for future locale-aware
+formatting. The dictionary keys are what actually drive the UI.
+
+The full shape lives in `packages/core/src/locale/types.ts` — start from a
+preset and override the keys you need rather than building one from scratch.
+
+## Templates and plurals
+
+A few entries are templates with `{name}`-style placeholders, or plural
+forms (`{ one, other }`). They are flagged in the type definition with
+JSDoc, e.g.:
+
+```ts
+/** template: "Loading {slideId}…" */
+loadingSlide: string;
+
+/** templates: "{count} unsaved change" / "{count} unsaved changes" */
+unsavedChanges: Plural;
+```
+
+The runtime expands these for you — your job is just to keep the same
+`{placeholder}` tokens (and both `one` and `other` forms) when translating.
+
+## Notes
+
+- Locale is read at module init. Changing it requires a dev-server reload
+  or a fresh build.
+- There is no in-app language switcher today; pick a single locale per
+  deployment.
