@@ -3,12 +3,31 @@ title: open-slide init
 description: Scaffold a new workspace.
 ---
 
-```bash
+```npm
 npx @open-slide/cli init [directory]
 ```
 
 If `directory` is omitted, the scaffolder uses the current folder. If it's
 provided and doesn't exist, it's created.
+
+## Flags
+
+| Flag                      | Default       | Description                                                              |
+| ------------------------- | ------------- | ------------------------------------------------------------------------ |
+| `-f, --force`             | off           | Scaffold into the target even if it's not empty.                         |
+| `-n, --name <name>`       | folder name   | Override the generated `package.json` name.                              |
+| `--use-npm`               | auto-detected | Install with npm.                                                        |
+| `--use-pnpm`              | auto-detected | Install with pnpm.                                                       |
+| `--use-yarn`              | auto-detected | Install with yarn.                                                       |
+| `--use-bun`               | auto-detected | Install with bun.                                                        |
+| `--no-install`            | off           | Skip dependency installation. You'll have to run `install` yourself.     |
+| `--no-git`                | off           | Skip `git init` and the initial commit.                                  |
+
+When no `--use-*` flag is passed, the scaffolder reads
+`npm_config_user_agent` (set by your launcher) to pick `pnpm`, `yarn`, or
+`bun`, and falls back to `npm` otherwise. Pass an explicit flag to force a
+specific manager — handy in CI or when `npx` was run under a different
+agent than the one you actually want to use.
 
 ## What it generates
 
@@ -19,8 +38,8 @@ my-deck/
 │       └── index.tsx       # starter slide
 ├── themes/                 # empty
 ├── open-slide.config.ts    # framework config
-├── CLAUDE.md               # agent rules
-├── AGENTS.md               # mirror of CLAUDE.md
+├── CLAUDE.md               # mirrors AGENTS.md
+├── AGENTS.md               # agent rules
 ├── package.json
 ├── tsconfig.json
 └── netlify.toml / vercel.json   # one-click deploy configs
@@ -28,10 +47,10 @@ my-deck/
 
 ## After init
 
-```bash
+```npm
 cd my-deck
-pnpm install
-pnpm dev
+npm install
+npm run dev
 ```
 
 The dev server boots, opens the slide browser, and you're ready for your

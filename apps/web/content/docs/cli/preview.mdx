@@ -3,13 +3,21 @@ title: open-slide preview
 description: Serve the production build locally for sanity-checking.
 ---
 
-```bash
+```npm
 open-slide preview
 # or
-pnpm preview
+npm run preview
 ```
 
 Serves `dist/` on a local port so you can rehearse the deck the way it will
 ship — same scaling, same routing, no dev-only chrome.
 
 Run `open-slide build` first; `preview` doesn't rebuild on its own.
+
+## Flags
+
+| Flag                  | Default        | Description                                              |
+| --------------------- | -------------- | -------------------------------------------------------- |
+| `-p, --port <port>`   | from config    | Override the listening port.                             |
+| `--host [host]`       | localhost only | Expose the preview on the network. Optional host pin.   |
+| `--open`              | off            | Open the browser on start.                               |

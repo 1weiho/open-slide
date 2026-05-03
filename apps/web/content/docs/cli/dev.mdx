@@ -3,10 +3,10 @@ title: open-slide dev
 description: Run the dev server with hot reload, inspector, and assets panel.
 ---
 
-```bash
+```npm
 open-slide dev
 # or, via the generated script
-pnpm dev
+npm run dev
 ```
 
 Boots a Vite-powered dev server on `http://localhost:5173` (or the next free
@@ -21,6 +21,19 @@ files — saving an `index.tsx` updates the canvas without losing slide state.
   `@slide-comment`, or both.
 - **Assets panel** — drag, rename, replace, plus svgl logo search.
 - **Present mode** — fullscreen playback with presenter view.
+
+## Flags
+
+| Flag                  | Default         | Description                                                       |
+| --------------------- | --------------- | ----------------------------------------------------------------- |
+| `-p, --port <port>`   | from config     | Override the listening port.                                      |
+| `--host [host]`       | localhost only  | Expose the dev server on the network. Optional host pin.          |
+| `--open`              | off             | Open the browser on start.                                        |
+| `--no-skills-check`   | off             | Skip the built-in skills drift check.                             |
+
+The skills check also obeys the `OPEN_SLIDE_SKIP_SKILLS_CHECK=1`
+environment variable — useful in CI or container builds where stdin
+isn't a TTY.
 
 ## Configuration
 
