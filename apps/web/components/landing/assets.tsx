@@ -166,7 +166,6 @@ function AssetManagerMock() {
                 } p-2 flex flex-col items-center gap-1.5`}
               >
                 <div className="h-8 flex items-center justify-center">
-                  {/* biome-ignore lint/performance/noImgElement: small inline logo */}
                   <img
                     src={`/assets/${r.logo}.svg`}
                     alt={r.name}
@@ -195,7 +194,6 @@ function AssetCard({ asset }: { asset: AssetMock }) {
             'repeating-conic-gradient(color-mix(in srgb, var(--color-rule) 70%, transparent) 0 25%, transparent 0 50%) 0 0 / 16px 16px',
         }}
       >
-        {/* biome-ignore lint/performance/noImgElement: small inline asset logo */}
         <img
           src={`/assets/${asset.logo}.svg`}
           alt=""

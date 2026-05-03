@@ -4,7 +4,6 @@ export function Footer() {
       <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-10 sm:py-14 grid grid-cols-12 gap-x-6 gap-y-10">
         <div className="col-span-12 lg:col-span-4 flex flex-col gap-4">
           <div className="flex items-center gap-3 font-[family-name:var(--font-mono)] text-[13px]">
-            {/* biome-ignore lint/performance/noImgElement: static brand icon */}
             <img src="/open-slide.png" alt="" aria-hidden className="h-6 w-6 rounded-[4px]" />
             <span className="tracking-[-0.01em]">open-slide</span>
           </div>

@@ -60,7 +60,9 @@ html {
 }
 
 html > body[data-scroll-locked] {
+  /* biome-ignore lint/complexity/noImportantStyles: must override react-remove-scroll's inline lock */
   margin-right: 0px !important;
+  /* biome-ignore lint/complexity/noImportantStyles: must override react-remove-scroll's inline lock */
   --removed-body-scroll-bar-size: 0px !important;
 }
 

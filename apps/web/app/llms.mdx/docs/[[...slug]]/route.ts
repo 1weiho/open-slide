@@ -1,5 +1,5 @@
-import { getLLMText, getPageMarkdownUrl, source } from '@/lib/source';
 import { notFound } from 'next/navigation';
+import { getLLMText, getPageMarkdownUrl, source } from '@/lib/source';
 
 export const revalidate = false;
 

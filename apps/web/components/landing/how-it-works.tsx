@@ -80,7 +80,6 @@ function AgentRow() {
   return (
     <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-2 normal-case tracking-normal">
       {agents.map(([file, name]) => (
-        // biome-ignore lint/performance/noImgElement: SVG from /public
         <img key={file} src={`/assets/${file}`} alt={name} className={cls} />
       ))}
       <span className="text-[10px] tracking-[0.1em] uppercase text-[color:var(--color-muted)]">

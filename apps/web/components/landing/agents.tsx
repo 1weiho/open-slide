@@ -40,7 +40,6 @@ export function Agents() {
         >
           <div className="marquee-track py-10 will-change-transform">
             {track.map((agent, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: marquee track repeats agents
               <span key={`${agent.file}-${i}`} className="inline-flex items-center gap-4">
                 <AgentLogo agent={agent} />
                 <span className="font-[family-name:var(--font-sans)] text-[color:var(--color-text)] text-[22px] sm:text-[28px] lg:text-[36px] tracking-[-0.02em]">
@@ -60,16 +59,11 @@ function AgentLogo({ agent }: { agent: Agent }) {
   const cls = 'h-[28px] md:h-[34px] lg:h-[40px] w-auto object-contain shrink-0';
 
   if (!agent.variants) {
-    return (
-      // biome-ignore lint/performance/noImgElement: SVG from /public, not remote
-      <img src={`/assets/${agent.file}.svg`} alt={alt} className={cls} />
-    );
+    return <img src={`/assets/${agent.file}.svg`} alt={alt} className={cls} />;
   }
   return (
     <>
-      {/* biome-ignore lint/performance/noImgElement: SVG from /public */}
       <img src={`/assets/${agent.file}-dark.svg`} alt={alt} className={`${cls} logo-dark`} />
-      {/* biome-ignore lint/performance/noImgElement: SVG from /public */}
       <img
         src={`/assets/${agent.file}-light.svg`}
         alt=""
