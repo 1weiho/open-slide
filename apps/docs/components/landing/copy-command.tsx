@@ -1,5 +1,6 @@
 "use client";
 
+import posthog from "posthog-js";
 import { useState } from "react";
 
 export function CopyCommand({
@@ -16,6 +17,7 @@ export function CopyCommand({
       await navigator.clipboard.writeText(command);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
+      posthog.capture("command_copied", { command });
     } catch {
       /* ignore */
     }

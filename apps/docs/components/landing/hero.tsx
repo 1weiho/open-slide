@@ -1,3 +1,6 @@
+"use client";
+
+import posthog from "posthog-js";
 import { CopyCommand } from "./copy-command";
 
 export function Hero() {
@@ -83,6 +86,9 @@ export function Hero() {
                 href="https://github.com/1weiho/open-slide"
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() =>
+                  posthog.capture("github_link_clicked", { location: "hero" })
+                }
                 className="group inline-flex items-center gap-2 h-[52px] px-5 rounded-[10px] border border-[color:var(--color-rule)] text-[14px] font-[family-name:var(--font-mono)] text-[color:var(--color-text)] hover:border-[color:var(--color-text)] transition"
               >
                 <GithubGlyph />
