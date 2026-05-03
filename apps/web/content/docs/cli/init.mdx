@@ -10,6 +10,25 @@ npx @open-slide/cli init [directory]
 If `directory` is omitted, the scaffolder uses the current folder. If it's
 provided and doesn't exist, it's created.
 
+## Flags
+
+| Flag                      | Default       | Description                                                              |
+| ------------------------- | ------------- | ------------------------------------------------------------------------ |
+| `-f, --force`             | off           | Scaffold into the target even if it's not empty.                         |
+| `-n, --name <name>`       | folder name   | Override the generated `package.json` name.                              |
+| `--use-npm`               | auto-detected | Install with npm.                                                        |
+| `--use-pnpm`              | auto-detected | Install with pnpm.                                                       |
+| `--use-yarn`              | auto-detected | Install with yarn.                                                       |
+| `--use-bun`               | auto-detected | Install with bun.                                                        |
+| `--no-install`            | off           | Skip dependency installation. You'll have to run `install` yourself.     |
+| `--no-git`                | off           | Skip `git init` and the initial commit.                                  |
+
+When no `--use-*` flag is passed, the scaffolder reads
+`npm_config_user_agent` (set by your launcher) to pick `pnpm`, `yarn`, or
+`bun`, and falls back to `npm` otherwise. Pass an explicit flag to force a
+specific manager — handy in CI or when `npx` was run under a different
+agent than the one you actually want to use.
+
 ## What it generates
 
 ```text

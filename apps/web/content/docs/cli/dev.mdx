@@ -22,6 +22,19 @@ files — saving an `index.tsx` updates the canvas without losing slide state.
 - **Assets panel** — drag, rename, replace, plus svgl logo search.
 - **Present mode** — fullscreen playback with presenter view.
 
+## Flags
+
+| Flag                  | Default         | Description                                                       |
+| --------------------- | --------------- | ----------------------------------------------------------------- |
+| `-p, --port <port>`   | from config     | Override the listening port.                                      |
+| `--host [host]`       | localhost only  | Expose the dev server on the network. Optional host pin.          |
+| `--open`              | off             | Open the browser on start.                                        |
+| `--no-skills-check`   | off             | Skip the built-in skills drift check.                             |
+
+The skills check also obeys the `OPEN_SLIDE_SKIP_SKILLS_CHECK=1`
+environment variable — useful in CI or container builds where stdin
+isn't a TTY.
+
 ## Configuration
 
 Override the port (and a few other knobs) in `open-slide.config.ts`:
