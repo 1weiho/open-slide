@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Loader2, RotateCcw, Square, Sun } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RotateCcw, Square, Sun } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -115,9 +115,14 @@ export function Presenter() {
   if (!slide) {
     return (
       <div className="grid h-dvh place-items-center bg-zinc-950 text-zinc-400">
-        <div className="flex items-center gap-2 text-[12.5px]">
-          <Loader2 className="size-4 animate-spin" />{' '}
-          {format(t.presenter.loadingSlide, { slideId })}
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative h-px w-56 overflow-hidden bg-white/10">
+            <span
+              aria-hidden
+              className="line-loader-bar absolute inset-y-[-0.5px] left-0 w-1/4 bg-zinc-100"
+            />
+          </div>
+          <div className="text-[12.5px]">{format(t.presenter.loadingSlide, { slideId })}</div>
         </div>
       </div>
     );

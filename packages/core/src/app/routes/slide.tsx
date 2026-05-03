@@ -128,9 +128,19 @@ export function Slide() {
 
   if (!slide) {
     return (
-      <div className="mx-auto max-w-3xl px-8 py-16 text-[12.5px] text-muted-foreground">
-        <span className="eyebrow">{t.slide.loadingEyebrow}</span>
-        <p className="mt-2 font-mono">{slideId}</p>
+      <div className="grid min-h-dvh place-items-center px-8 text-muted-foreground">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative h-px w-56 overflow-hidden bg-hairline">
+            <span
+              aria-hidden
+              className="line-loader-bar absolute inset-y-[-0.5px] left-0 w-1/4 bg-foreground"
+            />
+          </div>
+          <div className="flex flex-wrap items-baseline justify-center gap-x-2 text-[11.5px]">
+            <span className="eyebrow">{t.slide.loadingEyebrow}</span>
+            <span className="font-mono">{slideId}</span>
+          </div>
+        </div>
       </div>
     );
   }
