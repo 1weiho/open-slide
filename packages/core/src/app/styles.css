@@ -348,6 +348,34 @@
   }
 }
 
+/*
+ * Indeterminate "line loader" — a hairline track with a short bar that
+ * glides back and forth. Used for full-screen loading states in place of
+ * a spinner; quieter, more typographic, easier on the eye.
+ */
+@keyframes osd-line-loader {
+  0% {
+    transform: translateX(0%);
+  }
+  50% {
+    transform: translateX(300%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
+}
+
+.line-loader-bar {
+  animation: osd-line-loader 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .line-loader-bar {
+    animation: none;
+    transform: translateX(150%);
+  }
+}
+
 [data-osd-freeze-motion],
 [data-osd-freeze-motion] *,
 [data-osd-freeze-motion] *::before,
