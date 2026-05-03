@@ -31,12 +31,12 @@ export function LiveDemo() {
 
   return (
     <section id="demo" className="relative">
-      <div className="mx-auto max-w-[1360px] px-8 lg:px-12 pt-12 lg:pt-20 pb-24">
+      <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 pt-8 sm:pt-12 lg:pt-20 pb-16 sm:pb-24">
         {/* specimen frame */}
         <div className="relative specimen p-4 sm:p-6 lg:p-8 rounded-[6px] border border-[color:var(--color-rule)] bg-gradient-to-b from-[color:var(--color-panel)] to-[color:var(--color-ink)]">
           <SpecimenCorners />
 
-          <div className="flex items-center justify-between mb-4 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.14em] uppercase text-[color:var(--color-muted)]">
+          <div className="flex items-center justify-between mb-4 font-[family-name:var(--font-mono)] text-[10px] sm:text-[11px] tracking-[0.14em] uppercase text-[color:var(--color-muted)]">
             <span className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-accent)]" />
               open-slide · live demo
@@ -81,7 +81,7 @@ export function LiveDemo() {
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => posthog.capture("view_more_demos_clicked")}
-            className="inline-flex items-center gap-2 font-[family-name:var(--font-mono)] text-[12px] tracking-[0.12em] uppercase text-[color:var(--color-muted)] hover:text-[color:var(--color-accent)] transition-colors"
+            className="inline-flex items-center gap-2 font-[family-name:var(--font-mono)] text-[11px] sm:text-[12px] tracking-[0.12em] uppercase text-[color:var(--color-muted)] hover:text-[color:var(--color-accent)] transition-colors"
           >
             View more demos
             <span aria-hidden>↗</span>

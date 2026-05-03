@@ -7,7 +7,7 @@ import { ThemeToggle } from "./theme-toggle";
 export function Nav() {
   return (
     <header className="sticky top-0 z-40 bg-[color:var(--color-ink)]/80 backdrop-blur-md border-b border-[color:var(--color-rule-soft)]">
-      <div className="mx-auto max-w-[1360px] px-8 lg:px-12 h-16 flex items-center justify-between">
+      <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 h-16 flex items-center justify-between">
         <Link
           href="/"
           className="flex items-center gap-3 font-[family-name:var(--font-mono)] text-[13px] tracking-[0.04em]"

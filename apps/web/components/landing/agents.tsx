@@ -22,8 +22,8 @@ export function Agents() {
   return (
     <section id="agents" className="relative overflow-hidden">
       <div className="border-y border-[color:var(--color-rule)] bg-[color:var(--color-panel)]">
-        <div className="mx-auto max-w-[1360px] px-8 lg:px-12 py-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <span className="font-[family-name:var(--font-display)] italic text-[22px] text-[color:var(--color-text)]">
+        <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-8 sm:py-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4 sm:gap-6">
+          <span className="font-[family-name:var(--font-display)] italic text-[20px] sm:text-[22px] text-[color:var(--color-text)]">
             Bring your own agent.
           </span>
           <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.22em] uppercase text-[color:var(--color-muted)]">
@@ -48,7 +48,7 @@ export function Agents() {
                 className="inline-flex items-center gap-4"
               >
                 <AgentLogo agent={agent} />
-                <span className="font-[family-name:var(--font-sans)] text-[color:var(--color-text)] text-[28px] lg:text-[36px] tracking-[-0.02em]">
+                <span className="font-[family-name:var(--font-sans)] text-[color:var(--color-text)] text-[22px] sm:text-[28px] lg:text-[36px] tracking-[-0.02em]">
                   {agent.name}
                 </span>
               </span>

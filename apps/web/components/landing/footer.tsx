@@ -1,7 +1,7 @@
 export function Footer() {
   return (
     <footer className="border-t border-[color:var(--color-rule)] bg-[color:var(--color-panel)]/60">
-      <div className="mx-auto max-w-[1360px] px-8 lg:px-12 py-14 grid grid-cols-12 gap-x-6 gap-y-10">
+      <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-10 sm:py-14 grid grid-cols-12 gap-x-6 gap-y-10">
         <div className="col-span-12 lg:col-span-4 flex flex-col gap-4">
           <div className="flex items-center gap-3 font-[family-name:var(--font-mono)] text-[13px]">
             {/* biome-ignore lint/performance/noImgElement: static brand icon */}
@@ -52,7 +52,7 @@ export function Footer() {
       </div>
 
       <div className="border-t border-[color:var(--color-rule)]">
-        <div className="mx-auto max-w-[1360px] px-8 lg:px-12 py-5 flex items-center justify-between font-[family-name:var(--font-mono)] text-[11px] tracking-[0.18em] uppercase text-[color:var(--color-muted)]">
+        <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.18em] uppercase text-[color:var(--color-muted)]">
           <span>© open-slide · MIT</span>
           <span>
             Crafted with 🤍 by{" "}

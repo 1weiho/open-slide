@@ -4,10 +4,10 @@ export function GetStarted() {
   return (
     <section id="install" className="relative overflow-hidden">
       <div aria-hidden className="hair absolute inset-x-0 top-0" />
-      <div className="relative mx-auto max-w-[1360px] px-8 lg:px-12 py-28 lg:py-40">
+      <div className="relative mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-20 sm:py-28 lg:py-40">
         <div>
-          <div className="flex flex-col gap-10">
-            <h2 className="text-[40px] sm:text-[52px] lg:text-[72px] leading-[1.02] tracking-[-0.03em]">
+          <div className="flex flex-col gap-7 sm:gap-10">
+            <h2 className="text-[32px] sm:text-[44px] lg:text-[72px] leading-[1.05] sm:leading-[1.02] tracking-[-0.03em]">
               <span className="font-[family-name:var(--font-sans)] font-medium">
                 Author a deck
               </span>

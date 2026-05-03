@@ -8,15 +8,15 @@ export function Hero() {
     <section className="relative overflow-hidden">
       <div aria-hidden className="hair absolute inset-x-0 top-0" />
 
-      <div className="relative mx-auto max-w-[1360px] px-8 lg:px-12 pt-20 lg:pt-32 pb-24">
+      <div className="relative mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 pt-14 sm:pt-20 lg:pt-32 pb-16 sm:pb-24">
         <div>
-          <div className="flex flex-col gap-10">
+          <div className="flex flex-col gap-7 sm:gap-10">
             <div className="caption rise" style={{ animationDelay: "40ms" }}>
               a slide framework for the agent era
             </div>
 
             <h1
-              className="text-[52px] sm:text-[68px] lg:text-[96px] leading-[0.98] tracking-[-0.03em] rise"
+              className="text-[40px] sm:text-[68px] lg:text-[96px] leading-[1.08] sm:leading-[1.0] lg:leading-[0.98] tracking-[-0.03em] rise"
               style={{ animationDelay: "120ms" }}
             >
               <span className="font-[family-name:var(--font-sans)] font-medium text-[color:var(--color-text)]">
@@ -46,7 +46,7 @@ export function Hero() {
             </p>
 
             <div
-              className="flex flex-wrap items-center gap-4 rise"
+              className="flex flex-wrap items-center gap-3 sm:gap-4 rise"
               style={{ animationDelay: "360ms" }}
             >
               <CopyCommand command="npx @open-slide/cli init" />
@@ -55,7 +55,7 @@ export function Hero() {
                 onClick={() =>
                   posthog.capture("docs_link_clicked", { location: "hero" })
                 }
-                className="group inline-flex items-center gap-2 h-[52px] px-5 rounded-[6px] border border-[color:var(--color-rule)] text-[14px] font-[family-name:var(--font-mono)] text-[color:var(--color-text)] hover:border-[color:var(--color-text)] transition"
+                className="group inline-flex items-center gap-2 h-[48px] sm:h-[52px] px-4 sm:px-5 rounded-[6px] border border-[color:var(--color-rule)] text-[14px] font-[family-name:var(--font-mono)] text-[color:var(--color-text)] hover:border-[color:var(--color-text)] transition"
               >
                 <DocsGlyph />
                 <span>Read the docs</span>
@@ -73,7 +73,7 @@ export function Hero() {
                 onClick={() =>
                   posthog.capture("github_link_clicked", { location: "hero" })
                 }
-                className="group inline-flex items-center gap-2 h-[52px] px-5 rounded-[6px] border border-[color:var(--color-rule)] text-[14px] font-[family-name:var(--font-mono)] text-[color:var(--color-text)] hover:border-[color:var(--color-text)] transition"
+                className="group inline-flex items-center gap-2 h-[48px] sm:h-[52px] px-4 sm:px-5 rounded-[6px] border border-[color:var(--color-rule)] text-[14px] font-[family-name:var(--font-mono)] text-[color:var(--color-text)] hover:border-[color:var(--color-text)] transition"
               >
                 <GithubGlyph />
                 <span>1weiho/open-slide</span>

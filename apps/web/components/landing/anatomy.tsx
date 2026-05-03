@@ -70,8 +70,8 @@ export function Anatomy() {
 
   return (
     <section id="anatomy" className="relative">
-      <div className="mx-auto max-w-[1360px] px-8 lg:px-12 py-24 lg:py-32">
-        <h2 className="text-[40px] sm:text-[52px] lg:text-[72px] leading-[1.02] tracking-[-0.03em] max-w-[960px] mb-12">
+      <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-16 sm:py-24 lg:py-32">
+        <h2 className="text-[32px] sm:text-[44px] lg:text-[72px] leading-[1.05] sm:leading-[1.02] tracking-[-0.03em] max-w-[960px] mb-8 sm:mb-12">
           <span className="font-[family-name:var(--font-sans)] font-medium">
             A slide is a file.
           </span>
@@ -85,7 +85,7 @@ export function Anatomy() {
           {/* code pane */}
           <div className="lg:col-span-7">
             <div className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden">
-              <div className="flex items-center justify-between px-5 h-11 border-b border-[color:var(--color-rule)] font-[family-name:var(--font-mono)] text-[12px] text-[color:var(--color-muted)]">
+              <div className="flex items-center justify-between px-4 sm:px-5 h-10 sm:h-11 border-b border-[color:var(--color-rule)] font-[family-name:var(--font-mono)] text-[12px] text-[color:var(--color-muted)]">
                 <div className="flex items-center gap-3">
                   <span
                     className="h-2.5 w-2.5 rounded-full transition-colors duration-500"
@@ -97,7 +97,7 @@ export function Anatomy() {
                   tsx · {lines.length} lines
                 </span>
               </div>
-              <pre className="p-6 text-[13.5px] leading-[1.75] overflow-x-auto font-[family-name:var(--font-mono)]">
+              <pre className="p-4 sm:p-6 text-[12px] sm:text-[13.5px] leading-[1.65] sm:leading-[1.75] overflow-x-auto font-[family-name:var(--font-mono)]">
                 <code>
                   {lines.map((line, idx) => {
                     const changing = CHANGING_LINES.has(idx);
@@ -119,7 +119,7 @@ export function Anatomy() {
 
           {/* preview pane */}
           <div className="lg:col-span-5">
-            <div className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-5">
+            <div className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-4 sm:p-5">
               <div className="flex items-center justify-between font-[family-name:var(--font-mono)] text-[11px] tracking-[0.14em] uppercase text-[color:var(--color-muted)] mb-4">
                 <span>rendered output</span>
                 <span className="flex items-center gap-2">

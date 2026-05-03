@@ -23,9 +23,9 @@ export function CopyCommand({
     }
   };
 
-  const height = size === "lg" ? "h-[52px]" : "h-10";
-  const pad = size === "lg" ? "px-5" : "px-4";
-  const text = size === "lg" ? "text-[15px]" : "text-[13px]";
+  const height = size === "lg" ? "h-[48px] sm:h-[52px]" : "h-10";
+  const pad = size === "lg" ? "px-4 sm:px-5" : "px-4";
+  const text = size === "lg" ? "text-[13px] sm:text-[15px]" : "text-[13px]";
 
   return (
     <button
