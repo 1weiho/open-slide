@@ -195,9 +195,7 @@ const Cover: Page = () => (
       }}
     >
       A TypeScript toolkit for building AI-powered apps —{' '}
-      <span style={{ color: 'var(--osd-text)', fontWeight: 500 }}>
-        one API, any model.
-      </span>
+      <span style={{ color: 'var(--osd-text)', fontWeight: 500 }}>one API, any model.</span>
     </p>
 
     <div
@@ -288,8 +286,8 @@ const Problem: Page = () => (
           paddingTop: 24,
         }}
       >
-        Every provider ships its own SDK, its own quirks, its own response shape. Switching
-        models means rewriting plumbing — not building product.
+        Every provider ships its own SDK, its own quirks, its own response shape. Switching models
+        means rewriting plumbing — not building product.
       </div>
     </div>
 
@@ -390,8 +388,8 @@ const Pitch: Page = () => (
         fontWeight: 400,
       }}
     >
-      A unified, type-safe surface across 20+ providers. Swap models with a single string —
-      the rest of your app stays the same.
+      A unified, type-safe surface across 20+ providers. Swap models with a single string — the rest
+      of your app stays the same.
     </p>
   </div>
 );
@@ -514,7 +512,10 @@ const Code: Page = () => (
           2,
           <>
             <span style={{ color: tokens.k }}>const</span>
-            <span style={{ color: tokens.txt }}> {'{ '}text {'} '}</span>
+            <span style={{ color: tokens.txt }}>
+              {' '}
+              {'{ '}text {'} '}
+            </span>
             <span style={{ color: tokens.k }}>=</span>
             <span style={{ color: tokens.txt }}> </span>
             <span style={{ color: tokens.k }}>await</span>
@@ -556,9 +557,9 @@ const Code: Page = () => (
         letterSpacing: '0.04em',
       }}
     >
-      Swap <span style={{ fontFamily: font.mono, color: palette.textSoft }}>'anthropic/…'</span>{' '}
-      for <span style={{ fontFamily: font.mono, color: palette.textSoft }}>'openai/gpt-…'</span>{' '}
-      and ship. Same shape. Same types.
+      Swap <span style={{ fontFamily: font.mono, color: palette.textSoft }}>'anthropic/…'</span> for{' '}
+      <span style={{ fontFamily: font.mono, color: palette.textSoft }}>'openai/gpt-…'</span> and
+      ship. Same shape. Same types.
     </div>
   </div>
 );
@@ -806,9 +807,7 @@ const Capabilities: Page = () => (
             </span>
             <span>{c.name}</span>
           </div>
-          <div style={{ fontSize: 26, lineHeight: 1.5, color: palette.textSoft }}>
-            {c.desc}
-          </div>
+          <div style={{ fontSize: 26, lineHeight: 1.5, color: palette.textSoft }}>{c.desc}</div>
         </div>
       ))}
     </div>
@@ -1020,4 +1019,13 @@ const Closing: Page = () => (
 );
 
 export const meta: SlideMeta = { title: 'Vercel AI SDK' };
-export default [Cover, Problem, Pitch, Code, Layers, Capabilities, Providers, Closing] satisfies Page[];
+export default [
+  Cover,
+  Problem,
+  Pitch,
+  Code,
+  Layers,
+  Capabilities,
+  Providers,
+  Closing,
+] satisfies Page[];
