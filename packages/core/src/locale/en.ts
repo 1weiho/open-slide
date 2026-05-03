@@ -184,6 +184,15 @@ export const en: Locale = {
       one: '{count} unsaved change',
       other: '{count} unsaved changes',
     },
+    commentsCount: {
+      one: '{count} comment',
+      other: '{count} comments',
+    },
+    commentLineLabel: 'line {n}',
+    commentsEmpty: 'No comments yet. Toggle Inspect and click a slide element.',
+    commentsApplyHintPrefix: 'Run ',
+    commentsApplyHintSuffix: ' in your agent to apply these.',
+    commentDeleteAria: 'Delete',
   },
 
   stylePanel: {

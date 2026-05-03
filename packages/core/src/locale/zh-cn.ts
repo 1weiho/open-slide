@@ -184,6 +184,15 @@ export const zhCN: Locale = {
       one: '{count} 项未保存的更改',
       other: '{count} 项未保存的更改',
     },
+    commentsCount: {
+      one: '{count} 条评论',
+      other: '{count} 条评论',
+    },
+    commentLineLabel: '第 {n} 行',
+    commentsEmpty: '暂无评论。开启「检查」并点击幻灯片元素。',
+    commentsApplyHintPrefix: '在你的代理中运行 ',
+    commentsApplyHintSuffix: ' 以应用这些更改。',
+    commentDeleteAria: '删除',
   },
 
   stylePanel: {

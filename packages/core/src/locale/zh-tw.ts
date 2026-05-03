@@ -184,6 +184,15 @@ export const zhTW: Locale = {
       one: '{count} 項未儲存的變更',
       other: '{count} 項未儲存的變更',
     },
+    commentsCount: {
+      one: '{count} 則留言',
+      other: '{count} 則留言',
+    },
+    commentLineLabel: '第 {n} 行',
+    commentsEmpty: '尚無留言。開啟「檢視」並點選投影片元素。',
+    commentsApplyHintPrefix: '在你的代理中執行 ',
+    commentsApplyHintSuffix: ' 以套用這些變更。',
+    commentDeleteAria: '刪除',
   },
 
   stylePanel: {

@@ -185,6 +185,15 @@ export const ja: Locale = {
       one: '未保存の変更 {count} 件',
       other: '未保存の変更 {count} 件',
     },
+    commentsCount: {
+      one: 'コメント {count} 件',
+      other: 'コメント {count} 件',
+    },
+    commentLineLabel: '行 {n}',
+    commentsEmpty: 'まだコメントはありません。インスペクトを有効にしてスライド要素をクリックしてください。',
+    commentsApplyHintPrefix: 'エージェントで ',
+    commentsApplyHintSuffix: ' を実行して適用してください。',
+    commentDeleteAria: '削除',
   },
 
   stylePanel: {

@@ -185,6 +185,14 @@ export type Locale = {
     addNote: string;
     /** templates: "{count} unsaved change" / "{count} unsaved changes" */
     unsavedChanges: Plural;
+    /** templates: "{count} comment" / "{count} comments" */
+    commentsCount: Plural;
+    /** template: "line {n}" */
+    commentLineLabel: string;
+    commentsEmpty: string;
+    commentsApplyHintPrefix: string;
+    commentsApplyHintSuffix: string;
+    commentDeleteAria: string;
   };
 
   stylePanel: {
