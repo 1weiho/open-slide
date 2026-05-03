@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import posthog from "posthog-js";
-import { CopyCommand } from "./copy-command";
+import posthog from 'posthog-js';
+import { CopyCommand } from './copy-command';
 
 export function Hero() {
   return (
@@ -11,50 +11,43 @@ export function Hero() {
       <div className="relative mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 pt-14 sm:pt-20 lg:pt-32 pb-16 sm:pb-24">
         <div>
           <div className="flex flex-col gap-7 sm:gap-10">
-            <div className="caption rise" style={{ animationDelay: "40ms" }}>
+            <div className="caption rise" style={{ animationDelay: '40ms' }}>
               a slide framework for the agent era
             </div>
 
             <h1
               className="text-[40px] sm:text-[68px] lg:text-[96px] leading-[1.08] sm:leading-[1.0] lg:leading-[0.98] tracking-[-0.03em] rise"
-              style={{ animationDelay: "120ms" }}
+              style={{ animationDelay: '120ms' }}
             >
               <span className="font-[family-name:var(--font-sans)] font-medium text-[color:var(--color-text)]">
                 The slide framework
               </span>
               <br />
               <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-paper)]">
-                built for{" "}
-                <span className="text-[color:var(--color-accent)]">agents</span>
-                .
+                built for <span className="text-[color:var(--color-accent)]">agents</span>.
               </span>
             </h1>
 
             <p
               className="max-w-[720px] text-[18px] sm:text-[20px] leading-[1.55] text-[color:var(--color-text-soft)] rise"
-              style={{ animationDelay: "240ms" }}
+              style={{ animationDelay: '240ms' }}
             >
-              A React-first slide framework authored by AI agents. Every page is
-              arbitrary code on a{" "}
+              A React-first slide framework authored by AI agents. Every page is arbitrary code on a{' '}
               <span className="font-[family-name:var(--font-mono)] text-[color:var(--color-text)]">
                 1920×1080
-              </span>{" "}
-              canvas—{" "}
-              <span className="text-[color:var(--color-muted)]">
-                versioned, reviewable, yours.
-              </span>
+              </span>{' '}
+              canvas—{' '}
+              <span className="text-[color:var(--color-muted)]">versioned, reviewable, yours.</span>
             </p>
 
             <div
               className="flex flex-wrap items-center gap-3 sm:gap-4 rise"
-              style={{ animationDelay: "360ms" }}
+              style={{ animationDelay: '360ms' }}
             >
               <CopyCommand command="npx @open-slide/cli init" />
               <a
                 href="/docs"
-                onClick={() =>
-                  posthog.capture("docs_link_clicked", { location: "hero" })
-                }
+                onClick={() => posthog.capture('docs_link_clicked', { location: 'hero' })}
                 className="group inline-flex items-center gap-2 h-[48px] sm:h-[52px] px-4 sm:px-5 rounded-[6px] border border-[color:var(--color-rule)] text-[14px] font-[family-name:var(--font-mono)] text-[color:var(--color-text)] hover:border-[color:var(--color-text)] transition"
               >
                 <DocsGlyph />
@@ -70,9 +63,7 @@ export function Hero() {
                 href="https://github.com/1weiho/open-slide"
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() =>
-                  posthog.capture("github_link_clicked", { location: "hero" })
-                }
+                onClick={() => posthog.capture('github_link_clicked', { location: 'hero' })}
                 className="group inline-flex items-center gap-2 h-[48px] sm:h-[52px] px-4 sm:px-5 rounded-[6px] border border-[color:var(--color-rule)] text-[14px] font-[family-name:var(--font-mono)] text-[color:var(--color-text)] hover:border-[color:var(--color-text)] transition"
               >
                 <GithubGlyph />

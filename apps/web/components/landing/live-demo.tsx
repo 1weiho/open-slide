@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import posthog from "posthog-js";
-import { useState } from "react";
-import { InlineSlidePlayer, inlineSlideCount } from "./inline-slide-player";
+import posthog from 'posthog-js';
+import { useState } from 'react';
+import { InlineSlidePlayer, inlineSlideCount } from './inline-slide-player';
 
 export function LiveDemo() {
   const [index, setIndex] = useState(0);
@@ -14,8 +14,8 @@ export function LiveDemo() {
   const handlePrev = () => {
     const next = clamp(index - 1);
     setIndex(next);
-    posthog.capture("demo_slide_navigated", {
-      direction: "prev",
+    posthog.capture('demo_slide_navigated', {
+      direction: 'prev',
       slide_index: next,
     });
   };
@@ -23,8 +23,8 @@ export function LiveDemo() {
   const handleNext = () => {
     const next = clamp(index + 1);
     setIndex(next);
-    posthog.capture("demo_slide_navigated", {
-      direction: "next",
+    posthog.capture('demo_slide_navigated', {
+      direction: 'next',
       slide_index: next,
     });
   };
@@ -46,7 +46,7 @@ export function LiveDemo() {
 
           <div
             className="relative block w-full overflow-hidden rounded-[6px] border border-[color:var(--color-rule)] bg-black"
-            style={{ aspectRatio: "16 / 9" }}
+            style={{ aspectRatio: '16 / 9' }}
           >
             <InlineSlidePlayer index={index} onIndexChange={setIndex} />
           </div>
@@ -80,7 +80,7 @@ export function LiveDemo() {
             href="https://demo.open-slide.dev/"
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => posthog.capture("view_more_demos_clicked")}
+            onClick={() => posthog.capture('view_more_demos_clicked')}
             className="inline-flex items-center gap-2 font-[family-name:var(--font-mono)] text-[11px] sm:text-[12px] tracking-[0.12em] uppercase text-[color:var(--color-muted)] hover:text-[color:var(--color-accent)] transition-colors"
           >
             View more demos
@@ -93,8 +93,7 @@ export function LiveDemo() {
 }
 
 function SpecimenCorners() {
-  const corner =
-    "absolute h-5 w-5 border-[color:var(--color-accent)] pointer-events-none";
+  const corner = 'absolute h-5 w-5 border-[color:var(--color-accent)] pointer-events-none';
   return (
     <>
       <span

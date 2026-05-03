@@ -1,41 +1,41 @@
-import type { ComponentType } from "react";
+import type { ComponentType } from 'react';
 
 type Page = ComponentType;
-type SlideMeta = { title?: string; theme?: "light" | "dark" };
+type SlideMeta = { title?: string; theme?: 'light' | 'dark' };
 
 // Vite returns a URL string for asset imports; Next.js/Turbopack returns an
 // object like { src, width, height }. Normalize to a string so the slide
 // source works under both bundlers without per-bundler config.
 type AssetImport = string | { src: string };
-const url = (a: AssetImport): string => (typeof a === "string" ? a : a.src);
+const url = (a: AssetImport): string => (typeof a === 'string' ? a : a.src);
 
-import claudeLogo from "./assets/claude.svg";
-import cloudflareLogo from "./assets/cloudflare.svg";
-import geminiLogo from "./assets/gemini.svg";
-import codexLogo from "./assets/openai.svg";
-import opencodeLogo from "./assets/opencode.svg";
-import vercelLogo from "./assets/vercel.svg";
-import zeaburLogo from "./assets/zeabur.svg";
+import claudeLogo from './assets/claude.svg';
+import cloudflareLogo from './assets/cloudflare.svg';
+import geminiLogo from './assets/gemini.svg';
+import codexLogo from './assets/openai.svg';
+import opencodeLogo from './assets/opencode.svg';
+import vercelLogo from './assets/vercel.svg';
+import zeaburLogo from './assets/zeabur.svg';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const palette = {
-  bg: "#08090a",
-  surface: "#0e0f12",
-  surfaceHi: "#14161a",
-  surfaceMax: "#1a1c21",
-  text: "#f7f8f8",
-  textSoft: "#c7c9d1",
-  muted: "#6f727c",
-  dim: "#3e4048",
-  border: "rgba(255,255,255,0.07)",
-  borderBright: "rgba(255,255,255,0.14)",
-  accent: "#7170ff",
-  accentSoft: "#a3a0ff",
-  accent2: "#5e6ad2",
-  mint: "#68cc9a",
-  amber: "#e0b25c",
-  inspect: "#3b82f6",
-  inspectFill: "rgba(59,130,246,0.10)",
+  bg: '#08090a',
+  surface: '#0e0f12',
+  surfaceHi: '#14161a',
+  surfaceMax: '#1a1c21',
+  text: '#f7f8f8',
+  textSoft: '#c7c9d1',
+  muted: '#6f727c',
+  dim: '#3e4048',
+  border: 'rgba(255,255,255,0.07)',
+  borderBright: 'rgba(255,255,255,0.14)',
+  accent: '#7170ff',
+  accentSoft: '#a3a0ff',
+  accent2: '#5e6ad2',
+  mint: '#68cc9a',
+  amber: '#e0b25c',
+  inspect: '#3b82f6',
+  inspectFill: 'rgba(59,130,246,0.10)',
 };
 
 const font = {
@@ -44,14 +44,14 @@ const font = {
 };
 
 const fill = {
-  width: "100%",
-  height: "100%",
+  width: '100%',
+  height: '100%',
   background: palette.bg,
   color: palette.text,
   fontFamily: font.sans,
-  letterSpacing: "-0.015em",
-  overflow: "hidden",
-  position: "relative" as const,
+  letterSpacing: '-0.015em',
+  overflow: 'hidden',
+  position: 'relative' as const,
 };
 
 // ─── Shared animations (injected per slide so direct-nav also works) ──────────
@@ -151,15 +151,13 @@ const Styles = () => <style>{styles}</style>;
 const GridBg = () => (
   <div
     style={{
-      position: "absolute",
+      position: 'absolute',
       inset: 0,
       backgroundImage:
-        "linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)",
-      backgroundSize: "96px 96px",
-      maskImage:
-        "radial-gradient(ellipse at center, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 70%)",
-      WebkitMaskImage:
-        "radial-gradient(ellipse at center, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 70%)",
+        'linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)',
+      backgroundSize: '96px 96px',
+      maskImage: 'radial-gradient(ellipse at center, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 70%)',
+      WebkitMaskImage: 'radial-gradient(ellipse at center, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 70%)',
     }}
   />
 );
@@ -178,8 +176,8 @@ const Eyebrow = ({
     style={{
       fontFamily: font.mono,
       fontSize: 22,
-      letterSpacing: "0.18em",
-      textTransform: "uppercase",
+      letterSpacing: '0.18em',
+      textTransform: 'uppercase',
       color: palette.muted,
       ...style,
     }}
@@ -189,14 +187,14 @@ const Eyebrow = ({
 );
 
 const TrafficLights = () => (
-  <div style={{ display: "flex", gap: 10 }}>
-    {["#ff5f56", "#ffbd2e", "#27c93f"].map((c) => (
+  <div style={{ display: 'flex', gap: 10 }}>
+    {['#ff5f56', '#ffbd2e', '#27c93f'].map((c) => (
       <span
         key={c}
         style={{
           width: 14,
           height: 14,
-          borderRadius: "50%",
+          borderRadius: '50%',
           background: c,
           boxShadow: `inset 0 0 0 1px rgba(0,0,0,0.25)`,
         }}
@@ -221,20 +219,19 @@ const WindowShell = ({
       background: palette.surface,
       border: `1px solid ${palette.border}`,
       borderRadius: 16,
-      boxShadow:
-        "0 40px 80px -30px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.02)",
-      overflow: "hidden",
-      display: "flex",
-      flexDirection: "column",
+      boxShadow: '0 40px 80px -30px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.02)',
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
       ...style,
     }}
   >
     <div
       style={{
         height: 52,
-        padding: "0 20px",
-        display: "flex",
-        alignItems: "center",
+        padding: '0 20px',
+        display: 'flex',
+        alignItems: 'center',
         gap: 16,
         background: palette.surfaceHi,
         borderBottom: `1px solid ${palette.border}`,
@@ -245,39 +242,29 @@ const WindowShell = ({
       <div
         style={{
           flex: 1,
-          textAlign: "center",
+          textAlign: 'center',
           fontFamily: font.mono,
           fontSize: 20,
           color: palette.muted,
-          letterSpacing: "0.02em",
+          letterSpacing: '0.02em',
         }}
       >
         {title}
       </div>
-      <div
-        style={{ minWidth: 40, display: "flex", justifyContent: "flex-end" }}
-      >
-        {badge}
-      </div>
+      <div style={{ minWidth: 40, display: 'flex', justifyContent: 'flex-end' }}>{badge}</div>
     </div>
     {children}
   </div>
 );
 
-const SlashCmd = ({
-  name,
-  color = palette.accent,
-}: {
-  name: string;
-  color?: string;
-}) => (
+const SlashCmd = ({ name, color = palette.accent }: { name: string; color?: string }) => (
   <span
     style={{
       fontFamily: font.mono,
       color,
       background: `${color}16`,
       border: `1px solid ${color}40`,
-      padding: "2px 10px",
+      padding: '2px 10px',
       borderRadius: 6,
       fontWeight: 500,
     }}
@@ -291,16 +278,15 @@ const AgentLine = ({
   children,
   delay,
 }: {
-  speaker: "user" | "assistant" | "tool";
+  speaker: 'user' | 'assistant' | 'tool';
   children: React.ReactNode;
   delay: number;
 }) => {
-  const label =
-    speaker === "user" ? "you" : speaker === "assistant" ? "agent" : "tool";
+  const label = speaker === 'user' ? 'you' : speaker === 'assistant' ? 'agent' : 'tool';
   const color =
-    speaker === "user"
+    speaker === 'user'
       ? palette.mint
-      : speaker === "assistant"
+      : speaker === 'assistant'
         ? palette.accentSoft
         : palette.amber;
   return (
@@ -308,19 +294,19 @@ const AgentLine = ({
       className="gs-stream"
       style={{
         animationDelay: `${delay}s`,
-        display: "flex",
+        display: 'flex',
         gap: 18,
-        alignItems: "flex-start",
-        padding: "12px 0",
+        alignItems: 'flex-start',
+        padding: '12px 0',
       }}
     >
       <span
         style={{
-          flex: "0 0 110px",
+          flex: '0 0 110px',
           fontFamily: font.mono,
           fontSize: 20,
-          letterSpacing: "0.12em",
-          textTransform: "uppercase",
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
           color,
           paddingTop: 6,
         }}
@@ -361,11 +347,11 @@ const LogoCard = ({
       background: palette.surface,
       border: `1px solid ${palette.border}`,
       borderRadius: 16,
-      padding: "40px 28px 32px",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
+      padding: '40px 28px 32px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
       gap: 28,
       minHeight: 0,
     }}
@@ -373,15 +359,15 @@ const LogoCard = ({
     <div
       style={{
         height: logoHeight,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
     >
       <img
         src={url(src)}
         alt={name}
-        style={{ height: logoHeight, width: "auto", objectFit: "contain" }}
+        style={{ height: logoHeight, width: 'auto', objectFit: 'contain' }}
       />
     </div>
     <div
@@ -389,7 +375,7 @@ const LogoCard = ({
         fontFamily: font.mono,
         fontSize: 22,
         color: palette.textSoft,
-        letterSpacing: "0.02em",
+        letterSpacing: '0.02em',
       }}
     >
       {name}
@@ -404,33 +390,33 @@ const Cover: Page = () => (
     <GridBg />
     <div
       style={{
-        position: "absolute",
+        position: 'absolute',
         inset: 0,
-        padding: "140px 140px",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
+        padding: '140px 140px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
       }}
     >
       <div
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}
       >
-        <Eyebrow className="es-fadeUp" style={{ animationDelay: "0.05s" }}>
+        <Eyebrow className="es-fadeUp" style={{ animationDelay: '0.05s' }}>
           open-slide · getting started
         </Eyebrow>
         <div
           className="es-fadeUp"
           style={{
-            animationDelay: "0.05s",
+            animationDelay: '0.05s',
             fontFamily: font.mono,
             fontSize: 20,
             color: palette.muted,
             border: `1px solid ${palette.border}`,
-            padding: "8px 16px",
+            padding: '8px 16px',
             borderRadius: 999,
           }}
         >
@@ -446,8 +432,8 @@ const Cover: Page = () => (
             lineHeight: 0.98,
             fontWeight: 600,
             margin: 0,
-            letterSpacing: "-0.045em",
-            animationDelay: "0.15s",
+            letterSpacing: '-0.045em',
+            animationDelay: '0.15s',
           }}
         >
           Author slides
@@ -455,9 +441,9 @@ const Cover: Page = () => (
           <span
             style={{
               background: `linear-gradient(90deg, ${palette.accentSoft}, ${palette.accent})`,
-              WebkitBackgroundClip: "text",
-              backgroundClip: "text",
-              color: "transparent",
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              color: 'transparent',
             }}
           >
             with your agent.
@@ -471,7 +457,7 @@ const Cover: Page = () => (
             fontSize: 36,
             lineHeight: 1.35,
             color: palette.textSoft,
-            animationDelay: "0.35s",
+            animationDelay: '0.35s',
           }}
         >
           Three steps from empty folder to a live, editable slide.
@@ -481,8 +467,8 @@ const Cover: Page = () => (
       <div
         className="es-fadeUp"
         style={{
-          animationDelay: "0.55s",
-          display: "flex",
+          animationDelay: '0.55s',
+          display: 'flex',
           gap: 48,
           fontFamily: font.mono,
           fontSize: 22,
@@ -512,15 +498,15 @@ const Cover: Page = () => (
 // ─── Slide 2: Init in a terminal ─────────────────────────────────────────────
 const Init: Page = () => {
   const stream = [
-    "",
-    "Created open-slide workspace in /Users/you/my-slide",
-    "",
-    "Next steps:",
-    "  cd my-slide",
-    "  pnpm install    # or npm install / yarn",
-    "  pnpm dev",
-    "",
-    "Then open the dev server and start authoring in slides/<your-slide>/.",
+    '',
+    'Created open-slide workspace in /Users/you/my-slide',
+    '',
+    'Next steps:',
+    '  cd my-slide',
+    '  pnpm install    # or npm install / yarn',
+    '  pnpm dev',
+    '',
+    'Then open the dev server and start authoring in slides/<your-slide>/.',
   ];
   return (
     <div style={fill}>
@@ -528,11 +514,11 @@ const Init: Page = () => {
       <GridBg />
       <div
         style={{
-          position: "absolute",
+          position: 'absolute',
           inset: 0,
-          padding: "100px 140px",
-          display: "flex",
-          flexDirection: "column",
+          padding: '100px 140px',
+          display: 'flex',
+          flexDirection: 'column',
           gap: 48,
         }}
       >
@@ -544,7 +530,7 @@ const Init: Page = () => {
               marginBottom: 0,
               fontSize: 88,
               fontWeight: 600,
-              letterSpacing: "-0.035em",
+              letterSpacing: '-0.035em',
               lineHeight: 1.02,
             }}
           >
@@ -555,7 +541,7 @@ const Init: Page = () => {
               marginTop: 20,
               fontSize: 28,
               color: palette.textSoft,
-              letterSpacing: "-0.01em",
+              letterSpacing: '-0.01em',
             }}
           >
             Runs anywhere. No global installs, no Vite config to touch.
@@ -566,16 +552,16 @@ const Init: Page = () => {
           <div
             style={{
               flex: 1,
-              padding: "36px 48px",
+              padding: '36px 48px',
               fontFamily: font.mono,
               fontSize: 28,
               lineHeight: 1.55,
               color: palette.textSoft,
               background: palette.surface,
-              overflow: "hidden",
+              overflow: 'hidden',
             }}
           >
-            <div style={{ display: "flex", gap: 16 }}>
+            <div style={{ display: 'flex', gap: 16 }}>
               <span style={{ color: palette.mint }}>$</span>
               <span className="gs-type" style={{ color: palette.text }}>
                 npx @open-slide/cli init my-slide
@@ -589,15 +575,15 @@ const Init: Page = () => {
                 style={{
                   minHeight: 44,
                   animationDelay: `${1.8 + i * 0.12}s`,
-                  color: line.startsWith("Next steps")
+                  color: line.startsWith('Next steps')
                     ? palette.accentSoft
-                    : line.startsWith("Created")
+                    : line.startsWith('Created')
                       ? palette.mint
                       : palette.textSoft,
-                  whiteSpace: "pre",
+                  whiteSpace: 'pre',
                 }}
               >
-                {line || " "}
+                {line || ' '}
               </div>
             ))}
             <div
@@ -605,7 +591,7 @@ const Init: Page = () => {
               style={{
                 marginTop: 16,
                 animationDelay: `${1.8 + stream.length * 0.12 + 0.1}s`,
-                display: "flex",
+                display: 'flex',
                 gap: 16,
               }}
             >
@@ -621,18 +607,18 @@ const Init: Page = () => {
 
 // ─── Slide 3: Prompt → create-slide → pages appear ───────────────────────────
 const Prompt: Page = () => {
-  const thumbs = ["Cover", "Agenda", "Problem", "Solution", "Metrics", "Next"];
+  const thumbs = ['Cover', 'Agenda', 'Problem', 'Solution', 'Metrics', 'Next'];
   return (
     <div style={fill}>
       <Styles />
       <GridBg />
       <div
         style={{
-          position: "absolute",
+          position: 'absolute',
           inset: 0,
-          padding: "90px 120px 100px",
-          display: "flex",
-          flexDirection: "column",
+          padding: '90px 120px 100px',
+          display: 'flex',
+          flexDirection: 'column',
           gap: 36,
         }}
       >
@@ -644,7 +630,7 @@ const Prompt: Page = () => {
               marginBottom: 0,
               fontSize: 88,
               fontWeight: 600,
-              letterSpacing: "-0.035em",
+              letterSpacing: '-0.035em',
               lineHeight: 1.02,
             }}
           >
@@ -655,8 +641,8 @@ const Prompt: Page = () => {
         <div
           style={{
             flex: 1,
-            display: "grid",
-            gridTemplateColumns: "1fr 1.15fr",
+            display: 'grid',
+            gridTemplateColumns: '1fr 1.15fr',
             gap: 40,
             minHeight: 0,
           }}
@@ -666,10 +652,10 @@ const Prompt: Page = () => {
             <div
               style={{
                 flex: 1,
-                padding: "28px 36px",
+                padding: '28px 36px',
                 background: palette.surface,
-                display: "flex",
-                flexDirection: "column",
+                display: 'flex',
+                flexDirection: 'column',
               }}
             >
               <AgentLine speaker="user" delay={0.3}>
@@ -677,10 +663,7 @@ const Prompt: Page = () => {
                   <SlashCmd name="create-slide" />
                 </div>
                 <div style={{ marginTop: 10 }}>
-                  <span
-                    className="gs-type"
-                    style={{ maxWidth: "100%", color: palette.text }}
-                  >
+                  <span className="gs-type" style={{ maxWidth: '100%', color: palette.text }}>
                     slides about the Q2 launch
                   </span>
                 </div>
@@ -689,7 +672,7 @@ const Prompt: Page = () => {
                 style={{
                   height: 1,
                   background: palette.border,
-                  margin: "8px 0",
+                  margin: '8px 0',
                 }}
               />
               <AgentLine speaker="assistant" delay={2.0}>
@@ -697,31 +680,27 @@ const Prompt: Page = () => {
               </AgentLine>
               <AgentLine speaker="tool" delay={2.7}>
                 <div style={{ color: palette.muted }}>
-                  write{" "}
-                  <span style={{ color: palette.text }}>
-                    slides/q2-launch/index.tsx
-                  </span>
+                  write <span style={{ color: palette.text }}>slides/q2-launch/index.tsx</span>
                 </div>
               </AgentLine>
               <AgentLine speaker="tool" delay={3.4}>
                 <div style={{ color: palette.muted }}>
-                  hmr <span style={{ color: palette.mint }}>✓</span>{" "}
-                  localhost:5173 updated
+                  hmr <span style={{ color: palette.mint }}>✓</span> localhost:5173 updated
                 </div>
               </AgentLine>
               <div style={{ flex: 1 }} />
               <div
                 className="gs-stream"
                 style={{
-                  animationDelay: "4.1s",
-                  display: "flex",
+                  animationDelay: '4.1s',
+                  display: 'flex',
                   gap: 16,
                   fontFamily: font.mono,
                   fontSize: 26,
                   color: palette.muted,
                 }}
               >
-                <span style={{ color: palette.accentSoft }}>{">"}</span>
+                <span style={{ color: palette.accentSoft }}>{'>'}</span>
                 <span className="es-caret" />
               </div>
             </div>
@@ -732,7 +711,7 @@ const Prompt: Page = () => {
             <div
               style={{
                 flex: 1,
-                display: "flex",
+                display: 'flex',
                 background: palette.surface,
                 minHeight: 0,
               }}
@@ -741,13 +720,13 @@ const Prompt: Page = () => {
               <div
                 style={{
                   width: 220,
-                  padding: "20px 14px",
+                  padding: '20px 14px',
                   borderRight: `1px solid ${palette.border}`,
                   background: palette.surfaceHi,
-                  display: "flex",
-                  flexDirection: "column",
+                  display: 'flex',
+                  flexDirection: 'column',
                   gap: 10,
-                  overflow: "hidden",
+                  overflow: 'hidden',
                 }}
               >
                 {thumbs.map((label, i) => (
@@ -756,14 +735,13 @@ const Prompt: Page = () => {
                     className="gs-thumbIn"
                     style={{
                       animationDelay: `${1.2 + i * 0.25}s`,
-                      display: "flex",
-                      alignItems: "center",
+                      display: 'flex',
+                      alignItems: 'center',
                       gap: 10,
                       padding: 8,
                       borderRadius: 10,
                       border: `1px solid ${i === 0 ? palette.accent : palette.border}`,
-                      background:
-                        i === 0 ? `${palette.accent}12` : palette.surface,
+                      background: i === 0 ? `${palette.accent}12` : palette.surface,
                     }}
                   >
                     <span
@@ -774,7 +752,7 @@ const Prompt: Page = () => {
                         width: 22,
                       }}
                     >
-                      {String(i + 1).padStart(2, "0")}
+                      {String(i + 1).padStart(2, '0')}
                     </span>
                     <div
                       style={{
@@ -784,15 +762,15 @@ const Prompt: Page = () => {
                         background: `linear-gradient(135deg, ${palette.surfaceMax}, ${palette.bg})`,
                         border: `1px solid ${palette.border}`,
                         padding: 8,
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between",
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
                       }}
                     >
                       <div
                         style={{
                           height: 6,
-                          width: "60%",
+                          width: '60%',
                           background: palette.textSoft,
                           opacity: 0.55,
                           borderRadius: 2,
@@ -801,7 +779,7 @@ const Prompt: Page = () => {
                       <div
                         style={{
                           height: 4,
-                          width: "40%",
+                          width: '40%',
                           background: palette.muted,
                           borderRadius: 2,
                         }}
@@ -815,10 +793,10 @@ const Prompt: Page = () => {
               <div
                 style={{
                   flex: 1,
-                  position: "relative",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   padding: 40,
                 }}
               >
@@ -826,16 +804,16 @@ const Prompt: Page = () => {
                   className="gs-canvasSwap"
                   style={{
                     animationDelay: `${1.2 + thumbs.length * 0.25 + 0.2}s`,
-                    width: "100%",
-                    height: "100%",
+                    width: '100%',
+                    height: '100%',
                     borderRadius: 14,
                     border: `1px solid ${palette.border}`,
                     background: `radial-gradient(ellipse at 30% 30%, ${palette.accent2}22, transparent 60%), ${palette.bg}`,
                     padding: 48,
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.02)",
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.02)',
                   }}
                 >
                   <Eyebrow style={{ fontSize: 14 }}>cover</Eyebrow>
@@ -844,7 +822,7 @@ const Prompt: Page = () => {
                       style={{
                         fontSize: 64,
                         fontWeight: 600,
-                        letterSpacing: "-0.035em",
+                        letterSpacing: '-0.035em',
                         lineHeight: 1.02,
                       }}
                     >
@@ -858,14 +836,13 @@ const Prompt: Page = () => {
                         maxWidth: 560,
                       }}
                     >
-                      What we're shipping, why it matters, and how we'll measure
-                      success.
+                      What we're shipping, why it matters, and how we'll measure success.
                     </div>
                   </div>
                   <div
                     style={{
-                      display: "flex",
-                      justifyContent: "space-between",
+                      display: 'flex',
+                      justifyContent: 'space-between',
                       fontFamily: font.mono,
                       fontSize: 14,
                       color: palette.muted,
@@ -910,11 +887,11 @@ const VisualEdit: Page = () => {
       `}</style>
       <div
         style={{
-          position: "absolute",
+          position: 'absolute',
           inset: 0,
-          padding: "90px 120px 100px",
-          display: "flex",
-          flexDirection: "column",
+          padding: '90px 120px 100px',
+          display: 'flex',
+          flexDirection: 'column',
           gap: 36,
         }}
       >
@@ -926,7 +903,7 @@ const VisualEdit: Page = () => {
               marginBottom: 0,
               fontSize: 88,
               fontWeight: 600,
-              letterSpacing: "-0.035em",
+              letterSpacing: '-0.035em',
               lineHeight: 1.02,
             }}
           >
@@ -940,12 +917,9 @@ const VisualEdit: Page = () => {
               maxWidth: 1280,
             }}
           >
-            Pick any element. Change text, font, color, or swap an image — right
-            on the canvas. Edits buffer until you hit{" "}
-            <span style={{ fontFamily: font.mono, color: palette.accentSoft }}>
-              Save
-            </span>
-            .
+            Pick any element. Change text, font, color, or swap an image — right on the canvas.
+            Edits buffer until you hit{' '}
+            <span style={{ fontFamily: font.mono, color: palette.accentSoft }}>Save</span>.
           </p>
         </div>
 
@@ -955,10 +929,10 @@ const VisualEdit: Page = () => {
             <span
               className="gs-pulse"
               style={{
-                display: "inline-flex",
-                alignItems: "center",
+                display: 'inline-flex',
+                alignItems: 'center',
                 gap: 8,
-                padding: "6px 14px",
+                padding: '6px 14px',
                 background: `${palette.inspect}22`,
                 border: `1px solid ${palette.inspect}`,
                 borderRadius: 8,
@@ -971,7 +945,7 @@ const VisualEdit: Page = () => {
                 style={{
                   width: 10,
                   height: 10,
-                  borderRadius: "50%",
+                  borderRadius: '50%',
                   background: palette.inspect,
                 }}
               />
@@ -983,8 +957,8 @@ const VisualEdit: Page = () => {
           <div
             style={{
               flex: 1,
-              display: "grid",
-              gridTemplateColumns: "1fr 360px",
+              display: 'grid',
+              gridTemplateColumns: '1fr 360px',
               background: palette.surface,
               minHeight: 0,
             }}
@@ -992,10 +966,10 @@ const VisualEdit: Page = () => {
             {/* LEFT — canvas with selection + SaveBar */}
             <div
               style={{
-                position: "relative",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 padding: 40,
                 borderRight: `1px solid ${palette.border}`,
                 minHeight: 0,
@@ -1003,49 +977,49 @@ const VisualEdit: Page = () => {
             >
               <div
                 style={{
-                  width: "100%",
-                  height: "100%",
+                  width: '100%',
+                  height: '100%',
                   borderRadius: 14,
                   border: `1px solid ${palette.border}`,
                   background: `radial-gradient(ellipse at 30% 30%, ${palette.accent2}22, transparent 60%), ${palette.bg}`,
                   padding: 56,
-                  position: "relative",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
                 }}
               >
                 <Eyebrow style={{ fontSize: 14 }}>cover</Eyebrow>
                 <div
                   style={{
-                    position: "relative",
+                    position: 'relative',
                     marginTop: 20,
-                    display: "inline-block",
-                    width: "fit-content",
+                    display: 'inline-block',
+                    width: 'fit-content',
                   }}
                 >
                   <div
                     className="gs-outline"
                     style={{
-                      position: "absolute",
+                      position: 'absolute',
                       inset: -10,
                       border: `2px solid ${palette.inspect}`,
                       background: palette.inspectFill,
                       borderRadius: 6,
-                      pointerEvents: "none",
-                      animationDelay: "0.6s",
+                      pointerEvents: 'none',
+                      animationDelay: '0.6s',
                     }}
                   />
                   <div
                     className="gs-morph"
                     style={{
-                      animationDelay: "1.4s",
+                      animationDelay: '1.4s',
                       fontSize: 88,
                       fontWeight: 600,
-                      letterSpacing: "-0.035em",
+                      letterSpacing: '-0.035em',
                       lineHeight: 1.02,
                       color: palette.text,
-                      position: "relative",
+                      position: 'relative',
                     }}
                   >
                     Q2 Launch
@@ -1059,50 +1033,49 @@ const VisualEdit: Page = () => {
                     maxWidth: 620,
                   }}
                 >
-                  What we're shipping, why it matters, and how we'll measure
-                  success.
+                  What we're shipping, why it matters, and how we'll measure success.
                 </div>
 
                 {/* Crosshair cursor */}
                 <div
                   className="gs-crosshair"
                   style={{
-                    position: "absolute",
+                    position: 'absolute',
                     left: 220,
                     top: 200,
                     width: 28,
                     height: 28,
-                    pointerEvents: "none",
-                    animationDelay: "0.2s",
+                    pointerEvents: 'none',
+                    animationDelay: '0.2s',
                   }}
                 >
                   <div
                     style={{
-                      position: "absolute",
+                      position: 'absolute',
                       left: 0,
-                      top: "50%",
-                      width: "100%",
+                      top: '50%',
+                      width: '100%',
                       height: 2,
                       background: palette.inspect,
                     }}
                   />
                   <div
                     style={{
-                      position: "absolute",
+                      position: 'absolute',
                       top: 0,
-                      left: "50%",
+                      left: '50%',
                       width: 2,
-                      height: "100%",
+                      height: '100%',
                       background: palette.inspect,
                     }}
                   />
                   <div
                     style={{
-                      position: "absolute",
-                      inset: "25%",
+                      position: 'absolute',
+                      inset: '25%',
                       border: `2px solid ${palette.inspect}`,
-                      borderRadius: "50%",
-                      background: "transparent",
+                      borderRadius: '50%',
+                      background: 'transparent',
                     }}
                   />
                 </div>
@@ -1111,25 +1084,25 @@ const VisualEdit: Page = () => {
                 <div
                   className="es-fadeUp"
                   style={{
-                    animationDelay: "2.0s",
-                    position: "absolute",
-                    left: "50%",
+                    animationDelay: '2.0s',
+                    position: 'absolute',
+                    left: '50%',
                     bottom: 28,
-                    transform: "translateX(-50%)",
+                    transform: 'translateX(-50%)',
                   }}
                 >
                   <div
                     style={{
-                      position: "relative",
-                      display: "inline-flex",
-                      alignItems: "center",
+                      position: 'relative',
+                      display: 'inline-flex',
+                      alignItems: 'center',
                       gap: 10,
-                      padding: "6px 6px 6px 16px",
+                      padding: '6px 6px 6px 16px',
                       borderRadius: 999,
                       background: `${palette.surfaceHi}f0`,
                       border: `1px solid ${palette.borderBright}`,
-                      boxShadow: "0 24px 48px -16px rgba(0,0,0,0.6)",
-                      backdropFilter: "blur(8px)",
+                      boxShadow: '0 24px 48px -16px rgba(0,0,0,0.6)',
+                      backdropFilter: 'blur(8px)',
                       fontFamily: font.sans,
                       fontSize: 18,
                       color: palette.text,
@@ -1139,8 +1112,8 @@ const VisualEdit: Page = () => {
                     <span
                       className="ve-saveSwap"
                       style={{
-                        display: "inline-flex",
-                        alignItems: "center",
+                        display: 'inline-flex',
+                        alignItems: 'center',
                         gap: 12,
                       }}
                     >
@@ -1150,7 +1123,7 @@ const VisualEdit: Page = () => {
                           fontFamily: font.mono,
                           fontSize: 15,
                           color: palette.muted,
-                          padding: "6px 12px",
+                          padding: '6px 12px',
                           borderRadius: 999,
                         }}
                       >
@@ -1163,7 +1136,7 @@ const VisualEdit: Page = () => {
                           fontWeight: 500,
                           color: palette.text,
                           background: palette.accent,
-                          padding: "6px 14px",
+                          padding: '6px 14px',
                           borderRadius: 999,
                         }}
                       >
@@ -1173,19 +1146,17 @@ const VisualEdit: Page = () => {
                     <span
                       className="ve-savedIn"
                       style={{
-                        position: "absolute",
+                        position: 'absolute',
                         inset: 0,
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                         gap: 8,
                         color: palette.text,
                         fontWeight: 500,
                       }}
                     >
-                      <span style={{ color: palette.mint, fontSize: 18 }}>
-                        ✓
-                      </span>
+                      <span style={{ color: palette.mint, fontSize: 18 }}>✓</span>
                       Saved
                     </span>
                   </div>
@@ -1197,27 +1168,25 @@ const VisualEdit: Page = () => {
             <div
               style={{
                 background: palette.surfaceHi,
-                display: "flex",
-                flexDirection: "column",
+                display: 'flex',
+                flexDirection: 'column',
                 minHeight: 0,
-                overflow: "hidden",
+                overflow: 'hidden',
               }}
             >
               <div
                 style={{
-                  padding: "20px 22px 14px",
+                  padding: '20px 22px 14px',
                   borderBottom: `1px solid ${palette.border}`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
                   fontFamily: font.mono,
                   fontSize: 18,
                   color: palette.muted,
                 }}
               >
-                <span
-                  style={{ color: palette.textSoft, letterSpacing: "0.02em" }}
-                >
+                <span style={{ color: palette.textSoft, letterSpacing: '0.02em' }}>
                   &lt;h1&gt; · line 58
                 </span>
                 <span style={{ color: palette.dim }}>✕</span>
@@ -1229,7 +1198,7 @@ const VisualEdit: Page = () => {
                     background: palette.surface,
                     border: `1px solid ${palette.border}`,
                     borderRadius: 8,
-                    padding: "12px 14px",
+                    padding: '12px 14px',
                     fontFamily: font.sans,
                     fontSize: 18,
                     color: palette.text,
@@ -1250,30 +1219,30 @@ const VisualEdit: Page = () => {
                       height: 6,
                       borderRadius: 3,
                       background: palette.surfaceMax,
-                      position: "relative",
+                      position: 'relative',
                     }}
                   >
                     <div
                       style={{
-                        position: "absolute",
+                        position: 'absolute',
                         left: 0,
                         top: 0,
                         bottom: 0,
-                        width: "38%",
+                        width: '38%',
                         background: palette.accent,
                         borderRadius: 3,
                       }}
                     />
                     <div
                       style={{
-                        position: "absolute",
-                        left: "38%",
-                        top: "50%",
+                        position: 'absolute',
+                        left: '38%',
+                        top: '50%',
                         width: 14,
                         height: 14,
                         marginLeft: -7,
                         marginTop: -7,
-                        borderRadius: "50%",
+                        borderRadius: '50%',
                         background: palette.text,
                         border: `2px solid ${palette.accent}`,
                       }}
@@ -1308,7 +1277,7 @@ const VisualEdit: Page = () => {
                       width: 28,
                       height: 28,
                       borderRadius: 6,
-                      background: "transparent",
+                      background: 'transparent',
                       border: `1px dashed ${palette.dim}`,
                     }}
                   />
@@ -1340,18 +1309,18 @@ const VisualEdit: Page = () => {
 // ─── Slide: Assets manager ───────────────────────────────────────────────────
 const AssetsManager: Page = () => {
   const cards: { name: string; size: string; src: AssetImport }[] = [
-    { name: "claude.svg", size: "3.4 KB", src: claudeLogo },
-    { name: "openai.svg", size: "2.1 KB", src: codexLogo },
-    { name: "gemini.svg", size: "4.0 KB", src: geminiLogo },
-    { name: "opencode.svg", size: "5.2 KB", src: opencodeLogo },
-    { name: "cloudflare.svg", size: "6.8 KB", src: cloudflareLogo },
-    { name: "zeabur.svg", size: "4.7 KB", src: zeaburLogo },
+    { name: 'claude.svg', size: '3.4 KB', src: claudeLogo },
+    { name: 'openai.svg', size: '2.1 KB', src: codexLogo },
+    { name: 'gemini.svg', size: '4.0 KB', src: geminiLogo },
+    { name: 'opencode.svg', size: '5.2 KB', src: opencodeLogo },
+    { name: 'cloudflare.svg', size: '6.8 KB', src: cloudflareLogo },
+    { name: 'zeabur.svg', size: '4.7 KB', src: zeaburLogo },
   ];
 
   const svglResults: { name: string; src: AssetImport }[] = [
-    { name: "Vercel", src: vercelLogo },
-    { name: "Cloudflare", src: cloudflareLogo },
-    { name: "Zeabur", src: zeaburLogo },
+    { name: 'Vercel', src: vercelLogo },
+    { name: 'Cloudflare', src: cloudflareLogo },
+    { name: 'Zeabur', src: zeaburLogo },
   ];
 
   return (
@@ -1388,11 +1357,11 @@ const AssetsManager: Page = () => {
       `}</style>
       <div
         style={{
-          position: "absolute",
+          position: 'absolute',
           inset: 0,
-          padding: "90px 120px 100px",
-          display: "flex",
-          flexDirection: "column",
+          padding: '90px 120px 100px',
+          display: 'flex',
+          flexDirection: 'column',
           gap: 36,
         }}
       >
@@ -1404,7 +1373,7 @@ const AssetsManager: Page = () => {
               marginBottom: 0,
               fontSize: 88,
               fontWeight: 600,
-              letterSpacing: "-0.035em",
+              letterSpacing: '-0.035em',
               lineHeight: 1.02,
             }}
           >
@@ -1418,67 +1387,61 @@ const AssetsManager: Page = () => {
               maxWidth: 1280,
             }}
           >
-            Drag files into the deck — or search{" "}
-            <span style={{ fontFamily: font.mono, color: palette.accentSoft }}>
-              svgl
-            </span>{" "}
-            for a brand logo. Rename, replace, or delete without leaving the
-            editor.
+            Drag files into the deck — or search{' '}
+            <span style={{ fontFamily: font.mono, color: palette.accentSoft }}>svgl</span> for a
+            brand logo. Rename, replace, or delete without leaving the editor.
           </p>
         </div>
 
-        <WindowShell
-          title="localhost:5173/s/q2-launch · assets"
-          style={{ flex: 1, minHeight: 0 }}
-        >
+        <WindowShell title="localhost:5173/s/q2-launch · assets" style={{ flex: 1, minHeight: 0 }}>
           <div
             style={{
               flex: 1,
               background: palette.surface,
-              display: "flex",
-              flexDirection: "column",
+              display: 'flex',
+              flexDirection: 'column',
               minHeight: 0,
-              position: "relative",
+              position: 'relative',
             }}
           >
             {/* Toolbar: Slides/Assets switcher + Upload */}
             <div
               style={{
-                padding: "20px 28px",
+                padding: '20px 28px',
                 borderBottom: `1px solid ${palette.border}`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
                 gap: 16,
               }}
             >
               <div
                 style={{
-                  display: "inline-flex",
+                  display: 'inline-flex',
                   background: palette.surfaceHi,
                   border: `1px solid ${palette.border}`,
                   borderRadius: 999,
                   padding: 4,
-                  position: "relative",
+                  position: 'relative',
                 }}
               >
                 <div
                   style={{
-                    position: "absolute",
+                    position: 'absolute',
                     top: 4,
-                    left: "calc(50% + 0px)",
-                    width: "calc(50% - 4px)",
+                    left: 'calc(50% + 0px)',
+                    width: 'calc(50% - 4px)',
                     bottom: 4,
                     background: `${palette.accent}22`,
                     border: `1px solid ${palette.accent}`,
                     borderRadius: 999,
-                    transition: "left 200ms ease",
+                    transition: 'left 200ms ease',
                   }}
                 />
                 <span
                   style={{
-                    position: "relative",
-                    padding: "8px 22px",
+                    position: 'relative',
+                    padding: '8px 22px',
                     fontFamily: font.mono,
                     fontSize: 18,
                     color: palette.muted,
@@ -1488,8 +1451,8 @@ const AssetsManager: Page = () => {
                 </span>
                 <span
                   style={{
-                    position: "relative",
-                    padding: "8px 22px",
+                    position: 'relative',
+                    padding: '8px 22px',
                     fontFamily: font.mono,
                     fontSize: 18,
                     color: palette.accentSoft,
@@ -1500,10 +1463,10 @@ const AssetsManager: Page = () => {
               </div>
               <div
                 style={{
-                  display: "inline-flex",
-                  alignItems: "center",
+                  display: 'inline-flex',
+                  alignItems: 'center',
                   gap: 10,
-                  padding: "8px 18px",
+                  padding: '8px 18px',
                   background: palette.surfaceHi,
                   border: `1px solid ${palette.borderBright}`,
                   borderRadius: 10,
@@ -1521,13 +1484,13 @@ const AssetsManager: Page = () => {
             <div
               style={{
                 flex: 1,
-                padding: "28px 32px",
-                display: "grid",
-                gridTemplateColumns: "repeat(4, 1fr)",
-                gridAutoRows: "min-content",
+                padding: '28px 32px',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gridAutoRows: 'min-content',
                 gap: 22,
                 minHeight: 0,
-                alignContent: "start",
+                alignContent: 'start',
               }}
             >
               {cards.map((c, i) => (
@@ -1554,9 +1517,9 @@ const AssetsManager: Page = () => {
             <div
               className="am-overlay"
               style={{
-                position: "absolute",
+                position: 'absolute',
                 inset: 12,
-                pointerEvents: "none",
+                pointerEvents: 'none',
                 borderRadius: 14,
                 background: `${palette.bg}26`,
               }}
@@ -1564,24 +1527,24 @@ const AssetsManager: Page = () => {
             <div
               className="am-overlayPill"
               style={{
-                position: "absolute",
-                left: "50%",
+                position: 'absolute',
+                left: '50%',
                 bottom: 36,
-                transform: "translateX(-50%)",
-                pointerEvents: "none",
+                transform: 'translateX(-50%)',
+                pointerEvents: 'none',
               }}
             >
               <div
                 style={{
-                  display: "inline-flex",
-                  alignItems: "center",
+                  display: 'inline-flex',
+                  alignItems: 'center',
                   gap: 10,
-                  padding: "10px 20px",
+                  padding: '10px 20px',
                   borderRadius: 999,
                   background: `${palette.surfaceHi}f0`,
                   border: `1px solid ${palette.borderBright}`,
-                  boxShadow: "0 18px 36px -12px rgba(0,0,0,0.5)",
-                  backdropFilter: "blur(8px)",
+                  boxShadow: '0 18px 36px -12px rgba(0,0,0,0.5)',
+                  backdropFilter: 'blur(8px)',
                   fontFamily: font.sans,
                   fontSize: 18,
                   color: palette.textSoft,
@@ -1596,7 +1559,7 @@ const AssetsManager: Page = () => {
             <div
               className="gs-popover"
               style={{
-                position: "absolute",
+                position: 'absolute',
                 right: 36,
                 bottom: 36,
                 width: 420,
@@ -1604,15 +1567,15 @@ const AssetsManager: Page = () => {
                 border: `1px solid ${palette.borderBright}`,
                 borderRadius: 14,
                 padding: 18,
-                boxShadow: "0 40px 80px -24px rgba(0,0,0,0.7)",
-                animationDelay: "3.4s",
+                boxShadow: '0 40px 80px -24px rgba(0,0,0,0.7)',
+                animationDelay: '3.4s',
               }}
             >
               <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
                   fontFamily: font.mono,
                   fontSize: 15,
                   color: palette.muted,
@@ -1624,13 +1587,13 @@ const AssetsManager: Page = () => {
               </div>
               <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
+                  display: 'flex',
+                  alignItems: 'center',
                   gap: 10,
                   background: palette.surface,
                   border: `1px solid ${palette.border}`,
                   borderRadius: 8,
-                  padding: "10px 12px",
+                  padding: '10px 12px',
                   fontFamily: font.mono,
                   fontSize: 17,
                   color: palette.text,
@@ -1643,8 +1606,8 @@ const AssetsManager: Page = () => {
               </div>
               <div
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(3, 1fr)",
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
                   gap: 10,
                 }}
               >
@@ -1655,19 +1618,19 @@ const AssetsManager: Page = () => {
                       background: palette.surface,
                       border: `1px solid ${i === 0 ? palette.accent : palette.border}`,
                       borderRadius: 10,
-                      padding: "14px 8px 10px",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
+                      padding: '14px 8px 10px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
                       gap: 8,
                     }}
                   >
                     <div
                       style={{
                         height: 40,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
                     >
                       <img
@@ -1675,8 +1638,8 @@ const AssetsManager: Page = () => {
                         alt={r.name}
                         style={{
                           height: 32,
-                          width: "auto",
-                          objectFit: "contain",
+                          width: 'auto',
+                          objectFit: 'contain',
                         }}
                       />
                     </div>
@@ -1701,48 +1664,32 @@ const AssetsManager: Page = () => {
 };
 
 // ─── Inspector panel mock helpers ────────────────────────────────────────────
-const PanelSection = ({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) => (
-  <div style={{ padding: "16px 22px" }}>
+const PanelSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <div style={{ padding: '16px 22px' }}>
     <div
       style={{
         marginBottom: 12,
         fontFamily: font.mono,
         fontSize: 12,
-        letterSpacing: "0.08em",
-        textTransform: "uppercase",
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
         color: palette.muted,
       }}
     >
       {title}
     </div>
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {children}
-    </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{children}</div>
   </div>
 );
 
-const PanelDivider = () => (
-  <div style={{ height: 1, background: palette.border }} />
-);
+const PanelDivider = () => <div style={{ height: 1, background: palette.border }} />;
 
-const PanelRow = ({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) => (
+const PanelRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div
     style={{
-      display: "grid",
-      gridTemplateColumns: "80px 1fr",
-      alignItems: "center",
+      display: 'grid',
+      gridTemplateColumns: '80px 1fr',
+      alignItems: 'center',
       gap: 12,
     }}
   >
@@ -1755,26 +1702,18 @@ const PanelRow = ({
     >
       {label}
     </span>
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      {children}
-    </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{children}</div>
   </div>
 );
 
-const PanelInput = ({
-  value,
-  dim = false,
-}: {
-  value: string;
-  dim?: boolean;
-}) => (
+const PanelInput = ({ value, dim = false }: { value: string; dim?: boolean }) => (
   <div
     style={{
       flex: 1,
       background: palette.surface,
       border: `1px solid ${palette.border}`,
       borderRadius: 6,
-      padding: "6px 10px",
+      padding: '6px 10px',
       fontFamily: font.mono,
       fontSize: 14,
       color: dim ? palette.dim : palette.text,
@@ -1789,13 +1728,13 @@ const PanelSelect = ({ value }: { value: string }) => (
   <div
     style={{
       flex: 1,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
       background: palette.surface,
       border: `1px solid ${palette.border}`,
       borderRadius: 6,
-      padding: "6px 10px",
+      padding: '6px 10px',
       fontFamily: font.sans,
       fontSize: 14,
       color: palette.text,
@@ -1830,31 +1769,27 @@ const AssetCardMock = ({
       borderRadius: 12,
       border: `1px solid ${accent ? palette.accent : palette.border}`,
       background: palette.surfaceHi,
-      overflow: "hidden",
-      display: "flex",
-      flexDirection: "column",
-      boxShadow: accent ? `0 0 0 3px ${palette.accent}22` : "none",
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      boxShadow: accent ? `0 0 0 3px ${palette.accent}22` : 'none',
     }}
   >
     <div
       style={{
         height: 130,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         background:
-          "repeating-conic-gradient(#1a1c2155 0deg 90deg, transparent 90deg 180deg) 0 0 / 16px 16px",
+          'repeating-conic-gradient(#1a1c2155 0deg 90deg, transparent 90deg 180deg) 0 0 / 16px 16px',
       }}
     >
-      <img
-        src={url(src)}
-        alt=""
-        style={{ height: 64, width: "auto", objectFit: "contain" }}
-      />
+      <img src={url(src)} alt="" style={{ height: 64, width: 'auto', objectFit: 'contain' }} />
     </div>
     <div
       style={{
-        padding: "10px 14px",
+        padding: '10px 14px',
         borderTop: `1px solid ${palette.border}`,
         background: palette.surfaceHi,
       }}
@@ -1864,10 +1799,10 @@ const AssetCardMock = ({
           fontFamily: font.sans,
           fontSize: 16,
           color: palette.text,
-          letterSpacing: "-0.005em",
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
+          letterSpacing: '-0.005em',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
         }}
       >
         {name}
@@ -1893,11 +1828,11 @@ const Inspect: Page = () => (
     <GridBg />
     <div
       style={{
-        position: "absolute",
+        position: 'absolute',
         inset: 0,
-        padding: "90px 120px 100px",
-        display: "flex",
-        flexDirection: "column",
+        padding: '90px 120px 100px',
+        display: 'flex',
+        flexDirection: 'column',
         gap: 36,
       }}
     >
@@ -1909,7 +1844,7 @@ const Inspect: Page = () => (
             marginBottom: 0,
             fontSize: 88,
             fontWeight: 600,
-            letterSpacing: "-0.035em",
+            letterSpacing: '-0.035em',
             lineHeight: 1.02,
           }}
         >
@@ -1922,10 +1857,8 @@ const Inspect: Page = () => (
             color: palette.textSoft,
           }}
         >
-          Toggle inspect, click a block, leave a note. The tool drops a{" "}
-          <span style={{ fontFamily: font.mono, color: palette.accentSoft }}>
-            @slide-comment
-          </span>{" "}
+          Toggle inspect, click a block, leave a note. The tool drops a{' '}
+          <span style={{ fontFamily: font.mono, color: palette.accentSoft }}>@slide-comment</span>{' '}
           marker in your source.
         </p>
       </div>
@@ -1936,10 +1869,10 @@ const Inspect: Page = () => (
           <span
             className="gs-pulse"
             style={{
-              display: "inline-flex",
-              alignItems: "center",
+              display: 'inline-flex',
+              alignItems: 'center',
               gap: 8,
-              padding: "6px 14px",
+              padding: '6px 14px',
               background: `${palette.inspect}22`,
               border: `1px solid ${palette.inspect}`,
               borderRadius: 8,
@@ -1952,7 +1885,7 @@ const Inspect: Page = () => (
               style={{
                 width: 10,
                 height: 10,
-                borderRadius: "50%",
+                borderRadius: '50%',
                 background: palette.inspect,
               }}
             />
@@ -1964,9 +1897,9 @@ const Inspect: Page = () => (
         <div
           style={{
             flex: 1,
-            display: "flex",
+            display: 'flex',
             background: palette.surface,
-            position: "relative",
+            position: 'relative',
             minHeight: 0,
           }}
         >
@@ -1974,11 +1907,11 @@ const Inspect: Page = () => (
           <div
             style={{
               width: 200,
-              padding: "20px 14px",
+              padding: '20px 14px',
               borderRight: `1px solid ${palette.border}`,
               background: palette.surfaceHi,
-              display: "flex",
-              flexDirection: "column",
+              display: 'flex',
+              flexDirection: 'column',
               gap: 10,
             }}
           >
@@ -1999,56 +1932,56 @@ const Inspect: Page = () => (
           <div
             style={{
               flex: 1,
-              position: "relative",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               padding: 60,
             }}
           >
             <div
               style={{
-                width: "100%",
-                height: "100%",
+                width: '100%',
+                height: '100%',
                 borderRadius: 14,
                 border: `1px solid ${palette.border}`,
                 background: `radial-gradient(ellipse at 30% 30%, ${palette.accent2}22, transparent 60%), ${palette.bg}`,
                 padding: 56,
-                position: "relative",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
               }}
             >
               <Eyebrow style={{ fontSize: 14 }}>cover</Eyebrow>
               <div
                 style={{
-                  position: "relative",
+                  position: 'relative',
                   marginTop: 20,
-                  display: "inline-block",
-                  width: "fit-content",
+                  display: 'inline-block',
+                  width: 'fit-content',
                 }}
               >
                 {/* Inspect outline */}
                 <div
                   className="gs-outline"
                   style={{
-                    position: "absolute",
+                    position: 'absolute',
                     inset: -10,
                     border: `2px solid ${palette.inspect}`,
                     background: palette.inspectFill,
                     borderRadius: 6,
-                    pointerEvents: "none",
+                    pointerEvents: 'none',
                   }}
                 />
                 <div
                   style={{
                     fontSize: 72,
                     fontWeight: 600,
-                    letterSpacing: "-0.035em",
+                    letterSpacing: '-0.035em',
                     lineHeight: 1.02,
                     color: palette.text,
-                    position: "relative",
+                    position: 'relative',
                   }}
                 >
                   Q2 Launch
@@ -2062,49 +1995,48 @@ const Inspect: Page = () => (
                   maxWidth: 620,
                 }}
               >
-                What we're shipping, why it matters, and how we'll measure
-                success.
+                What we're shipping, why it matters, and how we'll measure success.
               </div>
 
               {/* Crosshair cursor (approaches target) */}
               <div
                 className="gs-crosshair"
                 style={{
-                  position: "absolute",
+                  position: 'absolute',
                   left: 240,
                   top: 220,
                   width: 28,
                   height: 28,
-                  pointerEvents: "none",
+                  pointerEvents: 'none',
                 }}
               >
                 <div
                   style={{
-                    position: "absolute",
+                    position: 'absolute',
                     left: 0,
-                    top: "50%",
-                    width: "100%",
+                    top: '50%',
+                    width: '100%',
                     height: 2,
                     background: palette.inspect,
                   }}
                 />
                 <div
                   style={{
-                    position: "absolute",
+                    position: 'absolute',
                     top: 0,
-                    left: "50%",
+                    left: '50%',
                     width: 2,
-                    height: "100%",
+                    height: '100%',
                     background: palette.inspect,
                   }}
                 />
                 <div
                   style={{
-                    position: "absolute",
-                    inset: "25%",
+                    position: 'absolute',
+                    inset: '25%',
                     border: `2px solid ${palette.inspect}`,
-                    borderRadius: "50%",
-                    background: "transparent",
+                    borderRadius: '50%',
+                    background: 'transparent',
                   }}
                 />
               </div>
@@ -2113,7 +2045,7 @@ const Inspect: Page = () => (
               <div
                 className="gs-popover"
                 style={{
-                  position: "absolute",
+                  position: 'absolute',
                   left: 320,
                   top: 240,
                   width: 380,
@@ -2121,15 +2053,15 @@ const Inspect: Page = () => (
                   border: `1px solid ${palette.borderBright}`,
                   borderRadius: 12,
                   padding: 18,
-                  boxShadow: "0 30px 60px -20px rgba(0,0,0,0.6)",
-                  transformOrigin: "top left",
+                  boxShadow: '0 30px 60px -20px rgba(0,0,0,0.6)',
+                  transformOrigin: 'top left',
                 }}
               >
                 <div
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                     fontFamily: font.mono,
                     fontSize: 15,
                     color: palette.muted,
@@ -2144,14 +2076,14 @@ const Inspect: Page = () => (
                     background: palette.surface,
                     border: `1px solid ${palette.border}`,
                     borderRadius: 8,
-                    padding: "14px 14px",
+                    padding: '14px 14px',
                     fontSize: 20,
                     color: palette.text,
                     minHeight: 78,
                     lineHeight: 1.4,
                   }}
                 >
-                  <span className="gs-type" style={{ maxWidth: "100%" }}>
+                  <span className="gs-type" style={{ maxWidth: '100%' }}>
                     use the accent color on this title
                   </span>
                   <span className="es-caret" style={{ color: palette.text }} />
@@ -2162,7 +2094,7 @@ const Inspect: Page = () => (
                     fontFamily: font.mono,
                     fontSize: 13,
                     color: palette.muted,
-                    textAlign: "right",
+                    textAlign: 'right',
                   }}
                 >
                   ⌘ / Ctrl + Enter to submit
@@ -2183,11 +2115,11 @@ const Apply: Page = () => (
     <GridBg />
     <div
       style={{
-        position: "absolute",
+        position: 'absolute',
         inset: 0,
-        padding: "90px 120px 100px",
-        display: "flex",
-        flexDirection: "column",
+        padding: '90px 120px 100px',
+        display: 'flex',
+        flexDirection: 'column',
         gap: 36,
       }}
     >
@@ -2199,7 +2131,7 @@ const Apply: Page = () => (
             marginBottom: 0,
             fontSize: 88,
             fontWeight: 600,
-            letterSpacing: "-0.035em",
+            letterSpacing: '-0.035em',
             lineHeight: 1.02,
           }}
         >
@@ -2210,8 +2142,8 @@ const Apply: Page = () => (
       <div
         style={{
           flex: 1,
-          display: "grid",
-          gridTemplateColumns: "1.1fr 1fr",
+          display: 'grid',
+          gridTemplateColumns: '1.1fr 1fr',
           gap: 40,
           minHeight: 0,
         }}
@@ -2222,12 +2154,12 @@ const Apply: Page = () => (
             style={{
               flex: 1,
               background: palette.surface,
-              padding: "28px 36px",
-              display: "flex",
-              flexDirection: "column",
+              padding: '28px 36px',
+              display: 'flex',
+              flexDirection: 'column',
               gap: 6,
               minHeight: 0,
-              overflow: "hidden",
+              overflow: 'hidden',
             }}
           >
             <AgentLine speaker="user" delay={0.2}>
@@ -2241,17 +2173,17 @@ const Apply: Page = () => (
             <div
               className="gs-stream"
               style={{
-                animationDelay: "1.8s",
+                animationDelay: '1.8s',
                 marginTop: 8,
                 background: palette.bg,
                 border: `1px solid ${palette.border}`,
                 borderRadius: 10,
-                padding: "18px 22px",
+                padding: '18px 22px',
                 fontFamily: font.mono,
                 fontSize: 18,
                 lineHeight: 1.55,
                 color: palette.textSoft,
-                overflow: "hidden",
+                overflow: 'hidden',
               }}
             >
               <div style={{ color: palette.muted }}>
@@ -2262,40 +2194,33 @@ const Apply: Page = () => (
                 className="gs-strike"
                 style={{
                   color: palette.muted,
-                  animationDelay: "2.8s",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
+                  animationDelay: '2.8s',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
                   paddingRight: 8,
                 }}
               >
                 <span style={{ color: palette.dim, marginRight: 14 }}>58</span>
-                {"{/* "}
-                <span style={{ color: palette.accentSoft }}>
-                  @slide-comment
-                </span>{" "}
-                id=
+                {'{/* '}
+                <span style={{ color: palette.accentSoft }}>@slide-comment</span> id=
                 <span style={{ color: palette.mint }}>"c-a1b2c3d4"</span> ts=
-                <span style={{ color: palette.mint }}>
-                  "2026-04-20T10:15:00.000Z"
-                </span>{" "}
-                text=
-                <span style={{ color: palette.mint }}>"eyJub3RlIjoi…"</span>{" "}
-                {"*/}"}
+                <span style={{ color: palette.mint }}>"2026-04-20T10:15:00.000Z"</span> text=
+                <span style={{ color: palette.mint }}>"eyJub3RlIjoi…"</span> {'*/}'}
               </div>
               <div>
                 <span style={{ color: palette.dim, marginRight: 14 }}>59</span>
-                &lt;h1 style={"{{"} color:{" "}
+                &lt;h1 style={'{{'} color:{' '}
                 <span
                   className="gs-morph"
                   style={{
-                    animationDelay: "3.2s",
+                    animationDelay: '3.2s',
                     color: palette.text,
                   }}
                 >
                   '{palette.accent}'
                 </span>
-                {" }}"}&gt;Q2 Launch&lt;/h1&gt;
+                {' }}'}&gt;Q2 Launch&lt;/h1&gt;
               </div>
               <div style={{ color: palette.muted }}>
                 <span style={{ color: palette.dim, marginRight: 14 }}>60</span>
@@ -2305,10 +2230,7 @@ const Apply: Page = () => (
 
             <AgentLine speaker="tool" delay={3.8}>
               <div style={{ color: palette.muted }}>
-                edit{" "}
-                <span style={{ color: palette.text }}>
-                  slides/q2-launch/index.tsx
-                </span>{" "}
+                edit <span style={{ color: palette.text }}>slides/q2-launch/index.tsx</span>{' '}
                 <span style={{ color: palette.mint }}>✓ 1 comment applied</span>
               </div>
             </AgentLine>
@@ -2322,7 +2244,7 @@ const Apply: Page = () => (
             style={{
               flex: 1,
               background: palette.surface,
-              display: "flex",
+              display: 'flex',
               padding: 40,
               minHeight: 0,
             }}
@@ -2334,20 +2256,20 @@ const Apply: Page = () => (
                 border: `1px solid ${palette.border}`,
                 background: `radial-gradient(ellipse at 30% 30%, ${palette.accent2}22, transparent 60%), ${palette.bg}`,
                 padding: 56,
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
               }}
             >
               <Eyebrow style={{ fontSize: 14 }}>cover</Eyebrow>
               <div
                 className="gs-morph"
                 style={{
-                  animationDelay: "3.2s",
+                  animationDelay: '3.2s',
                   marginTop: 20,
                   fontSize: 84,
                   fontWeight: 600,
-                  letterSpacing: "-0.035em",
+                  letterSpacing: '-0.035em',
                   lineHeight: 1.02,
                   color: palette.text,
                 }}
@@ -2362,32 +2284,31 @@ const Apply: Page = () => (
                   maxWidth: 620,
                 }}
               >
-                What we're shipping, why it matters, and how we'll measure
-                success.
+                What we're shipping, why it matters, and how we'll measure success.
               </div>
               <div
                 className="gs-stream"
                 style={{
-                  animationDelay: "3.6s",
+                  animationDelay: '3.6s',
                   marginTop: 40,
-                  display: "inline-flex",
-                  alignItems: "center",
+                  display: 'inline-flex',
+                  alignItems: 'center',
                   gap: 10,
-                  padding: "6px 12px",
+                  padding: '6px 12px',
                   borderRadius: 999,
                   background: `${palette.mint}18`,
                   border: `1px solid ${palette.mint}55`,
                   color: palette.mint,
                   fontFamily: font.mono,
                   fontSize: 16,
-                  width: "fit-content",
+                  width: 'fit-content',
                 }}
               >
                 <span
                   style={{
                     width: 8,
                     height: 8,
-                    borderRadius: "50%",
+                    borderRadius: '50%',
                     background: palette.mint,
                   }}
                 />
@@ -2404,11 +2325,11 @@ const Apply: Page = () => (
 // ─── Slide 6: Recap ──────────────────────────────────────────────────────────
 const Recap: Page = () => {
   const steps = [
-    { n: "01", title: "init", caption: "npx @open-slide/cli init" },
-    { n: "02", title: "prompt", caption: "create-slide" },
-    { n: "03", title: "edit", caption: "click → save" },
-    { n: "04", title: "assets", caption: "drag · drop · svgl" },
-    { n: "05", title: "comment", caption: "apply-comments" },
+    { n: '01', title: 'init', caption: 'npx @open-slide/cli init' },
+    { n: '02', title: 'prompt', caption: 'create-slide' },
+    { n: '03', title: 'edit', caption: 'click → save' },
+    { n: '04', title: 'assets', caption: 'drag · drop · svgl' },
+    { n: '05', title: 'comment', caption: 'apply-comments' },
   ];
   return (
     <div style={fill}>
@@ -2416,22 +2337,22 @@ const Recap: Page = () => {
       <GridBg />
       <div
         style={{
-          position: "absolute",
+          position: 'absolute',
           inset: 0,
-          padding: "140px 140px",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
+          padding: '140px 140px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
         }}
       >
         <Eyebrow className="es-fadeUp">recap</Eyebrow>
 
-        <div className="es-fadeUp" style={{ animationDelay: "0.15s" }}>
+        <div className="es-fadeUp" style={{ animationDelay: '0.15s' }}>
           <h2
             style={{
               fontSize: 160,
               fontWeight: 600,
-              letterSpacing: "-0.045em",
+              letterSpacing: '-0.045em',
               lineHeight: 0.98,
               margin: 0,
             }}
@@ -2441,9 +2362,9 @@ const Recap: Page = () => {
             <span
               style={{
                 background: `linear-gradient(90deg, ${palette.accentSoft}, ${palette.accent})`,
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                color: "transparent",
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent',
               }}
             >
               whole loop.
@@ -2453,8 +2374,8 @@ const Recap: Page = () => {
 
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(5, 1fr)",
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5, 1fr)',
             gap: 20,
           }}
         >
@@ -2464,12 +2385,12 @@ const Recap: Page = () => {
               className="es-fadeUp"
               style={{
                 animationDelay: `${0.35 + i * 0.1}s`,
-                padding: "24px 24px",
+                padding: '24px 24px',
                 border: `1px solid ${palette.border}`,
                 borderRadius: 14,
                 background: palette.surface,
-                display: "flex",
-                flexDirection: "column",
+                display: 'flex',
+                flexDirection: 'column',
                 gap: 14,
               }}
             >
@@ -2478,7 +2399,7 @@ const Recap: Page = () => {
                   fontFamily: font.mono,
                   fontSize: 20,
                   color: palette.accentSoft,
-                  letterSpacing: "0.12em",
+                  letterSpacing: '0.12em',
                 }}
               >
                 {s.n}
@@ -2487,7 +2408,7 @@ const Recap: Page = () => {
                 style={{
                   fontSize: 40,
                   fontWeight: 600,
-                  letterSpacing: "-0.03em",
+                  letterSpacing: '-0.03em',
                 }}
               >
                 {s.title}
@@ -2508,21 +2429,18 @@ const Recap: Page = () => {
         <div
           className="es-fadeUp"
           style={{
-            animationDelay: "0.75s",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            animationDelay: '0.75s',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
             fontFamily: font.mono,
             fontSize: 22,
             color: palette.muted,
           }}
         >
           <span>
-            edit{" "}
-            <span style={{ color: palette.text }}>
-              slides/&lt;your-slide&gt;/index.tsx
-            </span>{" "}
-            — HMR does the rest
+            edit <span style={{ color: palette.text }}>slides/&lt;your-slide&gt;/index.tsx</span> —
+            HMR does the rest
           </span>
           <span>open-slide</span>
         </div>
@@ -2534,10 +2452,10 @@ const Recap: Page = () => {
 // ─── Slide: Agent agnostic ───────────────────────────────────────────────────
 const AgentAgnostic: Page = () => {
   const agents = [
-    { name: "Claude Code", src: claudeLogo },
-    { name: "Codex", src: codexLogo },
-    { name: "Gemini CLI", src: geminiLogo },
-    { name: "opencode", src: opencodeLogo },
+    { name: 'Claude Code', src: claudeLogo },
+    { name: 'Codex', src: codexLogo },
+    { name: 'Gemini CLI', src: geminiLogo },
+    { name: 'opencode', src: opencodeLogo },
   ];
   return (
     <div style={fill}>
@@ -2545,11 +2463,11 @@ const AgentAgnostic: Page = () => {
       <GridBg />
       <div
         style={{
-          position: "absolute",
+          position: 'absolute',
           inset: 0,
-          padding: "110px 140px",
-          display: "flex",
-          flexDirection: "column",
+          padding: '110px 140px',
+          display: 'flex',
+          flexDirection: 'column',
           gap: 56,
         }}
       >
@@ -2561,17 +2479,17 @@ const AgentAgnostic: Page = () => {
               marginBottom: 0,
               fontSize: 120,
               fontWeight: 600,
-              letterSpacing: "-0.04em",
+              letterSpacing: '-0.04em',
               lineHeight: 1.0,
             }}
           >
-            Bring your{" "}
+            Bring your{' '}
             <span
               style={{
                 background: `linear-gradient(90deg, ${palette.accentSoft}, ${palette.accent})`,
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                color: "transparent",
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent',
               }}
             >
               favorite agent.
@@ -2584,18 +2502,18 @@ const AgentAgnostic: Page = () => {
               fontSize: 32,
               lineHeight: 1.4,
               color: palette.textSoft,
-              letterSpacing: "-0.01em",
+              letterSpacing: '-0.01em',
             }}
           >
-            open-slide speaks plain React and a file-convention protocol. Any
-            agent can author and edit slides — no lock-in, no bespoke SDK.
+            open-slide speaks plain React and a file-convention protocol. Any agent can author and
+            edit slides — no lock-in, no bespoke SDK.
           </p>
         </div>
 
         <div
           style={{
             flex: 1,
-            display: "flex",
+            display: 'flex',
             gap: 28,
             minHeight: 0,
           }}
@@ -2614,11 +2532,11 @@ const AgentAgnostic: Page = () => {
         <div
           className="es-fadeUp"
           style={{
-            animationDelay: "0.8s",
+            animationDelay: '0.8s',
             fontFamily: font.mono,
             fontSize: 22,
             color: palette.muted,
-            textAlign: "center",
+            textAlign: 'center',
           }}
         >
           …and anything else that can write files.
@@ -2631,29 +2549,27 @@ const AgentAgnostic: Page = () => {
 // ─── Slide: Free layout ──────────────────────────────────────────────────────
 const FreeLayout: Page = () => {
   const mockSlide = (
-    kind: "hero" | "split" | "bleed" | "grid" | "quote" | "bullets",
+    kind: 'hero' | 'split' | 'bleed' | 'grid' | 'quote' | 'bullets',
   ): React.ReactNode => {
     const base: React.CSSProperties = {
-      width: "100%",
-      height: "100%",
+      width: '100%',
+      height: '100%',
       borderRadius: 12,
       border: `1px solid ${palette.border}`,
       background: `radial-gradient(ellipse at 30% 30%, ${palette.accent2}1f, transparent 60%), ${palette.bg}`,
       padding: 26,
-      display: "flex",
-      overflow: "hidden",
-      position: "relative",
+      display: 'flex',
+      overflow: 'hidden',
+      position: 'relative',
     };
-    if (kind === "hero") {
+    if (kind === 'hero') {
       return (
-        <div
-          style={{ ...base, flexDirection: "column", justifyContent: "center" }}
-        >
+        <div style={{ ...base, flexDirection: 'column', justifyContent: 'center' }}>
           <div
             style={{
               fontSize: 44,
               fontWeight: 600,
-              letterSpacing: "-0.03em",
+              letterSpacing: '-0.03em',
               lineHeight: 1,
               color: palette.text,
             }}
@@ -2665,23 +2581,23 @@ const FreeLayout: Page = () => {
         </div>
       );
     }
-    if (kind === "split") {
+    if (kind === 'split') {
       return (
         <div style={{ ...base, padding: 0 }}>
           <div
             style={{
               flex: 1,
               padding: 22,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
               gap: 8,
             }}
           >
             <div
               style={{
                 height: 8,
-                width: "70%",
+                width: '70%',
                 background: palette.textSoft,
                 opacity: 0.7,
                 borderRadius: 2,
@@ -2690,7 +2606,7 @@ const FreeLayout: Page = () => {
             <div
               style={{
                 height: 6,
-                width: "55%",
+                width: '55%',
                 background: palette.muted,
                 borderRadius: 2,
               }}
@@ -2698,7 +2614,7 @@ const FreeLayout: Page = () => {
             <div
               style={{
                 height: 6,
-                width: "60%",
+                width: '60%',
                 background: palette.muted,
                 borderRadius: 2,
               }}
@@ -2706,7 +2622,7 @@ const FreeLayout: Page = () => {
             <div
               style={{
                 height: 6,
-                width: "40%",
+                width: '40%',
                 background: palette.muted,
                 borderRadius: 2,
               }}
@@ -2721,7 +2637,7 @@ const FreeLayout: Page = () => {
         </div>
       );
     }
-    if (kind === "bleed") {
+    if (kind === 'bleed') {
       return (
         <div
           style={{
@@ -2732,19 +2648,19 @@ const FreeLayout: Page = () => {
         >
           <div
             style={{
-              position: "absolute",
+              position: 'absolute',
               left: 22,
               bottom: 22,
               right: 22,
-              display: "flex",
-              flexDirection: "column",
+              display: 'flex',
+              flexDirection: 'column',
               gap: 6,
             }}
           >
             <div
               style={{
                 height: 7,
-                width: "45%",
+                width: '45%',
                 background: palette.text,
                 opacity: 0.95,
                 borderRadius: 2,
@@ -2753,7 +2669,7 @@ const FreeLayout: Page = () => {
             <div
               style={{
                 height: 5,
-                width: "65%",
+                width: '65%',
                 background: palette.textSoft,
                 opacity: 0.75,
                 borderRadius: 2,
@@ -2763,15 +2679,15 @@ const FreeLayout: Page = () => {
         </div>
       );
     }
-    if (kind === "grid") {
+    if (kind === 'grid') {
       return (
         <div
           style={{
             ...base,
             padding: 22,
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gridTemplateRows: "repeat(3, 1fr)",
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gridTemplateRows: 'repeat(3, 1fr)',
             gap: 8,
           }}
         >
@@ -2780,8 +2696,7 @@ const FreeLayout: Page = () => {
               key={i}
               style={{
                 borderRadius: 4,
-                background:
-                  i % 4 === 0 ? `${palette.accent}44` : palette.surfaceMax,
+                background: i % 4 === 0 ? `${palette.accent}44` : palette.surfaceMax,
                 border: `1px solid ${palette.border}`,
               }}
             />
@@ -2789,15 +2704,15 @@ const FreeLayout: Page = () => {
         </div>
       );
     }
-    if (kind === "quote") {
+    if (kind === 'quote') {
       return (
         <div
           style={{
             ...base,
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            textAlign: "center",
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            textAlign: 'center',
             padding: 30,
           }}
         >
@@ -2816,7 +2731,7 @@ const FreeLayout: Page = () => {
             style={{
               fontSize: 22,
               fontWeight: 500,
-              letterSpacing: "-0.02em",
+              letterSpacing: '-0.02em',
               lineHeight: 1.2,
               color: palette.textSoft,
             }}
@@ -2832,37 +2747,39 @@ const FreeLayout: Page = () => {
       <div
         style={{
           ...base,
-          flexDirection: "column",
-          justifyContent: "center",
+          flexDirection: 'column',
+          justifyContent: 'center',
           gap: 12,
           paddingLeft: 32,
         }}
       >
-        {[
-          "— prompt. write. ship.",
-          "— no templates.",
-          "— no themes.",
-          "— zero friction.",
-        ].map((t, i) => (
-          <div
-            key={i}
-            style={{
-              fontFamily: font.mono,
-              fontSize: 18,
-              color: i === 0 ? palette.accentSoft : palette.textSoft,
-              letterSpacing: "-0.01em",
-            }}
-          >
-            {t}
-          </div>
-        ))}
+        {['— prompt. write. ship.', '— no templates.', '— no themes.', '— zero friction.'].map(
+          (t, i) => (
+            <div
+              key={i}
+              style={{
+                fontFamily: font.mono,
+                fontSize: 18,
+                color: i === 0 ? palette.accentSoft : palette.textSoft,
+                letterSpacing: '-0.01em',
+              }}
+            >
+              {t}
+            </div>
+          ),
+        )}
       </div>
     );
   };
 
-  const kinds: Array<
-    "hero" | "split" | "bleed" | "grid" | "quote" | "bullets"
-  > = ["hero", "split", "bleed", "grid", "quote", "bullets"];
+  const kinds: Array<'hero' | 'split' | 'bleed' | 'grid' | 'quote' | 'bullets'> = [
+    'hero',
+    'split',
+    'bleed',
+    'grid',
+    'quote',
+    'bullets',
+  ];
 
   return (
     <div style={fill}>
@@ -2870,11 +2787,11 @@ const FreeLayout: Page = () => {
       <GridBg />
       <div
         style={{
-          position: "absolute",
+          position: 'absolute',
           inset: 0,
-          padding: "110px 140px",
-          display: "flex",
-          flexDirection: "column",
+          padding: '110px 140px',
+          display: 'flex',
+          flexDirection: 'column',
           gap: 48,
         }}
       >
@@ -2886,17 +2803,17 @@ const FreeLayout: Page = () => {
               marginBottom: 0,
               fontSize: 120,
               fontWeight: 600,
-              letterSpacing: "-0.04em",
+              letterSpacing: '-0.04em',
               lineHeight: 1.0,
             }}
           >
-            No templates.{" "}
+            No templates.{' '}
             <span
               style={{
                 background: `linear-gradient(90deg, ${palette.accentSoft}, ${palette.accent})`,
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                color: "transparent",
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent',
               }}
             >
               No opinions.
@@ -2909,31 +2826,26 @@ const FreeLayout: Page = () => {
               fontSize: 32,
               lineHeight: 1.4,
               color: palette.textSoft,
-              letterSpacing: "-0.01em",
+              letterSpacing: '-0.01em',
             }}
           >
-            Zero layouts. Zero slide types. Zero "themes". Each page is just a
-            React component on a 1920×1080 canvas — the agent decides
-            everything.
+            Zero layouts. Zero slide types. Zero "themes". Each page is just a React component on a
+            1920×1080 canvas — the agent decides everything.
           </p>
         </div>
 
         <div
           style={{
             flex: 1,
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gridTemplateRows: "repeat(2, 1fr)",
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gridTemplateRows: 'repeat(2, 1fr)',
             gap: 28,
             minHeight: 0,
           }}
         >
           {kinds.map((k, i) => (
-            <div
-              key={k}
-              className="gs-thumbIn"
-              style={{ animationDelay: `${0.25 + i * 0.09}s` }}
-            >
+            <div key={k} className="gs-thumbIn" style={{ animationDelay: `${0.25 + i * 0.09}s` }}>
               {mockSlide(k)}
             </div>
           ))}
@@ -2947,26 +2859,26 @@ const FreeLayout: Page = () => {
 const GitTracked: Page = () => {
   const commits = [
     {
-      hash: "a1b2c3d",
-      head: "(HEAD -> main)",
-      msg: "refine cover typography",
+      hash: 'a1b2c3d',
+      head: '(HEAD -> main)',
+      msg: 'refine cover typography',
     },
     {
-      hash: "9f8e7d6",
-      head: "",
-      msg: "revise Q2 metrics from finance review",
+      hash: '9f8e7d6',
+      head: '',
+      msg: 'revise Q2 metrics from finance review',
     },
     {
-      hash: "6a5b4c3",
-      head: "",
-      msg: "initial draft of Q2 launch deck",
+      hash: '6a5b4c3',
+      head: '',
+      msg: 'initial draft of Q2 launch deck',
     },
   ];
 
   const properties = [
-    { label: "plain .tsx files", caption: "no proprietary format" },
-    { label: "diffable in any tool", caption: "review like any other PR" },
-    { label: "branch · merge · revert", caption: "the tools you already know" },
+    { label: 'plain .tsx files', caption: 'no proprietary format' },
+    { label: 'diffable in any tool', caption: 'review like any other PR' },
+    { label: 'branch · merge · revert', caption: 'the tools you already know' },
   ];
 
   return (
@@ -2975,11 +2887,11 @@ const GitTracked: Page = () => {
       <GridBg />
       <div
         style={{
-          position: "absolute",
+          position: 'absolute',
           inset: 0,
-          padding: "90px 120px 100px",
-          display: "flex",
-          flexDirection: "column",
+          padding: '90px 120px 100px',
+          display: 'flex',
+          flexDirection: 'column',
           gap: 40,
         }}
       >
@@ -2991,17 +2903,17 @@ const GitTracked: Page = () => {
               marginBottom: 0,
               fontSize: 104,
               fontWeight: 600,
-              letterSpacing: "-0.04em",
+              letterSpacing: '-0.04em',
               lineHeight: 1.0,
             }}
           >
-            Your slides are{" "}
+            Your slides are{' '}
             <span
               style={{
                 background: `linear-gradient(90deg, ${palette.accentSoft}, ${palette.accent})`,
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                color: "transparent",
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent',
               }}
             >
               yours. Forever.
@@ -3013,19 +2925,19 @@ const GitTracked: Page = () => {
               fontSize: 28,
               color: palette.textSoft,
               maxWidth: 1280,
-              letterSpacing: "-0.01em",
+              letterSpacing: '-0.01em',
             }}
           >
-            Every slide is a file in your repo. No proprietary database. No SaaS
-            lock-in. No export-to-PDF-and-pray.
+            Every slide is a file in your repo. No proprietary database. No SaaS lock-in. No
+            export-to-PDF-and-pray.
           </p>
         </div>
 
         <div
           style={{
             flex: 1,
-            display: "grid",
-            gridTemplateColumns: "1.25fr 1fr",
+            display: 'grid',
+            gridTemplateColumns: '1.25fr 1fr',
             gap: 36,
             minHeight: 0,
           }}
@@ -3035,17 +2947,16 @@ const GitTracked: Page = () => {
               style={{
                 flex: 1,
                 background: palette.surface,
-                padding: "32px 40px",
+                padding: '32px 40px',
                 fontFamily: font.mono,
                 fontSize: 22,
                 lineHeight: 1.65,
                 color: palette.textSoft,
-                overflow: "hidden",
+                overflow: 'hidden',
               }}
             >
               <div style={{ color: palette.muted, marginBottom: 14 }}>
-                <span style={{ color: palette.mint }}>$</span> git log --oneline
-                slides/q2-launch/
+                <span style={{ color: palette.mint }}>$</span> git log --oneline slides/q2-launch/
               </div>
               {commits.map((c, i) => (
                 <div
@@ -3053,25 +2964,23 @@ const GitTracked: Page = () => {
                   className="gs-stream"
                   style={{
                     animationDelay: `${0.4 + i * 0.25}s`,
-                    display: "flex",
+                    display: 'flex',
                     gap: 14,
-                    padding: "6px 0",
+                    padding: '6px 0',
                   }}
                 >
                   <span style={{ color: palette.amber }}>*</span>
                   <span style={{ color: palette.accentSoft }}>{c.hash}</span>
-                  {c.head && (
-                    <span style={{ color: palette.mint }}>{c.head}</span>
-                  )}
+                  {c.head && <span style={{ color: palette.mint }}>{c.head}</span>}
                   <span style={{ color: palette.text }}>{c.msg}</span>
                 </div>
               ))}
               <div
                 className="gs-stream"
                 style={{
-                  animationDelay: "1.25s",
+                  animationDelay: '1.25s',
                   marginTop: 22,
-                  display: "flex",
+                  display: 'flex',
                   gap: 14,
                   color: palette.muted,
                 }}
@@ -3084,8 +2993,8 @@ const GitTracked: Page = () => {
 
           <div
             style={{
-              display: "flex",
-              flexDirection: "column",
+              display: 'flex',
+              flexDirection: 'column',
               gap: 20,
               minHeight: 0,
             }}
@@ -3097,20 +3006,20 @@ const GitTracked: Page = () => {
                 style={{
                   animationDelay: `${0.5 + i * 0.12}s`,
                   flex: 1,
-                  padding: "28px 32px",
+                  padding: '28px 32px',
                   borderRadius: 14,
                   border: `1px solid ${palette.border}`,
                   background: palette.surface,
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
                   gap: 10,
                 }}
               >
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: 14,
                   }}
                 >
@@ -3118,7 +3027,7 @@ const GitTracked: Page = () => {
                     style={{
                       width: 10,
                       height: 10,
-                      borderRadius: "50%",
+                      borderRadius: '50%',
                       background: palette.accent,
                       boxShadow: `0 0 16px ${palette.accent}`,
                     }}
@@ -3128,7 +3037,7 @@ const GitTracked: Page = () => {
                       fontFamily: font.mono,
                       fontSize: 28,
                       color: palette.text,
-                      letterSpacing: "-0.01em",
+                      letterSpacing: '-0.01em',
                     }}
                   >
                     {p.label}
@@ -3155,9 +3064,9 @@ const GitTracked: Page = () => {
 // ─── Slide: Deploy anywhere ──────────────────────────────────────────────────
 const DeployAnywhere: Page = () => {
   const hosts = [
-    { name: "Vercel", src: vercelLogo },
-    { name: "Cloudflare", src: cloudflareLogo },
-    { name: "Zeabur", src: zeaburLogo },
+    { name: 'Vercel', src: vercelLogo },
+    { name: 'Cloudflare', src: cloudflareLogo },
+    { name: 'Zeabur', src: zeaburLogo },
   ];
   return (
     <div style={fill}>
@@ -3165,11 +3074,11 @@ const DeployAnywhere: Page = () => {
       <GridBg />
       <div
         style={{
-          position: "absolute",
+          position: 'absolute',
           inset: 0,
-          padding: "110px 140px",
-          display: "flex",
-          flexDirection: "column",
+          padding: '110px 140px',
+          display: 'flex',
+          flexDirection: 'column',
           gap: 48,
         }}
       >
@@ -3181,17 +3090,17 @@ const DeployAnywhere: Page = () => {
               marginBottom: 0,
               fontSize: 104,
               fontWeight: 600,
-              letterSpacing: "-0.04em",
+              letterSpacing: '-0.04em',
               lineHeight: 1.0,
             }}
           >
-            Ship it{" "}
+            Ship it{' '}
             <span
               style={{
                 background: `linear-gradient(90deg, ${palette.accentSoft}, ${palette.accent})`,
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                color: "transparent",
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent',
               }}
             >
               anywhere.
@@ -3204,18 +3113,18 @@ const DeployAnywhere: Page = () => {
               fontSize: 32,
               lineHeight: 1.4,
               color: palette.textSoft,
-              letterSpacing: "-0.01em",
+              letterSpacing: '-0.01em',
             }}
           >
-            open-slide builds to plain static assets. Drop them on Vercel,
-            Cloudflare, Zeabur — or any server that serves HTML.
+            open-slide builds to plain static assets. Drop them on Vercel, Cloudflare, Zeabur — or
+            any server that serves HTML.
           </p>
         </div>
 
         <div
           style={{
             flex: 1,
-            display: "flex",
+            display: 'flex',
             gap: 32,
             minHeight: 0,
           }}
@@ -3234,18 +3143,18 @@ const DeployAnywhere: Page = () => {
         <div
           className="es-fadeUp"
           style={{
-            animationDelay: "0.75s",
-            alignSelf: "center",
-            padding: "18px 28px",
+            animationDelay: '0.75s',
+            alignSelf: 'center',
+            padding: '18px 28px',
             borderRadius: 12,
             border: `1px solid ${palette.border}`,
             background: palette.surface,
             fontFamily: font.mono,
             fontSize: 26,
             color: palette.textSoft,
-            display: "flex",
+            display: 'flex',
             gap: 16,
-            alignItems: "center",
+            alignItems: 'center',
           }}
         >
           <span style={{ color: palette.mint }}>$</span>
@@ -3259,8 +3168,8 @@ const DeployAnywhere: Page = () => {
 
 // ─── Slide export ────────────────────────────────────────────────────────────
 export const meta: SlideMeta = {
-  title: "Getting started with open-slide",
-  theme: "dark",
+  title: 'Getting started with open-slide',
+  theme: 'dark',
 };
 
 export default [

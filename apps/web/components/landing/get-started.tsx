@@ -1,4 +1,4 @@
-import { CopyCommand } from "./copy-command";
+import { CopyCommand } from './copy-command';
 
 export function GetStarted() {
   return (
@@ -8,9 +8,7 @@ export function GetStarted() {
         <div>
           <div className="flex flex-col gap-7 sm:gap-10">
             <h2 className="text-[32px] sm:text-[44px] lg:text-[72px] leading-[1.05] sm:leading-[1.02] tracking-[-0.03em]">
-              <span className="font-[family-name:var(--font-sans)] font-medium">
-                Author a deck
-              </span>
+              <span className="font-[family-name:var(--font-sans)] font-medium">Author a deck</span>
               <br />
               <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-accent)]">
                 in the next minute.
@@ -18,7 +16,7 @@ export function GetStarted() {
             </h2>
 
             <p className="max-w-[640px] text-[18px] leading-[1.55] text-[color:var(--color-text-soft)]">
-              One command, zero config.{" "}
+              One command, zero config.{' '}
               <span className="text-[color:var(--color-muted)]">
                 Your agent takes it from here.
               </span>

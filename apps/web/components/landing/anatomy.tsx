@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
 type Variant = {
   word: string;
@@ -11,22 +11,22 @@ type Variant = {
 
 const variants: Variant[] = [
   {
-    word: "deck",
-    accent: "#d56b48",
-    label: "01",
-    subtitle: "A React slide, rendered live.",
+    word: 'deck',
+    accent: '#d56b48',
+    label: '01',
+    subtitle: 'A React slide, rendered live.',
   },
   {
-    word: "pitch",
-    accent: "#ffb547",
-    label: "02",
-    subtitle: "No DSL. No templates. Just code.",
+    word: 'pitch',
+    accent: '#ffb547',
+    label: '02',
+    subtitle: 'No DSL. No templates. Just code.',
   },
   {
-    word: "story",
-    accent: "#68cc9a",
-    label: "03",
-    subtitle: "Versioned, reviewable, yours.",
+    word: 'story',
+    accent: '#68cc9a',
+    label: '03',
+    subtitle: 'Versioned, reviewable, yours.',
   },
 ];
 
@@ -35,21 +35,21 @@ const CYCLE_MS = 3200;
 function buildCode({ accent, word, subtitle }: Variant): string[] {
   return [
     "import type { Page } from '@open-slide/core';",
-    "",
+    '',
     `const ACCENT = '${accent}';`,
     `const WORD = '${word}';`,
     `const SUBTITLE = '${subtitle}';`,
-    "",
-    "const Cover: Page = () => (",
+    '',
+    'const Cover: Page = () => (',
     "  <div style={{ background: '#08090a', color: '#f7f8f8' }}>",
     "    <h1 style={{ fontSize: 188, letterSpacing: '-0.04em' }}>",
-    "      Hello, <em style={{ color: ACCENT }}>{WORD}</em>.",
-    "    </h1>",
-    "    <p>{SUBTITLE}</p>",
-    "  </div>",
-    ");",
-    "",
-    "export default [Cover] satisfies Page[];",
+    '      Hello, <em style={{ color: ACCENT }}>{WORD}</em>.',
+    '    </h1>',
+    '    <p>{SUBTITLE}</p>',
+    '  </div>',
+    ');',
+    '',
+    'export default [Cover] satisfies Page[];',
   ];
 }
 
@@ -58,10 +58,7 @@ const CHANGING_LINES = new Set([2, 3, 4]);
 export function Anatomy() {
   const [i, setI] = useState(0);
   useEffect(() => {
-    const id = setInterval(
-      () => setI((v) => (v + 1) % variants.length),
-      CYCLE_MS,
-    );
+    const id = setInterval(() => setI((v) => (v + 1) % variants.length), CYCLE_MS);
     return () => clearInterval(id);
   }, []);
 
@@ -93,9 +90,7 @@ export function Anatomy() {
                   />
                   <span>slides/hello/index.tsx</span>
                 </div>
-                <span className="tracking-[0.14em] uppercase">
-                  tsx · {lines.length} lines
-                </span>
+                <span className="tracking-[0.14em] uppercase">tsx · {lines.length} lines</span>
               </div>
               <pre className="p-4 sm:p-6 text-[12px] sm:text-[13.5px] leading-[1.65] sm:leading-[1.75] overflow-x-auto font-[family-name:var(--font-mono)]">
                 <code>
@@ -104,10 +99,10 @@ export function Anatomy() {
                     return (
                       <div
                         key={changing ? `${idx}-${i}` : idx}
-                        className={`-mx-2 px-2 rounded-[3px] ${changing ? "code-pulse" : ""}`}
+                        className={`-mx-2 px-2 rounded-[3px] ${changing ? 'code-pulse' : ''}`}
                         // highlight output is escaped + whitelisted spans — safe markup
                         dangerouslySetInnerHTML={{
-                          __html: highlight(line) || "&nbsp;",
+                          __html: highlight(line) || '&nbsp;',
                         }}
                       />
                     );
@@ -133,7 +128,7 @@ export function Anatomy() {
 
               <div
                 className="relative rounded-[6px] overflow-hidden border border-[color:var(--color-rule)]"
-                style={{ aspectRatio: "16 / 9", containerType: "inline-size" }}
+                style={{ aspectRatio: '16 / 9', containerType: 'inline-size' }}
               >
                 <SlidePreview variant={v} index={i} />
               </div>
@@ -151,9 +146,9 @@ function SlidePreview({ variant, index }: { variant: Variant; index: number }) {
     <div
       className="absolute inset-0"
       style={{
-        background: "#08090a",
-        color: "#f7f8f8",
-        fontFamily: "var(--font-sans), system-ui, sans-serif",
+        background: '#08090a',
+        color: '#f7f8f8',
+        fontFamily: 'var(--font-sans), system-ui, sans-serif',
       }}
     >
       {/* corner glow */}
@@ -171,8 +166,8 @@ function SlidePreview({ variant, index }: { variant: Variant; index: number }) {
         className="absolute inset-0 pointer-events-none opacity-[0.06]"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(255,255,255,0.7) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.7) 1px, transparent 1px)",
-          backgroundSize: "8cqw 8cqw",
+            'linear-gradient(rgba(255,255,255,0.7) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.7) 1px, transparent 1px)',
+          backgroundSize: '8cqw 8cqw',
         }}
       />
 
@@ -180,17 +175,17 @@ function SlidePreview({ variant, index }: { variant: Variant; index: number }) {
       <div
         className="absolute top-[4cqw] left-[4.5cqw] right-[4.5cqw] flex items-center justify-between"
         style={{
-          fontFamily: "var(--font-mono), ui-monospace, monospace",
-          fontSize: "1.6cqw",
-          letterSpacing: "0.22em",
-          textTransform: "uppercase",
-          color: "rgba(247,248,248,0.55)",
+          fontFamily: 'var(--font-mono), ui-monospace, monospace',
+          fontSize: '1.6cqw',
+          letterSpacing: '0.22em',
+          textTransform: 'uppercase',
+          color: 'rgba(247,248,248,0.55)',
         }}
       >
         <span className="flex items-center gap-[0.9cqw]">
           <span
             className="inline-block rounded-full transition-colors duration-500"
-            style={{ width: "0.9cqw", height: "0.9cqw", background: accent }}
+            style={{ width: '0.9cqw', height: '0.9cqw', background: accent }}
           />
           <span>open-slide · {label}</span>
         </span>
@@ -202,21 +197,21 @@ function SlidePreview({ variant, index }: { variant: Variant; index: number }) {
         <h1
           className="text-center"
           style={{
-            fontFamily: "var(--font-display), serif",
-            fontStyle: "italic",
-            fontSize: "10cqw",
+            fontFamily: 'var(--font-display), serif',
+            fontStyle: 'italic',
+            fontSize: '10cqw',
             lineHeight: 0.98,
-            letterSpacing: "-0.04em",
+            letterSpacing: '-0.04em',
           }}
         >
-          Hello,{" "}
+          Hello,{' '}
           <span
             key={`word-${index}`}
             className="inline-block"
             style={{
               color: accent,
-              transition: "color 600ms ease",
-              animation: "textReveal 650ms cubic-bezier(0.2,0.7,0.2,1) both",
+              transition: 'color 600ms ease',
+              animation: 'textReveal 650ms cubic-bezier(0.2,0.7,0.2,1) both',
             }}
           >
             {word}
@@ -227,22 +222,21 @@ function SlidePreview({ variant, index }: { variant: Variant; index: number }) {
           aria-hidden
           className="transition-colors duration-500"
           style={{
-            display: "block",
-            height: "1px",
-            width: "8cqw",
+            display: 'block',
+            height: '1px',
+            width: '8cqw',
             background: accent,
           }}
         />
         <p
           key={`sub-${index}`}
           style={{
-            fontFamily: "var(--font-mono), ui-monospace, monospace",
-            fontSize: "1.6cqw",
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: "rgba(247,248,248,0.62)",
-            animation:
-              "textReveal 650ms 120ms cubic-bezier(0.2,0.7,0.2,1) both",
+            fontFamily: 'var(--font-mono), ui-monospace, monospace',
+            fontSize: '1.6cqw',
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color: 'rgba(247,248,248,0.62)',
+            animation: 'textReveal 650ms 120ms cubic-bezier(0.2,0.7,0.2,1) both',
           }}
         >
           {subtitle}
@@ -253,11 +247,11 @@ function SlidePreview({ variant, index }: { variant: Variant; index: number }) {
       <div
         className="absolute bottom-[4cqw] left-[4.5cqw] right-[4.5cqw] flex items-center justify-between"
         style={{
-          fontFamily: "var(--font-mono), ui-monospace, monospace",
-          fontSize: "1.4cqw",
-          letterSpacing: "0.22em",
-          textTransform: "uppercase",
-          color: "rgba(247,248,248,0.38)",
+          fontFamily: 'var(--font-mono), ui-monospace, monospace',
+          fontSize: '1.4cqw',
+          letterSpacing: '0.22em',
+          textTransform: 'uppercase',
+          color: 'rgba(247,248,248,0.38)',
         }}
       >
         <span>hello</span>
@@ -270,29 +264,29 @@ function SlidePreview({ variant, index }: { variant: Variant; index: number }) {
 // minimal syntax highlighter — tokenizes keywords, strings, comments, JSX tags.
 function highlight(src: string): string {
   const escape = (s: string) =>
-    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
   const palette = {
-    kw: "var(--color-accent-soft)",
-    str: "var(--color-warm)",
-    num: "var(--color-mint)",
-    cmt: "var(--color-muted)",
-    tag: "var(--color-accent)",
-    fn: "var(--color-text)",
-    punct: "var(--color-dim)",
+    kw: 'var(--color-accent-soft)',
+    str: 'var(--color-warm)',
+    num: 'var(--color-mint)',
+    cmt: 'var(--color-muted)',
+    tag: 'var(--color-accent)',
+    fn: 'var(--color-text)',
+    punct: 'var(--color-dim)',
   };
   const wrap = (cls: keyof typeof palette, t: string) =>
     `<span style="color:${palette[cls]}">${t}</span>`;
 
   const keywords = new Set([
-    "import",
-    "from",
-    "type",
-    "const",
-    "return",
-    "export",
-    "default",
-    "satisfies",
+    'import',
+    'from',
+    'type',
+    'const',
+    'return',
+    'export',
+    'default',
+    'satisfies',
   ]);
 
   const tokens: string[] = [];
@@ -300,19 +294,19 @@ function highlight(src: string): string {
   while (i < src.length) {
     const c = src[i];
 
-    if (c === "'" || c === '"' || c === "`") {
+    if (c === "'" || c === '"' || c === '`') {
       const quote = c;
       let j = i + 1;
       while (j < src.length && src[j] !== quote) j++;
-      tokens.push(wrap("str", escape(src.slice(i, j + 1))));
+      tokens.push(wrap('str', escape(src.slice(i, j + 1))));
       i = j + 1;
       continue;
     }
 
-    if (c === "/" && src[i + 1] === "/") {
+    if (c === '/' && src[i + 1] === '/') {
       let j = i;
-      while (j < src.length && src[j] !== "\n") j++;
-      tokens.push(wrap("cmt", escape(src.slice(i, j))));
+      while (j < src.length && src[j] !== '\n') j++;
+      tokens.push(wrap('cmt', escape(src.slice(i, j))));
       i = j;
       continue;
     }
@@ -321,9 +315,9 @@ function highlight(src: string): string {
       let j = i;
       while (j < src.length && /[A-Za-z0-9_$]/.test(src[j])) j++;
       const word = src.slice(i, j);
-      if (keywords.has(word)) tokens.push(wrap("kw", escape(word)));
-      else if (/^[A-Z]/.test(word)) tokens.push(wrap("tag", escape(word)));
-      else tokens.push(wrap("fn", escape(word)));
+      if (keywords.has(word)) tokens.push(wrap('kw', escape(word)));
+      else if (/^[A-Z]/.test(word)) tokens.push(wrap('tag', escape(word)));
+      else tokens.push(wrap('fn', escape(word)));
       i = j;
       continue;
     }
@@ -331,13 +325,13 @@ function highlight(src: string): string {
     if (/[0-9]/.test(c)) {
       let j = i;
       while (j < src.length && /[0-9.]/.test(src[j])) j++;
-      tokens.push(wrap("num", escape(src.slice(i, j))));
+      tokens.push(wrap('num', escape(src.slice(i, j))));
       i = j;
       continue;
     }
 
     if (/[{}()[\];:,.<>=+\-*/!?|&]/.test(c)) {
-      tokens.push(wrap("punct", escape(c)));
+      tokens.push(wrap('punct', escape(c)));
       i++;
       continue;
     }
@@ -346,5 +340,5 @@ function highlight(src: string): string {
     i++;
   }
 
-  return tokens.join("");
+  return tokens.join('');
 }

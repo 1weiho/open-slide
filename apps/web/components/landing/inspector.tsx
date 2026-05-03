@@ -1,12 +1,9 @@
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
 export function Inspector() {
   return (
     <section id="inspector" className="relative">
-      <div
-        aria-hidden
-        className="absolute inset-x-0 top-0 h-px bg-[color:var(--color-rule)]"
-      />
+      <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-[color:var(--color-rule)]" />
       <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-16 sm:py-24 lg:py-32">
         <div className="flex items-end justify-between flex-wrap gap-y-4 mb-10 sm:mb-16">
           <h2 className="text-[32px] sm:text-[44px] lg:text-[72px] leading-[1.05] sm:leading-[1.02] tracking-[-0.03em] max-w-[920px]">
@@ -30,16 +27,15 @@ export function Inspector() {
             title="Drop a comment. The agent rewrites the file."
             body={
               <>
-                Click any block, leave a note. The inspector pins it as a{" "}
+                Click any block, leave a note. The inspector pins it as a{' '}
                 <span className="font-[family-name:var(--font-mono)] text-[color:var(--color-accent-soft)]">
                   @slide-comment
-                </span>{" "}
-                marker in your source. Run{" "}
+                </span>{' '}
+                marker in your source. Run{' '}
                 <span className="font-[family-name:var(--font-mono)] text-[color:var(--color-accent-soft)]">
                   /apply-comments
-                </span>{" "}
-                — the agent edits exactly what you flagged and clears the
-                marker.
+                </span>{' '}
+                — the agent edits exactly what you flagged and clears the marker.
               </>
             }
             visual={<AgentApplyVisual />}
@@ -99,7 +95,7 @@ function AgentApplyVisual() {
     <div className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden">
       <div
         className="relative aspect-[16/9] overflow-hidden"
-        style={{ containerType: "inline-size" }}
+        style={{ containerType: 'inline-size' }}
       >
         {/* canvas */}
         <div className="absolute inset-0 px-[7cqw] py-[5cqw] flex flex-col justify-center gap-[1.4cqw]">
@@ -113,14 +109,14 @@ function AgentApplyVisual() {
             />
             <span
               className="relative font-[family-name:var(--font-sans)] font-semibold tracking-[-0.035em] leading-[1.0]"
-              style={{ fontSize: "7.6cqw" }}
+              style={{ fontSize: '7.6cqw' }}
             >
               Q2 Launch
             </span>
           </div>
           <span
             className="font-[family-name:var(--font-sans)] text-[color:var(--color-text-soft)] max-w-[55%]"
-            style={{ fontSize: "1.7cqw", lineHeight: 1.4 }}
+            style={{ fontSize: '1.7cqw', lineHeight: 1.4 }}
           >
             What we're shipping, why it matters, and how we'll measure success.
           </span>
@@ -129,20 +125,20 @@ function AgentApplyVisual() {
         {/* CommentWidget — bottom-right popup + bubble button */}
         <div
           className="absolute right-[2cqw] bottom-[2cqw] flex flex-col items-end gap-[1cqw]"
-          style={{ width: "38%" }}
+          style={{ width: '38%' }}
         >
           {/* popup */}
           <div
             className="w-full rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.35)] overflow-hidden font-[family-name:var(--font-sans)]"
-            style={{ fontSize: "1.2cqw" }}
+            style={{ fontSize: '1.2cqw' }}
           >
             <div
               className="flex items-center justify-between border-b border-[color:var(--color-rule)]"
-              style={{ padding: "1cqw 1.2cqw" }}
+              style={{ padding: '1cqw 1.2cqw' }}
             >
               <span
                 className="font-semibold text-[color:var(--color-text)]"
-                style={{ fontSize: "1.15cqw" }}
+                style={{ fontSize: '1.15cqw' }}
               >
                 1 comment
               </span>
@@ -150,18 +146,18 @@ function AgentApplyVisual() {
             </div>
             <div
               className="border-b border-[color:var(--color-rule)] flex items-start gap-[0.8cqw]"
-              style={{ padding: "1cqw 1.2cqw" }}
+              style={{ padding: '1cqw 1.2cqw' }}
             >
               <div className="min-w-0 flex-1">
                 <div
                   className="font-[family-name:var(--font-mono)] text-[color:var(--color-muted)]"
-                  style={{ fontSize: "0.95cqw" }}
+                  style={{ fontSize: '0.95cqw' }}
                 >
                   line 58
                 </div>
                 <div
                   className="text-[color:var(--color-text)]"
-                  style={{ fontSize: "1.2cqw", marginTop: "0.2cqw" }}
+                  style={{ fontSize: '1.2cqw', marginTop: '0.2cqw' }}
                 >
                   use the accent color on this title
                 </div>
@@ -170,15 +166,15 @@ function AgentApplyVisual() {
             </div>
             <div
               className="text-[color:var(--color-muted)]"
-              style={{ padding: "0.9cqw 1.2cqw", fontSize: "1cqw" }}
+              style={{ padding: '0.9cqw 1.2cqw', fontSize: '1cqw' }}
             >
-              Run{" "}
+              Run{' '}
               <span
                 className="rounded-[3px] bg-[color:var(--color-panel)] font-[family-name:var(--font-mono)] text-[color:var(--color-text)]"
-                style={{ padding: "0.15cqw 0.4cqw" }}
+                style={{ padding: '0.15cqw 0.4cqw' }}
               >
                 /apply-comments
-              </span>{" "}
+              </span>{' '}
               in your agent to apply these.
             </div>
           </div>
@@ -186,7 +182,7 @@ function AgentApplyVisual() {
           {/* bubble button */}
           <span
             className="inline-flex items-center gap-[0.6cqw] rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] font-[family-name:var(--font-sans)] font-medium text-[color:var(--color-text)]"
-            style={{ padding: "0.7cqw 1.1cqw", fontSize: "1.15cqw" }}
+            style={{ padding: '0.7cqw 1.1cqw', fontSize: '1.15cqw' }}
           >
             <CommentGlyph />
             <span>1</span>
@@ -207,7 +203,7 @@ function CommentGlyph() {
       strokeWidth={1.8}
       strokeLinecap="round"
       strokeLinejoin="round"
-      style={{ width: "1.4cqw", height: "1.4cqw" }}
+      style={{ width: '1.4cqw', height: '1.4cqw' }}
     >
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     </svg>
@@ -220,7 +216,7 @@ function VisualEditorVisual() {
     <div className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden">
       <div
         className="relative aspect-[16/9] grid grid-cols-[1fr_42%]"
-        style={{ containerType: "inline-size" }}
+        style={{ containerType: 'inline-size' }}
       >
         {/* canvas */}
         <div className="relative overflow-hidden">
@@ -235,59 +231,56 @@ function VisualEditorVisual() {
               />
               <span
                 className="relative font-[family-name:var(--font-sans)] font-semibold tracking-[-0.035em] leading-[1.0] text-[color:var(--color-accent)]"
-                style={{ fontSize: "6.4cqw" }}
+                style={{ fontSize: '6.4cqw' }}
               >
                 Q2 Launch
               </span>
             </div>
             <span
               className="font-[family-name:var(--font-sans)] text-[color:var(--color-text-soft)] max-w-[80%]"
-              style={{ fontSize: "1.5cqw", lineHeight: 1.4 }}
+              style={{ fontSize: '1.5cqw', lineHeight: 1.4 }}
             >
               What we're shipping, why it matters.
             </span>
           </div>
 
           {/* SaveBar — matches core/SaveCard layout */}
-          <div
-            className="absolute left-1/2 -translate-x-1/2"
-            style={{ bottom: "3cqw" }}
-          >
+          <div className="absolute left-1/2 -translate-x-1/2" style={{ bottom: '3cqw' }}>
             <div
               className="inline-flex items-center gap-[0.4cqw] rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)]/95 backdrop-blur-md shadow-[0_8px_24px_-12px_rgba(0,0,0,0.35)]"
-              style={{ padding: "0.35cqw 0.35cqw 0.35cqw 0.5cqw" }}
+              style={{ padding: '0.35cqw 0.35cqw 0.35cqw 0.5cqw' }}
             >
               <SaveBarIconBtn glyph={<UndoGlyph />} />
               <SaveBarIconBtn glyph={<RedoGlyph />} dim />
               <span
                 aria-hidden
                 className="bg-[color:var(--color-rule)]"
-                style={{ width: "1px", height: "1.6cqw", margin: "0 0.2cqw" }}
+                style={{ width: '1px', height: '1.6cqw', margin: '0 0.2cqw' }}
               />
               <span
                 className="inline-flex items-center gap-[0.5cqw] font-[family-name:var(--font-sans)] font-medium text-[color:var(--color-text)]"
-                style={{ padding: "0 0.7cqw", fontSize: "1.25cqw" }}
+                style={{ padding: '0 0.7cqw', fontSize: '1.25cqw' }}
               >
                 <span
                   className="rounded-full bg-[color:var(--color-accent)]"
                   style={{
-                    width: "0.7cqw",
-                    height: "0.7cqw",
+                    width: '0.7cqw',
+                    height: '0.7cqw',
                     boxShadow:
-                      "0 0 0 0.3cqw color-mix(in oklab, var(--color-accent) 18%, transparent)",
+                      '0 0 0 0.3cqw color-mix(in oklab, var(--color-accent) 18%, transparent)',
                   }}
                 />
                 <span>1 unsaved change</span>
               </span>
               <span
                 className="font-[family-name:var(--font-sans)] text-[color:var(--color-muted)]"
-                style={{ fontSize: "1.2cqw", padding: "0.4cqw 0.8cqw" }}
+                style={{ fontSize: '1.2cqw', padding: '0.4cqw 0.8cqw' }}
               >
                 Discard
               </span>
               <span
                 className="inline-flex items-center gap-[0.4cqw] font-[family-name:var(--font-sans)] font-medium text-[color:var(--color-brand-foreground,white)] rounded-[4px] bg-[color:var(--color-accent)]"
-                style={{ fontSize: "1.2cqw", padding: "0.45cqw 0.9cqw" }}
+                style={{ fontSize: '1.2cqw', padding: '0.45cqw 0.9cqw' }}
               >
                 <SaveGlyph />
                 Save
@@ -301,23 +294,23 @@ function VisualEditorVisual() {
           {/* header */}
           <div
             className="border-b border-[color:var(--color-rule)] flex items-center justify-between"
-            style={{ padding: "1.4cqw 1.6cqw" }}
+            style={{ padding: '1.4cqw 1.6cqw' }}
           >
             <div className="flex items-center gap-[0.6cqw]">
               <span
                 className="font-[family-name:var(--font-sans)] font-semibold tracking-tight text-[color:var(--color-text)]"
-                style={{ fontSize: "1.25cqw" }}
+                style={{ fontSize: '1.25cqw' }}
               >
                 Inspect
               </span>
               <span
                 aria-hidden
                 className="bg-[color:var(--color-rule)]"
-                style={{ width: "1px", height: "1.4cqw" }}
+                style={{ width: '1px', height: '1.4cqw' }}
               />
               <span
                 className="rounded-[3px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] font-[family-name:var(--font-mono)] text-[color:var(--color-text)]"
-                style={{ padding: "0.1cqw 0.5cqw", fontSize: "1cqw" }}
+                style={{ padding: '0.1cqw 0.5cqw', fontSize: '1cqw' }}
               >
                 &lt;h1&gt;
               </span>
@@ -336,14 +329,14 @@ function VisualEditorVisual() {
               <div className="flex-1 h-[0.5cqw] rounded-full bg-[color:var(--color-panel)] relative">
                 <div
                   className="absolute left-0 top-0 bottom-0 rounded-full bg-[color:var(--color-accent)]"
-                  style={{ width: "38%" }}
+                  style={{ width: '38%' }}
                 />
                 <div
                   className="absolute top-1/2 -translate-y-1/2 rounded-full bg-[color:var(--color-text)] border border-[color:var(--color-accent)]"
                   style={{
-                    width: "1.1cqw",
-                    height: "1.1cqw",
-                    left: "calc(38% - 0.55cqw)",
+                    width: '1.1cqw',
+                    height: '1.1cqw',
+                    left: 'calc(38% - 0.55cqw)',
                   }}
                 />
               </div>
@@ -374,18 +367,12 @@ function VisualEditorVisual() {
   );
 }
 
-function PanelSection({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
+function PanelSection({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-[0.9cqw]" style={{ padding: "1.2cqw 1.6cqw" }}>
+    <div className="flex flex-col gap-[0.9cqw]" style={{ padding: '1.2cqw 1.6cqw' }}>
       <span
         className="font-[family-name:var(--font-sans)] font-medium text-[color:var(--color-text-soft)]"
-        style={{ fontSize: "1cqw" }}
+        style={{ fontSize: '1cqw' }}
       >
         {label}
       </span>
@@ -403,7 +390,7 @@ function PanelRow({ label, children }: { label: string; children: ReactNode }) {
     <div className="grid grid-cols-[34%_1fr] items-center gap-[0.7cqw]">
       <span
         className="font-[family-name:var(--font-sans)] text-[color:var(--color-muted)]"
-        style={{ fontSize: "1.1cqw" }}
+        style={{ fontSize: '1.1cqw' }}
       >
         {label}
       </span>
@@ -424,9 +411,9 @@ function PanelInput({
   return (
     <span
       className={`flex-1 rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] text-[color:var(--color-text)] ${
-        mono ? "font-[family-name:var(--font-mono)]" : "font-[family-name:var(--font-sans)]"
-      } ${uppercase ? "uppercase" : ""}`}
-      style={{ fontSize: "1.05cqw", padding: "0.4cqw 0.6cqw" }}
+        mono ? 'font-[family-name:var(--font-mono)]' : 'font-[family-name:var(--font-sans)]'
+      } ${uppercase ? 'uppercase' : ''}`}
+      style={{ fontSize: '1.05cqw', padding: '0.4cqw 0.6cqw' }}
     >
       {value}
     </span>
@@ -437,34 +424,25 @@ function PanelSelect({ value }: { value: string }) {
   return (
     <span
       className="flex-1 inline-flex items-center justify-between rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] font-[family-name:var(--font-sans)] text-[color:var(--color-text)]"
-      style={{ fontSize: "1.05cqw", padding: "0.4cqw 0.6cqw" }}
+      style={{ fontSize: '1.05cqw', padding: '0.4cqw 0.6cqw' }}
     >
       <span>{value}</span>
-      <span
-        className="text-[color:var(--color-muted)]"
-        style={{ fontSize: "1cqw" }}
-      >
+      <span className="text-[color:var(--color-muted)]" style={{ fontSize: '1cqw' }}>
         ▾
       </span>
     </span>
   );
 }
 
-function PanelToggle({
-  glyph,
-  pressed = false,
-}: {
-  glyph: ReactNode;
-  pressed?: boolean;
-}) {
+function PanelToggle({ glyph, pressed = false }: { glyph: ReactNode; pressed?: boolean }) {
   return (
     <span
       className={`inline-flex items-center justify-center rounded-[4px] border ${
         pressed
-          ? "border-[color:var(--color-rule)] bg-[color:var(--color-panel)] text-[color:var(--color-text)]"
-          : "border-[color:var(--color-rule)] bg-transparent text-[color:var(--color-muted)]"
+          ? 'border-[color:var(--color-rule)] bg-[color:var(--color-panel)] text-[color:var(--color-text)]'
+          : 'border-[color:var(--color-rule)] bg-transparent text-[color:var(--color-muted)]'
       }`}
-      style={{ width: "2.4cqw", height: "2.4cqw" }}
+      style={{ width: '2.4cqw', height: '2.4cqw' }}
     >
       {glyph}
     </span>
@@ -475,13 +453,13 @@ function PanelSwatch({ color }: { color: string }) {
   return (
     <span
       className="inline-flex items-center justify-center rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]"
-      style={{ width: "2.4cqw", height: "2.4cqw" }}
+      style={{ width: '2.4cqw', height: '2.4cqw' }}
     >
       <span
         className="rounded-[2px]"
         style={{
-          width: "1.5cqw",
-          height: "1.5cqw",
+          width: '1.5cqw',
+          height: '1.5cqw',
           backgroundColor: color,
         }}
       />
@@ -494,9 +472,9 @@ function PanelTextarea({ value }: { value: string }) {
     <span
       className="block rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] font-[family-name:var(--font-sans)] text-[color:var(--color-text)]"
       style={{
-        fontSize: "1.1cqw",
-        padding: "0.7cqw 0.7cqw",
-        minHeight: "3.6cqw",
+        fontSize: '1.1cqw',
+        padding: '0.7cqw 0.7cqw',
+        minHeight: '3.6cqw',
         lineHeight: 1.4,
       }}
     >
@@ -505,19 +483,13 @@ function PanelTextarea({ value }: { value: string }) {
   );
 }
 
-function SaveBarIconBtn({
-  glyph,
-  dim = false,
-}: {
-  glyph: ReactNode;
-  dim?: boolean;
-}) {
+function SaveBarIconBtn({ glyph, dim = false }: { glyph: ReactNode; dim?: boolean }) {
   return (
     <span
       className={`inline-flex items-center justify-center rounded-[4px] ${
-        dim ? "text-[color:var(--color-dim)]" : "text-[color:var(--color-muted)]"
+        dim ? 'text-[color:var(--color-dim)]' : 'text-[color:var(--color-muted)]'
       }`}
-      style={{ width: "2cqw", height: "2cqw" }}
+      style={{ width: '2cqw', height: '2cqw' }}
     >
       {glyph}
     </span>
@@ -534,7 +506,7 @@ function UndoGlyph() {
       strokeWidth={1.8}
       strokeLinecap="round"
       strokeLinejoin="round"
-      style={{ width: "1.2cqw", height: "1.2cqw" }}
+      style={{ width: '1.2cqw', height: '1.2cqw' }}
     >
       <path d="M9 14 4 9l5-5" />
       <path d="M4 9h11a5 5 0 0 1 0 10h-4" />
@@ -552,7 +524,7 @@ function RedoGlyph() {
       strokeWidth={1.8}
       strokeLinecap="round"
       strokeLinejoin="round"
-      style={{ width: "1.2cqw", height: "1.2cqw" }}
+      style={{ width: '1.2cqw', height: '1.2cqw' }}
     >
       <path d="m15 14 5-5-5-5" />
       <path d="M20 9H9a5 5 0 0 0 0 10h4" />
@@ -570,7 +542,7 @@ function SaveGlyph() {
       strokeWidth={1.8}
       strokeLinecap="round"
       strokeLinejoin="round"
-      style={{ width: "1.1cqw", height: "1.1cqw" }}
+      style={{ width: '1.1cqw', height: '1.1cqw' }}
     >
       <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
       <path d="M17 21v-8H7v8M7 3v5h8" />
@@ -588,7 +560,7 @@ function BoldGlyph() {
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
-      style={{ width: "1.2cqw", height: "1.2cqw" }}
+      style={{ width: '1.2cqw', height: '1.2cqw' }}
     >
       <path d="M6 4h7a4 4 0 0 1 0 8H6z" />
       <path d="M6 12h8a4 4 0 0 1 0 8H6z" />
@@ -606,7 +578,7 @@ function ItalicGlyph() {
       strokeWidth={1.8}
       strokeLinecap="round"
       strokeLinejoin="round"
-      style={{ width: "1.2cqw", height: "1.2cqw" }}
+      style={{ width: '1.2cqw', height: '1.2cqw' }}
     >
       <line x1="19" y1="4" x2="10" y2="4" />
       <line x1="14" y1="20" x2="5" y2="20" />

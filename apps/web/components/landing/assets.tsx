@@ -1,34 +1,34 @@
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
 type AssetMock = { name: string; size: string; logo: string };
 
 const assets: AssetMock[] = [
-  { name: "claude.svg", size: "3.4 KB", logo: "claude" },
-  { name: "codex-dark.svg", size: "2.1 KB", logo: "codex-dark" },
-  { name: "gemini.svg", size: "4.0 KB", logo: "gemini" },
-  { name: "cursor-dark.svg", size: "5.2 KB", logo: "cursor-dark" },
-  { name: "cloudflare.svg", size: "6.8 KB", logo: "cloudflare" },
-  { name: "zeabur-dark.svg", size: "4.7 KB", logo: "zeabur-dark" },
+  { name: 'claude.svg', size: '3.4 KB', logo: 'claude' },
+  { name: 'codex-dark.svg', size: '2.1 KB', logo: 'codex-dark' },
+  { name: 'gemini.svg', size: '4.0 KB', logo: 'gemini' },
+  { name: 'cursor-dark.svg', size: '5.2 KB', logo: 'cursor-dark' },
+  { name: 'cloudflare.svg', size: '6.8 KB', logo: 'cloudflare' },
+  { name: 'zeabur-dark.svg', size: '4.7 KB', logo: 'zeabur-dark' },
 ];
 
 const svglResults: { name: string; logo: string }[] = [
-  { name: "Vercel", logo: "vercel-dark" },
-  { name: "Cloudflare", logo: "cloudflare" },
-  { name: "Zeabur", logo: "zeabur-dark" },
+  { name: 'Vercel', logo: 'vercel-dark' },
+  { name: 'Cloudflare', logo: 'cloudflare' },
+  { name: 'Zeabur', logo: 'zeabur-dark' },
 ];
 
 const callouts: { eyebrow: string; title: string; body: ReactNode }[] = [
   {
-    eyebrow: "drop · rename · replace",
-    title: "In-place file management.",
-    body: "Drag images straight into the deck. Rename and replace from the same pane the inspector uses to swap an element’s src.",
+    eyebrow: 'drop · rename · replace',
+    title: 'In-place file management.',
+    body: 'Drag images straight into the deck. Rename and replace from the same pane the inspector uses to swap an element’s src.',
   },
   {
-    eyebrow: "svgl · 1500+ logos",
-    title: "Brand logos, no dance.",
+    eyebrow: 'svgl · 1500+ logos',
+    title: 'Brand logos, no dance.',
     body: (
       <>
-        Search{" "}
+        Search{' '}
         <a
           href="https://svgl.app/"
           target="_blank"
@@ -36,9 +36,8 @@ const callouts: { eyebrow: string; title: string; body: ReactNode }[] = [
           className="font-[family-name:var(--font-mono)] text-[color:var(--color-accent-soft)] underline-offset-4 hover:underline"
         >
           svgl
-        </a>{" "}
-        from inside the editor. Pick a result and the SVG lands in your assets
-        folder, ready to{" "}
+        </a>{' '}
+        from inside the editor. Pick a result and the SVG lands in your assets folder, ready to{' '}
         <code className="font-[family-name:var(--font-mono)] text-[color:var(--color-text)]">
           import
         </code>
@@ -51,23 +50,18 @@ const callouts: { eyebrow: string; title: string; body: ReactNode }[] = [
 export function Assets() {
   return (
     <section id="assets" className="relative">
-      <div
-        aria-hidden
-        className="absolute inset-x-0 top-0 h-px bg-[color:var(--color-rule)]"
-      />
+      <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-[color:var(--color-rule)]" />
       <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-16 sm:py-24 lg:py-32">
         <div className="flex items-end justify-between flex-wrap gap-y-4 mb-10 sm:mb-16">
           <h2 className="text-[32px] sm:text-[44px] lg:text-[72px] leading-[1.05] sm:leading-[1.02] tracking-[-0.03em] max-w-[920px]">
-            <span className="font-[family-name:var(--font-sans)] font-medium">
-              Drop in images.
-            </span>
+            <span className="font-[family-name:var(--font-sans)] font-medium">Drop in images.</span>
             <br />
             <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-warm)]">
               Pull in logos.
             </span>
           </h2>
           <div className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.22em] uppercase text-[color:var(--color-muted)]">
-            assets · powered by{" "}
+            assets · powered by{' '}
             <a
               href="https://svgl.app/"
               target="_blank"
@@ -167,8 +161,8 @@ function AssetManagerMock() {
                 key={r.name}
                 className={`rounded-[6px] border ${
                   i === 0
-                    ? "border-[color:var(--color-accent)] bg-[color:var(--color-accent)]/[0.06]"
-                    : "border-[color:var(--color-rule)] bg-[color:var(--color-panel)]"
+                    ? 'border-[color:var(--color-accent)] bg-[color:var(--color-accent)]/[0.06]'
+                    : 'border-[color:var(--color-rule)] bg-[color:var(--color-panel)]'
                 } p-2 flex flex-col items-center gap-1.5`}
               >
                 <div className="h-8 flex items-center justify-center">
@@ -198,7 +192,7 @@ function AssetCard({ asset }: { asset: AssetMock }) {
         className="h-[80px] sm:h-[120px] flex items-center justify-center"
         style={{
           background:
-            "repeating-conic-gradient(color-mix(in srgb, var(--color-rule) 70%, transparent) 0 25%, transparent 0 50%) 0 0 / 16px 16px",
+            'repeating-conic-gradient(color-mix(in srgb, var(--color-rule) 70%, transparent) 0 25%, transparent 0 50%) 0 0 / 16px 16px',
         }}
       >
         {/* biome-ignore lint/performance/noImgElement: small inline asset logo */}
