@@ -13,6 +13,7 @@ import { useHistory } from '@/components/history-provider';
 import { Button } from '@/components/ui/button';
 import { type SlideComment, useComments } from '@/lib/inspector/use-comments';
 import { type Edit, type EditOp, useEditor } from '@/lib/inspector/use-editor';
+import { useLocale } from '@/lib/use-locale';
 
 export type SelectedTarget = {
   line: number;
@@ -449,6 +450,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
 }
 
 export function InspectToggleButton() {
+  const t = useLocale();
   const { active, toggle } = useInspector();
   if (import.meta.env.PROD) return null;
   return (
@@ -457,10 +459,10 @@ export function InspectToggleButton() {
       variant={active ? 'default' : 'ghost'}
       onClick={toggle}
       data-inspector-ui
-      title="Inspect"
+      title={t.inspector.inspect}
     >
       <Crosshair className="size-3.5" />
-      <span className="hidden md:inline">Inspect</span>
+      <span className="hidden md:inline">{t.inspector.inspect}</span>
     </Button>
   );
 }
