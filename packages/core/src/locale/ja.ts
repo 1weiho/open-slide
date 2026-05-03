@@ -192,7 +192,8 @@ export const ja: Locale = {
       other: 'コメント {count} 件',
     },
     commentLineLabel: '行 {n}',
-    commentsEmpty: 'まだコメントはありません。インスペクトを有効にしてスライド要素をクリックしてください。',
+    commentsEmpty:
+      'まだコメントはありません。インスペクトを有効にしてスライド要素をクリックしてください。',
     commentsApplyHintPrefix: 'エージェントで ',
     commentsApplyHintSuffix: ' を実行して適用してください。',
     commentDeleteAria: '削除',
