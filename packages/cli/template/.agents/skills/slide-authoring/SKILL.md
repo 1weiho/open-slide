@@ -167,6 +167,7 @@ export const design: DesignSystem = {
     body: 'system-ui, -apple-system, sans-serif',
   },
   typeScale: { hero: 180, body: 40 },
+  radius: 12,
 };
 
 // Extra colors / sizes outside the DesignSystem shape stay as plain consts.
