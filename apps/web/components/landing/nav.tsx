@@ -59,13 +59,6 @@ export function Nav() {
           >
             GitHub ↗
           </a>
-          <a
-            href="#install"
-            className="inline-flex items-center gap-2 px-3.5 h-8 rounded-full border border-[color:var(--color-rule)] text-[color:var(--color-text)] hover:border-[color:var(--color-accent)] hover:text-[color:var(--color-accent)] transition"
-          >
-            init
-            <span aria-hidden>→</span>
-          </a>
           <ThemeToggle />
         </nav>
       </div>
