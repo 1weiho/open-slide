@@ -30,13 +30,13 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://open-slide.dev"),
   openGraph: {
     title: "open-slide",
-    description: "A React-first slide framework, crafted by agents.",
+    description: "A slide framework built for agents.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "open-slide",
-    description: "A React-first slide framework, crafted by agents.",
+    description: "A slide framework built for agents.",
   },
 };
 
