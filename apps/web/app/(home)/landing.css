@@ -1,22 +1,30 @@
 /* open-slide landing styles — scoped to .os-landing so they don't bleed
-   into the rest of the docs site (which uses fumadocs-ui's defaults). */
+   into the rest of the docs site (which uses fumadocs-ui's defaults).
+
+   Palette mirrors packages/core: warm paper + ink, single vermillion
+   accent. Brand consistency is the whole point — same identity across
+   the marketing surface, the docs, and the editor itself. */
 
 .os-landing {
-  --color-ink: #0a0a0c;
-  --color-paper: #f6f5f0;
-  --color-panel: #111114;
-  --color-panel-hi: #17171b;
-  --color-rule: rgba(246, 245, 240, 0.11);
-  --color-rule-soft: rgba(246, 245, 240, 0.06);
-  --color-text: #f6f5f0;
-  --color-text-soft: #c9c7bd;
-  --color-muted: #7f7e78;
-  --color-dim: #44443f;
-  --color-accent: #7170ff;
-  --color-accent-soft: #a3a0ff;
-  --color-accent-deep: #5e6ad2;
-  --color-warm: #ffb547;
-  --color-mint: #68cc9a;
+  /* Dark mode is the default — warm near-black ink, paper text. */
+  --color-ink: oklch(0.155 0.005 70);
+  --color-paper: oklch(0.945 0.005 80);
+  --color-panel: oklch(0.195 0.006 70);
+  --color-panel-hi: oklch(0.245 0.006 70);
+  --color-rule: oklch(1 0 0 / 0.1);
+  --color-rule-soft: oklch(1 0 0 / 0.06);
+  --color-text: oklch(0.945 0.005 80);
+  --color-text-soft: oklch(0.86 0.006 78);
+  --color-muted: oklch(0.68 0.008 75);
+  --color-dim: oklch(0.42 0.008 70);
+
+  /* Vermillion — single accent across the brand. Mirrors core's
+     --brand and --brand-soft tokens. */
+  --color-accent: oklch(0.66 0.19 28);
+  --color-accent-soft: oklch(0.76 0.14 28);
+  --color-accent-deep: oklch(0.555 0.185 28);
+  --color-warm: oklch(0.78 0.14 60);
+  --color-mint: oklch(0.7 0.14 160);
 
   --font-display: var(--font-instrument-serif);
   --font-sans: var(--font-geist-sans);
@@ -25,32 +33,36 @@
   background: var(--color-ink);
   color: var(--color-text);
   font-family: var(--font-sans);
-  letter-spacing: -0.011em;
-  font-feature-settings: "ss01", "cv11";
+  letter-spacing: -0.005em;
+  font-feature-settings: "ss01", "cv11", "calt";
   text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 html.light .os-landing {
-  --color-ink: #f6f5f0;
-  --color-paper: #0a0a0c;
-  --color-panel: #ffffff;
-  --color-panel-hi: #eceae3;
-  --color-rule: rgba(10, 10, 12, 0.14);
-  --color-rule-soft: rgba(10, 10, 12, 0.07);
-  --color-text: #0a0a0c;
-  --color-text-soft: #2f2f31;
-  --color-muted: #6a6a64;
-  --color-dim: #b4b3aa;
-  --color-accent: #5e6ad2;
-  --color-accent-soft: #7a79e8;
-  --color-accent-deep: #4a52b5;
-  --color-warm: #b6741a;
-  --color-mint: #1f8458;
+  /* Light mode — core's warm paper + ink. */
+  --color-ink: oklch(0.985 0.004 75);
+  --color-paper: oklch(0.2 0.012 60);
+  --color-panel: oklch(1 0 0);
+  --color-panel-hi: oklch(0.96 0.006 75);
+  --color-rule: oklch(0.86 0.008 70);
+  --color-rule-soft: oklch(0.91 0.008 70);
+  --color-text: oklch(0.2 0.012 60);
+  --color-text-soft: oklch(0.32 0.012 60);
+  --color-muted: oklch(0.485 0.012 60);
+  --color-dim: oklch(0.72 0.008 70);
+
+  --color-accent: oklch(0.555 0.185 28);
+  --color-accent-soft: oklch(0.66 0.16 28);
+  --color-accent-deep: oklch(0.46 0.18 28);
+  --color-warm: oklch(0.6 0.14 60);
+  --color-mint: oklch(0.5 0.13 160);
 }
 
 .os-landing ::selection {
-  background: var(--color-accent);
-  color: var(--color-ink);
+  background: color-mix(in oklab, var(--color-accent) 30%, transparent);
+  color: var(--color-text);
 }
 
 /* ————————————————————————— utilities ————————————————————————— */
@@ -58,9 +70,10 @@ html.light .os-landing {
 .os-landing .caption {
   font-family: var(--font-mono);
   font-size: 11px;
-  letter-spacing: 0.24em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--color-muted);
+  font-weight: 500;
 }
 
 .os-landing .hair {
@@ -104,7 +117,7 @@ html.light .os-landing {
 .os-landing .specimen {
   background-image: radial-gradient(
     circle at 1px 1px,
-    rgba(246, 245, 240, 0.12) 1px,
+    color-mix(in oklab, var(--color-text) 12%, transparent) 1px,
     transparent 0
   );
   background-size: 16px 16px;

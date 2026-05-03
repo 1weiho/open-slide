@@ -12,7 +12,7 @@ type Variant = {
 const variants: Variant[] = [
   {
     word: "deck",
-    accent: "#7170ff",
+    accent: "#d56b48",
     label: "01",
     subtitle: "A React slide, rendered live.",
   },

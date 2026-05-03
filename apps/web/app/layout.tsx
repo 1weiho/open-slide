@@ -1,16 +1,7 @@
 import { RootProvider } from "fumadocs-ui/provider/next";
 import "./global.css";
 import type { Metadata } from "next";
-import {
-  Geist,
-  Instrument_Serif,
-  Inter,
-  JetBrains_Mono,
-} from "next/font/google";
-
-const inter = Inter({
-  subsets: ["latin"],
-});
+import { Geist, Instrument_Serif, JetBrains_Mono } from "next/font/google";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -54,7 +45,7 @@ export default function Layout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${inter.className} ${geist.variable} ${jetbrains.variable} ${instrument.variable}`}
+      className={`${geist.className} ${geist.variable} ${jetbrains.variable} ${instrument.variable}`}
     >
       <body className="flex flex-col min-h-screen">
         <RootProvider>{children}</RootProvider>

@@ -11,7 +11,7 @@ export function Hero() {
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(1200px 720px at 18% 30%, rgba(113,112,255,0.18) 0%, transparent 62%), radial-gradient(900px 600px at 88% 82%, rgba(163,160,255,0.10) 0%, transparent 60%)",
+            "radial-gradient(1200px 720px at 18% 30%, color-mix(in oklab, var(--color-accent) 18%, transparent) 0%, transparent 62%), radial-gradient(900px 600px at 88% 82%, color-mix(in oklab, var(--color-warm) 12%, transparent) 0%, transparent 60%)",
         }}
       />
 
@@ -20,7 +20,7 @@ export function Hero() {
         className="absolute inset-x-0 top-0 h-px"
         style={{
           background:
-            "linear-gradient(90deg, transparent, rgba(113,112,255,0.7), transparent)",
+            "linear-gradient(90deg, transparent, color-mix(in oklab, var(--color-accent) 70%, transparent), transparent)",
         }}
       />
 

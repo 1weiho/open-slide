@@ -287,7 +287,7 @@ function VisualEditorVisual() {
           <PanelSection label="color">
             <PanelRow label="Color">
               <span className="size-[18px] rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-accent)]" />
-              <PanelInput value="#7170ff" />
+              <PanelInput value="#d56b48" />
             </PanelRow>
           </PanelSection>
         </div>

@@ -31,7 +31,11 @@ export function CopyCommand({
     <button
       type="button"
       onClick={onCopy}
-      className={`group relative inline-flex items-center gap-3 ${height} ${pad} rounded-[10px] border border-[color:var(--color-accent)]/40 bg-[color:var(--color-panel)] text-[color:var(--color-text)] font-[family-name:var(--font-mono)] ${text} hover:border-[color:var(--color-accent)] transition shadow-[0_0_0_1px_rgba(113,112,255,0.15),0_20px_80px_-20px_rgba(113,112,255,0.35)]`}
+      style={{
+        boxShadow:
+          "0 0 0 1px color-mix(in oklab, var(--color-accent) 15%, transparent), 0 20px 80px -20px color-mix(in oklab, var(--color-accent) 35%, transparent)",
+      }}
+      className={`group relative inline-flex items-center gap-3 ${height} ${pad} rounded-[6px] border border-[color:var(--color-accent)]/40 bg-[color:var(--color-panel)] text-[color:var(--color-text)] font-[family-name:var(--font-mono)] ${text} hover:border-[color:var(--color-accent)] transition`}
     >
       <span aria-hidden className="text-[color:var(--color-accent)]">
         $
