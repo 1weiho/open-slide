@@ -1,0 +1,44 @@
+---
+title: Skills
+description: The four agent skills shipped with every open-slide workspace.
+---
+
+A skill is a markdown file the agent reads on demand. open-slide ships four;
+your agent invokes them by typing `/<skill-name>` in chat.
+
+## `/create-slide`
+
+Drafts a deck end-to-end. Walks the agent through:
+
+1. **Scoping** — topic & aesthetic, page count, text density,
+   motion vs. static.
+2. **Theme lookup** — if a theme is referenced, reads
+   `themes/<id>.md` first.
+3. **ID & structure** — picks a kebab-case id, plans the page list.
+4. **Authoring** — writes `slides/<id>/index.tsx` page by page.
+
+Use it for any new deck. From a one-line prompt to a polished outline in a
+single skill call.
+
+## `/slide-authoring`
+
+The technical reference for everything inside `slides/<id>/`. The agent
+reads it before writing — file contract, the 1920×1080 canvas, type scale,
+palette, layout vocabulary, the self-review checklist, and the anti-pattern
+list. `create-slide` defers to it for the *how*.
+
+You don't usually invoke `slide-authoring` directly. Other skills do.
+
+## `/apply-comments`
+
+Scans for `@slide-comment` markers, edits the surrounding code to satisfy
+each comment, removes the marker. See [Apply comments](/docs/tools/apply-comments).
+
+## `/create-theme`
+
+Extracts a theme from an existing deck (or a brief). Writes `themes/<id>.md`
+with the palette, type stack, layout vocabulary, and voice notes that future
+`/create-slide` calls can reference.
+
+Use it once your decks start sharing a visual language — turn the implicit
+recipe into a file the agent can read.

@@ -1,0 +1,236 @@
+/* open-slide landing styles — scoped to .os-landing so they don't bleed
+   into the rest of the docs site (which uses fumadocs-ui's defaults).
+
+   Palette mirrors packages/core: warm paper + ink, single vermillion
+   accent. Brand consistency is the whole point — same identity across
+   the marketing surface, the docs, and the editor itself. */
+
+.os-landing {
+  /* Dark mode is the default — warm near-black ink, paper text. */
+  --color-ink: oklch(0.155 0.005 70);
+  --color-paper: oklch(0.945 0.005 80);
+  --color-panel: oklch(0.195 0.006 70);
+  --color-panel-hi: oklch(0.245 0.006 70);
+  --color-rule: oklch(1 0 0 / 0.1);
+  --color-rule-soft: oklch(1 0 0 / 0.06);
+  --color-text: oklch(0.945 0.005 80);
+  --color-text-soft: oklch(0.86 0.006 78);
+  --color-muted: oklch(0.68 0.008 75);
+  --color-dim: oklch(0.42 0.008 70);
+
+  /* Vermillion — single accent across the brand. Mirrors core's
+     --brand and --brand-soft tokens. */
+  --color-accent: oklch(0.66 0.19 28);
+  --color-accent-soft: oklch(0.76 0.14 28);
+  --color-accent-deep: oklch(0.555 0.185 28);
+  --color-warm: oklch(0.78 0.14 60);
+  --color-mint: oklch(0.7 0.14 160);
+
+  --font-display: var(--font-instrument-serif);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-jetbrains-mono);
+
+  background: var(--color-ink);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  letter-spacing: -0.005em;
+  font-feature-settings: "ss01", "cv11", "calt";
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html.light .os-landing {
+  /* Light mode — core's warm paper + ink. */
+  --color-ink: oklch(0.985 0.004 75);
+  --color-paper: oklch(0.2 0.012 60);
+  --color-panel: oklch(1 0 0);
+  --color-panel-hi: oklch(0.96 0.006 75);
+  --color-rule: oklch(0.86 0.008 70);
+  --color-rule-soft: oklch(0.91 0.008 70);
+  --color-text: oklch(0.2 0.012 60);
+  --color-text-soft: oklch(0.32 0.012 60);
+  --color-muted: oklch(0.485 0.012 60);
+  --color-dim: oklch(0.72 0.008 70);
+
+  --color-accent: oklch(0.555 0.185 28);
+  --color-accent-soft: oklch(0.66 0.16 28);
+  --color-accent-deep: oklch(0.46 0.18 28);
+  --color-warm: oklch(0.6 0.14 60);
+  --color-mint: oklch(0.5 0.13 160);
+}
+
+.os-landing ::selection {
+  background: color-mix(in oklab, var(--color-accent) 30%, transparent);
+  color: var(--color-text);
+}
+
+/* ————————————————————————— utilities ————————————————————————— */
+
+.os-landing .caption {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  font-weight: 500;
+}
+
+.os-landing .hair {
+  height: 1px;
+  background: var(--color-rule);
+}
+
+.os-landing .tick::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 10px;
+  border-left: 1px solid var(--color-accent);
+  border-top: 1px solid var(--color-accent);
+  transform: translateY(1px);
+}
+
+.os-landing .brackets::before {
+  content: "‹";
+  margin-right: 6px;
+  color: var(--color-muted);
+}
+.os-landing .brackets::after {
+  content: "›";
+  margin-left: 6px;
+  color: var(--color-muted);
+}
+
+.os-landing .noise::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='7'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.4 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  opacity: 0.35;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.os-landing .specimen {
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    color-mix(in oklab, var(--color-text) 12%, transparent) 1px,
+    transparent 0
+  );
+  background-size: 16px 16px;
+}
+
+@keyframes os-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.os-landing .marquee-track {
+  display: inline-flex;
+  gap: 160px;
+  animation: os-marquee 45s linear infinite;
+  white-space: nowrap;
+}
+
+@keyframes os-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.os-landing .rise {
+  animation: os-rise 900ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes os-caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+.os-landing .caret {
+  display: inline-block;
+  width: 0.55ch;
+  height: 1em;
+  background: currentColor;
+  transform: translateY(0.14em);
+  animation: os-caret 1.1s steps(1) infinite;
+  margin-left: 0.15ch;
+}
+
+@keyframes os-codePulse {
+  0% {
+    background-color: color-mix(in oklab, var(--color-accent) 32%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+@keyframes os-codeSwap {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+.os-landing .code-pulse {
+  animation:
+    os-codePulse 900ms ease-out,
+    os-codeSwap 450ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@keyframes textReveal {
+  from {
+    opacity: 0;
+    transform: translateY(0.5em);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.os-landing .logo-light {
+  display: none;
+}
+html.light .os-landing .logo-dark {
+  display: none;
+}
+html.light .os-landing .logo-light {
+  display: inline-block;
+}
+
+.os-landing .agent-mono {
+  filter: brightness(0) invert(1);
+}
+html.light .os-landing .agent-mono {
+  filter: brightness(0);
+  opacity: 0.7;
+}
+
+.os-landing :where(a, button, [role="button"]):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}

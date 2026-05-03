@@ -1,0 +1,68 @@
+---
+title: Slide module exports
+description: The shape the runtime expects from each slides/<id>/index.tsx.
+---
+
+```tsx title="slides/<id>/index.tsx"
+import type { Page, SlideMeta } from '@open-slide/core';
+
+const Cover: Page = () => <div>{/* ... */}</div>;
+
+export const meta: SlideMeta = {
+  title: 'Cover',
+  theme: 'dark',
+};
+
+export const notes = {
+  0: 'Open with the analyst quote.',
+};
+
+export default [Cover] satisfies Page[];
+```
+
+## Default export
+
+`Page[]` — the array of components, in display order. Each component fills
+its container; the runtime renders one at a time onto the 1920×1080 canvas.
+
+```ts
+type Page = ComponentType;
+```
+
+## `meta` (optional)
+
+```ts
+type SlideMeta = {
+  /** Display title for the deck — used in the slide browser. */
+  title?: string;
+  /** UI hint: 'light' inverts the chrome over a light deck. */
+  theme?: 'light' | 'dark';
+};
+```
+
+## `notes` (optional)
+
+A map of page index → markdown string. Surfaced in [presenter mode](/docs/tools/present-mode).
+
+```ts
+export const notes: Record<number, string> = {
+  0: 'Open with a smile.',
+  3: 'Pause for questions.',
+};
+```
+
+## Imports from `@open-slide/core`
+
+```ts
+import {
+  CANVAS_WIDTH,        // 1920
+  CANVAS_HEIGHT,       // 1080
+  ImagePlaceholder,    // sized empty placeholder for layout drafting
+} from '@open-slide/core';
+import type {
+  Page,
+  SlideMeta,
+  SlideModule,
+  ImagePlaceholderProps,
+} from '@open-slide/core';
+```

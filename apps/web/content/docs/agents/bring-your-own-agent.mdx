@@ -1,0 +1,29 @@
+---
+title: Bring your own agent
+description: open-slide isn't tied to a single editor or model.
+---
+
+The framework is intentionally agent-agnostic. Any tool that can edit React
+files in a workspace can author slides. The community confirms with: Claude
+Code, Codex, Cursor, Gemini CLI, OpenCode, Windsurf, Zed.
+
+## What an agent needs
+
+To author cleanly, the agent needs to:
+
+1. **Read the rules.** `CLAUDE.md` (and `AGENTS.md`) at the workspace root
+   define the file contract and constraints.
+2. **Find the skills.** `/create-slide`, `/slide-authoring`,
+   `/apply-comments`, `/create-theme` live under `skills/` (or wherever
+   that agent looks for skills).
+3. **Edit files.** That's it. There is no per-agent SDK.
+
+If your agent of choice doesn't have a skills system, you can paste the
+`slide-authoring` skill into context manually and ask the agent to follow
+its rules.
+
+## Mirroring `CLAUDE.md` for other agents
+
+`AGENTS.md` is generated alongside `CLAUDE.md` so editors that look for that
+filename (Codex, some Cursor configurations) pick the rules up automatically.
+The two files are kept in sync by the scaffolder.

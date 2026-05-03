@@ -1,0 +1,19 @@
+{
+  "title": "open-slide",
+  "pages": [
+    "index",
+    "getting-started",
+    "---Concepts---",
+    "...concepts",
+    "---Authoring---",
+    "...authoring",
+    "---Tools---",
+    "...tools",
+    "---Agents---",
+    "...agents",
+    "---CLI---",
+    "...cli",
+    "---Reference---",
+    "...reference"
+  ]
+}

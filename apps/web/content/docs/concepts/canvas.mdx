@@ -1,0 +1,42 @@
+---
+title: The 1920 × 1080 canvas
+description: Why the canvas is fixed, how scaling works, and how to lay out within it.
+---
+
+Every page in open-slide is rendered into a fixed 1920×1080 box. The runtime
+then scales that box uniformly to fit the viewport — so the same slide looks
+identical on a phone, a 4K monitor, and a beamer.
+
+## Why fixed
+
+Slides are visual artefacts. A presentation has to look the same in the
+preview, on stage, and in an exported PDF. Fixed canvas + uniform scaling
+makes that trivial: every pixel coordinate you write is the coordinate that
+ships.
+
+The constants are exported from `@open-slide/core` if you need them:
+
+```ts
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@open-slide/core';
+// 1920 × 1080
+```
+
+## Layout strategy
+
+Inside a page you have a 1920×1080 stage. The two patterns that work well:
+
+- **Absolute coordinates.** Place items with `position: absolute` and pixel
+  values. Predictable, easy to reason about, easy for an agent to write.
+- **Flex/grid centring.** When you want elements to flow, set
+  `display: 'flex'` and centre them. Avoid responsive breakpoints — the
+  canvas is fixed.
+
+Container queries (`containerType: 'inline-size'` + `cqw` units) are a great
+middle ground if you want a reusable widget that looks right at any embed
+size — see the demo player on the homepage.
+
+## Type scale & palette
+
+The `slide-authoring` skill ships a recommended type scale and palette so
+agent-authored slides feel consistent. You can override per-deck by writing
+your own theme — see the [Themes](/docs/authoring/themes) page.

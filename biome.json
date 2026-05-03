@@ -28,15 +28,7 @@
   },
   "overrides": [
     {
-      "includes": [
-        "**/slides/**",
-        "apps/web/app/components/demo-slide/**",
-        "apps/web/app/components/hero.tsx",
-        "apps/web/app/components/anatomy.tsx",
-        "apps/web/app/components/copy-command.tsx",
-        "apps/web/app/components/theme-toggle.tsx",
-        "apps/web/app/components/inline-slide-player.tsx"
-      ],
+      "includes": ["**/slides/**", "apps/web/components/landing/**"],
       "linter": {
         "rules": {
           "a11y": {

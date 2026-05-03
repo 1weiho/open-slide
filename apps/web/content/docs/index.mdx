@@ -1,0 +1,43 @@
+---
+title: Introduction
+description: A slide framework built for agents.
+---
+
+**open-slide** is a slide framework for the agent era. You describe a deck in
+natural language; your coding agent writes the React. open-slide handles the
+canvas, scaling, navigation, hot reload, present mode, and export so the agent
+can focus on content.
+
+Every page renders into a fixed **1920 × 1080** canvas. Slides are arbitrary
+React components — not a constrained DSL.
+
+```bash
+npx @open-slide/cli init my-deck
+```
+
+## Why open-slide
+
+Slides are visual code. Agents are great at writing code. open-slide is the
+missing runtime that turns *"make slides about X"* into a polished, presentable
+deck — without you ever leaving the chat.
+
+- **Agent-native authoring.** Ships with skills (`/create-slide`,
+  `/slide-authoring`, `/apply-comments`, `/create-theme`) that any
+  Claude Code, Codex, or Cursor session can call.
+- **In-browser inspector.** Click any element in the dev server, drop a
+  `@slide-comment`, and your agent applies it on the next `/apply-comments`.
+- **Assets manager + svgl.** Drop in images, search 1500+ brand logos through
+  the integrated [svgl](https://svgl.app/) catalogue.
+- **Professional present mode.** Fullscreen playback, presenter view, speaker
+  notes, timer.
+- **Export to static HTML or PDF.** Self-contained output — share without a
+  server.
+
+## What's next
+
+<Cards>
+  <Card title="Get started" href="/docs/getting-started" />
+  <Card title="A slide is a file" href="/docs/concepts/slide-as-code" />
+  <Card title="The 1920 × 1080 canvas" href="/docs/concepts/canvas" />
+  <Card title="Inspector & comments" href="/docs/tools/inspector" />
+</Cards>

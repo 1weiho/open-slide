@@ -1,0 +1,35 @@
+---
+title: Apply comments
+description: The slash command that closes the visual feedback loop.
+---
+
+`/apply-comments` is the agent skill that turns inspector comments into
+real edits.
+
+## What it does
+
+1. Scans the workspace for `@slide-comment` markers.
+2. For each marker, reads the surrounding code and the comment text.
+3. Edits the file to satisfy the comment.
+4. Removes the marker.
+
+The skill is shipped pre-installed by `npx @open-slide/cli init`. You invoke
+it from any compatible agent (Claude Code, Codex, Cursor, …).
+
+```text
+› /apply-comments
+✓ 3 markers · slides/q2-launch/index.tsx
+✓ 1 marker  · slides/intro/index.tsx
+```
+
+## When to use it
+
+Use it after a batch of inspector comments — usually right before saving the
+deck for the day, or right before a rehearsal. The loop is:
+
+```text
+present  →  click to comment  →  /apply-comments  →  repeat
+```
+
+If a comment is ambiguous, the agent will leave the marker in place and
+explain why. Refine the comment text and re-run.

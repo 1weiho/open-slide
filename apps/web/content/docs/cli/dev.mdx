@@ -1,0 +1,38 @@
+---
+title: open-slide dev
+description: Run the dev server with hot reload, inspector, and assets panel.
+---
+
+```bash
+open-slide dev
+# or, via the generated script
+pnpm dev
+```
+
+Boots a Vite-powered dev server on `http://localhost:5173` (or the next free
+port). Hot module reload is wired up for both the runtime and your slide
+files — saving an `index.tsx` updates the canvas without losing slide state.
+
+## What you get
+
+- **Slide browser** — list of every deck under `slides/`.
+- **Canvas** — the active page, scaled to fit the viewport.
+- **Inspector** — click any element to edit it visually, drop a
+  `@slide-comment`, or both.
+- **Assets panel** — drag, rename, replace, plus svgl logo search.
+- **Present mode** — fullscreen playback with presenter view.
+
+## Configuration
+
+Override the port (and a few other knobs) in `open-slide.config.ts`:
+
+```ts title="open-slide.config.ts"
+import type { OpenSlideConfig } from '@open-slide/core';
+
+const config: OpenSlideConfig = {
+  port: 5174,
+  slidesDir: 'slides',
+};
+
+export default config;
+```

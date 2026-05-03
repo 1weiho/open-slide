@@ -1,0 +1,40 @@
+---
+title: open-slide build
+description: Produce a static, deployable build.
+---
+
+```bash
+open-slide build
+# or
+pnpm build
+```
+
+Builds every deck under `slides/` into a self-contained static site at
+`dist/`. The output has no server requirement — drop it on any static host.
+
+## Output
+
+```text
+dist/
+├── index.html
+├── assets/
+│   └── ...hashed files...
+└── ...
+```
+
+## Trimming the public surface
+
+If the build is for a public share rather than internal review, you can hide
+the slide browser and on-canvas UI in `open-slide.config.ts`:
+
+```ts
+const config: OpenSlideConfig = {
+  build: {
+    showSlideBrowser: false,
+    showSlideUi: false,
+    allowHtmlDownload: false,
+  },
+};
+```
+
+See [Export](/docs/tools/export) for the full set of build knobs.
