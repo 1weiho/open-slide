@@ -71,6 +71,13 @@ export const ja: Locale = {
     deleteDialogDescriptionPrefix: '',
     deleteDialogDescriptionMid: ' とそのファイルをディスクから完全に削除します。',
     deleteDialogDescriptionSuffix: 'この操作は元に戻せません。',
+    toastFolderCreated: 'フォルダ「{name}」を作成しました',
+    toastFolderCreateFailed: 'フォルダの作成に失敗しました',
+    toastSlideMoved: '「{slide}」を {folder} に移動しました',
+    toastSlideMoveFailed: 'スライドの移動に失敗しました',
+    toastFolderDeleted: 'フォルダ「{name}」を削除しました',
+    toastFolderDeleteFailed: 'フォルダの削除に失敗しました',
+    pickIcon: 'アイコンを選択',
   },
 
   slide: {

@@ -71,6 +71,13 @@ export const zhCN: Locale = {
     deleteDialogDescriptionPrefix: '这将永久从磁盘移除 ',
     deleteDialogDescriptionMid: ' 及其文件。',
     deleteDialogDescriptionSuffix: '此操作无法撤销。',
+    toastFolderCreated: '已创建文件夹"{name}"',
+    toastFolderCreateFailed: '创建文件夹失败',
+    toastSlideMoved: '已将"{slide}"移至 {folder}',
+    toastSlideMoveFailed: '移动幻灯片失败',
+    toastFolderDeleted: '已删除文件夹"{name}"',
+    toastFolderDeleteFailed: '删除文件夹失败',
+    pickIcon: '选择图标',
   },
 
   slide: {

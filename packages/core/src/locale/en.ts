@@ -71,6 +71,13 @@ export const en: Locale = {
     deleteDialogDescriptionPrefix: 'This permanently removes ',
     deleteDialogDescriptionMid: ' and its files from disk. ',
     deleteDialogDescriptionSuffix: 'This action cannot be undone.',
+    toastFolderCreated: 'Created folder “{name}”',
+    toastFolderCreateFailed: 'Failed to create folder',
+    toastSlideMoved: 'Moved “{slide}” to {folder}',
+    toastSlideMoveFailed: 'Failed to move slide',
+    toastFolderDeleted: 'Deleted folder “{name}”',
+    toastFolderDeleteFailed: 'Failed to delete folder',
+    pickIcon: 'Pick icon',
   },
 
   slide: {

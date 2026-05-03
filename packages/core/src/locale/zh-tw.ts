@@ -71,6 +71,13 @@ export const zhTW: Locale = {
     deleteDialogDescriptionPrefix: '這將永久從磁碟移除 ',
     deleteDialogDescriptionMid: ' 與其檔案。',
     deleteDialogDescriptionSuffix: '此操作無法復原。',
+    toastFolderCreated: '已建立資料夾「{name}」',
+    toastFolderCreateFailed: '建立資料夾失敗',
+    toastSlideMoved: '已將「{slide}」移至 {folder}',
+    toastSlideMoveFailed: '移動投影片失敗',
+    toastFolderDeleted: '已刪除資料夾「{name}」',
+    toastFolderDeleteFailed: '刪除資料夾失敗',
+    pickIcon: '選擇圖示',
   },
 
   slide: {

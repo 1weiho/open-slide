@@ -1,6 +1,7 @@
 import { FolderInput, FolderPlus, MoreHorizontal, Pencil, Search, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -17,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useFolders } from '@/lib/folders';
-import { useLocale } from '@/lib/use-locale';
+import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import { FolderIconChip, SLIDE_DND_MIME } from '../components/sidebar/folder-item';
 import { DRAFT_ID, Sidebar } from '../components/sidebar/sidebar';
@@ -78,6 +79,24 @@ export function Home() {
     );
   }, []);
 
+  const moveSlideWithToast = useCallback(
+    async (slideId: string, folderId: string | null) => {
+      if (manifest.assignments[slideId] === (folderId ?? undefined)) return;
+      const slideName = titleMap[slideId] ?? slideId;
+      const folderName =
+        folderId === null
+          ? t.home.draft
+          : (manifest.folders.find((f) => f.id === folderId)?.name ?? folderId);
+      try {
+        await assign(slideId, folderId);
+        toast.success(format(t.home.toastSlideMoved, { slide: slideName, folder: folderName }));
+      } catch {
+        toast.error(t.home.toastSlideMoveFailed);
+      }
+    },
+    [assign, manifest, titleMap, t],
+  );
+
   const trimmedQuery = query.trim().toLowerCase();
   const filteredSlides = useMemo(() => {
     if (!trimmedQuery) return visibleSlides;
@@ -100,12 +119,18 @@ export function Home() {
           onCreate={(name, icon) => create(name, icon)}
           onRename={(id, name) => update(id, { name })}
           onChangeIcon={(id, icon) => update(id, { icon })}
-          onDelete={(id) => {
+          onDelete={async (id) => {
+            const name = manifest.folders.find((f) => f.id === id)?.name ?? id;
             if (selectedId === id) selectFolder(DRAFT_ID);
-            remove(id);
+            try {
+              await remove(id);
+              toast.success(format(t.home.toastFolderDeleted, { name }));
+            } catch {
+              toast.error(t.home.toastFolderDeleteFailed);
+            }
           }}
-          onDropToFolder={(folderId, slideId) => assign(slideId, folderId)}
-          onDropToDraft={(slideId) => assign(slideId, null)}
+          onDropToFolder={(folderId, slideId) => moveSlideWithToast(slideId, folderId)}
+          onDropToDraft={(slideId) => moveSlideWithToast(slideId, null)}
         />
       </div>
 

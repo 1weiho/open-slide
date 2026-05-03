@@ -1,7 +1,7 @@
 import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useLocale } from '@/lib/use-locale';
 import type { FolderIcon } from '@/lib/sdk';
+import { useLocale } from '@/lib/use-locale';
 
 // Editorial palette — restrained warm/earth tones, no shadcn defaults
 // (no #8b5cf6 violet, no #3b82f6 blue, etc.). Picked to coexist with the
