@@ -1,5 +1,11 @@
 # @open-slide/core
 
+## 1.0.6
+
+### Patch Changes
+
+- [#49](https://github.com/1weiho/open-slide/pull/49) [`efbcb4e`](https://github.com/1weiho/open-slide/commit/efbcb4eaa38fa9203266caeae750e49fabd06417) Thanks [@1weiho](https://github.com/1weiho)! - Remove redundant section dividers, module headers, and what-comments across the runtime.
+
 ## 1.0.5
 
 ### Patch Changes
