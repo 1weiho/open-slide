@@ -51,10 +51,14 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
       alias: {
         '@': APP_ROOT,
       },
+      dedupe: ['react', 'react-dom'],
     },
     optimizeDeps: {
       entries: [path.join(APP_ROOT, 'main.tsx')],
       include: [
+        'react',
+        'react-dom/client',
+        'react/jsx-runtime',
         'react-router-dom',
         'radix-ui',
         'lucide-react',
