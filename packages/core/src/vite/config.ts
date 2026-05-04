@@ -55,6 +55,10 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
     optimizeDeps: {
       entries: [path.join(APP_ROOT, 'main.tsx')],
       include: [
+        'react',
+        'react-dom',
+        'react-dom/client',
+        'next-themes',
         'react-router-dom',
         'radix-ui',
         'lucide-react',
