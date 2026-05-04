@@ -1,5 +1,9 @@
-// Visits every JSXElement/JSXFragment; return `'stop'` to short-circuit.
+import { isJSXElement, isJSXFragment, type Node } from '@babel/types';
 
+// Loose structural type so plugins that hand-cast their way through
+// the AST (design-plugin etc.) keep compiling without null-checks on
+// every `start`/`end` read. New code should prefer Babel's specific
+// node types (`t.JSXElement`, `t.Identifier`, …) at the use site.
 export type Loc = { line: number; column: number };
 export type AstNode = {
   type: string;
@@ -21,26 +25,37 @@ const SKIP_KEYS = new Set([
 ]);
 
 // biome-ignore lint/suspicious/noConfusingVoidType: callers return void or 'stop' to short-circuit traversal.
-export function walkJsx(ast: unknown, visit: (node: AstNode) => void | 'stop'): void {
+type Visitor = (node: Node) => void | 'stop';
+
+function walk(ast: unknown, visit: Visitor, accept: (n: Node) => boolean): void {
   let stopped = false;
-  const walk = (node: unknown): void => {
+  const recurse = (node: unknown): void => {
     if (stopped || !node || typeof node !== 'object') return;
     if (Array.isArray(node)) {
-      for (const c of node) walk(c);
+      for (const c of node) recurse(c);
       return;
     }
-    const n = node as AstNode;
+    const n = node as Node;
     if (typeof n.type !== 'string') return;
-    if (n.type === 'JSXElement' || n.type === 'JSXFragment') {
-      if (visit(n) === 'stop') {
-        stopped = true;
-        return;
-      }
+    if (accept(n) && visit(n) === 'stop') {
+      stopped = true;
+      return;
     }
     for (const key of Object.keys(n)) {
       if (SKIP_KEYS.has(key)) continue;
-      walk((n as Record<string, unknown>)[key]);
+      recurse((n as unknown as Record<string, unknown>)[key]);
     }
   };
-  walk(ast);
+  recurse(ast);
+}
+
+const isJsx = (n: Node) => isJSXElement(n) || isJSXFragment(n);
+const acceptAll = () => true;
+
+export function walkJsx(ast: unknown, visit: Visitor): void {
+  walk(ast, visit, isJsx);
+}
+
+export function walkAll(ast: unknown, visit: Visitor): void {
+  walk(ast, visit, acceptAll);
 }

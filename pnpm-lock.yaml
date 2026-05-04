@@ -131,6 +131,9 @@ importers:
       '@babel/parser':
         specifier: ^7.29.2
         version: 7.29.2
+      '@babel/types':
+        specifier: ^7.29.0
+        version: 7.29.0
       '@fontsource-variable/geist':
         specifier: ^5.2.8
         version: 5.2.8

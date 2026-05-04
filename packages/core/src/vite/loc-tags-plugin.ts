@@ -1,7 +1,8 @@
 import path from 'node:path';
 import { parse as babelParse } from '@babel/parser';
+import * as t from '@babel/types';
 import type { Plugin } from 'vite';
-import { type AstNode, walkJsx } from './babel-walk.ts';
+import { walkJsx } from './babel-walk.ts';
 
 // Inject `data-slide-loc="<line>:<col>"` onto every host JSX element in
 // slide source files so the inspector can map a click straight to a
@@ -11,25 +12,20 @@ import { type AstNode, walkJsx } from './babel-walk.ts';
 // host root, so the inspector can target them like a host element.
 const FORWARDING_COMPONENTS = new Set(['ImagePlaceholder']);
 
-function isTaggableJsxName(name: unknown): name is { type: string; name: string; end: number } {
-  if (!name || typeof name !== 'object') return false;
-  const n = name as { type?: string; name?: string };
-  if (n.type !== 'JSXIdentifier' || typeof n.name !== 'string') return false;
-  return /^[a-z]/.test(n.name) || FORWARDING_COMPONENTS.has(n.name);
+function isTaggableJsxName(name: t.JSXOpeningElement['name']): name is t.JSXIdentifier {
+  if (!t.isJSXIdentifier(name)) return false;
+  return /^[a-z]/.test(name.name) || FORWARDING_COMPONENTS.has(name.name);
 }
 
-function alreadyTagged(opening: AstNode): boolean {
-  const attrs = (opening as unknown as { attributes?: AstNode[] }).attributes ?? [];
-  for (const attr of attrs) {
-    if (attr.type !== 'JSXAttribute') continue;
-    const name = (attr as unknown as { name?: { type?: string; name?: string } }).name;
-    if (name?.type === 'JSXIdentifier' && name.name === 'data-slide-loc') return true;
-  }
-  return false;
+function alreadyTagged(opening: t.JSXOpeningElement): boolean {
+  return opening.attributes.some(
+    (attr) =>
+      t.isJSXAttribute(attr) && t.isJSXIdentifier(attr.name) && attr.name.name === 'data-slide-loc',
+  );
 }
 
 export function injectLocTags(code: string): string | null {
-  let ast: unknown;
+  let ast: t.File;
   try {
     ast = babelParse(code, {
       sourceType: 'module',
@@ -42,17 +38,13 @@ export function injectLocTags(code: string): string | null {
 
   const insertions: { offset: number; text: string }[] = [];
   walkJsx(ast, (node) => {
-    if (node.type !== 'JSXElement') return;
-    const opening = (node as unknown as { openingElement?: AstNode }).openingElement;
-    if (!opening) return;
-    const name = (opening as unknown as { name?: unknown }).name;
-    if (!isTaggableJsxName(name)) return;
-    if (alreadyTagged(opening)) return;
-    const loc = node.loc;
-    if (!loc) return;
+    if (!t.isJSXElement(node) || !node.loc) return;
+    const opening = node.openingElement;
+    const name = opening.name;
+    if (!isTaggableJsxName(name) || alreadyTagged(opening)) return;
     insertions.push({
-      offset: name.end,
-      text: ` data-slide-loc="${loc.start.line}:${loc.start.column}"`,
+      offset: name.end ?? 0,
+      text: ` data-slide-loc="${node.loc.start.line}:${node.loc.start.column}"`,
     });
   });
 

@@ -28,14 +28,24 @@ type Bucket = {
   line: number;
   column: number;
   styleOps: Map<string, string | null>;
-  textOp: { value: string } | null;
+  // Text edits are scoped per DOM instance: a reused component renders
+  // the same JSX `<h2>{title}</h2>` at multiple call sites with the same
+  // `data-slide-loc`, but each call site's prop literal is independent.
+  // Style/attr ops stay shared because they edit the JSX definition.
+  textOps: Map<string /* instanceId */, { value: string }>;
   attrOps: Map<string, AssetAttrOp>;
   // Pre-edit snapshot of the DOM, captured the first time we touch
   // each style key / text / attribute. Used by `cancelEdits` to revert.
   origStyle: Map<string, string>;
-  origText: { value: string } | null;
+  origTexts: Map<string /* instanceId */, { value: string }>;
   origAttrs: Map<string, string | null>;
 };
+
+const INSTANCE_ID_ATTR = 'data-slide-instance-id';
+
+function readInstanceId(el: HTMLElement): string | null {
+  return el.getAttribute(INSTANCE_ID_ATTR);
+}
 
 type InspectorCtx = {
   slideId: string;
@@ -77,23 +87,39 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
   const history = useHistory();
 
   const pendingRef = useRef<Map<string, Bucket>>(new Map());
+  const instanceCounterRef = useRef(0);
   const [pendingCount, setPendingCount] = useState(0);
   const [committing, setCommitting] = useState(false);
   const t = useLocale();
 
+  const ensureInstanceId = useCallback((el: HTMLElement): string => {
+    const existing = el.getAttribute(INSTANCE_ID_ATTR);
+    if (existing) return existing;
+    const next = `inst-${++instanceCounterRef.current}`;
+    el.setAttribute(INSTANCE_ID_ATTR, next);
+    return next;
+  }, []);
+
   const refreshCount = useCallback(() => {
     let n = 0;
     for (const b of pendingRef.current.values()) {
-      if (b.styleOps.size > 0 || b.textOp !== null || b.attrOps.size > 0) n++;
+      if (b.styleOps.size > 0 || b.textOps.size > 0 || b.attrOps.size > 0) n++;
     }
     setPendingCount(n);
   }, []);
 
   // Find the live anchor for a buffered loc. Used by history undo/redo
-  // since the original `anchor` reference may have unmounted.
-  const findAnchor = useCallback((line: number, column: number) => {
+  // since the original `anchor` reference may have unmounted. With an
+  // instance id, prefer the matching DOM node so per-instance text edits
+  // round-trip onto the right element.
+  const findAnchor = useCallback((line: number, column: number, instanceId?: string) => {
     const root = document.querySelector<HTMLElement>('[data-inspector-root]');
-    return root?.querySelector<HTMLElement>(`[data-slide-loc="${line}:${column}"]`) ?? null;
+    if (!root) return null;
+    if (instanceId) {
+      const byInstance = root.querySelector<HTMLElement>(`[${INSTANCE_ID_ATTR}="${instanceId}"]`);
+      if (byInstance) return byInstance;
+    }
+    return root.querySelector<HTMLElement>(`[data-slide-loc="${line}:${column}"]`);
   }, []);
 
   // Mutate bucket + DOM without recording history. Shared by `bufferOps`
@@ -107,10 +133,10 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
           line,
           column,
           styleOps: new Map(),
-          textOp: null,
+          textOps: new Map(),
           attrOps: new Map(),
           origStyle: new Map(),
-          origText: null,
+          origTexts: new Map(),
           origAttrs: new Map(),
         };
         pendingRef.current.set(key, bucket);
@@ -124,11 +150,16 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
           bucket.styleOps.set(op.key, op.value);
           if (anchor?.isConnected) style[op.key] = op.value ?? '';
         } else if (op.kind === 'set-text') {
-          if (anchor && bucket.origText === null) {
-            bucket.origText = { value: anchor.textContent ?? '' };
+          // Reused JSX renders multiple DOM nodes with the same
+          // `data-slide-loc` but distinct call-site literals; without an
+          // anchor we can't tell which instance to route to, so skip.
+          if (!anchor) continue;
+          const instanceId = ensureInstanceId(anchor);
+          if (!bucket.origTexts.has(instanceId)) {
+            bucket.origTexts.set(instanceId, { value: anchor.textContent ?? '' });
           }
-          bucket.textOp = { value: op.value };
-          if (anchor?.isConnected) anchor.textContent = op.value;
+          bucket.textOps.set(instanceId, { value: op.value });
+          if (anchor.isConnected) anchor.textContent = op.value;
         } else if (op.kind === 'set-attr-asset') {
           if (anchor && !bucket.origAttrs.has(op.attr)) {
             bucket.origAttrs.set(
@@ -142,14 +173,19 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       }
       refreshCount();
     },
-    [refreshCount],
+    [refreshCount, ensureInstanceId],
   );
 
   // Pre-edit snapshot for history: capture the *currently effective* value of
   // each touched field so undo can restore exactly the prior state, including
   // the case where the bucket already had a buffered edit before this op.
   type StyleSnap = { kind: 'style'; key: string; value: string | null; existed: boolean };
-  type TextSnap = { kind: 'text'; value: string | null; existed: boolean };
+  type TextSnap = {
+    kind: 'text';
+    instanceId: string;
+    value: string | null;
+    existed: boolean;
+  };
   type AttrSnap = {
     kind: 'attr';
     attr: string;
@@ -182,10 +218,17 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
             });
           }
         } else if (op.kind === 'set-text') {
-          if (bucket?.textOp) {
-            snaps.push({ kind: 'text', value: bucket.textOp.value, existed: true });
+          const instanceId = ensureInstanceId(anchor);
+          const existing = bucket?.textOps.get(instanceId);
+          if (existing) {
+            snaps.push({ kind: 'text', instanceId, value: existing.value, existed: true });
           } else {
-            snaps.push({ kind: 'text', value: anchor.textContent ?? '', existed: false });
+            snaps.push({
+              kind: 'text',
+              instanceId,
+              value: anchor.textContent ?? '',
+              existed: false,
+            });
           }
         } else if (op.kind === 'set-attr-asset') {
           const prev = bucket?.attrOps.get(op.attr);
@@ -212,7 +255,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       }
       return snaps;
     },
-    [],
+    [ensureInstanceId],
   );
 
   // Restore the snapshotted values to bucket + DOM. Mirrors the bucket-empty
@@ -222,43 +265,47 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       const key = `${line}:${column}`;
       const bucket = pendingRef.current.get(key);
       if (!bucket) return;
-      const anchor = findAnchor(line, column);
-      const style = (anchor?.style ?? {}) as unknown as Record<string, string>;
+      // Style/attr snaps share the loc-level anchor (first match);
+      // text snaps look up their per-instance node below.
+      const sharedAnchor = findAnchor(line, column);
+      const sharedStyle = (sharedAnchor?.style ?? {}) as unknown as Record<string, string>;
       for (const snap of snaps) {
         if (snap.kind === 'style') {
           if (snap.existed) {
             const v = snap.value ?? '';
             bucket.styleOps.set(snap.key, snap.value);
-            if (anchor?.isConnected) style[snap.key] = v;
+            if (sharedAnchor?.isConnected) sharedStyle[snap.key] = v;
           } else {
             bucket.styleOps.delete(snap.key);
             const orig = bucket.origStyle.get(snap.key);
-            if (anchor?.isConnected) style[snap.key] = orig ?? '';
+            if (sharedAnchor?.isConnected) sharedStyle[snap.key] = orig ?? '';
           }
         } else if (snap.kind === 'text') {
+          const textAnchor = findAnchor(line, column, snap.instanceId);
           if (snap.existed) {
-            bucket.textOp = { value: snap.value ?? '' };
-            if (anchor?.isConnected) anchor.textContent = snap.value ?? '';
+            bucket.textOps.set(snap.instanceId, { value: snap.value ?? '' });
+            if (textAnchor?.isConnected) textAnchor.textContent = snap.value ?? '';
           } else {
-            bucket.textOp = null;
-            if (anchor?.isConnected) anchor.textContent = bucket.origText?.value ?? '';
+            bucket.textOps.delete(snap.instanceId);
+            const orig = bucket.origTexts.get(snap.instanceId);
+            if (textAnchor?.isConnected) textAnchor.textContent = orig?.value ?? '';
           }
         } else if (snap.kind === 'attr') {
           if (snap.source === 'op') {
             const op = snap.value as AssetAttrOp;
             bucket.attrOps.set(snap.attr, op);
-            if (anchor?.isConnected) anchor.setAttribute(snap.attr, op.previewUrl);
+            if (sharedAnchor?.isConnected) sharedAnchor.setAttribute(snap.attr, op.previewUrl);
           } else {
             bucket.attrOps.delete(snap.attr);
             const orig = bucket.origAttrs.get(snap.attr);
-            if (anchor?.isConnected) {
-              if (orig === null || orig === undefined) anchor.removeAttribute(snap.attr);
-              else anchor.setAttribute(snap.attr, orig);
+            if (sharedAnchor?.isConnected) {
+              if (orig === null || orig === undefined) sharedAnchor.removeAttribute(snap.attr);
+              else sharedAnchor.setAttribute(snap.attr, orig);
             }
           }
         }
       }
-      if (bucket.styleOps.size === 0 && bucket.textOp === null && bucket.attrOps.size === 0) {
+      if (bucket.styleOps.size === 0 && bucket.textOps.size === 0 && bucket.attrOps.size === 0) {
         pendingRef.current.delete(key);
       }
       refreshCount();
@@ -291,22 +338,55 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
   const commitEdits = useCallback(async () => {
     const buckets = pendingRef.current;
     if (buckets.size === 0) return;
-    const pending: Array<{ key: string; edit: Edit }> = [];
-    for (const [key, { line, column, styleOps, textOp, attrOps, origText }] of buckets) {
-      const list: EditOp[] = [];
-      for (const [k, v] of styleOps) list.push({ kind: 'set-style', key: k, value: v });
-      if (textOp !== null) {
-        list.push({ kind: 'set-text', value: textOp.value, prevText: origText?.value });
-      }
+    // Each bucket flattens to one Edit per text instance plus one Edit
+    // for the shared style/attr ops. We track which entries in `pending`
+    // belong to which bucket so a per-edit failure can clear just the
+    // landed pieces while leaving the rest buffered for retry.
+    type PendingItem = {
+      key: string;
+      edit: Edit;
+      onSuccess: (bucket: Bucket) => void;
+    };
+    const pending: PendingItem[] = [];
+    for (const [key, bucket] of buckets) {
+      const { line, column, styleOps, textOps, attrOps, origTexts } = bucket;
+      // Shared edit (style + asset attrs) — one per bucket.
+      const sharedOps: EditOp[] = [];
+      for (const [k, v] of styleOps) sharedOps.push({ kind: 'set-style', key: k, value: v });
       for (const [attr, op] of attrOps) {
-        list.push({
+        sharedOps.push({
           kind: 'set-attr-asset',
           attr,
           assetPath: op.assetPath,
           previewUrl: op.previewUrl,
         });
       }
-      if (list.length > 0) pending.push({ key, edit: { line, column, ops: list } });
+      if (sharedOps.length > 0) {
+        pending.push({
+          key,
+          edit: { line, column, ops: sharedOps },
+          onSuccess: (b) => {
+            b.styleOps.clear();
+            b.attrOps.clear();
+          },
+        });
+      }
+      // Per-instance text edits — one Edit per call site, each with its
+      // own prevText so the server can disambiguate among siblings.
+      for (const [instanceId, textOp] of textOps) {
+        const orig = origTexts.get(instanceId);
+        pending.push({
+          key,
+          edit: {
+            line,
+            column,
+            ops: [{ kind: 'set-text', value: textOp.value, prevText: orig?.value }],
+          },
+          onSuccess: (b) => {
+            b.textOps.delete(instanceId);
+          },
+        });
+      }
     }
     if (pending.length === 0) {
       pendingRef.current = new Map();
@@ -317,17 +397,24 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
     setCommitting(true);
     try {
       const results = await applyEdits(pending.map((p) => p.edit));
-      // Drop buckets whose edits landed; keep failed ones so the user can
-      // retry. History is cleared either way — undoing through failed
-      // buckets after a partial commit would race with disk.
       const failures: string[] = [];
       for (let i = 0; i < results.length; i++) {
-        const { key, edit } = pending[i];
+        const item = pending[i];
         const r = results[i];
+        const bucket = pendingRef.current.get(item.key);
         if (r.ok) {
-          pendingRef.current.delete(key);
+          if (bucket) {
+            item.onSuccess(bucket);
+            if (
+              bucket.styleOps.size === 0 &&
+              bucket.textOps.size === 0 &&
+              bucket.attrOps.size === 0
+            ) {
+              pendingRef.current.delete(item.key);
+            }
+          }
         } else {
-          failures.push(`line ${edit.line}: ${r.error ?? 'edit failed'}`);
+          failures.push(`line ${item.edit.line}: ${r.error ?? 'edit failed'}`);
         }
       }
       refreshCount();
@@ -349,14 +436,20 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
     }
     const root = document.querySelector<HTMLElement>('[data-inspector-root]');
     for (const b of pendingRef.current.values()) {
-      const el = root?.querySelector<HTMLElement>(`[data-slide-loc="${b.line}:${b.column}"]`);
-      if (!el) continue;
-      const style = el.style as unknown as Record<string, string>;
-      for (const [k, v] of b.origStyle) style[k] = v;
-      if (b.origText !== null) el.textContent = b.origText.value;
-      for (const [attr, value] of b.origAttrs) {
-        if (value === null) el.removeAttribute(attr);
-        else el.setAttribute(attr, value);
+      const sharedEl = root?.querySelector<HTMLElement>(`[data-slide-loc="${b.line}:${b.column}"]`);
+      if (sharedEl) {
+        const style = sharedEl.style as unknown as Record<string, string>;
+        for (const [k, v] of b.origStyle) style[k] = v;
+        for (const [attr, value] of b.origAttrs) {
+          if (value === null) sharedEl.removeAttribute(attr);
+          else sharedEl.setAttribute(attr, value);
+        }
+      }
+      // Each text edit has its own anchor — locate by instance id.
+      for (const [instanceId, orig] of b.origTexts) {
+        const textEl =
+          root?.querySelector<HTMLElement>(`[${INSTANCE_ID_ATTR}="${instanceId}"]`) ?? null;
+        if (textEl?.isConnected) textEl.textContent = orig.value;
       }
     }
     pendingRef.current = new Map();
@@ -398,8 +491,15 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
         const v = value ?? '';
         if (style[key] !== v) style[key] = v;
       }
-      if (bucket.textOp !== null && el.textContent !== bucket.textOp.value) {
-        el.textContent = bucket.textOp.value;
+      // Text replays per-instance: only the originally clicked DOM node
+      // (stamped with its `data-slide-instance-id`) gets the buffered
+      // value, so siblings of a reused component aren't clobbered.
+      const instanceId = readInstanceId(el);
+      if (instanceId) {
+        const textOp = bucket.textOps.get(instanceId);
+        if (textOp && el.textContent !== textOp.value) {
+          el.textContent = textOp.value;
+        }
       }
       for (const [attr, op] of bucket.attrOps) {
         if (el.getAttribute(attr) !== op.previewUrl) el.setAttribute(attr, op.previewUrl);
