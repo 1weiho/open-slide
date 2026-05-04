@@ -322,6 +322,171 @@ describe('applyEdit / set-text', () => {
     expect(r.status).toBe(422);
     expect(r.error).toMatch(/multiple text candidates/);
   });
+
+  it('routes a prop pass-through edit to the matching call site', () => {
+    // `<h2>{title}</h2>` has no editable text of its own — find the
+    // `title="..."` literal at the (only) call site and rewrite it.
+    const src = [
+      'const Card = ({ title }: { title: string }) => (',
+      '  <h2>{title}</h2>',
+      ');',
+      'export default [() => (',
+      '  <Card title="Hello" />',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 2, [{ kind: 'set-text', value: 'Goodbye', prevText: 'Hello' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('<Card title="Goodbye" />');
+    expect(r.source).toContain('<h2>{title}</h2>');
+  });
+
+  it('disambiguates among sibling call sites of a reused prop component', () => {
+    const src = [
+      'const Card = ({ title }: { title: string }) => (',
+      '  <h2>{title}</h2>',
+      ');',
+      'export default [() => (',
+      '  <section>',
+      '    <Card title="First" />',
+      '    <Card title="Second" />',
+      '  </section>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 2, [{ kind: 'set-text', value: 'Edited', prevText: 'Second' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('<Card title="First" />');
+    expect(r.source).toContain('<Card title="Edited" />');
+  });
+
+  it('escapes a prop value that needs an expression container', () => {
+    const src = [
+      'const Card = ({ label }: { label: string }) => (',
+      '  <h2>{label}</h2>',
+      ');',
+      'export default [() => (',
+      '  <Card label="plain" />',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 2, [
+      { kind: 'set-text', value: 'with "quotes"', prevText: 'plain' },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain(`<Card label={'with "quotes"'} />`);
+  });
+
+  it('bails on a prop pass-through when the prop is not destructured', () => {
+    const src = [
+      'const Card = (props) => (',
+      '  <h2>{title}</h2>',
+      ');',
+      'export default [() => (',
+      '  <Card title="Hello" />',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 2, [{ kind: 'set-text', value: 'X', prevText: 'Hello' }]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.error).toMatch(/no editable text/);
+  });
+
+  it('routes a `.map()` MemberExpression child to the matching array entry', () => {
+    const src = [
+      'const surfaces = [',
+      "  { tag: 'CLI', label: 'Terminal' },",
+      "  { tag: 'IDE', label: 'VS Code' },",
+      '];',
+      'export default [() => (',
+      '  <>',
+      '    {surfaces.map((s) => (',
+      '      <div key={s.tag}>{s.label}</div>',
+      '    ))}',
+      '  </>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 8, 6, [{ kind: 'set-text', value: 'Shell', prevText: 'Terminal' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("label: 'Shell'");
+    expect(r.source).toContain("label: 'VS Code'");
+  });
+
+  it('routes a `.map()` Identifier child (destructured) to the matching array entry', () => {
+    const src = [
+      'const items = [',
+      "  { name: 'First' },",
+      "  { name: 'Second' },",
+      '];',
+      'export default [() => (',
+      '  <>',
+      '    {items.map(({ name }) => (',
+      '      <span key={name}>{name}</span>',
+      '    ))}',
+      '  </>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 8, 6, [{ kind: 'set-text', value: 'Edited', prevText: 'Second' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("name: 'First'");
+    expect(r.source).toContain("name: 'Edited'");
+  });
+
+  it('handles an inline array literal in a `.map()` callee', () => {
+    const src = [
+      'export default [() => (',
+      '  <>',
+      "    {[{ word: 'a' }, { word: 'b' }].map((x) => (",
+      '      <em key={x.word}>{x.word}</em>',
+      '    ))}',
+      '  </>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 4, 6, [{ kind: 'set-text', value: 'A!', prevText: 'a' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("word: 'A!'");
+    expect(r.source).toContain("word: 'b'");
+  });
+
+  it('bails on a `.map()` child when the prop is not a literal', () => {
+    const src = [
+      'const greet = "hi";',
+      'const items = [{ name: greet }];',
+      'export default [() => (',
+      '  <>',
+      '    {items.map((x) => (',
+      '      <span>{x.name}</span>',
+      '    ))}',
+      '  </>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 6, 6, [{ kind: 'set-text', value: 'X', prevText: 'hi' }]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.error).toMatch(/no editable text/);
+  });
+
+  it('bails on a prop pass-through when the call site uses a non-literal value', () => {
+    const src = [
+      'const heading = "Hello";',
+      'const Card = ({ title }: { title: string }) => (',
+      '  <h2>{title}</h2>',
+      ');',
+      'export default [() => (',
+      '  <Card title={heading} />',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 3, 2, [{ kind: 'set-text', value: 'X', prevText: 'Hello' }]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.error).toMatch(/no editable text/);
+  });
 });
 
 describe('applyEdit / combined ops', () => {

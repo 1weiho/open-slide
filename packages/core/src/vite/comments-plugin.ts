@@ -4,7 +4,7 @@ import type { ServerResponse } from 'node:http';
 import path from 'node:path';
 import { parse as babelParse } from '@babel/parser';
 import type { Connect, Plugin, ViteDevServer } from 'vite';
-import { type AstNode, walkJsx } from './babel-walk.ts';
+import { type AstNode, walkAll, walkJsx } from './babel-walk.ts';
 
 const MARKER_RE =
   /\{\/\*\s*@slide-comment\s+id="(c-[a-f0-9]+)"\s+ts="([^"]+)"\s+text="([A-Za-z0-9_-]+={0,2})"\s*\*\/\}/g;
@@ -405,28 +405,32 @@ function collectTextCandidates(element: AstNode, out: TextCandidate[]): void {
   }
 }
 
-// `<Wrap>{children}</Wrap>` — text lives at the *call sites*, not here.
-function isChildrenSlotElement(element: AstNode): boolean {
+// `<Wrap>{children}</Wrap>` and `<h2>{title}</h2>` — sole child is a
+// JSXExpressionContainer wrapping a bare Identifier. Returns the identifier
+// name; callers branch on `'children'` vs. a generic prop passthrough.
+function propPassthroughName(element: AstNode): string | null {
   const meaningful = meaningfulChildren(element);
-  if (meaningful.length !== 1) return false;
+  if (meaningful.length !== 1) return null;
   const child = meaningful[0];
-  if (child.type !== 'JSXExpressionContainer') return false;
+  if (child.type !== 'JSXExpressionContainer') return null;
   const expr = (child as unknown as { expression: AstNode }).expression;
-  if (expr.type !== 'Identifier') return false;
-  return (expr as unknown as { name?: string }).name === 'children';
+  if (expr.type !== 'Identifier') return null;
+  return (expr as unknown as { name?: string }).name ?? null;
 }
 
+type EnclosingComponent = { name: string; fn: AstNode };
+
 // Smallest top-level capitalized function whose body covers `target`.
-function findEnclosingComponentName(ast: AstNode, target: AstNode): string | null {
+function findEnclosingComponent(ast: AstNode, target: AstNode): EnclosingComponent | null {
   const body = (ast as unknown as { program?: { body?: AstNode[] } }).program?.body ?? [];
-  let bestName: string | null = null;
+  let best: EnclosingComponent | null = null;
   let bestSize = Number.POSITIVE_INFINITY;
   const consider = (name: string, fn: AstNode) => {
     if (!/^[A-Z]/.test(name)) return;
     if (fn.start > target.start || fn.end < target.end) return;
     const size = fn.end - fn.start;
     if (size < bestSize) {
-      bestName = name;
+      best = { name, fn };
       bestSize = size;
     }
   };
@@ -453,7 +457,28 @@ function findEnclosingComponentName(ast: AstNode, target: AstNode): string | nul
       if (inner) visitDecl(inner);
     }
   }
-  return bestName;
+  return best;
+}
+
+function componentDestructuresProp(fn: AstNode, propName: string): boolean {
+  const params = (fn as unknown as { params?: AstNode[] }).params ?? [];
+  if (params.length === 0) return false;
+  let first = params[0];
+  // Handle `({ title }: Props)` — the AssignmentPattern wraps a default,
+  // and TS may surface a TSAsExpression / TSTypeAnnotation on the param.
+  if (first.type === 'AssignmentPattern') {
+    first = (first as unknown as { left: AstNode }).left;
+  }
+  if (first.type !== 'ObjectPattern') return false;
+  const properties = (first as unknown as { properties?: AstNode[] }).properties ?? [];
+  for (const prop of properties) {
+    if (prop.type !== 'ObjectProperty') continue;
+    const key = (prop as unknown as { key?: { type?: string; name?: string; value?: string } }).key;
+    if (!key) continue;
+    if (key.type === 'Identifier' && key.name === propName) return true;
+    if (key.type === 'StringLiteral' && key.value === propName) return true;
+  }
+  return false;
 }
 
 function collectCallSiteCandidates(ast: AstNode, componentName: string): TextCandidate[] {
@@ -470,6 +495,217 @@ function collectCallSiteCandidates(ast: AstNode, componentName: string): TextCan
   return out;
 }
 
+// Emit a JSX attribute value: `"foo"` when the value is round-trip-safe
+// inside double quotes; otherwise wrap in `{...}` so escapes work.
+function formatJsxAttrValue(value: string): string {
+  if (/^[^"\\<>&{}\n\r]*$/.test(value)) return `"${value}"`;
+  return `{${jsString(value)}}`;
+}
+
+function collectPropCallSiteCandidates(
+  ast: AstNode,
+  componentName: string,
+  propName: string,
+): TextCandidate[] {
+  const out: TextCandidate[] = [];
+  walkJsx(ast, (n) => {
+    if (n.type !== 'JSXElement') return;
+    const opening = (n as unknown as { openingElement?: AstNode }).openingElement;
+    if (!opening) return;
+    const elName = (opening as unknown as { name?: { type?: string; name?: string } }).name;
+    if (elName?.type !== 'JSXIdentifier' || elName.name !== componentName) return;
+    const attr = findJsxAttr(opening, propName);
+    if (!attr) return;
+    const attrValue = (attr as unknown as { value?: AstNode | null }).value;
+    if (!attrValue) return; // shorthand-true: not editable text.
+    if (attrValue.type === 'StringLiteral') {
+      const current = (attrValue as unknown as { value?: string }).value ?? '';
+      out.push({
+        current,
+        splice: (v) => ({ from: attrValue.start, to: attrValue.end, text: formatJsxAttrValue(v) }),
+      });
+    } else if (attrValue.type === 'JSXExpressionContainer') {
+      const expr = (attrValue as unknown as { expression: AstNode }).expression;
+      if (expr.type === 'StringLiteral' || expr.type === 'NumericLiteral') {
+        const current = String((expr as unknown as { value: string | number }).value);
+        out.push({
+          current,
+          splice: (v) => ({
+            from: attrValue.start,
+            to: attrValue.end,
+            text: formatJsxAttrValue(v),
+          }),
+        });
+      }
+    }
+  });
+  return out;
+}
+
+// Smallest enclosing `arr.map((p) => …)` callback (or `.flatMap`) that
+// covers `target`. Returns the callback fn plus the array argument node.
+function findEnclosingMapCallback(
+  ast: AstNode,
+  target: AstNode,
+): { fn: AstNode; arrayArg: AstNode } | null {
+  type Best = { fn: AstNode; arrayArg: AstNode; size: number };
+  let best: Best | null = null;
+  walkAll(ast, (node) => {
+    if (node.type !== 'CallExpression') return;
+    const callee = (node as unknown as { callee?: AstNode }).callee;
+    if (!callee || callee.type !== 'MemberExpression') return;
+    const computed = (callee as unknown as { computed?: boolean }).computed;
+    if (computed) return;
+    const prop = (callee as unknown as { property?: { type?: string; name?: string } }).property;
+    if (prop?.type !== 'Identifier') return;
+    if (prop.name !== 'map' && prop.name !== 'flatMap') return;
+    const args = (node as unknown as { arguments?: AstNode[] }).arguments ?? [];
+    const fn = args[0];
+    if (!fn) return;
+    if (fn.type !== 'ArrowFunctionExpression' && fn.type !== 'FunctionExpression') return;
+    if (fn.start > target.start || fn.end < target.end) return;
+    const arrayArg = (callee as unknown as { object?: AstNode }).object;
+    if (!arrayArg) return;
+    const size = fn.end - fn.start;
+    const next: Best = { fn, arrayArg, size };
+    if (!best || size < best.size) best = next;
+  });
+  if (!best) return null;
+  const found: Best = best;
+  return { fn: found.fn, arrayArg: found.arrayArg };
+}
+
+// `[ {...}, {...} ]` literal, either inline or via a `const x = [ ... ]`
+// declaration the receiver resolves to. Returns the ArrayExpression's
+// element list, or null if we can't resolve to a literal.
+function resolveArrayLiteralElements(ast: AstNode, expr: AstNode): AstNode[] | null {
+  if (expr.type === 'ArrayExpression') {
+    return ((expr as unknown as { elements?: (AstNode | null)[] }).elements ?? []).filter(
+      (e): e is AstNode => !!e,
+    );
+  }
+  if (expr.type === 'Identifier') {
+    const name = (expr as unknown as { name?: string }).name;
+    if (!name) return null;
+    let init: AstNode | null = null;
+    walkAll(ast, (node) => {
+      if (node.type !== 'VariableDeclarator') return;
+      const id = (node as unknown as { id?: { type?: string; name?: string } }).id;
+      if (id?.type !== 'Identifier' || id.name !== name) return;
+      const declInit = (node as unknown as { init?: AstNode }).init;
+      if (!declInit || declInit.type !== 'ArrayExpression') return;
+      // Must be declared before the use site; pick the most local match.
+      if (declInit.start > expr.start) return;
+      init = declInit;
+    });
+    if (!init) return null;
+    return ((init as unknown as { elements?: (AstNode | null)[] }).elements ?? []).filter(
+      (e): e is AstNode => !!e,
+    );
+  }
+  return null;
+}
+
+function findObjectProperty(obj: AstNode, name: string): AstNode | null {
+  if (obj.type !== 'ObjectExpression') return null;
+  const properties = (obj as unknown as { properties?: AstNode[] }).properties ?? [];
+  for (const prop of properties) {
+    if (prop.type !== 'ObjectProperty') continue;
+    const computed = (prop as unknown as { computed?: boolean }).computed;
+    if (computed) continue;
+    const key = (prop as unknown as { key?: { type?: string; name?: string; value?: string } }).key;
+    if (!key) continue;
+    if (key.type === 'Identifier' && key.name === name) return prop;
+    if (key.type === 'StringLiteral' && key.value === name) return prop;
+  }
+  return null;
+}
+
+// Decode `{p.field}` (MemberExpression) or `{field}` (Identifier
+// destructured from the callback param) into a single field name.
+function decodeMapPassthrough(element: AstNode, callbackParam: AstNode | undefined): string | null {
+  const meaningful = meaningfulChildren(element);
+  if (meaningful.length !== 1) return null;
+  const child = meaningful[0];
+  if (child.type !== 'JSXExpressionContainer') return null;
+  const expr = (child as unknown as { expression: AstNode }).expression;
+
+  if (expr.type === 'MemberExpression') {
+    const me = expr as unknown as {
+      object: AstNode;
+      property: AstNode;
+      computed?: boolean;
+    };
+    if (me.computed) return null;
+    if (me.object.type !== 'Identifier' || me.property.type !== 'Identifier') return null;
+    const objName = (me.object as unknown as { name?: string }).name;
+    const fieldName = (me.property as unknown as { name?: string }).name;
+    if (!objName || !fieldName) return null;
+    if (callbackParam?.type !== 'Identifier') return null;
+    if ((callbackParam as unknown as { name?: string }).name !== objName) return null;
+    return fieldName;
+  }
+
+  if (expr.type === 'Identifier') {
+    const fieldName = (expr as unknown as { name?: string }).name;
+    if (!fieldName) return null;
+    // Param is `{ field, ... }` destructuring — the identifier names the
+    // destructured property. Skip alias/rename forms (`{ field: alias }`).
+    if (callbackParam?.type !== 'ObjectPattern') return null;
+    const properties = (callbackParam as unknown as { properties?: AstNode[] }).properties ?? [];
+    for (const prop of properties) {
+      if (prop.type !== 'ObjectProperty') continue;
+      const computed = (prop as unknown as { computed?: boolean }).computed;
+      if (computed) continue;
+      const key = (prop as unknown as { key?: { type?: string; name?: string } }).key;
+      const value = (prop as unknown as { value?: AstNode }).value;
+      if (key?.type !== 'Identifier' || key.name !== fieldName) continue;
+      // Shorthand `{ field }` → value is also an Identifier with same name.
+      // Aliased `{ field: other }` → value is a different identifier; skip.
+      if (
+        value?.type === 'Identifier' &&
+        (value as unknown as { name?: string }).name === fieldName
+      ) {
+        return fieldName;
+      }
+      return null;
+    }
+    return null;
+  }
+
+  return null;
+}
+
+function collectArrayMapCandidates(ast: AstNode, element: AstNode): TextCandidate[] {
+  const ctx = findEnclosingMapCallback(ast, element);
+  if (!ctx) return [];
+  const params = (ctx.fn as unknown as { params?: AstNode[] }).params ?? [];
+  const fieldName = decodeMapPassthrough(element, params[0]);
+  if (!fieldName) return [];
+  const elements = resolveArrayLiteralElements(ast, ctx.arrayArg);
+  if (!elements) return [];
+  const out: TextCandidate[] = [];
+  for (const obj of elements) {
+    const prop = findObjectProperty(obj, fieldName);
+    if (!prop) continue;
+    const propValue = (prop as unknown as { value: AstNode }).value;
+    if (propValue.type === 'StringLiteral') {
+      const current = (propValue as unknown as { value?: string }).value ?? '';
+      out.push({
+        current,
+        splice: (v) => ({ from: propValue.start, to: propValue.end, text: jsString(v) }),
+      });
+    } else if (propValue.type === 'NumericLiteral') {
+      const current = String((propValue as unknown as { value?: number }).value ?? '');
+      out.push({
+        current,
+        splice: (v) => ({ from: propValue.start, to: propValue.end, text: jsString(v) }),
+      });
+    }
+  }
+  return out;
+}
+
 function buildTextSplice(
   ast: AstNode,
   element: AstNode,
@@ -478,9 +714,26 @@ function buildTextSplice(
 ): Splice | { error: string } {
   const candidates: TextCandidate[] = [];
   collectTextCandidates(element, candidates);
-  if (candidates.length === 0 && isChildrenSlotElement(element)) {
-    const componentName = findEnclosingComponentName(ast, element);
-    if (componentName) candidates.push(...collectCallSiteCandidates(ast, componentName));
+  if (candidates.length === 0) {
+    const passthrough = propPassthroughName(element);
+    const enclosing = passthrough ? findEnclosingComponent(ast, element) : null;
+    if (passthrough === 'children' && enclosing) {
+      candidates.push(...collectCallSiteCandidates(ast, enclosing.name));
+    } else if (
+      // `<h2>{title}</h2>` — route to the matching prop literal at each
+      // call site so reused components are independently editable.
+      passthrough &&
+      enclosing &&
+      componentDestructuresProp(enclosing.fn, passthrough)
+    ) {
+      candidates.push(...collectPropCallSiteCandidates(ast, enclosing.name, passthrough));
+    }
+  }
+  if (candidates.length === 0) {
+    // `surfaces.map((s) => <div>{s.label}</div>)` and the destructured
+    // form `({ label }) => <div>{label}</div>` — text lives in the
+    // matching object literal of the iterated array.
+    candidates.push(...collectArrayMapCandidates(ast, element));
   }
   if (candidates.length === 0) {
     return { error: 'element has no editable text' };
