@@ -1,0 +1,99 @@
+---
+title: ImagePlaceholder
+description: A typed stand-in for a real image the user has to supply.
+---
+
+`ImagePlaceholder` is a small runtime component that renders a sized, dashed
+box with a hint label. Drop it into a slide whenever the layout calls for a
+real image — a product screenshot, a team photo, a customer dashboard — that
+you don't have on disk yet.
+
+```tsx title="slides/q2-launch/index.tsx"
+import { ImagePlaceholder } from '@open-slide/core';
+
+const Hero = () => (
+  <ImagePlaceholder hint="Product hero screenshot" width={1280} height={720} />
+);
+
+export default [Hero];
+```
+
+The user uploads the real file via the [Assets panel](/docs/authoring/assets),
+clicks the placeholder in the [inspector](/docs/tools/inspector), and picks
+**Replace…** — the JSX is rewritten to a real `<img>` and the asset import is
+added at the top of the file.
+
+## Props
+
+```ts
+type ImagePlaceholderProps = {
+  /** Description of the content that belongs here. Becomes the alt text
+   *  on the replaced <img>. Required. */
+  hint: string;
+  /** Box width in px. Omit to fill the parent. */
+  width?: number;
+  /** Box height in px. Omit to fill the parent. */
+  height?: number;
+  /** Extra inline styles, merged after the placeholder's own. */
+  style?: CSSProperties;
+  className?: string;
+} & Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'style' | 'className'>;
+```
+
+When both `width` and `height` are set, the placeholder renders the dimensions
+under the hint so you can eyeball aspect ratios while drafting.
+
+## Sizing
+
+Pick one of two modes:
+
+- **Fixed box** — pass `width` and `height` when the layout has a hard image
+  slot (a hero card, a logo lockup at a known size).
+- **Fill the parent** — omit both when the placeholder sits inside a flex or
+  grid cell that already controls its size. The component defaults to
+  `width: 100%; height: 100%`.
+
+```tsx
+// Fixed
+<ImagePlaceholder hint="Q3 revenue chart" width={960} height={540} />
+
+// Fill a flex/grid cell
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
+  <ImagePlaceholder hint="Before — old dashboard" />
+  <ImagePlaceholder hint="After — new dashboard" />
+</div>
+```
+
+The `hint` should describe the *content* the user has to supply
+("Q3 revenue chart"), not its layout role ("hero image").
+
+## Replacement workflow
+
+The inspector's **Replace…** action is wired to a Vite-plugin op called
+`replace-placeholder-with-image`. Given an asset path, it:
+
+1. Confirms the targeted JSX is an `<ImagePlaceholder>`.
+2. Adds `import <ident> from './assets/<file>'` if the asset isn't already
+   imported.
+3. Rewrites the element to:
+
+   ```tsx
+   <img src={<ident>} alt="<hint>" style={{ width, height, objectFit: 'cover' }} />
+   ```
+
+The asset path must live under `./assets/` relative to the slide. If you skip
+the inspector and want to swap the placeholder by hand, the snippet above is
+exactly what to write.
+
+## When to use it
+
+Use a placeholder only when a *specific concrete* image is required by the
+deck's topic — a product-intro deck (one screenshot per feature), an offsite
+recap (team photo), a case study (customer logo).
+
+Do **not** use it for decoration, generic stock-photo filler, or anywhere a
+typographic or iconographic solution would do. Empty placeholders are friction
+the user has to clear; only spend that friction when the alternative is worse.
+
+See the **Image placeholders** section of the `slide-authoring` skill for the
+full editorial checklist.
