@@ -412,13 +412,100 @@ function collectTextCandidates(element: AstNode, out: TextCandidate[]): void {
   }
 }
 
+function isChildrenSlotElement(element: AstNode): boolean {
+  // `<Wrap>{children}</Wrap>` — the element renders its consumer's
+  // children verbatim, so any editable text lives at the *call sites*,
+  // not here.
+  const meaningful = meaningfulChildren(element);
+  if (meaningful.length !== 1) return false;
+  const child = meaningful[0];
+  if (child.type !== 'JSXExpressionContainer') return false;
+  const expr = (child as unknown as { expression: AstNode }).expression;
+  if (expr.type !== 'Identifier') return false;
+  return (expr as unknown as { name?: string }).name === 'children';
+}
+
+function nodeContains(parent: AstNode, child: AstNode): boolean {
+  return parent.start <= child.start && parent.end >= child.end;
+}
+
+function findEnclosingComponentName(ast: AstNode, target: AstNode): string | null {
+  // Smallest top-level capitalized function whose body covers the
+  // target node's source range.
+  const body = (ast as unknown as { program?: { body?: AstNode[] } }).program?.body ?? [];
+  let bestName: string | null = null;
+  let bestSize = Number.POSITIVE_INFINITY;
+  const consider = (name: string, fn: AstNode) => {
+    if (!/^[A-Z]/.test(name)) return;
+    if (!nodeContains(fn, target)) return;
+    const size = fn.end - fn.start;
+    if (size < bestSize) {
+      bestName = name;
+      bestSize = size;
+    }
+  };
+  const visitDecl = (decl: AstNode) => {
+    if (decl.type === 'FunctionDeclaration') {
+      const id = (decl as unknown as { id?: { name?: string } }).id;
+      if (id?.name) consider(id.name, decl);
+    } else if (decl.type === 'VariableDeclaration') {
+      const declarations = (decl as unknown as { declarations?: AstNode[] }).declarations ?? [];
+      for (const d of declarations) {
+        const dId = (d as unknown as { id?: { type?: string; name?: string } }).id;
+        const init = (d as unknown as { init?: AstNode }).init;
+        if (dId?.type !== 'Identifier' || !dId.name) continue;
+        if (!init) continue;
+        if (init.type === 'ArrowFunctionExpression' || init.type === 'FunctionExpression') {
+          consider(dId.name, init);
+        }
+      }
+    }
+  };
+  for (const decl of body) {
+    visitDecl(decl);
+    if (decl.type === 'ExportNamedDeclaration' || decl.type === 'ExportDefaultDeclaration') {
+      const inner = (decl as unknown as { declaration?: AstNode }).declaration;
+      if (inner) visitDecl(inner);
+    }
+  }
+  return bestName;
+}
+
+function findComponentCallSites(ast: AstNode, name: string): AstNode[] {
+  const sites: AstNode[] = [];
+  walkJsx(ast, (n) => {
+    if (n.type !== 'JSXElement') return;
+    const opening = (n as unknown as { openingElement?: AstNode }).openingElement;
+    if (!opening) return;
+    const elName = (opening as unknown as { name?: { type?: string; name?: string } }).name;
+    if (elName?.type === 'JSXIdentifier' && elName.name === name) sites.push(n);
+  });
+  return sites;
+}
+
+function collectChildrenSlotCandidates(source: string, element: AstNode): TextCandidate[] {
+  if (!isChildrenSlotElement(element)) return [];
+  const ast = parseSource(source);
+  if (!ast) return [];
+  const componentName = findEnclosingComponentName(ast, element);
+  if (!componentName) return [];
+  const sites = findComponentCallSites(ast, componentName);
+  const out: TextCandidate[] = [];
+  for (const site of sites) collectTextCandidates(site, out);
+  return out;
+}
+
 function buildTextSplice(
+  source: string,
   element: AstNode,
   value: string,
   prevText?: string,
 ): Splice | { error: string } {
   const candidates: TextCandidate[] = [];
   collectTextCandidates(element, candidates);
+  if (candidates.length === 0) {
+    candidates.push(...collectChildrenSlotCandidates(source, element));
+  }
   if (candidates.length === 0) {
     return { error: 'element has no editable text' };
   }
@@ -679,7 +766,7 @@ export function applyEdit(
 
   for (const op of ops) {
     if (op.kind !== 'set-text') continue;
-    const result = buildTextSplice(element, op.value, op.prevText);
+    const result = buildTextSplice(source, element, op.value, op.prevText);
     if ('error' in result) return { ok: false, status: 422, error: result.error };
     splices.push(result);
   }

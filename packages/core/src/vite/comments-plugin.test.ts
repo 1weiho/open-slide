@@ -265,6 +265,63 @@ describe('applyEdit / set-text', () => {
     expect(r.status).toBe(422);
     expect(r.error).toMatch(/no editable text/);
   });
+
+  it('falls through to call sites when the element is a {children} slot', () => {
+    // The host `<div>` at line 2 only renders `{children}`; the actual
+    // text lives at the unique call site below.
+    const src = [
+      'const Eyebrow = ({ children }) => (',
+      '  <div>{children}</div>',
+      ');',
+      'export default [() => (',
+      '  <Eyebrow>Hello</Eyebrow>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 2, [{ kind: 'set-text', value: 'Goodbye', prevText: 'Hello' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('<Eyebrow>Goodbye</Eyebrow>');
+    expect(r.source).toContain('<div>{children}</div>');
+  });
+
+  it('disambiguates between sibling call sites of a children-slot component', () => {
+    const src = [
+      'const Eyebrow = ({ children }) => (',
+      '  <div>{children}</div>',
+      ');',
+      'export default [() => (',
+      '  <section>',
+      '    <Eyebrow>One</Eyebrow>',
+      '    <Eyebrow>Two</Eyebrow>',
+      '  </section>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 2, [{ kind: 'set-text', value: 'Second', prevText: 'Two' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('<Eyebrow>One</Eyebrow>');
+    expect(r.source).toContain('<Eyebrow>Second</Eyebrow>');
+  });
+
+  it('bails on a children-slot element when prevText is missing and call sites differ', () => {
+    const src = [
+      'const Eyebrow = ({ children }) => (',
+      '  <div>{children}</div>',
+      ');',
+      'export default [() => (',
+      '  <section>',
+      '    <Eyebrow>One</Eyebrow>',
+      '    <Eyebrow>Two</Eyebrow>',
+      '  </section>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 2, [{ kind: 'set-text', value: 'X' }]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.status).toBe(422);
+    expect(r.error).toMatch(/multiple text candidates/);
+  });
 });
 
 describe('applyEdit / combined ops', () => {
