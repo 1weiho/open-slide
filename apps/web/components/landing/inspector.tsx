@@ -89,7 +89,6 @@ function FeatureCell({
   );
 }
 
-// ─── Visual: comment widget — matches packages/core CommentWidget ──────────
 function AgentApplyVisual() {
   return (
     <div className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden">
@@ -210,7 +209,6 @@ function CommentGlyph() {
   );
 }
 
-// ─── Visual: InspectorPanel + SaveBar — matches packages/core ──────────────
 function VisualEditorVisual() {
   return (
     <div className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden">

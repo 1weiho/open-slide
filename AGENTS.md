@@ -40,6 +40,7 @@ Filter to one package: `pnpm core <script>` / `pnpm cli <script>`.
 - Don't bump versions or edit `CHANGELOG.md` by hand — `changeset version` owns that.
 - Don't add dependencies casually. The `core` runtime ships to users; every dep inflates install size.
 - `packages/core/src/app/components/ui` is shadcn-generated and biome-ignored — leave it alone unless regenerating.
+- **Default to writing no comments.** Only add one when the WHY is non-obvious — a hidden constraint, a subtle invariant, a workaround for a specific bug, behavior that would surprise a reader. Don't explain WHAT the code does (well-named identifiers handle that), don't reference tasks/PRs/callers ("added for X", "used by Y"), don't write section-divider banners (`// ── Section ──`) or module-header descriptions, and don't leave commented-out code. If removing a comment wouldn't confuse a future reader, don't write it.
 
 ## Releasing (reference)
 

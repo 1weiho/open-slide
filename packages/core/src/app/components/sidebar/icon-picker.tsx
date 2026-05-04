@@ -3,9 +3,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { FolderIcon } from '@/lib/sdk';
 import { useLocale } from '@/lib/use-locale';
 
-// Editorial palette — restrained warm/earth tones, no shadcn defaults
-// (no #8b5cf6 violet, no #3b82f6 blue, etc.). Picked to coexist with the
-// vermillion brand accent without shouting over it.
 export const PRESET_COLORS = [
   '#c0392b', // vermillion
   '#b8743e', // ochre

@@ -130,8 +130,6 @@ export function FolderItem({
     <div
       className={cn(
         'group relative flex items-center gap-2.5 rounded-[5px] px-2 py-[5px] text-[12.5px] transition-colors',
-        // Editorial selected state: subtle warm tint + a thin vermillion
-        // ink-mark on the leading edge. Avoids the heavy "filled pill" look.
         selected
           ? 'bg-muted text-foreground before:absolute before:inset-y-1.5 before:-left-0.5 before:w-[2px] before:rounded-full before:bg-brand'
           : 'text-foreground/70 hover:bg-muted/60 hover:text-foreground',

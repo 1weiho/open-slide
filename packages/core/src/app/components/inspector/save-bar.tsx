@@ -4,9 +4,6 @@ import { useDesignPanelState } from '@/components/style-panel/design-provider';
 import { format, plural, useLocale } from '@/lib/use-locale';
 import { useInspector } from './inspector-provider';
 
-// Single save card for both inspector edits and design-token edits.
-// Counts the design draft as one unit; the user sees one combined
-// "N unsaved changes" pill. Save/Discard fan out to both providers.
 export function SaveBar() {
   const insp = useInspector();
   const design = useDesignPanelState();

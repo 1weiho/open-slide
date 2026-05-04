@@ -261,7 +261,6 @@ function SlidePreview({ variant, index }: { variant: Variant; index: number }) {
   );
 }
 
-// minimal syntax highlighter — tokenizes keywords, strings, comments, JSX tags.
 function highlight(src: string): string {
   const escape = (s: string) =>
     s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

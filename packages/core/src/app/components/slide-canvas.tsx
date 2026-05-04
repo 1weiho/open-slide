@@ -5,21 +5,12 @@ import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
 
 type Props = {
   children: ReactNode;
-  /** If set, use this scale directly (e.g., thumbnails). Otherwise fit to container. */
+  /** If set, use this scale directly. Otherwise fit to container. */
   scale?: number;
-  /** Center the canvas within the container (default true). */
   center?: boolean;
-  /** Flat mode: no rounded corners or drop shadow. */
   flat?: boolean;
-  /** Freeze descendant animations and transitions, useful for thumbnail previews. */
   freezeMotion?: boolean;
   className?: string;
-  /**
-   * Per-slide design tokens. When set, the matching CSS custom properties
-   * are emitted on the canvas root so descendants can use `var(--osd-X)`
-   * regardless of which surface (editor, player, thumbnail, export) is
-   * rendering them.
-   */
   design?: DesignSystem;
 };
 

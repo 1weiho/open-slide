@@ -1,8 +1,3 @@
-// Exports a slide as a PDF via the browser's native print engine.
-// Each page in `slide.default` becomes one PDF page at 1920×1080.
-// Text stays selectable and inline SVG remains vector — `window.print()`
-// preserves both. The user picks "Save as PDF" in the print dialog.
-
 import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { designToCssVars } from './design';

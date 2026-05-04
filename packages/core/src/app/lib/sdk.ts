@@ -11,8 +11,7 @@ export type SlideModule = {
   default: Page[];
   meta?: SlideMeta;
   design?: DesignSystem;
-  // Index-aligned with `default`. Each entry is the speaker note for the
-  // page at the same position. Used by Presenter View only.
+  // Index-aligned with `default`.
   notes?: (string | undefined)[];
 };
 
