@@ -1,5 +1,9 @@
-// Visits every JSXElement/JSXFragment; return `'stop'` to short-circuit.
+import { isJSXElement, isJSXFragment, type Node } from '@babel/types';
 
+// Loose structural type so plugins that hand-cast their way through
+// the AST (design-plugin etc.) keep compiling without null-checks on
+// every `start`/`end` read. New code should prefer Babel's specific
+// node types (`t.JSXElement`, `t.Identifier`, …) at the use site.
 export type Loc = { line: number; column: number };
 export type AstNode = {
   type: string;
@@ -21,9 +25,9 @@ const SKIP_KEYS = new Set([
 ]);
 
 // biome-ignore lint/suspicious/noConfusingVoidType: callers return void or 'stop' to short-circuit traversal.
-type Visitor = (node: AstNode) => void | 'stop';
+type Visitor = (node: Node) => void | 'stop';
 
-function walk(ast: unknown, visit: Visitor, accept: (n: AstNode) => boolean): void {
+function walk(ast: unknown, visit: Visitor, accept: (n: Node) => boolean): void {
   let stopped = false;
   const recurse = (node: unknown): void => {
     if (stopped || !node || typeof node !== 'object') return;
@@ -31,7 +35,7 @@ function walk(ast: unknown, visit: Visitor, accept: (n: AstNode) => boolean): vo
       for (const c of node) recurse(c);
       return;
     }
-    const n = node as AstNode;
+    const n = node as Node;
     if (typeof n.type !== 'string') return;
     if (accept(n) && visit(n) === 'stop') {
       stopped = true;
@@ -39,13 +43,13 @@ function walk(ast: unknown, visit: Visitor, accept: (n: AstNode) => boolean): vo
     }
     for (const key of Object.keys(n)) {
       if (SKIP_KEYS.has(key)) continue;
-      recurse((n as Record<string, unknown>)[key]);
+      recurse((n as unknown as Record<string, unknown>)[key]);
     }
   };
   recurse(ast);
 }
 
-const isJsx = (n: AstNode) => n.type === 'JSXElement' || n.type === 'JSXFragment';
+const isJsx = (n: Node) => isJSXElement(n) || isJSXFragment(n);
 const acceptAll = () => true;
 
 export function walkJsx(ast: unknown, visit: Visitor): void {

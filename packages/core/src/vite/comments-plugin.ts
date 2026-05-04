@@ -3,8 +3,9 @@ import fs from 'node:fs/promises';
 import type { ServerResponse } from 'node:http';
 import path from 'node:path';
 import { parse as babelParse } from '@babel/parser';
+import * as t from '@babel/types';
 import type { Connect, Plugin, ViteDevServer } from 'vite';
-import { type AstNode, walkAll, walkJsx } from './babel-walk.ts';
+import { walkAll, walkJsx } from './babel-walk.ts';
 
 const MARKER_RE =
   /\{\/\*\s*@slide-comment\s+id="(c-[a-f0-9]+)"\s+ts="([^"]+)"\s+text="([A-Za-z0-9_-]+={0,2})"\s*\*\/\}/g;
@@ -117,38 +118,41 @@ function lineIndent(source: string, lineNumber: number): string {
   return m?.[0] ?? '';
 }
 
+type JsxContainer = t.JSXElement | t.JSXFragment;
+
 // Innermost-first list of JSX nodes enclosing the click point.
 // Inclusive at start, exclusive at end.
-function findJsxAncestors(ast: AstNode, line: number, column: number): AstNode[] {
-  const hits: { node: AstNode; size: number }[] = [];
+function findJsxAncestors(ast: t.Node, line: number, column: number): JsxContainer[] {
+  const hits: { node: JsxContainer; size: number }[] = [];
   walkJsx(ast, (n) => {
-    if (!n.loc) return;
+    if (!n.loc || (!t.isJSXElement(n) && !t.isJSXFragment(n))) return;
     const s = n.loc.start;
     const e = n.loc.end;
     const afterStart = line > s.line || (line === s.line && column >= s.column);
     const beforeEnd = line < e.line || (line === e.line && column < e.column);
-    if (afterStart && beforeEnd) hits.push({ node: n, size: n.end - n.start });
+    if (afterStart && beforeEnd) {
+      hits.push({ node: n, size: (n.end ?? 0) - (n.start ?? 0) });
+    }
   });
   hits.sort((a, b) => a.size - b.size);
   return hits.map((h) => h.node);
 }
 
-function planInsertion(source: string, target: AstNode): InsertionPlan | null {
-  if (target.type === 'JSXFragment') {
-    const opening = target.openingFragment as AstNode | undefined;
-    if (!opening) return null;
+function planInsertion(source: string, target: JsxContainer): InsertionPlan | null {
+  if (t.isJSXFragment(target)) {
+    const opening = target.openingFragment;
     const startLine = target.loc?.start.line ?? 1;
     return {
-      offset: opening.end,
+      offset: opening.end ?? 0,
       indent: `${lineIndent(source, startLine)}  `,
     };
   }
-  if (target.type === 'JSXElement') {
-    const opening = target.openingElement as (AstNode & { selfClosing?: boolean }) | undefined;
-    if (!opening || opening.selfClosing) return null;
+  if (t.isJSXElement(target)) {
+    const opening = target.openingElement;
+    if (opening.selfClosing) return null;
     const startLine = target.loc?.start.line ?? 1;
     return {
-      offset: opening.end,
+      offset: opening.end ?? 0,
       indent: `${lineIndent(source, startLine)}  `,
     };
   }
@@ -163,21 +167,11 @@ function findInsertion(
   line: number,
   column: number | undefined,
 ): InsertionPlan | null {
-  let ast: AstNode;
-  try {
-    ast = babelParse(source, {
-      sourceType: 'module',
-      plugins: ['typescript', 'jsx'],
-      errorRecovery: true,
-    }) as unknown as AstNode;
-  } catch {
-    return null;
-  }
+  const ast = parseSource(source);
+  if (!ast) return null;
 
   const col = column ?? 0;
   const ancestors = findJsxAncestors(ast, line, col);
-  if (ancestors.length === 0) return null;
-
   for (const node of ancestors) {
     const plan = planInsertion(source, node);
     if (plan) return plan;
@@ -208,19 +202,19 @@ export type ApplyEditResult =
 
 type Splice = { from: number; to: number; text: string };
 
-function parseSource(source: string): AstNode | null {
+function parseSource(source: string): t.File | null {
   try {
     return babelParse(source, {
       sourceType: 'module',
       plugins: ['typescript', 'jsx'],
       errorRecovery: true,
-    }) as unknown as AstNode;
+    });
   } catch {
     return null;
   }
 }
 
-function findInnermostJsxElement(ast: AstNode, line: number, column: number): AstNode | null {
+function findInnermostJsxElement(ast: t.Node, line: number, column: number): t.JSXElement | null {
   // Prefer exact `loc.start` match (what `data-slide-loc` sends) so
   // we don't accidentally hit an outer JSX whose range happens to
   // enclose the click point.
@@ -229,17 +223,16 @@ function findInnermostJsxElement(ast: AstNode, line: number, column: number): As
 
   // Fallback for fiber-walked clicks whose column may not align with
   // the opening `<`.
-  const ancestors = findJsxAncestors(ast, line, column);
-  for (const n of ancestors) {
-    if (n.type === 'JSXElement') return n;
+  for (const n of findJsxAncestors(ast, line, column)) {
+    if (t.isJSXElement(n)) return n;
   }
   return null;
 }
 
-function findJsxByStart(ast: AstNode, line: number, column: number): AstNode | null {
-  let hit: AstNode | null = null;
+function findJsxByStart(ast: t.Node, line: number, column: number): t.JSXElement | null {
+  let hit: t.JSXElement | null = null;
   walkJsx(ast, (n) => {
-    if (n.type !== 'JSXElement' || !n.loc) return;
+    if (!t.isJSXElement(n) || !n.loc) return;
     const s = n.loc.start;
     if (s.line === line && s.column === column) {
       hit = n;
@@ -253,61 +246,51 @@ function jsString(s: string): string {
   return `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n')}'`;
 }
 
-type StyleAttr = AstNode & { value?: AstNode | null };
+function jsxAttrName(attr: t.JSXAttribute): string | null {
+  return t.isJSXIdentifier(attr.name) ? attr.name.name : null;
+}
 
-function findStyleAttr(opening: AstNode): StyleAttr | null {
-  const attrs = (opening as unknown as { attributes?: AstNode[] }).attributes ?? [];
-  for (const attr of attrs) {
-    if (attr.type !== 'JSXAttribute') continue;
-    const name = (attr as unknown as { name?: { type?: string; name?: string } }).name;
-    if (name?.type === 'JSXIdentifier' && name.name === 'style') {
-      return attr as StyleAttr;
-    }
+function findJsxAttr(opening: t.JSXOpeningElement, name: string): t.JSXAttribute | null {
+  for (const attr of opening.attributes) {
+    if (t.isJSXAttribute(attr) && jsxAttrName(attr) === name) return attr;
   }
   return null;
 }
 
 function buildStyleSplice(
   source: string,
-  element: AstNode,
+  element: t.JSXElement,
   ops: Array<{ key: string; value: string | null }>,
 ): Splice | { error: string } | null {
-  const opening = (element as unknown as { openingElement?: AstNode }).openingElement;
-  if (!opening) return { error: 'no opening element' };
-
-  const existing = findStyleAttr(opening);
+  const opening = element.openingElement;
+  const existing = findJsxAttr(opening, 'style');
   // Raw source slices, not parsed values — preserves variables and
   // complex expressions exactly as authored.
   const style = new Map<string, string>();
 
   if (existing) {
     const value = existing.value;
-    if (!value || value.type !== 'JSXExpressionContainer') {
+    if (!value || !t.isJSXExpressionContainer(value)) {
       return { error: 'style attribute has unsupported form' };
     }
-    const expr = (value as unknown as { expression: AstNode }).expression;
-    if (expr.type !== 'ObjectExpression') {
+    const expr = value.expression;
+    if (!t.isObjectExpression(expr)) {
       return { error: 'style is not a literal object' };
     }
-    const properties = (expr as unknown as { properties: AstNode[] }).properties;
-    for (const prop of properties) {
-      if (prop.type !== 'ObjectProperty') {
+    for (const prop of expr.properties) {
+      if (!t.isObjectProperty(prop)) {
         return { error: 'style contains spread or method' };
       }
-      const p = prop as unknown as {
-        computed?: boolean;
-        shorthand?: boolean;
-        key: { type?: string; name?: string; value?: string };
-        value: AstNode;
-      };
-      if (p.computed) return { error: 'style has computed key' };
+      if (prop.computed) return { error: 'style has computed key' };
       let keyName: string | null = null;
-      if (p.key.type === 'Identifier' && p.key.name) keyName = p.key.name;
-      else if (p.key.type === 'StringLiteral' && typeof p.key.value === 'string') {
-        keyName = p.key.value;
-      }
+      if (t.isIdentifier(prop.key)) keyName = prop.key.name;
+      else if (t.isStringLiteral(prop.key)) keyName = prop.key.value;
       if (!keyName) return { error: 'style has unsupported key' };
-      style.set(keyName, source.slice(p.value.start, p.value.end));
+      const v = prop.value;
+      if (typeof v.start !== 'number' || typeof v.end !== 'number') {
+        return { error: 'style value missing source range' };
+      }
+      style.set(keyName, source.slice(v.start, v.end));
     }
   }
 
@@ -318,9 +301,9 @@ function buildStyleSplice(
 
   if (style.size === 0) {
     if (!existing) return null;
-    let from = existing.start;
+    let from = existing.start ?? 0;
     if (from > 0 && source[from - 1] === ' ') from -= 1;
-    return { from, to: existing.end, text: '' };
+    return { from, to: existing.end ?? 0, text: '' };
   }
 
   const propsText = Array.from(style.entries())
@@ -329,11 +312,9 @@ function buildStyleSplice(
   const newAttr = `style={{ ${propsText} }}`;
 
   if (existing) {
-    return { from: existing.start, to: existing.end, text: newAttr };
+    return { from: existing.start ?? 0, to: existing.end ?? 0, text: newAttr };
   }
-
-  const name = (opening as unknown as { name: AstNode }).name;
-  return { from: name.end, to: name.end, text: ` ${newAttr}` };
+  return { from: opening.name.end ?? 0, to: opening.name.end ?? 0, text: ` ${newAttr}` };
 }
 
 function formatJsxText(value: string): string {
@@ -353,12 +334,11 @@ type TextCandidate = {
   splice: (value: string) => Splice;
 };
 
-function meaningfulChildren(parent: AstNode): AstNode[] {
-  const children = (parent as unknown as { children?: AstNode[] }).children ?? [];
-  return children.filter((c) => {
-    if (c.type === 'JSXText') {
-      return (c as unknown as { value: string }).value.trim() !== '';
-    }
+type JsxParent = t.JSXElement | t.JSXFragment;
+
+function meaningfulChildren(parent: JsxParent): t.Node[] {
+  return parent.children.filter((c) => {
+    if (t.isJSXText(c)) return c.value.trim() !== '';
     return true;
   });
 }
@@ -366,40 +346,39 @@ function meaningfulChildren(parent: AstNode): AstNode[] {
 // Wrap-style splice: rewrite the whole children span of `parent`. Used
 // when the candidate is the parent's only meaningful child, so old
 // surrounding whitespace nodes don't leak into the new value.
-function wrapSplice(parent: AstNode, text: string): Splice {
-  const children = (parent as unknown as { children?: AstNode[] }).children ?? [];
-  const first = children[0];
-  const last = children[children.length - 1];
-  return { from: first.start, to: last.end, text };
+function wrapSplice(parent: JsxParent, text: string): Splice {
+  const first = parent.children[0];
+  const last = parent.children[parent.children.length - 1];
+  return { from: first.start ?? 0, to: last.end ?? 0, text };
 }
 
-function collectTextCandidates(element: AstNode, out: TextCandidate[]): void {
+function collectTextCandidates(element: JsxParent, out: TextCandidate[]): void {
   const meaningful = meaningfulChildren(element);
   const isSole = meaningful.length === 1;
   for (const child of meaningful) {
-    if (child.type === 'JSXText') {
-      const current = (child as unknown as { value: string }).value.trim();
+    if (t.isJSXText(child)) {
+      const current = child.value.trim();
       if (!current) continue;
       out.push({
         current,
         splice: (v) =>
           isSole
             ? wrapSplice(element, formatJsxText(v))
-            : { from: child.start, to: child.end, text: formatJsxText(v) },
+            : { from: child.start ?? 0, to: child.end ?? 0, text: formatJsxText(v) },
       });
-    } else if (child.type === 'JSXExpressionContainer') {
-      const expr = (child as unknown as { expression: AstNode }).expression;
-      if (expr.type === 'StringLiteral' || expr.type === 'NumericLiteral') {
-        const current = String((expr as unknown as { value: string | number }).value);
+    } else if (t.isJSXExpressionContainer(child)) {
+      const expr = child.expression;
+      if (t.isStringLiteral(expr) || t.isNumericLiteral(expr)) {
+        const current = String(expr.value);
         out.push({
           current,
           splice: (v) =>
             isSole
               ? wrapSplice(element, `{${jsString(v)}}`)
-              : { from: child.start, to: child.end, text: `{${jsString(v)}}` },
+              : { from: child.start ?? 0, to: child.end ?? 0, text: `{${jsString(v)}}` },
         });
       }
-    } else if (child.type === 'JSXElement' || child.type === 'JSXFragment') {
+    } else if (t.isJSXElement(child) || t.isJSXFragment(child)) {
       collectTextCandidates(child, out);
     }
   }
@@ -408,87 +387,80 @@ function collectTextCandidates(element: AstNode, out: TextCandidate[]): void {
 // `<Wrap>{children}</Wrap>` and `<h2>{title}</h2>` — sole child is a
 // JSXExpressionContainer wrapping a bare Identifier. Returns the identifier
 // name; callers branch on `'children'` vs. a generic prop passthrough.
-function propPassthroughName(element: AstNode): string | null {
+function propPassthroughName(element: t.JSXElement): string | null {
   const meaningful = meaningfulChildren(element);
   if (meaningful.length !== 1) return null;
   const child = meaningful[0];
-  if (child.type !== 'JSXExpressionContainer') return null;
-  const expr = (child as unknown as { expression: AstNode }).expression;
-  if (expr.type !== 'Identifier') return null;
-  return (expr as unknown as { name?: string }).name ?? null;
+  if (!t.isJSXExpressionContainer(child)) return null;
+  return t.isIdentifier(child.expression) ? child.expression.name : null;
 }
 
-type EnclosingComponent = { name: string; fn: AstNode };
+type EnclosingComponent = {
+  name: string;
+  fn: t.FunctionDeclaration | t.FunctionExpression | t.ArrowFunctionExpression;
+};
 
 // Smallest top-level capitalized function whose body covers `target`.
-function findEnclosingComponent(ast: AstNode, target: AstNode): EnclosingComponent | null {
-  const body = (ast as unknown as { program?: { body?: AstNode[] } }).program?.body ?? [];
+function findEnclosingComponent(ast: t.File, target: t.Node): EnclosingComponent | null {
   let best: EnclosingComponent | null = null;
   let bestSize = Number.POSITIVE_INFINITY;
-  const consider = (name: string, fn: AstNode) => {
+  const targetStart = target.start ?? 0;
+  const targetEnd = target.end ?? 0;
+  const consider = (name: string, fn: EnclosingComponent['fn']) => {
     if (!/^[A-Z]/.test(name)) return;
-    if (fn.start > target.start || fn.end < target.end) return;
-    const size = fn.end - fn.start;
+    const fnStart = fn.start ?? 0;
+    const fnEnd = fn.end ?? 0;
+    if (fnStart > targetStart || fnEnd < targetEnd) return;
+    const size = fnEnd - fnStart;
     if (size < bestSize) {
       best = { name, fn };
       bestSize = size;
     }
   };
-  const visitDecl = (decl: AstNode) => {
-    if (decl.type === 'FunctionDeclaration') {
-      const id = (decl as unknown as { id?: { name?: string } }).id;
-      if (id?.name) consider(id.name, decl);
-    } else if (decl.type === 'VariableDeclaration') {
-      const declarations = (decl as unknown as { declarations?: AstNode[] }).declarations ?? [];
-      for (const d of declarations) {
-        const dId = (d as unknown as { id?: { type?: string; name?: string } }).id;
-        const init = (d as unknown as { init?: AstNode }).init;
-        if (dId?.type !== 'Identifier' || !dId.name || !init) continue;
-        if (init.type === 'ArrowFunctionExpression' || init.type === 'FunctionExpression') {
-          consider(dId.name, init);
+  const visitDecl = (decl: t.Statement) => {
+    if (t.isFunctionDeclaration(decl) && decl.id) {
+      consider(decl.id.name, decl);
+    } else if (t.isVariableDeclaration(decl)) {
+      for (const d of decl.declarations) {
+        if (!t.isVariableDeclarator(d) || !t.isIdentifier(d.id) || !d.init) continue;
+        if (t.isArrowFunctionExpression(d.init) || t.isFunctionExpression(d.init)) {
+          consider(d.id.name, d.init);
         }
       }
     }
   };
-  for (const decl of body) {
+  for (const decl of ast.program.body) {
     visitDecl(decl);
-    if (decl.type === 'ExportNamedDeclaration' || decl.type === 'ExportDefaultDeclaration') {
-      const inner = (decl as unknown as { declaration?: AstNode }).declaration;
-      if (inner) visitDecl(inner);
+    if (t.isExportNamedDeclaration(decl) || t.isExportDefaultDeclaration(decl)) {
+      const inner = decl.declaration;
+      if (inner && (t.isStatement(inner) || t.isFunctionDeclaration(inner))) {
+        visitDecl(inner as t.Statement);
+      }
     }
   }
   return best;
 }
 
-function componentDestructuresProp(fn: AstNode, propName: string): boolean {
-  const params = (fn as unknown as { params?: AstNode[] }).params ?? [];
-  if (params.length === 0) return false;
-  let first = params[0];
-  // Handle `({ title }: Props)` — the AssignmentPattern wraps a default,
-  // and TS may surface a TSAsExpression / TSTypeAnnotation on the param.
-  if (first.type === 'AssignmentPattern') {
-    first = (first as unknown as { left: AstNode }).left;
-  }
-  if (first.type !== 'ObjectPattern') return false;
-  const properties = (first as unknown as { properties?: AstNode[] }).properties ?? [];
-  for (const prop of properties) {
-    if (prop.type !== 'ObjectProperty') continue;
-    const key = (prop as unknown as { key?: { type?: string; name?: string; value?: string } }).key;
-    if (!key) continue;
-    if (key.type === 'Identifier' && key.name === propName) return true;
-    if (key.type === 'StringLiteral' && key.value === propName) return true;
+function componentDestructuresProp(fn: EnclosingComponent['fn'], propName: string): boolean {
+  if (fn.params.length === 0) return false;
+  let first: t.Node = fn.params[0];
+  // Handle `({ title }: Props = defaults)` — strip the default-value wrapper.
+  if (t.isAssignmentPattern(first)) first = first.left;
+  if (!t.isObjectPattern(first)) return false;
+  for (const prop of first.properties) {
+    if (!t.isObjectProperty(prop)) continue;
+    if (t.isIdentifier(prop.key) && prop.key.name === propName) return true;
+    if (t.isStringLiteral(prop.key) && prop.key.value === propName) return true;
   }
   return false;
 }
 
-function collectCallSiteCandidates(ast: AstNode, componentName: string): TextCandidate[] {
+function collectCallSiteCandidates(ast: t.Node, componentName: string): TextCandidate[] {
   const out: TextCandidate[] = [];
   walkJsx(ast, (n) => {
-    if (n.type !== 'JSXElement') return;
-    const opening = (n as unknown as { openingElement?: AstNode }).openingElement;
-    const elName = (opening as unknown as { name?: { type?: string; name?: string } } | undefined)
-      ?.name;
-    if (elName?.type === 'JSXIdentifier' && elName.name === componentName) {
+    if (!t.isJSXElement(n)) return;
+    const elName = n.openingElement.name;
+    if (t.isJSXIdentifier(elName) && elName.name === componentName) {
       collectTextCandidates(n, out);
     }
   });
@@ -502,39 +474,34 @@ function formatJsxAttrValue(value: string): string {
   return `{${jsString(value)}}`;
 }
 
+function spliceRange(node: t.Node, text: string): Splice {
+  return { from: node.start ?? 0, to: node.end ?? 0, text };
+}
+
 function collectPropCallSiteCandidates(
-  ast: AstNode,
+  ast: t.Node,
   componentName: string,
   propName: string,
 ): TextCandidate[] {
   const out: TextCandidate[] = [];
   walkJsx(ast, (n) => {
-    if (n.type !== 'JSXElement') return;
-    const opening = (n as unknown as { openingElement?: AstNode }).openingElement;
-    if (!opening) return;
-    const elName = (opening as unknown as { name?: { type?: string; name?: string } }).name;
-    if (elName?.type !== 'JSXIdentifier' || elName.name !== componentName) return;
-    const attr = findJsxAttr(opening, propName);
-    if (!attr) return;
-    const attrValue = (attr as unknown as { value?: AstNode | null }).value;
-    if (!attrValue) return; // shorthand-true: not editable text.
-    if (attrValue.type === 'StringLiteral') {
-      const current = (attrValue as unknown as { value?: string }).value ?? '';
+    if (!t.isJSXElement(n)) return;
+    const elName = n.openingElement.name;
+    if (!t.isJSXIdentifier(elName) || elName.name !== componentName) return;
+    const attr = findJsxAttr(n.openingElement, propName);
+    if (!attr?.value) return; // shorthand-true: not editable text.
+    const v = attr.value;
+    if (t.isStringLiteral(v)) {
       out.push({
-        current,
-        splice: (v) => ({ from: attrValue.start, to: attrValue.end, text: formatJsxAttrValue(v) }),
+        current: v.value,
+        splice: (s) => spliceRange(v, formatJsxAttrValue(s)),
       });
-    } else if (attrValue.type === 'JSXExpressionContainer') {
-      const expr = (attrValue as unknown as { expression: AstNode }).expression;
-      if (expr.type === 'StringLiteral' || expr.type === 'NumericLiteral') {
-        const current = String((expr as unknown as { value: string | number }).value);
+    } else if (t.isJSXExpressionContainer(v)) {
+      const expr = v.expression;
+      if (t.isStringLiteral(expr) || t.isNumericLiteral(expr)) {
         out.push({
-          current,
-          splice: (v) => ({
-            from: attrValue.start,
-            to: attrValue.end,
-            text: formatJsxAttrValue(v),
-          }),
+          current: String(expr.value),
+          splice: (s) => spliceRange(v, formatJsxAttrValue(s)),
         });
       }
     }
@@ -545,142 +512,112 @@ function collectPropCallSiteCandidates(
 // Smallest enclosing `arr.map((p) => …)` callback (or `.flatMap`) that
 // covers `target`. Returns the callback fn plus the array argument node.
 function findEnclosingMapCallback(
-  ast: AstNode,
-  target: AstNode,
-): { fn: AstNode; arrayArg: AstNode } | null {
-  type Best = { fn: AstNode; arrayArg: AstNode; size: number };
+  ast: t.Node,
+  target: t.Node,
+): { fn: t.ArrowFunctionExpression | t.FunctionExpression; arrayArg: t.Expression } | null {
+  type Best = {
+    fn: t.ArrowFunctionExpression | t.FunctionExpression;
+    arrayArg: t.Expression;
+    size: number;
+  };
   let best: Best | null = null;
+  const targetStart = target.start ?? 0;
+  const targetEnd = target.end ?? 0;
   walkAll(ast, (node) => {
-    if (node.type !== 'CallExpression') return;
-    const callee = (node as unknown as { callee?: AstNode }).callee;
-    if (!callee || callee.type !== 'MemberExpression') return;
-    const computed = (callee as unknown as { computed?: boolean }).computed;
-    if (computed) return;
-    const prop = (callee as unknown as { property?: { type?: string; name?: string } }).property;
-    if (prop?.type !== 'Identifier') return;
-    if (prop.name !== 'map' && prop.name !== 'flatMap') return;
-    const args = (node as unknown as { arguments?: AstNode[] }).arguments ?? [];
-    const fn = args[0];
-    if (!fn) return;
-    if (fn.type !== 'ArrowFunctionExpression' && fn.type !== 'FunctionExpression') return;
-    if (fn.start > target.start || fn.end < target.end) return;
-    const arrayArg = (callee as unknown as { object?: AstNode }).object;
-    if (!arrayArg) return;
-    const size = fn.end - fn.start;
-    const next: Best = { fn, arrayArg, size };
-    if (!best || size < best.size) best = next;
+    if (!t.isCallExpression(node)) return;
+    const callee = node.callee;
+    if (!t.isMemberExpression(callee) || callee.computed) return;
+    if (!t.isIdentifier(callee.property)) return;
+    if (callee.property.name !== 'map' && callee.property.name !== 'flatMap') return;
+    const fn = node.arguments[0];
+    if (!fn || (!t.isArrowFunctionExpression(fn) && !t.isFunctionExpression(fn))) return;
+    const fnStart = fn.start ?? 0;
+    const fnEnd = fn.end ?? 0;
+    if (fnStart > targetStart || fnEnd < targetEnd) return;
+    if (!t.isExpression(callee.object)) return;
+    const size = fnEnd - fnStart;
+    if (!best || size < best.size) best = { fn, arrayArg: callee.object, size };
   });
   if (!best) return null;
   const found: Best = best;
   return { fn: found.fn, arrayArg: found.arrayArg };
 }
 
+type ArrayElement = t.Expression | t.SpreadElement;
+
 // `[ {...}, {...} ]` literal, either inline or via a `const x = [ ... ]`
 // declaration the receiver resolves to. Returns the ArrayExpression's
 // element list, or null if we can't resolve to a literal.
-function resolveArrayLiteralElements(ast: AstNode, expr: AstNode): AstNode[] | null {
-  if (expr.type === 'ArrayExpression') {
-    return ((expr as unknown as { elements?: (AstNode | null)[] }).elements ?? []).filter(
-      (e): e is AstNode => !!e,
-    );
-  }
-  if (expr.type === 'Identifier') {
-    const name = (expr as unknown as { name?: string }).name;
-    if (!name) return null;
-    let init: AstNode | null = null;
-    walkAll(ast, (node) => {
-      if (node.type !== 'VariableDeclarator') return;
-      const id = (node as unknown as { id?: { type?: string; name?: string } }).id;
-      if (id?.type !== 'Identifier' || id.name !== name) return;
-      const declInit = (node as unknown as { init?: AstNode }).init;
-      if (!declInit || declInit.type !== 'ArrayExpression') return;
-      // Must be declared before the use site; pick the most local match.
-      if (declInit.start > expr.start) return;
-      init = declInit;
-    });
-    if (!init) return null;
-    return ((init as unknown as { elements?: (AstNode | null)[] }).elements ?? []).filter(
-      (e): e is AstNode => !!e,
-    );
-  }
-  return null;
+function resolveArrayLiteralElements(ast: t.Node, expr: t.Expression): ArrayElement[] | null {
+  const dropHoles = (arr: t.ArrayExpression): ArrayElement[] =>
+    arr.elements.filter((e): e is ArrayElement => e != null);
+  if (t.isArrayExpression(expr)) return dropHoles(expr);
+  if (!t.isIdentifier(expr)) return null;
+  const name = expr.name;
+  const useStart = expr.start ?? 0;
+  let init: t.ArrayExpression | null = null;
+  walkAll(ast, (node) => {
+    if (!t.isVariableDeclarator(node)) return;
+    if (!t.isIdentifier(node.id) || node.id.name !== name) return;
+    if (!node.init || !t.isArrayExpression(node.init)) return;
+    // Must be declared before the use site; pick the most local match.
+    if ((node.init.start ?? 0) > useStart) return;
+    init = node.init;
+  });
+  return init ? dropHoles(init) : null;
 }
 
-function findObjectProperty(obj: AstNode, name: string): AstNode | null {
-  if (obj.type !== 'ObjectExpression') return null;
-  const properties = (obj as unknown as { properties?: AstNode[] }).properties ?? [];
-  for (const prop of properties) {
-    if (prop.type !== 'ObjectProperty') continue;
-    const computed = (prop as unknown as { computed?: boolean }).computed;
-    if (computed) continue;
-    const key = (prop as unknown as { key?: { type?: string; name?: string; value?: string } }).key;
-    if (!key) continue;
-    if (key.type === 'Identifier' && key.name === name) return prop;
-    if (key.type === 'StringLiteral' && key.value === name) return prop;
+function findObjectProperty(obj: t.Node, name: string): t.ObjectProperty | null {
+  if (!t.isObjectExpression(obj)) return null;
+  for (const prop of obj.properties) {
+    if (!t.isObjectProperty(prop) || prop.computed) continue;
+    if (t.isIdentifier(prop.key) && prop.key.name === name) return prop;
+    if (t.isStringLiteral(prop.key) && prop.key.value === name) return prop;
   }
   return null;
 }
 
 // Decode `{p.field}` (MemberExpression) or `{field}` (Identifier
 // destructured from the callback param) into a single field name.
-function decodeMapPassthrough(element: AstNode, callbackParam: AstNode | undefined): string | null {
+function decodeMapPassthrough(
+  element: t.JSXElement,
+  callbackParam: t.Node | undefined,
+): string | null {
   const meaningful = meaningfulChildren(element);
   if (meaningful.length !== 1) return null;
   const child = meaningful[0];
-  if (child.type !== 'JSXExpressionContainer') return null;
-  const expr = (child as unknown as { expression: AstNode }).expression;
+  if (!t.isJSXExpressionContainer(child)) return null;
+  const expr = child.expression;
 
-  if (expr.type === 'MemberExpression') {
-    const me = expr as unknown as {
-      object: AstNode;
-      property: AstNode;
-      computed?: boolean;
-    };
-    if (me.computed) return null;
-    if (me.object.type !== 'Identifier' || me.property.type !== 'Identifier') return null;
-    const objName = (me.object as unknown as { name?: string }).name;
-    const fieldName = (me.property as unknown as { name?: string }).name;
-    if (!objName || !fieldName) return null;
-    if (callbackParam?.type !== 'Identifier') return null;
-    if ((callbackParam as unknown as { name?: string }).name !== objName) return null;
-    return fieldName;
+  if (t.isMemberExpression(expr)) {
+    if (expr.computed) return null;
+    if (!t.isIdentifier(expr.object) || !t.isIdentifier(expr.property)) return null;
+    if (!callbackParam || !t.isIdentifier(callbackParam)) return null;
+    if (callbackParam.name !== expr.object.name) return null;
+    return expr.property.name;
   }
 
-  if (expr.type === 'Identifier') {
-    const fieldName = (expr as unknown as { name?: string }).name;
-    if (!fieldName) return null;
+  if (t.isIdentifier(expr)) {
+    const fieldName = expr.name;
     // Param is `{ field, ... }` destructuring — the identifier names the
     // destructured property. Skip alias/rename forms (`{ field: alias }`).
-    if (callbackParam?.type !== 'ObjectPattern') return null;
-    const properties = (callbackParam as unknown as { properties?: AstNode[] }).properties ?? [];
-    for (const prop of properties) {
-      if (prop.type !== 'ObjectProperty') continue;
-      const computed = (prop as unknown as { computed?: boolean }).computed;
-      if (computed) continue;
-      const key = (prop as unknown as { key?: { type?: string; name?: string } }).key;
-      const value = (prop as unknown as { value?: AstNode }).value;
-      if (key?.type !== 'Identifier' || key.name !== fieldName) continue;
+    if (!callbackParam || !t.isObjectPattern(callbackParam)) return null;
+    for (const prop of callbackParam.properties) {
+      if (!t.isObjectProperty(prop) || prop.computed) continue;
+      if (!t.isIdentifier(prop.key) || prop.key.name !== fieldName) continue;
       // Shorthand `{ field }` → value is also an Identifier with same name.
       // Aliased `{ field: other }` → value is a different identifier; skip.
-      if (
-        value?.type === 'Identifier' &&
-        (value as unknown as { name?: string }).name === fieldName
-      ) {
-        return fieldName;
-      }
-      return null;
+      return t.isIdentifier(prop.value) && prop.value.name === fieldName ? fieldName : null;
     }
-    return null;
   }
 
   return null;
 }
 
-function collectArrayMapCandidates(ast: AstNode, element: AstNode): TextCandidate[] {
+function collectArrayMapCandidates(ast: t.Node, element: t.JSXElement): TextCandidate[] {
   const ctx = findEnclosingMapCallback(ast, element);
   if (!ctx) return [];
-  const params = (ctx.fn as unknown as { params?: AstNode[] }).params ?? [];
-  const fieldName = decodeMapPassthrough(element, params[0]);
+  const fieldName = decodeMapPassthrough(element, ctx.fn.params[0]);
   if (!fieldName) return [];
   const elements = resolveArrayLiteralElements(ast, ctx.arrayArg);
   if (!elements) return [];
@@ -688,27 +625,19 @@ function collectArrayMapCandidates(ast: AstNode, element: AstNode): TextCandidat
   for (const obj of elements) {
     const prop = findObjectProperty(obj, fieldName);
     if (!prop) continue;
-    const propValue = (prop as unknown as { value: AstNode }).value;
-    if (propValue.type === 'StringLiteral') {
-      const current = (propValue as unknown as { value?: string }).value ?? '';
-      out.push({
-        current,
-        splice: (v) => ({ from: propValue.start, to: propValue.end, text: jsString(v) }),
-      });
-    } else if (propValue.type === 'NumericLiteral') {
-      const current = String((propValue as unknown as { value?: number }).value ?? '');
-      out.push({
-        current,
-        splice: (v) => ({ from: propValue.start, to: propValue.end, text: jsString(v) }),
-      });
+    const v = prop.value;
+    if (t.isStringLiteral(v)) {
+      out.push({ current: v.value, splice: (s) => spliceRange(v, jsString(s)) });
+    } else if (t.isNumericLiteral(v)) {
+      out.push({ current: String(v.value), splice: (s) => spliceRange(v, jsString(s)) });
     }
   }
   return out;
 }
 
 function buildTextSplice(
-  ast: AstNode,
-  element: AstNode,
+  ast: t.File,
+  element: t.JSXElement,
   value: string,
   prevText?: string,
 ): Splice | { error: string } {
@@ -757,44 +686,33 @@ function buildTextSplice(
   return matches[0].splice(value);
 }
 
-type ImportInfo = { node: AstNode; source: string; defaultIdent: string | null };
+type ImportInfo = { node: t.ImportDeclaration; source: string; defaultIdent: string | null };
 
-function findImports(ast: AstNode): ImportInfo[] {
-  const body = (ast as unknown as { program?: { body?: AstNode[] } }).program?.body ?? [];
+function findImports(ast: t.File): ImportInfo[] {
   const out: ImportInfo[] = [];
-  for (const node of body) {
-    if (node.type !== 'ImportDeclaration') continue;
-    const src = (node as unknown as { source?: { value?: unknown } }).source?.value;
-    if (typeof src !== 'string') continue;
-    const specs = (node as unknown as { specifiers?: AstNode[] }).specifiers ?? [];
+  for (const node of ast.program.body) {
+    if (!t.isImportDeclaration(node)) continue;
     let def: string | null = null;
-    for (const spec of specs) {
-      if (spec.type === 'ImportDefaultSpecifier') {
-        const local = (spec as unknown as { local?: { name?: string } }).local?.name;
-        if (typeof local === 'string') {
-          def = local;
-          break;
-        }
+    for (const spec of node.specifiers) {
+      if (t.isImportDefaultSpecifier(spec)) {
+        def = spec.local.name;
+        break;
       }
     }
-    out.push({ node, source: src, defaultIdent: def });
+    out.push({ node, source: node.source.value, defaultIdent: def });
   }
   return out;
 }
 
-function collectTopLevelIdentifiers(ast: AstNode): Set<string> {
+function collectTopLevelIdentifiers(ast: t.File): Set<string> {
   // Only need to avoid colliding with anything resolvable by JSX —
   // import bindings cover the common case. Local consts/lets are
   // handled by source-level identifier scanning below.
   const names = new Set<string>();
   for (const imp of findImports(ast)) {
     if (imp.defaultIdent) names.add(imp.defaultIdent);
-    const specs = (imp.node as unknown as { specifiers?: AstNode[] }).specifiers ?? [];
-    for (const spec of specs) {
-      if (spec.type !== 'ImportDefaultSpecifier') {
-        const local = (spec as unknown as { local?: { name?: string } }).local?.name;
-        if (typeof local === 'string') names.add(local);
-      }
+    for (const spec of imp.node.specifiers) {
+      if (!t.isImportDefaultSpecifier(spec)) names.add(spec.local.name);
     }
   }
   return names;
@@ -826,61 +744,46 @@ export function safeAssetIdentifier(filename: string, taken: Set<string>): strin
   return candidate;
 }
 
-function findJsxAttr(opening: AstNode, name: string): AstNode | null {
-  const attrs = (opening as unknown as { attributes?: AstNode[] }).attributes ?? [];
-  for (const attr of attrs) {
-    if (attr.type !== 'JSXAttribute') continue;
-    const n = (attr as unknown as { name?: { type?: string; name?: string } }).name;
-    if (n?.type === 'JSXIdentifier' && n.name === name) return attr;
-  }
-  return null;
-}
-
 type AssetEditPlan = {
   importSplice: Splice | null;
   attrSplice: Splice;
 };
 
+function planAssetImport(
+  ast: t.File,
+  assetPath: string,
+): { identifier: string; importSplice: Splice | null } {
+  const imports = findImports(ast);
+  for (const imp of imports) {
+    if (imp.source === assetPath && imp.defaultIdent) {
+      return { identifier: imp.defaultIdent, importSplice: null };
+    }
+  }
+  const filename = assetPath.slice(assetPath.lastIndexOf('/') + 1);
+  const identifier = safeAssetIdentifier(filename, collectTopLevelIdentifiers(ast));
+  const importStmt = `import ${identifier} from '${assetPath.replace(/'/g, "\\'")}';\n`;
+  const last = imports[imports.length - 1];
+  const insertAt = last ? (last.node.end ?? 0) : 0;
+  const prefix = last ? '\n' : '';
+  return { identifier, importSplice: { from: insertAt, to: insertAt, text: prefix + importStmt } };
+}
+
 function planAssetAttr(
-  ast: AstNode,
-  element: AstNode,
+  ast: t.File,
+  element: t.JSXElement,
   attr: string,
   assetPath: string,
 ): AssetEditPlan | { error: string } {
-  const opening = (element as unknown as { openingElement?: AstNode }).openingElement;
-  if (!opening) return { error: 'no opening element' };
   if (!attr || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(attr)) return { error: 'invalid attribute name' };
   if (!assetPath.startsWith('./assets/')) return { error: 'asset path must start with ./assets/' };
 
-  const imports = findImports(ast);
-  let identifier: string | null = null;
-  for (const imp of imports) {
-    if (imp.source === assetPath && imp.defaultIdent) {
-      identifier = imp.defaultIdent;
-      break;
-    }
-  }
-
-  let importSplice: Splice | null = null;
-  if (!identifier) {
-    const filename = assetPath.slice(assetPath.lastIndexOf('/') + 1);
-    const taken = collectTopLevelIdentifiers(ast);
-    identifier = safeAssetIdentifier(filename, taken);
-    const importStmt = `import ${identifier} from '${assetPath.replace(/'/g, "\\'")}';\n`;
-    const insertAt = imports.length > 0 ? imports[imports.length - 1].node.end : 0;
-    const prefix = imports.length > 0 ? '\n' : '';
-    importSplice = { from: insertAt, to: insertAt, text: prefix + importStmt };
-  }
-
+  const { identifier, importSplice } = planAssetImport(ast, assetPath);
+  const opening = element.openingElement;
   const newAttr = `${attr}={${identifier}}`;
   const existing = findJsxAttr(opening, attr);
-  let attrSplice: Splice;
-  if (existing) {
-    attrSplice = { from: existing.start, to: existing.end, text: newAttr };
-  } else {
-    const name = (opening as unknown as { name: AstNode }).name;
-    attrSplice = { from: name.end, to: name.end, text: ` ${newAttr}` };
-  }
+  const attrSplice: Splice = existing
+    ? { from: existing.start ?? 0, to: existing.end ?? 0, text: newAttr }
+    : { from: opening.name.end ?? 0, to: opening.name.end ?? 0, text: ` ${newAttr}` };
   return { importSplice, attrSplice };
 }
 
@@ -889,43 +792,31 @@ type PlaceholderEditPlan = {
   elementSplice: Splice;
 };
 
-function readJsxStringAttr(opening: AstNode, name: string): string | null {
+function readJsxStringAttr(opening: t.JSXOpeningElement, name: string): string | null {
   const attr = findJsxAttr(opening, name);
-  if (!attr) return null;
-  const value = (attr as unknown as { value?: AstNode | null }).value ?? null;
-  if (!value) return null;
-  if (value.type === 'StringLiteral') {
-    return (value as unknown as { value: string }).value;
-  }
-  if (value.type === 'JSXExpressionContainer') {
-    const expr = (value as unknown as { expression: AstNode }).expression;
-    if (expr.type === 'StringLiteral') return (expr as unknown as { value: string }).value;
-  }
+  const v = attr?.value;
+  if (!v) return null;
+  if (t.isStringLiteral(v)) return v.value;
+  if (t.isJSXExpressionContainer(v) && t.isStringLiteral(v.expression)) return v.expression.value;
   return null;
 }
 
-function readJsxNumberAttr(opening: AstNode, name: string): number | null {
+function readJsxNumberAttr(opening: t.JSXOpeningElement, name: string): number | null {
   const attr = findJsxAttr(opening, name);
-  if (!attr) return null;
-  const value = (attr as unknown as { value?: AstNode | null }).value ?? null;
-  if (!value || value.type !== 'JSXExpressionContainer') return null;
-  const expr = (value as unknown as { expression: AstNode }).expression;
-  if (expr.type === 'NumericLiteral') {
-    const n = (expr as unknown as { value: number }).value;
-    return Number.isFinite(n) ? n : null;
-  }
-  return null;
+  const v = attr?.value;
+  if (!v || !t.isJSXExpressionContainer(v)) return null;
+  if (!t.isNumericLiteral(v.expression)) return null;
+  const n = v.expression.value;
+  return Number.isFinite(n) ? n : null;
 }
 
 function planReplacePlaceholder(
-  ast: AstNode,
-  element: AstNode,
+  ast: t.File,
+  element: t.JSXElement,
   assetPath: string,
 ): PlaceholderEditPlan | { error: string } {
-  const opening = (element as unknown as { openingElement?: AstNode }).openingElement;
-  if (!opening) return { error: 'no opening element' };
-  const elName = (opening as unknown as { name?: { type?: string; name?: string } }).name;
-  if (elName?.type !== 'JSXIdentifier' || elName.name !== 'ImagePlaceholder') {
+  const opening = element.openingElement;
+  if (!t.isJSXIdentifier(opening.name) || opening.name.name !== 'ImagePlaceholder') {
     return { error: 'not a placeholder' };
   }
   if (!assetPath.startsWith('./assets/')) return { error: 'asset path must start with ./assets/' };
@@ -934,38 +825,16 @@ function planReplacePlaceholder(
   const width = readJsxNumberAttr(opening, 'width');
   const height = readJsxNumberAttr(opening, 'height');
 
-  const imports = findImports(ast);
-  let identifier: string | null = null;
-  for (const imp of imports) {
-    if (imp.source === assetPath && imp.defaultIdent) {
-      identifier = imp.defaultIdent;
-      break;
-    }
-  }
-
-  let importSplice: Splice | null = null;
-  if (!identifier) {
-    const filename = assetPath.slice(assetPath.lastIndexOf('/') + 1);
-    const taken = collectTopLevelIdentifiers(ast);
-    identifier = safeAssetIdentifier(filename, taken);
-    const importStmt = `import ${identifier} from '${assetPath.replace(/'/g, "\\'")}';\n`;
-    const insertAt = imports.length > 0 ? imports[imports.length - 1].node.end : 0;
-    const prefix = imports.length > 0 ? '\n' : '';
-    importSplice = { from: insertAt, to: insertAt, text: prefix + importStmt };
-  }
+  const { identifier, importSplice } = planAssetImport(ast, assetPath);
 
   const styleParts: string[] = [];
   if (width != null) styleParts.push(`width: ${width}`);
   if (height != null) styleParts.push(`height: ${height}`);
   styleParts.push(`objectFit: 'cover'`);
-  const styleAttr = ` style={{ ${styleParts.join(', ')} }}`;
-  const altAttr = ` alt=${jsString(hint)}`;
-  const replacement = `<img src={${identifier}}${altAttr}${styleAttr} />`;
+  const replacement =
+    `<img src={${identifier}} alt=${jsString(hint)} ` + `style={{ ${styleParts.join(', ')} }} />`;
 
-  return {
-    importSplice,
-    elementSplice: { from: element.start, to: element.end, text: replacement },
-  };
+  return { importSplice, elementSplice: spliceRange(element, replacement) };
 }
 
 export function applyEdit(
