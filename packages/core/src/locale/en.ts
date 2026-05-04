@@ -203,7 +203,6 @@ export const en: Locale = {
     commentsApplyHintSuffix: ' in your agent to apply these.',
     commentDeleteAria: 'Delete',
     saveFailed: "Couldn't save:",
-    saveFailedDismissAria: 'Dismiss error',
   },
 
   stylePanel: {

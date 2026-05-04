@@ -51,17 +51,12 @@ export function useEditor(slideId: string) {
       });
       const body = (await res.json().catch(() => ({}))) as {
         error?: string;
-        changed?: boolean;
         results?: EditResult[];
       };
       if (!res.ok) {
         throw new Error(body.error ?? `POST /__edit/batch → ${res.status}`);
       }
-      const results = body.results;
-      if (!Array.isArray(results) || results.length !== edits.length) {
-        throw new Error('malformed /__edit/batch response');
-      }
-      return results;
+      return body.results ?? [];
     },
     [slideId],
   );

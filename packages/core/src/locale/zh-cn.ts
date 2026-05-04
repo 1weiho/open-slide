@@ -203,7 +203,6 @@ export const zhCN: Locale = {
     commentsApplyHintSuffix: ' 以应用这些更改。',
     commentDeleteAria: '删除',
     saveFailed: '保存失败：',
-    saveFailedDismissAria: '关闭错误',
   },
 
   stylePanel: {
