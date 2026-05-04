@@ -1,5 +1,5 @@
 import { FolderInput, FolderPlus, MoreHorizontal, Pencil, Search, Trash2, X } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -339,6 +339,35 @@ function EmptyState({ isDraft, folderName }: { isDraft: boolean; folderName?: st
   );
 }
 
+// Defer the heavy `<SlideCanvas><FirstPage/></SlideCanvas>` render — and the
+// dynamic import that feeds it — until each card is within ~one viewport of the
+// scroll position. Without this, opening Home with N slides mounts N full
+// 1920×1080 React subtrees up front.
+function useNearViewport(ref: RefObject<Element>): boolean {
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    if (shown) return;
+    const el = ref.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      setShown(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setShown(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: '400px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [ref, shown]);
+  return shown;
+}
+
 function createDragChip(title: string): HTMLElement | null {
   if (typeof document === 'undefined') return null;
   const chip = document.createElement('div');
@@ -406,7 +435,11 @@ function SlideCard({
   const [dialog, setDialog] = useState<DialogKind>(null);
   const tCard = useLocale();
 
+  const thumbRef = useRef<HTMLDivElement>(null);
+  const inView = useNearViewport(thumbRef);
+
   useEffect(() => {
+    if (!inView) return;
     let cancelled = false;
     loadSlide(id)
       .then((mod) => {
@@ -416,7 +449,7 @@ function SlideCard({
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, inView]);
 
   const FirstPage = slide?.default[0];
   const displayTitle = slide?.meta?.title ?? id;
@@ -445,8 +478,11 @@ function SlideCard({
       >
         <Link to={`/s/${id}`} className="block focus-visible:outline-none">
           {/* Slide thumb — tight border, grey baseboard, no shadcn rounded-xl */}
-          <div className="relative aspect-video overflow-hidden rounded-[6px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] group-hover:shadow-floating group-hover:ring-foreground/20 motion-safe:transition-[box-shadow,--tw-ring-color] motion-safe:duration-200">
-            {FirstPage ? (
+          <div
+            ref={thumbRef}
+            className="relative aspect-video overflow-hidden rounded-[6px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] group-hover:shadow-floating group-hover:ring-foreground/20 motion-safe:transition-[box-shadow,--tw-ring-color] motion-safe:duration-200"
+          >
+            {inView && FirstPage ? (
               <div className="h-full w-full motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-[1.03]">
                 <SlideCanvas flat freezeMotion design={slide?.design}>
                   <FirstPage />
@@ -454,7 +490,7 @@ function SlideCard({
               </div>
             ) : (
               <div className="grid h-full w-full place-items-center text-[10px] tracking-[0.16em] uppercase text-muted-foreground/60">
-                {tCard.common.loading}
+                {inView ? tCard.common.loading : null}
               </div>
             )}
           </div>
