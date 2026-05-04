@@ -20,16 +20,9 @@ type Handler = (msg: PresenterCommand) => void;
 
 const SUPPORTED = typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined';
 
-/**
- * BroadcastChannel wrapper used by both the projection window (Player) and
- * the Presenter View. The channel is keyed by slideId so multiple decks
- * open in different tabs do not cross-talk. Falls back to no-op when the
- * API is missing (older browsers, SSR).
- *
- * The channel is owned by the effect (not useMemo) so React 18 StrictMode's
- * double-invoke creates a fresh channel on the second mount instead of
- * leaving a closed one behind that throws on the next `send()`.
- */
+// Channel ownership lives in the effect (not useMemo) so StrictMode's
+// double-invoke produces a fresh channel on remount rather than leaving a
+// closed one behind that throws on the next send().
 export function usePresenterChannel(slideId: string, onMessage?: Handler) {
   const onMessageRef = useRef(onMessage);
   onMessageRef.current = onMessage;

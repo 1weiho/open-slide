@@ -18,11 +18,6 @@ type Props = {
   onSelect: (index: number) => void;
 };
 
-/**
- * Full-screen grid of slide thumbnails. Reuses SlideCanvas at fixed scale
- * so each preview is rendered with the slide's design tokens but with
- * motion frozen. Arrow keys move focus; Enter/click jumps and closes.
- */
 export function PresentOverviewGrid({ pages, design, open, current, onClose, onSelect }: Props) {
   const [focused, setFocused] = useState(current);
   const gridRef = useRef<HTMLDivElement>(null);

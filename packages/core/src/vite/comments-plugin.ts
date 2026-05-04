@@ -187,9 +187,6 @@ function offsetToLine(source: string, offset: number): number {
   return line;
 }
 
-// `applyEdit` rewrites a slide file in place via minimal text splices
-// computed from AST ranges, so unrelated formatting is preserved.
-
 export type EditOp =
   | { kind: 'set-style'; key: string; value: string | null }
   | { kind: 'set-text'; value: string; prevText?: string }

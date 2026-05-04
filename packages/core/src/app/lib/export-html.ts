@@ -1,8 +1,3 @@
-// Exports a slide as a standalone HTML file (or a .zip bundle if the slide
-// references bundled assets). The export is a static snapshot of each page's
-// post-mount DOM — runtime interactivity (useState click handlers, timers,
-// etc.) is captured at snapshot time only.
-
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { designToCssVars } from './design';
@@ -39,9 +34,7 @@ export async function exportSlideAsHtml(slide: SlideModule, slideId: string): Pr
       const buf = new Uint8Array(await res.arrayBuffer());
       const name = uniqueAssetName(absolute, usedNames);
       assets.set(url, { name, bytes: buf });
-    } catch {
-      // ignore unreachable assets
-    }
+    } catch {}
   }
 
   const rewrittenPages = pagesHtml.map((html) => rewriteUrls(html, assets, 'html'));
@@ -175,7 +168,6 @@ function looksLikeAsset(url: string): boolean {
   if (url.startsWith('mailto:') || url.startsWith('javascript:')) return false;
   const abs = toAbsolute(url);
   if (!abs) return false;
-  // Same-origin only: we can only fetch local assets.
   try {
     const u = new URL(abs);
     if (u.origin !== window.location.origin) return false;

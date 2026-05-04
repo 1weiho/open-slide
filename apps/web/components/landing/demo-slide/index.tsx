@@ -17,7 +17,6 @@ import opencodeLogo from './assets/opencode.svg';
 import vercelLogo from './assets/vercel.svg';
 import zeaburLogo from './assets/zeabur.svg';
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
 const palette = {
   bg: '#08090a',
   surface: '#0e0f12',
@@ -54,7 +53,6 @@ const fill = {
   position: 'relative' as const,
 };
 
-// ─── Shared animations (injected per slide so direct-nav also works) ──────────
 const styles = `
   @keyframes es-fadeUp {
     from { opacity: 0; transform: translateY(18px); }
@@ -147,7 +145,6 @@ const styles = `
 
 const Styles = () => <style>{styles}</style>;
 
-// ─── Shared chrome ────────────────────────────────────────────────────────────
 const GridBg = () => (
   <div
     style={{
@@ -383,7 +380,6 @@ const LogoCard = ({
   </div>
 );
 
-// ─── Slide 1: Cover ──────────────────────────────────────────────────────────
 const Cover: Page = () => (
   <div style={fill}>
     <Styles />
@@ -495,7 +491,6 @@ const Cover: Page = () => (
   </div>
 );
 
-// ─── Slide 2: Init in a terminal ─────────────────────────────────────────────
 const Init: Page = () => {
   const stream = [
     '',
@@ -605,7 +600,6 @@ const Init: Page = () => {
   );
 };
 
-// ─── Slide 3: Prompt → create-slide → pages appear ───────────────────────────
 const Prompt: Page = () => {
   const thumbs = ['Cover', 'Agenda', 'Problem', 'Solution', 'Metrics', 'Next'];
   return (
@@ -861,7 +855,6 @@ const Prompt: Page = () => {
   );
 };
 
-// ─── Slide: Visual editor (click → tweak → save) ─────────────────────────────
 const VisualEdit: Page = () => {
   return (
     <div style={fill}>
@@ -1306,7 +1299,6 @@ const VisualEdit: Page = () => {
   );
 };
 
-// ─── Slide: Assets manager ───────────────────────────────────────────────────
 const AssetsManager: Page = () => {
   const cards: { name: string; size: string; src: AssetImport }[] = [
     { name: 'claude.svg', size: '3.4 KB', src: claudeLogo },
@@ -1663,7 +1655,6 @@ const AssetsManager: Page = () => {
   );
 };
 
-// ─── Inspector panel mock helpers ────────────────────────────────────────────
 const PanelSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <div style={{ padding: '16px 22px' }}>
     <div
@@ -1746,7 +1737,6 @@ const PanelSelect = ({ value }: { value: string }) => (
   </div>
 );
 
-// ─── Asset card mock ─────────────────────────────────────────────────────────
 const AssetCardMock = ({
   name,
   size,
@@ -1821,7 +1811,6 @@ const AssetCardMock = ({
   </div>
 );
 
-// ─── Slide: Inspect a block ──────────────────────────────────────────────────
 const Inspect: Page = () => (
   <div style={fill}>
     <Styles />
@@ -2108,7 +2097,6 @@ const Inspect: Page = () => (
   </div>
 );
 
-// ─── Slide 5: Apply comments ─────────────────────────────────────────────────
 const Apply: Page = () => (
   <div style={fill}>
     <Styles />
@@ -2322,7 +2310,6 @@ const Apply: Page = () => (
   </div>
 );
 
-// ─── Slide 6: Recap ──────────────────────────────────────────────────────────
 const Recap: Page = () => {
   const steps = [
     { n: '01', title: 'init', caption: 'npx @open-slide/cli init' },
@@ -2449,7 +2436,6 @@ const Recap: Page = () => {
   );
 };
 
-// ─── Slide: Agent agnostic ───────────────────────────────────────────────────
 const AgentAgnostic: Page = () => {
   const agents = [
     { name: 'Claude Code', src: claudeLogo },
@@ -2546,7 +2532,6 @@ const AgentAgnostic: Page = () => {
   );
 };
 
-// ─── Slide: Free layout ──────────────────────────────────────────────────────
 const FreeLayout: Page = () => {
   const mockSlide = (
     kind: 'hero' | 'split' | 'bleed' | 'grid' | 'quote' | 'bullets',
@@ -2855,7 +2840,6 @@ const FreeLayout: Page = () => {
   );
 };
 
-// ─── Slide: Git-tracked, yours forever ───────────────────────────────────────
 const GitTracked: Page = () => {
   const commits = [
     {
@@ -3061,7 +3045,6 @@ const GitTracked: Page = () => {
   );
 };
 
-// ─── Slide: Deploy anywhere ──────────────────────────────────────────────────
 const DeployAnywhere: Page = () => {
   const hosts = [
     { name: 'Vercel', src: vercelLogo },
@@ -3166,7 +3149,6 @@ const DeployAnywhere: Page = () => {
   );
 };
 
-// ─── Slide export ────────────────────────────────────────────────────────────
 export const meta: SlideMeta = {
   title: 'Getting started with open-slide',
   theme: 'dark',

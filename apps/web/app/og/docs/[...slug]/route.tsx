@@ -7,9 +7,7 @@ import { getPageImage, source } from '@/lib/source';
 
 export const revalidate = false;
 
-// Brand palette mirrors apps/web/app/(home)/landing.css and packages/core.
-// Warm paper + ink, single vermillion accent — same identity as the
-// marketing site, the docs UI, and the editor itself.
+// Mirrors apps/web/app/(home)/landing.css.
 const PAPER = '#F7F4EC';
 const INK = '#1A1814';
 const INK_SOFT = '#3A352E';

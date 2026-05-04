@@ -21,9 +21,6 @@ import { useTouchSwipe } from './present/use-touch-swipe';
 import { SlideCanvas } from './slide-canvas';
 
 const IDLE_HIDE_MS = 2000;
-// Bottom band of the viewport that reveals the control bar + progress bar.
-// Generous enough to feel forgiving with a trackpad, tight enough not to
-// flash on incidental cursor moves.
 const BAR_HOTZONE_PX = 160;
 
 type Props = {
@@ -33,15 +30,7 @@ type Props = {
   onIndexChange: (index: number) => void;
   onExit: () => void;
   allowExit?: boolean;
-  /**
-   * When true, render the full presenter chrome (control bar, progress bar,
-   * overview, blackout, laser pointer, jump-to-slide, help overlay, and
-   * the BroadcastChannel sync that powers Presenter View). Defaults to
-   * false so the static HTML export and any other minimal embeddings stay
-   * untouched.
-   */
   controls?: boolean;
-  /** Optional id used to namespace the BroadcastChannel for Presenter View. */
   slideId?: string;
 };
 
@@ -56,16 +45,15 @@ export function Player({
   slideId,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
-  // Mirrored as state so children that need to portal *into* the player
-  // (tooltips, popovers — the body is outside the fullscreen subtree and
-  // therefore invisible) can subscribe and re-render once the node mounts.
+  // Mirrored as state so descendants portaling *into* the player subtree
+  // (tooltips, popovers — the body is outside the fullscreen tree) re-render
+  // once the node mounts.
   const [rootEl, setRootEl] = useState<HTMLDivElement | null>(null);
   const setRoot = useCallback((el: HTMLDivElement | null) => {
     rootRef.current = el;
     setRootEl(el);
   }, []);
 
-  // ── Overlay state (only meaningful when `controls` is true) ────────────
   const [overviewOpen, setOverviewOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [blackout, setBlackout] = useState<'black' | 'white' | null>(null);
@@ -97,7 +85,6 @@ export function Player({
     onNext: goNext,
   });
 
-  // ── Fullscreen lifecycle ───────────────────────────────────────────────
   useEffect(() => {
     const el = rootRef.current;
     if (!el) return;
@@ -118,11 +105,9 @@ export function Player({
     return () => document.removeEventListener('fullscreenchange', onFsChange);
   }, [onExit, allowExit]);
 
-  // ── Presenter View sync ────────────────────────────────────────────────
-  // Player is the source of truth. It re-publishes state on every change
+  // Player is the source of truth: it re-publishes state on every change
   // and answers `request-state` pings so newly opened presenter windows
-  // hydrate immediately. Notes are loaded by Presenter View itself from
-  // the same slide module, so they don't cross the channel.
+  // hydrate immediately.
   const presenterState = useMemo<PresenterState>(
     () => ({ index, pageCount: pages.length, blackout, startedAt }),
     [index, pages.length, blackout, startedAt],
@@ -155,7 +140,6 @@ export function Player({
     channel.send({ type: 'state', state: presenterState });
   }, [controls, channel, presenterState]);
 
-  // ── Keyboard ───────────────────────────────────────────────────────────
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tgt = e.target;
@@ -256,10 +240,9 @@ export function Player({
     slideId,
   ]);
 
-  // ── Chrome visibility / cursor ─────────────────────────────────────────
   // The control bar + progress strip only surface when the pointer is in
-  // the bottom hot zone. Keyboard nav (arrows / space / PgDn) never
-  // reveals them — that's intentional so the deck stays clean.
+  // the bottom hot zone. Keyboard nav (arrows / space / PgDn) never reveals
+  // them — intentional so the deck stays clean during a talk.
   const pointerNearBottom = usePointerNearBottom(BAR_HOTZONE_PX, controls && !overlayActive);
   const chromeVisible = pointerNearBottom || overlayActive;
   const idle = useIdle(IDLE_HIDE_MS, controls && !overlayActive);
@@ -279,7 +262,6 @@ export function Player({
         {PageComp ? <PageComp /> : null}
       </SlideCanvas>
 
-      {/* Invisible side click zones — the original mobile-friendly nav. */}
       <button
         type="button"
         aria-label="Previous page"

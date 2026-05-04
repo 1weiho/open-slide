@@ -48,7 +48,6 @@ export function DesignProvider({ slideId, children }: { slideId: string; childre
   const draftRef = useRef<DesignSystem | null>(null);
   draftRef.current = draft;
 
-  // Re-seed draft whenever the saved design changes (slide switch, post-save HMR).
   useEffect(() => {
     if (design) setDraft(clone(design));
   }, [design]);
@@ -99,11 +98,8 @@ export function DesignProvider({ slideId, children }: { slideId: string; childre
     });
   }, [history]);
 
-  // Live-preview overlay: rendered only while there are unsaved changes so the
-  // canvas reflects the draft instantly, before any file write. SlideCanvas
-  // emits its own CSS variables inline on the canvas root (so home thumbnails,
-  // player, and exports work without any extra plumbing). Inline styles win
-  // against external rules, so the overlay must use `!important` to override.
+  // SlideCanvas emits its design vars inline on the canvas root, so a draft
+  // overlay must use `!important` to outrank those inline styles.
   const previewCss = useMemo(() => {
     if (!dirty || !draft) return '';
     const lines = Object.entries(designToCssVars(draft))

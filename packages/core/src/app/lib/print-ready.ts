@@ -1,6 +1,3 @@
-// Helpers used by the PDF export flow to wait for the page to settle before
-// invoking window.print(). Browser-only — no Node / headless dependency.
-
 const DEFAULT_WAITFOR_TIMEOUT_MS = 10_000;
 
 export async function waitForFonts(): Promise<void> {
@@ -38,7 +35,6 @@ export async function waitForDataWaitfor(
   );
 }
 
-/** Returns true if `frame` has no running finite-iteration animations. */
 export function isFrameAnimationSettled(frame: Element): boolean {
   if (typeof document.getAnimations !== 'function') return true;
   for (const anim of document.getAnimations()) {
