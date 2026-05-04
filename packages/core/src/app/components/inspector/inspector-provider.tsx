@@ -9,10 +9,11 @@ import {
   useRef,
   useState,
 } from 'react';
+import { toast } from 'sonner';
 import { useHistory } from '@/components/history-provider';
 import { Button } from '@/components/ui/button';
 import { type SlideComment, useComments } from '@/lib/inspector/use-comments';
-import { type Edit, type EditOp, useEditor } from '@/lib/inspector/use-editor';
+import { type Edit, type EditOp, type EditResult, useEditor } from '@/lib/inspector/use-editor';
 import { useLocale } from '@/lib/use-locale';
 
 export type SelectedTarget = {
@@ -49,7 +50,7 @@ type InspectorCtx = {
   selected: SelectedTarget | null;
   setSelected: (s: SelectedTarget | null) => void;
   applyEdit: (line: number, column: number, ops: EditOp[]) => Promise<void>;
-  applyEdits: (edits: Edit[]) => Promise<void>;
+  applyEdits: (edits: Edit[]) => Promise<EditResult[]>;
   // Mutate the DOM optimistically, snapshot the pre-edit values, and
   // remember the ops. `commitEdits` (manual Save or auto-flush on
   // close) is what actually writes to disk; `cancelEdits` reverts.
@@ -78,6 +79,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
   const pendingRef = useRef<Map<string, Bucket>>(new Map());
   const [pendingCount, setPendingCount] = useState(0);
   const [committing, setCommitting] = useState(false);
+  const t = useLocale();
 
   const refreshCount = useCallback(() => {
     let n = 0;
@@ -289,11 +291,13 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
   const commitEdits = useCallback(async () => {
     const buckets = pendingRef.current;
     if (buckets.size === 0) return;
-    const edits: Edit[] = [];
-    for (const { line, column, styleOps, textOp, attrOps } of buckets.values()) {
+    const pending: Array<{ key: string; edit: Edit }> = [];
+    for (const [key, { line, column, styleOps, textOp, attrOps, origText }] of buckets) {
       const list: EditOp[] = [];
       for (const [k, v] of styleOps) list.push({ kind: 'set-style', key: k, value: v });
-      if (textOp !== null) list.push({ kind: 'set-text', value: textOp.value });
+      if (textOp !== null) {
+        list.push({ kind: 'set-text', value: textOp.value, prevText: origText?.value });
+      }
       for (const [attr, op] of attrOps) {
         list.push({
           kind: 'set-attr-asset',
@@ -302,22 +306,41 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
           previewUrl: op.previewUrl,
         });
       }
-      if (list.length > 0) edits.push({ line, column, ops: list });
+      if (list.length > 0) pending.push({ key, edit: { line, column, ops: list } });
     }
-    pendingRef.current = new Map();
-    setPendingCount(0);
-    if (edits.length === 0) {
+    if (pending.length === 0) {
+      pendingRef.current = new Map();
+      setPendingCount(0);
       history.clear();
       return;
     }
     setCommitting(true);
     try {
-      await applyEdits(edits);
+      const results = await applyEdits(pending.map((p) => p.edit));
+      // Drop buckets whose edits landed; keep failed ones so the user can
+      // retry. History is cleared either way — undoing through failed
+      // buckets after a partial commit would race with disk.
+      const failures: string[] = [];
+      for (let i = 0; i < results.length; i++) {
+        const { key, edit } = pending[i];
+        const r = results[i];
+        if (r.ok) {
+          pendingRef.current.delete(key);
+        } else {
+          failures.push(`line ${edit.line}: ${r.error ?? 'edit failed'}`);
+        }
+      }
+      refreshCount();
+      if (failures.length > 0) toast.error(`${t.inspector.saveFailed} ${failures.join('; ')}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(`${t.inspector.saveFailed} ${msg}`);
+      throw err;
     } finally {
       setCommitting(false);
       history.clear();
     }
-  }, [applyEdits, history]);
+  }, [applyEdits, history, refreshCount, t]);
 
   const cancelEdits = useCallback(() => {
     if (pendingRef.current.size === 0) {
@@ -342,7 +365,9 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
   }, [history]);
 
   // Auto-flush on inspector close and on route unmount so toggling
-  // off or navigating away doesn't drop buffered edits.
+  // off or navigating away doesn't drop buffered edits. Failures are
+  // surfaced via toast inside `commitEdits`; the catch here only
+  // swallows the rethrown rejection.
   const commitRef = useRef(commitEdits);
   commitRef.current = commitEdits;
   useEffect(() => {

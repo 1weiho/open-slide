@@ -24,7 +24,9 @@ export function SaveBar() {
     const tasks: Promise<void>[] = [];
     if (inspectorCount > 0) tasks.push(Promise.resolve(insp.commitEdits()));
     if (designCount > 0) tasks.push(Promise.resolve(design.commit()));
-    await Promise.all(tasks);
+    // Each provider surfaces its own errors via toast; swallow here so
+    // one failure doesn't reject the combined save.
+    await Promise.all(tasks).catch(() => {});
   };
 
   const onDiscard = () => {

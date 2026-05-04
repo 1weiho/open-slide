@@ -198,7 +198,7 @@ function offsetToLine(source: string, offset: number): number {
 
 export type EditOp =
   | { kind: 'set-style'; key: string; value: string | null }
-  | { kind: 'set-text'; value: string }
+  | { kind: 'set-text'; value: string; prevText?: string }
   | { kind: 'set-attr-asset'; attr: string; assetPath: string }
   | { kind: 'replace-placeholder-with-image'; assetPath: string };
 
@@ -220,10 +220,7 @@ function parseSource(source: string): AstNode | null {
   }
 }
 
-function findInnermostJsxElement(source: string, line: number, column: number): AstNode | null {
-  const ast = parseSource(source);
-  if (!ast) return null;
-
+function findInnermostJsxElement(ast: AstNode, line: number, column: number): AstNode | null {
   // Prefer exact `loc.start` match (what `data-slide-loc` sends) so
   // we don't accidentally hit an outer JSX whose range happens to
   // enclose the click point.
@@ -348,47 +345,163 @@ function formatJsxText(value: string): string {
   return value;
 }
 
-function buildTextSplice(element: AstNode, value: string): Splice | { error: string } {
-  const children = (element as unknown as { children?: AstNode[] }).children ?? [];
-  if (children.length === 0) {
-    return { error: 'element has no children to edit' };
-  }
+type TextCandidate = {
+  // Normalized current text the candidate represents — what an
+  // unambiguous DOM `textContent` would render here. Used to match
+  // against the client-supplied `prevText` when there's more than one.
+  current: string;
+  splice: (value: string) => Splice;
+};
 
-  const meaningful = children.filter((c) => {
+function meaningfulChildren(parent: AstNode): AstNode[] {
+  const children = (parent as unknown as { children?: AstNode[] }).children ?? [];
+  return children.filter((c) => {
     if (c.type === 'JSXText') {
-      const v = (c as unknown as { value: string }).value;
-      return v.trim() !== '';
+      return (c as unknown as { value: string }).value.trim() !== '';
     }
     return true;
   });
+}
 
-  if (meaningful.length !== 1) {
-    return { error: 'element has complex children' };
-  }
+// Wrap-style splice: rewrite the whole children span of `parent`. Used
+// when the candidate is the parent's only meaningful child, so old
+// surrounding whitespace nodes don't leak into the new value.
+function wrapSplice(parent: AstNode, text: string): Splice {
+  const children = (parent as unknown as { children?: AstNode[] }).children ?? [];
+  const first = children[0];
+  const last = children[children.length - 1];
+  return { from: first.start, to: last.end, text };
+}
 
-  const child = meaningful[0];
-
-  if (child.type === 'JSXText') {
-    // Replace the whole children span so old surrounding whitespace
-    // doesn't leak into the new value.
-    const first = children[0];
-    const last = children[children.length - 1];
-    return { from: first.start, to: last.end, text: formatJsxText(value) };
-  }
-
-  if (child.type === 'JSXExpressionContainer') {
-    const expr = (child as unknown as { expression: AstNode }).expression;
-    if (expr.type === 'StringLiteral' || expr.type === 'NumericLiteral') {
-      return {
-        from: child.start,
-        to: child.end,
-        text: `{${jsString(value)}}`,
-      };
+function collectTextCandidates(element: AstNode, out: TextCandidate[]): void {
+  const meaningful = meaningfulChildren(element);
+  const isSole = meaningful.length === 1;
+  for (const child of meaningful) {
+    if (child.type === 'JSXText') {
+      const current = (child as unknown as { value: string }).value.trim();
+      if (!current) continue;
+      out.push({
+        current,
+        splice: (v) =>
+          isSole
+            ? wrapSplice(element, formatJsxText(v))
+            : { from: child.start, to: child.end, text: formatJsxText(v) },
+      });
+    } else if (child.type === 'JSXExpressionContainer') {
+      const expr = (child as unknown as { expression: AstNode }).expression;
+      if (expr.type === 'StringLiteral' || expr.type === 'NumericLiteral') {
+        const current = String((expr as unknown as { value: string | number }).value);
+        out.push({
+          current,
+          splice: (v) =>
+            isSole
+              ? wrapSplice(element, `{${jsString(v)}}`)
+              : { from: child.start, to: child.end, text: `{${jsString(v)}}` },
+        });
+      }
+    } else if (child.type === 'JSXElement' || child.type === 'JSXFragment') {
+      collectTextCandidates(child, out);
     }
-    return { error: 'element has dynamic expression child' };
   }
+}
 
-  return { error: 'element has complex children' };
+// `<Wrap>{children}</Wrap>` — text lives at the *call sites*, not here.
+function isChildrenSlotElement(element: AstNode): boolean {
+  const meaningful = meaningfulChildren(element);
+  if (meaningful.length !== 1) return false;
+  const child = meaningful[0];
+  if (child.type !== 'JSXExpressionContainer') return false;
+  const expr = (child as unknown as { expression: AstNode }).expression;
+  if (expr.type !== 'Identifier') return false;
+  return (expr as unknown as { name?: string }).name === 'children';
+}
+
+// Smallest top-level capitalized function whose body covers `target`.
+function findEnclosingComponentName(ast: AstNode, target: AstNode): string | null {
+  const body = (ast as unknown as { program?: { body?: AstNode[] } }).program?.body ?? [];
+  let bestName: string | null = null;
+  let bestSize = Number.POSITIVE_INFINITY;
+  const consider = (name: string, fn: AstNode) => {
+    if (!/^[A-Z]/.test(name)) return;
+    if (fn.start > target.start || fn.end < target.end) return;
+    const size = fn.end - fn.start;
+    if (size < bestSize) {
+      bestName = name;
+      bestSize = size;
+    }
+  };
+  const visitDecl = (decl: AstNode) => {
+    if (decl.type === 'FunctionDeclaration') {
+      const id = (decl as unknown as { id?: { name?: string } }).id;
+      if (id?.name) consider(id.name, decl);
+    } else if (decl.type === 'VariableDeclaration') {
+      const declarations = (decl as unknown as { declarations?: AstNode[] }).declarations ?? [];
+      for (const d of declarations) {
+        const dId = (d as unknown as { id?: { type?: string; name?: string } }).id;
+        const init = (d as unknown as { init?: AstNode }).init;
+        if (dId?.type !== 'Identifier' || !dId.name || !init) continue;
+        if (init.type === 'ArrowFunctionExpression' || init.type === 'FunctionExpression') {
+          consider(dId.name, init);
+        }
+      }
+    }
+  };
+  for (const decl of body) {
+    visitDecl(decl);
+    if (decl.type === 'ExportNamedDeclaration' || decl.type === 'ExportDefaultDeclaration') {
+      const inner = (decl as unknown as { declaration?: AstNode }).declaration;
+      if (inner) visitDecl(inner);
+    }
+  }
+  return bestName;
+}
+
+function collectCallSiteCandidates(ast: AstNode, componentName: string): TextCandidate[] {
+  const out: TextCandidate[] = [];
+  walkJsx(ast, (n) => {
+    if (n.type !== 'JSXElement') return;
+    const opening = (n as unknown as { openingElement?: AstNode }).openingElement;
+    const elName = (opening as unknown as { name?: { type?: string; name?: string } } | undefined)
+      ?.name;
+    if (elName?.type === 'JSXIdentifier' && elName.name === componentName) {
+      collectTextCandidates(n, out);
+    }
+  });
+  return out;
+}
+
+function buildTextSplice(
+  ast: AstNode,
+  element: AstNode,
+  value: string,
+  prevText?: string,
+): Splice | { error: string } {
+  const candidates: TextCandidate[] = [];
+  collectTextCandidates(element, candidates);
+  if (candidates.length === 0 && isChildrenSlotElement(element)) {
+    const componentName = findEnclosingComponentName(ast, element);
+    if (componentName) candidates.push(...collectCallSiteCandidates(ast, componentName));
+  }
+  if (candidates.length === 0) {
+    return { error: 'element has no editable text' };
+  }
+  if (candidates.length === 1) {
+    return candidates[0].splice(value);
+  }
+  if (prevText === undefined) {
+    return { error: 'element has multiple text candidates; missing prevText' };
+  }
+  // Trim: JSX collapses surrounding whitespace at render time, so the
+  // DOM `prevText` won't have leading/trailing space the source might.
+  const norm = prevText.trim();
+  const matches = candidates.filter((c) => c.current === norm);
+  if (matches.length === 0) {
+    return { error: 'no text candidate matches the current value' };
+  }
+  if (matches.length > 1) {
+    return { error: 'multiple text candidates share the same value; cannot disambiguate' };
+  }
+  return matches[0].splice(value);
 }
 
 type ImportInfo = { node: AstNode; source: string; defaultIdent: string | null };
@@ -610,7 +723,9 @@ export function applyEdit(
 ): ApplyEditResult {
   if (ops.length === 0) return { ok: true, source };
 
-  const element = findInnermostJsxElement(source, line, column);
+  const ast = parseSource(source);
+  if (!ast) return { ok: false, status: 422, error: 'could not parse source' };
+  const element = findInnermostJsxElement(ast, line, column);
   if (!element) return { ok: false, status: 422, error: 'no JSX element at location' };
 
   const splices: Splice[] = [];
@@ -628,7 +743,7 @@ export function applyEdit(
 
   for (const op of ops) {
     if (op.kind !== 'set-text') continue;
-    const result = buildTextSplice(element, op.value);
+    const result = buildTextSplice(ast, element, op.value, op.prevText);
     if ('error' in result) return { ok: false, status: 422, error: result.error };
     splices.push(result);
   }
@@ -638,8 +753,6 @@ export function applyEdit(
     op.kind === 'replace-placeholder-with-image' ? [op] : [],
   );
   if (assetOps.length > 0 || placeholderOps.length > 0) {
-    const ast = parseSource(source);
-    if (!ast) return { ok: false, status: 422, error: 'could not parse source' };
     const importSplices: Splice[] = [];
     for (const op of assetOps) {
       const plan = planAssetAttr(ast, element, op.attr, op.assetPath);

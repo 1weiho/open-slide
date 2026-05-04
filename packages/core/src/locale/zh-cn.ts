@@ -202,6 +202,7 @@ export const zhCN: Locale = {
     commentsApplyHintPrefix: '在你的代理中运行 ',
     commentsApplyHintSuffix: ' 以应用这些更改。',
     commentDeleteAria: '删除',
+    saveFailed: '保存失败：',
   },
 
   stylePanel: {

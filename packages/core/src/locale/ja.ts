@@ -204,6 +204,7 @@ export const ja: Locale = {
     commentsApplyHintPrefix: 'エージェントで ',
     commentsApplyHintSuffix: ' を実行して適用してください。',
     commentDeleteAria: '削除',
+    saveFailed: '保存に失敗しました:',
   },
 
   stylePanel: {
