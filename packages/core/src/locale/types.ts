@@ -205,6 +205,9 @@ export type Locale = {
     commentsApplyHintPrefix: string;
     commentsApplyHintSuffix: string;
     commentDeleteAria: string;
+    /** Shown when one or more buffered edits fail to write to disk. */
+    saveFailed: string;
+    saveFailedDismissAria: string;
   };
 
   stylePanel: {

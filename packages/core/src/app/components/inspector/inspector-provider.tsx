@@ -12,7 +12,7 @@ import {
 import { useHistory } from '@/components/history-provider';
 import { Button } from '@/components/ui/button';
 import { type SlideComment, useComments } from '@/lib/inspector/use-comments';
-import { type Edit, type EditOp, useEditor } from '@/lib/inspector/use-editor';
+import { type Edit, type EditOp, type EditResult, useEditor } from '@/lib/inspector/use-editor';
 import { useLocale } from '@/lib/use-locale';
 
 export type SelectedTarget = {
@@ -49,7 +49,7 @@ type InspectorCtx = {
   selected: SelectedTarget | null;
   setSelected: (s: SelectedTarget | null) => void;
   applyEdit: (line: number, column: number, ops: EditOp[]) => Promise<void>;
-  applyEdits: (edits: Edit[]) => Promise<void>;
+  applyEdits: (edits: Edit[]) => Promise<EditResult[]>;
   // Mutate the DOM optimistically, snapshot the pre-edit values, and
   // remember the ops. `commitEdits` (manual Save or auto-flush on
   // close) is what actually writes to disk; `cancelEdits` reverts.
@@ -58,6 +58,8 @@ type InspectorCtx = {
   commitEdits: () => Promise<void>;
   cancelEdits: () => void;
   committing: boolean;
+  commitError: string | null;
+  clearCommitError: () => void;
 };
 
 const Ctx = createContext<InspectorCtx | null>(null);
@@ -78,6 +80,8 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
   const pendingRef = useRef<Map<string, Bucket>>(new Map());
   const [pendingCount, setPendingCount] = useState(0);
   const [committing, setCommitting] = useState(false);
+  const [commitError, setCommitError] = useState<string | null>(null);
+  const clearCommitError = useCallback(() => setCommitError(null), []);
 
   const refreshCount = useCallback(() => {
     let n = 0;
@@ -290,7 +294,8 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
     const buckets = pendingRef.current;
     if (buckets.size === 0) return;
     const edits: Edit[] = [];
-    for (const { line, column, styleOps, textOp, attrOps } of buckets.values()) {
+    const keys: string[] = [];
+    for (const [key, { line, column, styleOps, textOp, attrOps }] of buckets) {
       const list: EditOp[] = [];
       for (const [k, v] of styleOps) list.push({ kind: 'set-style', key: k, value: v });
       if (textOp !== null) list.push({ kind: 'set-text', value: textOp.value });
@@ -302,24 +307,54 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
           previewUrl: op.previewUrl,
         });
       }
-      if (list.length > 0) edits.push({ line, column, ops: list });
+      if (list.length > 0) {
+        edits.push({ line, column, ops: list });
+        keys.push(key);
+      }
     }
-    pendingRef.current = new Map();
-    setPendingCount(0);
     if (edits.length === 0) {
+      pendingRef.current = new Map();
+      setPendingCount(0);
       history.clear();
       return;
     }
     setCommitting(true);
     try {
-      await applyEdits(edits);
+      const results = await applyEdits(edits);
+      // Keep buckets whose edits failed so the user can retry; drop the
+      // ones that landed cleanly. History is cleared either way: the
+      // failed buckets still hold the optimistic DOM state, and undoing
+      // through them after a partial commit would race with disk.
+      const failures: string[] = [];
+      for (let i = 0; i < results.length; i++) {
+        const r = results[i];
+        const key = keys[i];
+        if (r.ok) {
+          pendingRef.current.delete(key);
+        } else if (r.error) {
+          failures.push(`line ${edits[i].line}: ${r.error}`);
+        } else {
+          failures.push(`line ${edits[i].line}: edit failed`);
+        }
+      }
+      refreshCount();
+      if (failures.length > 0) {
+        setCommitError(failures.join('; '));
+      } else {
+        setCommitError(null);
+      }
+    } catch (err) {
+      // Transport / parse failure — every edit is still pending, surface it.
+      setCommitError(err instanceof Error ? err.message : String(err));
+      throw err;
     } finally {
       setCommitting(false);
       history.clear();
     }
-  }, [applyEdits, history]);
+  }, [applyEdits, history, refreshCount]);
 
   const cancelEdits = useCallback(() => {
+    setCommitError(null);
     if (pendingRef.current.size === 0) {
       history.clear();
       return;
@@ -342,7 +377,10 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
   }, [history]);
 
   // Auto-flush on inspector close and on route unmount so toggling
-  // off or navigating away doesn't drop buffered edits.
+  // off or navigating away doesn't drop buffered edits. Per-edit
+  // failures land in `commitError`; the catch here only swallows the
+  // promise rejection from transport errors (the message has already
+  // been written to `commitError` inside `commitEdits`).
   const commitRef = useRef(commitEdits);
   commitRef.current = commitEdits;
   useEffect(() => {
@@ -424,6 +462,8 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       commitEdits,
       cancelEdits,
       committing,
+      commitError,
+      clearCommitError,
     }),
     [
       slideId,
@@ -443,6 +483,8 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       commitEdits,
       cancelEdits,
       committing,
+      commitError,
+      clearCommitError,
     ],
   );
 

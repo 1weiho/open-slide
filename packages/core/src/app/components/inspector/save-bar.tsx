@@ -1,6 +1,8 @@
+import { X } from 'lucide-react';
 import { useHistory } from '@/components/history-provider';
 import { SaveCard } from '@/components/panel/save-card';
 import { useDesignPanelState } from '@/components/style-panel/design-provider';
+import { Button } from '@/components/ui/button';
 import { format, plural, useLocale } from '@/lib/use-locale';
 import { useInspector } from './inspector-provider';
 
@@ -24,7 +26,7 @@ export function SaveBar() {
     const tasks: Promise<void>[] = [];
     if (inspectorCount > 0) tasks.push(Promise.resolve(insp.commitEdits()));
     if (designCount > 0) tasks.push(Promise.resolve(design.commit()));
-    await Promise.all(tasks);
+    await Promise.all(tasks).catch(() => {});
   };
 
   const onDiscard = () => {
@@ -33,17 +35,40 @@ export function SaveBar() {
   };
 
   return (
-    <SaveCard
-      uiAttr="inspector"
-      dirty={dirty}
-      committing={committing}
-      onSave={onSave}
-      onDiscard={onDiscard}
-      unsavedLabel={format(plural(total, t.inspector.unsavedChanges), { count: total })}
-      onUndo={history.undo}
-      onRedo={history.redo}
-      canUndo={history.canUndo}
-      canRedo={history.canRedo}
-    />
+    <>
+      <SaveCard
+        uiAttr="inspector"
+        dirty={dirty}
+        committing={committing}
+        onSave={onSave}
+        onDiscard={onDiscard}
+        unsavedLabel={format(plural(total, t.inspector.unsavedChanges), { count: total })}
+        onUndo={history.undo}
+        onRedo={history.redo}
+        canUndo={history.canUndo}
+        canRedo={history.canRedo}
+      />
+      {insp.commitError && (
+        <div
+          data-inspector-ui
+          className="pointer-events-none absolute bottom-16 left-1/2 z-30 -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200 ease-out"
+          role="alert"
+        >
+          <div className="pointer-events-auto flex max-w-[80vw] items-start gap-2 rounded-[8px] border border-destructive/40 bg-destructive/10 px-3 py-2 text-[12px] text-destructive shadow-overlay backdrop-blur-md">
+            <span className="font-medium">{t.inspector.saveFailed}</span>
+            <span className="break-words">{insp.commitError}</span>
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              className="-mt-1 -mr-1 ml-auto size-5 shrink-0 text-destructive hover:text-destructive"
+              onClick={insp.clearCommitError}
+              aria-label={t.inspector.saveFailedDismissAria}
+            >
+              <X className="size-3" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

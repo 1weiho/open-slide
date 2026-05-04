@@ -8,6 +8,8 @@ export type EditOp =
 
 export type Edit = { line: number; column: number; ops: EditOp[] };
 
+export type EditResult = { ok: boolean; error?: string };
+
 export class NoOpEditError extends Error {
   constructor() {
     super(
@@ -37,9 +39,11 @@ export function useEditor(slideId: string) {
   );
 
   // Batch many element edits into one file write and one HMR tick.
+  // Returns one result per input edit so callers can keep failed
+  // edits buffered while clearing the ones that landed.
   const applyEdits = useCallback(
-    async (edits: Edit[]) => {
-      if (edits.length === 0) return;
+    async (edits: Edit[]): Promise<EditResult[]> => {
+      if (edits.length === 0) return [];
       const res = await fetch('/__edit/batch', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -48,13 +52,16 @@ export function useEditor(slideId: string) {
       const body = (await res.json().catch(() => ({}))) as {
         error?: string;
         changed?: boolean;
-        results?: Array<{ ok: boolean; error?: string }>;
+        results?: EditResult[];
       };
       if (!res.ok) {
         throw new Error(body.error ?? `POST /__edit/batch → ${res.status}`);
       }
-      const failed = body.results?.find((r) => !r.ok);
-      if (failed?.error) throw new Error(failed.error);
+      const results = body.results;
+      if (!Array.isArray(results) || results.length !== edits.length) {
+        throw new Error('malformed /__edit/batch response');
+      }
+      return results;
     },
     [slideId],
   );

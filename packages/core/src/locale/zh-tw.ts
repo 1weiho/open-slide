@@ -202,6 +202,8 @@ export const zhTW: Locale = {
     commentsApplyHintPrefix: '在你的代理中執行 ',
     commentsApplyHintSuffix: ' 以套用這些變更。',
     commentDeleteAria: '刪除',
+    saveFailed: '儲存失敗：',
+    saveFailedDismissAria: '關閉錯誤',
   },
 
   stylePanel: {
