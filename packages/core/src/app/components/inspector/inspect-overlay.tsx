@@ -1,13 +1,15 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { PANEL_TRANSITION_MS } from '@/components/panel/panel-shell';
 import { findSlideSource, type SlideSourceHit } from '@/lib/inspector/fiber';
 import { useInspector } from './inspector-provider';
 
-type Highlight = { rect: DOMRect; hit: SlideSourceHit };
+type Highlight = { hit: SlideSourceHit };
 
 type RelRect = { left: number; top: number; width: number; height: number };
 
 const FRAME_FADE_MS = 150;
 const FRAME_MORPH_MS = 180;
+const LAYOUT_TRACK_MS = PANEL_TRANSITION_MS + FRAME_MORPH_MS;
 
 export function InspectOverlay() {
   const { active, slideId, selected, setSelected, cancel } = useInspector();
@@ -33,7 +35,7 @@ export function InspectOverlay() {
       if (!el) return setHover(null);
       const hit = findSlideSource(el, slideId, { hostOnly: true });
       if (!hit) return setHover(null);
-      setHover({ rect: hit.anchor.getBoundingClientRect(), hit });
+      setHover({ hit });
     };
 
     const onClick = (e: MouseEvent) => {
@@ -45,7 +47,7 @@ export function InspectOverlay() {
       e.preventDefault();
       e.stopPropagation();
       setSelected({ line: hit.line, column: hit.column, anchor: hit.anchor });
-      setHover({ rect: hit.anchor.getBoundingClientRect(), hit });
+      setHover({ hit });
     };
 
     window.addEventListener('pointermove', onMove, true);
@@ -64,7 +66,7 @@ export function InspectOverlay() {
       overlayRef={overlayRef}
       // Pin to the selection so the highlight tracks what the panel
       // is editing even after the cursor moves away.
-      targetRect={selected?.anchor.getBoundingClientRect() ?? hover?.rect ?? null}
+      targetAnchor={selected?.anchor ?? hover?.hit.anchor ?? null}
     />
   );
 }
@@ -72,26 +74,77 @@ export function InspectOverlay() {
 function FrameOverlay({
   active,
   overlayRef,
-  targetRect,
+  targetAnchor,
 }: {
   active: boolean;
   overlayRef: React.RefObject<HTMLDivElement>;
-  targetRect: DOMRect | null;
+  targetAnchor: HTMLElement | null;
 }) {
-  const overlayRect = overlayRef.current?.getBoundingClientRect();
-  const visible = !!(active && targetRect && overlayRect);
+  const [rect, setRect] = useState<RelRect | null>(null);
+  const [hasTarget, setHasTarget] = useState(false);
 
-  // Hold the last rect so the frame stays put during fade-out, when
-  // `targetRect` has already gone null.
-  const lastRectRef = useRef<RelRect | null>(null);
-  if (visible && targetRect && overlayRect) {
-    lastRectRef.current = {
+  const measure = useCallback(() => {
+    const overlay = overlayRef.current;
+    if (!active || !targetAnchor?.isConnected || !overlay) {
+      setHasTarget(false);
+      return;
+    }
+
+    const targetRect = targetAnchor.getBoundingClientRect();
+    const overlayRect = overlay.getBoundingClientRect();
+    const next = {
       left: targetRect.left - overlayRect.left,
       top: targetRect.top - overlayRect.top,
       width: targetRect.width,
       height: targetRect.height,
     };
-  }
+
+    setHasTarget(true);
+    setRect((prev) => (sameRect(prev, next) ? prev : next));
+  }, [active, overlayRef, targetAnchor]);
+
+  useLayoutEffect(() => {
+    measure();
+  }, [measure]);
+
+  useEffect(() => {
+    if (!active) {
+      setHasTarget(false);
+      return;
+    }
+
+    let scheduled = 0;
+    let tracking = 0;
+    const scheduleMeasure = () => {
+      cancelAnimationFrame(scheduled);
+      scheduled = requestAnimationFrame(measure);
+    };
+
+    const resizeObserver = new ResizeObserver(scheduleMeasure);
+    const root = document.querySelector<HTMLElement>('[data-inspector-root]');
+    if (root) resizeObserver.observe(root);
+    if (overlayRef.current) resizeObserver.observe(overlayRef.current);
+    if (targetAnchor) resizeObserver.observe(targetAnchor);
+
+    const stopAt = performance.now() + LAYOUT_TRACK_MS;
+    const trackPanelTransition = () => {
+      measure();
+      if (performance.now() < stopAt) tracking = requestAnimationFrame(trackPanelTransition);
+    };
+    tracking = requestAnimationFrame(trackPanelTransition);
+
+    window.addEventListener('resize', scheduleMeasure, true);
+    window.addEventListener('scroll', scheduleMeasure, true);
+    return () => {
+      resizeObserver.disconnect();
+      cancelAnimationFrame(scheduled);
+      cancelAnimationFrame(tracking);
+      window.removeEventListener('resize', scheduleMeasure, true);
+      window.removeEventListener('scroll', scheduleMeasure, true);
+    };
+  }, [active, measure, overlayRef, targetAnchor]);
+
+  const visible = !!(active && hasTarget && rect);
 
   // First render after appearing: snap to the new rect (no transition).
   // Subsequent rect changes in the same visible session: animate.
@@ -106,7 +159,6 @@ function FrameOverlay({
   }, [visible]);
 
   if (!active) return null;
-  const rect = lastRectRef.current;
   const transition = morph
     ? `left ${FRAME_MORPH_MS}ms ease-out, top ${FRAME_MORPH_MS}ms ease-out, ` +
       `width ${FRAME_MORPH_MS}ms ease-out, height ${FRAME_MORPH_MS}ms ease-out, ` +
@@ -131,6 +183,16 @@ function FrameOverlay({
         />
       )}
     </div>
+  );
+}
+
+function sameRect(a: RelRect | null, b: RelRect): boolean {
+  return (
+    !!a &&
+    Math.abs(a.left - b.left) < 0.5 &&
+    Math.abs(a.top - b.top) < 0.5 &&
+    Math.abs(a.width - b.width) < 0.5 &&
+    Math.abs(a.height - b.height) < 0.5
   );
 }
 
