@@ -37,6 +37,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
   return {
     root: APP_ROOT,
     configFile: false,
+    envDir: userCwd,
     plugins: [
       locTagsPlugin({ userCwd, slidesDir }),
       react(),
