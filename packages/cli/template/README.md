@@ -19,6 +19,24 @@ Then open the dev server and edit `slides/getting-started/index.tsx`, or create 
 | `pnpm build` | Build a static bundle you can deploy. |
 | `pnpm preview` | Preview the built bundle locally. |
 
+## Docker
+
+Run the dev server inside Docker — no Node.js required on the host:
+
+```bash
+docker compose up -d
+# Open http://localhost:5173
+```
+
+The `slides/` and `themes/` directories are bind-mounted, so edits on the host are reflected immediately. The container uses `restart: unless-stopped` and survives host reboots.
+
+| Command | Description |
+| --- | --- |
+| `docker compose up -d` | Start (or rebuild and start) |
+| `docker compose down` | Stop and remove |
+| `docker compose up -d --build` | Rebuild after dependency changes |
+| `docker exec openslide-open-slide-1 sh -c "npx open-slide build"` | Static export to `dist/` |
+
 ## Authoring a slide
 
 ```tsx
