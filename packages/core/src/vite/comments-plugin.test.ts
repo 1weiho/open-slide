@@ -193,7 +193,23 @@ describe('applyEdit / set-text', () => {
     expect(r.source).toContain("<h1>{'1 < 2 > 0'}</h1>");
   });
 
-  it('bails when element has nested JSX children', () => {
+  it('descends through wrapper elements to find the text leaf', () => {
+    const src = ['export default [() => (', '<div><span>Hello</span></div>', ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-text', value: 'Goodbye' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('<div><span>Goodbye</span></div>');
+  });
+
+  it('disambiguates between sibling text leaves via prevText', () => {
+    const src = ['export default [() => (', '<h1>Hello <span>world</span></h1>', ')];', ''].join(
+      '\n',
+    );
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-text', value: 'planet', prevText: 'world' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('<h1>Hello <span>planet</span></h1>');
+  });
+
+  it('bails when prevText is missing for an ambiguous element', () => {
     const src = ['export default [() => (', '<h1>Hello <span>world</span></h1>', ')];', ''].join(
       '\n',
     );
@@ -201,7 +217,36 @@ describe('applyEdit / set-text', () => {
     expect(r.ok).toBe(false);
     if (r.ok) throw new Error('expected failure');
     expect(r.status).toBe(422);
-    expect(r.error).toMatch(/complex children/);
+    expect(r.error).toMatch(/multiple text candidates/);
+  });
+
+  it('bails when prevText matches no candidate', () => {
+    const src = ['export default [() => (', '<h1>Hello <span>world</span></h1>', ')];', ''].join(
+      '\n',
+    );
+    const r = applyEdit(src, 2, 0, [
+      { kind: 'set-text', value: 'Goodbye', prevText: 'nothing-like-this' },
+    ]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.status).toBe(422);
+    expect(r.error).toMatch(/no text candidate matches/);
+  });
+
+  it('bails when prevText matches multiple identical candidates', () => {
+    const src = ['export default [() => (', '<h1>X<span>X</span></h1>', ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-text', value: 'Y', prevText: 'X' }]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.status).toBe(422);
+    expect(r.error).toMatch(/cannot disambiguate/);
+  });
+
+  it('edits the JSXText child of a component invocation', () => {
+    const src = ['export default [() => (', '<Title>Hello</Title>', ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-text', value: 'Goodbye' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('<Title>Goodbye</Title>');
   });
 
   it('bails when element child is a dynamic expression', () => {
@@ -210,6 +255,15 @@ describe('applyEdit / set-text', () => {
     expect(r.ok).toBe(false);
     if (r.ok) throw new Error('expected failure');
     expect(r.status).toBe(422);
+  });
+
+  it('bails when a self-closing element has no editable text', () => {
+    const src = ['export default [() => (', '<MyComp title="x" />', ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-text', value: 'Goodbye' }]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.status).toBe(422);
+    expect(r.error).toMatch(/no editable text/);
   });
 });
 

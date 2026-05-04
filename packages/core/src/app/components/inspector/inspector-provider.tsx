@@ -295,10 +295,15 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
     if (buckets.size === 0) return;
     const edits: Edit[] = [];
     const keys: string[] = [];
-    for (const [key, { line, column, styleOps, textOp, attrOps }] of buckets) {
+    for (const [key, { line, column, styleOps, textOp, attrOps, origText }] of buckets) {
       const list: EditOp[] = [];
       for (const [k, v] of styleOps) list.push({ kind: 'set-style', key: k, value: v });
-      if (textOp !== null) list.push({ kind: 'set-text', value: textOp.value });
+      if (textOp !== null) {
+        // `origText` is the DOM textContent we captured before the
+        // optimistic mutation. The server uses it to disambiguate
+        // when the source JSX has multiple editable text leaves.
+        list.push({ kind: 'set-text', value: textOp.value, prevText: origText?.value });
+      }
       for (const [attr, op] of attrOps) {
         list.push({
           kind: 'set-attr-asset',

@@ -198,7 +198,7 @@ function offsetToLine(source: string, offset: number): number {
 
 export type EditOp =
   | { kind: 'set-style'; key: string; value: string | null }
-  | { kind: 'set-text'; value: string }
+  | { kind: 'set-text'; value: string; prevText?: string }
   | { kind: 'set-attr-asset'; attr: string; assetPath: string }
   | { kind: 'replace-placeholder-with-image'; assetPath: string };
 
@@ -348,47 +348,98 @@ function formatJsxText(value: string): string {
   return value;
 }
 
-function buildTextSplice(element: AstNode, value: string): Splice | { error: string } {
-  const children = (element as unknown as { children?: AstNode[] }).children ?? [];
-  if (children.length === 0) {
-    return { error: 'element has no children to edit' };
-  }
+type TextCandidate = {
+  // Normalized current text the candidate represents — what an
+  // unambiguous DOM `textContent` would render here. Used to match
+  // against the client-supplied `prevText` when there's more than one.
+  current: string;
+  splice: (value: string) => Splice;
+};
 
-  const meaningful = children.filter((c) => {
+function meaningfulChildren(parent: AstNode): AstNode[] {
+  const children = (parent as unknown as { children?: AstNode[] }).children ?? [];
+  return children.filter((c) => {
     if (c.type === 'JSXText') {
-      const v = (c as unknown as { value: string }).value;
-      return v.trim() !== '';
+      return (c as unknown as { value: string }).value.trim() !== '';
     }
     return true;
   });
+}
 
-  if (meaningful.length !== 1) {
-    return { error: 'element has complex children' };
-  }
+// Wrap-style splice: rewrite the whole children span of `parent`. Used
+// when the candidate is the parent's only meaningful child, so old
+// surrounding whitespace nodes don't leak into the new value.
+function wrapSplice(parent: AstNode, text: string): Splice {
+  const children = (parent as unknown as { children?: AstNode[] }).children ?? [];
+  const first = children[0];
+  const last = children[children.length - 1];
+  return { from: first.start, to: last.end, text };
+}
 
-  const child = meaningful[0];
-
-  if (child.type === 'JSXText') {
-    // Replace the whole children span so old surrounding whitespace
-    // doesn't leak into the new value.
-    const first = children[0];
-    const last = children[children.length - 1];
-    return { from: first.start, to: last.end, text: formatJsxText(value) };
-  }
-
-  if (child.type === 'JSXExpressionContainer') {
-    const expr = (child as unknown as { expression: AstNode }).expression;
-    if (expr.type === 'StringLiteral' || expr.type === 'NumericLiteral') {
-      return {
-        from: child.start,
-        to: child.end,
-        text: `{${jsString(value)}}`,
-      };
+function collectTextCandidates(element: AstNode, out: TextCandidate[]): void {
+  const meaningful = meaningfulChildren(element);
+  const isSole = meaningful.length === 1;
+  for (const child of meaningful) {
+    if (child.type === 'JSXText') {
+      const current = (child as unknown as { value: string }).value.trim();
+      if (!current) continue;
+      out.push({
+        current,
+        splice: (v) =>
+          isSole
+            ? wrapSplice(element, formatJsxText(v))
+            : { from: child.start, to: child.end, text: formatJsxText(v) },
+      });
+    } else if (child.type === 'JSXExpressionContainer') {
+      const expr = (child as unknown as { expression: AstNode }).expression;
+      if (expr.type === 'StringLiteral' || expr.type === 'NumericLiteral') {
+        const current = String((expr as unknown as { value: string | number }).value);
+        out.push({
+          current,
+          splice: (v) =>
+            isSole
+              ? wrapSplice(element, `{${jsString(v)}}`)
+              : { from: child.start, to: child.end, text: `{${jsString(v)}}` },
+        });
+      }
+      // Dynamic expressions: skip — we can't safely rewrite them.
+    } else if (child.type === 'JSXElement' || child.type === 'JSXFragment') {
+      // Descend through wrappers like `<div><span>X</span></div>` so a
+      // click that lands on the outer wrapper still resolves to the
+      // text leaf below.
+      collectTextCandidates(child, out);
     }
-    return { error: 'element has dynamic expression child' };
   }
+}
 
-  return { error: 'element has complex children' };
+function buildTextSplice(
+  element: AstNode,
+  value: string,
+  prevText?: string,
+): Splice | { error: string } {
+  const candidates: TextCandidate[] = [];
+  collectTextCandidates(element, candidates);
+  if (candidates.length === 0) {
+    return { error: 'element has no editable text' };
+  }
+  if (candidates.length === 1) {
+    return candidates[0].splice(value);
+  }
+  // More than one editable text leaf in the subtree: use the client's
+  // pre-edit DOM text to disambiguate. Trim because JSX collapses
+  // surrounding whitespace at render time.
+  if (prevText === undefined) {
+    return { error: 'element has multiple text candidates; missing prevText' };
+  }
+  const norm = prevText.trim();
+  const matches = candidates.filter((c) => c.current === norm);
+  if (matches.length === 0) {
+    return { error: 'no text candidate matches the current value' };
+  }
+  if (matches.length > 1) {
+    return { error: 'multiple text candidates share the same value; cannot disambiguate' };
+  }
+  return matches[0].splice(value);
 }
 
 type ImportInfo = { node: AstNode; source: string; defaultIdent: string | null };
@@ -628,7 +679,7 @@ export function applyEdit(
 
   for (const op of ops) {
     if (op.kind !== 'set-text') continue;
-    const result = buildTextSplice(element, op.value);
+    const result = buildTextSplice(element, op.value, op.prevText);
     if ('error' in result) return { ok: false, status: 422, error: result.error };
     splices.push(result);
   }
