@@ -17,6 +17,8 @@ You are authoring **slides** in this repo. Every slide is arbitrary React code t
 - **Creating or extracting a theme** — use the `create-theme` skill. Themes live as markdown under `themes/<id>.md` and are read by `create-slide` before authoring.
 - **Any other slide edit** — read the `slide-authoring` skill before writing. It is the technical reference for everything inside `slides/<id>/`: file contract, the 1920×1080 canvas, type scale, palette, layout, assets, self-review checklist, and anti-patterns. `create-slide` and `apply-comments` both defer to it for the *how*.
 
+- **Running with Docker** — use the `openslide-docker` skill. Covers the Docker dev server, container lifecycle, volume mounts, static export, and troubleshooting.
+
 Keep this file short: hard rules only. All deeper guidance lives in the skills above.
 
 ## Updating skills
