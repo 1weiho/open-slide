@@ -62,10 +62,17 @@ function toId(absFile: string, slidesRoot: string): string {
   return rel.split(path.sep)[0];
 }
 
+function toFsImportPath(abs: string): string {
+  // Vite's `/@fs/` prefix expects exactly one slash before the absolute path.
+  // POSIX abs paths already start with `/`; Windows ones start with a drive
+  // letter (`C:\…`). Normalise both to a single leading slash form.
+  return `/@fs/${abs.replace(/\\/g, '/').replace(/^\/+/, '')}`;
+}
+
 function generateSlidesModule(files: string[], slidesRoot: string, isDev: boolean): string {
   const entries = files.map((abs) => {
     const id = toId(abs, slidesRoot);
-    const importPath = isDev ? `/@fs${abs}` : abs;
+    const importPath = isDev ? toFsImportPath(abs) : abs;
     return { id, importPath };
   });
 
