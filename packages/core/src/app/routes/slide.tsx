@@ -1,5 +1,14 @@
 import config from 'virtual:open-slide/config';
-import { ChevronLeft, Download, FileCode2, FileText, Loader2, Pencil, Play } from 'lucide-react';
+import {
+  ChevronLeft,
+  Download,
+  FileCode2,
+  FileText,
+  FileType2,
+  Loader2,
+  Pencil,
+  Play,
+} from 'lucide-react';
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -35,10 +44,14 @@ import { SlideCanvas } from '../components/slide-canvas';
 import { ThumbnailRail } from '../components/thumbnail-rail';
 import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf } from '../lib/export-pdf';
+import { exportSlideAsPptx } from '../lib/export-pptx';
 import type { SlideModule } from '../lib/sdk';
 import { loadSlide } from '../lib/slides';
 
-const { showSlideUi, showSlideBrowser, allowHtmlDownload } = config.build;
+const { showSlideUi, showSlideBrowser, allowHtmlDownload, allowPptxDownload } =
+  config.build as typeof config.build & {
+    allowPptxDownload?: boolean;
+  };
 
 export function Slide() {
   const { slideId = '' } = useParams();
@@ -247,7 +260,7 @@ export function Slide() {
             </div>
 
             <div className="flex items-center gap-1">
-              {view === 'slides' && allowHtmlDownload && (
+              {view === 'slides' && (allowHtmlDownload || allowPptxDownload) && (
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     type="button"
@@ -263,61 +276,85 @@ export function Slide() {
                     )}
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="min-w-[200px]">
-                    <DropdownMenuItem
-                      disabled={exporting}
-                      onSelect={async () => {
-                        if (!slide || exporting) return;
-                        setExporting(true);
-                        try {
-                          await exportSlideAsHtml(slide, slideId);
-                        } catch (err) {
-                          console.error('[open-slide] export failed', err);
-                        } finally {
-                          setExporting(false);
-                        }
-                      }}
-                    >
-                      <FileCode2 />
-                      {t.slide.exportAsHtml}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      disabled={exporting}
-                      onSelect={async () => {
-                        if (!slide || exporting) return;
-                        setExporting(true);
-                        const toastId = `pdf-export-${slideId}`;
-                        toast.custom(
-                          () => (
-                            <PdfProgressToast
-                              progress={{
-                                phase: 'processing',
-                                current: 0,
-                                total: pages.length,
-                                percent: 0,
-                              }}
-                            />
-                          ),
-                          { id: toastId, duration: Infinity },
-                        );
-                        try {
-                          await exportSlideAsPdf(slide, slideId, (p) => {
-                            toast.custom(() => <PdfProgressToast progress={p} />, {
-                              id: toastId,
-                              duration: Infinity,
-                            });
-                          });
-                        } catch (err) {
-                          console.error('[open-slide] pdf export failed', err);
-                          toast.error(t.slide.pdfExportFailed, { id: toastId, duration: 4000 });
-                        } finally {
-                          setExporting(false);
-                          toast.dismiss(toastId);
-                        }
-                      }}
-                    >
-                      <FileText />
-                      {t.slide.exportAsPdf}
-                    </DropdownMenuItem>
+                    {allowHtmlDownload && (
+                      <>
+                        <DropdownMenuItem
+                          disabled={exporting}
+                          onSelect={async () => {
+                            if (!slide || exporting) return;
+                            setExporting(true);
+                            try {
+                              await exportSlideAsHtml(slide, slideId);
+                            } catch (err) {
+                              console.error('[open-slide] export failed', err);
+                            } finally {
+                              setExporting(false);
+                            }
+                          }}
+                        >
+                          <FileCode2 />
+                          {t.slide.exportAsHtml}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={exporting}
+                          onSelect={async () => {
+                            if (!slide || exporting) return;
+                            setExporting(true);
+                            const toastId = `pdf-export-${slideId}`;
+                            toast.custom(
+                              () => (
+                                <PdfProgressToast
+                                  progress={{
+                                    phase: 'processing',
+                                    current: 0,
+                                    total: pages.length,
+                                    percent: 0,
+                                  }}
+                                />
+                              ),
+                              { id: toastId, duration: Infinity },
+                            );
+                            try {
+                              await exportSlideAsPdf(slide, slideId, (p) => {
+                                toast.custom(() => <PdfProgressToast progress={p} />, {
+                                  id: toastId,
+                                  duration: Infinity,
+                                });
+                              });
+                            } catch (err) {
+                              console.error('[open-slide] pdf export failed', err);
+                              toast.error(t.slide.pdfExportFailed, { id: toastId, duration: 4000 });
+                            } finally {
+                              setExporting(false);
+                              toast.dismiss(toastId);
+                            }
+                          }}
+                        >
+                          <FileText />
+                          {t.slide.exportAsPdf}
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {allowPptxDownload && (
+                      <DropdownMenuItem
+                        disabled={exporting}
+                        onSelect={async () => {
+                          if (!slide || exporting) return;
+                          setExporting(true);
+                          try {
+                            await exportSlideAsPptx(slide, slideId);
+                          } catch (err) {
+                            console.error('[open-slide] pptx export failed', err);
+                            toast.error(t.slide.pptxExportFailed);
+                          } finally {
+                            setExporting(false);
+                          }
+                        }}
+                      >
+                        <FileType2 />
+                        {t.slide.exportAsPptx}
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}

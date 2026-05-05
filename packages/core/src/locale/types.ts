@@ -89,7 +89,9 @@ export type Locale = {
     download: string;
     exportAsHtml: string;
     exportAsPdf: string;
+    exportAsPptx: string;
     pdfExportFailed: string;
+    pptxExportFailed: string;
     present: string;
     slidesTab: string;
     assetsTab: string;
