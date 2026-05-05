@@ -55,7 +55,7 @@ export function Player({
   controls = false,
   slideId,
 }: Props) {
-  const rootRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
   // Mirrored as state so children that need to portal *into* the player
   // (tooltips, popovers — the body is outside the fullscreen subtree and
   // therefore invisible) can subscribe and re-render once the node mounts.

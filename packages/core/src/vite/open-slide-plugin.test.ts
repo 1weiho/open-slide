@@ -20,7 +20,8 @@ async function loadVirtualConfig(
     throw new Error('expected plugin load hook');
   }
 
-  const code = await plugin.load.call({} as never, CONFIG_ID);
+  const load = plugin.load as (this: unknown, id: string) => string | Promise<string | null> | null;
+  const code = await load.call(undefined, CONFIG_ID);
   if (typeof code !== 'string') {
     throw new Error('expected virtual config module');
   }
