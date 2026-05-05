@@ -65,7 +65,8 @@ function toId(absFile: string, slidesRoot: string): string {
 function generateSlidesModule(files: string[], slidesRoot: string, isDev: boolean): string {
   const entries = files.map((abs) => {
     const id = toId(abs, slidesRoot);
-    const importPath = isDev ? `/@fs${abs}` : abs;
+    // Normalize to forward slashes so /@fs/ works on Windows
+    const importPath = isDev ? `/@fs/${abs.split(path.sep).join('/')}` : abs;
     return { id, importPath };
   });
 
