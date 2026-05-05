@@ -116,11 +116,17 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
       if (id === resolved(CONFIG_VMOD)) {
         const userBuild = config.build ?? {};
         const buildResolved = isDev
-          ? { showSlideBrowser: true, showSlideUi: true, allowHtmlDownload: true }
+          ? {
+              showSlideBrowser: true,
+              showSlideUi: true,
+              allowHtmlDownload: true,
+              allowPptxDownload: true,
+            }
           : {
               showSlideBrowser: userBuild.showSlideBrowser ?? true,
               showSlideUi: userBuild.showSlideUi ?? true,
               allowHtmlDownload: userBuild.allowHtmlDownload ?? true,
+              allowPptxDownload: userBuild.allowPptxDownload ?? true,
             };
         const resolvedConfig = { ...config, build: buildResolved };
         return `export default ${JSON.stringify(resolvedConfig)};\n`;

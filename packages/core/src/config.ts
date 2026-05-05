@@ -4,6 +4,7 @@ export type OpenSlideBuildConfig = {
   showSlideBrowser?: boolean;
   showSlideUi?: boolean;
   allowHtmlDownload?: boolean;
+  allowPptxDownload?: boolean;
 };
 
 export type OpenSlideConfig = {
