@@ -2,4 +2,4 @@
 "@open-slide/core": patch
 ---
 
-Add PPTX download configuration for slide builds.
+Add PPTX export with editable text, shape, and image support.

@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import fg from 'fast-glob';
-import { loadConfigFromFile, type Plugin } from 'vite';
+import { loadConfigFromFile, normalizePath, type Plugin } from 'vite';
 import type { OpenSlideConfig } from '../config.ts';
 
 export type { OpenSlideConfig };
@@ -62,10 +62,15 @@ function toId(absFile: string, slidesRoot: string): string {
   return rel.split(path.sep)[0];
 }
 
+export function toViteFsPath(abs: string): string {
+  const normalized = normalizePath(abs);
+  return normalized.startsWith('/') ? `/@fs${normalized}` : `/@fs/${normalized}`;
+}
+
 function generateSlidesModule(files: string[], slidesRoot: string, isDev: boolean): string {
   const entries = files.map((abs) => {
     const id = toId(abs, slidesRoot);
-    const importPath = isDev ? `/@fs${abs}` : abs;
+    const importPath = isDev ? toViteFsPath(abs) : abs;
     return { id, importPath };
   });
 

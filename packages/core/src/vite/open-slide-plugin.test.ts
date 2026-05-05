@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type OpenSlidePluginOptions, openSlidePlugin } from './open-slide-plugin.ts';
+import { type OpenSlidePluginOptions, openSlidePlugin, toViteFsPath } from './open-slide-plugin.ts';
 
 const CONFIG_ID = '\0virtual:open-slide/config';
 
@@ -62,5 +62,19 @@ describe('openSlidePlugin config module', () => {
     );
 
     expect(config.build.allowPptxDownload).toBe(false);
+  });
+});
+
+describe('toViteFsPath', () => {
+  it('keeps a slash between /@fs and Windows drive paths', () => {
+    expect(toViteFsPath('C:\\Users\\Kevin\\slides\\demo\\index.tsx')).toBe(
+      '/@fs/C:/Users/Kevin/slides/demo/index.tsx',
+    );
+  });
+
+  it('keeps POSIX absolute paths valid', () => {
+    expect(toViteFsPath('/Users/kevin/slides/demo/index.tsx')).toBe(
+      '/@fs/Users/kevin/slides/demo/index.tsx',
+    );
   });
 });
