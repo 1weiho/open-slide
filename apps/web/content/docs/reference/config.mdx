@@ -24,6 +24,8 @@ type OpenSlideBuildConfig = {
   showSlideUi?: boolean;
   /** Show the "download as HTML" button in the static build. */
   allowHtmlDownload?: boolean;
+  /** Show the "download as PPTX" button in the static build. */
+  allowPptxDownload?: boolean;
 };
 
 type OpenSlideConfig = {
@@ -48,6 +50,7 @@ const config: OpenSlideConfig = {
     showSlideBrowser: false,
     showSlideUi: false,
     allowHtmlDownload: false,
+    allowPptxDownload: false,
   },
 };
 ```

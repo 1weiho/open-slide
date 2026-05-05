@@ -1,6 +1,6 @@
 ---
 title: Export
-description: One command to a self-contained static HTML site or PDF.
+description: One command to a self-contained static HTML site, PDF, or PPTX.
 ---
 
 `open-slide build` produces a plain static site under `dist/`. The output is
@@ -23,6 +23,24 @@ print pipeline. From the toolbar pick **Export → PDF**, or open the deck at
 `?print=1` and use Cmd/Ctrl-P. The runtime sets paper size to 1920×1080
 landscape so each slide is exactly one page.
 
+## PPTX
+
+The dev server can export the active deck to PowerPoint from
+**Export -> PPTX**. open-slide exports native editable objects where it can
+and falls back conservatively for browser-only effects.
+
+For the best editability, use the PPTX primitives for important content:
+
+```tsx
+import { PptxText, type Page } from '@open-slide/core';
+
+const PageOne: Page = () => (
+  <PptxText style={{ position: 'absolute', left: 120, top: 120, fontSize: 72 }}>
+    Editable in PowerPoint
+  </PptxText>
+);
+```
+
 ## What gets shipped
 
 The build pipeline only includes:
@@ -41,7 +59,8 @@ const config: OpenSlideConfig = {
   build: {
     showSlideBrowser: false,    // hide the deck index
     showSlideUi: false,         // hide on-canvas UI (toolbar etc.)
-    allowHtmlDownload: false,   // hide the "download HTML" button
+    allowHtmlDownload: false,   // hide HTML/PDF downloads
+    allowPptxDownload: false,   // hide PPTX downloads
   },
 };
 

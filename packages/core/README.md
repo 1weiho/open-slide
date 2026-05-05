@@ -60,12 +60,31 @@ export default pages;
 export const meta = { title: 'Hello' };
 ```
 
+## PPTX export
+
+The runtime can export the active deck as a PowerPoint file from the download
+menu. open-slide writes editable PowerPoint text, shapes, and images where it
+can, and falls back conservatively for browser-only effects.
+
+Use the PPTX primitives for content that should stay editable:
+
+```tsx
+import { PptxText, type Page } from '@open-slide/core';
+
+const Cover: Page = () => (
+  <PptxText style={{ position: 'absolute', left: 120, top: 120, fontSize: 72 }}>
+    Editable in PowerPoint
+  </PptxText>
+);
+```
+
 ## Exports
 
 ```ts
 import {
   CANVAS_WIDTH,   // 1920
   CANVAS_HEIGHT,  // 1080
+  PptxText,
   type Page,
   type SlideMeta,
   type SlideModule,
