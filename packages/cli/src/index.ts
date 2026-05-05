@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import prompts from 'prompts';
+import { exportPdf, type ExportPdfOptions } from './export-pdf.ts';
 import { init, isDirNonEmpty, type InitOptions } from './init.ts';
 import { detectPackageManager, type PackageManager } from './package-manager.ts';
 
@@ -125,6 +126,16 @@ export async function run(argv: string[]): Promise<void> {
     .option('--no-git', 'skip git init and initial commit')
     .action(async (dir: string | undefined, flags: InitCliFlags) => {
       await runInit(dir, flags);
+    });
+
+  program
+    .command('export-pdf')
+    .description('Export slides to PDF (requires playwright)')
+    .argument('[slide-id]', 'slide id to export')
+    .option('-a, --all', 'export all slides')
+    .option('-o, --out-dir <dir>', 'output directory (defaults to exports/)')
+    .action(async (slideId: string | undefined, flags: ExportPdfOptions) => {
+      await exportPdf({ slideId, ...flags });
     });
 
   await program.parseAsync(argv, { from: 'user' });
