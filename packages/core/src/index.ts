@@ -1,6 +1,22 @@
 export type { ImagePlaceholderProps } from './app/components/image-placeholder.tsx';
 export { ImagePlaceholder } from './app/components/image-placeholder.tsx';
 export type {
+  PptxBoxProps,
+  PptxGroupProps,
+  PptxImageProps,
+  PptxPrimitiveKind,
+  PptxShapeKind,
+  PptxShapeProps,
+  PptxTextProps,
+} from './app/components/pptx/index.tsx';
+export {
+  PptxBox,
+  PptxGroup,
+  PptxImage,
+  PptxShape,
+  PptxText,
+} from './app/components/pptx/index.tsx';
+export type {
   DesignFonts,
   DesignPalette,
   DesignSystem,
