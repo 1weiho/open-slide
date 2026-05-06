@@ -8,7 +8,7 @@ import type { Connect, Plugin, ViteDevServer } from 'vite';
 import { walkAll, walkJsx } from './babel-walk.ts';
 
 const MARKER_RE =
-  /\{\/\*\s*@slide-comment\s+id="(c-[a-f0-9]+)"\s+ts="([^"]+)"\s+text="([A-Za-z0-9_-]+={0,2})"\s*\*\/\}/g;
+  /\{\/\*\s*@slide-comment\s+id="(c-[a-f0-9]+)"\s+ts="([^"]+)"\s+text="([A-Za-z0-9_-]+={0,2})"(?:\s+note="((?:[^"\\]|\\.)*)")?\s*\*\/\}/g;
 
 const SLIDE_ID_RE = /^[a-z0-9_-]+$/i;
 
@@ -83,10 +83,24 @@ export function parseMarkers(source: string): Comment[] {
     MARKER_RE.lastIndex = 0;
     const m = MARKER_RE.exec(line);
     if (!m) continue;
-    const [, id, ts, textB64] = m;
+    const [, id, ts, textB64, noteRaw] = m;
     try {
-      const payload = JSON.parse(b64urlDecode(textB64)) as { note: string; hint?: string };
-      comments.push({ id, line: i + 1, ts, note: payload.note, hint: payload.hint });
+      if (noteRaw !== undefined) {
+        // Fast path: raw note attribute is directly readable — no decode needed.
+        // JSON.parse unwraps the JSON-string-escaped value (handles \", \\, \n, etc.).
+        const note = JSON.parse(`"${noteRaw}"`);
+        // Extract hint from base64url payload (best-effort)
+        let hint: string | undefined;
+        try {
+          const payload = JSON.parse(b64urlDecode(textB64)) as { note: string; hint?: string };
+          hint = payload.hint;
+        } catch {}
+        comments.push({ id, line: i + 1, ts, note, hint });
+      } else {
+        // Fallback: legacy markers without note attribute
+        const payload = JSON.parse(b64urlDecode(textB64)) as { note: string; hint?: string };
+        comments.push({ id, line: i + 1, ts, note: payload.note, hint: payload.hint });
+      }
     } catch {}
   }
   return comments;
@@ -1037,7 +1051,8 @@ export function commentsPlugin(opts: CommentsPluginOptions): Plugin {
             const id = newId();
             const ts = new Date().toISOString();
             const payload = b64urlEncode(JSON.stringify({ note: body.text, hint: body.hint }));
-            const marker = `\n${plan.indent}{/* @slide-comment id="${id}" ts="${ts}" text="${payload}" */}`;
+            const escapedNote = JSON.stringify(body.text).slice(1, -1);
+            const marker = `\n${plan.indent}{/* @slide-comment id="${id}" ts="${ts}" text="${payload}" note="${escapedNote}" */}`;
 
             const next = source.slice(0, plan.offset) + marker + source.slice(plan.offset);
             await fs.writeFile(file, next, 'utf8');
@@ -1061,7 +1076,7 @@ export function commentsPlugin(opts: CommentsPluginOptions): Plugin {
 
             const lines = source.split('\n');
             const idRe = new RegExp(
-              `\\{\\/\\*\\s*@slide-comment\\s+id="${id}"\\s+ts="[^"]+"\\s+text="[A-Za-z0-9_\\-]+={0,2}"\\s*\\*\\/\\}`,
+              `\\{\\/\\*\\s*@slide-comment\\s+id="${id}"\\s+ts="[^"]+"\\s+text="[A-Za-z0-9_\\-]+={0,2}"(?:\\s+note="(?:[^"\\\\]|\\\\.)*")?\\s*\\*\\/\\}`,
             );
             const hit = lines.findIndex((l) => idRe.test(l));
             if (hit === -1) return json(res, 404, { error: 'marker not found' });

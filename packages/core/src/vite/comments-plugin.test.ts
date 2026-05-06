@@ -75,6 +75,27 @@ describe('parseMarkers', () => {
     expect(comments.map((c) => c.note)).toEqual(['one', 'two']);
     expect(comments.map((c) => c.line)).toEqual([1, 3]);
   });
+
+  it('reads note from the human-readable note attribute directly', () => {
+    const payload = b64urlEncode(JSON.stringify({ note: 'make this red' }));
+    const source = `{/* @slide-comment id="c-deadbeef" ts="2026-04-25T00:00:00.000Z" text="${payload}" note="make this red" */}`;
+    const [c] = parseMarkers(source);
+    expect(c.note).toBe('make this red');
+  });
+
+  it('handles special characters in the note attribute value', () => {
+    const payload = b64urlEncode(JSON.stringify({ note: 'change "Title" to "Heading" — okay?' }));
+    const source = `{/* @slide-comment id="c-deadbeef" ts="2026-04-25T00:00:00.000Z" text="${payload}" note="change \\"Title\\" to \\"Heading\\" \\u2014 okay?" */}`;
+    const [c] = parseMarkers(source);
+    expect(c.note).toBe('change "Title" to "Heading" — okay?');
+  });
+
+  it('falls back to base64url decode for legacy markers without note attr', () => {
+    const payload = b64urlEncode(JSON.stringify({ note: 'old format' }));
+    const source = `{/* @slide-comment id="c-12345678" ts="2026-04-25T00:00:00.000Z" text="${payload}" */}`;
+    const [c] = parseMarkers(source);
+    expect(c.note).toBe('old format');
+  });
 });
 
 describe('applyEdit / set-style', () => {
