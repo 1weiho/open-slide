@@ -25,6 +25,7 @@ Once installed, the `open-slide` bin is available in the workspace:
 | `open-slide dev` | Start the dev server. Flags: `-p, --port <port>`, `--host [host]`, `--open`. |
 | `open-slide build` | Build a static site. Flags: `--out-dir <dir>` (defaults to `dist`). |
 | `open-slide preview` | Preview the production build. Flags: `-p, --port <port>`, `--host [host]`, `--open`. |
+| `open-slide export:pptx <slide-id>` | Export a schema-based editable PPTX file. Flags: `-o, --output <file>`. |
 
 ## Config
 
@@ -56,9 +57,40 @@ const Cover: Page = () => (
 
 const pages: Page[] = [Cover];
 export default pages;
-
 export const meta = { title: 'Hello' };
 ```
+
+## Editable PPTX export
+
+`open-slide export:pptx <slide-id>` creates a real `.pptx` with editable PowerPoint shapes and text. It does **not** screenshot the React DOM. Because arbitrary React/CSS cannot be safely translated into OOXML, export is schema-based: add a sibling `pptx` export to the slide module.
+
+```tsx
+import type { Page, PptxDeck } from '@open-slide/core';
+
+const Cover: Page = () => <div>Hello</div>;
+export default [Cover];
+
+export const pptx: PptxDeck = {
+  title: 'Hello',
+  slides: [
+    {
+      background: '#0F172A',
+      elements: [
+        { type: 'rect', x: 96, y: 96, w: 480, h: 180, fill: '#22C55E', radius: 24 },
+        { type: 'text', x: 128, y: 124, w: 900, h: 100, text: 'Hello editable PPTX', fontSize: 44, bold: true, color: '#FFFFFF' },
+      ],
+    },
+  ],
+};
+```
+
+Then run:
+
+```bash
+open-slide export:pptx hello -o hello.pptx
+```
+
+Coordinates use the same fixed 1920×1080 canvas as Open Slide and map to PowerPoint widescreen EMUs.
 
 ## Exports
 

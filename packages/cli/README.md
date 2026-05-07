@@ -28,8 +28,9 @@ You won't see any Vite, React, or tsconfig files in the workspace. They live ins
 | `open-slide init [dir]` | Scaffold a new workspace in `dir` (defaults to current dir). |
 | `open-slide init --force` | Scaffold into a non-empty directory. |
 | `open-slide init --name <name>` | Override the generated `package.json` name. |
+| `open-slide export:pptx <slide-id>` | In a workspace, write a schema-based editable PPTX. Use `-o, --output <file>`. |
 
-(Once installed in the workspace, `@open-slide/core` provides `open-slide dev`, `open-slide build`, and `open-slide preview` via its own bin.)
+(Once installed in the workspace, `@open-slide/core` provides `open-slide dev`, `open-slide build`, `open-slide preview`, and `open-slide export:pptx` via its own bin.)
 
 ## Authoring
 

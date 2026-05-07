@@ -44,7 +44,7 @@ export function Player({
   controls = false,
   slideId,
 }: Props) {
-  const rootRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
   // Mirrored as state so descendants portaling *into* the player subtree
   // (tooltips, popovers — the body is outside the fullscreen tree) re-render
   // once the node mounts.

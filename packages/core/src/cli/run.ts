@@ -77,6 +77,10 @@ interface BuildFlags {
   outDir?: string;
 }
 
+interface ExportPptxFlags {
+  output?: string;
+}
+
 interface SyncFlags {
   dryRun?: boolean;
 }
@@ -131,6 +135,17 @@ export async function run(argv: string[]): Promise<void> {
     .action(async (flags: ServerFlags) => {
       const { preview } = await import('./preview.ts');
       await preview(flags);
+    });
+
+  program
+    .command('export:pptx')
+    .description('Export a schema-based editable PPTX deck')
+    .argument('<slide-id>', 'slide id under slides/<id>')
+    .option('-o, --output <file>', 'output .pptx file (defaults to <slide-id>.pptx)')
+    .action(async (slideId: string, flags: ExportPptxFlags) => {
+      const { exportPptx } = await import('./export-pptx.ts');
+      const output = await exportPptx({ slideId, output: flags.output });
+      process.stdout.write(`${chalk.green('✓')} Wrote ${output}\n`);
     });
 
   program

@@ -11,3 +11,12 @@ export type { Page, SlideMeta, SlideModule } from './app/lib/sdk.ts';
 export { CANVAS_HEIGHT, CANVAS_WIDTH } from './app/lib/sdk.ts';
 export type { OpenSlideConfig } from './config.ts';
 export type { Locale, Plural } from './locale/types.ts';
+export type {
+  PptxDeck,
+  PptxElement,
+  PptxLineElement,
+  PptxRectElement,
+  PptxSlide,
+  PptxTextElement,
+} from './pptx/exporter.ts';
+export { createPptxBuffer, pxToEmu } from './pptx/exporter.ts';
