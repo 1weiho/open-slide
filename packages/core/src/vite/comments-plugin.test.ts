@@ -227,6 +227,28 @@ describe('applyEdit / set-text', () => {
     expect(r.source).toContain('<p>Hello editor</p>');
   });
 
+  it('matches formatted whole text when source whitespace spans lines', () => {
+    const src = [
+      'export default [() => (',
+      '<p>',
+      '  Hello',
+      '  <strong>world</strong>',
+      '  from open-slide',
+      '</p>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-text',
+        value: 'Hello editor',
+        prevText: 'Hello world from open-slide',
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('<p>Hello editor</p>');
+  });
+
   it('bails when prevText is missing for an ambiguous element', () => {
     const src = ['export default [() => (', '<h1>Hello <span>world</span></h1>', ')];', ''].join(
       '\n',

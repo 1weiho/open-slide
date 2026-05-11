@@ -1054,7 +1054,8 @@ function hasOnlyInlineTextChildren(el: HTMLElement): boolean {
     }
     if (!(child instanceof HTMLElement)) continue;
     if (!INLINE_TEXT_TAGS.has(child.tagName)) return false;
-    if (child.tagName !== 'BR' && !hasOnlyInlineTextChildren(child)) return false;
+    if (child.tagName === 'BR') continue;
+    if (!hasOnlyInlineTextChildren(child)) return false;
     sawText = true;
   }
   return sawText;
