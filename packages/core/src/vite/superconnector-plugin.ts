@@ -6,6 +6,8 @@ import type { Connect, Plugin, ViteDevServer } from 'vite';
 const MAX_MESSAGES = 50;
 const MAX_MESSAGE_TEXT = 300;
 const SLIDE_ID_RE = /^[a-z0-9_-]+$/i;
+const COMPLETED_RUN_TTL_MS = 10 * 60 * 1000;
+const MAX_RETAINED_RUNS = 100;
 
 export type AgentRunStatus = 'pending' | 'done' | 'error' | 'canceled';
 
@@ -24,6 +26,8 @@ type AgentRun = {
   commentId: string;
   controller: AbortController;
   messages: AgentRunMessage[];
+  completedAt?: number;
+  cleanupTimer?: ReturnType<typeof setTimeout>;
 };
 
 type RunBody = {
@@ -54,6 +58,44 @@ async function readBody(req: Connect.IncomingMessage): Promise<unknown> {
     });
     req.on('error', reject);
   });
+}
+
+export function isMalformedJsonError(err: unknown): boolean {
+  return err instanceof SyntaxError;
+}
+
+export function isAllowedSuperconnectorMutation(req: Connect.IncomingMessage): boolean {
+  const host = req.headers.host;
+  const origin = req.headers.origin;
+  if (!origin) return true;
+  if (!host) return false;
+
+  try {
+    return new URL(origin).host === host;
+  } catch {
+    return false;
+  }
+}
+
+export function pruneCompletedRuns(
+  runs: Map<string, Pick<AgentRun, 'status' | 'completedAt' | 'cleanupTimer'>>,
+  maxEntries = MAX_RETAINED_RUNS,
+): string[] {
+  if (runs.size <= maxEntries) return [];
+
+  const completed = [...runs.entries()]
+    .filter(([, run]) => run.status !== 'pending')
+    .sort(([, a], [, b]) => (a.completedAt ?? 0) - (b.completedAt ?? 0));
+  const deleted: string[] = [];
+
+  for (const [runId, run] of completed) {
+    if (runs.size <= maxEntries) break;
+    if (run.cleanupTimer) clearTimeout(run.cleanupTimer);
+    runs.delete(runId);
+    deleted.push(runId);
+  }
+
+  return deleted;
 }
 
 function newRunId(): string {
@@ -137,6 +179,23 @@ export function superconnectorPlugin(opts: SuperconnectorPluginOptions): Plugin 
         });
       };
 
+      const finalizeRun = (
+        run: AgentRun,
+        status: Exclude<AgentRunStatus, 'pending'>,
+        text = '',
+      ) => {
+        if (run.status !== 'pending') return;
+        run.status = status;
+        run.completedAt = Date.now();
+        if (status === 'error') run.error = text;
+        push(run, status, text);
+        run.cleanupTimer = setTimeout(() => {
+          const current = runs.get(run.runId);
+          if (current && current.status !== 'pending') runs.delete(run.runId);
+        }, COMPLETED_RUN_TTL_MS);
+        pruneCompletedRuns(runs, MAX_RETAINED_RUNS);
+      };
+
       server.middlewares.use('/__superconnector', async (req, res, next) => {
         const url = new URL(req.url ?? '/', 'http://local');
         const method = req.method ?? 'GET';
@@ -147,7 +206,18 @@ export function superconnectorPlugin(opts: SuperconnectorPluginOptions): Plugin 
           }
 
           if (method === 'POST' && url.pathname === '/runs') {
-            const body = (await readBody(req)) as RunBody;
+            if (!isAllowedSuperconnectorMutation(req)) {
+              return json(res, 403, { error: 'forbidden' });
+            }
+
+            let body: RunBody;
+            try {
+              body = (await readBody(req)) as RunBody;
+            } catch (err) {
+              if (isMalformedJsonError(err)) return json(res, 400, { error: 'malformed JSON' });
+              throw err;
+            }
+
             const { slideId, commentId, line, note } = body;
             if (!slideId || !commentId || !note) {
               return json(res, 400, { error: 'missing slideId, commentId, or note' });
@@ -190,21 +260,18 @@ export function superconnectorPlugin(opts: SuperconnectorPluginOptions): Plugin 
                   if (text) push(run, msgType, text);
                 }
 
-                run.status = run.controller.signal.aborted ? 'canceled' : 'done';
-                console.log(`[superconnector] ✓ ${runId} ${run.status}`);
-                push(run, run.status, '');
+                const status = run.controller.signal.aborted ? 'canceled' : 'done';
+                console.log(`[superconnector] ✓ ${runId} ${status}`);
+                finalizeRun(run, status);
               } catch (err) {
                 if (run.controller.signal.aborted) {
-                  run.status = 'canceled';
                   console.log(`[superconnector] ■ ${runId} canceled`);
-                  push(run, 'canceled', '');
+                  finalizeRun(run, 'canceled');
                   return;
                 }
                 const errText = String((err as Error).message ?? err);
                 console.error(`[superconnector] ✗ ${runId}`, errText);
-                run.status = 'error';
-                run.error = errText;
-                push(run, 'error', errText);
+                finalizeRun(run, 'error', errText);
               }
             });
 
@@ -228,6 +295,10 @@ export function superconnectorPlugin(opts: SuperconnectorPluginOptions): Plugin 
             url.pathname.startsWith('/runs/') &&
             url.pathname.endsWith('/cancel')
           ) {
+            if (!isAllowedSuperconnectorMutation(req)) {
+              return json(res, 403, { error: 'forbidden' });
+            }
+
             const runId = url.pathname.slice('/runs/'.length, -'/cancel'.length);
             const run = runs.get(runId);
             if (!run) return json(res, 404, { error: 'unknown run' });

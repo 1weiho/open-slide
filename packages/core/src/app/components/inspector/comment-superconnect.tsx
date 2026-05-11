@@ -3,29 +3,48 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useLocale } from '@/lib/use-locale';
 
-export type AgentStatus = 'idle' | 'pending' | 'done' | 'error' | 'canceled';
+export type AgentStatus = 'idle' | 'pending' | 'canceling' | 'done' | 'error' | 'canceled';
 
-type ActiveStatus = Exclude<AgentStatus, 'idle'>;
+type RunStatusValue = Exclude<AgentStatus, 'idle' | 'canceling'>;
 
 type SuperconnectorEvent = {
   runId: string;
   sessionId?: string;
   commentId: string;
-  status: ActiveStatus;
+  status: RunStatusValue;
   msgType: string;
   text: string;
 };
 
 type RunStatus = {
-  status: ActiveStatus;
+  status: RunStatusValue;
   sessionId?: string;
   error?: string;
   messages?: Array<{ text: string }>;
 };
 
+const FETCH_TIMEOUT_MS = 10_000;
+
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit | undefined,
+  label: string,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (err) {
+    if (controller.signal.aborted) throw new Error(`${label} timed out`);
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function checkAgentAvailable(): Promise<boolean> {
   try {
-    const res = await fetch('/__superconnector/available');
+    const res = await fetchWithTimeout('/__superconnector/available', undefined, 'agent check');
     if (!res.ok) return false;
     const data = (await res.json()) as { available?: boolean };
     return data.available === true;
@@ -40,11 +59,15 @@ async function startAgentRun(
   line: number,
   note: string,
 ): Promise<string> {
-  const res = await fetch('/__superconnector/runs', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ slideId, commentId, line, note }),
-  });
+  const res = await fetchWithTimeout(
+    '/__superconnector/runs',
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ slideId, commentId, line, note }),
+    },
+    'agent run',
+  );
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { error?: string };
     throw new Error(body.error ?? `agent run failed: ${res.status}`);
@@ -54,13 +77,17 @@ async function startAgentRun(
 }
 
 async function pollStatus(runId: string): Promise<RunStatus> {
-  const res = await fetch(`/__superconnector/runs/${runId}`);
+  const res = await fetchWithTimeout(`/__superconnector/runs/${runId}`, undefined, 'agent status');
   if (!res.ok) throw new Error(`status poll failed: ${res.status}`);
   return (await res.json()) as RunStatus;
 }
 
 async function cancelAgentRun(runId: string): Promise<void> {
-  const res = await fetch(`/__superconnector/runs/${runId}/cancel`, { method: 'POST' });
+  const res = await fetchWithTimeout(
+    `/__superconnector/runs/${runId}/cancel`,
+    { method: 'POST' },
+    'agent cancel',
+  );
   if (!res.ok) throw new Error(`cancel failed: ${res.status}`);
 }
 
@@ -78,7 +105,8 @@ export function useAgentRuns(slideId: string, onDone: () => void | Promise<void>
   const [status, setStatusMap] = useState<Map<string, AgentStatus>>(new Map());
   const [log, setLogMap] = useState<Map<string, string>>(new Map());
   const [runs, setRunsMap] = useState<Map<string, string>>(new Map());
-  const pollTimers = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
+  const pollTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const previousSlideId = useRef(slideId);
 
   useEffect(() => {
     checkAgentAvailable().then(setAvailable);
@@ -86,7 +114,8 @@ export function useAgentRuns(slideId: string, onDone: () => void | Promise<void>
 
   useEffect(() => {
     return () => {
-      for (const timer of pollTimers.current.values()) clearInterval(timer);
+      for (const timer of pollTimers.current.values()) clearTimeout(timer);
+      pollTimers.current.clear();
     };
   }, []);
 
@@ -97,13 +126,23 @@ export function useAgentRuns(slideId: string, onDone: () => void | Promise<void>
   const stopPolling = useCallback((id: string) => {
     const timer = pollTimers.current.get(id);
     if (timer !== undefined) {
-      clearInterval(timer);
+      clearTimeout(timer);
       pollTimers.current.delete(id);
     }
   }, []);
 
+  useEffect(() => {
+    if (previousSlideId.current === slideId) return;
+    previousSlideId.current = slideId;
+    for (const timer of pollTimers.current.values()) clearTimeout(timer);
+    pollTimers.current.clear();
+    setStatusMap(new Map());
+    setLogMap(new Map());
+    setRunsMap(new Map());
+  }, [slideId]);
+
   const finishRun = useCallback(
-    (commentId: string, s: ActiveStatus, text?: string) => {
+    (commentId: string, s: RunStatusValue, text?: string) => {
       stopPolling(commentId);
       setStatus(commentId, s);
       if (text) setLogMap((prev) => new Map(prev).set(commentId, text));
@@ -131,22 +170,29 @@ export function useAgentRuns(slideId: string, onDone: () => void | Promise<void>
     const handler = (data: SuperconnectorEvent) => {
       const { commentId, msgType, status: s, text } = data;
       if (msgType === 'done') {
+        if (!pollTimers.current.has(commentId)) return;
+        stopPolling(commentId);
         finishRun(commentId, 'done');
       } else if (msgType === 'error') {
+        if (!pollTimers.current.has(commentId)) return;
+        stopPolling(commentId);
         finishRun(commentId, 'error', text);
       } else if (msgType === 'canceled') {
+        if (!pollTimers.current.has(commentId)) return;
+        stopPolling(commentId);
         finishRun(commentId, 'canceled');
-      } else if (text) {
+      } else if (pollTimers.current.has(commentId) && text) {
         setLogMap((prev) => new Map(prev).set(commentId, text));
         setStatus(commentId, s);
       }
     };
     import.meta.hot.on('open-slide:superconnector-event', handler);
     return () => import.meta.hot?.off('open-slide:superconnector-event', handler);
-  }, [finishRun, setStatus]);
+  }, [finishRun, setStatus, stopPolling]);
 
   const run = useCallback(
     async (commentId: string, line: number, note: string) => {
+      stopPolling(commentId);
       setStatus(commentId, 'pending');
       toast(t.inspector.agentRunning, { icon: '▶' });
       let runId: string;
@@ -159,36 +205,48 @@ export function useAgentRuns(slideId: string, onDone: () => void | Promise<void>
         return;
       }
 
-      const timer = setInterval(async () => {
+      const pollLoop = async () => {
+        if (!pollTimers.current.has(commentId)) return;
         try {
           const result = await pollStatus(runId);
+          if (!pollTimers.current.has(commentId)) return;
           if (result.messages?.length) {
             const last = result.messages.at(-1);
             if (last?.text) setLogMap((prev) => new Map(prev).set(commentId, last.text));
           }
           if (result.status !== 'pending') {
+            if (!pollTimers.current.has(commentId)) return;
+            stopPolling(commentId);
             finishRun(commentId, result.status, result.error);
+            return;
           }
+          const timer = setTimeout(pollLoop, 2000);
+          pollTimers.current.set(commentId, timer);
         } catch {
+          if (!pollTimers.current.has(commentId)) return;
+          stopPolling(commentId);
           finishRun(commentId, 'error');
         }
-      }, 2000);
+      };
+      const timer = setTimeout(pollLoop, 2000);
       pollTimers.current.set(commentId, timer);
     },
-    [finishRun, setStatus, slideId, t.inspector.agentError, t.inspector.agentRunning],
+    [finishRun, setStatus, slideId, stopPolling, t.inspector.agentError, t.inspector.agentRunning],
   );
 
   const cancel = useCallback(
     async (commentId: string) => {
       const runId = runs.get(commentId);
       if (!runId) return;
+      setStatus(commentId, 'canceling');
       try {
         await cancelAgentRun(runId);
       } catch {
+        setStatus(commentId, 'pending');
         toast.error(t.inspector.agentError);
       }
     },
-    [runs, t.inspector.agentError],
+    [runs, setStatus, t.inspector.agentError],
   );
 
   return {
@@ -223,11 +281,12 @@ export function AgentRunButton({
   if (!runs.available) return null;
   const status = runs.statusOf(commentId);
 
-  if (status === 'pending') {
+  if (status === 'pending' || status === 'canceling') {
     return (
       <button
         type="button"
         onClick={() => runs.cancel(commentId)}
+        disabled={status === 'canceling'}
         className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
         title={t.inspector.stopAgent}
         aria-label={t.inspector.stopAgent}
@@ -263,7 +322,7 @@ export function AgentRunButton({
         className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
         title={t.inspector.agentCanceled}
       >
-        <StopCircle className="size-3.5" />
+        <Play className="size-3.5" />
       </button>
     );
   }
