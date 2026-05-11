@@ -38,6 +38,7 @@ export const ja: Locale = {
   home: {
     appTitle: 'open-slide',
     draft: '下書き',
+    themes: 'テーマ',
     folders: 'フォルダ',
     newFolder: '新規フォルダ',
     folderName: 'フォルダ名',
@@ -352,5 +353,25 @@ export const ja: Locale = {
     statusSaving: '保存中…',
     statusSaved: '保存済み',
     statusError: '保存に失敗しました: {msg}',
+  },
+
+  themes: {
+    title: 'テーマ',
+    noThemesTitle: 'テーマがまだありません',
+    noThemesHintPrefix: '',
+    noThemesHintSuffix:
+      ' を実行して作成 — themes/ に markdown ファイルと同名の demo スライドを置きます。',
+    noDemoYet: 'デモがまだありません',
+    noDemoHintPrefix: 'このテーマで ',
+    noDemoHintSuffix: ' を再実行するとプレビュー用スライドが生成されます。',
+    backToGallery: 'テーマ一覧へ戻る',
+    pageOf: '{n}/{total} ページ',
+    nextPageAria: '次のページ',
+    prevPageAria: '前のページ',
+    openThemeAria: 'テーマ {name} を開く',
+    usedBy: 'このテーマを使うスライド',
+    usedByEmpty: 'このテーマを使うスライドはまだありません。',
+    expandPromptAria: 'プロンプトを展開',
+    collapsePromptAria: 'プロンプトを折りたたむ',
   },
 };

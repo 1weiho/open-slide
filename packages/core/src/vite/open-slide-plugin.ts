@@ -62,20 +62,70 @@ function toId(absFile: string, slidesRoot: string): string {
   return rel.split(path.sep)[0];
 }
 
-function generateSlidesModule(files: string[], slidesRoot: string, isDev: boolean): string {
-  const entries = files.map((abs) => {
-    const id = toId(abs, slidesRoot);
-    const importPath = isDev ? `/@fs/${abs.replace(/^\/+/, '')}` : abs;
-    return { id, importPath };
-  });
+const META_THEME_RE = /(?:^|[\s,{])theme\s*:\s*['"]([^'"]+)['"]/;
+
+function extractMetaTheme(src: string): string | null {
+  const metaStart = src.search(/export\s+const\s+meta\b/);
+  if (metaStart === -1) return null;
+  const eqIdx = src.indexOf('=', metaStart);
+  if (eqIdx === -1) return null;
+  const openBrace = src.indexOf('{', eqIdx);
+  if (openBrace === -1) return null;
+  let depth = 0;
+  let closeBrace = -1;
+  for (let i = openBrace; i < src.length; i++) {
+    const ch = src[i];
+    if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) {
+        closeBrace = i;
+        break;
+      }
+    }
+  }
+  if (closeBrace === -1) return null;
+  const body = src.slice(openBrace + 1, closeBrace);
+  const m = body.match(META_THEME_RE);
+  return m ? m[1] : null;
+}
+
+async function readSlideTheme(abs: string): Promise<string | null> {
+  try {
+    const src = await fs.readFile(abs, 'utf8');
+    return extractMetaTheme(src);
+  } catch {
+    return null;
+  }
+}
+
+async function generateSlidesModule(
+  files: string[],
+  slidesRoot: string,
+  isDev: boolean,
+): Promise<string> {
+  const entries = await Promise.all(
+    files.map(async (abs) => {
+      const id = toId(abs, slidesRoot);
+      const importPath = isDev ? `/@fs/${abs.replace(/^\/+/, '')}` : abs;
+      const theme = await readSlideTheme(abs);
+      return { id, importPath, theme };
+    }),
+  );
 
   const ids = JSON.stringify(entries.map((e) => e.id).sort());
+  const themesMap: Record<string, string> = {};
+  for (const e of entries) {
+    if (e.theme) themesMap[e.id] = e.theme;
+  }
+  const themesJson = JSON.stringify(themesMap);
   const cases = entries
     .map((e) => `    case ${JSON.stringify(e.id)}: return import(${JSON.stringify(e.importPath)});`)
     .join('\n');
 
   return `// virtual:open-slide/slides — generated
 export const slideIds = ${ids};
+export const slideThemes = ${themesJson};
 
 export async function loadSlide(id) {
   switch (id) {
@@ -111,7 +161,7 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
     async load(id) {
       if (id === resolved(SLIDES_VMOD)) {
         const files = await findSlides(userCwd, slidesDir);
-        return generateSlidesModule(files, slidesRoot, isDev);
+        return await generateSlidesModule(files, slidesRoot, isDev);
       }
       if (id === resolved(CONFIG_VMOD)) {
         const userBuild = config.build ?? {};
@@ -160,6 +210,19 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
       });
       server.watcher.on('unlink', (p) => {
         if (isSlideEntry(p)) reload();
+      });
+
+      let slideThemeTimer: ReturnType<typeof setTimeout> | null = null;
+      const invalidateSlidesVmod = () => {
+        if (slideThemeTimer) clearTimeout(slideThemeTimer);
+        slideThemeTimer = setTimeout(() => {
+          slideThemeTimer = null;
+          const mod = server.moduleGraph.getModuleById(resolved(SLIDES_VMOD));
+          if (mod) server.moduleGraph.invalidateModule(mod);
+        }, 100);
+      };
+      server.watcher.on('change', (p) => {
+        if (isSlideEntry(p)) invalidateSlidesVmod();
       });
 
       let foldersTimer: ReturnType<typeof setTimeout> | null = null;

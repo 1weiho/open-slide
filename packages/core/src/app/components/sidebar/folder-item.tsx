@@ -67,6 +67,9 @@ type Row =
     }
   | {
       kind: 'draft';
+    }
+  | {
+      kind: 'themes';
     };
 
 export function FolderItem({
@@ -89,7 +92,9 @@ export function FolderItem({
   const slideDragActive = useSlideDragActive();
   const t = useLocale();
 
-  const isSlideDrag = (e: React.DragEvent) => e.dataTransfer.types.includes(SLIDE_DND_MIME);
+  const acceptsSlideDrop = row.kind !== 'themes';
+  const isSlideDrag = (e: React.DragEvent) =>
+    acceptsSlideDrop && e.dataTransfer.types.includes(SLIDE_DND_MIME);
   const handleDragEnter = (e: React.DragEvent) => {
     if (!isSlideDrag(e)) return;
     dragDepth.current += 1;
@@ -106,6 +111,7 @@ export function FolderItem({
     if (dragDepth.current === 0) setDragOver(false);
   };
   const handleDrop = (e: React.DragEvent) => {
+    if (!acceptsSlideDrop) return;
     const slideId = e.dataTransfer.getData(SLIDE_DND_MIME);
     dragDepth.current = 0;
     setDragOver(false);
@@ -114,9 +120,14 @@ export function FolderItem({
     onDropSlide(slideId);
   };
 
-  const icon =
-    row.kind === 'draft' ? ({ type: 'emoji', value: '📝' } satisfies FolderIcon) : row.folder.icon;
-  const label = row.kind === 'draft' ? t.home.draft : row.folder.name;
+  const icon: FolderIcon =
+    row.kind === 'draft'
+      ? { type: 'emoji', value: '📝' }
+      : row.kind === 'themes'
+        ? { type: 'emoji', value: '🎨' }
+        : row.folder.icon;
+  const label =
+    row.kind === 'draft' ? t.home.draft : row.kind === 'themes' ? t.home.themes : row.folder.name;
 
   const commitRename = () => {
     if (row.kind !== 'folder') return;
@@ -133,7 +144,7 @@ export function FolderItem({
         selected
           ? 'bg-muted text-foreground before:absolute before:inset-y-1.5 before:-left-0.5 before:w-[2px] before:rounded-full before:bg-brand'
           : 'text-foreground/70 hover:bg-muted/60 hover:text-foreground',
-        slideDragActive && !dragOver && 'ring-1 ring-foreground/10',
+        slideDragActive && acceptsSlideDrop && !dragOver && 'ring-1 ring-foreground/10',
         dragOver &&
           'bg-brand/10 text-foreground ring-1 ring-brand ring-offset-1 ring-offset-sidebar motion-safe:scale-[1.01] motion-safe:transition-transform',
       )}

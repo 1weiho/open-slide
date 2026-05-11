@@ -38,6 +38,7 @@ export const zhTW: Locale = {
   home: {
     appTitle: 'open-slide',
     draft: '草稿',
+    themes: '主題',
     folders: '資料夾',
     newFolder: '新增資料夾',
     folderName: '資料夾名稱',
@@ -348,5 +349,24 @@ export const zhTW: Locale = {
     statusSaving: '儲存中…',
     statusSaved: '已儲存',
     statusError: '儲存失敗：{msg}',
+  },
+
+  themes: {
+    title: '主題',
+    noThemesTitle: '尚無主題',
+    noThemesHintPrefix: '執行 ',
+    noThemesHintSuffix: ' 來建立一個 — 一個位於 themes/ 的 markdown 檔案，加上同名的 demo slide。',
+    noDemoYet: '尚無 demo',
+    noDemoHintPrefix: '對此主題重新執行 ',
+    noDemoHintSuffix: ' 即可產生預覽用的 slide。',
+    backToGallery: '返回主題列表',
+    pageOf: '第 {n}/{total} 頁',
+    nextPageAria: '下一頁',
+    prevPageAria: '上一頁',
+    openThemeAria: '開啟主題 {name}',
+    usedBy: '使用此主題的 slides',
+    usedByEmpty: '尚未有 slides 使用此主題。',
+    expandPromptAria: '展開 prompt',
+    collapsePromptAria: '收合 prompt',
   },
 };

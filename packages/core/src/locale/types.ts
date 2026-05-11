@@ -38,6 +38,7 @@ export type Locale = {
   home: {
     appTitle: string;
     draft: string;
+    themes: string;
     folders: string;
     newFolder: string;
     folderName: string;
@@ -369,5 +370,26 @@ export type Locale = {
     statusSaved: string;
     /** template: "Save failed: {msg}" */
     statusError: string;
+  };
+
+  themes: {
+    title: string;
+    noThemesTitle: string;
+    noThemesHintPrefix: string;
+    noThemesHintSuffix: string;
+    noDemoYet: string;
+    noDemoHintPrefix: string;
+    noDemoHintSuffix: string;
+    backToGallery: string;
+    /** template: "page {n}/{total}" */
+    pageOf: string;
+    nextPageAria: string;
+    prevPageAria: string;
+    /** template: "Open theme {name}" */
+    openThemeAria: string;
+    usedBy: string;
+    usedByEmpty: string;
+    expandPromptAria: string;
+    collapsePromptAria: string;
   };
 };

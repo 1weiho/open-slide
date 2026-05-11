@@ -3,14 +3,24 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Toaster } from './components/ui/sonner';
 import { useLocale } from './lib/use-locale';
 import { Home } from './routes/home';
+import { HomeShell } from './routes/home-shell';
 import { Presenter } from './routes/presenter';
 import { Slide } from './routes/slide';
+import { ThemeDetailPage, ThemesGalleryPage } from './routes/themes';
 
 export function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={config.build.showSlideBrowser ? <Home /> : <NotFound />} />
+        {config.build.showSlideBrowser ? (
+          <Route element={<HomeShell />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/themes" element={<ThemesGalleryPage />} />
+            <Route path="/themes/:themeId" element={<ThemeDetailPage />} />
+          </Route>
+        ) : (
+          <Route path="/" element={<NotFound />} />
+        )}
         <Route path="/s/:slideId" element={<Slide />} />
         <Route path="/s/:slideId/presenter" element={<Presenter />} />
         <Route path="*" element={<NotFound />} />

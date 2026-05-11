@@ -5,6 +5,7 @@ export type Page = ComponentType;
 
 export type SlideMeta = {
   title?: string;
+  theme?: string;
 };
 
 export type SlideModule = {

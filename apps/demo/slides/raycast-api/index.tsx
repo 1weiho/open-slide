@@ -969,7 +969,7 @@ const Closing: Page = () => (
   </div>
 );
 
-export const meta: SlideMeta = { title: 'Raycast Developer API' };
+export const meta: SlideMeta = { title: 'Raycast Developer API', theme: 'aurora' };
 
 export default [
   Cover,

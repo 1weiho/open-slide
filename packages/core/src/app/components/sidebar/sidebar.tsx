@@ -9,10 +9,12 @@ import { FolderIconChip, FolderItem } from './folder-item';
 import { IconPicker, PRESET_COLORS } from './icon-picker';
 
 export const DRAFT_ID = 'draft';
+export const THEMES_ID = '__themes__';
 
 export function Sidebar({
   folders,
   countFor,
+  themesCount,
   selectedId,
   onSelect,
   onCreate,
@@ -24,6 +26,7 @@ export function Sidebar({
 }: {
   folders: Folder[];
   countFor: (folderId: string | null) => number;
+  themesCount: number;
   selectedId: string;
   onSelect: (id: string) => void;
   onCreate: (name: string, icon: FolderIcon) => Promise<Folder> | undefined;
@@ -110,6 +113,13 @@ export function Sidebar({
           selected={selectedId === DRAFT_ID}
           onSelect={() => onSelect(DRAFT_ID)}
           onDropSlide={onDropToDraft}
+        />
+        <FolderItem
+          row={{ kind: 'themes' }}
+          count={themesCount}
+          selected={selectedId === THEMES_ID}
+          onSelect={() => onSelect(THEMES_ID)}
+          onDropSlide={() => {}}
         />
       </div>
 
