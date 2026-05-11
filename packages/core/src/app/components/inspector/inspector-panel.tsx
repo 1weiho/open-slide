@@ -991,7 +991,7 @@ function CommentsSection({
 
 function readSnapshot(el: HTMLElement): ElementSnapshot {
   const cs = getComputedStyle(el);
-  const text = isSimpleTextElement(el) ? (el.textContent ?? '') : null;
+  const text = isEditableTextElement(el) ? (el.textContent ?? '') : null;
   const imageSrc =
     el.tagName === 'IMG'
       ? (el as HTMLImageElement).currentSrc || (el as HTMLImageElement).src || null
@@ -1021,10 +1021,43 @@ function readSnapshot(el: HTMLElement): ElementSnapshot {
   };
 }
 
-function isSimpleTextElement(el: HTMLElement): boolean {
+function isEditableTextElement(el: HTMLElement): boolean {
   if (el.childNodes.length === 0) return true;
   if (el.childNodes.length === 1 && el.firstChild?.nodeType === Node.TEXT_NODE) return true;
-  return false;
+  return hasOnlyInlineTextChildren(el);
+}
+
+const INLINE_TEXT_TAGS = new Set([
+  'B',
+  'BR',
+  'CODE',
+  'DEL',
+  'EM',
+  'I',
+  'INS',
+  'MARK',
+  'S',
+  'SMALL',
+  'SPAN',
+  'STRONG',
+  'SUB',
+  'SUP',
+  'U',
+]);
+
+function hasOnlyInlineTextChildren(el: HTMLElement): boolean {
+  let sawText = false;
+  for (const child of el.childNodes) {
+    if (child.nodeType === Node.TEXT_NODE) {
+      if ((child.textContent ?? '').trim()) sawText = true;
+      continue;
+    }
+    if (!(child instanceof HTMLElement)) continue;
+    if (!INLINE_TEXT_TAGS.has(child.tagName)) return false;
+    if (child.tagName !== 'BR' && !hasOnlyInlineTextChildren(child)) return false;
+    sawText = true;
+  }
+  return sawText;
 }
 
 function rgbToHex(value: string): string | null {

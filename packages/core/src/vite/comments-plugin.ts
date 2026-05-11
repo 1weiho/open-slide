@@ -381,6 +381,45 @@ function collectTextCandidates(element: JsxParent, out: TextCandidate[]): void {
   }
 }
 
+function normalizeRenderedText(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function staticRenderedText(parent: JsxParent): string | null {
+  let text = '';
+  for (const child of parent.children) {
+    if (t.isJSXText(child)) {
+      text += child.value;
+    } else if (t.isJSXExpressionContainer(child)) {
+      const expr = child.expression;
+      if (t.isStringLiteral(expr) || t.isNumericLiteral(expr)) {
+        text += String(expr.value);
+      } else {
+        return null;
+      }
+    } else if (t.isJSXElement(child) || t.isJSXFragment(child)) {
+      const childText = staticRenderedText(child);
+      if (childText === null) return null;
+      text += childText;
+    }
+  }
+  const normalized = normalizeRenderedText(text);
+  return normalized ? normalized : null;
+}
+
+function collectWholeTextCandidate(element: t.JSXElement, leafs: TextCandidate[]): TextCandidate[] {
+  if (leafs.length < 2) return [];
+  const current = staticRenderedText(element);
+  if (!current) return [];
+  if (leafs.some((candidate) => candidate.current === current)) return [];
+  return [
+    {
+      current,
+      splice: (value) => wrapSplice(element, formatJsxText(value)),
+    },
+  ];
+}
+
 // `<Wrap>{children}</Wrap>` and `<h2>{title}</h2>` — sole child is a
 // JSXExpressionContainer wrapping a bare Identifier. Returns the identifier
 // name; callers branch on `'children'` vs. a generic prop passthrough.
@@ -640,6 +679,7 @@ function buildTextSplice(
 ): Splice | { error: string } {
   const candidates: TextCandidate[] = [];
   collectTextCandidates(element, candidates);
+  candidates.push(...collectWholeTextCandidate(element, candidates));
   if (candidates.length === 0) {
     const passthrough = propPassthroughName(element);
     const enclosing = passthrough ? findEnclosingComponent(ast, element) : null;
