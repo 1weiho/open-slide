@@ -1,12 +1,14 @@
 import { MessageSquare, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { format, plural, useLocale } from '@/lib/use-locale';
+import { AgentLogLine, AgentRunButton, useAgentRuns } from './comment-superconnect';
 import { useInspector } from './inspector-provider';
 
 export function CommentWidget() {
   const t = useLocale();
-  const { comments, remove, error } = useInspector();
+  const { comments, remove, error, slideId, refetch } = useInspector();
   const [open, setOpen] = useState(false);
+  const agents = useAgentRuns(slideId, refetch);
   const count = comments.length;
 
   return (
@@ -43,15 +45,19 @@ export function CommentWidget() {
                         {format(t.inspector.commentLineLabel, { n: c.line })}
                       </div>
                       <div className="mt-0.5 text-xs break-words">{c.note}</div>
+                      <AgentLogLine commentId={c.id} runs={agents} />
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => remove(c.id)}
-                      className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-red-600"
-                      title={t.inspector.commentDeleteAria}
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <AgentRunButton commentId={c.id} line={c.line} note={c.note} runs={agents} />
+                      <button
+                        type="button"
+                        onClick={() => remove(c.id)}
+                        className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-red-600"
+                        title={t.inspector.commentDeleteAria}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>

@@ -11,6 +11,7 @@ import { filesPlugin } from './files-plugin.ts';
 import { locTagsPlugin } from './loc-tags-plugin.ts';
 import { notesPlugin } from './notes-plugin.ts';
 import { loadUserConfig, type OpenSlideConfig, openSlidePlugin } from './open-slide-plugin.ts';
+import { superconnectorPlugin } from './superconnector-plugin.ts';
 
 function findPackageRoot(fromFile: string): string {
   let dir = path.dirname(fromFile);
@@ -50,6 +51,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
       notesPlugin({ userCwd, slidesDir }),
       filesPlugin({ userCwd, slidesDir }),
       currentPlugin({ userCwd, slidesDir }),
+      superconnectorPlugin({ userCwd, slidesDir }),
     ],
     resolve: {
       alias: {

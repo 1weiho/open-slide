@@ -220,6 +220,12 @@ export const zhCN: Locale = {
     commentsApplyHintPrefix: '在你的代理中运行 ',
     commentsApplyHintSuffix: ' 以应用这些更改。',
     commentDeleteAria: '删除',
+    runWithAgent: '用 Agent 执行 (Superconnected)',
+    agentRunning: 'Agent 执行中…',
+    agentDone: '完成',
+    agentError: 'Agent 出错',
+    agentCanceled: 'Agent 已停止',
+    stopAgent: '停止 Agent',
     saveFailed: '保存失败：',
   },
 

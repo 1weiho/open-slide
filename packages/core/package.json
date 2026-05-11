@@ -62,6 +62,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@fontsource-variable/geist": "^5.2.8",
+    "@nimrobo/superconnector": "^0.1.0",
     "@tailwindcss/vite": "^4.2.2",
     "@vitejs/plugin-react": "^4.3.3",
     "chalk": "^5.3.0",
