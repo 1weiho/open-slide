@@ -249,6 +249,28 @@ describe('applyEdit / set-text', () => {
     expect(r.source).toContain('<p>Hello editor</p>');
   });
 
+  it('matches formatted whole text with a br using DOM textContent spacing', () => {
+    const src = [
+      'export default [() => (',
+      '<h2>',
+      '  Not autocomplete.',
+      '  <br />',
+      '  An <em>agent</em> that does the work.',
+      '</h2>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-text',
+        value: 'test',
+        prevText: 'Not autocomplete.An agent that does the work.',
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('<h2>test</h2>');
+  });
+
   it('bails when prevText is missing for an ambiguous element', () => {
     const src = ['export default [() => (', '<h1>Hello <span>world</span></h1>', ')];', ''].join(
       '\n',

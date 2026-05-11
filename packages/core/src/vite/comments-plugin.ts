@@ -407,17 +407,44 @@ function staticRenderedText(parent: JsxParent): string | null {
   return normalized ? normalized : null;
 }
 
+function staticDomTextContent(parent: JsxParent): string | null {
+  let text = '';
+  // Match React's JSX whitespace cleanup before comparing with DOM textContent.
+  for (const child of t.react.buildChildren(parent)) {
+    if (t.isStringLiteral(child) || t.isNumericLiteral(child)) {
+      text += String(child.value);
+    } else if (t.isJSXElement(child) || t.isJSXFragment(child)) {
+      const childText = staticDomTextContent(child);
+      if (childText === null) return null;
+      text += childText;
+    } else {
+      return null;
+    }
+  }
+  return text;
+}
+
+function staticDomRenderedText(parent: JsxParent): string | null {
+  const text = staticDomTextContent(parent);
+  if (text === null) return null;
+  const normalized = normalizeRenderedText(text);
+  return normalized ? normalized : null;
+}
+
 function collectWholeTextCandidate(element: t.JSXElement, leafs: TextCandidate[]): TextCandidate[] {
   if (leafs.length < 2) return [];
-  const current = staticRenderedText(element);
-  if (!current) return [];
-  if (leafs.some((candidate) => candidate.current === current)) return [];
-  return [
-    {
-      current,
-      splice: (value) => wrapSplice(element, formatJsxText(value)),
-    },
-  ];
+  const seen = new Set(leafs.map((candidate) => candidate.current));
+  const currents: string[] = [];
+  for (const current of [staticRenderedText(element), staticDomRenderedText(element)]) {
+    if (!current || seen.has(current)) continue;
+    seen.add(current);
+    currents.push(current);
+  }
+  if (currents.length === 0) return [];
+  return currents.map((current) => ({
+    current,
+    splice: (value) => wrapSplice(element, formatJsxText(value)),
+  }));
 }
 
 // `<Wrap>{children}</Wrap>` and `<h2>{title}</h2>` — sole child is a
