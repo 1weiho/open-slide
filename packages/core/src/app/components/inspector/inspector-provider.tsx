@@ -48,6 +48,111 @@ function readInstanceId(el: HTMLElement): string | null {
   return el.getAttribute(INSTANCE_ID_ATTR);
 }
 
+type DomTextPart = { node: Text | HTMLBRElement; current: string };
+
+function readEditableText(el: HTMLElement): string {
+  const parts: DomTextPart[] = [];
+  collectDomTextParts(el, parts);
+  return parts.map((part) => part.current).join('');
+}
+
+function collectDomTextParts(node: Node, out: DomTextPart[]): void {
+  for (const child of Array.from(node.childNodes)) {
+    if (child instanceof Text) {
+      if (child.data) out.push({ node: child, current: child.data });
+    } else if (child instanceof HTMLBRElement) {
+      out.push({ node: child, current: '\n' });
+    } else if (child instanceof HTMLElement) {
+      collectDomTextParts(child, out);
+    }
+  }
+}
+
+function textDiff(prevText: string, nextText: string) {
+  let start = 0;
+  while (
+    start < prevText.length &&
+    start < nextText.length &&
+    prevText[start] === nextText[start]
+  ) {
+    start += 1;
+  }
+
+  let prevEnd = prevText.length;
+  let nextEnd = nextText.length;
+  while (prevEnd > start && nextEnd > start && prevText[prevEnd - 1] === nextText[nextEnd - 1]) {
+    prevEnd -= 1;
+    nextEnd -= 1;
+  }
+
+  return { start, end: prevEnd, value: nextText.slice(start, nextEnd) };
+}
+
+function textFragment(value: string): DocumentFragment {
+  const fragment = document.createDocumentFragment();
+  const lines = value.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i]) fragment.append(document.createTextNode(lines[i]));
+    if (i < lines.length - 1) fragment.append(document.createElement('br'));
+  }
+  return fragment;
+}
+
+function replaceDomTextPart(part: DomTextPart, value: string) {
+  if (part.node instanceof Text && !value.includes('\n')) {
+    part.node.data = value;
+    return;
+  }
+  const fragment = textFragment(value);
+  part.node.replaceWith(fragment);
+}
+
+function setEditableText(el: HTMLElement, value: string) {
+  const parts: DomTextPart[] = [];
+  collectDomTextParts(el, parts);
+  const current = parts.map((part) => part.current).join('');
+  if (current === value) return;
+  if (parts.length === 0) {
+    el.replaceChildren(textFragment(value));
+    return;
+  }
+
+  const diff = textDiff(current, value);
+  let offset = 0;
+  let inserted = false;
+  for (const part of parts) {
+    const partStart = offset;
+    const partEnd = partStart + part.current.length;
+    offset = partEnd;
+
+    const overlaps = diff.start < partEnd && diff.end > partStart;
+    const insertsHere =
+      diff.start === diff.end && !inserted && diff.start >= partStart && diff.start <= partEnd;
+    if (!overlaps && !insertsHere) continue;
+
+    if (part.node instanceof Text) {
+      const localStart = Math.max(diff.start, partStart) - partStart;
+      const localEnd = overlaps ? Math.min(diff.end, partEnd) - partStart : localStart;
+      replaceDomTextPart(
+        part,
+        `${part.current.slice(0, localStart)}${inserted ? '' : diff.value}${part.current.slice(localEnd)}`,
+      );
+    } else if (overlaps) {
+      replaceDomTextPart(part, inserted ? '' : diff.value);
+    } else {
+      const fragment = textFragment(diff.value);
+      if (diff.start === partStart) part.node.before(fragment);
+      else part.node.after(fragment);
+    }
+
+    inserted = true;
+  }
+
+  if (!inserted && diff.start === diff.end && diff.start === offset) {
+    el.append(textFragment(diff.value));
+  }
+}
+
 type InspectorCtx = {
   slideId: string;
   active: boolean;
@@ -169,10 +274,10 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
           if (!anchor) continue;
           const instanceId = ensureInstanceId(anchor);
           if (!bucket.origTexts.has(instanceId)) {
-            bucket.origTexts.set(instanceId, { value: anchor.textContent ?? '' });
+            bucket.origTexts.set(instanceId, { value: readEditableText(anchor) });
           }
           bucket.textOps.set(instanceId, { value: op.value });
-          if (anchor.isConnected) anchor.textContent = op.value;
+          if (anchor.isConnected) setEditableText(anchor, op.value);
         } else if (op.kind === 'set-attr-asset') {
           if (anchor && !bucket.origAttrs.has(op.attr)) {
             bucket.origAttrs.set(
@@ -239,7 +344,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
             snaps.push({
               kind: 'text',
               instanceId,
-              value: anchor.textContent ?? '',
+              value: readEditableText(anchor),
               existed: false,
             });
           }
@@ -297,11 +402,11 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
           const textAnchor = findAnchor(line, column, snap.instanceId);
           if (snap.existed) {
             bucket.textOps.set(snap.instanceId, { value: snap.value ?? '' });
-            if (textAnchor?.isConnected) textAnchor.textContent = snap.value ?? '';
+            if (textAnchor?.isConnected) setEditableText(textAnchor, snap.value ?? '');
           } else {
             bucket.textOps.delete(snap.instanceId);
             const orig = bucket.origTexts.get(snap.instanceId);
-            if (textAnchor?.isConnected) textAnchor.textContent = orig?.value ?? '';
+            if (textAnchor?.isConnected) setEditableText(textAnchor, orig?.value ?? '');
           }
         } else if (snap.kind === 'attr') {
           if (snap.source === 'op') {
@@ -462,7 +567,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       for (const [instanceId, orig] of b.origTexts) {
         const textEl =
           root?.querySelector<HTMLElement>(`[${INSTANCE_ID_ATTR}="${instanceId}"]`) ?? null;
-        if (textEl?.isConnected) textEl.textContent = orig.value;
+        if (textEl?.isConnected) setEditableText(textEl, orig.value);
       }
     }
     pendingRef.current = new Map();
@@ -510,8 +615,8 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       const instanceId = readInstanceId(el);
       if (instanceId) {
         const textOp = bucket.textOps.get(instanceId);
-        if (textOp && el.textContent !== textOp.value) {
-          el.textContent = textOp.value;
+        if (textOp && readEditableText(el) !== textOp.value) {
+          setEditableText(el, textOp.value);
         }
       }
       for (const [attr, op] of bucket.attrOps) {

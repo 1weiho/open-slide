@@ -209,6 +209,137 @@ describe('applyEdit / set-text', () => {
     expect(r.source).toContain('<h1>Hello <span>planet</span></h1>');
   });
 
+  it('applies selected text style to an existing inline leaf', () => {
+    const src = [
+      'export default [() => (',
+      '<h2>',
+      '  Not autocomplete.',
+      '  <br />',
+      "  An <em style={{ color: 'var(--osd-accent)' }}>agent</em> that does the work.",
+      '</h2>',
+      ')];',
+      '',
+    ].join('\n');
+    const prevText = 'Not autocomplete.\nAn agent that does the work.';
+    const start = prevText.indexOf('agent');
+    const r = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-text-range-style',
+        start,
+        end: start + 'agent'.length,
+        key: 'color',
+        value: '#bb7025',
+        prevText,
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("<em style={{ color: '#bb7025' }}>agent</em>");
+  });
+
+  it('applies selected text style across inline and plain text leaves', () => {
+    const src = [
+      'export default [() => (',
+      '<h2>',
+      '  Not autocomplete.',
+      '  <br />',
+      "  An <em style={{ color: 'var(--osd-accent)' }}>agent</em> that does the work.",
+      '</h2>',
+      ')];',
+      '',
+    ].join('\n');
+    const prevText = 'Not autocomplete.\nAn agent that does the work.';
+    const start = prevText.indexOf('agent');
+    const r = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-text-range-style',
+        start,
+        end: start + 'agent that'.length,
+        key: 'color',
+        value: '#bb7025',
+        prevText,
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("<em style={{ color: '#bb7025' }}>agent</em>");
+    expect(r.source).toContain("<span style={{ color: '#bb7025' }}>{' that'}</span> does");
+  });
+
+  it('updates selected text style after a plain text leaf has been wrapped', () => {
+    const src = [
+      'export default [() => (',
+      '<h2>',
+      '  Not autocomplete.',
+      '  <br />',
+      "  An <em style={{ color: '#bb7025' }}>agent</em><span style={{ color: '#bb7025' }}>{' that'}</span> does the work.",
+      '</h2>',
+      ')];',
+      '',
+    ].join('\n');
+    const prevText = 'Not autocomplete.\nAn agent that does the work.';
+    const start = prevText.indexOf('agent');
+    const r = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-text-range-style',
+        start,
+        end: start + 'agent that'.length,
+        key: 'color',
+        value: '#111111',
+        prevText,
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("<em style={{ color: '#111111' }}>agent</em>");
+    expect(r.source).toContain("<span style={{ color: '#111111' }}>{' that'}</span> does");
+  });
+
+  it('edits rich text content without flattening inline style', () => {
+    const src = [
+      'export default [() => (',
+      '<h2>',
+      '  Not autocomplete.',
+      '  <br />',
+      "  An <em style={{ color: 'var(--osd-accent)' }}>agent</em> that does the work.",
+      '</h2>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-text',
+        value: 'Not autocomplete.\nAn agent that does the real work.',
+        prevText: 'Not autocomplete.\nAn agent that does the work.',
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("<em style={{ color: 'var(--osd-accent)' }}>agent</em>");
+    expect(r.source).toContain('that does the real work.');
+    expect(r.source).toContain('<br />');
+  });
+
+  it('edits rich text line breaks as newlines', () => {
+    const src = [
+      'export default [() => (',
+      '<h2>',
+      '  Not autocomplete.',
+      '  <br />',
+      "  An <em style={{ color: 'var(--osd-accent)' }}>agent</em> that does the work.",
+      '</h2>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-text',
+        value: 'Not autocomplete. An agent that does the work.',
+        prevText: 'Not autocomplete.\nAn agent that does the work.',
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).not.toContain('<br />');
+    expect(r.source).toContain("{' '}");
+    expect(r.source).toContain("<em style={{ color: 'var(--osd-accent)' }}>agent</em>");
+  });
+
   it('bails when prevText is missing for an ambiguous element', () => {
     const src = ['export default [() => (', '<h1>Hello <span>world</span></h1>', ')];', ''].join(
       '\n',

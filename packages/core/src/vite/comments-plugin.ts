@@ -190,6 +190,14 @@ function offsetToLine(source: string, offset: number): number {
 export type EditOp =
   | { kind: 'set-style'; key: string; value: string | null }
   | { kind: 'set-text'; value: string; prevText?: string }
+  | {
+      kind: 'set-text-range-style';
+      start: number;
+      end: number;
+      key: string;
+      value: string | null;
+      prevText?: string;
+    }
   | { kind: 'set-attr-asset'; attr: string; assetPath: string }
   | { kind: 'replace-placeholder-with-image'; assetPath: string };
 
@@ -332,6 +340,15 @@ type TextCandidate = {
 };
 
 type JsxParent = t.JSXElement | t.JSXFragment;
+type TextRangeLeaf = {
+  node: t.JSXText | t.JSXExpressionContainer;
+  parent: JsxParent;
+  current: string;
+  raw: string;
+  text: (value: string) => string;
+};
+type TextRangeBreak = { node: t.JSXElement; current: '\n' };
+type TextRangePart = TextRangeLeaf | TextRangeBreak;
 
 function meaningfulChildren(parent: JsxParent): t.Node[] {
   return parent.children.filter((c) => {
@@ -347,6 +364,31 @@ function wrapSplice(parent: JsxParent, text: string): Splice {
   const first = parent.children[0];
   const last = parent.children[parent.children.length - 1];
   return { from: first.start ?? 0, to: last.end ?? 0, text };
+}
+
+function cleanJsxText(value: string): string {
+  const lines = value.split(/\r\n|\n|\r/);
+  let lastNonEmptyLine = 0;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trim()) lastNonEmptyLine = i;
+  }
+
+  let text = '';
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i].replace(/\t/g, ' ');
+    if (i !== 0) line = line.replace(/^ +/, '');
+    if (i !== lines.length - 1) line = line.replace(/ +$/, '');
+    if (!line) continue;
+    if (i !== lastNonEmptyLine) line += ' ';
+    text += line;
+  }
+  return text;
+}
+
+function isJsxBrElement(node: t.Node): node is t.JSXElement {
+  if (!t.isJSXElement(node)) return false;
+  const name = node.openingElement.name;
+  return t.isJSXIdentifier(name) && name.name.toLowerCase() === 'br';
 }
 
 function collectTextCandidates(element: JsxParent, out: TextCandidate[]): void {
@@ -379,6 +421,230 @@ function collectTextCandidates(element: JsxParent, out: TextCandidate[]): void {
       collectTextCandidates(child, out);
     }
   }
+}
+
+function collectTextRangeParts(element: JsxParent, out: TextRangePart[]): void {
+  for (const child of element.children) {
+    if (t.isJSXText(child)) {
+      const current = cleanJsxText(child.value);
+      if (current) {
+        out.push({
+          node: child,
+          parent: element,
+          current,
+          raw: child.value,
+          text: formatJsxText,
+        });
+      }
+    } else if (t.isJSXExpressionContainer(child)) {
+      const expression = child.expression;
+      if (t.isStringLiteral(expression) || t.isNumericLiteral(expression)) {
+        const raw = String(expression.value);
+        const current = raw;
+        if (current) {
+          out.push({
+            node: child,
+            parent: element,
+            current,
+            raw,
+            text: (value) => `{${jsString(value)}}`,
+          });
+        }
+      }
+    } else if (isJsxBrElement(child)) {
+      out.push({ node: child, current: '\n' });
+    } else if (t.isJSXElement(child) || t.isJSXFragment(child)) {
+      collectTextRangeParts(child, out);
+    }
+  }
+}
+
+function styleSpanForText(text: string, key: string, value: string | null): string {
+  if (value === null) return formatJsxText(text);
+  return `<span style={{ ${key}: ${jsString(value)} }}>${formatJsxText(text)}</span>`;
+}
+
+function textRangeContent(parts: TextRangePart[]): string {
+  return parts.map((part) => part.current).join('');
+}
+
+function formatRichText(value: string, formatText = formatJsxText): string {
+  return value
+    .split('\n')
+    .map((part) => formatText(part))
+    .join('<br />');
+}
+
+function formatOptionalText(value: string, formatText = formatJsxText): string {
+  return value ? formatText(value) : '';
+}
+
+function textDiff(prevText: string, nextText: string) {
+  let start = 0;
+  while (
+    start < prevText.length &&
+    start < nextText.length &&
+    prevText[start] === nextText[start]
+  ) {
+    start += 1;
+  }
+
+  let prevEnd = prevText.length;
+  let nextEnd = nextText.length;
+  while (prevEnd > start && nextEnd > start && prevText[prevEnd - 1] === nextText[nextEnd - 1]) {
+    prevEnd -= 1;
+    nextEnd -= 1;
+  }
+
+  return { start, end: prevEnd, value: nextText.slice(start, nextEnd) };
+}
+
+function textLeafSplice(part: TextRangeLeaf, value: string): Splice {
+  const rawStart = part.raw.indexOf(part.current);
+  if (rawStart < 0) return spliceRange(part.node, part.text(value));
+  const rawEnd = rawStart + part.current.length;
+  return {
+    from: part.node.start ?? 0,
+    to: part.node.end ?? 0,
+    text: `${part.raw.slice(0, rawStart)}${formatRichText(value, part.text)}${part.raw.slice(rawEnd)}`,
+  };
+}
+
+function buildTextRangeReplaceSplices(
+  parts: TextRangePart[],
+  start: number,
+  end: number,
+  value: string,
+): Splice[] | { error: string } {
+  const splices: Splice[] = [];
+  let offset = 0;
+  let inserted = false;
+
+  for (const part of parts) {
+    const partStart = offset;
+    const partEnd = partStart + part.current.length;
+    offset = partEnd;
+
+    const overlaps = start < partEnd && end > partStart;
+    const insertsHere = start === end && !inserted && start >= partStart && start <= partEnd;
+    if (!overlaps && !insertsHere) continue;
+
+    if ('raw' in part) {
+      const localStart = Math.max(start, partStart) - partStart;
+      const localEnd = overlaps ? Math.min(end, partEnd) - partStart : localStart;
+      const nextText = `${part.current.slice(0, localStart)}${inserted ? '' : value}${part.current.slice(localEnd)}`;
+      splices.push(textLeafSplice(part, nextText));
+    } else if (overlaps) {
+      splices.push(spliceRange(part.node, inserted ? '' : formatRichText(value)));
+    } else if (insertsHere) {
+      const at = start === partStart ? (part.node.start ?? 0) : (part.node.end ?? 0);
+      splices.push({ from: at, to: at, text: formatRichText(value) });
+    }
+
+    inserted = true;
+  }
+
+  if (!inserted && start === end && start === offset) {
+    const last = parts[parts.length - 1];
+    if (!last) return { error: 'element has no editable text' };
+    if ('raw' in last) {
+      splices.push(textLeafSplice(last, `${last.current}${value}`));
+    } else {
+      splices.push({
+        from: last.node.end ?? 0,
+        to: last.node.end ?? 0,
+        text: formatRichText(value),
+      });
+    }
+  }
+
+  return splices;
+}
+
+function buildTextContentSplices(
+  element: t.JSXElement,
+  value: string,
+  prevText: string,
+): Splice[] | { error: string } {
+  const parts: TextRangePart[] = [];
+  collectTextRangeParts(element, parts);
+  const current = textRangeContent(parts);
+  if (current !== prevText) return { error: 'no text candidate matches the current value' };
+  const diff = textDiff(prevText, value);
+  if (diff.start === diff.end && diff.value === '') return [];
+  return buildTextRangeReplaceSplices(parts, diff.start, diff.end, diff.value);
+}
+
+function buildTextRangeStyleSplices(
+  source: string,
+  element: t.JSXElement,
+  start: number,
+  end: number,
+  op: { key: string; value: string | null },
+  prevText?: string,
+): Splice[] | { error: string } | null {
+  if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end <= start) {
+    return { error: 'invalid text range' };
+  }
+
+  const parts: TextRangePart[] = [];
+  collectTextRangeParts(element, parts);
+  const current = prevText ?? textRangeContent(parts);
+  if (!current) return { error: 'element has no editable text' };
+  if (end > current.length) return { error: 'text range is out of bounds' };
+  if (prevText !== undefined && textRangeContent(parts) !== prevText) {
+    return { error: 'no text candidate matches the current value' };
+  }
+
+  const splices: Splice[] = [];
+  let leafStart = 0;
+  for (const leaf of parts) {
+    const leafEnd = leafStart + leaf.current.length;
+    if (!('raw' in leaf)) {
+      leafStart = leafEnd;
+      continue;
+    }
+    const selectedStart = Math.max(start, leafStart);
+    const selectedEnd = Math.min(end, leafEnd);
+    if (selectedStart >= selectedEnd) {
+      leafStart = leafEnd;
+      continue;
+    }
+
+    if (
+      selectedStart === leafStart &&
+      selectedEnd === leafEnd &&
+      t.isJSXElement(leaf.parent) &&
+      leaf.parent !== element
+    ) {
+      const result = buildStyleSplice(source, leaf.parent, [op]);
+      if (result && 'error' in result) return result;
+      if (result) splices.push(result);
+      leafStart = leafEnd;
+      continue;
+    }
+
+    const raw = leaf.raw;
+    const currentStartInRaw = raw.indexOf(leaf.current);
+    if (currentStartInRaw < 0) return { error: 'text range source mismatch' };
+    const rawStart = currentStartInRaw + selectedStart - leafStart;
+    const rawEnd = currentStartInRaw + selectedEnd - leafStart;
+    const before = raw.slice(0, rawStart);
+    const selected = raw.slice(rawStart, rawEnd);
+    const after = raw.slice(rawEnd);
+    if (op.value === null) continue;
+    const beforeText = t.isJSXText(leaf.node) ? before : formatOptionalText(before, leaf.text);
+    const afterText = t.isJSXText(leaf.node) ? after : formatOptionalText(after, leaf.text);
+    splices.push(
+      spliceRange(
+        leaf.node,
+        `${beforeText}${styleSpanForText(selected, op.key, op.value)}${afterText}`,
+      ),
+    );
+    leafStart = leafEnd;
+  }
+
+  return splices.length > 0 ? splices : null;
 }
 
 // `<Wrap>{children}</Wrap>` and `<h2>{title}</h2>` — sole child is a
@@ -864,10 +1130,30 @@ export function applyEdit(
   }
 
   for (const op of ops) {
+    if (op.kind !== 'set-text-range-style') continue;
+    const result = buildTextRangeStyleSplices(
+      source,
+      element,
+      op.start,
+      op.end,
+      { key: op.key, value: op.value },
+      op.prevText,
+    );
+    if (result && 'error' in result) return { ok: false, status: 422, error: result.error };
+    if (result) splices.push(...result);
+  }
+
+  for (const op of ops) {
     if (op.kind !== 'set-text') continue;
     const result = buildTextSplice(ast, element, op.value, op.prevText);
-    if ('error' in result) return { ok: false, status: 422, error: result.error };
-    splices.push(result);
+    if ('error' in result) {
+      if (op.prevText === undefined) return { ok: false, status: 422, error: result.error };
+      const richResult = buildTextContentSplices(element, op.value, op.prevText);
+      if ('error' in richResult) return { ok: false, status: 422, error: result.error };
+      splices.push(...richResult);
+    } else {
+      splices.push(result);
+    }
   }
 
   const assetOps = ops.flatMap((op) => (op.kind === 'set-attr-asset' ? [op] : []));

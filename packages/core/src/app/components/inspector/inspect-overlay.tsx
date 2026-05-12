@@ -31,7 +31,7 @@ export function InspectOverlay() {
     };
 
     const onMove = (e: PointerEvent) => {
-      const el = pickElement(e.clientX, e.clientY);
+      const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
       if (!el) return setHover(null);
       const hit = findSlideSource(el, slideId, { hostOnly: true });
       if (!hit) return setHover(null);
@@ -40,7 +40,7 @@ export function InspectOverlay() {
 
     const onClick = (e: MouseEvent) => {
       if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) return;
-      const el = pickElement(e.clientX, e.clientY);
+      const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
       if (!el) return;
       const hit = findSlideSource(el, slideId, { hostOnly: true });
       if (!hit) return;
@@ -52,7 +52,7 @@ export function InspectOverlay() {
 
     const onDblClick = (e: MouseEvent) => {
       if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) return;
-      const el = pickElement(e.clientX, e.clientY);
+      const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
       if (!el) return;
       const hit = findSlideSource(el, slideId, { hostOnly: true });
       if (!hit) return;
@@ -220,4 +220,50 @@ function pickElement(x: number, y: number): HTMLElement | null {
     return el;
   }
   return null;
+}
+
+const INLINE_TEXT_TAGS = new Set([
+  'B',
+  'CODE',
+  'DEL',
+  'EM',
+  'I',
+  'INS',
+  'MARK',
+  'S',
+  'SMALL',
+  'SPAN',
+  'STRONG',
+  'SUB',
+  'SUP',
+  'U',
+]);
+
+function pickInspectorTarget(el: HTMLElement | null): HTMLElement | null {
+  if (!el) return null;
+  const root = el.closest('[data-inspector-root]');
+  const startedOnInlineText = INLINE_TEXT_TAGS.has(el.tagName);
+  for (let cur: HTMLElement | null = el; cur && root?.contains(cur); cur = cur.parentElement) {
+    if (startedOnInlineText && INLINE_TEXT_TAGS.has(cur.tagName)) continue;
+    if (isEditableTextContainer(cur)) return cur;
+  }
+  return el;
+}
+
+function isEditableTextContainer(el: HTMLElement): boolean {
+  if (!el.textContent?.trim()) return false;
+  return hasOnlyInlineTextChildren(el);
+}
+
+function hasOnlyInlineTextChildren(el: HTMLElement): boolean {
+  for (const child of Array.from(el.childNodes)) {
+    if (child.nodeType === Node.TEXT_NODE) {
+      continue;
+    } else if (child instanceof HTMLElement) {
+      if (child.tagName === 'BR') continue;
+      if (INLINE_TEXT_TAGS.has(child.tagName) && hasOnlyInlineTextChildren(child)) continue;
+    }
+    return false;
+  }
+  return true;
 }
