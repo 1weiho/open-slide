@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import fg from 'fast-glob';
-import { loadConfigFromFile, type Plugin } from 'vite';
+import { loadConfigFromFile, type Plugin, type ViteDevServer } from 'vite';
 import type { OpenSlideConfig } from '../config.ts';
 
 export type { OpenSlideConfig };
@@ -120,7 +120,12 @@ async function generateSlidesModule(
   }
   const themesJson = JSON.stringify(themesMap);
   const cases = entries
-    .map((e) => `    case ${JSON.stringify(e.id)}: return import(${JSON.stringify(e.importPath)});`)
+    .map((e) => {
+      const importExpr = isDev
+        ? `import(/* @vite-ignore */ ${JSON.stringify(`${e.importPath}?t=`)} + Date.now())`
+        : `import(${JSON.stringify(e.importPath)})`;
+      return `    case ${JSON.stringify(e.id)}: return ${importExpr};`;
+    })
     .join('\n');
 
   return `// virtual:open-slide/slides — generated
@@ -143,6 +148,32 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
   const foldersManifestPath = path.join(slidesRoot, '.folders.json');
 
   let isDev = false;
+  const slideIdForEntry = (p: string): string | null => {
+    const rel = path.relative(slidesRoot, p);
+    if (rel.startsWith('..') || path.isAbsolute(rel)) return null;
+    const parts = rel.split(path.sep);
+    if (parts.length !== 2) return null;
+    if (!/^index\.(tsx|jsx|ts|js)$/.test(parts[1])) return null;
+    return parts[0];
+  };
+  let slideChangeTimer: ReturnType<typeof setTimeout> | null = null;
+  const pendingSlideChanges = new Set<string>();
+  const queueSlideChanged = (server: ViteDevServer, id: string) => {
+    pendingSlideChanges.add(id);
+    if (slideChangeTimer) clearTimeout(slideChangeTimer);
+    slideChangeTimer = setTimeout(() => {
+      slideChangeTimer = null;
+      const mod = server.moduleGraph.getModuleById(resolved(SLIDES_VMOD));
+      if (mod) server.moduleGraph.invalidateModule(mod);
+      const slideIds = Array.from(pendingSlideChanges);
+      pendingSlideChanges.clear();
+      server.ws.send({
+        type: 'custom',
+        event: 'open-slide:slide-changed',
+        data: { slideIds },
+      });
+    }, 100);
+  };
 
   return {
     name: 'open-slide',
@@ -181,14 +212,14 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
       }
       return null;
     },
+    handleHotUpdate(ctx) {
+      const slideId = slideIdForEntry(ctx.file);
+      if (!slideId) return;
+      queueSlideChanged(ctx.server, slideId);
+      return [];
+    },
     configureServer(server) {
-      const isSlideEntry = (p: string) => {
-        const rel = path.relative(slidesRoot, p);
-        if (rel.startsWith('..') || path.isAbsolute(rel)) return false;
-        const parts = rel.split(path.sep);
-        if (parts.length !== 2) return false;
-        return /^index\.(tsx|jsx|ts|js)$/.test(parts[1]);
-      };
+      const isSlideEntry = (p: string) => slideIdForEntry(p) !== null;
 
       let reloadTimer: ReturnType<typeof setTimeout> | null = null;
       const reload = () => {
@@ -210,19 +241,6 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
       });
       server.watcher.on('unlink', (p) => {
         if (isSlideEntry(p)) reload();
-      });
-
-      let slideThemeTimer: ReturnType<typeof setTimeout> | null = null;
-      const invalidateSlidesVmod = () => {
-        if (slideThemeTimer) clearTimeout(slideThemeTimer);
-        slideThemeTimer = setTimeout(() => {
-          slideThemeTimer = null;
-          const mod = server.moduleGraph.getModuleById(resolved(SLIDES_VMOD));
-          if (mod) server.moduleGraph.invalidateModule(mod);
-        }, 100);
-      };
-      server.watcher.on('change', (p) => {
-        if (isSlideEntry(p)) invalidateSlidesVmod();
       });
 
       let foldersTimer: ReturnType<typeof setTimeout> | null = null;

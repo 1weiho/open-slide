@@ -24,11 +24,21 @@ export type SelectedTarget = {
 };
 
 type AssetAttrOp = { assetPath: string; previewUrl: string };
+type StyleOp = { value: string | null; prevText?: string };
+type TextRangeStyleOp = {
+  instanceId: string;
+  start: number;
+  end: number;
+  key: string;
+  value: string | null;
+  prevText?: string;
+};
 
 type Bucket = {
   line: number;
   column: number;
-  styleOps: Map<string, string | null>;
+  styleOps: Map<string, StyleOp>;
+  rangeStyleOps: Map<string, TextRangeStyleOp>;
   // Text edits are scoped per DOM instance: a reused component renders
   // the same JSX `<h2>{title}</h2>` at multiple call sites with the same
   // `data-slide-loc`, but each call site's prop literal is independent.
@@ -39,6 +49,7 @@ type Bucket = {
   // each style key / text / attribute. Used by `cancelEdits` to revert.
   origStyle: Map<string, string>;
   origTexts: Map<string /* instanceId */, { value: string }>;
+  origHtmls: Map<string /* instanceId */, string>;
   origAttrs: Map<string, string | null>;
 };
 
@@ -57,15 +68,40 @@ function readEditableText(el: HTMLElement): string {
 }
 
 function collectDomTextParts(node: Node, out: DomTextPart[]): void {
+  const parts: DomTextPart[] = [];
+  collectDomTextPartsRaw(node, parts);
+  out.push(...normalizeDomTextParts(parts));
+}
+
+function collectDomTextPartsRaw(node: Node, out: DomTextPart[]): void {
   for (const child of Array.from(node.childNodes)) {
     if (child instanceof Text) {
-      if (child.data) out.push({ node: child, current: child.data });
+      const current = renderedTextNodeValue(child);
+      if (current) out.push({ node: child, current });
     } else if (child instanceof HTMLBRElement) {
       out.push({ node: child, current: '\n' });
     } else if (child instanceof HTMLElement) {
-      collectDomTextParts(child, out);
+      collectDomTextPartsRaw(child, out);
     }
   }
+}
+
+function normalizeDomTextParts(parts: DomTextPart[]): DomTextPart[] {
+  return parts.flatMap((part, index) => {
+    if (part.current === '\n') return [part];
+    let current = part.current;
+    if (parts[index - 1]?.current === '\n') current = current.replace(/^\s+/, '');
+    if (parts[index + 1]?.current === '\n') current = current.replace(/\s+$/, '');
+    return current ? [{ ...part, current }] : [];
+  });
+}
+
+function renderedTextNodeValue(node: Text): string {
+  const whiteSpace = node.parentElement ? getComputedStyle(node.parentElement).whiteSpace : '';
+  if (whiteSpace === 'pre' || whiteSpace === 'pre-wrap' || whiteSpace === 'break-spaces') {
+    return node.data;
+  }
+  return node.data.replace(/\s+/g, ' ');
 }
 
 function textDiff(prevText: string, nextText: string) {
@@ -153,6 +189,56 @@ function setEditableText(el: HTMLElement, value: string) {
   }
 }
 
+function rangeStyleKey(
+  instanceId: string,
+  op: { start: number; end: number; key: string },
+): string {
+  return `${instanceId}:${op.start}:${op.end}:${op.key}`;
+}
+
+function applyDomTextRangeStyle(
+  el: HTMLElement,
+  op: Pick<TextRangeStyleOp, 'start' | 'end' | 'key' | 'value'>,
+) {
+  const value = op.value ?? resetValueForRangeStyle(op.key);
+  if (value === null) return;
+  const parts: DomTextPart[] = [];
+  collectDomTextParts(el, parts);
+  let offset = 0;
+  for (const part of parts) {
+    const partStart = offset;
+    const partEnd = partStart + part.current.length;
+    offset = partEnd;
+    if (!(part.node instanceof Text)) continue;
+    const selectedStart = Math.max(op.start, partStart);
+    const selectedEnd = Math.min(op.end, partEnd);
+    if (selectedStart >= selectedEnd) continue;
+
+    const localStart = selectedStart - partStart;
+    const localEnd = selectedEnd - partStart;
+    const before = part.current.slice(0, localStart);
+    const selected = part.current.slice(localStart, localEnd);
+    const after = part.current.slice(localEnd);
+    const span = document.createElement('span');
+    (span.style as unknown as Record<string, string>)[op.key] = value;
+    span.textContent = selected;
+    part.node.replaceWith(document.createTextNode(before), span, document.createTextNode(after));
+  }
+}
+
+function resetValueForRangeStyle(key: string): string | null {
+  if (key === 'fontWeight') return '400';
+  if (key === 'fontStyle') return 'normal';
+  return null;
+}
+
+function replayDomTextRangeStyles(el: HTMLElement, html: string, ops: TextRangeStyleOp[]) {
+  const preview = document.createElement('span');
+  preview.innerHTML = html;
+  for (const op of ops) applyDomTextRangeStyle(preview, op);
+  if (el.innerHTML !== preview.innerHTML) el.innerHTML = preview.innerHTML;
+}
+
 type InspectorCtx = {
   slideId: string;
   active: boolean;
@@ -221,7 +307,14 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
   const refreshCount = useCallback(() => {
     let n = 0;
     for (const b of pendingRef.current.values()) {
-      if (b.styleOps.size > 0 || b.textOps.size > 0 || b.attrOps.size > 0) n++;
+      if (
+        b.styleOps.size > 0 ||
+        b.rangeStyleOps.size > 0 ||
+        b.textOps.size > 0 ||
+        b.attrOps.size > 0
+      ) {
+        n++;
+      }
     }
     setPendingCount(n);
   }, []);
@@ -251,10 +344,12 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
           line,
           column,
           styleOps: new Map(),
+          rangeStyleOps: new Map(),
           textOps: new Map(),
           attrOps: new Map(),
           origStyle: new Map(),
           origTexts: new Map(),
+          origHtmls: new Map(),
           origAttrs: new Map(),
         };
         pendingRef.current.set(key, bucket);
@@ -265,8 +360,30 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
           if (anchor && !bucket.origStyle.has(op.key)) {
             bucket.origStyle.set(op.key, style[op.key] ?? '');
           }
-          bucket.styleOps.set(op.key, op.value);
+          bucket.styleOps.set(op.key, { value: op.value, prevText: op.prevText });
           if (anchor?.isConnected) style[op.key] = op.value ?? '';
+        } else if (op.kind === 'set-text-range-style') {
+          if (!anchor) continue;
+          const instanceId = ensureInstanceId(anchor);
+          if (!bucket.origHtmls.has(instanceId)) bucket.origHtmls.set(instanceId, anchor.innerHTML);
+          const nextOp: TextRangeStyleOp = {
+            instanceId,
+            start: op.start,
+            end: op.end,
+            key: op.key,
+            value: op.value,
+            prevText: op.prevText ?? readEditableText(anchor),
+          };
+          bucket.rangeStyleOps.set(rangeStyleKey(instanceId, op), nextOp);
+          if (anchor.isConnected) {
+            replayDomTextRangeStyles(
+              anchor,
+              bucket.origHtmls.get(instanceId) ?? anchor.innerHTML,
+              Array.from(bucket.rangeStyleOps.values()).filter(
+                (item) => item.instanceId === instanceId,
+              ),
+            );
+          }
         } else if (op.kind === 'set-text') {
           // Reused JSX renders multiple DOM nodes with the same
           // `data-slide-loc` but distinct call-site literals; without an
@@ -298,6 +415,13 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
   // each touched field so undo can restore exactly the prior state, including
   // the case where the bucket already had a buffered edit before this op.
   type StyleSnap = { kind: 'style'; key: string; value: string | null; existed: boolean };
+  type RangeStyleSnap = {
+    kind: 'range-style';
+    id: string;
+    instanceId: string;
+    value: TextRangeStyleOp | null;
+    existed: boolean;
+  };
   type TextSnap = {
     kind: 'text';
     instanceId: string;
@@ -310,7 +434,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
     value: AssetAttrOp | string | null;
     source: 'op' | 'orig' | 'dom-missing' | 'dom-present';
   };
-  type Snap = StyleSnap | TextSnap | AttrSnap;
+  type Snap = StyleSnap | RangeStyleSnap | TextSnap | AttrSnap;
 
   const snapshotForOps = useCallback(
     (line: number, column: number, anchor: HTMLElement, ops: EditOp[]): Snap[] => {
@@ -324,7 +448,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
             snaps.push({
               kind: 'style',
               key: op.key,
-              value: bucket.styleOps.get(op.key) ?? null,
+              value: bucket.styleOps.get(op.key)?.value ?? null,
               existed: true,
             });
           } else {
@@ -335,6 +459,17 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
               existed: false,
             });
           }
+        } else if (op.kind === 'set-text-range-style') {
+          const instanceId = ensureInstanceId(anchor);
+          const id = rangeStyleKey(instanceId, op);
+          const existing = bucket?.rangeStyleOps.get(id);
+          snaps.push({
+            kind: 'range-style',
+            id,
+            instanceId,
+            value: existing ? { ...existing } : null,
+            existed: !!existing,
+          });
         } else if (op.kind === 'set-text') {
           const instanceId = ensureInstanceId(anchor);
           const existing = bucket?.textOps.get(instanceId);
@@ -391,12 +526,29 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
         if (snap.kind === 'style') {
           if (snap.existed) {
             const v = snap.value ?? '';
-            bucket.styleOps.set(snap.key, snap.value);
+            bucket.styleOps.set(snap.key, { value: snap.value });
             if (sharedAnchor?.isConnected) sharedStyle[snap.key] = v;
           } else {
             bucket.styleOps.delete(snap.key);
             const orig = bucket.origStyle.get(snap.key);
             if (sharedAnchor?.isConnected) sharedStyle[snap.key] = orig ?? '';
+          }
+        } else if (snap.kind === 'range-style') {
+          const textAnchor = findAnchor(line, column, snap.instanceId);
+          if (snap.existed && snap.value) {
+            bucket.rangeStyleOps.set(snap.id, snap.value);
+          } else {
+            bucket.rangeStyleOps.delete(snap.id);
+          }
+          const html = bucket.origHtmls.get(snap.instanceId);
+          if (textAnchor?.isConnected && html !== undefined) {
+            replayDomTextRangeStyles(
+              textAnchor,
+              html,
+              Array.from(bucket.rangeStyleOps.values()).filter(
+                (op) => op.instanceId === snap.instanceId,
+              ),
+            );
           }
         } else if (snap.kind === 'text') {
           const textAnchor = findAnchor(line, column, snap.instanceId);
@@ -423,7 +575,12 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
           }
         }
       }
-      if (bucket.styleOps.size === 0 && bucket.textOps.size === 0 && bucket.attrOps.size === 0) {
+      if (
+        bucket.styleOps.size === 0 &&
+        bucket.rangeStyleOps.size === 0 &&
+        bucket.textOps.size === 0 &&
+        bucket.attrOps.size === 0
+      ) {
         pendingRef.current.delete(key);
       }
       refreshCount();
@@ -467,10 +624,17 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
     };
     const pending: PendingItem[] = [];
     for (const [key, bucket] of buckets) {
-      const { line, column, styleOps, textOps, attrOps, origTexts } = bucket;
+      const { line, column, styleOps, rangeStyleOps, textOps, attrOps, origTexts } = bucket;
       // Shared edit (style + asset attrs) — one per bucket.
       const sharedOps: EditOp[] = [];
-      for (const [k, v] of styleOps) sharedOps.push({ kind: 'set-style', key: k, value: v });
+      for (const [k, op] of styleOps) {
+        sharedOps.push({
+          kind: 'set-style',
+          key: k,
+          value: op.value,
+          prevText: op.prevText,
+        });
+      }
       for (const [attr, op] of attrOps) {
         sharedOps.push({
           kind: 'set-attr-asset',
@@ -486,6 +650,28 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
           onSuccess: (b) => {
             b.styleOps.clear();
             b.attrOps.clear();
+          },
+        });
+      }
+      for (const [id, op] of rangeStyleOps) {
+        pending.push({
+          key,
+          edit: {
+            line,
+            column,
+            ops: [
+              {
+                kind: 'set-text-range-style',
+                start: op.start,
+                end: op.end,
+                key: op.key,
+                value: op.value,
+                prevText: op.prevText,
+              },
+            ],
+          },
+          onSuccess: (b) => {
+            b.rangeStyleOps.delete(id);
           },
         });
       }
@@ -525,6 +711,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
             item.onSuccess(bucket);
             if (
               bucket.styleOps.size === 0 &&
+              bucket.rangeStyleOps.size === 0 &&
               bucket.textOps.size === 0 &&
               bucket.attrOps.size === 0
             ) {
@@ -564,6 +751,11 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
         }
       }
       // Each text edit has its own anchor — locate by instance id.
+      for (const [instanceId, html] of b.origHtmls) {
+        const textEl =
+          root?.querySelector<HTMLElement>(`[${INSTANCE_ID_ATTR}="${instanceId}"]`) ?? null;
+        if (textEl?.isConnected) textEl.innerHTML = html;
+      }
       for (const [instanceId, orig] of b.origTexts) {
         const textEl =
           root?.querySelector<HTMLElement>(`[${INSTANCE_ID_ATTR}="${instanceId}"]`) ?? null;
@@ -605,8 +797,8 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       const bucket = pendingRef.current.get(loc);
       if (!bucket) return;
       const style = el.style as unknown as Record<string, string>;
-      for (const [key, value] of bucket.styleOps) {
-        const v = value ?? '';
+      for (const [key, op] of bucket.styleOps) {
+        const v = op.value ?? '';
         if (style[key] !== v) style[key] = v;
       }
       // Text replays per-instance: only the originally clicked DOM node
@@ -614,6 +806,14 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       // value, so siblings of a reused component aren't clobbered.
       const instanceId = readInstanceId(el);
       if (instanceId) {
+        const html = bucket.origHtmls.get(instanceId);
+        if (html !== undefined) {
+          replayDomTextRangeStyles(
+            el,
+            html,
+            Array.from(bucket.rangeStyleOps.values()).filter((op) => op.instanceId === instanceId),
+          );
+        }
         const textOp = bucket.textOps.get(instanceId);
         if (textOp && readEditableText(el) !== textOp.value) {
           setEditableText(el, textOp.value);
@@ -624,15 +824,18 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       }
     };
 
+    let observer: MutationObserver | null = null;
     const replayAll = () => {
       if (pendingRef.current.size === 0) return;
+      observer?.disconnect();
       root.querySelectorAll<HTMLElement>('[data-slide-loc]').forEach(applyBuffered);
+      observer?.observe(root, { childList: true, subtree: true });
     };
 
     replayAll();
-    const observer = new MutationObserver(replayAll);
+    observer = new MutationObserver(replayAll);
     observer.observe(root, { childList: true, subtree: true });
-    return () => observer.disconnect();
+    return () => observer?.disconnect();
   }, []);
 
   const toggle = useCallback(() => {

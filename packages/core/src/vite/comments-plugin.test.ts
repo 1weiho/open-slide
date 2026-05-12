@@ -109,6 +109,26 @@ describe('applyEdit / set-style', () => {
     expect(r.source).toContain("style={{ color: 'red', fontSize: '24px' }}");
   });
 
+  it('falls back to prevText for text style edits with a stale source location', () => {
+    const src = [
+      'export default [() => (',
+      '<div>',
+      '  <h1>',
+      '    Claude',
+      '    <br />',
+      "    <em style={{ color: 'var(--osd-accent)' }}>Code.</em>",
+      '  </h1>',
+      '</div>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 0, [
+      { kind: 'set-style', key: 'fontSize', value: '24px', prevText: 'Claude\nCode.' },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("<h1 style={{ fontSize: '24px' }}>");
+  });
+
   it('removes a key when value is null', () => {
     const src = [
       'export default [() => (',
@@ -144,23 +164,63 @@ describe('applyEdit / set-style', () => {
     expect(r.source).toContain("style={{ fontSize: someVar, color: 'blue' }}");
   });
 
-  it('bails when style is a non-object expression', () => {
+  it('preserves dynamic style expressions when adding an override', () => {
     const src = ['export default [() => (', '<h1 style={someStyle}>Hi</h1>', ')];', ''].join('\n');
     const r = applyEdit(src, 2, 0, [{ kind: 'set-style', key: 'color', value: 'red' }]);
-    expect(r.ok).toBe(false);
-    if (r.ok) throw new Error('expected failure');
-    expect(r.status).toBe(422);
-    expect(r.error).toMatch(/literal object/);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("style={{ ...(someStyle), color: 'red' }}");
   });
 
-  it('bails when style object contains a spread', () => {
+  it('adds style keys after spreads so they override spread values', () => {
     const src = ['export default [() => (', '<h1 style={{ ...base }}>Hi</h1>', ')];', ''].join(
       '\n',
     );
     const r = applyEdit(src, 2, 0, [{ kind: 'set-style', key: 'color', value: 'red' }]);
-    expect(r.ok).toBe(false);
-    if (r.ok) throw new Error('expected failure');
-    expect(r.status).toBe(422);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("style={{ ...base, color: 'red' }}");
+  });
+
+  it('updates explicit style keys while preserving spreads', () => {
+    const src = [
+      'export default [() => (',
+      "<h1 style={{ ...base, color: 'red' }}>Hi</h1>",
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-style', key: 'color', value: 'blue' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("style={{ ...base, color: 'blue' }}");
+  });
+
+  it('removes explicit style keys while still overriding spread values', () => {
+    const src = [
+      'export default [() => (',
+      "<h1 style={{ ...base, color: 'red' }}>Hi</h1>",
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-style', key: 'color', value: null }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('style={{ ...base, color: undefined }}');
+  });
+
+  it('places new style attributes after prop spreads', () => {
+    const src = ['export default [() => (', '<h1 {...props}>Hi</h1>', ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-style', key: 'color', value: 'red' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("<h1 {...props} style={{ color: 'red' }}>Hi</h1>");
+  });
+
+  it('moves existing style attributes after later prop spreads', () => {
+    const src = [
+      'export default [() => (',
+      "<h1 style={{ fontSize: '24px' }} {...props}>Hi</h1>",
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-style', key: 'color', value: 'red' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("<h1 {...props} style={{ fontSize: '24px', color: 'red' }}>Hi</h1>");
   });
 
   it('escapes special characters in style values', () => {
@@ -193,6 +253,15 @@ describe('applyEdit / set-text', () => {
     expect(r.source).toContain("<h1>{'1 < 2 > 0'}</h1>");
   });
 
+  it('preserves inserted line breaks as JSX breaks', () => {
+    const src = ['export default [() => (', '<h1>Hello</h1>', ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [
+      { kind: 'set-text', value: 'Hello\nworld', prevText: 'Hello' },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('<h1>Hello<br />world</h1>');
+  });
+
   it('descends through wrapper elements to find the text leaf', () => {
     const src = ['export default [() => (', '<div><span>Hello</span></div>', ')];', ''].join('\n');
     const r = applyEdit(src, 2, 0, [{ kind: 'set-text', value: 'Goodbye' }]);
@@ -207,6 +276,25 @@ describe('applyEdit / set-text', () => {
     const r = applyEdit(src, 2, 0, [{ kind: 'set-text', value: 'planet', prevText: 'world' }]);
     if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
     expect(r.source).toContain('<h1>Hello <span>planet</span></h1>');
+  });
+
+  it('falls back to prevText for multiline content edits with a stale source location', () => {
+    const src = [
+      'const fill = {',
+      "  color: 'var(--osd-text)',",
+      '};',
+      'export default [() => (',
+      '<section style={fill}>',
+      '<p>Alpha<br />Beta</p>',
+      '</section>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 2, [
+      { kind: 'set-text', value: 'Alpha\nBeta\nGamma', prevText: 'Alpha\nBeta' },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('<p>Alpha<br />Beta<br />Gamma</p>');
   });
 
   it('applies selected text style to an existing inline leaf', () => {
@@ -264,6 +352,33 @@ describe('applyEdit / set-text', () => {
     expect(r.source).toContain("<span style={{ color: '#bb7025' }}>{' that'}</span> does");
   });
 
+  it('applies selected text style inside folded JSX text', () => {
+    const src = [
+      'export default [() => (',
+      '<p>',
+      '  Claude Code reads your codebase, plans, edits files, runs commands, checks the result, and',
+      '  iterates — keeping you in the loop on the decisions that matter.',
+      '</p>',
+      ')];',
+      '',
+    ].join('\n');
+    const prevText =
+      'Claude Code reads your codebase, plans, edits files, runs commands, checks the result, and iterates — keeping you in the loop on the decisions that matter.';
+    const start = prevText.indexOf('iterates');
+    const r = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-text-range-style',
+        start,
+        end: start + 'iterates'.length,
+        key: 'fontWeight',
+        value: '700',
+        prevText,
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("<span style={{ fontWeight: '700' }}>iterates</span>");
+  });
+
   it('updates selected text style after a plain text leaf has been wrapped', () => {
     const src = [
       'export default [() => (',
@@ -290,6 +405,189 @@ describe('applyEdit / set-text', () => {
     if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
     expect(r.source).toContain("<em style={{ color: '#111111' }}>agent</em>");
     expect(r.source).toContain("<span style={{ color: '#111111' }}>{' that'}</span> does");
+  });
+
+  it('removes selected text style from a fully selected inline leaf', () => {
+    const src = [
+      'export default [() => (',
+      '<h2>',
+      "  <span style={{ fontWeight: '700' }}>agent</span> work.",
+      '</h2>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-text-range-style',
+        start: 0,
+        end: 'agent'.length,
+        key: 'fontWeight',
+        value: null,
+        prevText: 'agent work.',
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('<span>agent</span> work.');
+  });
+
+  it('resets selected text style inside an inherited bold range', () => {
+    const src = [
+      'export default [() => (',
+      "<h2 style={{ fontWeight: '700' }}>An agent that works.</h2>",
+      ')];',
+      '',
+    ].join('\n');
+    const prevText = 'An agent that works.';
+    const start = prevText.indexOf('agent');
+    const r = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-text-range-style',
+        start,
+        end: start + 'agent'.length,
+        key: 'fontWeight',
+        value: null,
+        prevText,
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("<span style={{ fontWeight: '400' }}>agent</span>");
+  });
+
+  it('falls back to prevText when a stale source location no longer points at JSX', () => {
+    const src = [
+      'export default [() => (',
+      '<h1>',
+      "  <span style={{ fontStyle: 'italic' }}>Claude</span>",
+      '  <br />',
+      "  <em style={{ color: 'var(--osd-accent)' }}>Code.</em>",
+      '</h1>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 99, 0, [
+      {
+        kind: 'set-text-range-style',
+        start: 0,
+        end: 'Claude'.length,
+        key: 'fontSize',
+        value: '180px',
+        prevText: 'Claude\nCode.',
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("<span style={{ fontStyle: 'italic', fontSize: '180px' }}>");
+  });
+
+  it('falls back to prevText for direct JSX text with a stale source location', () => {
+    const src = [
+      'export default [() => (',
+      '<h1>',
+      '  Claude',
+      '  <br />',
+      "  <em style={{ color: 'var(--osd-accent)' }}>Code.</em>",
+      '</h1>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 99, 0, [
+      {
+        kind: 'set-text-range-style',
+        start: 0,
+        end: 'Claude'.length,
+        key: 'fontSize',
+        value: '180px',
+        prevText: 'Claude\nCode.',
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("<span style={{ fontSize: '180px' }}>Claude</span>");
+  });
+
+  it('falls back to prevText when a stale location points at an outer JSX element', () => {
+    const src = [
+      'export default [() => (',
+      '<div>',
+      '  <h1>',
+      '    Claude',
+      '    <br />',
+      "    <em style={{ color: 'var(--osd-accent)' }}>Code.</em>",
+      '  </h1>',
+      '</div>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-text-range-style',
+        start: 0,
+        end: 'Claude'.length,
+        key: 'fontSize',
+        value: '180px',
+        prevText: 'Claude\nCode.',
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("<span style={{ fontSize: '180px' }}>Claude</span>");
+  });
+
+  it('styles the whole element when selected map text is expression-backed', () => {
+    const src = [
+      'const items = [',
+      "  { title: 'Read files' },",
+      "  { title: 'Run tools' },",
+      '];',
+      'export default [() => (',
+      '<div>',
+      '  {items.map((item) => (',
+      '    <div key={item.title}>',
+      '      <div style={{ fontWeight: 400 }}>{item.title}</div>',
+      '    </div>',
+      '  ))}',
+      '</div>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 9, 6, [
+      {
+        kind: 'set-text-range-style',
+        start: 0,
+        end: 'Run tools'.length,
+        key: 'fontSize',
+        value: '79px',
+        prevText: 'Run tools',
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("style={{ fontWeight: 400, fontSize: '79px' }}");
+  });
+
+  it('falls back to element style for partial expression-backed map text', () => {
+    const src = [
+      'const steps = [',
+      "  { label: 'Read' },",
+      "  { label: 'Plan' },",
+      '];',
+      'export default [() => (',
+      '<div>',
+      '  {steps.map((step) => (',
+      '    <div key={step.label} style={{ fontWeight: 400 }}>{step.label}</div>',
+      '  ))}',
+      '</div>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 8, 4, [
+      {
+        kind: 'set-text-range-style',
+        start: 1,
+        end: 3,
+        key: 'fontSize',
+        value: '81px',
+        prevText: 'Plan',
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("style={{ fontWeight: 400, fontSize: '81px' }}");
   });
 
   it('edits rich text content without flattening inline style', () => {
@@ -338,6 +636,80 @@ describe('applyEdit / set-text', () => {
     expect(r.source).not.toContain('<br />');
     expect(r.source).toContain("{' '}");
     expect(r.source).toContain("<em style={{ color: 'var(--osd-accent)' }}>agent</em>");
+  });
+
+  it('matches visible rich text when a string literal has whitespace before a line break', () => {
+    const src = [
+      'export default [() => (',
+      '<h2>',
+      "  an <span>agent <span>harness</span></span> is{' '}",
+      '  <span>',
+      '    {\'"everything \'}<br />in an AI agent except the model itself."',
+      '  </span>',
+      '</h2>',
+      ')];',
+      '',
+    ].join('\n');
+    const prevText = 'an agent harness is "everything\nin an AI agent except the model itself."';
+    const r = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-text',
+        value: 'an agent harness is "everything\nin a coding agent except the model itself."',
+        prevText,
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('in a coding agent except the model itself.');
+    expect(r.source).toContain('<br />');
+  });
+
+  it('matches rich text content after line break positions changed in a pending edit', () => {
+    const src = [
+      'export default [() => (',
+      '<h2>',
+      '  Permissions, t<br />hen hooks.',
+      '</h2>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-text',
+        value: 'Permissions, t\nhen hooks!',
+        prevText: 'Permissions, then hooks.',
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('hen hooks!');
+    expect(r.source).toContain('<br />');
+  });
+
+  it('styles visible rich text when a string literal has whitespace before a line break', () => {
+    const src = [
+      'export default [() => (',
+      '<h2>',
+      "  an <span>agent <span>harness</span></span> is{' '}",
+      '  <span>',
+      '    {\'"everything \'}<br />in an AI agent except the model itself."',
+      '  </span>',
+      '</h2>',
+      ')];',
+      '',
+    ].join('\n');
+    const prevText = 'an agent harness is "everything\nin an AI agent except the model itself."';
+    const start = prevText.indexOf('in an AI');
+    const r = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-text-range-style',
+        start,
+        end: start + 'in an AI'.length,
+        key: 'fontWeight',
+        value: '700',
+        prevText,
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("<span style={{ fontWeight: '700' }}>in an AI</span>");
   });
 
   it('bails when prevText is missing for an ambiguous element', () => {

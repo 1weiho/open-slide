@@ -15,3 +15,10 @@ export function slidesByTheme(themeId: string): string[] {
 export async function loadSlide(id: string): Promise<SlideModule> {
   return load(id);
 }
+
+export function slideChangeIncludes(data: unknown, slideId: string): boolean {
+  if (!data || typeof data !== 'object') return false;
+  const payload = data as { slideId?: unknown; slideIds?: unknown };
+  if (payload.slideId === slideId) return true;
+  return Array.isArray(payload.slideIds) && payload.slideIds.includes(slideId);
+}

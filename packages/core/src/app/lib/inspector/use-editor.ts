@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 
 export type EditOp =
-  | { kind: 'set-style'; key: string; value: string | null }
+  | { kind: 'set-style'; key: string; value: string | null; prevText?: string }
   | { kind: 'set-text'; value: string; prevText?: string }
   | {
       kind: 'set-text-range-style';

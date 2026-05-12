@@ -11,7 +11,7 @@ import {
 import { SlideCanvas } from '../components/slide-canvas';
 import type { SlideModule } from '../lib/sdk';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
-import { loadSlide } from '../lib/slides';
+import { loadSlide, slideChangeIncludes } from '../lib/slides';
 
 export function Presenter() {
   const { slideId = '' } = useParams();
@@ -27,23 +27,39 @@ export function Presenter() {
   const [localStart] = useState(() => Date.now());
   const [hasProjection, setHasProjection] = useState(false);
   const requestedRef = useRef(false);
+  const loadSeqRef = useRef(0);
   const t = useLocale();
 
+  const reloadSlide = useCallback(
+    (reset: boolean) => {
+      const seq = ++loadSeqRef.current;
+      if (reset) setSlide(null);
+      setError(null);
+      loadSlide(slideId)
+        .then((mod) => {
+          if (seq === loadSeqRef.current) setSlide(mod);
+        })
+        .catch((e) => {
+          if (seq === loadSeqRef.current) setError(String(e?.message ?? e));
+        });
+    },
+    [slideId],
+  );
+
   useEffect(() => {
-    let cancelled = false;
-    setSlide(null);
-    setError(null);
-    loadSlide(slideId)
-      .then((mod) => {
-        if (!cancelled) setSlide(mod);
-      })
-      .catch((e) => {
-        if (!cancelled) setError(String(e?.message ?? e));
-      });
-    return () => {
-      cancelled = true;
+    reloadSlide(true);
+  }, [reloadSlide]);
+
+  useEffect(() => {
+    if (!import.meta.hot) return;
+    const handler = (data: unknown) => {
+      if (slideChangeIncludes(data, slideId)) reloadSlide(false);
     };
-  }, [slideId]);
+    import.meta.hot.on('open-slide:slide-changed', handler);
+    return () => {
+      import.meta.hot?.off('open-slide:slide-changed', handler);
+    };
+  }, [slideId, reloadSlide]);
 
   const channel = usePresenterChannel(slideId, (msg) => {
     if (msg.type === 'state') {

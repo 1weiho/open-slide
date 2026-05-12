@@ -62,19 +62,39 @@ type ElementSnapshot = {
 };
 
 type ContentSelection = { start: number; end: number };
+type StylePreview = Partial<
+  Pick<ElementSnapshot, 'fontSize' | 'fontWeight' | 'fontStyle' | 'color'>
+>;
+type RangeStylePreview = {
+  anchor: HTMLElement;
+  start: number;
+  end: number;
+  values: StylePreview;
+};
+
+function resolveSelectedTarget(target: SelectedTarget, slideId: string): SelectedTarget {
+  const hit = findSlideSource(target.anchor, slideId, { hostOnly: true });
+  if (!hit) return target;
+  if (hit.line === target.line && hit.column === target.column && hit.anchor === target.anchor) {
+    return target;
+  }
+  return { line: hit.line, column: hit.column, anchor: hit.anchor };
+}
 
 export function InspectorPanel() {
   const { active, slideId, selected, setSelected, bufferOps, pendingCount, add, applyEdit } =
     useInspector();
   const [snapshot, setSnapshot] = useState<ElementSnapshot | null>(null);
   const [contentSelection, setContentSelection] = useState<ContentSelection | null>(null);
-  const selectedKey = selected ? `${selected.line}:${selected.column}` : null;
+  const [rangeStylePreview, setRangeStylePreview] = useState<RangeStylePreview | null>(null);
   const reloadCounter = useReloadCounter();
   const t = useLocale();
 
   useEffect(() => {
-    setContentSelection((current) => (selectedKey === null || current ? null : current));
-  }, [selectedKey]);
+    void selected;
+    setContentSelection(null);
+    setRangeStylePreview(null);
+  }, [selected]);
 
   useEffect(() => {
     void reloadCounter;
@@ -123,10 +143,12 @@ export function InspectorPanel() {
   const apply = useCallback(
     (ops: EditOp[]) => {
       if (!selected) return;
-      bufferOps(selected.line, selected.column, selected.anchor, ops);
-      if (selected.anchor.isConnected) setSnapshot(readSnapshot(selected.anchor));
+      const target = resolveSelectedTarget(selected, slideId);
+      if (target !== selected) setSelected(target);
+      bufferOps(target.line, target.column, target.anchor, ops);
+      if (target.anchor.isConnected) setSnapshot(readSnapshot(target.anchor));
     },
-    [selected, bufferOps],
+    [selected, setSelected, slideId, bufferOps],
   );
 
   // `pinned` keeps the last selection rendered through the close-out
@@ -152,8 +174,19 @@ export function InspectorPanel() {
     pinSnapshot.text !== null && contentSelection && contentSelection.end > contentSelection.start
       ? contentSelection
       : null;
+  const rangePreviewApplies =
+    contentRange &&
+    rangeStylePreview &&
+    rangeStylePreview.anchor === pinSelected.anchor &&
+    rangeStylePreview.start === contentRange.start &&
+    rangeStylePreview.end === contentRange.end;
+  const typographySnapshot = rangePreviewApplies
+    ? withStylePreview(pinSnapshot, rangeStylePreview.values)
+    : pinSnapshot;
   const applyTextStyle = (ops: EditOp[]) => {
     const styleOps = ops.flatMap((op) => (op.kind === 'set-style' ? [op] : []));
+    const target = resolveSelectedTarget(pinSelected, slideId);
+    if (target !== pinSelected) setSelected(target);
     if (
       contentRange &&
       pinSnapshot.text !== null &&
@@ -161,22 +194,48 @@ export function InspectorPanel() {
       styleOps.length === ops.length &&
       styleOps.every((op) => INLINE_CONTENT_STYLE_KEYS.has(op.key))
     ) {
-      for (const op of styleOps) {
-        applyEdit(pinSelected.line, pinSelected.column, [
-          {
-            kind: 'set-text-range-style',
-            start: contentRange.start,
-            end: contentRange.end,
-            key: op.key,
-            value: op.value,
-            prevText: pinSnapshot.text,
-          },
-        ]).catch((err) => {
-          if (err instanceof Error && err.name === 'NoOpEditError') return;
-          const msg = err instanceof Error ? err.message : String(err);
-          toast.error(`${t.inspector.saveFailed} ${msg}`);
-        });
-      }
+      bufferOps(
+        target.line,
+        target.column,
+        target.anchor,
+        styleOps.map((op) => ({
+          kind: 'set-text-range-style',
+          start: contentRange.start,
+          end: contentRange.end,
+          key: op.key,
+          value: op.value,
+          prevText: pinSnapshot.text,
+        })),
+      );
+      setRangeStylePreview((current) => ({
+        anchor: target.anchor,
+        start: contentRange.start,
+        end: contentRange.end,
+        values: {
+          ...(current?.anchor === target.anchor &&
+          current.start === contentRange.start &&
+          current.end === contentRange.end
+            ? current.values
+            : {}),
+          ...stylePreviewFromOps(styleOps),
+        },
+      }));
+      if (target.anchor.isConnected) setSnapshot(readSnapshot(target.anchor));
+      return;
+    }
+    if (
+      pinSnapshot.text !== null &&
+      styleOps.length > 0 &&
+      styleOps.length === ops.length &&
+      styleOps.every((op) => INLINE_CONTENT_STYLE_KEYS.has(op.key))
+    ) {
+      bufferOps(
+        target.line,
+        target.column,
+        target.anchor,
+        styleOps.map((op) => ({ ...op, prevText: pinSnapshot.text ?? undefined })),
+      );
+      if (target.anchor.isConnected) setSnapshot(readSnapshot(target.anchor));
       return;
     }
     apply(ops);
@@ -226,9 +285,9 @@ export function InspectorPanel() {
       <Separator />
 
       <Section title={t.inspector.typographySection}>
-        <FontSizeField snapshot={pinSnapshot} apply={applyTextStyle} />
-        <FontWeightField snapshot={pinSnapshot} apply={applyTextStyle} />
-        <StyleToggles snapshot={pinSnapshot} apply={applyTextStyle} />
+        <FontSizeField snapshot={typographySnapshot} apply={applyTextStyle} />
+        <FontWeightField snapshot={typographySnapshot} apply={applyTextStyle} />
+        <StyleToggles snapshot={typographySnapshot} apply={applyTextStyle} />
         <LineHeightField snapshot={pinSnapshot} apply={apply} />
         <LetterSpacingField snapshot={pinSnapshot} apply={apply} />
         <TextAlignField snapshot={pinSnapshot} apply={apply} />
@@ -239,7 +298,7 @@ export function InspectorPanel() {
       <Section title={t.inspector.colorSection}>
         <ColorField
           label={t.inspector.textColor}
-          value={pinSnapshot.color}
+          value={typographySnapshot.color}
           onChange={(v) => applyTextStyle([{ kind: 'set-style', key: 'color', value: v }])}
           clearable={false}
         />
@@ -307,6 +366,27 @@ const INLINE_CONTENT_STYLE_KEYS = new Set([
   'color',
 ]);
 
+function stylePreviewFromOps(ops: Array<Extract<EditOp, { kind: 'set-style' }>>): StylePreview {
+  const preview: StylePreview = {};
+  for (const op of ops) {
+    if (op.key === 'fontSize' && op.value) {
+      const n = parseFloat(op.value);
+      if (Number.isFinite(n)) preview.fontSize = n;
+    } else if (op.key === 'fontWeight') {
+      preview.fontWeight = op.value ? Number(op.value) || 400 : 400;
+    } else if (op.key === 'fontStyle') {
+      preview.fontStyle = op.value === 'italic' ? 'italic' : 'normal';
+    } else if (op.key === 'color' && op.value) {
+      preview.color = op.value;
+    }
+  }
+  return preview;
+}
+
+function withStylePreview(snapshot: ElementSnapshot, preview: StylePreview): ElementSnapshot {
+  return { ...snapshot, ...preview };
+}
+
 function ContentField({
   snapshot,
   apply,
@@ -357,8 +437,9 @@ function ContentField({
       onKeyUp={(e) => reportSelection(e.currentTarget)}
       onMouseUp={(e) => reportSelection(e.currentTarget)}
       onSelect={(e) => reportSelection(e.currentTarget)}
+      wrap="off"
       rows={3}
-      className="min-h-16 resize-none text-xs"
+      className="min-h-16 resize-none overflow-x-auto whitespace-pre text-xs"
       placeholder={t.inspector.elementTextPlaceholder}
     />
   );
@@ -1131,17 +1212,38 @@ function hasOnlyInlineTextChildren(el: HTMLElement): boolean {
 }
 
 function readEditableText(el: HTMLElement): string {
-  let text = '';
+  const parts: string[] = [];
   for (const child of Array.from(el.childNodes)) {
     if (child.nodeType === Node.TEXT_NODE) {
-      text += child.textContent ?? '';
+      parts.push(renderedTextNodeValue(child as Text));
     } else if (child instanceof HTMLBRElement) {
-      text += '\n';
+      parts.push('\n');
     } else if (child instanceof HTMLElement) {
-      text += readEditableText(child);
+      parts.push(readEditableText(child));
     }
   }
-  return text;
+  return normalizeRenderedText(parts);
+}
+
+function normalizeRenderedText(parts: string[]): string {
+  return parts
+    .map((part, index) => {
+      if (part === '\n') return part;
+      let next = part;
+      if (parts[index - 1] === '\n') next = next.replace(/^\s+/, '');
+      if (parts[index + 1] === '\n') next = next.replace(/\s+$/, '');
+      return next;
+    })
+    .join('');
+}
+
+function renderedTextNodeValue(node: Text): string {
+  const value = node.textContent ?? '';
+  const whiteSpace = node.parentElement ? getComputedStyle(node.parentElement).whiteSpace : '';
+  if (whiteSpace === 'pre' || whiteSpace === 'pre-wrap' || whiteSpace === 'break-spaces') {
+    return value;
+  }
+  return value.replace(/\s+/g, ' ');
 }
 
 function rgbToHex(value: string): string | null {

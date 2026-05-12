@@ -40,7 +40,7 @@ import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf } from '../lib/export-pdf';
 import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
 import type { SlideModule } from '../lib/sdk';
-import { loadSlide } from '../lib/slides';
+import { loadSlide, slideChangeIncludes } from '../lib/slides';
 
 const { showSlideUi, showSlideBrowser, allowHtmlDownload } = config.build;
 
@@ -54,23 +54,39 @@ export function Slide() {
   const [designOpen, setDesignOpen] = useState(false);
   const { renameSlide } = useFolders();
   const slideViewportRef = useRef<HTMLElement>(null);
+  const loadSeqRef = useRef(0);
   const t = useLocale();
 
+  const reloadSlide = useCallback(
+    (reset: boolean) => {
+      const seq = ++loadSeqRef.current;
+      if (reset) setSlide(null);
+      setError(null);
+      loadSlide(slideId)
+        .then((mod) => {
+          if (seq === loadSeqRef.current) setSlide(mod);
+        })
+        .catch((e) => {
+          if (seq === loadSeqRef.current) setError(String(e?.message ?? e));
+        });
+    },
+    [slideId],
+  );
+
   useEffect(() => {
-    let cancelled = false;
-    setSlide(null);
-    setError(null);
-    loadSlide(slideId)
-      .then((mod) => {
-        if (!cancelled) setSlide(mod);
-      })
-      .catch((e) => {
-        if (!cancelled) setError(String(e?.message ?? e));
-      });
-    return () => {
-      cancelled = true;
+    reloadSlide(true);
+  }, [reloadSlide]);
+
+  useEffect(() => {
+    if (!import.meta.hot) return;
+    const handler = (data: unknown) => {
+      if (slideChangeIncludes(data, slideId)) reloadSlide(false);
     };
-  }, [slideId]);
+    import.meta.hot.on('open-slide:slide-changed', handler);
+    return () => {
+      import.meta.hot?.off('open-slide:slide-changed', handler);
+    };
+  }, [slideId, reloadSlide]);
 
   const modulePages = useMemo(() => slide?.default ?? [], [slide]);
   const [pages, setPages] = useState<typeof modulePages>(modulePages);
