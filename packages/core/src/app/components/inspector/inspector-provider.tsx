@@ -422,7 +422,12 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
   // Pre-edit snapshot for history: capture the *currently effective* value of
   // each touched field so undo can restore exactly the prior state, including
   // the case where the bucket already had a buffered edit before this op.
-  type StyleSnap = { kind: 'style'; key: string; value: string | null; existed: boolean };
+  type StyleSnap = {
+    kind: 'style';
+    key: string;
+    value: Sequenced<StyleOp> | string | null;
+    existed: boolean;
+  };
   type RangeStyleSnap = {
     kind: 'range-style';
     id: string;
@@ -452,11 +457,12 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       const snaps: Snap[] = [];
       for (const op of ops) {
         if (op.kind === 'set-style') {
-          if (bucket?.styleOps.has(op.key)) {
+          const existing = bucket?.styleOps.get(op.key);
+          if (existing) {
             snaps.push({
               kind: 'style',
               key: op.key,
-              value: bucket.styleOps.get(op.key)?.value ?? null,
+              value: { ...existing },
               existed: true,
             });
           } else {
@@ -533,8 +539,12 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       for (const snap of snaps) {
         if (snap.kind === 'style') {
           if (snap.existed) {
-            const v = snap.value ?? '';
-            bucket.styleOps.set(snap.key, { value: snap.value, seq: ++pendingSeqRef.current });
+            const prev =
+              typeof snap.value === 'object' && snap.value !== null
+                ? snap.value
+                : { value: snap.value };
+            const v = prev.value ?? '';
+            bucket.styleOps.set(snap.key, { ...prev, seq: ++pendingSeqRef.current });
             if (sharedAnchor?.isConnected) sharedStyle[snap.key] = v;
           } else {
             bucket.styleOps.delete(snap.key);
@@ -601,6 +611,11 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
 
   const bufferOps = useCallback(
     (line: number, column: number, anchor: HTMLElement, ops: EditOp[]) => {
+      const instanceId = ops.some(
+        (op) => op.kind === 'set-text' || op.kind === 'set-text-range-style',
+      )
+        ? ensureInstanceId(anchor)
+        : undefined;
       const snaps = snapshotForOps(line, column, anchor, ops);
       applyOpsRaw(line, column, anchor, ops);
       const first = ops[0];
@@ -615,10 +630,10 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       history.record({
         coalesceKey,
         undo: () => restoreSnapshot(line, column, snaps),
-        redo: () => applyOpsRaw(line, column, findAnchor(line, column), ops),
+        redo: () => applyOpsRaw(line, column, findAnchor(line, column, instanceId), ops),
       });
     },
-    [applyOpsRaw, snapshotForOps, restoreSnapshot, findAnchor, history],
+    [applyOpsRaw, snapshotForOps, restoreSnapshot, findAnchor, history, ensureInstanceId],
   );
 
   const commitEdits = useCallback(async () => {
