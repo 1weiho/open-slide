@@ -468,6 +468,11 @@ function meaningfulChildren(parent: JsxParent): t.Node[] {
   });
 }
 
+function isOnlyMeaningfulChild(parent: JsxParent, child: t.Node): boolean {
+  const meaningful = meaningfulChildren(parent);
+  return meaningful.length === 1 && meaningful[0] === child;
+}
+
 // Wrap-style splice: rewrite the whole children span of `parent`. Used
 // when the candidate is the parent's only meaningful child, so old
 // surrounding whitespace nodes don't leak into the new value.
@@ -833,7 +838,8 @@ function buildTextRangeStyleSplices(
       selectedStart === leafStart &&
       selectedEnd === leafEnd &&
       t.isJSXElement(leaf.parent) &&
-      leaf.parent !== element
+      leaf.parent !== element &&
+      isOnlyMeaningfulChild(leaf.parent, leaf.node)
     ) {
       const result = buildStyleSplice(source, leaf.parent, [op]);
       if (result && 'error' in result) return result;

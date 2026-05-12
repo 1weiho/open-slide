@@ -9,14 +9,12 @@ import {
   usePresenterChannel,
 } from '../components/present/use-presenter-channel';
 import { SlideCanvas } from '../components/slide-canvas';
-import type { SlideModule } from '../lib/sdk';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
-import { loadSlide, slideChangeIncludes } from '../lib/slides';
+import { useSlideModule } from '../lib/use-slide-module';
 
 export function Presenter() {
   const { slideId = '' } = useParams();
-  const [slide, setSlide] = useState<SlideModule | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { slide, error } = useSlideModule(slideId);
 
   // Presenter view is a passive mirror of the projection window. It only
   // tracks the index it last heard about; navigation buttons send commands
@@ -27,39 +25,7 @@ export function Presenter() {
   const [localStart] = useState(() => Date.now());
   const [hasProjection, setHasProjection] = useState(false);
   const requestedRef = useRef(false);
-  const loadSeqRef = useRef(0);
   const t = useLocale();
-
-  const reloadSlide = useCallback(
-    (reset: boolean) => {
-      const seq = ++loadSeqRef.current;
-      if (reset) setSlide(null);
-      setError(null);
-      loadSlide(slideId)
-        .then((mod) => {
-          if (seq === loadSeqRef.current) setSlide(mod);
-        })
-        .catch((e) => {
-          if (seq === loadSeqRef.current) setError(String(e?.message ?? e));
-        });
-    },
-    [slideId],
-  );
-
-  useEffect(() => {
-    reloadSlide(true);
-  }, [reloadSlide]);
-
-  useEffect(() => {
-    if (!import.meta.hot) return;
-    const handler = (data: unknown) => {
-      if (slideChangeIncludes(data, slideId)) reloadSlide(false);
-    };
-    import.meta.hot.on('open-slide:slide-changed', handler);
-    return () => {
-      import.meta.hot?.off('open-slide:slide-changed', handler);
-    };
-  }, [slideId, reloadSlide]);
 
   const channel = usePresenterChannel(slideId, (msg) => {
     if (msg.type === 'state') {

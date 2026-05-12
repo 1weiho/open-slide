@@ -24,6 +24,7 @@ export type SelectedTarget = {
 };
 
 type AssetAttrOp = { assetPath: string; previewUrl: string };
+type Sequenced<T> = T & { seq: number };
 type StyleOp = { value: string | null; prevText?: string };
 type TextRangeStyleOp = {
   instanceId: string;
@@ -37,14 +38,14 @@ type TextRangeStyleOp = {
 type Bucket = {
   line: number;
   column: number;
-  styleOps: Map<string, StyleOp>;
-  rangeStyleOps: Map<string, TextRangeStyleOp>;
+  styleOps: Map<string, Sequenced<StyleOp>>;
+  rangeStyleOps: Map<string, Sequenced<TextRangeStyleOp>>;
   // Text edits are scoped per DOM instance: a reused component renders
   // the same JSX `<h2>{title}</h2>` at multiple call sites with the same
   // `data-slide-loc`, but each call site's prop literal is independent.
   // Style/attr ops stay shared because they edit the JSX definition.
-  textOps: Map<string /* instanceId */, { value: string }>;
-  attrOps: Map<string, AssetAttrOp>;
+  textOps: Map<string /* instanceId */, Sequenced<{ value: string }>>;
+  attrOps: Map<string, Sequenced<AssetAttrOp>>;
   // Pre-edit snapshot of the DOM, captured the first time we touch
   // each style key / text / attribute. Used by `cancelEdits` to revert.
   origStyle: Map<string, string>;
@@ -281,6 +282,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
 
   const pendingRef = useRef<Map<string, Bucket>>(new Map());
   const instanceCounterRef = useRef(0);
+  const pendingSeqRef = useRef(0);
   const [pendingCount, setPendingCount] = useState(0);
   const [committing, setCommitting] = useState(false);
   const [cropTarget, setCropTarget] = useState<{
@@ -356,23 +358,25 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       }
       const style = (anchor?.style ?? {}) as unknown as Record<string, string>;
       for (const op of ops) {
+        const seq = ++pendingSeqRef.current;
         if (op.kind === 'set-style') {
           if (anchor && !bucket.origStyle.has(op.key)) {
             bucket.origStyle.set(op.key, style[op.key] ?? '');
           }
-          bucket.styleOps.set(op.key, { value: op.value, prevText: op.prevText });
+          bucket.styleOps.set(op.key, { value: op.value, prevText: op.prevText, seq });
           if (anchor?.isConnected) style[op.key] = op.value ?? '';
         } else if (op.kind === 'set-text-range-style') {
           if (!anchor) continue;
           const instanceId = ensureInstanceId(anchor);
           if (!bucket.origHtmls.has(instanceId)) bucket.origHtmls.set(instanceId, anchor.innerHTML);
-          const nextOp: TextRangeStyleOp = {
+          const nextOp: Sequenced<TextRangeStyleOp> = {
             instanceId,
             start: op.start,
             end: op.end,
             key: op.key,
             value: op.value,
             prevText: op.prevText ?? readEditableText(anchor),
+            seq,
           };
           bucket.rangeStyleOps.set(rangeStyleKey(instanceId, op), nextOp);
           if (anchor.isConnected) {
@@ -393,7 +397,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
           if (!bucket.origTexts.has(instanceId)) {
             bucket.origTexts.set(instanceId, { value: readEditableText(anchor) });
           }
-          bucket.textOps.set(instanceId, { value: op.value });
+          bucket.textOps.set(instanceId, { value: op.value, seq });
           if (anchor.isConnected) setEditableText(anchor, op.value);
         } else if (op.kind === 'set-attr-asset') {
           if (anchor && !bucket.origAttrs.has(op.attr)) {
@@ -402,7 +406,11 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
               anchor.hasAttribute(op.attr) ? anchor.getAttribute(op.attr) : null,
             );
           }
-          bucket.attrOps.set(op.attr, { assetPath: op.assetPath, previewUrl: op.previewUrl });
+          bucket.attrOps.set(op.attr, {
+            assetPath: op.assetPath,
+            previewUrl: op.previewUrl,
+            seq,
+          });
           if (anchor?.isConnected) anchor.setAttribute(op.attr, op.previewUrl);
         }
       }
@@ -419,7 +427,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
     kind: 'range-style';
     id: string;
     instanceId: string;
-    value: TextRangeStyleOp | null;
+    value: Sequenced<TextRangeStyleOp> | null;
     existed: boolean;
   };
   type TextSnap = {
@@ -431,7 +439,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
   type AttrSnap = {
     kind: 'attr';
     attr: string;
-    value: AssetAttrOp | string | null;
+    value: Sequenced<AssetAttrOp> | string | null;
     source: 'op' | 'orig' | 'dom-missing' | 'dom-present';
   };
   type Snap = StyleSnap | RangeStyleSnap | TextSnap | AttrSnap;
@@ -526,7 +534,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
         if (snap.kind === 'style') {
           if (snap.existed) {
             const v = snap.value ?? '';
-            bucket.styleOps.set(snap.key, { value: snap.value });
+            bucket.styleOps.set(snap.key, { value: snap.value, seq: ++pendingSeqRef.current });
             if (sharedAnchor?.isConnected) sharedStyle[snap.key] = v;
           } else {
             bucket.styleOps.delete(snap.key);
@@ -536,7 +544,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
         } else if (snap.kind === 'range-style') {
           const textAnchor = findAnchor(line, column, snap.instanceId);
           if (snap.existed && snap.value) {
-            bucket.rangeStyleOps.set(snap.id, snap.value);
+            bucket.rangeStyleOps.set(snap.id, { ...snap.value, seq: ++pendingSeqRef.current });
           } else {
             bucket.rangeStyleOps.delete(snap.id);
           }
@@ -553,7 +561,10 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
         } else if (snap.kind === 'text') {
           const textAnchor = findAnchor(line, column, snap.instanceId);
           if (snap.existed) {
-            bucket.textOps.set(snap.instanceId, { value: snap.value ?? '' });
+            bucket.textOps.set(snap.instanceId, {
+              value: snap.value ?? '',
+              seq: ++pendingSeqRef.current,
+            });
             if (textAnchor?.isConnected) setEditableText(textAnchor, snap.value ?? '');
           } else {
             bucket.textOps.delete(snap.instanceId);
@@ -562,8 +573,8 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
           }
         } else if (snap.kind === 'attr') {
           if (snap.source === 'op') {
-            const op = snap.value as AssetAttrOp;
-            bucket.attrOps.set(snap.attr, op);
+            const op = snap.value as Sequenced<AssetAttrOp>;
+            bucket.attrOps.set(snap.attr, { ...op, seq: ++pendingSeqRef.current });
             if (sharedAnchor?.isConnected) sharedAnchor.setAttribute(snap.attr, op.previewUrl);
           } else {
             bucket.attrOps.delete(snap.attr);
@@ -613,49 +624,54 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
   const commitEdits = useCallback(async () => {
     const buckets = pendingRef.current;
     if (buckets.size === 0) return;
-    // Each bucket flattens to one Edit per text instance plus one Edit
-    // for the shared style/attr ops. We track which entries in `pending`
-    // belong to which bucket so a per-edit failure can clear just the
-    // landed pieces while leaving the rest buffered for retry.
     type PendingItem = {
       key: string;
+      seq: number;
       edit: Edit;
       onSuccess: (bucket: Bucket) => void;
     };
     const pending: PendingItem[] = [];
     for (const [key, bucket] of buckets) {
       const { line, column, styleOps, rangeStyleOps, textOps, attrOps, origTexts } = bucket;
-      // Shared edit (style + asset attrs) — one per bucket.
-      const sharedOps: EditOp[] = [];
       for (const [k, op] of styleOps) {
-        sharedOps.push({
-          kind: 'set-style',
-          key: k,
-          value: op.value,
-          prevText: op.prevText,
+        pending.push({
+          key,
+          seq: op.seq,
+          edit: {
+            line,
+            column,
+            ops: [{ kind: 'set-style', key: k, value: op.value, prevText: op.prevText }],
+          },
+          onSuccess: (b) => {
+            b.styleOps.delete(k);
+          },
         });
       }
       for (const [attr, op] of attrOps) {
-        sharedOps.push({
-          kind: 'set-attr-asset',
-          attr,
-          assetPath: op.assetPath,
-          previewUrl: op.previewUrl,
-        });
-      }
-      if (sharedOps.length > 0) {
         pending.push({
           key,
-          edit: { line, column, ops: sharedOps },
+          seq: op.seq,
+          edit: {
+            line,
+            column,
+            ops: [
+              {
+                kind: 'set-attr-asset',
+                attr,
+                assetPath: op.assetPath,
+                previewUrl: op.previewUrl,
+              },
+            ],
+          },
           onSuccess: (b) => {
-            b.styleOps.clear();
-            b.attrOps.clear();
+            b.attrOps.delete(attr);
           },
         });
       }
       for (const [id, op] of rangeStyleOps) {
         pending.push({
           key,
+          seq: op.seq,
           edit: {
             line,
             column,
@@ -681,6 +697,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
         const orig = origTexts.get(instanceId);
         pending.push({
           key,
+          seq: textOp.seq,
           edit: {
             line,
             column,
@@ -692,6 +709,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
         });
       }
     }
+    pending.sort((a, b) => a.seq - b.seq);
     if (pending.length === 0) {
       pendingRef.current = new Map();
       setPendingCount(0);

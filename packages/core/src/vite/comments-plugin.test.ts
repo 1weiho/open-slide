@@ -324,6 +324,30 @@ describe('applyEdit / set-text', () => {
     expect(r.source).toContain("<em style={{ color: '#bb7025' }}>agent</em>");
   });
 
+  it('does not style sibling content when a selected leaf has mixed parent content', () => {
+    const src = [
+      'export default [() => (',
+      '<h1><span>Hello <strong>world</strong></span></h1>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-text-range-style',
+        start: 0,
+        end: 'Hello'.length,
+        key: 'color',
+        value: '#bb7025',
+        prevText: 'Hello world',
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain(
+      "<span><span style={{ color: '#bb7025' }}>Hello</span> <strong>world</strong></span>",
+    );
+    expect(r.source).not.toContain("<span style={{ color: '#bb7025' }}>Hello <strong>world");
+  });
+
   it('applies selected text style across inline and plain text leaves', () => {
     const src = [
       'export default [() => (',

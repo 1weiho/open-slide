@@ -39,54 +39,20 @@ import { type ThumbnailActions, ThumbnailRail } from '../components/thumbnail-ra
 import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf } from '../lib/export-pdf';
 import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
-import type { SlideModule } from '../lib/sdk';
-import { loadSlide, slideChangeIncludes } from '../lib/slides';
+import { useSlideModule } from '../lib/use-slide-module';
 
 const { showSlideUi, showSlideBrowser, allowHtmlDownload } = config.build;
 
 export function Slide() {
   const { slideId = '' } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [slide, setSlide] = useState<SlideModule | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { slide, error } = useSlideModule(slideId);
   const [playing, setPlaying] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [designOpen, setDesignOpen] = useState(false);
   const { renameSlide } = useFolders();
   const slideViewportRef = useRef<HTMLElement>(null);
-  const loadSeqRef = useRef(0);
   const t = useLocale();
-
-  const reloadSlide = useCallback(
-    (reset: boolean) => {
-      const seq = ++loadSeqRef.current;
-      if (reset) setSlide(null);
-      setError(null);
-      loadSlide(slideId)
-        .then((mod) => {
-          if (seq === loadSeqRef.current) setSlide(mod);
-        })
-        .catch((e) => {
-          if (seq === loadSeqRef.current) setError(String(e?.message ?? e));
-        });
-    },
-    [slideId],
-  );
-
-  useEffect(() => {
-    reloadSlide(true);
-  }, [reloadSlide]);
-
-  useEffect(() => {
-    if (!import.meta.hot) return;
-    const handler = (data: unknown) => {
-      if (slideChangeIncludes(data, slideId)) reloadSlide(false);
-    };
-    import.meta.hot.on('open-slide:slide-changed', handler);
-    return () => {
-      import.meta.hot?.off('open-slide:slide-changed', handler);
-    };
-  }, [slideId, reloadSlide]);
 
   const modulePages = useMemo(() => slide?.default ?? [], [slide]);
   const [pages, setPages] = useState<typeof modulePages>(modulePages);

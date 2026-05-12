@@ -119,10 +119,25 @@ async function generateSlidesModule(
     if (e.theme) themesMap[e.id] = e.theme;
   }
   const themesJson = JSON.stringify(themesMap);
+  const importTokens = JSON.stringify(Object.fromEntries(entries.map((e) => [e.id, 0])));
+  const devRuntime = isDev
+    ? `
+const slideImportTokens = ${importTokens};
+if (import.meta.hot) {
+  import.meta.hot.on('open-slide:slide-changed', (data) => {
+    const ids = Array.isArray(data?.slideIds) ? data.slideIds : data?.slideId ? [data.slideId] : [];
+    const token = Date.now();
+    for (const id of ids) {
+      if (Object.prototype.hasOwnProperty.call(slideImportTokens, id)) slideImportTokens[id] = token;
+    }
+  });
+}
+`
+    : '';
   const cases = entries
     .map((e) => {
       const importExpr = isDev
-        ? `import(/* @vite-ignore */ ${JSON.stringify(`${e.importPath}?t=`)} + Date.now())`
+        ? `import(/* @vite-ignore */ ${JSON.stringify(`${e.importPath}?t=`)} + slideImportTokens[${JSON.stringify(e.id)}])`
         : `import(${JSON.stringify(e.importPath)})`;
       return `    case ${JSON.stringify(e.id)}: return ${importExpr};`;
     })
@@ -131,6 +146,7 @@ async function generateSlidesModule(
   return `// virtual:open-slide/slides — generated
 export const slideIds = ${ids};
 export const slideThemes = ${themesJson};
+${devRuntime}
 
 export async function loadSlide(id) {
   switch (id) {
