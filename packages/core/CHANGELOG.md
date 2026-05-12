@@ -1,5 +1,27 @@
 # @open-slide/core
 
+## 1.3.0
+
+### Minor Changes
+
+- [#91](https://github.com/1weiho/open-slide/pull/91) [`0e7061a`](https://github.com/1weiho/open-slide/commit/0e7061a21d4d45b7d70a4d1996666a0375913662) Thanks [@1weiho](https://github.com/1weiho)! - Drop external image files onto an `<ImagePlaceholder />` to upload + assign in one step, and upload images straight from the inspector's Replace dialog without switching to the Asset Manager.
+
+- [#90](https://github.com/1weiho/open-slide/pull/90) [`7985d30`](https://github.com/1weiho/open-slide/commit/7985d30f0b30d86770a7c0f28df057b299c8e993) Thanks [@1weiho](https://github.com/1weiho)! - Make the slide editor's thumbnail rail width adjustable via a drag handle. Width persists in localStorage and thumbnails scale to fit.
+
+- [#93](https://github.com/1weiho/open-slide/pull/93) [`5505c3b`](https://github.com/1weiho/open-slide/commit/5505c3b827e1f544504537281c4980b7b41fd02f) Thanks [@1weiho](https://github.com/1weiho)! - Add a Themes panel to the dev UI. Themes under `themes/<id>.md` get their own `/themes` gallery and `/themes/:id` detail page, with a live preview rendered from a paired `themes/<id>.demo.tsx` slide module. Slides can declare a `theme` in `SlideMeta` to back-link to the theme they were built from, and each theme page lists every slide using it. The `/create-theme` skill writes both files so every new theme has an instant preview.
+
+### Patch Changes
+
+- [#95](https://github.com/1weiho/open-slide/pull/95) [`e372b2f`](https://github.com/1weiho/open-slide/commit/e372b2fb1be5d3542a35808db3f1dd9d39fe89bb) Thanks [@1weiho](https://github.com/1weiho)! - Flip the dev-only "Agent connected" and "Agent is watching" badges to a disconnected state when the Vite HMR socket drops, with a tooltip prompting the user to restart the dev server.
+
+- [#96](https://github.com/1weiho/open-slide/pull/96) [`b711765`](https://github.com/1weiho/open-slide/commit/b7117653c6d3e788c09f4fb6e0adb7c2c4c16a56) Thanks [@1weiho](https://github.com/1weiho)! - Point the empty-home hint at `/create-slide` in your agent instead of describing the file layout to author by hand.
+
+- [#102](https://github.com/1weiho/open-slide/pull/102) [`fa21143`](https://github.com/1weiho/open-slide/commit/fa211431a43e847bf9fe9272b81fb202a4c978ec) Thanks [@1weiho](https://github.com/1weiho)! - Add `homepage`, `bugs`, and `author` fields to the published package metadata so npm shows links to the site, repo issues, and author.
+
+- [#92](https://github.com/1weiho/open-slide/pull/92) [`3f959a6`](https://github.com/1weiho/open-slide/commit/3f959a62266a7c08cacd4bd80c3990bd040a0504) Thanks [@1weiho](https://github.com/1weiho)! - Add slide-authoring skill guidance for editing large existing slides: locate the target page with `grep`, then partial-read the range instead of loading the whole file.
+
+- [#88](https://github.com/1weiho/open-slide/pull/88) [`b0665bb`](https://github.com/1weiho/open-slide/commit/b0665bb620e19b995b979ddface46a9ea9bf0eed) Thanks [@1weiho](https://github.com/1weiho)! - Hot-reload the slide list when a new deck is created — previously the dev server had to be restarted before a new slide directory showed up on the home page.
+
 ## 1.2.0
 
 ### Minor Changes

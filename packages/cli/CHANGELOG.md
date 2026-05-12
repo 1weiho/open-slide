@@ -1,5 +1,15 @@
 # @open-slide/cli
 
+## 1.2.0
+
+### Minor Changes
+
+- [#100](https://github.com/1weiho/open-slide/pull/100) [`8b2e59b`](https://github.com/1weiho/open-slide/commit/8b2e59b0c55a46afd0e7665c047c03a2c4f996c1) Thanks [@1weiho](https://github.com/1weiho)! - Prompt for the package manager during `init` when no `--use-*` flag is passed, defaulting to the detected one.
+
+### Patch Changes
+
+- [#102](https://github.com/1weiho/open-slide/pull/102) [`fa21143`](https://github.com/1weiho/open-slide/commit/fa211431a43e847bf9fe9272b81fb202a4c978ec) Thanks [@1weiho](https://github.com/1weiho)! - Add `homepage`, `bugs`, and `author` fields to the published package metadata so npm shows links to the site, repo issues, and author.
+
 ## 1.1.1
 
 ### Patch Changes
