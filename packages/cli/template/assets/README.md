@@ -11,8 +11,7 @@ slide, under `slides/<id>/assets/`.
 Use the `@assets` alias from any slide:
 
 ```tsx
-import logoDark from '@assets/logos/acme-dark.svg';
-import logoLight from '@assets/logos/acme-light.svg';
+import logo from '@assets/logos/acme.svg';
 ```
 
 The alias resolves to this folder. Vite handles hashing and emits the file into

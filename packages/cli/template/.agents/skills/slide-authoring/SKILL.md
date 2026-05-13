@@ -248,8 +248,7 @@ const videoUrl = new URL('./assets/intro.mp4', import.meta.url).href;
 **Global assets** — anything reused across decks or themes (company logos, presenter avatars, recurring icons) — live in the project root `assets/` folder. Import them via the `@assets` alias:
 
 ```tsx
-import logoDark from '@assets/logos/acme-dark.svg';
-import logoLight from '@assets/logos/acme-light.svg';
+import logo from '@assets/logos/acme.svg';
 ```
 
 A `themes/*.md` file may name an asset path in its prose (e.g. "use `@assets/logos/acme.svg` in the title slot"); the slide imports it explicitly.
