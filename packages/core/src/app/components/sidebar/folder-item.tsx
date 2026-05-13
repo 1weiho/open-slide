@@ -70,6 +70,9 @@ type Row =
     }
   | {
       kind: 'themes';
+    }
+  | {
+      kind: 'assets';
     };
 
 export function FolderItem({
@@ -92,7 +95,7 @@ export function FolderItem({
   const slideDragActive = useSlideDragActive();
   const t = useLocale();
 
-  const acceptsSlideDrop = row.kind !== 'themes';
+  const acceptsSlideDrop = row.kind !== 'themes' && row.kind !== 'assets';
   const isSlideDrag = (e: React.DragEvent) =>
     acceptsSlideDrop && e.dataTransfer.types.includes(SLIDE_DND_MIME);
   const handleDragEnter = (e: React.DragEvent) => {
@@ -125,9 +128,17 @@ export function FolderItem({
       ? { type: 'emoji', value: '📝' }
       : row.kind === 'themes'
         ? { type: 'emoji', value: '🎨' }
-        : row.folder.icon;
+        : row.kind === 'assets'
+          ? { type: 'emoji', value: '🗂️' }
+          : row.folder.icon;
   const label =
-    row.kind === 'draft' ? t.home.draft : row.kind === 'themes' ? t.home.themes : row.folder.name;
+    row.kind === 'draft'
+      ? t.home.draft
+      : row.kind === 'themes'
+        ? t.home.themes
+        : row.kind === 'assets'
+          ? t.home.assets
+          : row.folder.name;
 
   const commitRename = () => {
     if (row.kind !== 'folder') return;

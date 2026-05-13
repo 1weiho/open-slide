@@ -9,6 +9,7 @@ export type OpenSlideBuildConfig = {
 export type OpenSlideConfig = {
   slidesDir?: string;
   themesDir?: string;
+  assetsDir?: string;
   port?: number;
   locale?: Locale;
   build?: OpenSlideBuildConfig;

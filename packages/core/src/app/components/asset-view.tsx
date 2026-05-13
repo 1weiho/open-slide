@@ -30,6 +30,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   type AssetEntry,
   fetchSvgAsFile,
@@ -41,7 +42,11 @@ import {
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 
-type Props = { slideId: string };
+type Props = { slideId: string | null };
+
+type Scope = 'slide' | 'global';
+
+const GLOBAL_SLIDE_ID = '@global';
 
 type ConflictState = {
   file: File;
@@ -49,7 +54,10 @@ type ConflictState = {
 };
 
 export function AssetView({ slideId }: Props) {
-  const { assets, loading, available, upload, rename, remove } = useAssets(slideId);
+  const lockedToGlobal = slideId === null;
+  const [scope, setScope] = useState<Scope>(lockedToGlobal ? 'global' : 'slide');
+  const effectiveSlideId = scope === 'global' || slideId === null ? GLOBAL_SLIDE_ID : slideId;
+  const { assets, loading, available, upload, rename, remove } = useAssets(effectiveSlideId);
   const [dragActive, setDragActive] = useState(false);
   const [conflict, setConflict] = useState<ConflictState | null>(null);
   const [preview, setPreview] = useState<AssetEntry | null>(null);
@@ -133,10 +141,21 @@ export function AssetView({ slideId }: Props) {
       }}
     >
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-hairline bg-sidebar px-6 py-3">
-        <div className="min-w-0">
-          <span className="eyebrow">{t.asset.eyebrow}</span>
-          <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
-            <span className="font-mono text-[11.5px]">slides/{slideId}/assets/</span>
+        <div className="flex min-w-0 items-center gap-3">
+          {lockedToGlobal ? (
+            <span className="eyebrow">{t.asset.eyebrow}</span>
+          ) : (
+            <Tabs value={scope} onValueChange={(next) => setScope(next as Scope)}>
+              <TabsList>
+                <TabsTrigger value="slide">{t.asset.scopeSlide}</TabsTrigger>
+                <TabsTrigger value="global">{t.asset.scopeGlobal}</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
+          <p className="min-w-0 truncate text-[12px] text-muted-foreground">
+            <span className="font-mono text-[11.5px]">
+              {scope === 'global' ? 'assets/' : `slides/${slideId}/assets/`}
+            </span>
             {!loading && (
               <>
                 <span className="mx-2 opacity-50">·</span>
@@ -274,7 +293,7 @@ export function AssetView({ slideId }: Props) {
         />
       )}
 
-      {preview && <PreviewDialog asset={preview} onClose={() => setPreview(null)} />}
+      {preview && <PreviewDialog asset={preview} scope={scope} onClose={() => setPreview(null)} />}
 
       {logoSearchOpen && (
         <LogoSearchDialog
@@ -542,9 +561,17 @@ function NoResultsMessage({ query, t }: { query: string; t: ReturnType<typeof us
   );
 }
 
-function PreviewDialog({ asset, onClose }: { asset: AssetEntry; onClose: () => void }) {
+function PreviewDialog({
+  asset,
+  scope,
+  onClose,
+}: {
+  asset: AssetEntry;
+  scope: Scope;
+  onClose: () => void;
+}) {
   const isImage = asset.mime.startsWith('image/');
-  const importPath = `./assets/${asset.name}`;
+  const importPath = scope === 'global' ? `@assets/${asset.name}` : `./assets/${asset.name}`;
   const t = useLocale();
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>

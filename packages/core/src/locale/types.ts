@@ -39,6 +39,7 @@ export type Locale = {
     appTitle: string;
     draft: string;
     themes: string;
+    assets: string;
     folders: string;
     newFolder: string;
     folderName: string;
@@ -251,6 +252,8 @@ export type Locale = {
     devOnlyMessage: string;
     sectionAria: string;
     eyebrow: string;
+    scopeSlide: string;
+    scopeGlobal: string;
     /** templates: "{count} file" / "{count} files" */
     fileCount: Plural;
     searchLogos: string;
@@ -269,7 +272,7 @@ export type Locale = {
     renameMenuItem: string;
     deleteMenuItem: string;
     conflictTitle: string;
-    /** template: "{name} is already in this slide's assets folder." */
+    /** template: "{name} is already in the assets folder." */
     conflictDescription: string;
     conflictReplace: string;
     conflictRenameCopy: string;

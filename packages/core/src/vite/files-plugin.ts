@@ -7,6 +7,7 @@ import type { Connect, Plugin, ViteDevServer } from 'vite';
 
 const FOLDER_ID_RE = /^f-[a-f0-9]{8}$/;
 const SLIDE_ID_RE = /^[a-z0-9_-]+$/i;
+const GLOBAL_SCOPE = '@global';
 const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 // biome-ignore lint/suspicious/noControlCharactersInRegex: explicit control-char block list for filename safety
 const ASSET_FORBIDDEN_RE = /[\x00-\x1F\x7F/\\:*?"<>|]/;
@@ -168,6 +169,30 @@ function resolveAssetFile(slidesRoot: string, slideId: string, filename: string)
   const file = path.resolve(assetsDir, filename);
   if (!file.startsWith(assetsDir + path.sep)) return null;
   return file;
+}
+
+function resolveScopedAssetsDir(
+  slidesRoot: string,
+  globalAssetsRoot: string,
+  scope: string,
+): string | null {
+  if (scope === GLOBAL_SCOPE) return globalAssetsRoot;
+  return resolveAssetsDir(slidesRoot, scope);
+}
+
+function resolveScopedAssetFile(
+  slidesRoot: string,
+  globalAssetsRoot: string,
+  scope: string,
+  filename: string,
+): string | null {
+  if (scope === GLOBAL_SCOPE) {
+    if (!validateAssetName(filename)) return null;
+    const file = path.resolve(globalAssetsRoot, filename);
+    if (!file.startsWith(globalAssetsRoot + path.sep)) return null;
+    return file;
+  }
+  return resolveAssetFile(slidesRoot, scope, filename);
 }
 
 function resolveSlideEntry(slidesRoot: string, slideId: string): string | null {
@@ -544,12 +569,15 @@ export function validateIcon(v: unknown): FolderIcon | null {
 export type FilesPluginOptions = {
   userCwd: string;
   slidesDir?: string;
+  assetsDir?: string;
 };
 
 export function filesPlugin(opts: FilesPluginOptions): Plugin {
   const userCwd = opts.userCwd;
   const slidesDir = opts.slidesDir ?? 'slides';
+  const assetsDir = opts.assetsDir ?? 'assets';
   const slidesRoot = path.resolve(userCwd, slidesDir);
+  const globalAssetsRoot = path.resolve(userCwd, assetsDir);
   const manifestPath = path.join(slidesRoot, '.folders.json');
 
   return {
@@ -565,7 +593,16 @@ export function filesPlugin(opts: FilesPluginOptions): Plugin {
 
       // Surface asset directory mutations as an HMR ping so the editor's
       // <AssetPanel> can re-list without a full reload.
+      server.watcher.add(globalAssetsRoot);
       const onAssetChange = (p: string) => {
+        if (p.startsWith(globalAssetsRoot + path.sep) || p === globalAssetsRoot) {
+          server.ws.send({
+            type: 'custom',
+            event: 'open-slide:assets-changed',
+            data: { slideId: GLOBAL_SCOPE },
+          });
+          return;
+        }
         if (!p.startsWith(slidesRoot + path.sep)) return;
         const rel = p.slice(slidesRoot.length + 1);
         const parts = rel.split(path.sep);
@@ -730,7 +767,7 @@ export function filesPlugin(opts: FilesPluginOptions): Plugin {
 
           if (listMatch && method === 'GET') {
             const slideId = listMatch[1];
-            const assetsDir = resolveAssetsDir(slidesRoot, slideId);
+            const assetsDir = resolveScopedAssetsDir(slidesRoot, globalAssetsRoot, slideId);
             if (!assetsDir) return json(res, 400, { error: 'invalid slideId' });
 
             let entries: string[];
@@ -763,7 +800,7 @@ export function filesPlugin(opts: FilesPluginOptions): Plugin {
           if (fileMatch) {
             const slideId = fileMatch[1];
             const filename = decodeURIComponent(fileMatch[2]);
-            const file = resolveAssetFile(slidesRoot, slideId, filename);
+            const file = resolveScopedAssetFile(slidesRoot, globalAssetsRoot, slideId, filename);
             if (!file) return json(res, 400, { error: 'invalid path' });
 
             if (method === 'GET') {
@@ -799,7 +836,7 @@ export function filesPlugin(opts: FilesPluginOptions): Plugin {
                 }
               }
 
-              const assetsDir = resolveAssetsDir(slidesRoot, slideId);
+              const assetsDir = resolveScopedAssetsDir(slidesRoot, globalAssetsRoot, slideId);
               if (!assetsDir) return json(res, 400, { error: 'invalid slideId' });
               await fs.mkdir(assetsDir, { recursive: true });
 
@@ -837,7 +874,7 @@ export function filesPlugin(opts: FilesPluginOptions): Plugin {
               if (!target) return json(res, 400, { error: 'invalid name' });
               if (target === filename) return json(res, 200, { ok: true, name: filename });
 
-              const dest = resolveAssetFile(slidesRoot, slideId, target);
+              const dest = resolveScopedAssetFile(slidesRoot, globalAssetsRoot, slideId, target);
               if (!dest) return json(res, 400, { error: 'invalid name' });
 
               try {

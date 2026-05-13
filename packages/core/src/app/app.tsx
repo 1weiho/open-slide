@@ -2,6 +2,7 @@ import config from 'virtual:open-slide/config';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Toaster } from './components/ui/sonner';
 import { useLocale } from './lib/use-locale';
+import { AssetsPage } from './routes/assets';
 import { Home } from './routes/home';
 import { HomeShell } from './routes/home-shell';
 import { Presenter } from './routes/presenter';
@@ -17,6 +18,7 @@ export function App() {
             <Route path="/" element={<Home />} />
             <Route path="/themes" element={<ThemesGalleryPage />} />
             <Route path="/themes/:themeId" element={<ThemeDetailPage />} />
+            <Route path="/assets" element={<AssetsPage />} />
           </Route>
         ) : (
           <Route path="/" element={<NotFound />} />

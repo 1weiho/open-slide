@@ -231,7 +231,7 @@ export default [Cover, Content] satisfies Page[];
 
 ## Assets
 
-Place files under `slides/<id>/assets/`. Import them as ES modules:
+**Slide-local assets** live under `slides/<id>/assets/` — anything one-off to a single slide. Import them as ES modules:
 
 ```tsx
 import hero from './assets/hero.jpg';
@@ -244,6 +244,15 @@ For URL-only access:
 ```tsx
 const videoUrl = new URL('./assets/intro.mp4', import.meta.url).href;
 ```
+
+**Global assets** — anything reused across decks or themes (company logos, presenter avatars, recurring icons) — live in the project root `assets/` folder. Import them via the `@assets` alias:
+
+```tsx
+import logoDark from '@assets/logos/acme-dark.svg';
+import logoLight from '@assets/logos/acme-light.svg';
+```
+
+Pair theme-aware variants with `-dark.svg` / `-light.svg` suffixes so they match `meta.theme`. A `themes/*.md` file may name an asset path in its prose (e.g. "use `@assets/logos/acme-dark.svg` in the title slot"); the slide imports it explicitly.
 
 Skip the `assets/` folder entirely for pure-text slides.
 
@@ -328,7 +337,7 @@ This applies whenever the *visual element* repeats, not whenever the *data* does
 - [ ] Slide declares a top-level `export const design: DesignSystem = { … }` and references the values via `var(--osd-X)` (use `design.X` only when you need a JS number for arithmetic). Only omit the `design` const for a one-off slide whose palette is intentionally locked.
 - [ ] One idea per page.
 - [ ] Visually repeated elements (cards, tiles, logo rows) are rendered as explicit `<Component />` instances, not via `array.map` over a data list.
-- [ ] All imported assets exist on disk under `slides/<id>/assets/`.
+- [ ] All imported assets exist on disk — slide-local under `slides/<id>/assets/`, or global under `assets/` (imported via `@assets/...`).
 - [ ] Every `<ImagePlaceholder>` corresponds to a real image the user must supply — not decorative filler. If it could be replaced by typography or layout, it should be.
 - [ ] Nothing outside `slides/<id>/` was edited.
 

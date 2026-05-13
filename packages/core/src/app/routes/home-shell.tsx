@@ -1,10 +1,12 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useAssets } from '@/lib/assets';
 import { useFolders } from '@/lib/folders';
 import { format, useLocale } from '@/lib/use-locale';
+import { cn } from '@/lib/utils';
 import { MobileFolderPill } from '../components/sidebar/mobile-pill';
-import { DRAFT_ID, Sidebar, THEMES_ID } from '../components/sidebar/sidebar';
+import { ASSETS_ID, DRAFT_ID, Sidebar, THEMES_ID } from '../components/sidebar/sidebar';
 import type { FoldersManifest } from '../lib/sdk';
 import { slideIds } from '../lib/slides';
 import { themes as themeRegistry } from '../lib/themes';
@@ -25,6 +27,7 @@ export type HomeOutletContext = {
 
 function pathToSelectedId(pathname: string, search: URLSearchParams): string {
   if (pathname === '/themes' || pathname.startsWith('/themes/')) return THEMES_ID;
+  if (pathname === '/assets') return ASSETS_ID;
   return search.get('f') ?? DRAFT_ID;
 }
 
@@ -48,11 +51,15 @@ export function HomeShell() {
   const selectFolder = useCallback(
     (id: string) => {
       if (id === THEMES_ID) navigate('/themes', { replace: true });
+      else if (id === ASSETS_ID) navigate('/assets', { replace: true });
       else if (id === DRAFT_ID) navigate('/', { replace: true });
       else navigate(`/?f=${encodeURIComponent(id)}`, { replace: true });
     },
     [navigate],
   );
+
+  const { assets: globalAssets } = useAssets('@global');
+  const isAssetsRoute = location.pathname === '/assets';
 
   const { draftSlides, slidesByFolder } = useMemo(() => {
     const byFolder: Record<string, string[]> = {};
@@ -111,6 +118,7 @@ export function HomeShell() {
           folders={manifest.folders}
           countFor={countFor}
           themesCount={themeRegistry.length}
+          assetsCount={globalAssets.length}
           selectedId={selectedId}
           onSelect={selectFolder}
           onCreate={(name, icon) => create(name, icon)}
@@ -151,6 +159,13 @@ export function HomeShell() {
               active={selectedId === THEMES_ID}
               onClick={() => selectFolder(THEMES_ID)}
             />
+            <MobileFolderPill
+              icon={{ type: 'emoji', value: '🗂️' }}
+              label={t.home.assets}
+              count={globalAssets.length}
+              active={selectedId === ASSETS_ID}
+              onClick={() => selectFolder(ASSETS_ID)}
+            />
             {manifest.folders.map((f) => (
               <MobileFolderPill
                 key={f.id}
@@ -164,7 +179,13 @@ export function HomeShell() {
           </div>
         </div>
 
-        <div className="mx-auto w-full max-w-[1180px] px-5 py-8 md:px-10 md:py-12">
+        <div
+          className={cn(
+            isAssetsRoute
+              ? 'flex min-h-0 flex-1 flex-col'
+              : 'mx-auto w-full max-w-[1180px] px-5 py-8 md:px-10 md:py-12',
+          )}
+        >
           <Outlet context={ctx} />
         </div>
       </div>
