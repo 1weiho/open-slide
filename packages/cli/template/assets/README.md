@@ -18,11 +18,8 @@ import logoLight from '@assets/logos/acme-light.svg';
 The alias resolves to this folder. Vite handles hashing and emits the file into
 the build output like any other imported asset.
 
-## Conventions
+## Organising
 
-- **Theme-aware pairs:** name dark/light variants with `-dark.svg` / `-light.svg`
-  suffixes so they can be matched to `meta.theme`.
-- **Group by kind:** `logos/`, `avatars/`, `icons/`, `fonts/`, etc.
-- **Theme references:** a `themes/*.md` file may name an asset path in prose
-  (e.g. "use `@assets/logos/acme-dark.svg` in the title slot"). Slides then
-  import it explicitly.
+Group by kind however suits you — `logos/`, `avatars/`, `icons/`, `fonts/`. A
+`themes/*.md` file can name an asset path in prose (e.g. "use
+`@assets/logos/acme.svg` in the title slot"); slides then import it explicitly.

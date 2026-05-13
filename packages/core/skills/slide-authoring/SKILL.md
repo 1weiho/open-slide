@@ -263,7 +263,7 @@ import logoDark from '@assets/logos/acme-dark.svg';
 import logoLight from '@assets/logos/acme-light.svg';
 ```
 
-Pair theme-aware variants with `-dark.svg` / `-light.svg` suffixes so they match `meta.theme`. A `themes/*.md` file may name an asset path in its prose (e.g. "use `@assets/logos/acme-dark.svg` in the title slot"); the slide imports it explicitly.
+A `themes/*.md` file may name an asset path in its prose (e.g. "use `@assets/logos/acme.svg` in the title slot"); the slide imports it explicitly.
 
 Skip the `assets/` folder entirely for pure-text slides.
 
