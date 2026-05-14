@@ -29,6 +29,10 @@ type OpenSlideBuildConfig = {
 type OpenSlideConfig = {
   /** Folder that contains your decks. Default: 'slides'. */
   slidesDir?: string;
+  /** Folder that holds theme markdown + demo files. Default: 'themes'. */
+  themesDir?: string;
+  /** Folder for global assets shared across decks. Default: 'assets'. */
+  assetsDir?: string;
   /** Dev server port. Default: first free port from 5173 upward. */
   port?: number;
   /** UI language for the runtime (home, inspector, presenter, etc.). */

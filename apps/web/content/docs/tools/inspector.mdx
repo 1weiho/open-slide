@@ -19,7 +19,7 @@ Click an element. A property panel opens with editable inputs:
 - **Text** — replace inline.
 - **Typography** — font family, weight, size, letter-spacing.
 - **Colour** — text colour, background colour.
-- **Image src** — swap to any file in the deck's assets folder.
+- **Image src** — swap to any file in the deck's assets folder or the global `assets/` folder; the Replace picker has a **Slide / Global** toggle and rewrites the import accordingly (`./assets/...` or `@assets/...`).
 
 All edits buffer in memory until you press **Save** in the SaveBar. One save
 lands as a single HMR write to disk.
