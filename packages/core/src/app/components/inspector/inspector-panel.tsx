@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Slider } from '@/components/ui/slider';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -804,13 +805,15 @@ function ImageField({
         <AssetPickerDialog
           slideId={slideId}
           onClose={() => setOpen(false)}
-          onPick={(asset) => {
+          onPick={(asset, scope) => {
             setOpen(false);
+            const assetPath =
+              scope === 'global' ? `@assets/${asset.name}` : `./assets/${asset.name}`;
             const ops: EditOp[] = [
               {
                 kind: 'set-attr-asset',
                 attr: 'src',
-                assetPath: `./assets/${asset.name}`,
+                assetPath,
                 previewUrl: asset.url,
               },
             ];
@@ -869,14 +872,16 @@ function PlaceholderField({
         <AssetPickerDialog
           slideId={slideId}
           onClose={() => setOpen(false)}
-          onPick={async (asset) => {
+          onPick={async (asset, scope) => {
             setOpen(false);
             setSubmitting(true);
             try {
+              const assetPath =
+                scope === 'global' ? `@assets/${asset.name}` : `./assets/${asset.name}`;
               await applyEdit(line, column, [
                 {
                   kind: 'replace-placeholder-with-image',
-                  assetPath: `./assets/${asset.name}`,
+                  assetPath,
                 },
               ]);
             } finally {
@@ -889,6 +894,9 @@ function PlaceholderField({
   );
 }
 
+type PickerScope = 'slide' | 'global';
+const GLOBAL_PICKER_SLIDE_ID = '@global';
+
 function AssetPickerDialog({
   slideId,
   onClose,
@@ -896,12 +904,14 @@ function AssetPickerDialog({
 }: {
   slideId: string;
   onClose: () => void;
-  onPick: (asset: AssetEntry) => void;
+  onPick: (asset: AssetEntry, scope: PickerScope) => void;
 }) {
-  const { assets, loading, refresh } = useAssets(slideId);
+  const [scope, setScope] = useState<PickerScope>('slide');
+  const effectiveSlideId = scope === 'global' ? GLOBAL_PICKER_SLIDE_ID : slideId;
+  const { assets, loading, refresh } = useAssets(effectiveSlideId);
   const images = assets.filter((a) => a.mime.startsWith('image/'));
   const t = useLocale();
-  const path = `slides/${slideId}/assets/`;
+  const path = scope === 'global' ? 'assets/' : `slides/${slideId}/assets/`;
   const [descPrefix, descSuffix] = t.inspector.replaceImageDescription.split('{path}');
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -913,18 +923,18 @@ function AssetPickerDialog({
       if (!file.type.startsWith('image/')) return;
       setUploading(true);
       try {
-        const { ok, status, entry } = await uploadWithAutoRename(slideId, file);
+        const { ok, status, entry } = await uploadWithAutoRename(effectiveSlideId, file);
         if (!ok || !entry) {
           toast.error(format(t.asset.toastUploadFailed, { status }));
           return;
         }
         await refresh().catch(() => {});
-        onPick(entry);
+        onPick(entry, scope);
       } finally {
         setUploading(false);
       }
     },
-    [slideId, refresh, onPick, t],
+    [effectiveSlideId, scope, refresh, onPick, t],
   );
 
   return (
@@ -938,6 +948,12 @@ function AssetPickerDialog({
             {descSuffix}
           </DialogDescription>
         </DialogHeader>
+        <Tabs value={scope} onValueChange={(next) => setScope(next as PickerScope)}>
+          <TabsList>
+            <TabsTrigger value="slide">{t.asset.scopeSlide}</TabsTrigger>
+            <TabsTrigger value="global">{t.asset.scopeGlobal}</TabsTrigger>
+          </TabsList>
+        </Tabs>
         <label
           htmlFor={inputId}
           className={cn(
@@ -1006,7 +1022,7 @@ function AssetPickerDialog({
                 <button
                   key={asset.name}
                   type="button"
-                  onClick={() => onPick(asset)}
+                  onClick={() => onPick(asset, scope)}
                   className={cn(
                     'group flex flex-col overflow-hidden rounded-lg border bg-card text-left shadow-sm transition-all',
                     'hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none',

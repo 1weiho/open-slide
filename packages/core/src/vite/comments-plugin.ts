@@ -1270,7 +1270,9 @@ function planAssetAttr(
   assetPath: string,
 ): AssetEditPlan | { error: string } {
   if (!attr || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(attr)) return { error: 'invalid attribute name' };
-  if (!assetPath.startsWith('./assets/')) return { error: 'asset path must start with ./assets/' };
+  if (!assetPath.startsWith('./assets/') && !assetPath.startsWith('@assets/')) {
+    return { error: 'asset path must start with ./assets/ or @assets/' };
+  }
 
   const { identifier, importSplice } = planAssetImport(ast, assetPath);
   const opening = element.openingElement;
@@ -1314,7 +1316,9 @@ function planReplacePlaceholder(
   if (!t.isJSXIdentifier(opening.name) || opening.name.name !== 'ImagePlaceholder') {
     return { error: 'not a placeholder' };
   }
-  if (!assetPath.startsWith('./assets/')) return { error: 'asset path must start with ./assets/' };
+  if (!assetPath.startsWith('./assets/') && !assetPath.startsWith('@assets/')) {
+    return { error: 'asset path must start with ./assets/ or @assets/' };
+  }
 
   const hint = readJsxStringAttr(opening, 'hint') ?? '';
   const width = readJsxNumberAttr(opening, 'width');
