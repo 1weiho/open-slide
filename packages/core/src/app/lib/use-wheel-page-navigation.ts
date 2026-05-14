@@ -31,6 +31,7 @@ export function useWheelPageNavigation<T extends HTMLElement>({
 
     const onWheel = (event: WheelEvent) => {
       if (event.defaultPrevented || event.ctrlKey || shouldIgnoreWheelTarget(event.target)) return;
+      if (isVisualViewportZoomed()) return;
 
       const deltaY = normalizeDeltaY(event);
       if (Math.abs(deltaY) <= Math.abs(normalizeDeltaX(event))) return;
@@ -82,6 +83,12 @@ function normalizeWheelDelta(delta: number, deltaMode: number) {
   if (deltaMode === WheelEvent.DOM_DELTA_LINE) return delta * 16;
   if (deltaMode === WheelEvent.DOM_DELTA_PAGE) return delta * 800;
   return delta;
+}
+
+function isVisualViewportZoomed() {
+  if (typeof window === 'undefined') return false;
+  const vv = window.visualViewport;
+  return vv != null && vv.scale > 1.01;
 }
 
 function shouldIgnoreWheelTarget(target: EventTarget | null) {
