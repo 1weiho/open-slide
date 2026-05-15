@@ -5,8 +5,8 @@ import {
   b64urlEncode,
   parseMarkers,
   safeAssetIdentifier,
-  validateMutationRequest,
 } from './comments-plugin.ts';
+import { validateMutationRequest } from './request-guard.ts';
 
 describe('b64url encoding', () => {
   it('round-trips arbitrary unicode strings', () => {
