@@ -1,5 +1,11 @@
 # @open-slide/cli
 
+## 1.2.2
+
+### Patch Changes
+
+- [#120](https://github.com/1weiho/open-slide/pull/120) [`d6f1551`](https://github.com/1weiho/open-slide/commit/d6f1551e1270e424825da7581d57690e536ed450) Thanks [@1weiho](https://github.com/1weiho)! - Drop the README from the scaffolded `assets/` folder so a fresh project's assets manager opens empty instead of showing a stray file.
+
 ## 1.2.1
 
 ### Patch Changes
