@@ -1,5 +1,25 @@
 # @open-slide/core
 
+## 1.4.0
+
+### Minor Changes
+
+- [#114](https://github.com/1weiho/open-slide/pull/114) [`21bb307`](https://github.com/1weiho/open-slide/commit/21bb307db4369b9d40d6fc239c740c85b984bbe3) Thanks [@1weiho](https://github.com/1weiho)! - Add a Global assets manager. Files in the project root `assets/` folder can be imported via the `@assets/*` Vite alias and are reusable across decks and themes. The dev-mode UI exposes it two ways: a Slide / Global scope toggle inside any slide's Assets view, and a dedicated Assets entry in the home sidebar at `/assets`.
+
+- [#119](https://github.com/1weiho/open-slide/pull/119) [`6d9b5f0`](https://github.com/1weiho/open-slide/commit/6d9b5f06b0febf3efbf3316d3037aba4b9422622) Thanks [@1weiho](https://github.com/1weiho)! - Split the Present button into a primary action plus a dropdown with Play (windowed), Fullscreen, and Presenter mode. Windowed play fills the browser viewport without entering the Fullscreen API, and the floating control bar gains a toggle to switch between window and fullscreen mid-presentation.
+
+### Patch Changes
+
+- [#110](https://github.com/1weiho/open-slide/pull/110) [`5a39c31`](https://github.com/1weiho/open-slide/commit/5a39c319f85dff046f9cba67011d314fc5343b89) Thanks [@1weiho](https://github.com/1weiho)! - Fix type errors across inspector, player, slide route, and comments plugin.
+
+- [#115](https://github.com/1weiho/open-slide/pull/115) [`5bc45b7`](https://github.com/1weiho/open-slide/commit/5bc45b7e544958615e4706a6f880f4a56515d21f) Thanks [@1weiho](https://github.com/1weiho)! - Prevent inspector content textarea from expanding the panel width when typing long unbroken lines.
+
+- [#103](https://github.com/1weiho/open-slide/pull/103) [`c7b8f6a`](https://github.com/1weiho/open-slide/commit/c7b8f6a435ed5d27d7e3ab9f8e99b5badcd36515) Thanks [@chentyke](https://github.com/chentyke)! - Support styling selected text ranges in inspector content fields.
+
+- [#117](https://github.com/1weiho/open-slide/pull/117) [`8aab380`](https://github.com/1weiho/open-slide/commit/8aab380bd1840a4183397b2c70b59b387a5144ab) Thanks [@1weiho](https://github.com/1weiho)! - Show a toast when triggering PDF export on Safari, since the print pipeline isn't supported there.
+
+- [#111](https://github.com/1weiho/open-slide/pull/111) [`35158dd`](https://github.com/1weiho/open-slide/commit/35158dd37214978e60775487954168d6cfaf5d4a) Thanks [@1weiho](https://github.com/1weiho)! - Pare back the agent-connected and agent-watching tooltips to a single status line.
+
 ## 1.3.0
 
 ### Minor Changes

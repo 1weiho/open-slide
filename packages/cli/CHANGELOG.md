@@ -1,5 +1,11 @@
 # @open-slide/cli
 
+## 1.2.1
+
+### Patch Changes
+
+- [#114](https://github.com/1weiho/open-slide/pull/114) [`21bb307`](https://github.com/1weiho/open-slide/commit/21bb307db4369b9d40d6fc239c740c85b984bbe3) Thanks [@1weiho](https://github.com/1weiho)! - Scaffold an empty `assets/` folder for cross-deck reusable assets like logos and avatars.
+
 ## 1.2.0
 
 ### Minor Changes
