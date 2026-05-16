@@ -1,8 +1,6 @@
 import type { Connect } from 'vite';
 
-type MutationRequestValidationResult =
-  | { ok: true }
-  | { ok: false; status: number; error: string };
+type MutationRequestValidationResult = { ok: true } | { ok: false; status: number; error: string };
 
 function firstHeaderValue(value: string | string[] | undefined): string | null {
   if (Array.isArray(value)) return value[0] ?? null;
