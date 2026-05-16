@@ -14,15 +14,17 @@ Your job: read those markers, perform the described edits, and delete the marker
 ## Marker format
 
 ```
-{/* @slide-comment id="c-<8hex>" ts="<ISO>" text="<base64url(JSON)>" */}
+{/* @slide-comment id="c-<8hex>" ts="<ISO>" text="<base64url(JSON)>" note="<escaped-text>" */}
 ```
 
 - Always sits on its own line as the **first child inside** the JSX element it refers to (i.e. between that element's opening `>` and its other children). The marker is dropped *into* its target, not floated above it.
-- `text` is base64url-encoded JSON: `{"note": "...", "hint"?: "..."}`.
+- `text` is base64url-encoded JSON: `{"note": "...", "hint"?: "..."}` — the canonical payload.
+- **`note` is the human-readable raw comment text** (JSON-string-escaped for safety — `"` → `\"`, `\` → `\\`, `*/` → `*\/`). Read it directly; no decoding needed. The `text` attribute remains for backwards compatibility and for extracting `hint`.
+- For **legacy markers** (no `note` attribute), fall back to base64url-decoding `text`.
 - Detection regex (authoritative — use exactly this):
 
   ```
-  /\{\/\*\s*@slide-comment\s+id="(c-[a-f0-9]+)"\s+ts="([^"]+)"\s+text="([A-Za-z0-9_\-]+={0,2})"\s*\*\/\}/g
+  /\{\/\*\s*@slide-comment\s+id="(c-[a-f0-9]+)"\s+ts="([^"]+)"\s+text="([A-Za-z0-9_\-]+={0,2})"(?:\s+note="((?:[^"\\]|\\.)*)")?\s*\*\/\}/g
   ```
 
 ## Procedure
@@ -33,7 +35,8 @@ Your job: read those markers, perform the described edits, and delete the marker
 
 2. **Read the file and find all markers.**
    - Run the regex above against the whole file.
-   - For each match, base64url-decode `text` and `JSON.parse` it to get `{ note, hint? }`.
+   - **Preferred path:** If `note` is captured (group 4), `JSON.parse(`"${noteRaw}"`)` to get the comment text directly — no base64url decode needed. Optionally extract `hint` from the base64url `text` payload if the note is ambiguous.
+   - **Fallback path (legacy markers):** If `note` is not captured, base64url-decode `text` and `JSON.parse` it to get `{ note, hint? }`.
    - Record each hit as `{ id, lineIndex (0-based), indent, note, hint }`.
    - If there are no markers, tell the user and stop.
 
@@ -57,7 +60,7 @@ Your job: read those markers, perform the described edits, and delete the marker
 7. **Report.**
    - Summarise: `N applied, 0 remaining` plus a one-line description of each change (including the slide id).
 
-## base64url decoding helper
+## base64url decoding (legacy markers only)
 
 ```js
 function decode(s) {
@@ -66,7 +69,7 @@ function decode(s) {
 }
 ```
 
-You can run this inline via `node -e '...'` if you need to inspect a payload; otherwise just reason about the decoded string.
+You can run this inline via `node -e '...'` if you need to inspect a legacy payload. New markers include the `note` attribute which is directly readable — no decode step needed.
 
 ## Edge cases
 
