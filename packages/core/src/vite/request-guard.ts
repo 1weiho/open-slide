@@ -20,7 +20,7 @@ function firstCommaToken(value: string | null): string | null {
 function requestProto(req: Connect.IncomingMessage): 'http' | 'https' {
   const forwarded = firstCommaToken(headerValue(req, 'x-forwarded-proto'))?.toLowerCase();
   if (forwarded === 'http' || forwarded === 'https') return forwarded;
-  return req.socket.encrypted ? 'https' : 'http';
+  return 'encrypted' in req.socket && req.socket.encrypted ? 'https' : 'http';
 }
 
 function normalizedOrigin(origin: string): string | null {
