@@ -1,5 +1,27 @@
 # @open-slide/core
 
+## 1.5.0
+
+### Minor Changes
+
+- [#132](https://github.com/1weiho/open-slide/pull/132) [`cdc6dd2`](https://github.com/1weiho/open-slide/commit/cdc6dd21bebf67b744b64264f24b174171b4196b) Thanks [@1weiho](https://github.com/1weiho)! - Add a copy-link button next to the download button on the slide toolbar; copies the current slide URL and shows a toast.
+
+- [#125](https://github.com/1weiho/open-slide/pull/125) [`06b7159`](https://github.com/1weiho/open-slide/commit/06b7159895c202b218a5802b31dc7136de56eeb7) Thanks [@1weiho](https://github.com/1weiho)! - Add slide list sorting on the home page by creation time or name (asc/desc). Reads a new optional `meta.createdAt` (ISO 8601 string) on each slide; preference persists per browser; default is newest-created first.
+
+### Patch Changes
+
+- [#126](https://github.com/1weiho/open-slide/pull/126) [`a59835d`](https://github.com/1weiho/open-slide/commit/a59835d1c3396a237ecdbf01c007d4aa206a818d) Thanks [@1weiho](https://github.com/1weiho)! - Extend cross-origin mutation guard to the design, notes, slides, assets, and folders dev-server endpoints.
+
+- [#138](https://github.com/1weiho/open-slide/pull/138) [`49382a7`](https://github.com/1weiho/open-slide/commit/49382a799b77b7714f6f3a7396a144e73e5bd248) Thanks [@1weiho](https://github.com/1weiho)! - Fix a vertical-line artifact that could appear during fullscreen playback: drive the laser pointer with `transform` instead of `left`/`top` so a moving box-shadow no longer leaves a compositor ghost, and animate the progress bar fill with `scaleX` so its opacity fade-out shares a layer with the parent.
+
+- [#140](https://github.com/1weiho/open-slide/pull/140) [`c6538c4`](https://github.com/1weiho/open-slide/commit/c6538c41c7223f962d9ceb76922b142a38ec9fe3) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Add `⌘/` / `Ctrl+/` shortcut to focus the inspector comment input, and allow the inspector panel to scroll its comment input into view when the viewport is too short to fit the full panel.
+
+- [#113](https://github.com/1weiho/open-slide/pull/113) [`fa0d836`](https://github.com/1weiho/open-slide/commit/fa0d836dae38571b98459c7421a9ac21099012ef) Thanks [@DeryFerd](https://github.com/DeryFerd)! - Harden comments and edit mutation endpoints by validating request origin/fetch metadata and requiring JSON content-type for write routes.
+
+- [#135](https://github.com/1weiho/open-slide/pull/135) [`24b7311`](https://github.com/1weiho/open-slide/commit/24b731128701ba90df1f538e7d2ed0e9ee4dc540) Thanks [@1weiho](https://github.com/1weiho)! - Refactor the dev-server Vite plugins: extract pure logic out of the monolithic `comments-plugin` and `files-plugin` into per-domain modules (`editing/`, `files/`, `http/`), and consolidate every `/__*` HTTP endpoint into a single `api-plugin` whose route handlers live under `vite/routes/` (one file per endpoint group with a manifest comment up top). No public API change.
+
+- [#134](https://github.com/1weiho/open-slide/pull/134) [`ac564fa`](https://github.com/1weiho/open-slide/commit/ac564faf8e77127dc98ed2558a1d8638345b0055) Thanks [@1weiho](https://github.com/1weiho)! - Asset deletion now reverts in-slide usages back to image placeholders instead of leaving broken imports.
+
 ## 1.4.0
 
 ### Minor Changes

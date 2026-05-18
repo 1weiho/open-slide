@@ -1,5 +1,11 @@
 # @open-slide/cli
 
+## 1.2.3
+
+### Patch Changes
+
+- [#131](https://github.com/1weiho/open-slide/pull/131) [`377b5ba`](https://github.com/1weiho/open-slide/commit/377b5bafef39e15f1e48b65b88cbc282b8c33731) Thanks [@1weiho](https://github.com/1weiho)! - Trim verbose follow-up text from `init` next-steps output.
+
 ## 1.2.2
 
 ### Patch Changes
