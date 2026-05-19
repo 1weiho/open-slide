@@ -1,5 +1,23 @@
 # @open-slide/core
 
+## 1.6.0
+
+### Minor Changes
+
+- [#144](https://github.com/1weiho/open-slide/pull/144) [`68bfb3e`](https://github.com/1weiho/open-slide/commit/68bfb3e890cb9f66433004dda1ec8c01876865d8) Thanks [@1weiho](https://github.com/1weiho)! - Flag unused files in the assets manager with an "Unused" pill so they're easy to spot.
+
+- [#141](https://github.com/1weiho/open-slide/pull/141) [`9d24d18`](https://github.com/1weiho/open-slide/commit/9d24d1875a8e3c368822a4eeda59d8040c51ba7d) Thanks [@mvanhorn](https://github.com/mvanhorn)! - Add a Duplicate action to slide cards so you can use a deck as a template without destroying it.
+
+- [#137](https://github.com/1weiho/open-slide/pull/137) [`f5b9a31`](https://github.com/1weiho/open-slide/commit/f5b9a3168452e9e95595fbb96f3d843a8cd0d4f8) Thanks [@1weiho](https://github.com/1weiho)! - Add `useSlidePageNumber()` hook so slide pages can render their own page number without hardcoding.
+
+### Patch Changes
+
+- [#142](https://github.com/1weiho/open-slide/pull/142) [`f1fa6b9`](https://github.com/1weiho/open-slide/commit/f1fa6b91bb7fa47f88bd78a9abead2a89c814bb6) Thanks [@mvanhorn](https://github.com/mvanhorn)! - Inspector now selects elements inside multi-file slide structures (e.g. slides composed of shared.tsx + 01-Cover.tsx).
+
+- [#145](https://github.com/1weiho/open-slide/pull/145) [`12b2853`](https://github.com/1weiho/open-slide/commit/12b285337eab22e5f58640a8826975fbcdcc9b45) Thanks [@1weiho](https://github.com/1weiho)! - Strip box-shadows and CSS gradients during PDF export so macOS Preview pages through the file at full speed.
+
+- [#118](https://github.com/1weiho/open-slide/pull/118) [`c768bbd`](https://github.com/1weiho/open-slide/commit/c768bbd8625f60a9af0343d2b13a6690023b0c03) Thanks [@samzzi](https://github.com/samzzi)! - Skip wheel-based page navigation while the visual viewport is pinch-zoomed, so panning a zoomed slide no longer jumps to the next or previous page.
+
 ## 1.5.0
 
 ### Minor Changes

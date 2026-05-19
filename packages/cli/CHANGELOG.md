@@ -1,5 +1,11 @@
 # @open-slide/cli
 
+## 1.2.4
+
+### Patch Changes
+
+- [#147](https://github.com/1weiho/open-slide/pull/147) [`ce3afe6`](https://github.com/1weiho/open-slide/commit/ce3afe676355fb38fc8b7b24de58cc5bdca62019) Thanks [@1weiho](https://github.com/1weiho)! - Pin scaffolded `@open-slide/core` to the core version bundled at CLI build time instead of the CLI's own version.
+
 ## 1.2.3
 
 ### Patch Changes
