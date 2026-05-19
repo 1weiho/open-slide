@@ -73,7 +73,10 @@ export function locTagsPlugin(opts: LocTagsPluginOptions): Plugin {
     transform(code, id) {
       const filePath = id.split('?')[0];
       if (!filePath.startsWith(slidesRoot + path.sep)) return null;
-      if (!filePath.endsWith(`${path.sep}index.tsx`)) return null;
+      if (!filePath.endsWith('.tsx')) return null;
+      if (filePath.endsWith('.d.ts') || filePath.endsWith('.test.tsx')) return null;
+      const rel = filePath.slice(slidesRoot.length + path.sep.length);
+      if (!rel.includes(path.sep)) return null;
       const next = injectLocTags(code);
       if (next === null) return null;
       return { code: next, map: null };

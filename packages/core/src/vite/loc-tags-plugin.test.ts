@@ -1,5 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { injectLocTags } from './loc-tags-plugin.ts';
+import { injectLocTags, locTagsPlugin } from './loc-tags-plugin.ts';
+
+const pluginTransformSource = 'export default [() => <div />];';
+
+type LocTagsTransformResult = null | { code: string; map: null };
+
+function transformWithLocTags(id: string) {
+  const plugin = locTagsPlugin({ userCwd: '/repo' });
+  const transform = plugin.transform;
+  if (typeof transform !== 'function') throw new Error('expected transform function');
+  return transform.call({} as never, pluginTransformSource, id) as LocTagsTransformResult;
+}
+
+function expectTaggedTransform(id: string) {
+  const out = transformWithLocTags(id);
+  if (out === null) throw new Error('expected tagged transform result');
+  expect(out.code).toContain('data-slide-loc');
+}
 
 describe('injectLocTags', () => {
   it('adds data-slide-loc to host elements with the JSX start position', () => {
@@ -104,5 +121,35 @@ describe('injectLocTags', () => {
     expect(out).toContain('<ImagePlaceholder data-slide-loc="3:4"');
     expect(out).not.toContain('<Layout data-slide-loc');
     expect(out).not.toContain('<CustomThing data-slide-loc');
+  });
+});
+
+describe('locTagsPlugin', () => {
+  it('tags slide index files', () => {
+    expectTaggedTransform('/repo/slides/cover/index.tsx');
+  });
+
+  it('tags shared slide source files', () => {
+    expectTaggedTransform('/repo/slides/cover/shared.tsx');
+  });
+
+  it('tags numbered slide source files', () => {
+    expectTaggedTransform('/repo/slides/cover/01-Cover.tsx');
+  });
+
+  it('tags slide source files in nested folders', () => {
+    expectTaggedTransform('/repo/slides/cover/components/Card.tsx');
+  });
+
+  it('skips tsx files directly under the slides directory', () => {
+    expect(transformWithLocTags('/repo/slides/index.tsx')).toBeNull();
+  });
+
+  it('skips tsx files outside the slides directory', () => {
+    expect(transformWithLocTags('/repo/apps/demo/foo.tsx')).toBeNull();
+  });
+
+  it('skips colocated test files', () => {
+    expect(transformWithLocTags('/repo/slides/cover/index.test.tsx')).toBeNull();
   });
 });
