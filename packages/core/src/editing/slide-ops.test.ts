@@ -21,22 +21,26 @@ async function withSlidesRoot<T>(fn: (root: string) => Promise<T>): Promise<T> {
   }
 }
 
-async function writeSlide(root: string, id: string): Promise<void> {
+async function writeSlide(root: string, id: string, title = id): Promise<void> {
   await fs.mkdir(path.join(root, id, 'assets'), { recursive: true });
-  await fs.writeFile(path.join(root, id, 'index.tsx'), `export default [];\n`, 'utf8');
+  await fs.writeFile(
+    path.join(root, id, 'index.tsx'),
+    `export const meta = { title: '${title}' };\nexport default [];\n`,
+    'utf8',
+  );
   await fs.writeFile(path.join(root, id, 'assets', 'hero.txt'), 'hero', 'utf8');
 }
 
 describe('duplicateSlideDir', () => {
   it('duplicates a slide directory with an automatic copy id', async () => {
     await withSlidesRoot(async (root) => {
-      await writeSlide(root, 'cover');
+      await writeSlide(root, 'cover', 'Cover');
 
       const result = await duplicateSlideDir(root, 'cover');
 
       expect(result).toEqual({ ok: true, slideId: 'cover-copy' });
       await expect(fs.readFile(path.join(root, 'cover-copy', 'index.tsx'), 'utf8')).resolves.toBe(
-        `export default [];\n`,
+        `export const meta = { title: 'Cover (copy)' };\nexport default [];\n`,
       );
       await expect(
         fs.readFile(path.join(root, 'cover-copy', 'assets', 'hero.txt'), 'utf8'),
