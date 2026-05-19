@@ -41,14 +41,12 @@ function readMetaTitleInSource(source: string): MetaTitleRead {
     return { kind: 'unsupported' };
   }
 
-  const body =
-    (ast as { program?: { body?: Array<Record<string, unknown>> } }).program?.body ?? [];
+  const body = (ast as { program?: { body?: Array<Record<string, unknown>> } }).program?.body ?? [];
   for (const stmt of body) {
     if (stmt.type !== 'ExportNamedDeclaration') continue;
     const decl = stmt.declaration as Record<string, unknown> | undefined;
     if (!decl || decl.type !== 'VariableDeclaration') continue;
-    const declarations =
-      (decl.declarations as Array<Record<string, unknown>> | undefined) ?? [];
+    const declarations = (decl.declarations as Array<Record<string, unknown>> | undefined) ?? [];
     for (const d of declarations) {
       const id = d.id as Record<string, unknown> | undefined;
       if (!id || id.type !== 'Identifier' || id.name !== 'meta') continue;
