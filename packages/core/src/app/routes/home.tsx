@@ -2,6 +2,7 @@ import {
   ArrowDownAZ,
   ChevronDown,
   Clock,
+  Copy,
   FolderInput,
   FolderPlus,
   MoreHorizontal,
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -28,7 +30,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useLocale } from '@/lib/use-locale';
+import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import { FolderIconChip, SLIDE_DND_MIME } from '../components/sidebar/folder-item';
 import { DRAFT_ID } from '../components/sidebar/sidebar';
@@ -77,6 +79,7 @@ export function Home() {
     titleMap,
     assign,
     renameSlide,
+    duplicateSlide,
     deleteSlide,
   } = useOutletContext<HomeOutletContext>();
   const t = useLocale();
@@ -163,6 +166,20 @@ export function Home() {
                 folders={manifest.folders}
                 currentFolderId={manifest.assignments[id] ?? null}
                 onRename={(name) => renameSlide(id, name)}
+                onDuplicate={async () => {
+                  const slideName = titleMap[id] ?? id;
+                  try {
+                    const newSlideId = await duplicateSlide(id);
+                    toast.success(
+                      format(t.home.toastSlideDuplicated, {
+                        slide: slideName,
+                        newSlide: newSlideId,
+                      }),
+                    );
+                  } catch {
+                    toast.error(t.home.toastSlideDuplicateFailed);
+                  }
+                }}
                 onMove={(folderId) => assign(id, folderId)}
                 onDelete={() => deleteSlide(id)}
                 onTitleResolved={reportTitle}
@@ -381,6 +398,7 @@ function SlideCard({
   folders,
   currentFolderId,
   onRename,
+  onDuplicate,
   onMove,
   onDelete,
   onTitleResolved,
@@ -389,6 +407,7 @@ function SlideCard({
   folders: Folder[];
   currentFolderId: string | null;
   onRename: (name: string) => Promise<void> | void;
+  onDuplicate: () => Promise<void> | void;
   onMove: (folderId: string | null) => Promise<void> | void;
   onDelete: () => Promise<void> | void;
   onTitleResolved?: (id: string, title: string) => void;
@@ -488,6 +507,10 @@ function SlideCard({
                 <DropdownMenuItem onSelect={() => setDialog('rename')}>
                   <Pencil />
                   {tCard.common.rename}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onDuplicate()}>
+                  <Copy />
+                  {tCard.home.duplicate}
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setDialog('move')}>
                   <FolderInput />

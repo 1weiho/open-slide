@@ -33,6 +33,19 @@ async function patchSlideName(slideId: string, name: string): Promise<void> {
   if (!res.ok) throw new Error(`PATCH /__slides/${slideId} ${res.status}`);
 }
 
+async function duplicateSlideReq(slideId: string, newId?: string): Promise<string> {
+  const init: RequestInit = { method: 'POST' };
+  if (newId !== undefined) {
+    init.headers = { 'content-type': 'application/json' };
+    init.body = JSON.stringify({ newId });
+  }
+  const res = await fetch(`/__slides/${slideId}/duplicate`, init);
+  if (!res.ok) throw new Error(`POST /__slides/${slideId}/duplicate ${res.status}`);
+  const body = (await res.json()) as { slideId?: unknown };
+  if (typeof body.slideId !== 'string') throw new Error('duplicate response missing slideId');
+  return body.slideId;
+}
+
 async function deleteSlideReq(slideId: string): Promise<void> {
   const res = await fetch(`/__slides/${slideId}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`DELETE /__slides/${slideId} ${res.status}`);
@@ -83,6 +96,7 @@ export type UseFoldersResult = {
   remove: (id: string) => Promise<void>;
   assign: (slideId: string, folderId: string | null) => Promise<void>;
   renameSlide: (slideId: string, name: string) => Promise<void>;
+  duplicateSlide: (slideId: string, newId?: string) => Promise<string>;
   deleteSlide: (slideId: string) => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -165,6 +179,15 @@ export function useFolders(): UseFoldersResult {
     [refresh],
   );
 
+  const duplicateSlide = useCallback(
+    async (slideId: string, newId?: string) => {
+      const duplicatedId = await duplicateSlideReq(slideId, newId);
+      await refresh();
+      return duplicatedId;
+    },
+    [refresh],
+  );
+
   const deleteSlide = useCallback(
     async (slideId: string) => {
       await deleteSlideReq(slideId);
@@ -173,5 +196,16 @@ export function useFolders(): UseFoldersResult {
     [refresh],
   );
 
-  return { manifest, loading, create, update, remove, assign, renameSlide, deleteSlide, refresh };
+  return {
+    manifest,
+    loading,
+    create,
+    update,
+    remove,
+    assign,
+    renameSlide,
+    duplicateSlide,
+    deleteSlide,
+    refresh,
+  };
 }

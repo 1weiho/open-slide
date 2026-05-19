@@ -38,6 +38,7 @@ export const ja: Locale = {
   home: {
     appTitle: 'open-slide',
     draft: '下書き',
+    duplicate: '複製',
     themes: 'テーマ',
     assets: 'アセット',
     folders: 'フォルダ',
@@ -79,6 +80,8 @@ export const ja: Locale = {
     deleteDialogDescriptionSuffix: 'この操作は元に戻せません。',
     toastFolderCreated: 'フォルダ「{name}」を作成しました',
     toastFolderCreateFailed: 'フォルダの作成に失敗しました',
+    toastSlideDuplicated: '「{slide}」を {newSlide} として複製しました',
+    toastSlideDuplicateFailed: 'スライドを複製できませんでした',
     toastSlideMoved: '「{slide}」を {folder} に移動しました',
     toastSlideMoveFailed: 'スライドの移動に失敗しました',
     toastFolderDeleted: 'フォルダ「{name}」を削除しました',

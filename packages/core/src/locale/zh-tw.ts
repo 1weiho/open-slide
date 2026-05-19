@@ -38,6 +38,7 @@ export const zhTW: Locale = {
   home: {
     appTitle: 'open-slide',
     draft: '草稿',
+    duplicate: '複製',
     themes: '主題',
     assets: '素材',
     folders: '資料夾',
@@ -79,6 +80,8 @@ export const zhTW: Locale = {
     deleteDialogDescriptionSuffix: '此操作無法復原。',
     toastFolderCreated: '已建立資料夾「{name}」',
     toastFolderCreateFailed: '建立資料夾失敗',
+    toastSlideDuplicated: '已將「{slide}」複製為 {newSlide}',
+    toastSlideDuplicateFailed: '無法複製投影片',
     toastSlideMoved: '已將「{slide}」移至 {folder}',
     toastSlideMoveFailed: '移動投影片失敗',
     toastFolderDeleted: '已刪除資料夾「{name}」',

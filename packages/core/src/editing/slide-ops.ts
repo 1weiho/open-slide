@@ -23,6 +23,66 @@ export async function rmSlideDir(slidesRoot: string, slideId: string): Promise<b
   }
 }
 
+export async function duplicateSlideDir(
+  slidesRoot: string,
+  slideId: string,
+  desiredId?: string,
+): Promise<{ ok: true; slideId: string } | { ok: false; status: number; error: string }> {
+  if (!SLIDE_ID_RE.test(slideId)) return { ok: false, status: 400, error: 'invalid slideId' };
+
+  const root = path.resolve(slidesRoot);
+  const srcDir = path.resolve(root, slideId);
+  if (!srcDir.startsWith(root + path.sep)) {
+    return { ok: false, status: 400, error: 'invalid slideId' };
+  }
+
+  try {
+    await fs.access(path.join(srcDir, 'index.tsx'));
+  } catch {
+    return { ok: false, status: 404, error: 'slide not found' };
+  }
+
+  let newId: string;
+  if (desiredId !== undefined) {
+    if (!SLIDE_ID_RE.test(desiredId)) return { ok: false, status: 400, error: 'invalid newId' };
+    newId = desiredId;
+    const dstDir = path.resolve(root, newId);
+    if (!dstDir.startsWith(root + path.sep)) {
+      return { ok: false, status: 400, error: 'invalid newId' };
+    }
+    try {
+      await fs.access(dstDir);
+      return { ok: false, status: 409, error: 'slide already exists' };
+    } catch {}
+  } else {
+    let suffix = 1;
+    while (true) {
+      newId = suffix === 1 ? `${slideId}-copy` : `${slideId}-copy-${suffix}`;
+      try {
+        await fs.access(path.resolve(root, newId));
+        suffix++;
+      } catch {
+        break;
+      }
+    }
+  }
+
+  const dstDir = path.resolve(root, newId);
+  if (!dstDir.startsWith(root + path.sep)) {
+    return { ok: false, status: 400, error: 'invalid newId' };
+  }
+
+  try {
+    await fs.cp(srcDir, dstDir, { recursive: true, errorOnExist: true, force: false });
+    return { ok: true, slideId: newId };
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'EEXIST') {
+      return { ok: false, status: 409, error: 'slide already exists' };
+    }
+    return { ok: false, status: 500, error: String((err as Error).message ?? err) };
+  }
+}
+
 export function resolveSlideEntry(slidesRoot: string, slideId: string): string | null {
   if (!SLIDE_ID_RE.test(slideId)) return null;
   const dir = path.resolve(slidesRoot, slideId);

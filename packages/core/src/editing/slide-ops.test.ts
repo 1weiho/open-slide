@@ -1,12 +1,91 @@
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   duplicatePageInDefaultExportInSource,
+  duplicateSlideDir,
   removePageFromDefaultExportInSource,
   reorderDefaultExportPagesInSource,
   reorderNotesArrayInSource,
   updateMetaTitleInSource,
   validateSlideName,
 } from './slide-ops.ts';
+
+async function withSlidesRoot<T>(fn: (root: string) => Promise<T>): Promise<T> {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'open-slide-test-'));
+  try {
+    return await fn(root);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+}
+
+async function writeSlide(root: string, id: string): Promise<void> {
+  await fs.mkdir(path.join(root, id, 'assets'), { recursive: true });
+  await fs.writeFile(path.join(root, id, 'index.tsx'), `export default [];\n`, 'utf8');
+  await fs.writeFile(path.join(root, id, 'assets', 'hero.txt'), 'hero', 'utf8');
+}
+
+describe('duplicateSlideDir', () => {
+  it('duplicates a slide directory with an automatic copy id', async () => {
+    await withSlidesRoot(async (root) => {
+      await writeSlide(root, 'cover');
+
+      const result = await duplicateSlideDir(root, 'cover');
+
+      expect(result).toEqual({ ok: true, slideId: 'cover-copy' });
+      await expect(fs.readFile(path.join(root, 'cover-copy', 'index.tsx'), 'utf8')).resolves.toBe(
+        `export default [];\n`,
+      );
+      await expect(
+        fs.readFile(path.join(root, 'cover-copy', 'assets', 'hero.txt'), 'utf8'),
+      ).resolves.toBe('hero');
+    });
+  });
+
+  it('increments the automatic copy id when a copy already exists', async () => {
+    await withSlidesRoot(async (root) => {
+      await writeSlide(root, 'cover');
+
+      expect(await duplicateSlideDir(root, 'cover')).toEqual({ ok: true, slideId: 'cover-copy' });
+      expect(await duplicateSlideDir(root, 'cover')).toEqual({
+        ok: true,
+        slideId: 'cover-copy-2',
+      });
+    });
+  });
+
+  it('rejects source slide ids with bad characters', async () => {
+    await withSlidesRoot(async (root) => {
+      expect(await duplicateSlideDir(root, 'bad id')).toMatchObject({ ok: false, status: 400 });
+    });
+  });
+
+  it('rejects an existing desired id', async () => {
+    await withSlidesRoot(async (root) => {
+      await writeSlide(root, 'cover');
+      await writeSlide(root, 'target');
+
+      expect(await duplicateSlideDir(root, 'cover', 'target')).toMatchObject({
+        ok: false,
+        status: 409,
+      });
+    });
+  });
+
+  it('rejects path traversal in the source slide id', async () => {
+    await withSlidesRoot(async (root) => {
+      expect(await duplicateSlideDir(root, '..')).toMatchObject({ ok: false, status: 400 });
+    });
+  });
+
+  it('returns not found when the source slide does not exist', async () => {
+    await withSlidesRoot(async (root) => {
+      expect(await duplicateSlideDir(root, 'missing')).toMatchObject({ ok: false, status: 404 });
+    });
+  });
+});
 
 describe('validateSlideName', () => {
   it('accepts longer slide names than folder names', () => {

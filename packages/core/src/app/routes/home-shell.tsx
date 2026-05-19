@@ -22,6 +22,7 @@ export type HomeOutletContext = {
   titleMap: Record<string, string>;
   assign: (slideId: string, folderId: string | null) => Promise<void>;
   renameSlide: (slideId: string, name: string) => Promise<void>;
+  duplicateSlide: (slideId: string, newId?: string) => Promise<string>;
   deleteSlide: (slideId: string) => Promise<void>;
 };
 
@@ -32,8 +33,17 @@ function pathToSelectedId(pathname: string, search: URLSearchParams): string {
 }
 
 export function HomeShell() {
-  const { manifest, loading, create, update, remove, assign, renameSlide, deleteSlide } =
-    useFolders();
+  const {
+    manifest,
+    loading,
+    create,
+    update,
+    remove,
+    assign,
+    renameSlide,
+    duplicateSlide,
+    deleteSlide,
+  } = useFolders();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -108,6 +118,7 @@ export function HomeShell() {
     titleMap,
     assign,
     renameSlide,
+    duplicateSlide,
     deleteSlide,
   };
 

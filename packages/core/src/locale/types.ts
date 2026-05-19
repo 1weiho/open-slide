@@ -38,6 +38,7 @@ export type Locale = {
   home: {
     appTitle: string;
     draft: string;
+    duplicate: string;
     themes: string;
     assets: string;
     folders: string;
@@ -80,6 +81,9 @@ export type Locale = {
     /** template: "Created folder “{name}”" */
     toastFolderCreated: string;
     toastFolderCreateFailed: string;
+    /** template: "Duplicated “{slide}” as {newSlide}" */
+    toastSlideDuplicated: string;
+    toastSlideDuplicateFailed: string;
     /** template: "Moved “{slide}” to {folder}" */
     toastSlideMoved: string;
     toastSlideMoveFailed: string;

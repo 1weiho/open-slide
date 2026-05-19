@@ -38,6 +38,7 @@ export const en: Locale = {
   home: {
     appTitle: 'open-slide',
     draft: 'Draft',
+    duplicate: 'Duplicate',
     themes: 'Themes',
     assets: 'Assets',
     folders: 'Folders',
@@ -79,6 +80,8 @@ export const en: Locale = {
     deleteDialogDescriptionSuffix: 'This action cannot be undone.',
     toastFolderCreated: 'Created folder “{name}”',
     toastFolderCreateFailed: 'Failed to create folder',
+    toastSlideDuplicated: 'Duplicated “{slide}” as {newSlide}',
+    toastSlideDuplicateFailed: 'Could not duplicate slide',
     toastSlideMoved: 'Moved “{slide}” to {folder}',
     toastSlideMoveFailed: 'Failed to move slide',
     toastFolderDeleted: 'Deleted folder “{name}”',

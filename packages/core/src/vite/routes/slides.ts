@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import type { ViteDevServer } from 'vite';
 import {
   duplicatePageInDefaultExportInSource,
+  duplicateSlideDir,
   removePageFromDefaultExportInSource,
   reorderDefaultExportPagesInSource,
   reorderNotesArrayInSource,
@@ -18,9 +19,11 @@ import { type ApiContext, json, readBody } from './context.ts';
 // PUT    /__slides/:id/reorder            reorder pages { order: number[] }
 // DELETE /__slides/:id/pages/:i           remove page
 // POST   /__slides/:id/pages/:i/duplicate duplicate page
+// POST   /__slides/:id/duplicate          duplicate slide directory { newId? }
 // PATCH  /__slides/:id                    rename slide (writes meta.title)
 // DELETE /__slides/:id                    delete slide directory + folder assignment
 
+type DuplicateSlideBody = { newId?: unknown };
 type SlidePatchBody = { name?: unknown };
 
 export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): void {
@@ -115,6 +118,32 @@ export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): voi
           await fs.writeFile(entry, updated, 'utf8');
         }
         return json(res, 200, { ok: true, slideId, index: pageIndex });
+      }
+
+      const duplicateMatch = url.pathname.match(/^\/([^/]+)\/duplicate$/);
+      if (duplicateMatch && method === 'POST') {
+        const requestCheck = validateMutationRequest(req);
+        if (!requestCheck.ok) {
+          return json(res, requestCheck.status, { error: requestCheck.error });
+        }
+        const slideId = duplicateMatch[1];
+        if (!SLIDE_ID_RE.test(slideId)) return json(res, 400, { error: 'invalid slideId' });
+
+        const body = (await readBody(req)) as DuplicateSlideBody;
+        if (body.newId !== undefined && typeof body.newId !== 'string') {
+          return json(res, 400, { error: 'invalid newId' });
+        }
+
+        const duplicated = await duplicateSlideDir(ctx.slidesRoot, slideId, body.newId);
+        if (!duplicated.ok) return json(res, duplicated.status, { error: duplicated.error });
+
+        const manifest = await readManifest(ctx.manifestPath);
+        const folderId = manifest.assignments[slideId];
+        if (folderId) {
+          manifest.assignments[duplicated.slideId] = folderId;
+          await writeManifest(ctx.manifestPath, manifest);
+        }
+        return json(res, 200, { ok: true, slideId: duplicated.slideId });
       }
 
       const idMatch = url.pathname.match(/^\/([^/]+)$/);

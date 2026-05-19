@@ -38,6 +38,7 @@ export const zhCN: Locale = {
   home: {
     appTitle: 'open-slide',
     draft: '草稿',
+    duplicate: '复制',
     themes: '主题',
     assets: '素材',
     folders: '文件夹',
@@ -79,6 +80,8 @@ export const zhCN: Locale = {
     deleteDialogDescriptionSuffix: '此操作无法撤销。',
     toastFolderCreated: '已创建文件夹"{name}"',
     toastFolderCreateFailed: '创建文件夹失败',
+    toastSlideDuplicated: '已将"{slide}"复制为 {newSlide}',
+    toastSlideDuplicateFailed: '无法复制幻灯片',
     toastSlideMoved: '已将"{slide}"移至 {folder}',
     toastSlideMoveFailed: '移动幻灯片失败',
     toastFolderDeleted: '已删除文件夹"{name}"',
