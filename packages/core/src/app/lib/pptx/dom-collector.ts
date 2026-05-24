@@ -93,7 +93,9 @@ function collectElement(el: Element, canvas: HTMLElement, scene: PptxSlideScene)
     return;
   }
 
-  const node = collectPrimitiveNode(el, canvas, primitiveKind) ?? collectFallbackNode(el, canvas);
+  const node =
+    collectPrimitiveNode(el, canvas, primitiveKind, scene.diagnostics) ??
+    collectFallbackNode(el, canvas, scene.diagnostics);
 
   if (node) {
     scene.nodes.push(node);
@@ -121,10 +123,11 @@ function collectPrimitiveNode(
   el: Element,
   canvas: HTMLElement,
   primitiveKind: string | null,
+  diagnostics: PptxDiagnostic[],
 ): PptxSceneNode | null {
   switch (primitiveKind) {
     case 'text':
-      return collectTextNode(el, canvas);
+      return collectTextNode(el, canvas, diagnostics);
     case 'image':
       return collectImageNode(el, canvas);
     case 'box':
@@ -136,7 +139,11 @@ function collectPrimitiveNode(
   }
 }
 
-function collectFallbackNode(el: Element, canvas: HTMLElement): PptxSceneNode | null {
+function collectFallbackNode(
+  el: Element,
+  canvas: HTMLElement,
+  diagnostics: PptxDiagnostic[],
+): PptxSceneNode | null {
   if (isImageElement(el)) {
     return collectImageNode(el, canvas);
   }
@@ -146,19 +153,24 @@ function collectFallbackNode(el: Element, canvas: HTMLElement): PptxSceneNode | 
   }
 
   if (isTextElement(el)) {
-    return collectTextNode(el, canvas);
+    return collectTextNode(el, canvas, diagnostics);
   }
 
   return collectShapeNode(el, canvas);
 }
 
-function collectTextNode(el: Element, canvas: HTMLElement): PptxSceneNode | null {
+function collectTextNode(
+  el: Element,
+  canvas: HTMLElement,
+  diagnostics: PptxDiagnostic[],
+): PptxSceneNode | null {
   const rect = readElementRect(el, canvas);
   const text = readElementText(el);
   if (!rect || !text) {
     return null;
   }
   const style = readElementTextStyle(el);
+  addFontFallbackDiagnostic(diagnostics, style, 'text');
   const adjustedRect = expandTextRect(rect, canvas, style.align);
 
   if (hasInlineFormatting(el)) {
@@ -445,6 +457,22 @@ function addUnsupportedEffectDiagnostics(
       ...(nodeKind ? { nodeKind } : {}),
     });
   }
+}
+
+function addFontFallbackDiagnostic(
+  diagnostics: PptxDiagnostic[],
+  style: PptxTextStyle,
+  nodeKind: PptxSceneNode['kind'],
+): void {
+  if (!style.fontFallbackWarning) {
+    return;
+  }
+
+  diagnostics.push({
+    level: 'warn',
+    message: style.fontFallbackWarning,
+    nodeKind,
+  });
 }
 
 function readComputedStyle(el: Element): CSSStyleDeclaration | null {

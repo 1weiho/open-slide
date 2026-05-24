@@ -40,6 +40,7 @@ export type PptxTextStyle = {
   valign?: 'top' | 'middle' | 'bottom';
   lineHeight?: number;
   opacity?: number;
+  fontFallbackWarning?: string;
 };
 
 export type PptxShapeKind = 'rect' | 'roundRect' | 'ellipse' | 'line';

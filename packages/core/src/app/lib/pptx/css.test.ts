@@ -66,7 +66,7 @@ describe('readElementTextStyle', () => {
   it('extracts supported computed text styles', () => {
     vi.stubGlobal('getComputedStyle', () => ({
       color: 'rgb(255, 79, 26)',
-      fontFamily: '"Geist", Arial, sans-serif',
+      fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '48px',
       fontStyle: 'italic',
       fontWeight: '700',
@@ -78,7 +78,7 @@ describe('readElementTextStyle', () => {
       align: 'center',
       bold: true,
       color: 'FF4F1A',
-      fontFace: 'Geist',
+      fontFace: 'Georgia',
       fontSize: 48,
       italic: true,
       lineHeight: 60,
@@ -97,6 +97,25 @@ describe('readElementTextStyle', () => {
     }));
 
     expect(readElementTextStyle(elementWithRect({}))).toEqual({ bold: false });
+  });
+
+  it('uses PowerPoint-safe font fallbacks when reading text styles', () => {
+    vi.stubGlobal('getComputedStyle', () => ({
+      color: 'rgb(0, 0, 0)',
+      fontFamily: '"Iowan Old Style", "Times New Roman", Georgia, serif',
+      fontSize: '48px',
+      fontStyle: 'normal',
+      fontWeight: '400',
+      lineHeight: '60px',
+      textAlign: 'left',
+    }));
+
+    expect(readElementTextStyle(elementWithRect({}))).toEqual(
+      expect.objectContaining({
+        fontFace: 'Times New Roman',
+        fontFallbackWarning: 'Font fallback: Iowan Old Style -> Times New Roman',
+      }),
+    );
   });
 });
 

@@ -1,3 +1,5 @@
+import { resolvePptxFontFace } from './fonts';
+
 export type PptxRect = {
   x: number;
   y: number;
@@ -14,6 +16,7 @@ export type PptxTextStyle = {
   italic?: boolean;
   lineHeight?: number;
   align?: 'left' | 'center' | 'right' | 'justify';
+  fontFallbackWarning?: string;
 };
 
 const HEX_COLOR_RE = /^#(?<hex>[0-9a-f]{3}|[0-9a-f]{6})$/i;
@@ -91,14 +94,15 @@ export function readElementTextStyle(el: Element): PptxTextStyle {
     return {};
   }
 
-  const fontFace = readFirstFontFamily(style.fontFamily);
+  const resolvedFont = resolvePptxFontFace(style.fontFamily);
   const fontSize = parseCssPx(style.fontSize);
   const color = normalizeCssColor(style.color);
   const lineHeight = parseCssPx(style.lineHeight);
   const align = normalizeTextAlign(style.textAlign);
 
   return {
-    ...(fontFace ? { fontFace } : {}),
+    ...(resolvedFont?.fontFace ? { fontFace: resolvedFont.fontFace } : {}),
+    ...(resolvedFont?.warning ? { fontFallbackWarning: resolvedFont.warning } : {}),
     ...(fontSize !== undefined ? { fontSize } : {}),
     ...(color ? { color } : {}),
     bold: fontWeightToBold(style.fontWeight),
@@ -135,12 +139,6 @@ function parseRgbChannel(value: string): number | undefined {
 function getElementComputedStyle(el: Element): CSSStyleDeclaration | null {
   const readStyle = globalThis.getComputedStyle;
   return typeof readStyle === 'function' ? readStyle(el) : null;
-}
-
-function readFirstFontFamily(value: string): string | undefined {
-  const [firstFamily] = value.split(',');
-  const fontFamily = firstFamily?.trim().replace(/^['"]|['"]$/g, '');
-  return fontFamily || undefined;
 }
 
 function normalizeTextAlign(value: string): PptxTextStyle['align'] | undefined {
