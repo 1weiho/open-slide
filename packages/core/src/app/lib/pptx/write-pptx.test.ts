@@ -130,4 +130,34 @@ describe('writePptxFile', () => {
     const zip = await unzipPptx(blob);
     expect(Object.keys(zip).some((name) => name.startsWith('ppt/media/image'))).toBe(true);
   });
+
+  it('embeds raster nodes as slide media', async () => {
+    const svg = Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10" fill="blue"/></svg>',
+    ).toString('base64');
+    const blob = await writePptxFile({
+      title: 'Raster test',
+      slides: [
+        {
+          width: 1920,
+          height: 1080,
+          nodes: [
+            {
+              dataUrl: `data:image/svg+xml;base64,${svg}`,
+              h: 100,
+              kind: 'raster',
+              reason: 'explicit test raster',
+              w: 100,
+              x: 0,
+              y: 0,
+            },
+          ],
+          diagnostics: [],
+        },
+      ],
+    });
+
+    const zip = await unzipPptx(blob);
+    expect(Object.keys(zip).some((name) => name.startsWith('ppt/media/image'))).toBe(true);
+  });
 });

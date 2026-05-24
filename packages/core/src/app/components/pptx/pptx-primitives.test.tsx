@@ -1,6 +1,13 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { PptxBox, PptxGroup, PptxImage, PptxShape, PptxText } from './index.tsx';
+import {
+  PptxBox,
+  PptxGroup,
+  PptxImage,
+  PptxRasterLayer,
+  PptxShape,
+  PptxText,
+} from './index.tsx';
 
 describe('pptx primitives', () => {
   it('renders text as normal HTML with pptx metadata', () => {
@@ -26,5 +33,20 @@ describe('pptx primitives', () => {
     expect(html).toContain('data-osd-pptx-kind="image"');
     expect(html).toContain('data-osd-pptx-kind="shape"');
     expect(html).toContain('data-osd-pptx-shape="ellipse"');
+  });
+
+  it('renders raster layers as normal images with export metadata', () => {
+    const html = renderToStaticMarkup(
+      <PptxRasterLayer
+        alt="Texture"
+        dataUrl="data:image/png;base64,abc"
+        reason="unsupported filter"
+      />,
+    );
+
+    expect(html).toContain('alt="Texture"');
+    expect(html).toContain('src="data:image/png;base64,abc"');
+    expect(html).toContain('data-osd-pptx-kind="raster"');
+    expect(html).toContain('data-osd-pptx-reason="unsupported filter"');
   });
 });

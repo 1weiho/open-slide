@@ -5,6 +5,7 @@ export type {
   PptxGroupProps,
   PptxImageProps,
   PptxPrimitiveKind,
+  PptxRasterLayerProps,
   PptxShapeKind,
   PptxShapeProps,
   PptxTextProps,
@@ -13,6 +14,7 @@ export {
   PptxBox,
   PptxGroup,
   PptxImage,
+  PptxRasterLayer,
   PptxShape,
   PptxText,
 } from './app/components/pptx/index.tsx';

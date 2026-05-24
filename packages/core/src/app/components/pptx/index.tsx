@@ -1,6 +1,6 @@
 import type { HTMLAttributes, ImgHTMLAttributes } from 'react';
 
-export type PptxPrimitiveKind = 'text' | 'box' | 'image' | 'shape' | 'group';
+export type PptxPrimitiveKind = 'text' | 'box' | 'image' | 'shape' | 'group' | 'raster';
 
 export type PptxShapeKind = 'rect' | 'roundRect' | 'ellipse' | 'line';
 
@@ -10,6 +10,12 @@ export type PptxBoxProps = HTMLAttributes<HTMLDivElement>;
 
 export type PptxImageProps = ImgHTMLAttributes<HTMLImageElement> & {
   alt: string;
+};
+
+export type PptxRasterLayerProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> & {
+  alt: string;
+  dataUrl: string;
+  reason: string;
 };
 
 export type PptxShapeProps = HTMLAttributes<HTMLDivElement> & {
@@ -36,6 +42,18 @@ export function PptxBox({ children, ...props }: PptxBoxProps) {
 
 export function PptxImage({ alt, ...props }: PptxImageProps) {
   return <img {...props} alt={alt} data-osd-pptx-kind="image" />;
+}
+
+export function PptxRasterLayer({ alt, dataUrl, reason, ...props }: PptxRasterLayerProps) {
+  return (
+    <img
+      {...props}
+      alt={alt}
+      src={dataUrl}
+      data-osd-pptx-kind="raster"
+      data-osd-pptx-reason={reason}
+    />
+  );
 }
 
 export function PptxShape({ children, shape = 'rect', ...props }: PptxShapeProps) {

@@ -2,6 +2,7 @@ import {
   PptxBox,
   PptxGroup,
   PptxImage,
+  PptxRasterLayer,
   PptxShape,
   PptxText,
   type DesignSystem,
@@ -312,9 +313,10 @@ const MediaStress: Page = () => (
           boxShadow: '0 34px 80px rgba(33, 29, 24, 0.28)',
         }}
       >
-        <PptxImage
-          src={textureSvg}
+        <PptxRasterLayer
+          dataUrl={textureSvg}
           alt="Abstract gradient texture"
+          reason="complex decorative SVG texture"
           style={{
             width: '100%',
             height: '100%',

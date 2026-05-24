@@ -503,6 +503,36 @@ describe('collectDomPptxScene', () => {
     ]);
   });
 
+  it('collects explicit raster primitives as raster nodes with decisions', () => {
+    const raster = testElement({
+      attributes: {
+        'data-osd-pptx-kind': 'raster',
+        'data-osd-pptx-reason': 'unsupported filter',
+        src: 'data:image/png;base64,abc',
+      },
+      rect: { height: 240, width: 360, x: 40, y: 50 },
+      tagName: 'IMG',
+    });
+    const canvas = testElement({
+      children: [raster],
+      rect: { height: 1080, width: 1920, x: 0, y: 0 },
+    });
+    vi.stubGlobal('getComputedStyle', (el: TestElement) => el.__style);
+
+    const scene = collectDomPptxScene(canvas as unknown as HTMLElement);
+
+    expect(scene.nodes).toEqual([
+      expect.objectContaining({
+        dataUrl: 'data:image/png;base64,abc',
+        decision: { kind: 'raster', reason: 'unsupported filter' },
+        h: 240,
+        kind: 'raster',
+        reason: 'unsupported filter',
+        w: 360,
+      }),
+    ]);
+  });
+
   it('keeps inline SVG visible as an image fallback without collecting descendants', () => {
     const path = testElement({
       rect: { height: 200, width: 200, x: 80, y: 90 },

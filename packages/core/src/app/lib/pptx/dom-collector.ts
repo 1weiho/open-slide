@@ -16,6 +16,7 @@ import {
 
 const PPTX_KIND_ATTR = 'data-osd-pptx-kind';
 const PPTX_SHAPE_ATTR = 'data-osd-pptx-shape';
+const PPTX_RASTER_REASON_ATTR = 'data-osd-pptx-reason';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const TEXT_CONTAINER_TAGS = new Set(['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'SPAN']);
@@ -130,6 +131,8 @@ function collectPrimitiveNode(
       return collectTextNode(el, canvas, diagnostics);
     case 'image':
       return collectImageNode(el, canvas);
+    case 'raster':
+      return collectRasterNode(el, canvas);
     case 'box':
       return collectShapeNode(el, canvas);
     case 'shape':
@@ -212,6 +215,25 @@ function collectImageNode(el: Element, canvas: HTMLElement): PptxSceneNode | nul
     ...(alt ? { alt } : {}),
     kind: 'image',
     src,
+  } satisfies PptxSceneNode;
+
+  return isRenderableNode(node) ? node : null;
+}
+
+function collectRasterNode(el: Element, canvas: HTMLElement): PptxSceneNode | null {
+  const rect = readElementRect(el, canvas);
+  const dataUrl = readImageSrc(el);
+  if (!rect || !dataUrl) {
+    return null;
+  }
+
+  const reason = el.getAttribute(PPTX_RASTER_REASON_ATTR) ?? 'explicit raster layer';
+  const node = {
+    ...rect,
+    dataUrl,
+    decision: { kind: 'raster', reason },
+    kind: 'raster',
+    reason,
   } satisfies PptxSceneNode;
 
   return isRenderableNode(node) ? node : null;
