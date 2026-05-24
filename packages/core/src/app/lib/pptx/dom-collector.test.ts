@@ -503,6 +503,33 @@ describe('collectDomPptxScene', () => {
     ]);
   });
 
+  it('collects image object-fit as PowerPoint sizing intent', () => {
+    const cover = testElement({
+      attributes: { alt: 'Cover', src: '/cover.png' },
+      rect: { height: 300, width: 500, x: 40, y: 50 },
+      style: { objectFit: 'cover' },
+      tagName: 'IMG',
+    });
+    const contain = testElement({
+      attributes: { alt: 'Contain', src: '/contain.png' },
+      rect: { height: 300, width: 500, x: 600, y: 50 },
+      style: { objectFit: 'contain' },
+      tagName: 'IMG',
+    });
+    const canvas = testElement({
+      children: [cover, contain],
+      rect: { height: 1080, width: 1920, x: 0, y: 0 },
+    });
+    vi.stubGlobal('getComputedStyle', (el: TestElement) => el.__style);
+
+    const scene = collectDomPptxScene(canvas as unknown as HTMLElement);
+
+    expect(scene.nodes).toEqual([
+      expect.objectContaining({ fit: 'cover', kind: 'image', src: '/cover.png' }),
+      expect.objectContaining({ fit: 'contain', kind: 'image', src: '/contain.png' }),
+    ]);
+  });
+
   it('collects explicit raster primitives as raster nodes with decisions', () => {
     const raster = testElement({
       attributes: {

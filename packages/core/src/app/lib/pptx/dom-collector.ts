@@ -217,10 +217,13 @@ function collectImageNode(el: Element, canvas: HTMLElement): PptxSceneNode | nul
     return null;
   }
 
+  const style = readComputedStyle(el);
+  const fit = normalizeObjectFit(style ? readStyleProperty(style, 'objectFit') : undefined);
   const alt = readStringProperty(el, 'alt') ?? el.getAttribute('alt') ?? undefined;
   const node = {
     ...rect,
     ...(alt ? { alt } : {}),
+    ...(fit ? { fit } : {}),
     kind: 'image',
     src,
   } satisfies PptxSceneNode;
@@ -400,6 +403,16 @@ function readExplicitShape(el: Element): PptxShapeKind | undefined {
   const value = el.getAttribute(PPTX_SHAPE_ATTR);
   if (value === 'rect' || value === 'roundRect' || value === 'ellipse' || value === 'line') {
     return value;
+  }
+  return undefined;
+}
+
+function normalizeObjectFit(value: string | undefined): 'contain' | 'cover' | 'stretch' | undefined {
+  if (value === 'contain' || value === 'cover') {
+    return value;
+  }
+  if (value === 'fill') {
+    return 'stretch';
   }
   return undefined;
 }
