@@ -39,6 +39,7 @@ export type PptxTextStyle = {
   align?: 'left' | 'center' | 'right' | 'justify';
   valign?: 'top' | 'middle' | 'bottom';
   lineHeight?: number;
+  charSpacing?: number;
   opacity?: number;
   fontFallbackWarning?: string;
 };
@@ -46,11 +47,16 @@ export type PptxTextStyle = {
 export type PptxShapeKind = 'rect' | 'roundRect' | 'ellipse' | 'line';
 export type PptxChartType = 'bar' | 'line' | 'pie' | 'doughnut';
 
+export type PptxTextLine = PptxRect & {
+  text: string;
+};
+
 export type PptxTextNode = PptxRect &
   PptxNodeMetadata & {
     kind: 'text';
     text: string;
     style: PptxTextStyle;
+    lines?: PptxTextLine[];
     lineBreakPolicy?: 'preserve-browser-lines' | 'powerpoint-wrap';
   };
 

@@ -122,6 +122,37 @@ describe('collectDomPptxScene', () => {
     ]);
   });
 
+  it('normalizes scaled canvas coordinates before creating pptx nodes', () => {
+    const text = testElement({
+      rect: { height: 40, width: 200, x: 70, y: 100 },
+      text: 'Scaled',
+    });
+    const canvas = testElement({
+      children: [text],
+      rect: { height: 540, width: 960, x: 10, y: 20 },
+    });
+    vi.stubGlobal('getComputedStyle', (el: TestElement) => el.__style);
+
+    const scene = collectDomPptxScene(canvas as unknown as HTMLElement);
+
+    expect(scene).toEqual(
+      expect.objectContaining({
+        height: 1080,
+        width: 1920,
+      }),
+    );
+    expect(scene.nodes).toEqual([
+      expect.objectContaining({
+        h: 80,
+        kind: 'text',
+        text: 'Scaled',
+        w: 432,
+        x: 120,
+        y: 160,
+      }),
+    ]);
+  });
+
   it('collects semantic text containers with inline children as one editable text node', () => {
     const title = testElement({
       children: [testElement({ tagName: 'BR' })],
@@ -220,6 +251,10 @@ describe('collectDomPptxScene', () => {
     expect(scene.nodes).toEqual([
       expect.objectContaining({
         kind: 'text',
+        lines: [
+          expect.objectContaining({ text: 'The better question is not' }),
+          expect.objectContaining({ text: 'why did Rome fall' }),
+        ],
         lineBreakPolicy: 'preserve-browser-lines',
         text: 'The better question is not\nwhy did Rome fall',
       }),

@@ -100,6 +100,40 @@ describe('writePptxFile', () => {
     expect(xml).toContain(' text');
   });
 
+  it('exports preserved browser text lines as separate editable text boxes', async () => {
+    const blob = await writePptxFile({
+      title: 'Measured lines test',
+      slides: [
+        {
+          width: 1920,
+          height: 1080,
+          nodes: [
+            {
+              h: 120,
+              kind: 'text',
+              lineBreakPolicy: 'preserve-browser-lines',
+              lines: [
+                { h: 42, text: 'Browser line one', w: 360, x: 100, y: 120 },
+                { h: 42, text: 'Browser line two', w: 370, x: 100, y: 172 },
+              ],
+              style: { fontFace: 'Georgia', fontSize: 36, lineHeight: 48 },
+              text: 'Browser line one\nBrowser line two',
+              w: 520,
+              x: 100,
+              y: 120,
+            },
+          ],
+          diagnostics: [],
+        },
+      ],
+    });
+
+    const xml = await readPptxXml(blob, 'ppt/slides/slide1.xml');
+    expect(xml).toContain('Browser line one');
+    expect(xml).toContain('Browser line two');
+    expect(xml.match(/name="Text/g)?.length).toBeGreaterThanOrEqual(2);
+  });
+
   it('embeds inline SVG image fallbacks', async () => {
     const svg = Buffer.from(
       '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10" fill="red"/></svg>',

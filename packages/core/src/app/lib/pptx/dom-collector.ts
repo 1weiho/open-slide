@@ -2,6 +2,8 @@ import { normalizeCssColor, parseCssPx, readElementRect, readElementTextStyle } 
 import {
   createPptxSlide,
   isRenderableNode,
+  PPTX_CANVAS_HEIGHT,
+  PPTX_CANVAS_WIDTH,
   type PptxChartNode,
   type PptxChartSeries,
   type PptxChartType,
@@ -15,6 +17,7 @@ import {
   type PptxSlideScene,
   type PptxStroke,
   type PptxTableNode,
+  type PptxTextLine,
   type PptxTextRun,
   type PptxTextStyle,
 } from './scene';
@@ -66,11 +69,7 @@ type BorderSide = {
 };
 
 export function collectDomPptxScene(canvas: HTMLElement): PptxSlideScene {
-  const canvasRect = canvas.getBoundingClientRect();
-  const scene = createPptxSlide({
-    height: canvasRect.height > 0 ? canvasRect.height : undefined,
-    width: canvasRect.width > 0 ? canvasRect.width : undefined,
-  });
+  const scene = createPptxSlide();
 
   for (const child of Array.from(canvas.children)) {
     collectElement(child, canvas, scene);
@@ -189,7 +188,10 @@ function collectTextNode(
   diagnostics: PptxDiagnostic[],
 ): PptxSceneNode | null {
   const rect = readElementRect(el, canvas);
-  const text = readElementText(el);
+  const renderedLines = readRenderedTextLines(el, canvas);
+  const text = renderedLines
+    ? renderedLines.map((line) => line.text).join('\n')
+    : readElementText(el);
   if (!rect || !text) {
     return null;
   }
@@ -216,6 +218,7 @@ function collectTextNode(
     ...adjustedRect,
     kind: 'text',
     lineBreakPolicy: lineBreakPolicyForText(el, text, style),
+    ...(renderedLines ? { lines: renderedLines } : {}),
     style,
     text,
   } satisfies PptxSceneNode;
@@ -847,7 +850,7 @@ function readRenderedText(el: Element): string | null {
     return null;
   }
 
-  const segments = collectTextSegments(el);
+  const segments = collectTextSegments(el, null);
   if (segments.length === 0) {
     return null;
   }
@@ -882,15 +885,63 @@ function readRenderedText(el: Element): string | null {
   return text ? normalizeText(text) : null;
 }
 
-type TextSegment = { kind: 'word'; text: string; top: number } | { kind: 'break' };
+function readRenderedTextLines(el: Element, canvas: HTMLElement): PptxTextLine[] | null {
+  if (!canMeasureTextRanges(el)) {
+    return null;
+  }
 
-function collectTextSegments(root: Element): TextSegment[] {
+  const segments = collectTextSegments(el, canvas);
+  if (segments.length === 0) {
+    return null;
+  }
+
+  const lines: PptxTextLine[] = [];
+  let current: PptxTextLine | null = null;
+  let currentTop: number | null = null;
+
+  const flush = () => {
+    if (!current?.text.trim()) {
+      current = null;
+      currentTop = null;
+      return;
+    }
+
+    lines.push({ ...current, text: normalizeText(current.text) });
+    current = null;
+    currentTop = null;
+  };
+
+  for (const segment of segments) {
+    if (segment.kind === 'break') {
+      flush();
+      continue;
+    }
+
+    if (
+      currentTop !== null &&
+      Math.abs(segment.rect.y - currentTop) > LINE_TOP_TOLERANCE_PX &&
+      current
+    ) {
+      flush();
+    }
+
+    currentTop = segment.rect.y;
+    current = current ? mergeTextLine(current, segment) : lineFromSegment(segment);
+  }
+
+  flush();
+  return lines.length > 0 ? lines : null;
+}
+
+type TextSegment = { kind: 'word'; rect: PptxRect; text: string; top: number } | { kind: 'break' };
+
+function collectTextSegments(root: Element, canvas: HTMLElement | null): TextSegment[] {
   const segments: TextSegment[] = [];
   const range = document.createRange();
 
   const visit = (node: Node) => {
     if (node.nodeType === Node.TEXT_NODE) {
-      collectTextNodeSegments(node as Text, range, segments);
+      collectTextNodeSegments(node as Text, range, segments, canvas);
       return;
     }
 
@@ -913,7 +964,12 @@ function collectTextSegments(root: Element): TextSegment[] {
   return segments;
 }
 
-function collectTextNodeSegments(node: Text, range: Range, segments: TextSegment[]): void {
+function collectTextNodeSegments(
+  node: Text,
+  range: Range,
+  segments: TextSegment[],
+  canvas: HTMLElement | null,
+): void {
   const text = node.data;
   const wordRe = /\S+/g;
 
@@ -927,8 +983,63 @@ function collectTextNodeSegments(node: Text, range: Range, segments: TextSegment
       continue;
     }
 
-    segments.push({ kind: 'word', text: word, top: rect.top });
+    const lineRect = canvas
+      ? canonicalRectFromDomRect(rect, canvas)
+      : fallbackRectFromDomRect(rect);
+    segments.push({ kind: 'word', rect: lineRect, text: word, top: lineRect.y });
   }
+}
+
+function lineFromSegment(segment: Extract<TextSegment, { kind: 'word' }>): PptxTextLine {
+  return { ...segment.rect, text: segment.text };
+}
+
+function mergeTextLine(
+  line: PptxTextLine,
+  segment: Extract<TextSegment, { kind: 'word' }>,
+): PptxTextLine {
+  const left = Math.min(line.x, segment.rect.x);
+  const top = Math.min(line.y, segment.rect.y);
+  const right = Math.max(line.x + line.w, segment.rect.x + segment.rect.w);
+  const bottom = Math.max(line.y + line.h, segment.rect.y + segment.rect.h);
+
+  return {
+    h: bottom - top,
+    text: `${line.text} ${segment.text}`,
+    w: right - left,
+    x: left,
+    y: top,
+  };
+}
+
+function canonicalRectFromDomRect(rect: DOMRect, canvas: HTMLElement): PptxRect {
+  const canvasRect = canvas.getBoundingClientRect();
+  const scaleX = canvasRect.width > 0 ? PPTX_CANVAS_WIDTH / canvasRect.width : 1;
+  const scaleY = canvasRect.height > 0 ? PPTX_CANVAS_HEIGHT / canvasRect.height : 1;
+  const left = finiteNumber(rect.left, canvasRect.left);
+  const top = finiteNumber(rect.top, canvasRect.top);
+  const width = finiteNumber(rect.width, 0);
+  const height = finiteNumber(rect.height, 0);
+
+  return {
+    h: height * scaleY,
+    w: width * scaleX,
+    x: (left - canvasRect.left) * scaleX,
+    y: (top - canvasRect.top) * scaleY,
+  };
+}
+
+function fallbackRectFromDomRect(rect: DOMRect): PptxRect {
+  return {
+    h: finiteNumber(rect.height, 0),
+    w: finiteNumber(rect.width, 0),
+    x: finiteNumber(rect.left, 0),
+    y: finiteNumber(rect.top, 0),
+  };
+}
+
+function finiteNumber(value: number | undefined, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
 function firstUsableRect(range: Range): DOMRect | null {

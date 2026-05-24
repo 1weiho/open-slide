@@ -70,6 +70,7 @@ describe('readElementTextStyle', () => {
       fontSize: '48px',
       fontStyle: 'italic',
       fontWeight: '700',
+      letterSpacing: '3px',
       lineHeight: '60px',
       textAlign: 'center',
     }));
@@ -81,6 +82,7 @@ describe('readElementTextStyle', () => {
       fontFace: 'Georgia',
       fontSize: 48,
       italic: true,
+      charSpacing: 3,
       lineHeight: 60,
     });
   });
@@ -123,6 +125,18 @@ describe('readElementRect', () => {
   it('reads a canvas-relative element rect', () => {
     const canvas = elementWithRect({ height: 1080, width: 1920, x: 100, y: 50 });
     const el = elementWithRect({ height: 200, width: 300, x: 140, y: 110 });
+
+    expect(readElementRect(el, canvas)).toEqual({
+      h: 200,
+      w: 300,
+      x: 40,
+      y: 60,
+    });
+  });
+
+  it('normalizes scaled canvas rects to canonical slide coordinates', () => {
+    const canvas = elementWithRect({ height: 540, width: 960, x: 10, y: 20 });
+    const el = elementWithRect({ height: 100, width: 150, x: 30, y: 50 });
 
     expect(readElementRect(el, canvas)).toEqual({
       h: 200,

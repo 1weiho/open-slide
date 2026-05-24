@@ -1,4 +1,5 @@
 import { resolvePptxFontFace } from './fonts';
+import { PPTX_CANVAS_HEIGHT, PPTX_CANVAS_WIDTH } from './scene';
 
 export type PptxRect = {
   x: number;
@@ -15,6 +16,7 @@ export type PptxTextStyle = {
   bold?: boolean;
   italic?: boolean;
   lineHeight?: number;
+  charSpacing?: number;
   align?: 'left' | 'center' | 'right' | 'justify';
   fontFallbackWarning?: string;
 };
@@ -98,6 +100,7 @@ export function readElementTextStyle(el: Element): PptxTextStyle {
   const fontSize = parseCssPx(style.fontSize);
   const color = normalizeCssColor(style.color);
   const lineHeight = parseCssPx(style.lineHeight);
+  const charSpacing = parseCssPx(style.letterSpacing ?? '');
   const align = normalizeTextAlign(style.textAlign);
 
   return {
@@ -108,6 +111,7 @@ export function readElementTextStyle(el: Element): PptxTextStyle {
     bold: fontWeightToBold(style.fontWeight),
     ...(style.fontStyle === 'italic' || style.fontStyle === 'oblique' ? { italic: true } : {}),
     ...(lineHeight !== undefined ? { lineHeight } : {}),
+    ...(charSpacing !== undefined ? { charSpacing } : {}),
     ...(align ? { align } : {}),
   };
 }
@@ -119,11 +123,13 @@ export function readElementRect(el: Element, canvas: Element): PptxRect | null {
   }
 
   const canvasRect = canvas.getBoundingClientRect();
+  const scaleX = canvasRect.width > 0 ? PPTX_CANVAS_WIDTH / canvasRect.width : 1;
+  const scaleY = canvasRect.height > 0 ? PPTX_CANVAS_HEIGHT / canvasRect.height : 1;
   return {
-    x: rect.left - canvasRect.left,
-    y: rect.top - canvasRect.top,
-    w: rect.width,
-    h: rect.height,
+    x: (rect.left - canvasRect.left) * scaleX,
+    y: (rect.top - canvasRect.top) * scaleY,
+    w: rect.width * scaleX,
+    h: rect.height * scaleY,
   };
 }
 

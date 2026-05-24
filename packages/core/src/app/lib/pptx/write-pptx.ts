@@ -8,6 +8,7 @@ import {
   type PptxEquationNode,
   type PptxImageNode,
   type PptxRasterNode,
+  type PptxRect,
   type PptxRichTextNode,
   type PptxSceneNode,
   type PptxShapeNode,
@@ -22,6 +23,8 @@ const PPTX_HEIGHT_IN = 7.5;
 const PX_PER_IN = PPTX_CANVAS_WIDTH / PPTX_WIDTH_IN;
 const PT_PER_PX = 72 / 96;
 const PPTX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+const TEXT_LINE_WIDTH_CUSHION_RATIO = 0.12;
+const TEXT_LINE_WIDTH_CUSHION_MAX_PX = 120;
 
 type PptxPresentation = InstanceType<typeof PptxGenJS>;
 type PptxSlide = ReturnType<PptxPresentation['addSlide']>;
@@ -106,11 +109,25 @@ function addSceneNode(
 }
 
 export function addTextNode(slide: PptxSlide, node: PptxTextNode): void {
+  if (node.lineBreakPolicy === 'preserve-browser-lines' && node.lines && node.lines.length > 0) {
+    for (const line of node.lines) {
+      slide.addText(line.text, {
+        ...positionProps(expandTextLineRect(line, node.style)),
+        rotate: node.rotation,
+        margin: 0,
+        fit: 'none',
+        breakLine: false,
+        ...textStyleProps(node.style, { singleLine: true }),
+      });
+    }
+    return;
+  }
+
   slide.addText(node.text, {
     ...positionProps(node),
     rotate: node.rotation,
     margin: 0,
-    fit: 'shrink',
+    fit: 'none',
     breakLine: false,
     ...textStyleProps(node.style),
   });
@@ -126,7 +143,7 @@ export function addRichTextNode(slide: PptxSlide, node: PptxRichTextNode): void 
       ...positionProps(node),
       rotate: node.rotation,
       margin: 0,
-      fit: 'shrink',
+      fit: 'none',
       breakLine: false,
       ...textStyleProps(node.style),
     },
@@ -148,7 +165,7 @@ export function addEquationNode(
     ...positionProps(node),
     rotate: node.rotation,
     margin: 0,
-    fit: 'shrink',
+    fit: 'none',
     breakLine: false,
     ...textStyleProps(node.style),
   });
@@ -198,7 +215,7 @@ export function addChartNode(slide: PptxSlide, node: PptxChartNode): void {
   );
 }
 
-function textStyleProps(style: PptxTextStyle) {
+function textStyleProps(style: PptxTextStyle, options: { singleLine?: boolean } = {}) {
   return {
     color: style.color,
     fontFace: style.fontFace,
@@ -209,7 +226,8 @@ function textStyleProps(style: PptxTextStyle) {
     align: style.align,
     valign: style.valign,
     transparency: opacityToTransparency(style.opacity),
-    lineSpacing: pxToPt(style.lineHeight),
+    charSpacing: pxToPt(style.charSpacing),
+    lineSpacing: options.singleLine ? undefined : pxToPt(style.lineHeight),
   };
 }
 
@@ -247,12 +265,21 @@ export function addRasterNode(slide: PptxSlide, node: PptxRasterNode): void {
   });
 }
 
-function positionProps(node: PptxSceneNode) {
+function positionProps(node: PptxRect) {
   return {
     x: pxToIn(node.x),
     y: pxToIn(node.y),
     w: pxToIn(node.w),
     h: pxToIn(node.h),
+  };
+}
+
+function expandTextLineRect(line: PptxRect, style: PptxTextStyle): PptxRect {
+  const cushion = Math.min(TEXT_LINE_WIDTH_CUSHION_MAX_PX, line.w * TEXT_LINE_WIDTH_CUSHION_RATIO);
+  return {
+    ...line,
+    h: Math.max(line.h, style.lineHeight ?? (style.fontSize ? style.fontSize * 1.2 : line.h)),
+    w: line.w + cushion,
   };
 }
 
