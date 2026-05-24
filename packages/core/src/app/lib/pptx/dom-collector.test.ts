@@ -587,7 +587,7 @@ describe('collectDomPptxScene', () => {
     ]);
     expect(scene.diagnostics).toEqual([
       expect.objectContaining({
-        message: expect.stringContaining('native OfficeMath is not implemented'),
+        message: expect.stringContaining('native OfficeMath'),
         nodeKind: 'equation',
       }),
     ]);

@@ -1,4 +1,6 @@
+import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import PptxGenJS from 'pptxgenjs';
+import { createOmmlEquation, ensureMathNamespace } from './equation';
 import {
   isRenderableNode,
   PPTX_CANVAS_WIDTH,
@@ -23,6 +25,10 @@ const PPTX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.presentati
 
 type PptxPresentation = InstanceType<typeof PptxGenJS>;
 type PptxSlide = ReturnType<PptxPresentation['addSlide']>;
+type PptxEquationReplacement = {
+  omml: string;
+  token: string;
+};
 
 export type WritePptxFileRequest = {
   title?: string;
@@ -40,6 +46,7 @@ export function pxToPt(px: number | undefined): number | undefined {
 
 export async function writePptxFile(request: WritePptxFileRequest): Promise<Blob> {
   const pptx = new PptxGenJS();
+  const equationReplacements: PptxEquationReplacement[] = [];
   pptx.defineLayout({ name: 'OPEN_SLIDE_WIDE', width: PPTX_WIDTH_IN, height: PPTX_HEIGHT_IN });
   pptx.layout = 'OPEN_SLIDE_WIDE';
   pptx.author = 'open-slide';
@@ -51,7 +58,7 @@ export async function writePptxFile(request: WritePptxFileRequest): Promise<Blob
 
     for (const node of scene.nodes) {
       if (!isRenderableNode(node)) continue;
-      addSceneNode(slide, node);
+      addSceneNode(slide, node, equationReplacements);
     }
 
     const notes = request.notes?.[index];
@@ -59,10 +66,17 @@ export async function writePptxFile(request: WritePptxFileRequest): Promise<Blob
   }
 
   const output = await pptx.write({ outputType: 'blob' });
-  return normalizePptxBlob(output);
+  const blob = normalizePptxBlob(output);
+  return equationReplacements.length > 0
+    ? replaceEquationPlaceholders(blob, equationReplacements)
+    : blob;
 }
 
-function addSceneNode(slide: PptxSlide, node: PptxSceneNode): void {
+function addSceneNode(
+  slide: PptxSlide,
+  node: PptxSceneNode,
+  equationReplacements: PptxEquationReplacement[],
+): void {
   switch (node.kind) {
     case 'text':
       addTextNode(slide, node);
@@ -71,7 +85,7 @@ function addSceneNode(slide: PptxSlide, node: PptxSceneNode): void {
       addRichTextNode(slide, node);
       return;
     case 'equation':
-      addEquationNode(slide, node);
+      addEquationNode(slide, node, equationReplacements);
       return;
     case 'table':
       addTableNode(slide, node);
@@ -119,8 +133,18 @@ export function addRichTextNode(slide: PptxSlide, node: PptxRichTextNode): void 
   );
 }
 
-export function addEquationNode(slide: PptxSlide, node: PptxEquationNode): void {
-  slide.addText(node.fallbackText ?? node.latex ?? node.mathml ?? '', {
+export function addEquationNode(
+  slide: PptxSlide,
+  node: PptxEquationNode,
+  equationReplacements: PptxEquationReplacement[] = [],
+): void {
+  const omml = createOmmlEquation(node);
+  const token = omml ? `OSD_PPTX_EQUATION_${equationReplacements.length}` : null;
+  if (token && omml) {
+    equationReplacements.push({ omml, token });
+  }
+
+  slide.addText(token ?? node.fallbackText ?? node.latex ?? node.mathml ?? '', {
     ...positionProps(node),
     rotate: node.rotation,
     margin: 0,
@@ -276,6 +300,54 @@ function imageSizingProps(node: PptxImageNode) {
 
 function isString(value: string | undefined): value is string {
   return typeof value === 'string' && value.length > 0;
+}
+
+async function replaceEquationPlaceholders(
+  blob: Blob,
+  replacements: PptxEquationReplacement[],
+): Promise<Blob> {
+  const zip = unzipSync(new Uint8Array(await blob.arrayBuffer()));
+  const replacementMap = new Map(
+    replacements.map((replacement) => [replacement.token, replacement]),
+  );
+
+  for (const path of Object.keys(zip)) {
+    if (!path.startsWith('ppt/slides/slide') || !path.endsWith('.xml')) {
+      continue;
+    }
+
+    let xml = strFromU8(zip[path]);
+    let changed = false;
+    for (const replacement of replacementMap.values()) {
+      if (!xml.includes(replacement.token)) {
+        continue;
+      }
+
+      xml = replaceEquationParagraph(xml, replacement);
+      changed = true;
+    }
+
+    if (changed) {
+      zip[path] = strToU8(ensureMathNamespace(xml));
+    }
+  }
+
+  const bytes = zipSync(zip);
+  const arrayBuffer = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(arrayBuffer).set(bytes);
+  return new Blob([arrayBuffer], { type: PPTX_MIME_TYPE });
+}
+
+function replaceEquationParagraph(xml: string, replacement: PptxEquationReplacement): string {
+  const escapedToken = escapeRegExp(replacement.token);
+  const paragraphRe = new RegExp(
+    `<a:p>(?:(?!</a:p>)[\\s\\S])*?<a:t>${escapedToken}</a:t>(?:(?!</a:p>)[\\s\\S])*?</a:p>`,
+  );
+  return xml.replace(paragraphRe, `<a:p>${replacement.omml}</a:p>`);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function opacityToTransparency(opacity: number | undefined): number | undefined {

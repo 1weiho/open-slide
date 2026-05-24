@@ -65,7 +65,7 @@ export const meta = { title: 'Hello' };
 The runtime can export the active deck as a PowerPoint file from the download
 menu. The primary target is Microsoft PowerPoint Desktop on Windows and Mac.
 open-slide writes editable PowerPoint text, rich text, shapes, images, charts,
-raster layers, equation fallbacks, and tables where it can, and reports
+raster layers, reduced OfficeMath equations, and tables where it can, and reports
 conservative fallbacks for browser-only effects.
 
 Use the PPTX primitives for content that should stay editable:

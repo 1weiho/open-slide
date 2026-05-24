@@ -75,8 +75,9 @@ const PageOne: Page = () => (
 ```
 
 PPTX export logs a developer-facing report for native, reduced-fidelity,
-raster, and omitted objects. Equation primitives currently export editable
-fallback text and report that native OfficeMath is not implemented yet.
+raster, and omitted objects. Equation primitives currently export reduced
+OfficeMath XML for PowerPoint Desktop and should be round-trip checked before
+claiming full equation fidelity.
 
 ## What gets shipped
 

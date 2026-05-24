@@ -49,6 +49,16 @@ describe('PPTX export structural contract', () => {
           y: 360,
         },
         {
+          fallbackText: 'E = m c^2',
+          h: 90,
+          kind: 'equation',
+          latex: 'E = mc^2',
+          style: { fontFace: 'Cambria Math', fontSize: 30 },
+          w: 360,
+          x: 780,
+          y: 220,
+        },
+        {
           columns: ['Layer', 'Export'],
           h: 180,
           kind: 'table',
@@ -86,6 +96,7 @@ describe('PPTX export structural contract', () => {
     expect(slideXml).toContain('editable');
     expect(slideXml).toContain('Layer');
     expect(slideXml).toContain('Native');
+    expect(slideXml).toContain('<m:oMathPara>');
     expect(slideXml.match(/<a:r>/g)?.length).toBeGreaterThanOrEqual(4);
     expect(chartPath).toBeDefined();
     expect(await readPptxXml(blob, chartPath ?? '')).toContain('Native chart');

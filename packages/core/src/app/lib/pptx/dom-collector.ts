@@ -277,7 +277,7 @@ function collectEquationNode(
   const fallbackText =
     el.getAttribute(PPTX_EQUATION_FALLBACK_ATTR) ?? readElementText(el) ?? latex ?? mathml;
   const reason =
-    'Equation exported as editable fallback text; native OfficeMath is not implemented';
+    'Equation exported as native OfficeMath with reduced LaTeX conversion; verify in PowerPoint Desktop';
   diagnostics.push({ level: 'warn', message: reason, nodeKind: 'equation' });
 
   const node = {
