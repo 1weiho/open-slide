@@ -7,7 +7,8 @@ export type PptxPrimitiveKind =
   | 'shape'
   | 'group'
   | 'raster'
-  | 'equation';
+  | 'equation'
+  | 'table';
 
 export type PptxShapeKind = 'rect' | 'roundRect' | 'ellipse' | 'line';
 
@@ -30,6 +31,11 @@ export type PptxEquationProps = HTMLAttributes<HTMLDivElement> & {
   inline?: boolean;
   latex?: string;
   mathml?: string;
+};
+
+export type PptxTableProps = HTMLAttributes<HTMLTableElement> & {
+  columns: string[];
+  rows: string[][];
 };
 
 export type PptxShapeProps = HTMLAttributes<HTMLDivElement> & {
@@ -90,6 +96,33 @@ export function PptxEquation({
     >
       {text}
     </div>
+  );
+}
+
+export function PptxTable({ columns, rows, ...props }: PptxTableProps) {
+  return (
+    <table
+      {...props}
+      data-osd-pptx-kind="table"
+      data-osd-pptx-table={JSON.stringify({ columns, rows })}
+    >
+      <thead>
+        <tr>
+          {columns.map((column) => (
+            <th key={column}>{column}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row, rowIndex) => (
+          <tr key={`${row.join('|')}-${rowIndex}`}>
+            {row.map((cell, cellIndex) => (
+              <td key={`${cell}-${cellIndex}`}>{cell}</td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 

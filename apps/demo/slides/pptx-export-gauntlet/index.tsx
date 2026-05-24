@@ -5,6 +5,7 @@ import {
   PptxImage,
   PptxRasterLayer,
   PptxShape,
+  PptxTable,
   PptxText,
   type DesignSystem,
   type Page,
@@ -391,53 +392,19 @@ const StructuredStress: Page = () => {
       <div style={{ position: 'relative', zIndex: 1 }}>
         <Eyebrow>04 / structured data</Eyebrow>
         <div style={{ display: 'grid', gridTemplateColumns: '1.05fr 0.95fr', gap: 70, marginTop: 36 }}>
-          {/* TODO: replace with <PptxTable /> once native editable tables land. */}
-          <PptxBox
+          <PptxTable
+            columns={['Case', 'Status']}
+            rows={rows.map(([label, status]) => [label, status])}
             style={{
+              width: '100%',
+              borderCollapse: 'collapse',
               border: `1px solid ${palette.faint}`,
               background: palette.paper,
               borderRadius: 'var(--osd-radius)',
               overflow: 'hidden',
+              fontSize: 26,
             }}
-          >
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 220px 42px',
-                background: palette.ink,
-                color: palette.paper,
-                fontFamily: fonts.mono,
-                fontSize: 20,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                padding: '22px 28px',
-              }}
-            >
-              <span>Case</span>
-              <span>Status</span>
-              <span />
-            </div>
-            {rows.map(([label, status, color]) => (
-              <div
-                key={label}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 220px 42px',
-                  alignItems: 'center',
-                  padding: '28px',
-                  borderTop: `1px solid ${palette.faint}`,
-                  fontSize: 28,
-                }}
-              >
-                <PptxText>{label}</PptxText>
-                <PptxText style={{ color: palette.muted }}>{status}</PptxText>
-                <PptxShape
-                  shape="ellipse"
-                  style={{ width: 22, height: 22, borderRadius: 999, background: color }}
-                />
-              </div>
-            ))}
-          </PptxBox>
+          />
 
           {/* TODO: replace with <PptxChart /> once native editable charts land. */}
           <PptxBox

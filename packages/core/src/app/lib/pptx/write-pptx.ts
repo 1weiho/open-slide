@@ -9,6 +9,7 @@ import {
   type PptxSceneNode,
   type PptxShapeNode,
   type PptxSlideScene,
+  type PptxTableNode,
   type PptxTextNode,
   type PptxTextStyle,
 } from './scene';
@@ -71,6 +72,9 @@ function addSceneNode(slide: PptxSlide, node: PptxSceneNode): void {
     case 'equation':
       addEquationNode(slide, node);
       return;
+    case 'table':
+      addTableNode(slide, node);
+      return;
     case 'shape':
       addShapeNode(slide, node);
       return;
@@ -119,6 +123,23 @@ export function addEquationNode(slide: PptxSlide, node: PptxEquationNode): void 
     fit: 'shrink',
     breakLine: false,
     ...textStyleProps(node.style),
+  });
+}
+
+export function addTableNode(slide: PptxSlide, node: PptxTableNode): void {
+  const header = node.columns.map((column) => ({
+    text: column,
+    options: { bold: true, fill: { color: 'F3F0E8' } },
+  }));
+  const rows = node.rows.map((row) => row.map((cell) => ({ text: cell })));
+
+  slide.addTable([header, ...rows], {
+    ...positionProps(node),
+    border: { color: 'D9CDB8', pt: 1 },
+    color: node.style.color,
+    fontFace: node.style.fontFace,
+    fontSize: pxToPt(node.style.fontSize),
+    margin: 0.08,
   });
 }
 

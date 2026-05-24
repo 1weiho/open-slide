@@ -76,6 +76,14 @@ export type PptxEquationNode = PptxRect &
     style: PptxTextStyle;
   };
 
+export type PptxTableNode = PptxRect &
+  PptxNodeMetadata & {
+    kind: 'table';
+    columns: string[];
+    rows: string[][];
+    style: PptxTextStyle;
+  };
+
 export type PptxShapeNode = PptxRect &
   PptxNodeMetadata & {
     kind: 'shape';
@@ -103,6 +111,7 @@ export type PptxSceneNode =
   | PptxTextNode
   | PptxRichTextNode
   | PptxEquationNode
+  | PptxTableNode
   | PptxShapeNode
   | PptxImageNode
   | PptxRasterNode;

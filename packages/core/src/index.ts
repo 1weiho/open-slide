@@ -9,6 +9,7 @@ export type {
   PptxRasterLayerProps,
   PptxShapeKind,
   PptxShapeProps,
+  PptxTableProps,
   PptxTextProps,
 } from './app/components/pptx/index.tsx';
 export {
@@ -18,6 +19,7 @@ export {
   PptxImage,
   PptxRasterLayer,
   PptxShape,
+  PptxTable,
   PptxText,
 } from './app/components/pptx/index.tsx';
 export type {

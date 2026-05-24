@@ -595,6 +595,36 @@ describe('collectDomPptxScene', () => {
     ]);
   });
 
+  it('collects explicit table primitives as native table nodes', () => {
+    const table = testElement({
+      attributes: {
+        'data-osd-pptx-kind': 'table',
+        'data-osd-pptx-table': JSON.stringify({
+          columns: ['Metric', 'Value'],
+          rows: [['Text', 'Editable']],
+        }),
+      },
+      rect: { height: 180, width: 520, x: 40, y: 50 },
+      tagName: 'TABLE',
+    });
+    const canvas = testElement({
+      children: [table],
+      rect: { height: 1080, width: 1920, x: 0, y: 0 },
+    });
+    vi.stubGlobal('getComputedStyle', (el: TestElement) => el.__style);
+
+    const scene = collectDomPptxScene(canvas as unknown as HTMLElement);
+
+    expect(scene.nodes).toEqual([
+      expect.objectContaining({
+        columns: ['Metric', 'Value'],
+        decision: { kind: 'native' },
+        kind: 'table',
+        rows: [['Text', 'Editable']],
+      }),
+    ]);
+  });
+
   it('keeps inline SVG visible as an image fallback without collecting descendants', () => {
     const path = testElement({
       rect: { height: 200, width: 200, x: 80, y: 90 },

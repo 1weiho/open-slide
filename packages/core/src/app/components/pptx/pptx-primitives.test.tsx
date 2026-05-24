@@ -7,6 +7,7 @@ import {
   PptxImage,
   PptxRasterLayer,
   PptxShape,
+  PptxTable,
   PptxText,
 } from './index.tsx';
 
@@ -60,5 +61,16 @@ describe('pptx primitives', () => {
     expect(html).toContain('data-osd-pptx-kind="equation"');
     expect(html).toContain('data-osd-pptx-latex="E = mc^2"');
     expect(html).toContain('data-osd-pptx-inline="true"');
+  });
+
+  it('renders table metadata and normal table markup', () => {
+    const html = renderToStaticMarkup(
+      <PptxTable columns={['Metric', 'Value']} rows={[['Text', 'Editable']]} />,
+    );
+
+    expect(html).toContain('<table');
+    expect(html).toContain('data-osd-pptx-kind="table"');
+    expect(html).toContain('Metric');
+    expect(html).toContain('Editable');
   });
 });

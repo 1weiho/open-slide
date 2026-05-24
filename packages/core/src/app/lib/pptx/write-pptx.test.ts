@@ -160,4 +160,33 @@ describe('writePptxFile', () => {
     const zip = await unzipPptx(blob);
     expect(Object.keys(zip).some((name) => name.startsWith('ppt/media/image'))).toBe(true);
   });
+
+  it('exports table nodes as editable table XML', async () => {
+    const blob = await writePptxFile({
+      title: 'Table test',
+      slides: [
+        {
+          width: 1920,
+          height: 1080,
+          nodes: [
+            {
+              columns: ['Metric', 'Value'],
+              h: 240,
+              kind: 'table',
+              rows: [['Text', 'Editable']],
+              style: { fontFace: 'Aptos', fontSize: 24 },
+              w: 640,
+              x: 80,
+              y: 120,
+            },
+          ],
+          diagnostics: [],
+        },
+      ],
+    });
+
+    const xml = await readPptxXml(blob, 'ppt/slides/slide1.xml');
+    expect(xml).toContain('Metric');
+    expect(xml).toContain('Editable');
+  });
 });

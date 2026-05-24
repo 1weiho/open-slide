@@ -11,6 +11,7 @@ import {
   type PptxShapeNode,
   type PptxSlideScene,
   type PptxStroke,
+  type PptxTableNode,
   type PptxTextRun,
   type PptxTextStyle,
 } from './scene';
@@ -22,6 +23,7 @@ const PPTX_EQUATION_FALLBACK_ATTR = 'data-osd-pptx-fallback';
 const PPTX_EQUATION_INLINE_ATTR = 'data-osd-pptx-inline';
 const PPTX_EQUATION_LATEX_ATTR = 'data-osd-pptx-latex';
 const PPTX_EQUATION_MATHML_ATTR = 'data-osd-pptx-mathml';
+const PPTX_TABLE_ATTR = 'data-osd-pptx-table';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const TEXT_CONTAINER_TAGS = new Set(['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'SPAN']);
@@ -113,6 +115,7 @@ function collectElement(el: Element, canvas: HTMLElement, scene: PptxSlideScene)
     primitiveKind === 'image' ||
     primitiveKind === 'shape' ||
     primitiveKind === 'equation' ||
+    primitiveKind === 'table' ||
     node?.kind === 'text' ||
     node?.kind === 'richText' ||
     isImageElement(el) ||
@@ -141,6 +144,8 @@ function collectPrimitiveNode(
       return collectRasterNode(el, canvas);
     case 'equation':
       return collectEquationNode(el, canvas, diagnostics);
+    case 'table':
+      return collectTableNode(el, canvas);
     case 'box':
       return collectShapeNode(el, canvas);
     case 'shape':
@@ -281,6 +286,25 @@ function collectEquationNode(
   return isRenderableNode(node) ? node : null;
 }
 
+function collectTableNode(el: Element, canvas: HTMLElement): PptxSceneNode | null {
+  const rect = readElementRect(el, canvas);
+  const data = parseTableData(el.getAttribute(PPTX_TABLE_ATTR));
+  if (!rect || !data) {
+    return null;
+  }
+
+  const node = {
+    ...rect,
+    columns: data.columns,
+    decision: { kind: 'native' },
+    kind: 'table',
+    rows: data.rows,
+    style: readElementTextStyle(el),
+  } satisfies PptxTableNode;
+
+  return isRenderableNode(node) ? node : null;
+}
+
 function collectSvgImageNode(el: Element, canvas: HTMLElement): PptxSceneNode | null {
   const rect = readElementRect(el, canvas);
   if (!rect) {
@@ -405,6 +429,29 @@ function readExplicitShape(el: Element): PptxShapeKind | undefined {
     return value;
   }
   return undefined;
+}
+
+function parseTableData(value: string | null): { columns: string[]; rows: string[][] } | null {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(value) as { columns?: unknown; rows?: unknown };
+    if (
+      !Array.isArray(parsed.columns) ||
+      !parsed.columns.every((column) => typeof column === 'string') ||
+      !Array.isArray(parsed.rows) ||
+      !parsed.rows.every(
+        (row) => Array.isArray(row) && row.every((cell) => typeof cell === 'string'),
+      )
+    ) {
+      return null;
+    }
+    return { columns: parsed.columns, rows: parsed.rows };
+  } catch {
+    return null;
+  }
 }
 
 function normalizeObjectFit(value: string | undefined): 'contain' | 'cover' | 'stretch' | undefined {
