@@ -50,6 +50,7 @@ export type PptxTextNode = PptxRect &
     kind: 'text';
     text: string;
     style: PptxTextStyle;
+    lineBreakPolicy?: 'preserve-browser-lines' | 'powerpoint-wrap';
   };
 
 export type PptxTextRun = {
@@ -62,6 +63,7 @@ export type PptxRichTextNode = PptxRect &
     kind: 'richText';
     runs: PptxTextRun[];
     style: PptxTextStyle;
+    lineBreakPolicy?: 'preserve-browser-lines' | 'powerpoint-wrap';
   };
 
 export type PptxShapeNode = PptxRect &

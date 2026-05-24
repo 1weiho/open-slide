@@ -179,6 +179,7 @@ function collectTextNode(
       const node = {
         ...adjustedRect,
         kind: 'richText',
+        lineBreakPolicy: lineBreakPolicyForText(el, text, style),
         runs,
         style,
       } satisfies PptxRichTextNode;
@@ -190,6 +191,7 @@ function collectTextNode(
   const node = {
     ...adjustedRect,
     kind: 'text',
+    lineBreakPolicy: lineBreakPolicyForText(el, text, style),
     style,
     text,
   } satisfies PptxSceneNode;
@@ -311,6 +313,17 @@ function hasInlineFormatting(el: Element): boolean {
     const tagName = child.tagName.toUpperCase();
     return tagName !== 'BR' && INLINE_TEXT_TAGS.has(tagName) && readElementText(child).length > 0;
   });
+}
+
+function lineBreakPolicyForText(
+  el: Element,
+  text: string,
+  style: PptxTextStyle,
+): 'preserve-browser-lines' | 'powerpoint-wrap' {
+  const tagName = el.tagName.toUpperCase();
+  const isHeading = /^H[1-6]$/.test(tagName);
+  const isLarge = (style.fontSize ?? 0) >= 56;
+  return text.includes('\n') || isHeading || isLarge ? 'preserve-browser-lines' : 'powerpoint-wrap';
 }
 
 function readImageSrc(el: Element): string | undefined {

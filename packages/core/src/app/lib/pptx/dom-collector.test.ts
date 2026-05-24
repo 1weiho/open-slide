@@ -220,6 +220,7 @@ describe('collectDomPptxScene', () => {
     expect(scene.nodes).toEqual([
       expect.objectContaining({
         kind: 'text',
+        lineBreakPolicy: 'preserve-browser-lines',
         text: 'The better question is not\nwhy did Rome fall',
       }),
     ]);
