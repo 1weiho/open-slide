@@ -252,8 +252,8 @@ describe('collectDomPptxScene', () => {
       expect.objectContaining({
         kind: 'text',
         lines: [
-          expect.objectContaining({ h: 30, text: 'The better question is not', w: 972 }),
-          expect.objectContaining({ h: 30, text: 'why did Rome fall', w: 972 }),
+          expect.objectContaining({ h: 30, text: 'The better question is not', w: 972, y: 130 }),
+          expect.objectContaining({ h: 30, text: 'why did Rome fall', w: 972, y: 160 }),
         ],
         lineBreakPolicy: 'preserve-browser-lines',
         text: 'The better question is not\nwhy did Rome fall',
@@ -352,11 +352,11 @@ describe('collectDomPptxScene', () => {
         kind: 'text',
         lines: [
           expect.objectContaining({
-            h: 110,
+            h: 112,
             text: 'A loop, not a one-shot.',
             w: 972,
             x: 100,
-            y: 120,
+            y: 118,
           }),
         ],
         lineBreakPolicy: 'preserve-browser-lines',
@@ -484,6 +484,146 @@ describe('collectDomPptxScene', () => {
             text: '!',
           }),
         ],
+      }),
+    ]);
+  });
+
+  it('preserves measured line boxes for inline formatted rich text', () => {
+    class RangeNode {
+      static TEXT_NODE = 3;
+      childNodes: RangeNode[] = [];
+      textContent = '';
+      constructor(readonly nodeType: number) {}
+    }
+
+    class RangeText extends RangeNode {
+      constructor(readonly data: string) {
+        super(RangeNode.TEXT_NODE);
+        this.textContent = data;
+      }
+    }
+
+    class RangeElement extends RangeNode {
+      __style: Partial<CSSStyleDeclaration>;
+      children: RangeElement[];
+      innerText: string;
+      textContent: string;
+
+      constructor(
+        readonly tagName: string,
+        readonly rect: DOMRectInit,
+        childNodes: RangeNode[] = [],
+        style: Partial<CSSStyleDeclaration> = defaultStyle,
+      ) {
+        super(1);
+        this.__style = style;
+        this.childNodes = childNodes;
+        this.children = childNodes.filter(
+          (child): child is RangeElement => child instanceof RangeElement,
+        );
+        this.textContent = childNodes
+          .map((child) => (child instanceof RangeText ? child.data : child.textContent))
+          .join('');
+        this.innerText = this.textContent;
+      }
+
+      getAttribute() {
+        return null;
+      }
+
+      getBoundingClientRect() {
+        return rectFromInit(this.rect);
+      }
+    }
+
+    const headingStyle = {
+      ...defaultStyle,
+      fontFamily: 'Georgia',
+      fontSize: '100px',
+      lineHeight: '106px',
+    };
+    const accentStyle = {
+      ...headingStyle,
+      color: 'rgb(179, 74, 42)',
+      fontStyle: 'italic',
+    };
+    const accent = new RangeElement(
+      'EM',
+      { height: 106, width: 220, x: 260, y: 236 },
+      [new RangeText('agent')],
+      accentStyle,
+    );
+    const heading = new RangeElement(
+      'H2',
+      { height: 230, width: 1500, x: 100, y: 120 },
+      [
+        new RangeText('Not autocomplete.'),
+        new RangeElement('BR', { height: 0, width: 0, x: 0, y: 0 }),
+        new RangeText('An '),
+        accent,
+        new RangeText(' that does the work.'),
+      ],
+      headingStyle,
+    );
+    const canvas = new RangeElement('DIV', { height: 1080, width: 1920, x: 0, y: 0 }, [heading]);
+
+    vi.stubGlobal('Node', RangeNode);
+    vi.stubGlobal('Text', RangeText);
+    vi.stubGlobal('Element', RangeElement);
+    vi.stubGlobal('getComputedStyle', (el: RangeElement) => el.__style);
+    vi.stubGlobal('document', {
+      createRange: () => {
+        let currentNode: RangeText | null = null;
+        return {
+          detach: () => undefined,
+          getClientRects: () => [
+            {
+              height: 92,
+              left: currentNode?.data === 'Not autocomplete.' ? 100 : 100,
+              top: currentNode?.data === 'Not autocomplete.' ? 130 : 236,
+              width:
+                currentNode?.data === 'Not autocomplete.'
+                  ? 760
+                  : currentNode?.data === 'agent'
+                    ? 220
+                    : 420,
+            },
+          ],
+          setEnd: () => undefined,
+          setStart: (node: RangeText) => {
+            currentNode = node;
+          },
+        };
+      },
+    });
+
+    const scene = collectDomPptxScene(canvas as unknown as HTMLElement);
+
+    expect(scene.nodes).toEqual([
+      expect.objectContaining({
+        kind: 'richText',
+        lines: [
+          expect.objectContaining({
+            runs: [expect.objectContaining({ text: 'Not autocomplete.' })],
+            text: 'Not autocomplete.',
+            w: 1596,
+            y: 130,
+          }),
+          expect.objectContaining({
+            runs: [
+              expect.objectContaining({ text: 'An' }),
+              expect.objectContaining({
+                style: expect.objectContaining({ color: 'B34A2A', italic: true }),
+                text: ' agent',
+              }),
+              expect.objectContaining({ text: ' that does the work.' }),
+            ],
+            text: 'An agent that does the work.',
+            w: 1596,
+            y: 236,
+          }),
+        ],
+        lineBreakPolicy: 'preserve-browser-lines',
       }),
     ]);
   });

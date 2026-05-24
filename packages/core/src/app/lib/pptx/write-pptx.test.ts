@@ -100,6 +100,62 @@ describe('writePptxFile', () => {
     expect(xml).toContain(' text');
   });
 
+  it('exports preserved rich text lines as separate editable text boxes', async () => {
+    const blob = await writePptxFile({
+      title: 'Measured rich text lines test',
+      slides: [
+        {
+          width: 1920,
+          height: 1080,
+          nodes: [
+            {
+              h: 220,
+              kind: 'richText',
+              lineBreakPolicy: 'preserve-browser-lines',
+              lines: [
+                {
+                  h: 96,
+                  runs: [{ text: 'Not autocomplete.' }],
+                  text: 'Not autocomplete.',
+                  w: 1200,
+                  x: 100,
+                  y: 120,
+                },
+                {
+                  h: 96,
+                  runs: [
+                    { text: 'An ' },
+                    { text: 'agent', style: { color: 'B34A2A', italic: true } },
+                    { text: ' that does the work.' },
+                  ],
+                  text: 'An agent that does the work.',
+                  w: 1200,
+                  x: 100,
+                  y: 226,
+                },
+              ],
+              runs: [
+                { text: 'Not autocomplete.\nAn ' },
+                { text: 'agent', style: { color: 'B34A2A', italic: true } },
+                { text: ' that does the work.' },
+              ],
+              style: { fontFace: 'Georgia', fontSize: 72, lineHeight: 96 },
+              w: 1200,
+              x: 100,
+              y: 120,
+            },
+          ],
+          diagnostics: [],
+        },
+      ],
+    });
+
+    const xml = await readPptxXml(blob, 'ppt/slides/slide1.xml');
+    expect(xml).toContain('Not autocomplete.');
+    expect(xml).toContain('agent');
+    expect(xml.match(/name="Text/g)?.length).toBeGreaterThanOrEqual(2);
+  });
+
   it('exports preserved browser text lines as separate editable text boxes', async () => {
     const blob = await writePptxFile({
       title: 'Measured lines test',

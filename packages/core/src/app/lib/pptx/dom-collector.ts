@@ -10,6 +10,7 @@ import {
   type PptxDiagnostic,
   type PptxEquationNode,
   type PptxRect,
+  type PptxRichTextLine,
   type PptxRichTextNode,
   type PptxSceneNode,
   type PptxShapeKind,
@@ -205,10 +206,12 @@ function collectTextNode(
   if (hasInlineFormatting(el)) {
     const runs = collectInlineTextRuns(el, style);
     if (runs.length > 0) {
+      const richLines = renderedLines ? splitRichTextRunsByLines(runs, renderedLines) : null;
       const node = {
         ...adjustedRect,
         kind: 'richText',
         lineBreakPolicy: lineBreakPolicyForText(el, text, style),
+        ...(richLines ? { lines: richLines } : {}),
         runs,
         style,
       } satisfies PptxRichTextNode;
@@ -1031,12 +1034,93 @@ function normalizeTextLineRects(
     (style.fontSize ? style.fontSize * 1.2 : Math.max(1, containerRect.h / lines.length));
 
   return lines.map((line, index) => ({
-    h: lineHeight,
+    h: Math.max(line.h, lineHeight),
     text: line.text,
     w: containerRect.w,
     x: containerRect.x,
-    y: containerRect.y + index * lineHeight,
+    y: Number.isFinite(line.y) ? line.y : containerRect.y + index * lineHeight,
   }));
+}
+
+type RichTextWordToken = {
+  kind: 'word';
+  style?: PptxTextStyle;
+  text: string;
+};
+
+type RichTextBreakToken = {
+  kind: 'break';
+};
+
+type RichTextToken = RichTextWordToken | RichTextBreakToken;
+
+function splitRichTextRunsByLines(
+  runs: PptxTextRun[],
+  lines: PptxTextLine[],
+): PptxRichTextLine[] | null {
+  const tokens = tokenizeRichTextRuns(runs);
+  if (tokens.length === 0) {
+    return null;
+  }
+
+  const result: PptxRichTextLine[] = [];
+  let tokenIndex = 0;
+
+  for (const line of lines) {
+    const words = wordsFromText(line.text);
+    const lineRuns: PptxTextRun[] = [];
+    let consumedWords = 0;
+
+    while (tokenIndex < tokens.length && consumedWords < words.length) {
+      const token = tokens[tokenIndex];
+      tokenIndex += 1;
+
+      if (token.kind === 'break') {
+        if (consumedWords === 0) {
+          continue;
+        }
+        break;
+      }
+
+      const prefix = consumedWords === 0 ? '' : ' ';
+      addTextRun(lineRuns, `${prefix}${token.text}`, token.style ?? {});
+      consumedWords += 1;
+    }
+
+    while (tokenIndex < tokens.length && tokens[tokenIndex]?.kind === 'break') {
+      tokenIndex += 1;
+    }
+
+    result.push({
+      ...line,
+      runs: lineRuns.length > 0 ? lineRuns : [{ text: line.text }],
+    });
+  }
+
+  return result.length > 0 ? result : null;
+}
+
+function tokenizeRichTextRuns(runs: PptxTextRun[]): RichTextToken[] {
+  const tokens: RichTextToken[] = [];
+
+  for (const run of runs) {
+    const parts = run.text.split('\n');
+    for (const [index, part] of parts.entries()) {
+      if (index > 0) {
+        tokens.push({ kind: 'break' });
+      }
+
+      for (const word of wordsFromText(part)) {
+        tokens.push({ kind: 'word', style: run.style, text: word });
+      }
+    }
+  }
+
+  return tokens;
+}
+
+function wordsFromText(text: string): string[] {
+  return normalizeText(text).split(/\s+/).filter(Boolean);
 }
 
 function canonicalRectFromDomRect(rect: DOMRect, canvas: HTMLElement): PptxRect {

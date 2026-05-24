@@ -134,6 +134,26 @@ export function addTextNode(slide: PptxSlide, node: PptxTextNode): void {
 }
 
 export function addRichTextNode(slide: PptxSlide, node: PptxRichTextNode): void {
+  if (node.lineBreakPolicy === 'preserve-browser-lines' && node.lines && node.lines.length > 0) {
+    for (const line of node.lines) {
+      slide.addText(
+        line.runs.map((run) => ({
+          text: run.text,
+          options: textStyleProps({ ...node.style, ...run.style }, { singleLine: true }),
+        })),
+        {
+          ...positionProps(expandTextLineRect(line, node.style)),
+          rotate: node.rotation,
+          margin: 0,
+          fit: 'none',
+          breakLine: false,
+          ...textStyleProps(node.style, { singleLine: true }),
+        },
+      );
+    }
+    return;
+  }
+
   slide.addText(
     node.runs.map((run) => ({
       text: run.text,
