@@ -3,11 +3,13 @@ import {
   isRenderableNode,
   PPTX_CANVAS_WIDTH,
   type PptxImageNode,
+  type PptxRichTextNode,
   type PptxRasterNode,
   type PptxSceneNode,
   type PptxShapeNode,
   type PptxSlideScene,
   type PptxTextNode,
+  type PptxTextStyle,
 } from './scene';
 
 const PPTX_WIDTH_IN = 13.333333;
@@ -62,6 +64,9 @@ function addSceneNode(slide: PptxSlide, node: PptxSceneNode): void {
     case 'text':
       addTextNode(slide, node);
       return;
+    case 'richText':
+      addRichTextNode(slide, node);
+      return;
     case 'shape':
       addShapeNode(slide, node);
       return;
@@ -81,17 +86,40 @@ export function addTextNode(slide: PptxSlide, node: PptxTextNode): void {
     margin: 0,
     fit: 'shrink',
     breakLine: false,
-    color: node.style.color,
-    fontFace: node.style.fontFace,
-    fontSize: pxToPt(node.style.fontSize),
-    bold: node.style.bold,
-    italic: node.style.italic,
-    underline: node.style.underline ? { style: 'sng' } : undefined,
-    align: node.style.align,
-    valign: node.style.valign,
-    transparency: opacityToTransparency(node.style.opacity),
-    lineSpacing: pxToPt(node.style.lineHeight),
+    ...textStyleProps(node.style),
   });
+}
+
+export function addRichTextNode(slide: PptxSlide, node: PptxRichTextNode): void {
+  slide.addText(
+    node.runs.map((run) => ({
+      text: run.text,
+      options: textStyleProps({ ...node.style, ...run.style }),
+    })),
+    {
+      ...positionProps(node),
+      rotate: node.rotation,
+      margin: 0,
+      fit: 'shrink',
+      breakLine: false,
+      ...textStyleProps(node.style),
+    },
+  );
+}
+
+function textStyleProps(style: PptxTextStyle) {
+  return {
+    color: style.color,
+    fontFace: style.fontFace,
+    fontSize: pxToPt(style.fontSize),
+    bold: style.bold,
+    italic: style.italic,
+    underline: style.underline ? { style: 'sng' as const } : undefined,
+    align: style.align,
+    valign: style.valign,
+    transparency: opacityToTransparency(style.opacity),
+    lineSpacing: pxToPt(style.lineHeight),
+  };
 }
 
 export function addShapeNode(slide: PptxSlide, node: PptxShapeNode): void {

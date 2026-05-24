@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { PptxSlideScene, PptxTextNode } from './scene';
+import type { PptxRichTextNode, PptxSlideScene, PptxTextNode } from './scene';
 import { readPptxXml, unzipPptx } from './test-utils';
 import { pxToPt, writePptxFile } from './write-pptx';
 
@@ -18,6 +18,24 @@ const textNode: PptxTextNode = {
     align: 'center',
     valign: 'middle',
   },
+};
+
+const richTextNode: PptxRichTextNode = {
+  kind: 'richText',
+  x: 120,
+  y: 320,
+  w: 760,
+  h: 120,
+  style: {
+    color: '171512',
+    fontFace: 'Georgia',
+    fontSize: 40,
+  },
+  runs: [
+    { text: 'Hello ' },
+    { text: 'accent', style: { color: 'B34A2A', italic: true } },
+    { text: ' text' },
+  ],
 };
 
 describe('writePptxFile', () => {
@@ -63,6 +81,25 @@ describe('writePptxFile', () => {
     expect(await readPptxXml(blob, 'ppt/notesSlides/notesSlide1.xml')).toContain(
       'Presenter note',
     );
+  });
+
+  it('exports rich text nodes as editable text runs', async () => {
+    const blob = await writePptxFile({
+      title: 'Rich text test',
+      slides: [
+        {
+          width: 1920,
+          height: 1080,
+          nodes: [richTextNode],
+          diagnostics: [],
+        },
+      ],
+    });
+
+    const xml = await readPptxXml(blob, 'ppt/slides/slide1.xml');
+    expect(xml).toContain('Hello ');
+    expect(xml).toContain('accent');
+    expect(xml).toContain(' text');
   });
 
   it('embeds inline SVG image fallbacks', async () => {

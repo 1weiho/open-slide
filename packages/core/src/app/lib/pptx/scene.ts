@@ -46,35 +46,52 @@ export type PptxShapeKind = 'rect' | 'roundRect' | 'ellipse' | 'line';
 
 export type PptxTextNode = PptxRect &
   PptxNodeMetadata & {
-  kind: 'text';
+    kind: 'text';
+    text: string;
+    style: PptxTextStyle;
+  };
+
+export type PptxTextRun = {
   text: string;
-  style: PptxTextStyle;
+  style?: PptxTextStyle;
 };
+
+export type PptxRichTextNode = PptxRect &
+  PptxNodeMetadata & {
+    kind: 'richText';
+    runs: PptxTextRun[];
+    style: PptxTextStyle;
+  };
 
 export type PptxShapeNode = PptxRect &
   PptxNodeMetadata & {
-  kind: 'shape';
-  shape: PptxShapeKind;
-  fill?: string;
-  stroke?: PptxStroke;
-};
+    kind: 'shape';
+    shape: PptxShapeKind;
+    fill?: string;
+    stroke?: PptxStroke;
+  };
 
 export type PptxImageNode = PptxRect &
   PptxNodeMetadata & {
-  kind: 'image';
-  src: string;
-  alt?: string;
-  fit?: 'contain' | 'cover' | 'stretch';
-};
+    kind: 'image';
+    src: string;
+    alt?: string;
+    fit?: 'contain' | 'cover' | 'stretch';
+  };
 
 export type PptxRasterNode = PptxRect &
   PptxNodeMetadata & {
-  kind: 'raster';
-  dataUrl: string;
-  reason: string;
-};
+    kind: 'raster';
+    dataUrl: string;
+    reason: string;
+  };
 
-export type PptxSceneNode = PptxTextNode | PptxShapeNode | PptxImageNode | PptxRasterNode;
+export type PptxSceneNode =
+  | PptxTextNode
+  | PptxRichTextNode
+  | PptxShapeNode
+  | PptxImageNode
+  | PptxRasterNode;
 
 export type PptxDiagnostic = {
   level: 'info' | 'warn';

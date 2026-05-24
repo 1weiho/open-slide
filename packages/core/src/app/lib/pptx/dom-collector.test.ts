@@ -299,6 +299,55 @@ describe('collectDomPptxScene', () => {
     ]);
   });
 
+  it('collects inline formatted text as rich text runs', () => {
+    const hello = testElement({
+      rect: { height: 40, width: 100, x: 100, y: 120 },
+      tagName: 'SPAN',
+      text: 'Hello ',
+    });
+    const world = testElement({
+      rect: { height: 40, width: 100, x: 200, y: 120 },
+      style: { color: 'rgb(179, 74, 42)', fontStyle: 'italic' },
+      tagName: 'EM',
+      text: 'world',
+    });
+    const bang = testElement({
+      rect: { height: 40, width: 40, x: 300, y: 120 },
+      style: { fontWeight: '700' },
+      tagName: 'STRONG',
+      text: '!',
+    });
+    const paragraph = testElement({
+      children: [hello, world, bang],
+      rect: { height: 80, width: 420, x: 100, y: 120 },
+      tagName: 'P',
+    });
+    const canvas = testElement({
+      children: [paragraph],
+      rect: { height: 1080, width: 1920, x: 0, y: 0 },
+    });
+    vi.stubGlobal('getComputedStyle', (el: TestElement) => el.__style);
+
+    const scene = collectDomPptxScene(canvas as unknown as HTMLElement);
+
+    expect(scene.nodes).toEqual([
+      expect.objectContaining({
+        kind: 'richText',
+        runs: [
+          expect.objectContaining({ text: 'Hello ' }),
+          expect.objectContaining({
+            style: expect.objectContaining({ color: 'B34A2A', italic: true }),
+            text: 'world',
+          }),
+          expect.objectContaining({
+            style: expect.objectContaining({ bold: true }),
+            text: '!',
+          }),
+        ],
+      }),
+    ]);
+  });
+
   it('collects a simple background element as a shape node', () => {
     const box = testElement({
       rect: { height: 120, width: 240, x: 20, y: 30 },

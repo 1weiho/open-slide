@@ -4,11 +4,13 @@ import {
   isRenderableNode,
   type PptxDiagnostic,
   type PptxRect,
+  type PptxRichTextNode,
   type PptxSceneNode,
   type PptxShapeKind,
   type PptxShapeNode,
   type PptxSlideScene,
   type PptxStroke,
+  type PptxTextRun,
   type PptxTextStyle,
 } from './scene';
 
@@ -103,6 +105,7 @@ function collectElement(el: Element, canvas: HTMLElement, scene: PptxSlideScene)
     primitiveKind === 'image' ||
     primitiveKind === 'shape' ||
     node?.kind === 'text' ||
+    node?.kind === 'richText' ||
     isImageElement(el) ||
     isSvgElement(el)
   ) {
@@ -157,6 +160,20 @@ function collectTextNode(el: Element, canvas: HTMLElement): PptxSceneNode | null
   }
   const style = readElementTextStyle(el);
   const adjustedRect = expandTextRect(rect, canvas, style.align);
+
+  if (hasInlineFormatting(el)) {
+    const runs = collectInlineTextRuns(el, style);
+    if (runs.length > 0) {
+      const node = {
+        ...adjustedRect,
+        kind: 'richText',
+        runs,
+        style,
+      } satisfies PptxRichTextNode;
+
+      return isRenderableNode(node) ? node : null;
+    }
+  }
 
   const node = {
     ...adjustedRect,
@@ -275,6 +292,13 @@ function isTextElement(el: Element): boolean {
   return Array.from(el.children).every((child) =>
     INLINE_TEXT_TAGS.has(child.tagName.toUpperCase()),
   );
+}
+
+function hasInlineFormatting(el: Element): boolean {
+  return Array.from(el.children).some((child) => {
+    const tagName = child.tagName.toUpperCase();
+    return tagName !== 'BR' && INLINE_TEXT_TAGS.has(tagName) && readElementText(child).length > 0;
+  });
 }
 
 function readImageSrc(el: Element): string | undefined {
@@ -442,6 +466,86 @@ function readElementText(el: Element): string {
     readRenderedText(el) ??
     normalizeText(readStringProperty(el, 'innerText') ?? el.textContent ?? '')
   );
+}
+
+function collectInlineTextRuns(el: Element, inheritedStyle: PptxTextStyle): PptxTextRun[] {
+  const runs: PptxTextRun[] = [];
+
+  const visit = (node: Node | Element, style: PptxTextStyle) => {
+    if (isTextNodeLike(node)) {
+      addTextRun(runs, normalizeRunText(node.data), style);
+      return;
+    }
+
+    if (!isElementNodeLike(node)) {
+      return;
+    }
+
+    const element = node as Element;
+    if (element.tagName.toUpperCase() === 'BR') {
+      addTextRun(runs, '\n', style);
+      return;
+    }
+
+    const elementStyle = { ...style, ...readElementTextStyle(element) };
+    const childNodes = readChildNodes(element);
+    if (childNodes.length === 0) {
+      addTextRun(runs, normalizeRunText(element.textContent ?? ''), elementStyle);
+      return;
+    }
+
+    for (const child of childNodes) {
+      visit(child, elementStyle);
+    }
+  };
+
+  for (const child of readChildNodes(el)) {
+    visit(child, inheritedStyle);
+  }
+
+  return runs.filter((run) => run.text.length > 0);
+}
+
+function addTextRun(runs: PptxTextRun[], text: string, style: PptxTextStyle): void {
+  if (!text) {
+    return;
+  }
+
+  const previous = runs.at(-1);
+  if (previous && textStylesEqual(previous.style ?? {}, style)) {
+    previous.text += text;
+    return;
+  }
+
+  runs.push({ text, style });
+}
+
+function textStylesEqual(a: PptxTextStyle, b: PptxTextStyle): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+function normalizeRunText(text: string): string {
+  return text.replace(/\r\n?/g, '\n').replace(/[ \t\f\v]+/g, ' ');
+}
+
+function readChildNodes(el: Element): Array<Node | Element> {
+  const childNodes = (el as unknown as { childNodes?: ArrayLike<Node | Element> }).childNodes;
+  if (childNodes && childNodes.length > 0) {
+    return Array.from(childNodes);
+  }
+  return Array.from(el.children);
+}
+
+function isTextNodeLike(node: Node | Element): node is Text {
+  return typeof (node as unknown as { data?: unknown }).data === 'string';
+}
+
+function isElementLike(node: Node | Element): boolean {
+  return typeof (node as unknown as { tagName?: unknown }).tagName === 'string';
+}
+
+function isElementNodeLike(node: Node | Element): boolean {
+  return typeof Element !== 'undefined' ? node instanceof Element : isElementLike(node);
 }
 
 function normalizeText(text: string): string {
