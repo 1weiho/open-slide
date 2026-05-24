@@ -2,6 +2,7 @@ import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { designToCssVars } from './design';
 import { collectDomPptxScene, logPptxDiagnostics } from './pptx/dom-collector';
+import { createPptxExportReport, logPptxExportReport } from './pptx/report';
 import { writePptxFile } from './pptx/write-pptx';
 import { waitForDataWaitfor, waitForFonts } from './print-ready';
 import type { SlideModule } from './sdk';
@@ -76,6 +77,8 @@ export async function exportSlideAsPptx(
       reactRoots.pop();
       host.remove();
     }
+
+    logPptxExportReport(createPptxExportReport(scenes));
 
     const blob = await writePptxFile({
       title: slide.meta?.title ?? slideId,

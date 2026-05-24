@@ -5,7 +5,9 @@ import type { SlideModule } from './sdk';
 const mocks = vi.hoisted(() => ({
   collectDomPptxScene: vi.fn(),
   logPptxDiagnostics: vi.fn(),
+  logPptxExportReport: vi.fn(),
   render: vi.fn(),
+  createPptxExportReport: vi.fn(() => ({ slides: [] })),
   unmount: vi.fn(),
   writePptxFile: vi.fn(),
 }));
@@ -24,6 +26,11 @@ vi.mock('./pptx/dom-collector', () => ({
 
 vi.mock('./pptx/write-pptx', () => ({
   writePptxFile: mocks.writePptxFile,
+}));
+
+vi.mock('./pptx/report', () => ({
+  createPptxExportReport: mocks.createPptxExportReport,
+  logPptxExportReport: mocks.logPptxExportReport,
 }));
 
 import { exportSlideAsPptx } from './export-pptx';
@@ -171,6 +178,8 @@ describe('exportSlideAsPptx', () => {
       slides: [scene(), scene(2)],
       notes: ['Note one', ''],
     });
+    expect(mocks.createPptxExportReport).toHaveBeenCalledWith([scene(), scene(2)]);
+    expect(mocks.logPptxExportReport).toHaveBeenCalledWith({ slides: [] });
     expect(downloadBlob).toHaveBeenCalledWith(blob, 'deck-id.pptx');
     expect(body.children).toEqual([]);
     expect(mocks.unmount).toHaveBeenCalledTimes(2);
