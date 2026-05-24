@@ -252,11 +252,115 @@ describe('collectDomPptxScene', () => {
       expect.objectContaining({
         kind: 'text',
         lines: [
-          expect.objectContaining({ text: 'The better question is not' }),
-          expect.objectContaining({ text: 'why did Rome fall' }),
+          expect.objectContaining({ h: 30, text: 'The better question is not', w: 972 }),
+          expect.objectContaining({ h: 30, text: 'why did Rome fall', w: 972 }),
         ],
         lineBreakPolicy: 'preserve-browser-lines',
         text: 'The better question is not\nwhy did Rome fall',
+      }),
+    ]);
+  });
+
+  it('does not split one rendered line when large serif glyph boxes jitter vertically', () => {
+    class RangeNode {
+      static TEXT_NODE = 3;
+      childNodes: RangeNode[] = [];
+      textContent = '';
+      constructor(readonly nodeType: number) {}
+    }
+
+    class RangeText extends RangeNode {
+      constructor(readonly data: string) {
+        super(RangeNode.TEXT_NODE);
+        this.textContent = data;
+      }
+    }
+
+    class RangeElement extends RangeNode {
+      __style = {
+        ...defaultStyle,
+        fontFamily: 'Georgia',
+        fontSize: '96px',
+        lineHeight: '110px',
+      };
+      children: RangeElement[];
+      textContent: string;
+
+      constructor(
+        readonly tagName: string,
+        readonly rect: DOMRectInit,
+        childNodes: RangeNode[],
+      ) {
+        super(1);
+        this.childNodes = childNodes;
+        this.children = childNodes.filter(
+          (child): child is RangeElement => child instanceof RangeElement,
+        );
+        this.textContent = childNodes
+          .map((child) => (child instanceof RangeText ? child.data : child.textContent))
+          .join('');
+      }
+
+      getAttribute() {
+        return null;
+      }
+
+      getBoundingClientRect() {
+        return rectFromInit(this.rect);
+      }
+    }
+
+    const text = new RangeText('A loop, not a one-shot.');
+    const heading = new RangeElement('H1', { height: 120, width: 900, x: 100, y: 120 }, [text]);
+    const canvas = new RangeElement('DIV', { height: 1080, width: 1920, x: 0, y: 0 }, [heading]);
+    const topsByOffset = new Map([
+      [0, 130],
+      [2, 118],
+      [8, 142],
+      [12, 124],
+      [14, 138],
+    ]);
+    vi.stubGlobal('Node', RangeNode);
+    vi.stubGlobal('Text', RangeText);
+    vi.stubGlobal('Element', RangeElement);
+    vi.stubGlobal('getComputedStyle', (el: RangeElement) => el.__style);
+    vi.stubGlobal('document', {
+      createRange: () => {
+        let start = 0;
+        return {
+          detach: () => undefined,
+          getClientRects: () => [
+            {
+              height: 88,
+              left: 100,
+              top: topsByOffset.get(start) ?? 130,
+              width: 120,
+            },
+          ],
+          setEnd: () => undefined,
+          setStart: (_node: RangeText, offset: number) => {
+            start = offset;
+          },
+        };
+      },
+    });
+
+    const scene = collectDomPptxScene(canvas as unknown as HTMLElement);
+
+    expect(scene.nodes).toEqual([
+      expect.objectContaining({
+        kind: 'text',
+        lines: [
+          expect.objectContaining({
+            h: 110,
+            text: 'A loop, not a one-shot.',
+            w: 972,
+            x: 100,
+            y: 120,
+          }),
+        ],
+        lineBreakPolicy: 'preserve-browser-lines',
+        text: 'A loop, not a one-shot.',
       }),
     ]);
   });

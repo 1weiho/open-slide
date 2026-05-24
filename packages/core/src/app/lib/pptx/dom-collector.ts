@@ -188,16 +188,19 @@ function collectTextNode(
   diagnostics: PptxDiagnostic[],
 ): PptxSceneNode | null {
   const rect = readElementRect(el, canvas);
-  const renderedLines = readRenderedTextLines(el, canvas);
-  const text = renderedLines
-    ? renderedLines.map((line) => line.text).join('\n')
-    : readElementText(el);
-  if (!rect || !text) {
+  if (!rect) {
     return null;
   }
   const style = readElementTextStyle(el);
+  const adjustedRect = expandTextRect(rect, style.align);
+  const renderedLines = readRenderedTextLines(el, canvas, adjustedRect, style);
+  const text = renderedLines
+    ? renderedLines.map((line) => line.text).join('\n')
+    : readElementText(el);
+  if (!text) {
+    return null;
+  }
   addFontFallbackDiagnostic(diagnostics, style, 'text');
-  const adjustedRect = expandTextRect(rect, canvas, style.align);
 
   if (hasInlineFormatting(el)) {
     const runs = collectInlineTextRuns(el, style);
@@ -636,13 +639,8 @@ function lineNodeForBorderSide(rect: PptxRect, border: BorderSide): PptxShapeNod
   }
 }
 
-function expandTextRect(
-  rect: PptxRect,
-  canvas: HTMLElement,
-  align: PptxTextStyle['align'],
-): PptxRect {
-  const canvasRect = canvas.getBoundingClientRect();
-  const maxWidth = Math.max(0, canvasRect.width - rect.x);
+function expandTextRect(rect: PptxRect, align: PptxTextStyle['align']): PptxRect {
+  const maxWidth = Math.max(0, PPTX_CANVAS_WIDTH - rect.x);
   const cushion = Math.min(TEXT_WIDTH_CUSHION_MAX_PX, rect.w * TEXT_WIDTH_CUSHION_RATIO);
   const extra = Math.max(0, Math.min(cushion, maxWidth - rect.w));
 
@@ -657,7 +655,7 @@ function expandTextRect(
 
   if (align === 'center') {
     const leftExtra = Math.min(extra / 2, rect.x);
-    const rightExtra = Math.min(extra - leftExtra, canvasRect.width - (rect.x + rect.w));
+    const rightExtra = Math.min(extra - leftExtra, PPTX_CANVAS_WIDTH - (rect.x + rect.w));
     return { ...rect, w: rect.w + leftExtra + rightExtra, x: rect.x - leftExtra };
   }
 
@@ -885,7 +883,12 @@ function readRenderedText(el: Element): string | null {
   return text ? normalizeText(text) : null;
 }
 
-function readRenderedTextLines(el: Element, canvas: HTMLElement): PptxTextLine[] | null {
+function readRenderedTextLines(
+  el: Element,
+  canvas: HTMLElement,
+  containerRect: PptxRect,
+  style: PptxTextStyle,
+): PptxTextLine[] | null {
   if (!canMeasureTextRanges(el)) {
     return null;
   }
@@ -898,6 +901,7 @@ function readRenderedTextLines(el: Element, canvas: HTMLElement): PptxTextLine[]
   const lines: PptxTextLine[] = [];
   let current: PptxTextLine | null = null;
   let currentTop: number | null = null;
+  const topTolerance = lineTopTolerance(style);
 
   const flush = () => {
     if (!current?.text.trim()) {
@@ -917,11 +921,7 @@ function readRenderedTextLines(el: Element, canvas: HTMLElement): PptxTextLine[]
       continue;
     }
 
-    if (
-      currentTop !== null &&
-      Math.abs(segment.rect.y - currentTop) > LINE_TOP_TOLERANCE_PX &&
-      current
-    ) {
+    if (currentTop !== null && Math.abs(segment.rect.y - currentTop) > topTolerance && current) {
       flush();
     }
 
@@ -930,7 +930,7 @@ function readRenderedTextLines(el: Element, canvas: HTMLElement): PptxTextLine[]
   }
 
   flush();
-  return lines.length > 0 ? lines : null;
+  return lines.length > 0 ? normalizeTextLineRects(lines, containerRect, style) : null;
 }
 
 type TextSegment = { kind: 'word'; rect: PptxRect; text: string; top: number } | { kind: 'break' };
@@ -1010,6 +1010,33 @@ function mergeTextLine(
     x: left,
     y: top,
   };
+}
+
+function lineTopTolerance(style: PptxTextStyle): number {
+  const referenceSize = style.lineHeight ?? style.fontSize;
+  if (!referenceSize || !Number.isFinite(referenceSize)) {
+    return LINE_TOP_TOLERANCE_PX;
+  }
+
+  return Math.max(LINE_TOP_TOLERANCE_PX, referenceSize * 0.45);
+}
+
+function normalizeTextLineRects(
+  lines: PptxTextLine[],
+  containerRect: PptxRect,
+  style: PptxTextStyle,
+): PptxTextLine[] {
+  const lineHeight =
+    style.lineHeight ??
+    (style.fontSize ? style.fontSize * 1.2 : Math.max(1, containerRect.h / lines.length));
+
+  return lines.map((line, index) => ({
+    h: lineHeight,
+    text: line.text,
+    w: containerRect.w,
+    x: containerRect.x,
+    y: containerRect.y + index * lineHeight,
+  }));
 }
 
 function canonicalRectFromDomRect(rect: DOMRect, canvas: HTMLElement): PptxRect {
