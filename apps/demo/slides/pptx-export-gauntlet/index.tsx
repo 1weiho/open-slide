@@ -2,6 +2,7 @@ import {
   type DesignSystem,
   type Page,
   PptxBox,
+  PptxChart,
   PptxEquation,
   PptxGroup,
   PptxRasterLayer,
@@ -426,8 +427,17 @@ const StructuredStress: Page = () => {
             }}
           />
 
-          {/* TODO: replace with <PptxChart /> once native editable charts land. */}
-          <PptxBox
+          <PptxChart
+            chartType="bar"
+            labels={['Text', 'Images', 'Effects', 'Math']}
+            series={[
+              {
+                color: palette.green.replace('#', ''),
+                name: 'Editability score',
+                values: [92, 76, 38, 61],
+              },
+            ]}
+            title="Editability score"
             style={{
               background: palette.ink,
               color: palette.paper,
@@ -477,7 +487,7 @@ const StructuredStress: Page = () => {
                 </div>
               ))}
             </div>
-          </PptxBox>
+          </PptxChart>
         </div>
       </div>
       <Footer label="tables, charts, notes" />
@@ -491,7 +501,7 @@ export const notes = [
   'Typography stress page: verify line breaks, font fallback, rich runs, mono spans, and dashed footer rule.',
   'Equation stress page: display and inline math are placeholders until PptxEquation writes native OfficeMath.',
   'Media stress page: verify image cover behavior and raster diagnostics for filters/blend modes.',
-  'Structured stress page: table and chart placeholders should become native editable objects in later tasks.',
+  'Structured stress page: table and chart should export as native editable objects.',
 ];
 
 export default [TypographyStress, EquationStress, MediaStress, StructuredStress] satisfies Page[];

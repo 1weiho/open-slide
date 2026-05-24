@@ -623,6 +623,39 @@ describe('collectDomPptxScene', () => {
     ]);
   });
 
+  it('collects explicit chart primitives as native chart nodes', () => {
+    const chart = testElement({
+      attributes: {
+        'data-osd-pptx-chart': JSON.stringify({
+          chartType: 'bar',
+          labels: ['Text', 'Images'],
+          series: [{ color: '3F7D58', name: 'Score', values: [92, 76] }],
+          title: 'Editability score',
+        }),
+        'data-osd-pptx-kind': 'chart',
+      },
+      rect: { height: 320, width: 640, x: 40, y: 50 },
+    });
+    const canvas = testElement({
+      children: [chart],
+      rect: { height: 1080, width: 1920, x: 0, y: 0 },
+    });
+    vi.stubGlobal('getComputedStyle', (el: TestElement) => el.__style);
+
+    const scene = collectDomPptxScene(canvas as unknown as HTMLElement);
+
+    expect(scene.nodes).toEqual([
+      expect.objectContaining({
+        chartType: 'bar',
+        decision: { kind: 'native' },
+        kind: 'chart',
+        labels: ['Text', 'Images'],
+        series: [{ color: '3F7D58', name: 'Score', values: [92, 76] }],
+        title: 'Editability score',
+      }),
+    ]);
+  });
+
   it('keeps inline SVG visible as an image fallback without collecting descendants', () => {
     const path = testElement({
       rect: { height: 200, width: 200, x: 80, y: 90 },

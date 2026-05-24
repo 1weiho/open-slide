@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import {
   PptxBox,
+  PptxChart,
   PptxEquation,
   PptxGroup,
   PptxImage,
@@ -72,5 +73,23 @@ describe('pptx primitives', () => {
     expect(html).toContain('data-osd-pptx-kind="table"');
     expect(html).toContain('Metric');
     expect(html).toContain('Editable');
+  });
+
+  it('renders chart metadata while preserving browser children', () => {
+    const html = renderToStaticMarkup(
+      <PptxChart
+        chartType="bar"
+        labels={['Text', 'Images']}
+        series={[{ color: '3F7D58', name: 'Score', values: [92, 76] }]}
+        title="Editability score"
+      >
+        <span>Browser chart</span>
+      </PptxChart>,
+    );
+
+    expect(html).toContain('Browser chart');
+    expect(html).toContain('data-osd-pptx-kind="chart"');
+    expect(html).toContain('&quot;chartType&quot;:&quot;bar&quot;');
+    expect(html).toContain('Editability score');
   });
 });

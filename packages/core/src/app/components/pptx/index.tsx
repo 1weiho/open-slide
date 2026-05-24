@@ -8,9 +8,11 @@ export type PptxPrimitiveKind =
   | 'group'
   | 'raster'
   | 'equation'
-  | 'table';
+  | 'table'
+  | 'chart';
 
 export type PptxShapeKind = 'rect' | 'roundRect' | 'ellipse' | 'line';
+export type PptxChartType = 'bar' | 'line' | 'pie' | 'doughnut';
 
 export type PptxTextProps = HTMLAttributes<HTMLDivElement>;
 
@@ -36,6 +38,19 @@ export type PptxEquationProps = HTMLAttributes<HTMLDivElement> & {
 export type PptxTableProps = HTMLAttributes<HTMLTableElement> & {
   columns: string[];
   rows: string[][];
+};
+
+export type PptxChartSeries = {
+  color?: string;
+  name: string;
+  values: number[];
+};
+
+export type PptxChartProps = HTMLAttributes<HTMLDivElement> & {
+  chartType?: PptxChartType;
+  labels: string[];
+  series: PptxChartSeries[];
+  title?: string;
 };
 
 export type PptxShapeProps = HTMLAttributes<HTMLDivElement> & {
@@ -126,6 +141,25 @@ export function PptxTable({ columns, rows, ...props }: PptxTableProps) {
         ))}
       </tbody>
     </table>
+  );
+}
+
+export function PptxChart({
+  chartType = 'bar',
+  labels,
+  series,
+  title,
+  children,
+  ...props
+}: PptxChartProps) {
+  return (
+    <div
+      {...props}
+      data-osd-pptx-kind="chart"
+      data-osd-pptx-chart={JSON.stringify({ chartType, labels, series, title })}
+    >
+      {children}
+    </div>
   );
 }
 

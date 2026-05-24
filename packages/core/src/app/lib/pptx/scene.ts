@@ -44,6 +44,7 @@ export type PptxTextStyle = {
 };
 
 export type PptxShapeKind = 'rect' | 'roundRect' | 'ellipse' | 'line';
+export type PptxChartType = 'bar' | 'line' | 'pie' | 'doughnut';
 
 export type PptxTextNode = PptxRect &
   PptxNodeMetadata & {
@@ -84,6 +85,22 @@ export type PptxTableNode = PptxRect &
     style: PptxTextStyle;
   };
 
+export type PptxChartSeries = {
+  color?: string;
+  name: string;
+  values: number[];
+};
+
+export type PptxChartNode = PptxRect &
+  PptxNodeMetadata & {
+    kind: 'chart';
+    chartType: PptxChartType;
+    labels: string[];
+    series: PptxChartSeries[];
+    style: PptxTextStyle;
+    title?: string;
+  };
+
 export type PptxShapeNode = PptxRect &
   PptxNodeMetadata & {
     kind: 'shape';
@@ -112,6 +129,7 @@ export type PptxSceneNode =
   | PptxRichTextNode
   | PptxEquationNode
   | PptxTableNode
+  | PptxChartNode
   | PptxShapeNode
   | PptxImageNode
   | PptxRasterNode;

@@ -33,7 +33,14 @@ falls back conservatively for browser-only effects.
 For the best editability, use the PPTX primitives for important content:
 
 ```tsx
-import { PptxEquation, PptxRasterLayer, PptxTable, PptxText, type Page } from '@open-slide/core';
+import {
+  PptxChart,
+  PptxEquation,
+  PptxRasterLayer,
+  PptxTable,
+  PptxText,
+  type Page,
+} from '@open-slide/core';
 
 const PageOne: Page = () => (
   <>
@@ -49,6 +56,13 @@ const PageOne: Page = () => (
       columns={['Layer', 'Export']}
       rows={[['Text', 'Native'], ['Effects', 'Raster']]}
       style={{ position: 'absolute', left: 120, top: 340, width: 620, height: 180 }}
+    />
+    <PptxChart
+      chartType="bar"
+      labels={['Text', 'Charts']}
+      series={[{ name: 'Editability', values: [95, 88] }]}
+      title="Export score"
+      style={{ position: 'absolute', left: 120, top: 560, width: 620, height: 260 }}
     />
     <PptxRasterLayer
       alt="Decorative texture"

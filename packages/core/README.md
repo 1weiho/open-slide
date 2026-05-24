@@ -64,14 +64,21 @@ export const meta = { title: 'Hello' };
 
 The runtime can export the active deck as a PowerPoint file from the download
 menu. The primary target is Microsoft PowerPoint Desktop on Windows and Mac.
-open-slide writes editable PowerPoint text, rich text, shapes, images, raster
-layers, equation fallbacks, and tables where it can, and reports conservative
-fallbacks for browser-only effects.
+open-slide writes editable PowerPoint text, rich text, shapes, images, charts,
+raster layers, equation fallbacks, and tables where it can, and reports
+conservative fallbacks for browser-only effects.
 
 Use the PPTX primitives for content that should stay editable:
 
 ```tsx
-import { PptxEquation, PptxRasterLayer, PptxTable, PptxText, type Page } from '@open-slide/core';
+import {
+  PptxChart,
+  PptxEquation,
+  PptxRasterLayer,
+  PptxTable,
+  PptxText,
+  type Page,
+} from '@open-slide/core';
 
 const Cover: Page = () => (
   <>
@@ -87,6 +94,13 @@ const Cover: Page = () => (
       columns={['Metric', 'Status']}
       rows={[['Text', 'Editable']]}
       style={{ position: 'absolute', left: 120, top: 340, width: 520, height: 160 }}
+    />
+    <PptxChart
+      chartType="bar"
+      labels={['Text', 'Charts']}
+      series={[{ name: 'Editability', values: [95, 88] }]}
+      title="Export score"
+      style={{ position: 'absolute', left: 120, top: 540, width: 520, height: 260 }}
     />
     <PptxRasterLayer
       alt="Decorative texture"
@@ -104,6 +118,7 @@ const Cover: Page = () => (
 import {
   CANVAS_WIDTH,   // 1920
   CANVAS_HEIGHT,  // 1080
+  PptxChart,
   PptxEquation,
   PptxRasterLayer,
   PptxTable,

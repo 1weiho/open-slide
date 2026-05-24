@@ -2,6 +2,9 @@ import { normalizeCssColor, parseCssPx, readElementRect, readElementTextStyle } 
 import {
   createPptxSlide,
   isRenderableNode,
+  type PptxChartNode,
+  type PptxChartSeries,
+  type PptxChartType,
   type PptxDiagnostic,
   type PptxEquationNode,
   type PptxRect,
@@ -24,6 +27,7 @@ const PPTX_EQUATION_INLINE_ATTR = 'data-osd-pptx-inline';
 const PPTX_EQUATION_LATEX_ATTR = 'data-osd-pptx-latex';
 const PPTX_EQUATION_MATHML_ATTR = 'data-osd-pptx-mathml';
 const PPTX_TABLE_ATTR = 'data-osd-pptx-table';
+const PPTX_CHART_ATTR = 'data-osd-pptx-chart';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const TEXT_CONTAINER_TAGS = new Set(['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'SPAN']);
@@ -116,6 +120,7 @@ function collectElement(el: Element, canvas: HTMLElement, scene: PptxSlideScene)
     primitiveKind === 'shape' ||
     primitiveKind === 'equation' ||
     primitiveKind === 'table' ||
+    primitiveKind === 'chart' ||
     node?.kind === 'text' ||
     node?.kind === 'richText' ||
     isImageElement(el) ||
@@ -146,6 +151,8 @@ function collectPrimitiveNode(
       return collectEquationNode(el, canvas, diagnostics);
     case 'table':
       return collectTableNode(el, canvas);
+    case 'chart':
+      return collectChartNode(el, canvas);
     case 'box':
       return collectShapeNode(el, canvas);
     case 'shape':
@@ -306,6 +313,27 @@ function collectTableNode(el: Element, canvas: HTMLElement): PptxSceneNode | nul
   return isRenderableNode(node) ? node : null;
 }
 
+function collectChartNode(el: Element, canvas: HTMLElement): PptxSceneNode | null {
+  const rect = readElementRect(el, canvas);
+  const data = parseChartData(el.getAttribute(PPTX_CHART_ATTR));
+  if (!rect || !data) {
+    return null;
+  }
+
+  const node = {
+    ...rect,
+    chartType: data.chartType,
+    decision: { kind: 'native' },
+    kind: 'chart',
+    labels: data.labels,
+    series: data.series,
+    style: readElementTextStyle(el),
+    ...(data.title ? { title: data.title } : {}),
+  } satisfies PptxChartNode;
+
+  return isRenderableNode(node) ? node : null;
+}
+
 function collectSvgImageNode(el: Element, canvas: HTMLElement): PptxSceneNode | null {
   const rect = readElementRect(el, canvas);
   if (!rect) {
@@ -453,6 +481,67 @@ function parseTableData(value: string | null): { columns: string[]; rows: string
   } catch {
     return null;
   }
+}
+
+function parseChartData(value: string | null): {
+  chartType: PptxChartType;
+  labels: string[];
+  series: PptxChartSeries[];
+  title?: string;
+} | null {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(value) as {
+      chartType?: unknown;
+      labels?: unknown;
+      series?: unknown;
+      title?: unknown;
+    };
+    const chartType = normalizeChartType(parsed.chartType);
+    if (
+      !chartType ||
+      !Array.isArray(parsed.labels) ||
+      !parsed.labels.every((label) => typeof label === 'string') ||
+      !Array.isArray(parsed.series) ||
+      !parsed.series.every(isChartSeries)
+    ) {
+      return null;
+    }
+
+    return {
+      chartType,
+      labels: parsed.labels,
+      series: parsed.series,
+      ...(typeof parsed.title === 'string' && parsed.title.length > 0
+        ? { title: parsed.title }
+        : {}),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function normalizeChartType(value: unknown): PptxChartType | null {
+  return value === 'bar' || value === 'line' || value === 'pie' || value === 'doughnut'
+    ? value
+    : null;
+}
+
+function isChartSeries(value: unknown): value is PptxChartSeries {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const series = value as Record<string, unknown>;
+  return (
+    typeof series.name === 'string' &&
+    Array.isArray(series.values) &&
+    series.values.every((item) => typeof item === 'number' && Number.isFinite(item)) &&
+    (series.color === undefined || typeof series.color === 'string')
+  );
 }
 
 function normalizeObjectFit(

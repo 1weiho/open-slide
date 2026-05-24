@@ -187,4 +187,36 @@ describe('writePptxFile', () => {
     expect(xml).toContain('Metric');
     expect(xml).toContain('Editable');
   });
+
+  it('exports chart nodes as editable chart parts', async () => {
+    const blob = await writePptxFile({
+      title: 'Chart test',
+      slides: [
+        {
+          width: 1920,
+          height: 1080,
+          nodes: [
+            {
+              chartType: 'bar',
+              h: 360,
+              kind: 'chart',
+              labels: ['Text', 'Images'],
+              series: [{ color: '3F7D58', name: 'Score', values: [92, 76] }],
+              style: { fontFace: 'Aptos', fontSize: 18 },
+              title: 'Editability score',
+              w: 720,
+              x: 80,
+              y: 120,
+            },
+          ],
+          diagnostics: [],
+        },
+      ],
+    });
+
+    const zip = await unzipPptx(blob);
+    const chartPath = Object.keys(zip).find((name) => name.startsWith('ppt/charts/chart'));
+    expect(chartPath).toBeDefined();
+    expect(await readPptxXml(blob, chartPath ?? '')).toContain('Editability score');
+  });
 });

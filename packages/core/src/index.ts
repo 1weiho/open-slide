@@ -2,6 +2,9 @@ export type { ImagePlaceholderProps } from './app/components/image-placeholder.t
 export { ImagePlaceholder } from './app/components/image-placeholder.tsx';
 export type {
   PptxBoxProps,
+  PptxChartProps,
+  PptxChartSeries,
+  PptxChartType,
   PptxEquationProps,
   PptxGroupProps,
   PptxImageProps,
@@ -14,6 +17,7 @@ export type {
 } from './app/components/pptx/index.tsx';
 export {
   PptxBox,
+  PptxChart,
   PptxEquation,
   PptxGroup,
   PptxImage,

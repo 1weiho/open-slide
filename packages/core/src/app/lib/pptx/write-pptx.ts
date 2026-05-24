@@ -2,6 +2,7 @@ import PptxGenJS from 'pptxgenjs';
 import {
   isRenderableNode,
   PPTX_CANVAS_WIDTH,
+  type PptxChartNode,
   type PptxEquationNode,
   type PptxImageNode,
   type PptxRasterNode,
@@ -75,6 +76,9 @@ function addSceneNode(slide: PptxSlide, node: PptxSceneNode): void {
     case 'table':
       addTableNode(slide, node);
       return;
+    case 'chart':
+      addChartNode(slide, node);
+      return;
     case 'shape':
       addShapeNode(slide, node);
       return;
@@ -141,6 +145,33 @@ export function addTableNode(slide: PptxSlide, node: PptxTableNode): void {
     fontSize: pxToPt(node.style.fontSize),
     margin: 0.08,
   });
+}
+
+export function addChartNode(slide: PptxSlide, node: PptxChartNode): void {
+  slide.addChart(
+    chartTypeForNode(node),
+    node.series.map((series) => ({
+      labels: node.labels,
+      name: series.name,
+      values: series.values,
+    })),
+    {
+      ...positionProps(node),
+      altText: node.title,
+      catAxisLabelFontFace: node.style.fontFace,
+      catAxisLabelFontSize: pxToPt(node.style.fontSize),
+      chartColors: node.series.map((series) => series.color).filter(isString),
+      showLegend: node.series.length > 1,
+      showTitle: Boolean(node.title),
+      showValue: false,
+      title: node.title,
+      titleColor: node.style.color,
+      titleFontFace: node.style.fontFace,
+      titleFontSize: pxToPt(node.style.fontSize),
+      valAxisLabelFontFace: node.style.fontFace,
+      valAxisLabelFontSize: pxToPt(node.style.fontSize),
+    },
+  );
 }
 
 function textStyleProps(style: PptxTextStyle) {
@@ -214,6 +245,19 @@ function shapeNameForNode(node: PptxShapeNode) {
   }
 }
 
+function chartTypeForNode(node: PptxChartNode) {
+  switch (node.chartType) {
+    case 'bar':
+      return 'bar';
+    case 'line':
+      return 'line';
+    case 'pie':
+      return 'pie';
+    case 'doughnut':
+      return 'doughnut';
+  }
+}
+
 function imageSourceProps(src: string): { data: string } | { path: string } {
   return src.startsWith('data:') ? { data: src } : { path: src };
 }
@@ -228,6 +272,10 @@ function imageSizingProps(node: PptxImageNode) {
     w: pxToIn(node.w),
     h: pxToIn(node.h),
   };
+}
+
+function isString(value: string | undefined): value is string {
+  return typeof value === 'string' && value.length > 0;
 }
 
 function opacityToTransparency(opacity: number | undefined): number | undefined {
