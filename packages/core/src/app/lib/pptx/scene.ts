@@ -1,3 +1,5 @@
+import type { PptxExportDecision } from './decision';
+
 export const PPTX_CANVAS_WIDTH = 1920;
 export const PPTX_CANVAS_HEIGHT = 1080;
 
@@ -9,8 +11,20 @@ export type PptxRect = {
   rotation?: number;
 };
 
+export type PptxNodeSource = {
+  tagName?: string;
+  id?: string;
+  className?: string;
+};
+
+export type PptxNodeMetadata = {
+  decision?: PptxExportDecision;
+  source?: PptxNodeSource;
+};
+
 export type PptxStroke = {
   color?: string;
+  dash?: 'dash' | 'solid';
   width?: number;
   opacity?: number;
 };
@@ -28,27 +42,33 @@ export type PptxTextStyle = {
   opacity?: number;
 };
 
-export type PptxTextNode = PptxRect & {
+export type PptxShapeKind = 'rect' | 'roundRect' | 'ellipse' | 'line';
+
+export type PptxTextNode = PptxRect &
+  PptxNodeMetadata & {
   kind: 'text';
   text: string;
   style: PptxTextStyle;
 };
 
-export type PptxShapeNode = PptxRect & {
+export type PptxShapeNode = PptxRect &
+  PptxNodeMetadata & {
   kind: 'shape';
-  shape: 'rect' | 'roundRect' | 'ellipse' | 'line';
+  shape: PptxShapeKind;
   fill?: string;
   stroke?: PptxStroke;
 };
 
-export type PptxImageNode = PptxRect & {
+export type PptxImageNode = PptxRect &
+  PptxNodeMetadata & {
   kind: 'image';
   src: string;
   alt?: string;
   fit?: 'contain' | 'cover' | 'stretch';
 };
 
-export type PptxRasterNode = PptxRect & {
+export type PptxRasterNode = PptxRect &
+  PptxNodeMetadata & {
   kind: 'raster';
   dataUrl: string;
   reason: string;
@@ -78,13 +98,13 @@ export function createPptxSlide(scene: Partial<PptxSlideScene> = {}): PptxSlideS
   };
 }
 
-export function isRenderableNode(node: PptxRect & { kind?: string }): boolean {
+export function isRenderableNode(node: PptxRect & { kind?: string; shape?: string }): boolean {
+  const isLine = (node as PptxRect & { shape?: string }).shape === 'line';
   return (
     Number.isFinite(node.x) &&
     Number.isFinite(node.y) &&
     Number.isFinite(node.w) &&
     Number.isFinite(node.h) &&
-    node.w > 0 &&
-    node.h > 0
+    (isLine ? node.w >= 0 && node.h >= 0 && (node.w > 0 || node.h > 0) : node.w > 0 && node.h > 0)
   );
 }

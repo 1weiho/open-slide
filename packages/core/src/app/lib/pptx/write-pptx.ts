@@ -13,6 +13,7 @@ import {
 const PPTX_WIDTH_IN = 13.333333;
 const PPTX_HEIGHT_IN = 7.5;
 const PX_PER_IN = PPTX_CANVAS_WIDTH / PPTX_WIDTH_IN;
+const PT_PER_PX = 72 / 96;
 const PPTX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 
 type PptxPresentation = InstanceType<typeof PptxGenJS>;
@@ -26,6 +27,10 @@ export type WritePptxFileRequest = {
 
 export function pxToIn(px: number): number {
   return px / PX_PER_IN;
+}
+
+export function pxToPt(px: number | undefined): number | undefined {
+  return px === undefined ? undefined : px * PT_PER_PX;
 }
 
 export async function writePptxFile(request: WritePptxFileRequest): Promise<Blob> {
@@ -78,14 +83,14 @@ export function addTextNode(slide: PptxSlide, node: PptxTextNode): void {
     breakLine: false,
     color: node.style.color,
     fontFace: node.style.fontFace,
-    fontSize: node.style.fontSize,
+    fontSize: pxToPt(node.style.fontSize),
     bold: node.style.bold,
     italic: node.style.italic,
     underline: node.style.underline ? { style: 'sng' } : undefined,
     align: node.style.align,
     valign: node.style.valign,
     transparency: opacityToTransparency(node.style.opacity),
-    lineSpacingMultiple: node.style.lineHeight,
+    lineSpacing: pxToPt(node.style.lineHeight),
   });
 }
 
@@ -97,7 +102,8 @@ export function addShapeNode(slide: PptxSlide, node: PptxShapeNode): void {
     line: node.stroke
       ? {
           color: node.stroke.color,
-          width: node.stroke.width,
+          dashType: node.stroke.dash,
+          width: pxToPt(node.stroke.width),
           transparency: opacityToTransparency(node.stroke.opacity),
         }
       : { color: 'FFFFFF', transparency: 100 },

@@ -5,6 +5,7 @@ import type { PptxDiagnostic } from './scene';
 type TestElementOptions = {
   tagName?: string;
   text?: string;
+  innerText?: string;
   rect?: DOMRectInit;
   attributes?: Record<string, string>;
   style?: Partial<CSSStyleDeclaration>;
@@ -18,11 +19,19 @@ type TestElement = Element & {
 const defaultStyle: Partial<CSSStyleDeclaration> = {
   backgroundColor: 'rgba(0, 0, 0, 0)',
   borderBottomWidth: '0px',
+  borderBottomColor: 'rgba(0, 0, 0, 0)',
+  borderBottomStyle: 'none',
   borderColor: 'rgba(0, 0, 0, 0)',
+  borderLeftColor: 'rgba(0, 0, 0, 0)',
+  borderLeftStyle: 'none',
   borderLeftWidth: '0px',
   borderRadius: '0px',
+  borderRightColor: 'rgba(0, 0, 0, 0)',
+  borderRightStyle: 'none',
   borderRightWidth: '0px',
   borderStyle: 'none',
+  borderTopColor: 'rgba(0, 0, 0, 0)',
+  borderTopStyle: 'none',
   borderTopWidth: '0px',
   color: 'rgb(0, 0, 0)',
   display: 'block',
@@ -40,6 +49,7 @@ const defaultStyle: Partial<CSSStyleDeclaration> = {
 function testElement({
   tagName = 'DIV',
   text = '',
+  innerText,
   rect = { height: 100, width: 100, x: 0, y: 0 },
   attributes = {},
   style = {},
@@ -50,9 +60,12 @@ function testElement({
   const element = {
     __style: { ...defaultStyle, ...style },
     children: childNodes,
+    cloneNode: () => testElement({ attributes, children, rect, style, tagName, text }),
     getAttribute: (name: string) => attrMap.get(name) ?? null,
     getBoundingClientRect: () => rectFromInit(rect),
     hasAttribute: (name: string) => attrMap.has(name),
+    innerText: (innerText ?? text) || childNodes.map((child) => child.textContent).join(''),
+    setAttribute: (name: string, value: string) => attrMap.set(name, value),
     tagName,
     textContent: text || childNodes.map((child) => child.textContent).join(''),
   };
@@ -102,9 +115,186 @@ describe('collectDomPptxScene', () => {
         h: 80,
         kind: 'text',
         text: 'Hello',
-        w: 400,
+        w: 432,
         x: 120,
         y: 160,
+      }),
+    ]);
+  });
+
+  it('collects semantic text containers with inline children as one editable text node', () => {
+    const title = testElement({
+      children: [testElement({ tagName: 'BR' })],
+      innerText: 'Rome did not fall\nin a day.',
+      rect: { height: 270, width: 1050, x: 140, y: 250 },
+      tagName: 'H1',
+      text: 'Rome did not fallin a day.',
+    });
+    const canvas = testElement({
+      children: [title],
+      rect: { height: 1080, width: 1920, x: 0, y: 0 },
+    });
+    vi.stubGlobal('getComputedStyle', (el: TestElement) => el.__style);
+
+    const scene = collectDomPptxScene(canvas as unknown as HTMLElement);
+
+    expect(scene.nodes).toEqual([
+      expect.objectContaining({
+        h: 270,
+        kind: 'text',
+        text: 'Rome did not fall\nin a day.',
+        w: 1134,
+        x: 140,
+        y: 250,
+      }),
+    ]);
+  });
+
+  it('uses browser-measured line breaks for editable text boxes', () => {
+    class RangeNode {
+      static TEXT_NODE = 3;
+      childNodes: RangeNode[] = [];
+      textContent = '';
+      constructor(readonly nodeType: number) {}
+    }
+
+    class RangeText extends RangeNode {
+      constructor(readonly data: string) {
+        super(RangeNode.TEXT_NODE);
+        this.textContent = data;
+      }
+    }
+
+    class RangeElement extends RangeNode {
+      __style = defaultStyle;
+      children: RangeElement[];
+      textContent: string;
+
+      constructor(
+        readonly tagName: string,
+        readonly rect: DOMRectInit,
+        childNodes: RangeNode[],
+      ) {
+        super(1);
+        this.childNodes = childNodes;
+        this.children = childNodes.filter(
+          (child): child is RangeElement => child instanceof RangeElement,
+        );
+        this.textContent = childNodes
+          .map((child) => (child instanceof RangeText ? child.data : child.textContent))
+          .join('');
+      }
+
+      getAttribute() {
+        return null;
+      }
+
+      getBoundingClientRect() {
+        return rectFromInit(this.rect);
+      }
+    }
+
+    const text = new RangeText('The better question is not why did Rome fall');
+    const heading = new RangeElement('H2', { height: 180, width: 900, x: 100, y: 120 }, [text]);
+    const canvas = new RangeElement('DIV', { height: 1080, width: 1920, x: 0, y: 0 }, [heading]);
+    vi.stubGlobal('Node', RangeNode);
+    vi.stubGlobal('Text', RangeText);
+    vi.stubGlobal('Element', RangeElement);
+    vi.stubGlobal('getComputedStyle', (el: RangeElement) => el.__style);
+    vi.stubGlobal('document', {
+      createRange: () => {
+        let start = 0;
+        return {
+          detach: () => undefined,
+          getClientRects: () => [{ height: 20, top: start < 27 ? 130 : 160, width: 20 }],
+          setEnd: () => undefined,
+          setStart: (_node: RangeText, offset: number) => {
+            start = offset;
+          },
+        };
+      },
+    });
+
+    const scene = collectDomPptxScene(canvas as unknown as HTMLElement);
+
+    expect(scene.nodes).toEqual([
+      expect.objectContaining({
+        kind: 'text',
+        text: 'The better question is not\nwhy did Rome fall',
+      }),
+    ]);
+  });
+
+  it('falls back to normalized text when range measurement yields no rects', () => {
+    class RangeNode {
+      static TEXT_NODE = 3;
+      childNodes: RangeNode[] = [];
+      textContent = '';
+      constructor(readonly nodeType: number) {}
+    }
+
+    class RangeText extends RangeNode {
+      constructor(readonly data: string) {
+        super(RangeNode.TEXT_NODE);
+        this.textContent = data;
+      }
+    }
+
+    class RangeElement extends RangeNode {
+      __style = defaultStyle;
+      children: RangeElement[];
+      innerText: string;
+      textContent: string;
+
+      constructor(
+        readonly tagName: string,
+        readonly rect: DOMRectInit,
+        childNodes: RangeNode[],
+      ) {
+        super(1);
+        this.childNodes = childNodes;
+        this.children = childNodes.filter(
+          (child): child is RangeElement => child instanceof RangeElement,
+        );
+        this.textContent = childNodes
+          .map((child) => (child instanceof RangeText ? child.data : child.textContent))
+          .join('');
+        this.innerText = this.textContent;
+      }
+
+      getAttribute() {
+        return null;
+      }
+
+      getBoundingClientRect() {
+        return rectFromInit(this.rect);
+      }
+    }
+
+    const text = new RangeText('Visible text');
+    const heading = new RangeElement('H2', { height: 80, width: 400, x: 100, y: 120 }, [text]);
+    const canvas = new RangeElement('DIV', { height: 1080, width: 1920, x: 0, y: 0 }, [heading]);
+    const getClientRects = vi.fn(() => []);
+    vi.stubGlobal('Node', RangeNode);
+    vi.stubGlobal('Text', RangeText);
+    vi.stubGlobal('Element', RangeElement);
+    vi.stubGlobal('getComputedStyle', (el: RangeElement) => el.__style);
+    vi.stubGlobal('document', {
+      createRange: () => ({
+        detach: () => undefined,
+        getClientRects,
+        setEnd: () => undefined,
+        setStart: () => undefined,
+      }),
+    });
+
+    const scene = collectDomPptxScene(canvas as unknown as HTMLElement);
+
+    expect(getClientRects).toHaveBeenCalled();
+    expect(scene.nodes).toEqual([
+      expect.objectContaining({
+        kind: 'text',
+        text: 'Visible text',
       }),
     ]);
   });
@@ -135,6 +325,107 @@ describe('collectDomPptxScene', () => {
     ]);
   });
 
+  it('collects one-sided borders as editable lines instead of rectangles', () => {
+    const rule = testElement({
+      rect: { height: 120, width: 700, x: 80, y: 900 },
+      style: {
+        borderTopColor: 'rgb(26, 24, 21)',
+        borderTopStyle: 'dashed',
+        borderTopWidth: '1px',
+      },
+    });
+    const canvas = testElement({
+      children: [rule],
+      rect: { height: 1080, width: 1920, x: 0, y: 0 },
+    });
+    vi.stubGlobal('getComputedStyle', (el: TestElement) => el.__style);
+
+    const scene = collectDomPptxScene(canvas as unknown as HTMLElement);
+
+    expect(scene.nodes).toEqual([
+      expect.objectContaining({
+        h: 0,
+        kind: 'shape',
+        shape: 'line',
+        stroke: { color: '1A1815', dash: 'dash', width: 1 },
+        w: 700,
+        x: 80,
+        y: 900,
+      }),
+    ]);
+  });
+
+  it('collects group children instead of treating the group as a primitive leaf', () => {
+    const child = testElement({
+      rect: { height: 60, width: 200, x: 40, y: 50 },
+      text: 'Grouped text',
+    });
+    const group = testElement({
+      attributes: { 'data-osd-pptx-kind': 'group' },
+      children: [child],
+      rect: { height: 100, width: 300, x: 20, y: 30 },
+    });
+    const canvas = testElement({
+      children: [group],
+      rect: { height: 1080, width: 1920, x: 0, y: 0 },
+    });
+    vi.stubGlobal('getComputedStyle', (el: TestElement) => el.__style);
+
+    const scene = collectDomPptxScene(canvas as unknown as HTMLElement);
+
+    expect(scene.nodes).toEqual([
+      expect.objectContaining({ kind: 'text', text: 'Grouped text' }),
+    ]);
+  });
+
+  it('collects box primitives and their child content', () => {
+    const child = testElement({
+      rect: { height: 50, width: 180, x: 60, y: 70 },
+      text: 'Panel title',
+    });
+    const box = testElement({
+      attributes: { 'data-osd-pptx-kind': 'box' },
+      children: [child],
+      rect: { height: 160, width: 320, x: 40, y: 50 },
+      style: { backgroundColor: 'rgb(255, 255, 255)' },
+    });
+    const canvas = testElement({
+      children: [box],
+      rect: { height: 1080, width: 1920, x: 0, y: 0 },
+    });
+    vi.stubGlobal('getComputedStyle', (el: TestElement) => el.__style);
+
+    const scene = collectDomPptxScene(canvas as unknown as HTMLElement);
+
+    expect(scene.nodes).toEqual([
+      expect.objectContaining({ fill: 'FFFFFF', kind: 'shape', shape: 'rect' }),
+      expect.objectContaining({ kind: 'text', text: 'Panel title' }),
+    ]);
+  });
+
+  it('honors explicit primitive shape metadata', () => {
+    const ellipse = testElement({
+      attributes: { 'data-osd-pptx-kind': 'shape', 'data-osd-pptx-shape': 'ellipse' },
+      rect: { height: 120, width: 240, x: 20, y: 30 },
+    });
+    const line = testElement({
+      attributes: { 'data-osd-pptx-kind': 'shape', 'data-osd-pptx-shape': 'line' },
+      rect: { height: 1, width: 300, x: 40, y: 90 },
+    });
+    const canvas = testElement({
+      children: [ellipse, line],
+      rect: { height: 1080, width: 1920, x: 0, y: 0 },
+    });
+    vi.stubGlobal('getComputedStyle', (el: TestElement) => el.__style);
+
+    const scene = collectDomPptxScene(canvas as unknown as HTMLElement);
+
+    expect(scene.nodes).toEqual([
+      expect.objectContaining({ h: 120, kind: 'shape', shape: 'ellipse', w: 240 }),
+      expect.objectContaining({ h: 1, kind: 'shape', shape: 'line', w: 300 }),
+    ]);
+  });
+
   it('collects images as image nodes', () => {
     const image = testElement({
       attributes: { alt: 'Diagram', src: '/diagram.png' },
@@ -156,6 +447,46 @@ describe('collectDomPptxScene', () => {
         kind: 'image',
         src: '/diagram.png',
         w: 500,
+        x: 40,
+        y: 50,
+      }),
+    ]);
+  });
+
+  it('keeps inline SVG visible as an image fallback without collecting descendants', () => {
+    const path = testElement({
+      rect: { height: 200, width: 200, x: 80, y: 90 },
+      style: { borderColor: 'rgb(0, 0, 0)', borderStyle: 'solid', borderTopWidth: '8px' },
+      tagName: 'PATH',
+    });
+    const svg = testElement({
+      children: [path],
+      rect: { height: 320, width: 260, x: 40, y: 50 },
+      tagName: 'SVG',
+    });
+    const canvas = testElement({
+      children: [svg],
+      rect: { height: 1080, width: 1920, x: 0, y: 0 },
+    });
+    vi.stubGlobal('getComputedStyle', (el: TestElement) => el.__style);
+    vi.stubGlobal(
+      'XMLSerializer',
+      class {
+        serializeToString() {
+          return '<svg xmlns="http://www.w3.org/2000/svg"></svg>';
+        }
+      },
+    );
+
+    const scene = collectDomPptxScene(canvas as unknown as HTMLElement);
+
+    expect(scene.nodes).toEqual([
+      expect.objectContaining({
+        fit: 'stretch',
+        h: 320,
+        kind: 'image',
+        src: expect.stringMatching(/^data:image\/svg\+xml;base64,/),
+        w: 260,
         x: 40,
         y: 50,
       }),
