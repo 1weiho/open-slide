@@ -108,16 +108,19 @@ export function PptxTable({ columns, rows, ...props }: PptxTableProps) {
     >
       <thead>
         <tr>
-          {columns.map((column) => (
-            <th key={column}>{column}</th>
+          {columns.map((column, columnIndex) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: PPTX tables render static export metadata.
+            <th key={`${column}-${columnIndex}`}>{column}</th>
           ))}
         </tr>
       </thead>
       <tbody>
         {rows.map((row, rowIndex) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: PPTX tables render static export metadata.
           <tr key={`${row.join('|')}-${rowIndex}`}>
             {row.map((cell, cellIndex) => (
-              <td key={`${cell}-${cellIndex}`}>{cell}</td>
+              // biome-ignore lint/suspicious/noArrayIndexKey: PPTX tables render static export metadata.
+              <td key={`${row.join('|')}-${cell}-${cellIndex}`}>{cell}</td>
             ))}
           </tr>
         ))}

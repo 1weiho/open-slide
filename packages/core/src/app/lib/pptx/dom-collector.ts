@@ -269,7 +269,8 @@ function collectEquationNode(
   const mathml = el.getAttribute(PPTX_EQUATION_MATHML_ATTR) ?? undefined;
   const fallbackText =
     el.getAttribute(PPTX_EQUATION_FALLBACK_ATTR) ?? readElementText(el) ?? latex ?? mathml;
-  const reason = 'Equation exported as editable fallback text; native OfficeMath is not implemented';
+  const reason =
+    'Equation exported as editable fallback text; native OfficeMath is not implemented';
   diagnostics.push({ level: 'warn', message: reason, nodeKind: 'equation' });
 
   const node = {
@@ -454,7 +455,9 @@ function parseTableData(value: string | null): { columns: string[]; rows: string
   }
 }
 
-function normalizeObjectFit(value: string | undefined): 'contain' | 'cover' | 'stretch' | undefined {
+function normalizeObjectFit(
+  value: string | undefined,
+): 'contain' | 'cover' | 'stretch' | undefined {
   if (value === 'contain' || value === 'cover') {
     return value;
   }

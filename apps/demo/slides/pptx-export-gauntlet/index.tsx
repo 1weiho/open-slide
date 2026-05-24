@@ -1,14 +1,13 @@
 import {
+  type DesignSystem,
+  type Page,
   PptxBox,
   PptxEquation,
   PptxGroup,
-  PptxImage,
   PptxRasterLayer,
   PptxShape,
   PptxTable,
   PptxText,
-  type DesignSystem,
-  type Page,
   type SlideMeta,
 } from '@open-slide/core';
 
@@ -303,7 +302,15 @@ const EquationStress: Page = () => (
 const MediaStress: Page = () => (
   <div style={{ ...fill, padding: `${Pad}px ${Pad}px 150px` }}>
     <GrainLayer />
-    <div style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 72 }}>
+    <div
+      style={{
+        position: 'relative',
+        zIndex: 1,
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 72,
+      }}
+    >
       <div>
         <Eyebrow>03 / media and effects</Eyebrow>
         <PptxText
@@ -369,8 +376,19 @@ const MediaStress: Page = () => (
         >
           <title>Complex SVG mark</title>
           <circle cx="380" cy="315" r="156" fill="none" stroke="#fffaf0" strokeWidth="20" />
-          <path d="M230 344 C312 160 448 160 530 344" fill="none" stroke="#b9472d" strokeWidth="26" />
-          <path d="M250 390 L510 390" fill="none" stroke="#fffaf0" strokeWidth="14" strokeDasharray="20 18" />
+          <path
+            d="M230 344 C312 160 448 160 530 344"
+            fill="none"
+            stroke="#b9472d"
+            strokeWidth="26"
+          />
+          <path
+            d="M250 390 L510 390"
+            fill="none"
+            stroke="#fffaf0"
+            strokeWidth="14"
+            strokeDasharray="20 18"
+          />
         </svg>
       </PptxBox>
     </div>
@@ -391,7 +409,9 @@ const StructuredStress: Page = () => {
       <GrainLayer />
       <div style={{ position: 'relative', zIndex: 1 }}>
         <Eyebrow>04 / structured data</Eyebrow>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.05fr 0.95fr', gap: 70, marginTop: 36 }}>
+        <div
+          style={{ display: 'grid', gridTemplateColumns: '1.05fr 0.95fr', gap: 70, marginTop: 36 }}
+        >
           <PptxTable
             columns={['Case', 'Status']}
             rows={rows.map(([label, status]) => [label, status])}
@@ -432,7 +452,15 @@ const StructuredStress: Page = () => {
                 ['Effects', 38, palette.accent],
                 ['Math', 61, palette.amber],
               ].map(([label, value, color]) => (
-                <div key={label} style={{ display: 'grid', gridTemplateColumns: '120px 1fr 58px', gap: 22, alignItems: 'center' }}>
+                <div
+                  key={label}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '120px 1fr 58px',
+                    gap: 22,
+                    alignItems: 'center',
+                  }}
+                >
                   <PptxText style={{ fontSize: 24, color: '#d8cbb7' }}>{label}</PptxText>
                   <PptxBox style={{ height: 24, background: '#332d25', borderRadius: 999 }}>
                     <PptxShape

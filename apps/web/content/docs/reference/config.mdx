@@ -6,6 +6,10 @@ description: Workspace-level configuration.
 The config lives at the workspace root and is fully optional — every field
 has a sensible default.
 
+PPTX export is optimized first for Microsoft PowerPoint Desktop on Windows and
+Mac. Other editors may open the generated file, but compatibility there is
+best-effort.
+
 ```ts title="open-slide.config.ts"
 import type { OpenSlideConfig } from '@open-slide/core';
 

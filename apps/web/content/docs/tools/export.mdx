@@ -26,20 +26,43 @@ landscape so each slide is exactly one page.
 ## PPTX
 
 The dev server can export the active deck to PowerPoint from
-**Export -> PPTX**. open-slide exports native editable objects where it can
-and falls back conservatively for browser-only effects.
+**Export -> PPTX**. The primary target is Microsoft PowerPoint Desktop on
+Windows and Mac. open-slide exports native editable objects where it can and
+falls back conservatively for browser-only effects.
 
 For the best editability, use the PPTX primitives for important content:
 
 ```tsx
-import { PptxText, type Page } from '@open-slide/core';
+import { PptxEquation, PptxRasterLayer, PptxTable, PptxText, type Page } from '@open-slide/core';
 
 const PageOne: Page = () => (
-  <PptxText style={{ position: 'absolute', left: 120, top: 120, fontSize: 72 }}>
-    Editable in PowerPoint
-  </PptxText>
+  <>
+    <PptxText style={{ position: 'absolute', left: 120, top: 120, fontSize: 72 }}>
+      Editable in PowerPoint
+    </PptxText>
+    <PptxEquation
+      latex="\\int_0^1 x^2 dx = 1/3"
+      fallbackText="integral from 0 to 1 of x squared d x equals one third"
+      style={{ position: 'absolute', left: 120, top: 240, fontSize: 36 }}
+    />
+    <PptxTable
+      columns={['Layer', 'Export']}
+      rows={[['Text', 'Native'], ['Effects', 'Raster']]}
+      style={{ position: 'absolute', left: 120, top: 340, width: 620, height: 180 }}
+    />
+    <PptxRasterLayer
+      alt="Decorative texture"
+      dataUrl="data:image/png;base64,..."
+      reason="browser-only texture"
+      style={{ position: 'absolute', left: 820, top: 120, width: 320, height: 220 }}
+    />
+  </>
 );
 ```
+
+PPTX export logs a developer-facing report for native, reduced-fidelity,
+raster, and omitted objects. Equation primitives currently export editable
+fallback text and report that native OfficeMath is not implemented yet.
 
 ## What gets shipped
 

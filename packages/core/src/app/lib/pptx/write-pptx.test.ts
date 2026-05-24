@@ -78,9 +78,7 @@ describe('writePptxFile', () => {
 
     const zip = await unzipPptx(blob);
     expect(zip['ppt/notesSlides/notesSlide1.xml']).toBeDefined();
-    expect(await readPptxXml(blob, 'ppt/notesSlides/notesSlide1.xml')).toContain(
-      'Presenter note',
-    );
+    expect(await readPptxXml(blob, 'ppt/notesSlides/notesSlide1.xml')).toContain('Presenter note');
   });
 
   it('exports rich text nodes as editable text runs', async () => {

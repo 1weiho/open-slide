@@ -423,9 +423,7 @@ describe('collectDomPptxScene', () => {
 
     const scene = collectDomPptxScene(canvas as unknown as HTMLElement);
 
-    expect(scene.nodes).toEqual([
-      expect.objectContaining({ kind: 'text', text: 'Grouped text' }),
-    ]);
+    expect(scene.nodes).toEqual([expect.objectContaining({ kind: 'text', text: 'Grouped text' })]);
   });
 
   it('collects box primitives and their child content', () => {
