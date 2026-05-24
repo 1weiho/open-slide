@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import {
   PptxBox,
+  PptxEquation,
   PptxGroup,
   PptxImage,
   PptxRasterLayer,
@@ -48,5 +49,16 @@ describe('pptx primitives', () => {
     expect(html).toContain('src="data:image/png;base64,abc"');
     expect(html).toContain('data-osd-pptx-kind="raster"');
     expect(html).toContain('data-osd-pptx-reason="unsupported filter"');
+  });
+
+  it('renders equation metadata with editable fallback text', () => {
+    const html = renderToStaticMarkup(
+      <PptxEquation latex="E = mc^2" fallbackText="E = m c^2" inline />,
+    );
+
+    expect(html).toContain('E = m c^2');
+    expect(html).toContain('data-osd-pptx-kind="equation"');
+    expect(html).toContain('data-osd-pptx-latex="E = mc^2"');
+    expect(html).toContain('data-osd-pptx-inline="true"');
   });
 });

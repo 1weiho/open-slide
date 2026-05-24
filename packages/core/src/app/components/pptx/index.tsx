@@ -1,6 +1,13 @@
 import type { HTMLAttributes, ImgHTMLAttributes } from 'react';
 
-export type PptxPrimitiveKind = 'text' | 'box' | 'image' | 'shape' | 'group' | 'raster';
+export type PptxPrimitiveKind =
+  | 'text'
+  | 'box'
+  | 'image'
+  | 'shape'
+  | 'group'
+  | 'raster'
+  | 'equation';
 
 export type PptxShapeKind = 'rect' | 'roundRect' | 'ellipse' | 'line';
 
@@ -16,6 +23,13 @@ export type PptxRasterLayerProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'sr
   alt: string;
   dataUrl: string;
   reason: string;
+};
+
+export type PptxEquationProps = HTMLAttributes<HTMLDivElement> & {
+  fallbackText?: string;
+  inline?: boolean;
+  latex?: string;
+  mathml?: string;
 };
 
 export type PptxShapeProps = HTMLAttributes<HTMLDivElement> & {
@@ -53,6 +67,29 @@ export function PptxRasterLayer({ alt, dataUrl, reason, ...props }: PptxRasterLa
       data-osd-pptx-kind="raster"
       data-osd-pptx-reason={reason}
     />
+  );
+}
+
+export function PptxEquation({
+  fallbackText,
+  inline = false,
+  latex,
+  mathml,
+  children,
+  ...props
+}: PptxEquationProps) {
+  const text = fallbackText ?? latex ?? mathml ?? children;
+  return (
+    <div
+      {...props}
+      data-osd-pptx-kind="equation"
+      data-osd-pptx-latex={latex}
+      data-osd-pptx-mathml={mathml}
+      data-osd-pptx-inline={inline ? 'true' : undefined}
+      data-osd-pptx-fallback={fallbackText}
+    >
+      {text}
+    </div>
   );
 }
 

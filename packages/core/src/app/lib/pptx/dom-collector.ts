@@ -3,6 +3,7 @@ import {
   createPptxSlide,
   isRenderableNode,
   type PptxDiagnostic,
+  type PptxEquationNode,
   type PptxRect,
   type PptxRichTextNode,
   type PptxSceneNode,
@@ -17,6 +18,10 @@ import {
 const PPTX_KIND_ATTR = 'data-osd-pptx-kind';
 const PPTX_SHAPE_ATTR = 'data-osd-pptx-shape';
 const PPTX_RASTER_REASON_ATTR = 'data-osd-pptx-reason';
+const PPTX_EQUATION_FALLBACK_ATTR = 'data-osd-pptx-fallback';
+const PPTX_EQUATION_INLINE_ATTR = 'data-osd-pptx-inline';
+const PPTX_EQUATION_LATEX_ATTR = 'data-osd-pptx-latex';
+const PPTX_EQUATION_MATHML_ATTR = 'data-osd-pptx-mathml';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const TEXT_CONTAINER_TAGS = new Set(['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'SPAN']);
@@ -107,6 +112,7 @@ function collectElement(el: Element, canvas: HTMLElement, scene: PptxSlideScene)
     primitiveKind === 'text' ||
     primitiveKind === 'image' ||
     primitiveKind === 'shape' ||
+    primitiveKind === 'equation' ||
     node?.kind === 'text' ||
     node?.kind === 'richText' ||
     isImageElement(el) ||
@@ -133,6 +139,8 @@ function collectPrimitiveNode(
       return collectImageNode(el, canvas);
     case 'raster':
       return collectRasterNode(el, canvas);
+    case 'equation':
+      return collectEquationNode(el, canvas, diagnostics);
     case 'box':
       return collectShapeNode(el, canvas);
     case 'shape':
@@ -235,6 +243,37 @@ function collectRasterNode(el: Element, canvas: HTMLElement): PptxSceneNode | nu
     kind: 'raster',
     reason,
   } satisfies PptxSceneNode;
+
+  return isRenderableNode(node) ? node : null;
+}
+
+function collectEquationNode(
+  el: Element,
+  canvas: HTMLElement,
+  diagnostics: PptxDiagnostic[],
+): PptxSceneNode | null {
+  const rect = readElementRect(el, canvas);
+  if (!rect) {
+    return null;
+  }
+
+  const latex = el.getAttribute(PPTX_EQUATION_LATEX_ATTR) ?? undefined;
+  const mathml = el.getAttribute(PPTX_EQUATION_MATHML_ATTR) ?? undefined;
+  const fallbackText =
+    el.getAttribute(PPTX_EQUATION_FALLBACK_ATTR) ?? readElementText(el) ?? latex ?? mathml;
+  const reason = 'Equation exported as editable fallback text; native OfficeMath is not implemented';
+  diagnostics.push({ level: 'warn', message: reason, nodeKind: 'equation' });
+
+  const node = {
+    ...rect,
+    decision: { kind: 'native-reduced', reason },
+    fallbackText,
+    inline: el.getAttribute(PPTX_EQUATION_INLINE_ATTR) === 'true',
+    kind: 'equation',
+    ...(latex ? { latex } : {}),
+    ...(mathml ? { mathml } : {}),
+    style: readElementTextStyle(el),
+  } satisfies PptxEquationNode;
 
   return isRenderableNode(node) ? node : null;
 }

@@ -66,6 +66,16 @@ export type PptxRichTextNode = PptxRect &
     lineBreakPolicy?: 'preserve-browser-lines' | 'powerpoint-wrap';
   };
 
+export type PptxEquationNode = PptxRect &
+  PptxNodeMetadata & {
+    kind: 'equation';
+    fallbackText?: string;
+    inline?: boolean;
+    latex?: string;
+    mathml?: string;
+    style: PptxTextStyle;
+  };
+
 export type PptxShapeNode = PptxRect &
   PptxNodeMetadata & {
     kind: 'shape';
@@ -92,6 +102,7 @@ export type PptxRasterNode = PptxRect &
 export type PptxSceneNode =
   | PptxTextNode
   | PptxRichTextNode
+  | PptxEquationNode
   | PptxShapeNode
   | PptxImageNode
   | PptxRasterNode;

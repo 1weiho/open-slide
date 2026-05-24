@@ -533,6 +533,41 @@ describe('collectDomPptxScene', () => {
     ]);
   });
 
+  it('collects equation primitives as reduced-fidelity editable equation nodes', () => {
+    const equation = testElement({
+      attributes: {
+        'data-osd-pptx-fallback': 'E = m c^2',
+        'data-osd-pptx-inline': 'true',
+        'data-osd-pptx-kind': 'equation',
+        'data-osd-pptx-latex': 'E = mc^2',
+      },
+      rect: { height: 80, width: 360, x: 40, y: 50 },
+      text: 'E = m c^2',
+    });
+    const canvas = testElement({
+      children: [equation],
+      rect: { height: 1080, width: 1920, x: 0, y: 0 },
+    });
+    vi.stubGlobal('getComputedStyle', (el: TestElement) => el.__style);
+
+    const scene = collectDomPptxScene(canvas as unknown as HTMLElement);
+
+    expect(scene.nodes).toEqual([
+      expect.objectContaining({
+        fallbackText: 'E = m c^2',
+        inline: true,
+        kind: 'equation',
+        latex: 'E = mc^2',
+      }),
+    ]);
+    expect(scene.diagnostics).toEqual([
+      expect.objectContaining({
+        message: expect.stringContaining('native OfficeMath is not implemented'),
+        nodeKind: 'equation',
+      }),
+    ]);
+  });
+
   it('keeps inline SVG visible as an image fallback without collecting descendants', () => {
     const path = testElement({
       rect: { height: 200, width: 200, x: 80, y: 90 },

@@ -1,5 +1,6 @@
 import {
   PptxBox,
+  PptxEquation,
   PptxGroup,
   PptxImage,
   PptxRasterLayer,
@@ -229,7 +230,6 @@ const EquationStress: Page = () => (
         Editable math, inline and display.
       </PptxText>
 
-      {/* TODO: replace with <PptxEquation latex="\\int_0^1 x^2 dx = 1/3" />. */}
       <PptxBox
         style={{
           marginTop: 58,
@@ -241,7 +241,9 @@ const EquationStress: Page = () => (
           boxShadow: '0 20px 60px rgba(33, 29, 24, 0.12)',
         }}
       >
-        <PptxText
+        <PptxEquation
+          fallbackText="integral from 0 to 1 of x squared d x equals one third"
+          latex="\\int_0^1 x^2 dx = 1/3"
           style={{
             fontFamily: fonts.display,
             fontSize: 64,
@@ -250,21 +252,48 @@ const EquationStress: Page = () => (
           }}
         >
           {'\\int_0^1 x^2 dx = 1/3'}
-        </PptxText>
+        </PptxEquation>
       </PptxBox>
 
-      <PptxText
+      <div
         style={{
           marginTop: 54,
           maxWidth: 1260,
-          fontSize: 34,
-          lineHeight: 1.58,
-          color: palette.muted,
         }}
       >
-        Inline math should not become a screenshot: beta = alpha + 1 appears inside the paragraph
-        and should eventually be editable without leaving duplicate background text.
-      </PptxText>
+        <PptxText
+          style={{
+            display: 'inline',
+            fontSize: 34,
+            lineHeight: 1.58,
+            color: palette.muted,
+          }}
+        >
+          Inline math should not become a screenshot:
+        </PptxText>{' '}
+        <PptxEquation
+          inline
+          latex="\\beta = \\alpha + 1"
+          fallbackText="beta = alpha + 1"
+          style={{
+            display: 'inline-block',
+            fontFamily: fonts.display,
+            fontSize: 34,
+            color: palette.blue,
+          }}
+        />{' '}
+        <PptxText
+          style={{
+            display: 'inline',
+            fontSize: 34,
+            lineHeight: 1.58,
+            color: palette.muted,
+          }}
+        >
+          appears inside the paragraph and should eventually be editable without leaving duplicate
+          background text.
+        </PptxText>
+      </div>
     </div>
     <Footer label="display equation, inline equation" />
   </div>

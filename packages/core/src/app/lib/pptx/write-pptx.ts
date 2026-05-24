@@ -2,6 +2,7 @@ import PptxGenJS from 'pptxgenjs';
 import {
   isRenderableNode,
   PPTX_CANVAS_WIDTH,
+  type PptxEquationNode,
   type PptxImageNode,
   type PptxRichTextNode,
   type PptxRasterNode,
@@ -67,6 +68,9 @@ function addSceneNode(slide: PptxSlide, node: PptxSceneNode): void {
     case 'richText':
       addRichTextNode(slide, node);
       return;
+    case 'equation':
+      addEquationNode(slide, node);
+      return;
     case 'shape':
       addShapeNode(slide, node);
       return;
@@ -105,6 +109,17 @@ export function addRichTextNode(slide: PptxSlide, node: PptxRichTextNode): void 
       ...textStyleProps(node.style),
     },
   );
+}
+
+export function addEquationNode(slide: PptxSlide, node: PptxEquationNode): void {
+  slide.addText(node.fallbackText ?? node.latex ?? node.mathml ?? '', {
+    ...positionProps(node),
+    rotate: node.rotation,
+    margin: 0,
+    fit: 'shrink',
+    breakLine: false,
+    ...textStyleProps(node.style),
+  });
 }
 
 function textStyleProps(style: PptxTextStyle) {
