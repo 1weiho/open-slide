@@ -1,5 +1,19 @@
 # @open-slide/core
 
+## 1.7.0
+
+### Minor Changes
+
+- [#153](https://github.com/1weiho/open-slide/pull/153) [`7952a06`](https://github.com/1weiho/open-slide/commit/7952a06a518a5b444e7df34307aef13324e36518) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Add I and D shortcuts for the inspector and design panel, show a dashed hover frame alongside the inspector selection, and polish the inspector header and save bar.
+
+- [#148](https://github.com/1weiho/open-slide/pull/148) [`78333bc`](https://github.com/1weiho/open-slide/commit/78333bcd7156e511ad2c84a0800f084705c44536) Thanks [@1weiho](https://github.com/1weiho)! - Show a floating action panel below the inspector selection box when an image is selected, with quick-access Replace and Crop icons.
+
+- [#149](https://github.com/1weiho/open-slide/pull/149) [`26f6cb1`](https://github.com/1weiho/open-slide/commit/26f6cb13cdc1c738d41bd5bab90940b38562e828) Thanks [@1weiho](https://github.com/1weiho)! - Add SlideTransition API for declaring per-page page-transition animations, plus a transitions section in the bundled slide-authoring skill with tasteful few-shot examples.
+
+### Patch Changes
+
+- [#154](https://github.com/1weiho/open-slide/pull/154) [`51108f1`](https://github.com/1weiho/open-slide/commit/51108f1547942c2fb1cf6d18c62e8c449b5be587) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Truncate long slide titles in the editor header instead of letting them overlap the right-side controls.
+
 ## 1.6.0
 
 ### Minor Changes
