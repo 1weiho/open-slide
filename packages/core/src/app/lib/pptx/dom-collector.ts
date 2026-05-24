@@ -110,6 +110,7 @@ function collectElement(el: Element, canvas: HTMLElement, scene: PptxSlideScene)
     collectFallbackNode(el, canvas, scene.diagnostics);
 
   if (node) {
+    markUnsupportedEffectDecision(node, style);
     scene.nodes.push(node);
   }
   addUnsupportedEffectDiagnostics(scene.diagnostics, style, node?.kind);
@@ -665,16 +666,7 @@ function addUnsupportedEffectDiagnostics(
   style: CSSStyleDeclaration | null,
   nodeKind?: PptxSceneNode['kind'],
 ): void {
-  if (!style) {
-    return;
-  }
-
-  const effects = [
-    ['filter', style.filter],
-    ['backdrop-filter', readStyleProperty(style, 'backdropFilter')],
-    ['box-shadow', style.boxShadow],
-    ['text-shadow', style.textShadow],
-  ].filter(([, value]) => value && value !== 'none');
+  const effects = readUnsupportedEffects(style);
 
   for (const [name, value] of effects) {
     diagnostics.push({
@@ -683,6 +675,45 @@ function addUnsupportedEffectDiagnostics(
       ...(nodeKind ? { nodeKind } : {}),
     });
   }
+}
+
+function markUnsupportedEffectDecision(
+  node: PptxSceneNode,
+  style: CSSStyleDeclaration | null,
+): void {
+  if (node.decision) {
+    return;
+  }
+
+  const effects = readUnsupportedEffects(style);
+  if (effects.length === 0) {
+    return;
+  }
+
+  node.decision = {
+    kind: 'native-reduced',
+    reason: `Unsupported CSS effects are not exported as editable PPTX effects: ${effects
+      .map(([name]) => name)
+      .join(', ')}`,
+  };
+}
+
+function readUnsupportedEffects(style: CSSStyleDeclaration | null): Array<[string, string]> {
+  if (!style) {
+    return [];
+  }
+
+  return [
+    ['filter', style.filter],
+    ['backdrop-filter', readStyleProperty(style, 'backdropFilter')],
+    ['box-shadow', style.boxShadow],
+    ['text-shadow', style.textShadow],
+    ['mix-blend-mode', readStyleProperty(style, 'mixBlendMode')],
+    ['clip-path', readStyleProperty(style, 'clipPath')],
+    ['mask-image', readStyleProperty(style, 'maskImage')],
+  ].filter(([, value]) => value && value !== 'none' && value !== 'normal') as Array<
+    [string, string]
+  >;
 }
 
 function addFontFallbackDiagnostic(

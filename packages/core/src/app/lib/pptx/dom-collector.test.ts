@@ -699,7 +699,7 @@ describe('collectDomPptxScene', () => {
   it('adds diagnostics for unsupported effects without creating UI state', () => {
     const filtered = testElement({
       rect: { height: 100, width: 100, x: 0, y: 0 },
-      style: { filter: 'blur(4px)' },
+      style: { filter: 'blur(4px)', mixBlendMode: 'multiply' },
       text: 'Filtered',
     });
     const canvas = testElement({
@@ -715,6 +715,14 @@ describe('collectDomPptxScene', () => {
       message: expect.stringContaining('filter'),
       nodeKind: 'text',
     });
+    expect(scene.nodes[0]).toEqual(
+      expect.objectContaining({
+        decision: {
+          kind: 'native-reduced',
+          reason: expect.stringContaining('filter'),
+        },
+      }),
+    );
   });
 
   it('skips invisible elements and descendants of primitive export nodes', () => {

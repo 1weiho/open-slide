@@ -49,7 +49,7 @@ export function summarizePptxScene(slideIndex: number, scene: PptxSlideScene): P
     }
   }
 
-  return report;
+  return { ...report, warnings: Array.from(new Set(report.warnings)) };
 }
 
 export function createPptxExportReport(slides: PptxSlideScene[]): PptxExportReport {
