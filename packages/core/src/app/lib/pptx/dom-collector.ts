@@ -194,13 +194,15 @@ function collectTextNode(
   }
   const style = readElementTextStyle(el);
   const adjustedRect = expandTextRect(rect, style.align);
-  const renderedLines = readRenderedTextLines(el, canvas, adjustedRect, style);
-  const text = renderedLines
-    ? renderedLines.map((line) => line.text).join('\n')
-    : readElementText(el);
+  const text = readElementText(el);
   if (!text) {
     return null;
   }
+  const lineBreakPolicy = lineBreakPolicyForText(text);
+  const renderedLines =
+    lineBreakPolicy === 'preserve-browser-lines'
+      ? readRenderedTextLines(el, canvas, adjustedRect, style)
+      : null;
   addFontFallbackDiagnostic(diagnostics, style, 'text');
 
   if (hasInlineFormatting(el)) {
@@ -210,7 +212,7 @@ function collectTextNode(
       const node = {
         ...adjustedRect,
         kind: 'richText',
-        lineBreakPolicy: lineBreakPolicyForText(el, text, style),
+        lineBreakPolicy,
         ...(richLines ? { lines: richLines } : {}),
         runs,
         style,
@@ -223,7 +225,7 @@ function collectTextNode(
   const node = {
     ...adjustedRect,
     kind: 'text',
-    lineBreakPolicy: lineBreakPolicyForText(el, text, style),
+    lineBreakPolicy,
     ...(renderedLines ? { lines: renderedLines } : {}),
     style,
     text,
@@ -442,15 +444,8 @@ function hasInlineFormatting(el: Element): boolean {
   });
 }
 
-function lineBreakPolicyForText(
-  el: Element,
-  text: string,
-  style: PptxTextStyle,
-): 'preserve-browser-lines' | 'powerpoint-wrap' {
-  const tagName = el.tagName.toUpperCase();
-  const isHeading = /^H[1-6]$/.test(tagName);
-  const isLarge = (style.fontSize ?? 0) >= 56;
-  return text.includes('\n') || isHeading || isLarge ? 'preserve-browser-lines' : 'powerpoint-wrap';
+function lineBreakPolicyForText(text: string): 'preserve-browser-lines' | 'powerpoint-wrap' {
+  return text.includes('\n') ? 'preserve-browser-lines' : 'powerpoint-wrap';
 }
 
 function readImageSrc(el: Element): string | undefined {
@@ -751,10 +746,47 @@ function readStyleProperty(style: CSSStyleDeclaration, property: string): string
 }
 
 function readElementText(el: Element): string {
-  return (
-    readRenderedText(el) ??
-    normalizeText(readStringProperty(el, 'innerText') ?? el.textContent ?? '')
-  );
+  const textWithExplicitBreaks = normalizeText(readTextWithExplicitBreaks(el));
+  const innerText = readStringProperty(el, 'innerText');
+  if (textWithExplicitBreaks?.includes('\n')) {
+    return textWithExplicitBreaks;
+  }
+
+  return normalizeText(innerText ?? textWithExplicitBreaks);
+}
+
+function readTextWithExplicitBreaks(el: Element): string {
+  const parts: string[] = [];
+
+  const visit = (node: Node | Element) => {
+    if (isTextNodeLike(node)) {
+      parts.push(node.data);
+      return;
+    }
+
+    if (!isElementNodeLike(node)) {
+      return;
+    }
+
+    const element = node as Element;
+    if (element.tagName.toUpperCase() === 'BR') {
+      parts.push('\n');
+      return;
+    }
+
+    const childNodes = readChildNodes(element);
+    if (childNodes.length === 0) {
+      parts.push(element.textContent ?? '');
+      return;
+    }
+
+    for (const child of childNodes) {
+      visit(child);
+    }
+  };
+
+  visit(el);
+  return parts.join('');
 }
 
 function collectInlineTextRuns(el: Element, inheritedStyle: PptxTextStyle): PptxTextRun[] {
@@ -844,46 +876,6 @@ function normalizeText(text: string): string {
     .replace(/ *\n */g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
-}
-
-function readRenderedText(el: Element): string | null {
-  if (!canMeasureTextRanges(el)) {
-    return null;
-  }
-
-  const segments = collectTextSegments(el, null);
-  if (segments.length === 0) {
-    return null;
-  }
-
-  const lines: string[] = [];
-  let currentLine = '';
-  let currentTop: number | null = null;
-
-  for (const segment of segments) {
-    if (segment.kind === 'break') {
-      if (currentLine) lines.push(currentLine);
-      currentLine = '';
-      currentTop = null;
-      continue;
-    }
-
-    if (
-      currentTop !== null &&
-      Math.abs(segment.top - currentTop) > LINE_TOP_TOLERANCE_PX &&
-      currentLine
-    ) {
-      lines.push(currentLine);
-      currentLine = '';
-    }
-
-    currentTop = segment.top;
-    currentLine = currentLine ? `${currentLine} ${segment.text}` : segment.text;
-  }
-
-  if (currentLine) lines.push(currentLine);
-  const text = lines.join('\n');
-  return text ? normalizeText(text) : null;
 }
 
 function readRenderedTextLines(
@@ -1038,7 +1030,7 @@ function normalizeTextLineRects(
     text: line.text,
     w: containerRect.w,
     x: containerRect.x,
-    y: Number.isFinite(line.y) ? line.y : containerRect.y + index * lineHeight,
+    y: containerRect.y + index * lineHeight,
   }));
 }
 

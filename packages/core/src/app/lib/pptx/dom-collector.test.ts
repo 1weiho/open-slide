@@ -225,8 +225,13 @@ describe('collectDomPptxScene', () => {
       }
     }
 
-    const text = new RangeText('The better question is not why did Rome fall');
-    const heading = new RangeElement('H2', { height: 180, width: 900, x: 100, y: 120 }, [text]);
+    const firstLine = new RangeText('The better question is not');
+    const secondLine = new RangeText('why did Rome fall');
+    const heading = new RangeElement('H2', { height: 180, width: 900, x: 100, y: 120 }, [
+      firstLine,
+      new RangeElement('BR', { height: 0, width: 0, x: 0, y: 0 }, []),
+      secondLine,
+    ]);
     const canvas = new RangeElement('DIV', { height: 1080, width: 1920, x: 0, y: 0 }, [heading]);
     vi.stubGlobal('Node', RangeNode);
     vi.stubGlobal('Text', RangeText);
@@ -234,13 +239,15 @@ describe('collectDomPptxScene', () => {
     vi.stubGlobal('getComputedStyle', (el: RangeElement) => el.__style);
     vi.stubGlobal('document', {
       createRange: () => {
-        let start = 0;
+        let currentNode: RangeText | null = null;
         return {
           detach: () => undefined,
-          getClientRects: () => [{ height: 20, top: start < 27 ? 130 : 160, width: 20 }],
+          getClientRects: () => [
+            { height: 20, top: currentNode === firstLine ? 130 : 160, width: 20 },
+          ],
           setEnd: () => undefined,
-          setStart: (_node: RangeText, offset: number) => {
-            start = offset;
+          setStart: (node: RangeText) => {
+            currentNode = node;
           },
         };
       },
@@ -252,8 +259,8 @@ describe('collectDomPptxScene', () => {
       expect.objectContaining({
         kind: 'text',
         lines: [
-          expect.objectContaining({ h: 30, text: 'The better question is not', w: 972, y: 130 }),
-          expect.objectContaining({ h: 30, text: 'why did Rome fall', w: 972, y: 160 }),
+          expect.objectContaining({ h: 30, text: 'The better question is not', w: 972, y: 120 }),
+          expect.objectContaining({ h: 30, text: 'why did Rome fall', w: 972, y: 150 }),
         ],
         lineBreakPolicy: 'preserve-browser-lines',
         text: 'The better question is not\nwhy did Rome fall',
@@ -350,16 +357,7 @@ describe('collectDomPptxScene', () => {
     expect(scene.nodes).toEqual([
       expect.objectContaining({
         kind: 'text',
-        lines: [
-          expect.objectContaining({
-            h: 112,
-            text: 'A loop, not a one-shot.',
-            w: 972,
-            x: 100,
-            y: 118,
-          }),
-        ],
-        lineBreakPolicy: 'preserve-browser-lines',
+        lineBreakPolicy: 'powerpoint-wrap',
         text: 'A loop, not a one-shot.',
       }),
     ]);
@@ -411,8 +409,13 @@ describe('collectDomPptxScene', () => {
       }
     }
 
-    const text = new RangeText('Visible text');
-    const heading = new RangeElement('H2', { height: 80, width: 400, x: 100, y: 120 }, [text]);
+    const text = new RangeText('Visible');
+    const nextLine = new RangeText('text');
+    const heading = new RangeElement('H2', { height: 80, width: 400, x: 100, y: 120 }, [
+      text,
+      new RangeElement('BR', { height: 0, width: 0, x: 0, y: 0 }, []),
+      nextLine,
+    ]);
     const canvas = new RangeElement('DIV', { height: 1080, width: 1920, x: 0, y: 0 }, [heading]);
     const getClientRects = vi.fn(() => []);
     vi.stubGlobal('Node', RangeNode);
@@ -434,7 +437,7 @@ describe('collectDomPptxScene', () => {
     expect(scene.nodes).toEqual([
       expect.objectContaining({
         kind: 'text',
-        text: 'Visible text',
+        text: 'Visible\ntext',
       }),
     ]);
   });
@@ -607,7 +610,7 @@ describe('collectDomPptxScene', () => {
             runs: [expect.objectContaining({ text: 'Not autocomplete.' })],
             text: 'Not autocomplete.',
             w: 1596,
-            y: 130,
+            y: 120,
           }),
           expect.objectContaining({
             runs: [
@@ -620,7 +623,7 @@ describe('collectDomPptxScene', () => {
             ],
             text: 'An agent that does the work.',
             w: 1596,
-            y: 236,
+            y: 226,
           }),
         ],
         lineBreakPolicy: 'preserve-browser-lines',
