@@ -272,6 +272,44 @@ Size the placeholder to the slot it occupies. Pass `width`/`height` when the lay
 - In play mode: Space/→ next, ← prev, Esc exit.
 - Hot reload: edit `index.tsx` and the browser updates live.
 
+## Keep `.map()` content inline-editable
+
+The inspector's inline text editor splices values directly back into source. For text rendered through `.map()`, it can only locate the source string when the callback shape matches one of the supported patterns. Use these shapes:
+
+```tsx
+// ✅ Array of objects + member access
+{items.map((it) => <li key={it.id}>{it.label}</li>)}
+
+// ✅ Array of objects + shorthand object destructure
+{items.map(({ label }) => <li key={label}>{label}</li>)}
+
+// ✅ Tuple destructure over nested arrays
+{[
+  ['Consultoria', '1.200 €'],
+  ['Estoc',       '2.500 €'],
+].map(([title, price]) => <Row key={title} title={title} price={price} />)}
+
+// ✅ Bare identifier over a string array
+{['Documents', 'Protocols'].map((x) => <span key={x}>{x}</span>)}
+```
+
+Don't use shapes the splicer can't decode — they render fine but the inspector refuses to edit them with `element has no editable text`:
+
+```tsx
+// ❌ Computed value — call expression / template literal in the JSX child
+{items.map((it) => <span>{formatPrice(it.price)}</span>)}
+{items.map((it) => <span>{`${it.price} €`}</span>)}
+
+// ❌ Aliased object destructure
+{items.map(({ price: p }) => <span>{p}</span>)}
+
+// ❌ Array imported from another module — it must be a literal in the same file
+import { rows } from './data';
+{rows.map(({ title }) => <span>{title}</span>)}
+```
+
+If you need formatting (currency, dates, units), bake it into the source string (`'1.200 €'`) so the literal is what the user sees and edits.
+
 ## Self-review before finishing
 
 - [ ] `slides/<id>/index.tsx` `export default`s a non-empty `Page[]`.
@@ -284,6 +322,7 @@ Size the placeholder to the slot it occupies. Pass `width`/`height` when the lay
 - [ ] One idea per page.
 - [ ] All imported assets exist on disk under `slides/<id>/assets/`.
 - [ ] Every `<ImagePlaceholder>` corresponds to a real image the user must supply — not decorative filler. If it could be replaced by typography or layout, it should be.
+- [ ] `.map()` callbacks use a shape the inspector can edit (member access, shorthand destructure, tuple destructure, or bare identifier over a literal array — see "Keep `.map()` content inline-editable").
 - [ ] Nothing outside `slides/<id>/` was edited.
 
 ## Anti-patterns
@@ -300,5 +339,6 @@ Size the placeholder to the slot it occupies. Pass `width`/`height` when the lay
 - ❌ Writing CSS to a shared file. Inline styles or scoped classnames only.
 - ❌ Creating `README.md` or other prose files inside the slide folder.
 - ❌ Editing `package.json`, `open-slide.config.ts`, or other slides.
+- ❌ Rendering text through a call expression or template literal inside JSX (`{fmt(p)}`, `` {`${p} €`} ``). Inline edits will fail with `element has no editable text` — bake the formatted string into the source array instead.
 - ❌ Sprinkling `<ImagePlaceholder>` across pages "for visual interest". Placeholders are for content the user owns; they're not stock-photo slots.
 - ❌ Using a placeholder for an icon or decorative shape — those are typography/SVG problems, not asset problems.
