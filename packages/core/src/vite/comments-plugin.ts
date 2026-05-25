@@ -574,12 +574,22 @@ function findObjectProperty(obj: t.Node, name: string): t.ObjectProperty | null 
   return null;
 }
 
-// Decode `{p.field}` (MemberExpression) or `{field}` (Identifier
-// destructured from the callback param) into a single field name.
+type MapLookup =
+  | { kind: 'key'; name: string }
+  | { kind: 'index'; index: number }
+  | { kind: 'whole' };
+
+// Decode the single child expression of `element` plus the callback's first
+// param into a lookup that locates the editable value inside each array
+// element. Supports:
+//   `{p.field}` with `(p) => …`          → key 'field'
+//   `{field}`   with `({ field }) => …`  → key 'field' (shorthand only)
+//   `{field}`   with `([a, field]) => …` → index 1
+//   `{x}`       with `(x) => …`          → whole element
 function decodeMapPassthrough(
   element: t.JSXElement,
   callbackParam: t.Node | undefined,
-): string | null {
+): MapLookup | null {
   const meaningful = meaningfulChildren(element);
   if (meaningful.length !== 1) return null;
   const child = meaningful[0];
@@ -591,38 +601,67 @@ function decodeMapPassthrough(
     if (!t.isIdentifier(expr.object) || !t.isIdentifier(expr.property)) return null;
     if (!callbackParam || !t.isIdentifier(callbackParam)) return null;
     if (callbackParam.name !== expr.object.name) return null;
-    return expr.property.name;
+    return { kind: 'key', name: expr.property.name };
   }
 
   if (t.isIdentifier(expr)) {
-    const fieldName = expr.name;
-    // Param is `{ field, ... }` destructuring — the identifier names the
-    // destructured property. Skip alias/rename forms (`{ field: alias }`).
-    if (!callbackParam || !t.isObjectPattern(callbackParam)) return null;
-    for (const prop of callbackParam.properties) {
-      if (!t.isObjectProperty(prop) || prop.computed) continue;
-      if (!t.isIdentifier(prop.key) || prop.key.name !== fieldName) continue;
-      // Shorthand `{ field }` → value is also an Identifier with same name.
-      // Aliased `{ field: other }` → value is a different identifier; skip.
-      return t.isIdentifier(prop.value) && prop.value.name === fieldName ? fieldName : null;
+    const ident = expr.name;
+    if (!callbackParam) return null;
+
+    if (t.isIdentifier(callbackParam)) {
+      return callbackParam.name === ident ? { kind: 'whole' } : null;
+    }
+
+    if (t.isObjectPattern(callbackParam)) {
+      for (const prop of callbackParam.properties) {
+        if (!t.isObjectProperty(prop) || prop.computed) continue;
+        if (!t.isIdentifier(prop.key) || prop.key.name !== ident) continue;
+        // Shorthand `{ field }` → value is also an Identifier with same name.
+        // Aliased `{ field: other }` → value is a different identifier; skip.
+        return t.isIdentifier(prop.value) && prop.value.name === ident
+          ? { kind: 'key', name: ident }
+          : null;
+      }
+      return null;
+    }
+
+    if (t.isArrayPattern(callbackParam)) {
+      for (let i = 0; i < callbackParam.elements.length; i++) {
+        const el = callbackParam.elements[i];
+        if (el && t.isIdentifier(el) && el.name === ident) {
+          return { kind: 'index', index: i };
+        }
+      }
+      return null;
     }
   }
 
   return null;
 }
 
+function resolveLookup(element: t.Node, lookup: MapLookup): t.Node | null {
+  if (lookup.kind === 'whole') return element;
+  if (lookup.kind === 'key') {
+    const prop = findObjectProperty(element, lookup.name);
+    return prop ? prop.value : null;
+  }
+  if (!t.isArrayExpression(element)) return null;
+  const item = element.elements[lookup.index];
+  return item && !t.isSpreadElement(item) ? item : null;
+}
+
 function collectArrayMapCandidates(ast: t.Node, element: t.JSXElement): TextCandidate[] {
   const ctx = findEnclosingMapCallback(ast, element);
   if (!ctx) return [];
-  const fieldName = decodeMapPassthrough(element, ctx.fn.params[0]);
-  if (!fieldName) return [];
+  const lookup = decodeMapPassthrough(element, ctx.fn.params[0]);
+  if (!lookup) return [];
   const elements = resolveArrayLiteralElements(ast, ctx.arrayArg);
   if (!elements) return [];
   const out: TextCandidate[] = [];
-  for (const obj of elements) {
-    const prop = findObjectProperty(obj, fieldName);
-    if (!prop) continue;
-    const v = prop.value;
+  for (const item of elements) {
+    if (t.isSpreadElement(item)) continue;
+    const v = resolveLookup(item, lookup);
+    if (!v) continue;
     if (t.isStringLiteral(v)) {
       out.push({ current: v.value, splice: (s) => spliceRange(v, jsString(s)) });
     } else if (t.isNumericLiteral(v)) {

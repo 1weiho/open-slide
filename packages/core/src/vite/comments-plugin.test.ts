@@ -452,6 +452,46 @@ describe('applyEdit / set-text', () => {
     expect(r.source).toContain("word: 'b'");
   });
 
+  it('routes a `.map()` ArrayPattern destructure to the matching tuple slot', () => {
+    const src = [
+      'export default [() => (',
+      '  <>',
+      '    {[',
+      "      ['Consultoria', '1.200 €'],",
+      "      ['Estoc', '2.500 €'],",
+      '    ].map(([title, price]) => (',
+      '      <div key={title}><span>{title}</span><span>{price}</span></div>',
+      '    ))}',
+      '  </>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 7, 49, [{ kind: 'set-text', value: '2.400 €', prevText: '2.500 €' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("'1.200 €'");
+    expect(r.source).toContain("'2.400 €'");
+  });
+
+  it('routes a `.map()` bare identifier child to the iterated string element', () => {
+    const src = [
+      'export default [() => (',
+      '  <>',
+      "    {['Documents', 'Protocols', 'Estoc'].map((x) => (",
+      '      <span key={x}>{x}</span>',
+      '    ))}',
+      '  </>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 4, 22, [
+      { kind: 'set-text', value: 'Protocoles', prevText: 'Protocols' },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("'Documents'");
+    expect(r.source).toContain("'Protocoles'");
+    expect(r.source).not.toContain("'Protocols'");
+  });
+
   it('bails on a `.map()` child when the prop is not a literal', () => {
     const src = [
       'const greet = "hi";',
