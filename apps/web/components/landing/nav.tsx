@@ -17,24 +17,6 @@ export function Nav({ githubStars }: { githubStars?: string | null }) {
         </Link>
 
         <nav className="flex items-center gap-8 font-[family-name:var(--font-mono)] text-[12px] tracking-[0.08em] uppercase">
-          <a
-            href="#how-it-works"
-            className="hidden md:inline text-[color:var(--color-muted)] hover:text-[color:var(--color-text)] transition-colors"
-          >
-            How
-          </a>
-          <a
-            href="#anatomy"
-            className="hidden md:inline text-[color:var(--color-muted)] hover:text-[color:var(--color-text)] transition-colors"
-          >
-            Anatomy
-          </a>
-          <a
-            href="#agents"
-            className="hidden md:inline text-[color:var(--color-muted)] hover:text-[color:var(--color-text)] transition-colors"
-          >
-            Agents
-          </a>
           <Link
             href="/docs"
             className="hidden md:inline text-[color:var(--color-muted)] hover:text-[color:var(--color-text)] transition-colors"

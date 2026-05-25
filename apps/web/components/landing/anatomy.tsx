@@ -67,8 +67,8 @@ export function Anatomy() {
 
   return (
     <section id="anatomy" className="relative">
-      <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-16 sm:py-24 lg:py-32">
-        <h2 className="text-[32px] sm:text-[44px] lg:text-[72px] leading-[1.05] sm:leading-[1.02] tracking-[-0.03em] max-w-[960px] mb-8 sm:mb-12">
+      <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-20 sm:py-32 lg:py-40">
+        <h2 className="text-[32px] sm:text-[44px] lg:text-[64px] leading-[1.1] sm:leading-[1.05] tracking-[-0.03em] max-w-[820px] mb-14 sm:mb-20">
           <span className="font-[family-name:var(--font-sans)] font-medium">
             A slide is a file.
           </span>

@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
 import type { DesignSystem } from '../lib/design';
-import { SlidePageProvider } from '../lib/page-context';
 import type { Page } from '../lib/sdk';
+import type { SlideTransition } from '../lib/transition';
+import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
 import { PresentBlackoutOverlay } from './present/blackout-overlay';
 import { PresentControlBar } from './present/control-bar';
 import { PresentHelpOverlay } from './present/help-overlay';
@@ -20,6 +21,7 @@ import {
 } from './present/use-presenter-channel';
 import { useTouchSwipe } from './present/use-touch-swipe';
 import { SlideCanvas } from './slide-canvas';
+import { SlideTransitionLayer } from './slide-transition-layer';
 
 const IDLE_HIDE_MS = 2000;
 const BAR_HOTZONE_PX = 160;
@@ -27,6 +29,7 @@ const BAR_HOTZONE_PX = 160;
 type Props = {
   pages: Page[];
   design?: DesignSystem;
+  transition?: SlideTransition;
   index: number;
   onIndexChange: (index: number) => void;
   onExit: () => void;
@@ -44,6 +47,7 @@ type Props = {
 export function Player({
   pages,
   design,
+  transition,
   index,
   onIndexChange,
   onExit,
@@ -52,6 +56,7 @@ export function Player({
   slideId,
   fullscreen = true,
 }: Props) {
+  const prefersReducedMotion = usePrefersReducedMotion();
   const rootRef = useRef<HTMLDivElement | null>(null);
   // Mirrored as state so descendants portaling *into* the player subtree
   // (tooltips, popovers — the body is outside the fullscreen tree) re-render
@@ -284,8 +289,6 @@ export function Player({
   const hideCursor =
     controls && (laser || keyboardDriven || (idle && !overlayActive && !pointerNearBottom));
 
-  const PageComp = pages[index];
-
   return (
     <div
       ref={setRoot}
@@ -296,11 +299,13 @@ export function Player({
       )}
     >
       <SlideCanvas flat design={design}>
-        {PageComp ? (
-          <SlidePageProvider index={index} total={pages.length}>
-            <PageComp />
-          </SlidePageProvider>
-        ) : null}
+        <SlideTransitionLayer
+          pages={pages}
+          index={index}
+          total={pages.length}
+          moduleTransition={transition}
+          disabled={prefersReducedMotion}
+        />
       </SlideCanvas>
 
       <button

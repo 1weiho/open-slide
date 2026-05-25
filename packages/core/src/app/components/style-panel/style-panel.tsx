@@ -211,6 +211,9 @@ export function DesignToggleButton({
     >
       <Palette className="size-3.5" />
       <span className="hidden md:inline">{t.stylePanel.designToggle}</span>
+      <kbd className="ml-1 hidden rounded-[3px] bg-foreground/10 px-1 font-mono text-[9.5px] tracking-[0.04em] md:inline">
+        D
+      </kbd>
     </Button>
   );
 }

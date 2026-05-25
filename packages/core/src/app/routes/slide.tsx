@@ -48,12 +48,13 @@ import { NotesDrawer } from '../components/notes-drawer';
 import { PdfProgressToast } from '../components/pdf-progress-toast';
 import { openPresenterWindow, Player } from '../components/player';
 import { SlideCanvas } from '../components/slide-canvas';
+import { SlideTransitionLayer } from '../components/slide-transition-layer';
 import { type ThumbnailActions, ThumbnailRail } from '../components/thumbnail-rail';
 import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf, isSafari } from '../lib/export-pdf';
 import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
-import { SlidePageProvider } from '../lib/page-context';
 import type { SlideModule } from '../lib/sdk';
+import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
 import { useSlideModule } from '../lib/use-slide-module';
 
 const { showSlideUi, showSlideBrowser, allowHtmlDownload } = config.build;
@@ -76,6 +77,7 @@ export function Slide() {
   const { renameSlide } = useFolders();
   const slideViewportRef = useRef<HTMLElement>(null);
   const t = useLocale();
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   const modulePages = useMemo(() => slide?.default ?? [], [slide]);
   const [pages, setPages] = useState<typeof modulePages>(modulePages);
@@ -237,6 +239,8 @@ export function Slide() {
         goTo(index - 1);
       } else if (e.key === 'f' || e.key === 'F') {
         setPlayMode('fullscreen');
+      } else if (import.meta.env.DEV && (e.key === 'd' || e.key === 'D')) {
+        setDesignOpen((v) => !v);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -325,6 +329,7 @@ export function Slide() {
       <Player
         pages={pages}
         design={slide.design}
+        transition={slide.transition}
         index={index}
         onIndexChange={goTo}
         onExit={() => setPlayMode(null)}
@@ -335,17 +340,16 @@ export function Slide() {
     );
   }
 
-  const CurrentPage = pages[index];
   const title = slide.meta?.title ?? slideId;
 
   return (
     <HistoryProvider>
-      <InspectorProvider slideId={slideId}>
+      <InspectorProvider slideId={slideId} pageIndex={index}>
         <SelectionReporter />
         <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
           {/* Editorial toolbar — three zones, hairline separators, mono-folio center */}
-          <header className="relative flex h-12 shrink-0 items-center justify-between border-b border-hairline bg-sidebar/85 px-2 backdrop-blur-md md:px-3">
-            <div className="flex items-center gap-1.5 md:gap-2">
+          <header className="flex h-12 shrink-0 items-center gap-2 border-b border-hairline bg-sidebar/85 px-2 backdrop-blur-md md:px-3">
+            <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
               {showSlideBrowser && (
                 <Button asChild variant="ghost" size="icon-sm" title={t.slide.home}>
                   <Link to="/" aria-label={t.slide.backToHome}>
@@ -379,13 +383,13 @@ export function Slide() {
             </div>
 
             {/* Centered title — the rail and mobile pill carry the page count. */}
-            <div className="pointer-events-none absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-center px-2">
-              <div className="pointer-events-auto min-w-0 max-w-[min(34rem,calc(100vw-22rem))]">
+            <div className="flex min-w-0 flex-1 justify-center px-2">
+              <div className="min-w-0 max-w-[34rem]">
                 <InlineTitleEditor title={title} onSubmit={(next) => renameSlide(slideId, next)} />
               </div>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1">
               {view === 'slides' && (
                 <button
                   type="button"
@@ -585,9 +589,13 @@ export function Slide() {
                       canNext={index < pageCount - 1}
                     />
                     <SlideCanvas design={slide.design}>
-                      <SlidePageProvider index={index} total={pageCount}>
-                        <CurrentPage />
-                      </SlidePageProvider>
+                      <SlideTransitionLayer
+                        pages={pages}
+                        index={index}
+                        total={pageCount}
+                        moduleTransition={slide.transition}
+                        disabled={prefersReducedMotion}
+                      />
                     </SlideCanvas>
                     <ClickNavZones
                       onPrev={() => goTo(index - 1)}

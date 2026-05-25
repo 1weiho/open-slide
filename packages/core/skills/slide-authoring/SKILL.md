@@ -308,6 +308,174 @@ const Footer = () => {
 
 `current` is 1-indexed (matches what readers see) and `total` is the slide's page count. The hook works in every render context (main viewer, thumbnails, overview grid, present mode, presenter window, HTML/PDF export) — the same `<Footer />` JSX is correct everywhere. Call the hook inside a component that's used **per page**; don't try to call it at module top level.
 
+## Page transitions
+
+The framework can run an enter/exit animation between every slide change. There's **no default** — pages snap unless you declare a `SlideTransition`. Snap-swap is a perfectly tasteful default; only opt in when motion adds something.
+
+`prefers-reduced-motion: reduce` is honored automatically. You don't write a fallback.
+
+### Contract
+
+Module-level for the whole deck; per-page to override. The **incoming page wins**: navigating A → B uses `pages[B].transition ?? module.transition`. Its `exit` plays on A, its `enter` plays on B. Going back B → A uses A's transition.
+
+```tsx
+import type { Page, SlideTransition } from '@open-slide/core';
+
+const Cover: Page = () => <section>…</section>;
+const Body:  Page = () => <section>…</section>;
+
+// Module-level default — every page inherits unless it overrides.
+export const transition: SlideTransition = { /* … */ };
+
+// Per-page override.
+Cover.transition = { /* … */ };
+
+export default [Cover, Body];
+```
+
+```ts
+type TransitionPhase = {
+  keyframes: Keyframe[] | PropertyIndexedKeyframes;  // WAAPI keyframes
+  duration?: number;  // ms (falls back to top-level duration)
+  easing?: string;    // CSS easing
+  delay?: number;     // ms — use to overlap exit + enter
+};
+type SlideTransition = {
+  duration: number;          // top-level fallback
+  easing?: string;           // top-level fallback
+  enter?: TransitionPhase;   // runs on incoming page
+  exit?:  TransitionPhase;   // runs on outgoing page
+};
+```
+
+The framework also exposes `--osd-dir` (`1` forward, `-1` backward) and `data-osd-dir` on the wrapper, so a single keyframe can mirror direction without a JS callback.
+
+### Design principles (hold the line)
+
+The single loudest signal of "made in PowerPoint" is six different transitions in one deck. Restraint is the rhythm.
+
+- **Pick one DNA, hold it across the deck.** Same duration band, same easing pair, same out-then-in stagger. Variation lives only in *which property* gets the small nudge — Y, X, opacity, scale, blur.
+- **Duration: 140–280 ms.** Exit 140–180 ms, enter 200–280 ms, enter delayed ~80 ms so they overlap but don't fight. Past 350 ms is video-editor territory; reserve for genuine state changes.
+- **Magnitude ceiling: 12 px or 3% scale.** A 6 px Y-rise reads as "next thought." A 1920 px translateX reads as "different document." Premium tools move barely enough to register.
+- **Opacity is always part of it.** Pure-transform transitions look stiff; pure-opacity transitions are the safest possible default.
+- **Easing: ease-in for exit, ease-out for enter.** `cubic-bezier(0.4, 0, 1, 1)` going out, `cubic-bezier(0, 0, 0.2, 1)` coming in. Never `linear` (feels like a slideshow). Reserve symmetric `ease-in-out` for state-anchored morphs only.
+
+### Tasteful family — six members, one DNA
+
+Use this set as a starting point. Pick one as the deck's house transition; optionally reserve a second for hero/cover slides and a third for genuine section breaks. The CSS-`calc` + `--osd-dir` trick lets a single definition mirror itself on backward navigation when needed.
+
+```tsx
+const EASE_OUT = 'cubic-bezier(0, 0, 0.2, 1)';
+const EASE_IN  = 'cubic-bezier(0.4, 0, 1, 1)';
+
+// RISE — house quiet. 6 px Y. Use as module default.
+export const transition: SlideTransition = {
+  duration: 200,
+  exit:  { duration: 140, easing: EASE_IN,
+           keyframes: [
+             { opacity: 1, transform: 'translateY(0)' },
+             { opacity: 0, transform: 'translateY(-4px)' },
+           ] },
+  enter: { duration: 200, delay: 80, easing: EASE_OUT,
+           keyframes: [
+             { opacity: 0, transform: 'translateY(6px)' },
+             { opacity: 1, transform: 'translateY(0)' },
+           ] },
+};
+
+// DISSOLVE — pure opacity. The quietest possible.
+const dissolve: SlideTransition = {
+  duration: 240,
+  exit:  { duration: 200, easing: EASE_IN,
+           keyframes: [{ opacity: 1 }, { opacity: 0 }] },
+  enter: { duration: 240, delay: 40, easing: EASE_OUT,
+           keyframes: [{ opacity: 0 }, { opacity: 1 }] },
+};
+
+// SETTLE — cover-grade. Rise + a hair of blur on enter only.
+Cover.transition = {
+  duration: 280,
+  exit:  { duration: 160, easing: EASE_IN,
+           keyframes: [
+             { opacity: 1, transform: 'translateY(0)' },
+             { opacity: 0, transform: 'translateY(-6px)' },
+           ] },
+  enter: { duration: 280, delay: 100, easing: EASE_OUT,
+           keyframes: [
+             { opacity: 0, transform: 'translateY(12px)', filter: 'blur(4px)' },
+             { opacity: 1, transform: 'translateY(0)',    filter: 'blur(0)'   },
+           ] },
+};
+
+// BLOOM — scale 0.97 → 1, no translate. Materializes in place.
+const bloom: SlideTransition = {
+  duration: 240,
+  exit:  { duration: 160, easing: EASE_IN,
+           keyframes: [
+             { opacity: 1, transform: 'scale(1)' },
+             { opacity: 0, transform: 'scale(1.01)' },
+           ] },
+  enter: { duration: 240, delay: 80, easing: EASE_OUT,
+           keyframes: [
+             { opacity: 0, transform: 'scale(0.97)' },
+             { opacity: 1, transform: 'scale(1)' },
+           ] },
+};
+
+// FALL — mirrored Rise. Incoming page comes down from above.
+const fall: SlideTransition = {
+  duration: 200,
+  exit:  { duration: 140, easing: EASE_IN,
+           keyframes: [
+             { opacity: 1, transform: 'translateY(0)' },
+             { opacity: 0, transform: 'translateY(4px)' },
+           ] },
+  enter: { duration: 200, delay: 80, easing: EASE_OUT,
+           keyframes: [
+             { opacity: 0, transform: 'translateY(-6px)' },
+             { opacity: 1, transform: 'translateY(0)' },
+           ] },
+};
+
+// BREATH — section break. Exit fully, hold 120 ms, then enter.
+// Reserve for genuine chapter dividers; use at most 1–2× per deck.
+const breath: SlideTransition = {
+  duration: 460,
+  exit:  { duration: 180, easing: EASE_IN,
+           keyframes: [{ opacity: 1 }, { opacity: 0 }] },
+  enter: { duration: 240, delay: 300, easing: EASE_OUT,
+           keyframes: [
+             { opacity: 0, transform: 'translateY(8px)' },
+             { opacity: 1, transform: 'translateY(0)' },
+           ] },
+};
+```
+
+All six share the same DNA — they only differ in which property carries the small nudge. The reader perceives variety; the eye still reads one consistent hand.
+
+### Direction-aware keyframes (use sparingly)
+
+Most tasteful tools don't mirror on backward navigation. When you genuinely need to — e.g. a horizontal slide that should reverse — use `--osd-dir` inside `calc()`:
+
+```tsx
+{ transform: 'translateX(calc(var(--osd-dir, 1) * 8px))' },
+{ transform: 'translateX(0)' },
+```
+
+If you find yourself reaching for this on every transition, you're probably over-designing. Forward = backward is the more refined default.
+
+### Transition anti-patterns
+
+- ❌ Six different transitions across six pages — the single loudest "made in PowerPoint" tell.
+- ❌ `translateX(100%)` slide-from-side — iOS modal / PowerPoint Push; not a slide change.
+- ❌ Aggressive scale-pop (e.g. `0.85 → 1`) + blur — lightbox / photo-viewer vocabulary; implies zooming *into* something.
+- ❌ `clip-path: inset(…)` reveals — After Effects vocabulary; theatrical.
+- ❌ Parallel blur on both layers at once — visual mush; the eye can't fixate.
+- ❌ Duration > 350 ms for a standard slide change — drags.
+- ❌ Translate > 12 px or scale > 3% — reads as rupture, not continuity.
+- ❌ `linear` easing — feels like a slideshow, not a product.
+- ❌ Declaring a transition on every deck. **If you don't have a clear reason, omit it.** Snap-swap is fine.
+
 ## Repeated elements: component, not `map`
 
 When a page has visually repeated items — cards, logo rows, gallery tiles, list rows, step indicators — **define a small component and instantiate it once per item**. Do **not** render the group with `array.map` over a data array.
@@ -373,6 +541,7 @@ This applies whenever the *visual element* repeats, not whenever the *data* does
 - [ ] Visually repeated elements (cards, tiles, logo rows) are rendered as explicit `<Component />` instances, not via `array.map` over a data list.
 - [ ] All imported assets exist on disk — slide-local under `slides/<id>/assets/`, or global under `assets/` (imported via `@assets/...`).
 - [ ] Every `<ImagePlaceholder>` corresponds to a real image the user must supply — not decorative filler. If it could be replaced by typography or layout, it should be.
+- [ ] If a `SlideTransition` is declared, every page sits in one family — same duration band (140–280 ms), same easing pair, same out-then-in stagger, magnitude under 12 px / 3%. No six-different-vocabularies decks. When in doubt, omit transitions entirely.
 - [ ] Nothing outside `slides/<id>/` was edited.
 
 ## Anti-patterns

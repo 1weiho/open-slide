@@ -1,6 +1,6 @@
 ---
 name: create-theme
-description: Use this skill when the user wants to create, draft, author, or extract a slide theme in this open-slide repo. Triggers on phrases like "create a theme", "make a theme called X", "extract a theme from <slide>", "build a theme from these images". Produces two paired files under `themes/`: `<id>.md` (palette, typography, layout, fixed Title/Footer components, motion) and `<id>.demo.tsx` (a runnable demo slide that the dev-UI Themes panel previews). Do NOT use for editing real slides — only for authoring the theme bundle.
+description: Use this skill when the user wants to create, draft, author, or extract a slide theme in this open-slide repo. Triggers on phrases like "create a theme", "make a theme called X", "extract a theme from <slide>", "build a theme from these images". Produces two paired files under `themes/` — `<id>.md` (palette, typography, layout, fixed Title/Footer components, motion) and `<id>.demo.tsx` (a runnable demo slide that the dev-UI Themes panel previews). Do NOT use for editing real slides — only for authoring the theme bundle.
 ---
 
 # Create a slide theme

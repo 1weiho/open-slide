@@ -37,6 +37,19 @@ export interface InitOptions {
   locale: LocaleCode;
 }
 
+export function sanitizeDirName(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed === '.' || trimmed === '..') return trimmed;
+  const cleaned = trimmed
+    .replace(/\s+/g, '-')
+    .replace(/[^\\\p{L}\p{N}_./-]/gu, '-')
+    .replace(/-+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .replace(/-*([/\\])-*/g, '$1');
+  if (cleaned === '' || /^[/\\]+$/.test(cleaned)) return 'my-slides';
+  return cleaned;
+}
+
 export async function isDirNonEmpty(target: string): Promise<boolean> {
   if (!existsSync(target)) return false;
   const entries = await readdir(target);
@@ -153,7 +166,7 @@ export async function init(opts: InitOptions): Promise<void> {
     await writeFile(configPath, renderConfigFile(locale));
   }
 
-  await writeFile(join(target, '.gitignore'), 'node_modules\ndist\n');
+  await writeFile(join(target, '.gitignore'), 'node_modules\ndist\n.DS_Store\n');
 
   const cdTarget = dir === '.' ? basename(target) : dir;
   process.stdout.write(

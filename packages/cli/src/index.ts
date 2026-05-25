@@ -4,7 +4,14 @@ import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import prompts from 'prompts';
-import { type InitOptions, init, isDirNonEmpty, LOCALE_CHOICES, type LocaleCode } from './init.ts';
+import {
+  type InitOptions,
+  init,
+  isDirNonEmpty,
+  LOCALE_CHOICES,
+  type LocaleCode,
+  sanitizeDirName,
+} from './init.ts';
 import { detectPackageManager, PACKAGE_MANAGERS, type PackageManager } from './package-manager.ts';
 
 async function readVersion(): Promise<string> {
@@ -77,6 +84,31 @@ async function runInit(dirArg: string | undefined, flags: InitCliFlags): Promise
       { onCancel },
     );
     dir = answers.dir;
+  }
+
+  if (dir !== undefined) {
+    const safe = sanitizeDirName(dir);
+    if (safe !== dir) {
+      if (!isTTY) {
+        throw new Error(
+          `Target directory "${dir}" contains characters that break shell commands (spaces, quotes, etc.). Try "${safe}" instead.`,
+        );
+      }
+      process.stdout.write(
+        `${chalk.yellow('!')} ${chalk.bold(`"${dir}"`)} has characters that confuse shells.\n` +
+          `  Suggested: ${chalk.cyan(`"${safe}"`)}\n`,
+      );
+      const answers = await prompts(
+        {
+          type: 'text',
+          name: 'dir',
+          message: 'Directory name',
+          initial: safe,
+        },
+        { onCancel },
+      );
+      dir = sanitizeDirName(answers.dir ?? safe);
+    }
   }
 
   if (isTTY && locale === undefined) {

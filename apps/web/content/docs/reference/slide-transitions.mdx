@@ -1,0 +1,229 @@
+---
+title: SlideTransition
+description: Per-page enter/exit animations driven by Web Animations API keyframes.
+---
+
+The framework can run an enter/exit animation between every page change. There
+is **no default** — pages snap unless you declare a `SlideTransition`. Snap-swap
+is a perfectly tasteful default; only opt in when motion adds something.
+
+```tsx title="slides/q2-launch/index.tsx"
+import type { Page, SlideTransition } from '@open-slide/core';
+
+const Cover: Page = () => <section>…</section>;
+const Body:  Page = () => <section>…</section>;
+
+const EASE_OUT = 'cubic-bezier(0, 0, 0.2, 1)';
+const EASE_IN  = 'cubic-bezier(0.4, 0, 1, 1)';
+
+export const transition: SlideTransition = {
+  duration: 200,
+  exit:  { duration: 140, easing: EASE_IN,
+           keyframes: [
+             { opacity: 1, transform: 'translateY(0)' },
+             { opacity: 0, transform: 'translateY(-4px)' },
+           ] },
+  enter: { duration: 200, delay: 80, easing: EASE_OUT,
+           keyframes: [
+             { opacity: 0, transform: 'translateY(6px)' },
+             { opacity: 1, transform: 'translateY(0)' },
+           ] },
+};
+
+export default [Cover, Body];
+```
+
+`prefers-reduced-motion: reduce` is honored automatically — you don't write a
+fallback.
+
+## Schema
+
+```ts
+type TransitionPhase = {
+  /** WAAPI keyframes — either an array of Keyframe objects
+   *  or a PropertyIndexedKeyframes object. */
+  keyframes: Keyframe[] | PropertyIndexedKeyframes;
+  /** Phase duration in ms. Falls back to the top-level duration. */
+  duration?: number;
+  /** CSS easing string. Falls back to the top-level easing. */
+  easing?: string;
+  /** Delay in ms before the phase starts.
+   *  Use on enter to overlap with the outgoing exit. */
+  delay?: number;
+};
+
+type SlideTransition = {
+  /** Top-level duration fallback (ms). Required. */
+  duration: number;
+  /** Top-level easing fallback. */
+  easing?: string;
+  /** Plays on the incoming page. */
+  enter?: TransitionPhase;
+  /** Plays on the outgoing page. */
+  exit?: TransitionPhase;
+};
+```
+
+## Where to declare it
+
+Two surfaces, both optional:
+
+- **Module-level** — `export const transition` from the slide module. Every
+  page in the deck inherits it.
+- **Per-page** — assign `Page.transition` directly. Overrides the module
+  default for that page.
+
+```tsx
+const Cover: Page = () => <section>…</section>;
+const Body:  Page = () => <section>…</section>;
+
+// Module default — applies to both pages.
+export const transition: SlideTransition = { /* … */ };
+
+// Per-page override — only Cover uses this.
+Cover.transition = { /* … */ };
+
+export default [Cover, Body];
+```
+
+### Which one wins
+
+The **incoming page wins**. Navigating A → B uses `pages[B].transition ??
+module.transition`; its `exit` plays on A, its `enter` plays on B. Going back
+B → A uses A's transition instead. This keeps the "next thought" feeling
+attached to the slide you're heading toward, not the one you're leaving.
+
+## Direction hook
+
+The framework writes two values on the transition wrapper so a single keyframe
+can mirror itself on backward navigation:
+
+| Surface         | Forward | Backward |
+| --------------- | ------- | -------- |
+| `--osd-dir`     | `1`     | `-1`     |
+| `data-osd-dir`  | `forward` | `backward` |
+
+Use `--osd-dir` inside `calc()` when you genuinely need to mirror motion:
+
+```tsx
+{ transform: 'translateX(calc(var(--osd-dir, 1) * 8px))' },
+{ transform: 'translateX(0)' },
+```
+
+Most tasteful tools don't mirror on backward navigation — forward = backward
+reads as more refined. Reach for the direction hook only when the page's motion
+has a literal direction (a horizontal advance, a chapter sweep).
+
+## Design principles
+
+The loudest signal of "made in PowerPoint" is six different transitions in one
+deck. Restraint is the rhythm.
+
+- **Pick one DNA, hold it across the deck.** Same duration band, same easing
+  pair, same out-then-in stagger. Variation lives only in *which property* gets
+  the small nudge — Y, X, opacity, scale, blur.
+- **Duration: 140–280 ms.** Exit 140–180 ms, enter 200–280 ms, enter delayed
+  ~80 ms so they overlap but don't fight. Past 350 ms is video-editor
+  territory.
+- **Magnitude ceiling: 12 px or 3% scale.** A 6 px Y-rise reads as "next
+  thought." A 1920 px translateX reads as "different document."
+- **Opacity is always part of it.** Pure-transform transitions look stiff;
+  pure-opacity transitions are the safest possible default.
+- **Easing: ease-in for exit, ease-out for enter.** `cubic-bezier(0.4, 0, 1, 1)`
+  going out, `cubic-bezier(0, 0, 0.2, 1)` coming in. Never `linear`.
+
+## A tasteful family
+
+Six members, one DNA. Pick one as the deck's house transition; optionally
+reserve a second for cover slides and a third for genuine section breaks.
+
+```tsx
+const EASE_OUT = 'cubic-bezier(0, 0, 0.2, 1)';
+const EASE_IN  = 'cubic-bezier(0.4, 0, 1, 1)';
+
+// RISE — house quiet. 6 px Y. Good module default.
+export const transition: SlideTransition = {
+  duration: 200,
+  exit:  { duration: 140, easing: EASE_IN,
+           keyframes: [
+             { opacity: 1, transform: 'translateY(0)' },
+             { opacity: 0, transform: 'translateY(-4px)' },
+           ] },
+  enter: { duration: 200, delay: 80, easing: EASE_OUT,
+           keyframes: [
+             { opacity: 0, transform: 'translateY(6px)' },
+             { opacity: 1, transform: 'translateY(0)' },
+           ] },
+};
+
+// DISSOLVE — pure opacity. The quietest possible.
+const dissolve: SlideTransition = {
+  duration: 240,
+  exit:  { duration: 200, easing: EASE_IN,
+           keyframes: [{ opacity: 1 }, { opacity: 0 }] },
+  enter: { duration: 240, delay: 40, easing: EASE_OUT,
+           keyframes: [{ opacity: 0 }, { opacity: 1 }] },
+};
+
+// SETTLE — cover-grade. Rise + a hair of blur on enter only.
+const settle: SlideTransition = {
+  duration: 280,
+  exit:  { duration: 160, easing: EASE_IN,
+           keyframes: [
+             { opacity: 1, transform: 'translateY(0)' },
+             { opacity: 0, transform: 'translateY(-6px)' },
+           ] },
+  enter: { duration: 280, delay: 100, easing: EASE_OUT,
+           keyframes: [
+             { opacity: 0, transform: 'translateY(12px)', filter: 'blur(4px)' },
+             { opacity: 1, transform: 'translateY(0)',    filter: 'blur(0)'   },
+           ] },
+};
+
+// BLOOM — scale 0.97 → 1, no translate. Materializes in place.
+const bloom: SlideTransition = {
+  duration: 240,
+  exit:  { duration: 160, easing: EASE_IN,
+           keyframes: [
+             { opacity: 1, transform: 'scale(1)' },
+             { opacity: 0, transform: 'scale(1.01)' },
+           ] },
+  enter: { duration: 240, delay: 80, easing: EASE_OUT,
+           keyframes: [
+             { opacity: 0, transform: 'scale(0.97)' },
+             { opacity: 1, transform: 'scale(1)' },
+           ] },
+};
+
+// FALL — mirrored Rise. Incoming page comes down from above.
+const fall: SlideTransition = {
+  duration: 200,
+  exit:  { duration: 140, easing: EASE_IN,
+           keyframes: [
+             { opacity: 1, transform: 'translateY(0)' },
+             { opacity: 0, transform: 'translateY(4px)' },
+           ] },
+  enter: { duration: 200, delay: 80, easing: EASE_OUT,
+           keyframes: [
+             { opacity: 0, transform: 'translateY(-6px)' },
+             { opacity: 1, transform: 'translateY(0)' },
+           ] },
+};
+
+// BREATH — section break. Exit fully, hold 120 ms, then enter.
+// Reserve for genuine chapter dividers; use 1–2× per deck at most.
+const breath: SlideTransition = {
+  duration: 460,
+  exit:  { duration: 180, easing: EASE_IN,
+           keyframes: [{ opacity: 1 }, { opacity: 0 }] },
+  enter: { duration: 240, delay: 300, easing: EASE_OUT,
+           keyframes: [
+             { opacity: 0, transform: 'translateY(8px)' },
+             { opacity: 1, transform: 'translateY(0)' },
+           ] },
+};
+```
+
+All six share the same DNA — they only differ in which property carries the
+small nudge. The reader perceives variety; the eye still reads one consistent
+hand.

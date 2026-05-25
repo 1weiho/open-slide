@@ -51,6 +51,23 @@ export const notes: Record<number, string> = {
 };
 ```
 
+## `transition` (optional)
+
+A module-level `SlideTransition` becomes the default animation between every
+page in the deck. Per-page overrides are assigned on the `Page` component
+itself. See [SlideTransition](/docs/reference/slide-transitions) for the full
+schema and a tasteful family of defaults.
+
+```ts
+import type { SlideTransition } from '@open-slide/core';
+
+export const transition: SlideTransition = {
+  duration: 200,
+  exit:  { /* … */ },
+  enter: { /* … */ },
+};
+```
+
 ## Imports from `@open-slide/core`
 
 ```ts
@@ -63,6 +80,8 @@ import type {
   Page,
   SlideMeta,
   SlideModule,
+  SlideTransition,     // per-page / module-level animations — see /docs/reference/slide-transitions
+  TransitionPhase,
   ImagePlaceholderProps,
 } from '@open-slide/core';
 ```

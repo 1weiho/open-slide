@@ -31,87 +31,50 @@ export function LiveDemo() {
 
   return (
     <section id="demo" className="relative">
-      <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 pt-8 sm:pt-12 lg:pt-20 pb-16 sm:pb-24">
-        {/* specimen frame */}
-        <div className="relative specimen p-4 sm:p-6 lg:p-8 rounded-[6px] border border-[color:var(--color-rule)] bg-gradient-to-b from-[color:var(--color-panel)] to-[color:var(--color-ink)]">
-          <SpecimenCorners />
-
-          <div className="flex items-center justify-between mb-4 font-[family-name:var(--font-mono)] text-[10px] sm:text-[11px] tracking-[0.14em] uppercase text-[color:var(--color-muted)]">
-            <span className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-accent)]" />
-              open-slide · live demo
-            </span>
-            <span>1920 × 1080 · 16 : 9</span>
-          </div>
-
-          <div
-            className="relative block w-full overflow-hidden rounded-[6px] border border-[color:var(--color-rule)] bg-black"
-            style={{ aspectRatio: '16 / 9' }}
-          >
-            <InlineSlidePlayer index={index} onIndexChange={setIndex} />
-          </div>
-
-          <div className="flex items-center justify-end mt-4 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.12em] uppercase text-[color:var(--color-muted)]">
-            <span className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={handlePrev}
-                disabled={atStart}
-                aria-label="Previous slide"
-                className="px-1.5 py-0.5 rounded border border-[color:var(--color-rule)] text-[color:var(--color-text-soft)] hover:border-[color:var(--color-text)] hover:text-[color:var(--color-text)] transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[color:var(--color-rule)] disabled:hover:text-[color:var(--color-text-soft)]"
-              >
-                ←
-              </button>
-              <button
-                type="button"
-                onClick={handleNext}
-                disabled={atEnd}
-                aria-label="Next slide"
-                className="px-1.5 py-0.5 rounded border border-[color:var(--color-rule)] text-[color:var(--color-text-soft)] hover:border-[color:var(--color-text)] hover:text-[color:var(--color-text)] transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[color:var(--color-rule)] disabled:hover:text-[color:var(--color-text-soft)]"
-              >
-                →
-              </button>
-            </span>
-          </div>
+      <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 pt-4 sm:pt-8 lg:pt-12 pb-20 sm:pb-32">
+        <div
+          className="relative block w-full overflow-hidden rounded-[8px] border border-[color:var(--color-rule)] bg-black"
+          style={{ aspectRatio: '16 / 9' }}
+        >
+          <InlineSlidePlayer index={index} onIndexChange={setIndex} />
         </div>
 
-        <div className="mt-8 flex justify-center">
+        <div className="mt-6 flex items-center justify-between font-[family-name:var(--font-mono)] text-[11px] tracking-[0.12em] uppercase text-[color:var(--color-muted)]">
           <a
             href="https://demo.open-slide.dev/"
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => posthog.capture('view_more_demos_clicked')}
-            className="inline-flex items-center gap-2 font-[family-name:var(--font-mono)] text-[11px] sm:text-[12px] tracking-[0.12em] uppercase text-[color:var(--color-muted)] hover:text-[color:var(--color-accent)] transition-colors"
+            className="inline-flex items-center gap-2 hover:text-[color:var(--color-text)] transition-colors"
           >
             View more demos
             <span aria-hidden>↗</span>
           </a>
+          <span className="flex items-center gap-3">
+            <span className="text-[color:var(--color-text-soft)]">
+              {String(index + 1).padStart(2, '0')} / {String(count).padStart(2, '0')}
+            </span>
+            <button
+              type="button"
+              onClick={handlePrev}
+              disabled={atStart}
+              aria-label="Previous slide"
+              className="px-1.5 py-0.5 text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text)] transition disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-[color:var(--color-text-soft)]"
+            >
+              ←
+            </button>
+            <button
+              type="button"
+              onClick={handleNext}
+              disabled={atEnd}
+              aria-label="Next slide"
+              className="px-1.5 py-0.5 text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text)] transition disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-[color:var(--color-text-soft)]"
+            >
+              →
+            </button>
+          </span>
         </div>
       </div>
     </section>
-  );
-}
-
-function SpecimenCorners() {
-  const corner = 'absolute h-5 w-5 border-[color:var(--color-accent)] pointer-events-none';
-  return (
-    <>
-      <span
-        aria-hidden
-        className={`${corner} -top-px -left-px border-t border-l rounded-tl-[12px]`}
-      />
-      <span
-        aria-hidden
-        className={`${corner} -top-px -right-px border-t border-r rounded-tr-[12px]`}
-      />
-      <span
-        aria-hidden
-        className={`${corner} -bottom-px -left-px border-b border-l rounded-bl-[12px]`}
-      />
-      <span
-        aria-hidden
-        className={`${corner} -bottom-px -right-px border-b border-r rounded-br-[12px]`}
-      />
-    </>
   );
 }

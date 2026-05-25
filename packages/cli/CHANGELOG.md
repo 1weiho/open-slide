@@ -1,5 +1,15 @@
 # @open-slide/cli
 
+## 1.2.5
+
+### Patch Changes
+
+- [#152](https://github.com/1weiho/open-slide/pull/152) [`30cec7f`](https://github.com/1weiho/open-slide/commit/30cec7f94b76fea9e0f92357328dcbaccdc25e44) Thanks [@itskylechung](https://github.com/itskylechung)! - Sanitize `init` target directory names and suggest a safe equivalent for shell-unfriendly input.
+
+- [#151](https://github.com/1weiho/open-slide/pull/151) [`75667fa`](https://github.com/1weiho/open-slide/commit/75667fa9968a8956a7a703f4ab8a977c87ee1db4) Thanks [@1weiho](https://github.com/1weiho)! - Add `.DS_Store` to the scaffolded `.gitignore`.
+
+- [#149](https://github.com/1weiho/open-slide/pull/149) [`26f6cb1`](https://github.com/1weiho/open-slide/commit/26f6cb13cdc1c738d41bd5bab90940b38562e828) Thanks [@1weiho](https://github.com/1weiho)! - Add SlideTransition API for declaring per-page page-transition animations, plus a transitions section in the bundled slide-authoring skill with tasteful few-shot examples.
+
 ## 1.2.4
 
 ### Patch Changes

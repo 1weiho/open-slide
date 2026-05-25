@@ -1,6 +1,10 @@
+import { Crop, ImageIcon } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { PANEL_TRANSITION_MS } from '@/components/panel/panel-shell';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { findSlideSource, type SlideSourceHit } from '@/lib/inspector/fiber';
+import { useLocale } from '@/lib/use-locale';
+import { cn } from '@/lib/utils';
 import { useInspector } from './inspector-provider';
 
 type Highlight = { hit: SlideSourceHit };
@@ -31,6 +35,9 @@ export function InspectOverlay() {
     };
 
     const onMove = (e: PointerEvent) => {
+      if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) {
+        return setHover(null);
+      }
       const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
       if (!el) return setHover(null);
       const hit = findSlideSource(el, slideId, { hostOnly: true });
@@ -75,37 +82,48 @@ export function InspectOverlay() {
     };
   }, [active, slideId, setSelected, cancel, openCrop]);
 
+  const hoverAnchor = hover?.hit.anchor.isConnected ? hover.hit.anchor : null;
+  const selectedAnchor = selected?.anchor.isConnected ? selected.anchor : null;
+  const dedupedHover = hoverAnchor && hoverAnchor !== selectedAnchor ? hoverAnchor : null;
+
+  if (!active) return null;
   return (
-    <FrameOverlay
-      active={active}
-      overlayRef={overlayRef}
-      // Pin to the selection so the highlight tracks what the panel
-      // is editing even after the cursor moves away.
-      targetAnchor={selected?.anchor ?? hover?.hit.anchor ?? null}
-    />
+    <div ref={overlayRef} data-inspector-ui className="pointer-events-none absolute inset-0 z-30">
+      <Frame anchor={selectedAnchor} overlayRef={overlayRef} variant="selected" showImageActions />
+      <Frame anchor={dedupedHover} overlayRef={overlayRef} variant="hover" />
+    </div>
   );
 }
 
-function FrameOverlay({
-  active,
+type FrameVariant = 'selected' | 'hover';
+
+const FRAME_STYLES: Record<FrameVariant, React.CSSProperties> = {
+  selected: { outline: '2px solid #3b82f6', background: 'rgba(59,130,246,0.1)' },
+  hover: { outline: '1.5px dashed #3b82f6', background: 'rgba(59,130,246,0.05)' },
+};
+
+function Frame({
+  anchor,
   overlayRef,
-  targetAnchor,
+  variant,
+  showImageActions = false,
 }: {
-  active: boolean;
+  anchor: HTMLElement | null;
   overlayRef: React.RefObject<HTMLDivElement>;
-  targetAnchor: HTMLElement | null;
+  variant: FrameVariant;
+  showImageActions?: boolean;
 }) {
   const [rect, setRect] = useState<RelRect | null>(null);
   const [hasTarget, setHasTarget] = useState(false);
 
   const measure = useCallback(() => {
     const overlay = overlayRef.current;
-    if (!active || !targetAnchor?.isConnected || !overlay) {
+    if (!anchor?.isConnected || !overlay) {
       setHasTarget(false);
       return;
     }
 
-    const targetRect = targetAnchor.getBoundingClientRect();
+    const targetRect = anchor.getBoundingClientRect();
     const overlayRect = overlay.getBoundingClientRect();
     const next = {
       left: targetRect.left - overlayRect.left,
@@ -116,14 +134,14 @@ function FrameOverlay({
 
     setHasTarget(true);
     setRect((prev) => (sameRect(prev, next) ? prev : next));
-  }, [active, overlayRef, targetAnchor]);
+  }, [overlayRef, anchor]);
 
   useLayoutEffect(() => {
     measure();
   }, [measure]);
 
   useEffect(() => {
-    if (!active) {
+    if (!anchor) {
       setHasTarget(false);
       return;
     }
@@ -139,7 +157,7 @@ function FrameOverlay({
     const root = document.querySelector<HTMLElement>('[data-inspector-root]');
     if (root) resizeObserver.observe(root);
     if (overlayRef.current) resizeObserver.observe(overlayRef.current);
-    if (targetAnchor) resizeObserver.observe(targetAnchor);
+    resizeObserver.observe(anchor);
 
     const stopAt = performance.now() + LAYOUT_TRACK_MS;
     const trackPanelTransition = () => {
@@ -157,9 +175,9 @@ function FrameOverlay({
       window.removeEventListener('resize', scheduleMeasure, true);
       window.removeEventListener('scroll', scheduleMeasure, true);
     };
-  }, [active, measure, overlayRef, targetAnchor]);
+  }, [measure, overlayRef, anchor]);
 
-  const visible = !!(active && hasTarget && rect);
+  const visible = !!(hasTarget && rect);
 
   // First render after appearing: snap to the new rect (no transition).
   // Subsequent rect changes in the same visible session: animate.
@@ -173,31 +191,110 @@ function FrameOverlay({
     return () => clearTimeout(t);
   }, [visible]);
 
-  if (!active) return null;
+  if (!rect) return null;
   const transition = morph
     ? `left ${FRAME_MORPH_MS}ms ease-out, top ${FRAME_MORPH_MS}ms ease-out, ` +
       `width ${FRAME_MORPH_MS}ms ease-out, height ${FRAME_MORPH_MS}ms ease-out, ` +
       `opacity ${FRAME_FADE_MS}ms ease-out`
     : `opacity ${FRAME_FADE_MS}ms ease-out`;
 
+  const imageAnchor = anchor instanceof HTMLImageElement ? anchor : null;
+  const actionsVisible = showImageActions && visible && !!imageAnchor;
+
   return (
-    <div ref={overlayRef} data-inspector-ui className="pointer-events-none absolute inset-0 z-30">
-      {rect && (
-        <div
-          className="absolute"
-          style={{
-            left: rect.left,
-            top: rect.top,
-            width: rect.width,
-            height: rect.height,
-            opacity: visible ? 1 : 0,
-            transition,
-            outline: '2px solid #3b82f6',
-            background: 'rgba(59,130,246,0.1)',
-          }}
+    <>
+      <div
+        className="absolute"
+        style={{
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          height: rect.height,
+          opacity: visible ? 1 : 0,
+          transition,
+          ...FRAME_STYLES[variant],
+        }}
+      />
+      {showImageActions && imageAnchor && (
+        <ImageActionPanel
+          anchor={imageAnchor}
+          rect={rect}
+          visible={actionsVisible}
+          transition={transition}
         />
       )}
-    </div>
+    </>
+  );
+}
+
+const FLOATING_PANEL_GAP = 8;
+
+function ImageActionPanel({
+  anchor,
+  rect,
+  visible,
+  transition,
+}: {
+  anchor: HTMLElement;
+  rect: RelRect;
+  visible: boolean;
+  transition: string;
+}) {
+  const { openCrop, openReplace } = useInspector();
+  const t = useLocale();
+  return (
+    <TooltipProvider delayDuration={200}>
+      <div
+        className={cn(
+          'absolute flex items-center gap-0.5 rounded-[8px] border border-border bg-popover p-1 text-popover-foreground shadow-floating',
+          visible ? 'pointer-events-auto' : 'pointer-events-none',
+        )}
+        style={{
+          left: rect.left + rect.width / 2,
+          top: rect.top + rect.height + FLOATING_PANEL_GAP,
+          transform: 'translateX(-50%)',
+          opacity: visible ? 1 : 0,
+          transition,
+        }}
+      >
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              aria-label={t.inspector.replace}
+              onClick={(e) => {
+                e.stopPropagation();
+                openReplace(anchor);
+              }}
+              className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+            >
+              <ImageIcon className="size-3.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" data-inspector-ui>
+            {t.inspector.replace}
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              aria-label={t.inspector.crop}
+              onClick={(e) => {
+                e.stopPropagation();
+                openCrop(anchor as HTMLImageElement);
+              }}
+              className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+            >
+              <Crop className="size-3.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" data-inspector-ui>
+            {t.inspector.crop}
+          </TooltipContent>
+        </Tooltip>
+      </div>
+    </TooltipProvider>
   );
 }
 

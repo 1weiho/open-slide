@@ -17,9 +17,7 @@ export function Footer() {
           title="Product"
           links={[
             ['Live demo', '#demo'],
-            ['How it works', '#how-it-works'],
-            ['Anatomy', '#anatomy'],
-            ['Principles', '#principles'],
+            ['Docs', '/docs'],
           ]}
         />
         <FooterCol

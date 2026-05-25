@@ -2,9 +2,9 @@
 
 # open-slide
 
-[![GitHub stars](https://img.shields.io/github/stars/1weiho/open-slide?style=social)](https://github.com/1weiho/open-slide/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/1weiho/open-slide?style=social)](https://github.com/1weiho/open-slide/network/members)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub stars](https://img.shields.io/github/stars/1weiho/open-slide?style=for-the-badge)](https://github.com/1weiho/open-slide/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/1weiho/open-slide?style=for-the-badge)](https://github.com/1weiho/open-slide/network/members)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 **The slide framework built for agents.** Describe your deck in natural language — your coding agent writes the React. open-slide handles the canvas, scaling, navigation, hot reload, and present mode so the agent can focus on content.
 
