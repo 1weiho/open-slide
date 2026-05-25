@@ -109,6 +109,13 @@ function collectElement(el: Element, canvas: HTMLElement, scene: PptxSlideScene)
     collectPrimitiveNode(el, canvas, primitiveKind, scene.diagnostics) ??
     collectFallbackNode(el, canvas, scene.diagnostics);
 
+  const backingShape =
+    !primitiveKind && node && isTextLikeNode(node) ? collectShapeNode(el, canvas) : null;
+  if (backingShape) {
+    markUnsupportedEffectDecision(backingShape, style);
+    scene.nodes.push(backingShape);
+  }
+
   if (node) {
     markUnsupportedEffectDecision(node, style);
     scene.nodes.push(node);
@@ -181,6 +188,12 @@ function collectFallbackNode(
   }
 
   return collectShapeNode(el, canvas);
+}
+
+function isTextLikeNode(
+  node: PptxSceneNode,
+): node is PptxRichTextNode | Extract<PptxSceneNode, { kind: 'text' }> {
+  return node.kind === 'text' || node.kind === 'richText';
 }
 
 function collectTextNode(

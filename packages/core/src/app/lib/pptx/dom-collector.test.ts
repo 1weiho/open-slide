@@ -657,6 +657,42 @@ describe('collectDomPptxScene', () => {
     ]);
   });
 
+  it('keeps fallback text container fills behind editable text', () => {
+    const label = testElement({
+      rect: { height: 120, width: 300, x: 140, y: 620 },
+      style: {
+        backgroundColor: 'rgb(122, 27, 20)',
+        color: 'rgb(255, 255, 255)',
+        fontWeight: '700',
+      },
+      text: 'mass-produced pottery',
+    });
+    const canvas = testElement({
+      children: [label],
+      rect: { height: 1080, width: 1920, x: 0, y: 0 },
+    });
+    vi.stubGlobal('getComputedStyle', (el: TestElement) => el.__style);
+
+    const scene = collectDomPptxScene(canvas as unknown as HTMLElement);
+
+    expect(scene.nodes).toEqual([
+      expect.objectContaining({
+        fill: '7A1B14',
+        h: 120,
+        kind: 'shape',
+        shape: 'rect',
+        w: 300,
+        x: 140,
+        y: 620,
+      }),
+      expect.objectContaining({
+        kind: 'text',
+        style: expect.objectContaining({ bold: true, color: 'FFFFFF' }),
+        text: 'mass-produced pottery',
+      }),
+    ]);
+  });
+
   it('collects one-sided borders as editable lines instead of rectangles', () => {
     const rule = testElement({
       rect: { height: 120, width: 700, x: 80, y: 900 },
