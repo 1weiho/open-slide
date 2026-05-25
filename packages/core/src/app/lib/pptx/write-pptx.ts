@@ -21,7 +21,7 @@ import {
 const PPTX_WIDTH_IN = 13.333333;
 const PPTX_HEIGHT_IN = 7.5;
 const PX_PER_IN = PPTX_CANVAS_WIDTH / PPTX_WIDTH_IN;
-const PT_PER_PX = 72 / 96;
+const PT_PER_PX = 72 / PX_PER_IN;
 const PPTX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 const TEXT_LINE_WIDTH_CUSHION_RATIO = 0.12;
 const TEXT_LINE_WIDTH_CUSHION_MAX_PX = 120;

@@ -40,7 +40,7 @@ const richTextNode: PptxRichTextNode = {
 
 describe('writePptxFile', () => {
   it('converts browser pixels to PowerPoint points for text and stroke APIs', () => {
-    expect(pxToPt(48)).toBe(36);
+    expect(pxToPt(48)).toBeCloseTo(24);
     expect(pxToPt(undefined)).toBeUndefined();
   });
 
