@@ -117,6 +117,7 @@ export type PptxShapeNode = PptxRect &
     kind: 'shape';
     shape: PptxShapeKind;
     fill?: string;
+    radius?: number;
     stroke?: PptxStroke;
   };
 

@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import fg from 'fast-glob';
-import { loadConfigFromFile, normalizePath, type Plugin } from 'vite';
+import { loadConfigFromFile, normalizePath, type Plugin, searchForWorkspaceRoot } from 'vite';
 import type { OpenSlideConfig } from '../config.ts';
 
 export type { OpenSlideConfig };
@@ -104,7 +104,7 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
     config(_c, env) {
       isDev = env.command === 'serve';
       return {
-        server: { fs: { allow: [userCwd] } },
+        server: { fs: { allow: [searchForWorkspaceRoot(userCwd), userCwd] } },
       };
     },
     resolveId(id) {

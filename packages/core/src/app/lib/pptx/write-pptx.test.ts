@@ -249,6 +249,36 @@ describe('writePptxFile', () => {
     expect(Object.keys(zip).some((name) => name.startsWith('ppt/media/image'))).toBe(true);
   });
 
+  it('writes rounded rectangle radius instead of using the PowerPoint default', async () => {
+    const blob = await writePptxFile({
+      title: 'Radius test',
+      slides: [
+        {
+          width: 1920,
+          height: 1080,
+          diagnostics: [],
+          nodes: [
+            {
+              fill: 'FFFAF0',
+              h: 180,
+              kind: 'shape',
+              radius: 14,
+              shape: 'roundRect',
+              w: 520,
+              x: 80,
+              y: 120,
+            },
+          ],
+        },
+      ],
+    });
+
+    const xml = await readPptxXml(blob, 'ppt/slides/slide1.xml');
+
+    expect(xml).toContain('prst="roundRect"');
+    expect(xml).toContain('name="adj"');
+  });
+
   it('exports table nodes as editable table XML', async () => {
     const blob = await writePptxFile({
       title: 'Table test',

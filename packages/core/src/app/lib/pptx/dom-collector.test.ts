@@ -693,6 +693,32 @@ describe('collectDomPptxScene', () => {
     ]);
   });
 
+  it('preserves CSS border radius on editable rounded rectangles', () => {
+    const card = testElement({
+      rect: { height: 180, width: 520, x: 80, y: 120 },
+      style: {
+        backgroundColor: 'rgb(255, 250, 240)',
+        borderRadius: '14px',
+      },
+    });
+    const canvas = testElement({
+      children: [card],
+      rect: { height: 1080, width: 1920, x: 0, y: 0 },
+    });
+    vi.stubGlobal('getComputedStyle', (el: TestElement) => el.__style);
+
+    const scene = collectDomPptxScene(canvas as unknown as HTMLElement);
+
+    expect(scene.nodes).toEqual([
+      expect.objectContaining({
+        fill: 'FFFAF0',
+        kind: 'shape',
+        radius: 14,
+        shape: 'roundRect',
+      }),
+    ]);
+  });
+
   it('collects one-sided borders as editable lines instead of rectangles', () => {
     const rule = testElement({
       rect: { height: 120, width: 700, x: 80, y: 900 },

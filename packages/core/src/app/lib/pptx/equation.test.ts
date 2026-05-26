@@ -18,8 +18,7 @@ describe('pptx equations', () => {
     });
 
     expect(omml).toContain('<m:oMathPara>');
-    expect(omml).toContain('<m:sSup>');
-    expect(omml).toContain('<m:t>2</m:t>');
+    expect(omml).toContain('<m:t>\u00B2</m:t>');
   });
 
   it('adds the OfficeMath namespace to slide XML', () => {
@@ -56,5 +55,34 @@ describe('pptx equations', () => {
     expect(xml).toContain('xmlns:m=');
     expect(xml).toContain('<m:oMathPara>');
     expect(xml).toContain('<m:t>\u222B</m:t>');
+    expect(xml).toContain('<m:t>\u2080</m:t>');
+    expect(xml).toContain('<m:t>\u00B9</m:t>');
+  });
+
+  it('normalizes Greek symbols for inline equation exports', async () => {
+    const scene: PptxSlideScene = {
+      width: 1920,
+      height: 1080,
+      diagnostics: [],
+      nodes: [
+        {
+          fallbackText: '\u03B2 = \u03B1 + 1',
+          inline: true,
+          kind: 'equation',
+          latex: '\\beta = \\alpha + 1',
+          style: { fontFace: 'Cambria Math', fontSize: 30 },
+          x: 100,
+          y: 100,
+          w: 320,
+          h: 60,
+        },
+      ],
+    };
+
+    const blob = await writePptxFile({ slides: [scene], title: 'Inline equation test' });
+    const xml = await readPptxXml(blob, 'ppt/slides/slide1.xml');
+
+    expect(xml).toContain('<m:t>\u03B2</m:t>');
+    expect(xml).toContain('<m:t>\u03B1</m:t>');
   });
 });

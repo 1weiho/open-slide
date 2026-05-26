@@ -58,10 +58,32 @@ describe('pptx primitives', () => {
       <PptxEquation latex="E = mc^2" fallbackText="E = m c^2" inline />,
     );
 
-    expect(html).toContain('E = m c^2');
+    expect(html).toContain('E = m');
+    expect(html).toContain('<sup');
     expect(html).toContain('data-osd-pptx-kind="equation"');
     expect(html).toContain('data-osd-pptx-latex="E = mc^2"');
     expect(html).toContain('data-osd-pptx-inline="true"');
+    expect(html).toContain('data-osd-pptx-fallback="E = m c^2"');
+    expect(html).toContain('aria-label="E = m c^2"');
+  });
+
+  it('renders lightweight browser previews for common LaTeX equations', () => {
+    const displayHtml = renderToStaticMarkup(
+      <PptxEquation
+        latex="\\int_0^1 x^2 dx = \\frac{1}{3}"
+        fallbackText="integral from 0 to 1 of x squared d x equals one third"
+      />,
+    );
+    const inlineHtml = renderToStaticMarkup(
+      <PptxEquation latex="\\beta = \\alpha + 1" fallbackText="beta = alpha + 1" inline />,
+    );
+
+    expect(displayHtml).toContain('∫');
+    expect(displayHtml).toContain('<sup');
+    expect(displayHtml).toContain('>1</span>');
+    expect(displayHtml).toContain('>0</span>');
+    expect(displayHtml).toContain('border-bottom');
+    expect(inlineHtml).toContain('>β = α + 1</div>');
   });
 
   it('renders table metadata and normal table markup', () => {

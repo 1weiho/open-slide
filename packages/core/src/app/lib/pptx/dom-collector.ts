@@ -404,6 +404,7 @@ function collectShapeNode(
   const node = {
     ...rect,
     ...(fill ? { fill } : {}),
+    ...(radius > 0 && shape === 'roundRect' ? { radius } : {}),
     ...(stroke ? { stroke } : {}),
     kind: 'shape',
     shape,

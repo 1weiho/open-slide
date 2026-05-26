@@ -255,6 +255,7 @@ export function addShapeNode(slide: PptxSlide, node: PptxShapeNode): void {
   slide.addShape(shapeNameForNode(node), {
     ...positionProps(node),
     rotate: node.rotation,
+    rectRadius: rectRadiusForNode(node),
     fill: node.fill ? { color: node.fill } : { color: 'FFFFFF', transparency: 100 },
     line: node.stroke
       ? {
@@ -265,6 +266,19 @@ export function addShapeNode(slide: PptxSlide, node: PptxShapeNode): void {
         }
       : { color: 'FFFFFF', transparency: 100 },
   });
+}
+
+function rectRadiusForNode(node: PptxShapeNode): number | undefined {
+  if (node.shape !== 'roundRect' || !node.radius) {
+    return undefined;
+  }
+
+  const shortestSide = Math.min(node.w, node.h);
+  if (shortestSide <= 0) {
+    return undefined;
+  }
+
+  return Math.min(1, Math.max(0, node.radius / shortestSide));
 }
 
 export function addImageNode(slide: PptxSlide, node: PptxImageNode): void {

@@ -63,6 +63,21 @@ describe('openSlidePlugin config module', () => {
 
     expect(config.build.allowPptxDownload).toBe(false);
   });
+
+  it('allows the Vite workspace root for pnpm-resolved dependency assets', async () => {
+    const plugin = openSlidePlugin({
+      config: {},
+      userCwd: process.cwd(),
+    });
+
+    if (typeof plugin.config !== 'function') {
+      throw new Error('expected plugin config hook');
+    }
+
+    const config = await plugin.config({}, { command: 'serve', mode: 'development' });
+
+    expect(config?.server?.fs?.allow).toContain(process.cwd());
+  });
 });
 
 describe('toViteFsPath', () => {

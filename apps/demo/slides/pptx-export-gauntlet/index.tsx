@@ -243,7 +243,7 @@ const EquationStress: Page = () => (
         }}
       >
         <PptxEquation
-          fallbackText="integral from 0 to 1 of x squared d x equals one third"
+          fallbackText="∫₀¹ x² dx = 1/3"
           latex="\\int_0^1 x^2 dx = 1/3"
           style={{
             fontFamily: fonts.display,
@@ -275,7 +275,7 @@ const EquationStress: Page = () => (
         <PptxEquation
           inline
           latex="\\beta = \\alpha + 1"
-          fallbackText="beta = alpha + 1"
+          fallbackText="β = α + 1"
           style={{
             display: 'inline-block',
             fontFamily: fonts.display,

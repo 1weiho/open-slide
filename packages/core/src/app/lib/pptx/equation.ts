@@ -24,12 +24,77 @@ export function ensureMathNamespace(xml: string): string {
 }
 
 function normalizeEquationSource(source: string): string {
-  return source
-    .replace(/\\int/g, '\u222B')
-    .replace(/\\sum/g, '\u2211')
+  return latexToReadableMath(source).replace(/\s+/g, ' ').trim();
+}
+
+function latexToReadableMath(source: string): string {
+  let output = source
+    .replace(/\\\\/g, '\\')
     .replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, '$1/$2')
-    .replace(/\s+/g, ' ')
-    .trim();
+    .replace(/\\alpha/g, '\u03B1')
+    .replace(/\\beta/g, '\u03B2')
+    .replace(/\\int/g, '\u222B')
+    .replace(/\\sum/g, '\u2211');
+
+  output = output.replace(
+    /([∫∑A-Za-z0-9)])_\{?([^{}\s^]+)\}?\^\{?([^{}\s]+)\}?/g,
+    (_match, base: string, sub: string, sup: string) =>
+      `${base}${toSubscript(sub)}${toSuperscript(sup)}`,
+  );
+  output = output.replace(
+    /([∫∑A-Za-z0-9)])\^\{?([^{}\s]+)\}?/g,
+    (_match, base: string, sup: string) => `${base}${toSuperscript(sup)}`,
+  );
+  output = output.replace(
+    /([∫∑A-Za-z0-9)])_\{?([^{}\s]+)\}?/g,
+    (_match, base: string, sub: string) => `${base}${toSubscript(sub)}`,
+  );
+
+  return output;
+}
+
+const SUPERSCRIPT: Record<string, string> = {
+  '0': '\u2070',
+  '1': '\u00B9',
+  '2': '\u00B2',
+  '3': '\u00B3',
+  '4': '\u2074',
+  '5': '\u2075',
+  '6': '\u2076',
+  '7': '\u2077',
+  '8': '\u2078',
+  '9': '\u2079',
+  '+': '\u207A',
+  '-': '\u207B',
+};
+
+const SUBSCRIPT: Record<string, string> = {
+  '0': '\u2080',
+  '1': '\u2081',
+  '2': '\u2082',
+  '3': '\u2083',
+  '4': '\u2084',
+  '5': '\u2085',
+  '6': '\u2086',
+  '7': '\u2087',
+  '8': '\u2088',
+  '9': '\u2089',
+  '+': '\u208A',
+  '-': '\u208B',
+};
+
+function toSuperscript(value: string): string {
+  return value
+    .split('')
+    .map((char) => SUPERSCRIPT[char] ?? char)
+    .join('');
+}
+
+function toSubscript(value: string): string {
+  return value
+    .split('')
+    .map((char) => SUBSCRIPT[char] ?? char)
+    .join('');
 }
 
 function toOmmlRuns(source: string): string {
