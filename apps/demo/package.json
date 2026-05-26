@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "open-slide dev",
-    "build": "open-slide build",
-    "preview": "open-slide preview"
+    "dev": "./node_modules/.bin/open-slide dev",
+    "build": "./node_modules/.bin/open-slide build && cp _redirects dist/_redirects",
+    "preview": "./node_modules/.bin/open-slide preview"
   },
   "dependencies": {
     "@open-slide/core": "workspace:*",

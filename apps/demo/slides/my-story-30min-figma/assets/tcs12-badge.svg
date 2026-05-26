@@ -1,0 +1,20 @@
+<svg width="112" height="86" viewBox="0 0 112 86" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="112" height="86" rx="22" fill="url(#paint0_linear_514_8)"/>
+  <rect x="15" y="10" width="82" height="66" rx="18" fill="#FBFDFF" stroke="#C8D9F7" stroke-width="1.5"/>
+  <path d="M28 20L34 24L40 20L46 24L52 20L58 24L64 20L70 24L76 20L82 24" stroke="#1762D8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="28" cy="31" r="3" fill="#8CB8FF"/>
+  <circle cx="84" cy="31" r="3" fill="#8CB8FF"/>
+  <rect x="25" y="50" width="62" height="13" rx="6.5" fill="#EAF2FF"/>
+  <rect x="72" y="16" width="16" height="16" rx="8" fill="#1762D8" fill-opacity="0.1"/>
+  <path d="M80 19L81.7 22.4L85.5 22.9L82.8 25.5L83.4 29.2L80 27.4L76.6 29.2L77.2 25.5L74.5 22.9L78.3 22.4L80 19Z" fill="#1762D8"/>
+  <text x="26" y="44" fill="#1762D8" font-family="Arial, sans-serif" font-size="22" font-weight="800">TCS12</text>
+  <text x="30" y="59.5" fill="#5B6E87" font-family="Arial, sans-serif" font-size="7.2" font-weight="700">CENTRAL FEST</text>
+  <rect x="72" y="50" width="15" height="13" rx="6.5" fill="#1762D8"/>
+  <text x="79.5" y="58.8" text-anchor="middle" fill="#F8FAFF" font-family="Arial, sans-serif" font-size="5.6" font-weight="800">VC</text>
+  <defs>
+    <linearGradient id="paint0_linear_514_8" x1="11" y1="9" x2="101" y2="79" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E8F1FF"/>
+      <stop offset="1" stop-color="#F7FBFF"/>
+    </linearGradient>
+  </defs>
+</svg>

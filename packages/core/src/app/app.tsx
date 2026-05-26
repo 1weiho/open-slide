@@ -23,6 +23,8 @@ export function App() {
         ) : (
           <Route path="/" element={<NotFound />} />
         )}
+        <Route path="/id/:slideId" element={<Slide />} />
+        <Route path="/id/:slideId/presenter" element={<Presenter />} />
         <Route path="/s/:slideId" element={<Slide />} />
         <Route path="/s/:slideId/presenter" element={<Presenter />} />
         <Route path="*" element={<NotFound />} />
