@@ -63,19 +63,13 @@ const PRINT_STYLES = `
     transform: scale(0.5);
     transform-origin: top left;
   }
-  /* Chromium serializes box-shadow and CSS gradients as PDF transparency
-     groups / soft masks. macOS Preview re-composites those on every page
-     turn, causing 0.5–2s per-page lag. Strip them in the print container
-     only — gradients on pseudo-elements via CSS (DOM walk can't reach them),
-     inline-style gradients via neutralizeGradientBackgrounds() below. */
+  /* Chromium serializes box-shadow as PDF transparency groups / soft masks.
+     macOS Preview re-composites those on every page turn, causing lag. Strip
+     shadows in the print container while preserving authored backgrounds. */
   #${PRINT_ROOT_ID} *,
   #${PRINT_ROOT_ID} *::before,
   #${PRINT_ROOT_ID} *::after {
     box-shadow: none !important;
-  }
-  #${PRINT_ROOT_ID} *::before,
-  #${PRINT_ROOT_ID} *::after {
-    background-image: none !important;
   }
 }
 `;
@@ -174,7 +168,6 @@ export async function exportSlideAsPdf(
     }
 
     await waitForDataWaitfor(root);
-    neutralizeGradientBackgrounds(root);
     await sleep(100); // flush layout
 
     onProgress?.({ phase: 'printing', current: total, total, percent: 99 });
@@ -187,18 +180,6 @@ export async function exportSlideAsPdf(
     for (const r of reactRoots) r.unmount();
     root.remove();
     style.remove();
-  }
-}
-
-// Strip inline-style gradients from background-image so Chromium does not
-// emit them as PDF soft masks. url(...) backgrounds are preserved.
-function neutralizeGradientBackgrounds(root: HTMLElement): void {
-  const elements = root.querySelectorAll<HTMLElement>('*');
-  for (const el of elements) {
-    const bg = getComputedStyle(el).backgroundImage;
-    if (bg?.includes('gradient(')) {
-      el.style.backgroundImage = 'none';
-    }
   }
 }
 
