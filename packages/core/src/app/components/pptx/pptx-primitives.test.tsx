@@ -1,4 +1,4 @@
-import { renderToStaticMarkup } from 'react-dom/server';
+﻿import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import {
   PptxBox,
@@ -53,13 +53,14 @@ describe('pptx primitives', () => {
     expect(html).toContain('data-osd-pptx-reason="unsupported filter"');
   });
 
-  it('renders equation metadata with editable fallback text', () => {
+  it('renders equation metadata with Temml MathML preview', () => {
     const html = renderToStaticMarkup(
       <PptxEquation latex="E = mc^2" fallbackText="E = m c^2" inline />,
     );
 
     expect(html).toContain('E = m');
-    expect(html).toContain('<sup');
+    expect(html).toContain('<math');
+    expect(html).toContain('<msup>');
     expect(html).toContain('data-osd-pptx-kind="equation"');
     expect(html).toContain('data-osd-pptx-latex="E = mc^2"');
     expect(html).toContain('data-osd-pptx-inline="true"');
@@ -67,7 +68,7 @@ describe('pptx primitives', () => {
     expect(html).toContain('aria-label="E = m c^2"');
   });
 
-  it('renders lightweight browser previews for common LaTeX equations', () => {
+  it('renders browser previews for common LaTeX equations', () => {
     const displayHtml = renderToStaticMarkup(
       <PptxEquation
         latex="\\int_0^1 x^2 dx = \\frac{1}{3}"
@@ -78,12 +79,25 @@ describe('pptx primitives', () => {
       <PptxEquation latex="\\beta = \\alpha + 1" fallbackText="beta = alpha + 1" inline />,
     );
 
-    expect(displayHtml).toContain('∫');
-    expect(displayHtml).toContain('<sup');
-    expect(displayHtml).toContain('>1</span>');
-    expect(displayHtml).toContain('>0</span>');
-    expect(displayHtml).toContain('border-bottom');
-    expect(inlineHtml).toContain('>β = α + 1</div>');
+    expect(displayHtml).toContain('<math');
+    expect(displayHtml).toContain('<msubsup>');
+    expect(displayHtml).toContain('<mfrac>');
+    expect(inlineHtml).toContain(`<mi>${String.fromCharCode(0x03b2)}</mi>`);
+    expect(inlineHtml).toContain(`<mi>${String.fromCharCode(0x03b1)}</mi>`);
+  });
+
+  it('renders browser previews for matrix and binomial LaTeX', () => {
+    const matrixHtml = renderToStaticMarkup(
+      <PptxEquation latex="A=\\begin{bmatrix}2&1\\\\1&2\\end{bmatrix}" />,
+    );
+    const binomialHtml = renderToStaticMarkup(
+      <PptxEquation latex="\\sum_{k=0}^{n} \\binom{n}{k}x^k y^{n-k} = (x+y)^n" />,
+    );
+
+    expect(matrixHtml).toContain('<mtable>');
+    expect(matrixHtml).not.toContain('ParseError');
+    expect(binomialHtml).toContain('<munderover>');
+    expect(binomialHtml).toContain('<mfrac');
   });
 
   it('renders table metadata and normal table markup', () => {

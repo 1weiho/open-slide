@@ -308,6 +308,37 @@ describe('writePptxFile', () => {
     expect(xml).toContain('Editable');
   });
 
+  it('exports table nodes with quiet source-like styling instead of a default grid', async () => {
+    const blob = await writePptxFile({
+      title: 'Quiet table test',
+      slides: [
+        {
+          width: 1920,
+          height: 1080,
+          nodes: [
+            {
+              columns: ['Case', 'Status'],
+              h: 240,
+              kind: 'table',
+              rows: [['Native text', 'Expected']],
+              style: { fontFace: 'Aptos', fontSize: 24 },
+              w: 640,
+              x: 80,
+              y: 120,
+            },
+          ],
+          diagnostics: [],
+        },
+      ],
+    });
+
+    const xml = await readPptxXml(blob, 'ppt/slides/slide1.xml');
+    expect(xml).toContain('Case');
+    expect(xml).toContain('Native text');
+    expect(xml).toContain('FFFAF0');
+    expect(xml).not.toContain('D9CDB8');
+  });
+
   it('exports chart nodes as editable chart parts', async () => {
     const blob = await writePptxFile({
       title: 'Chart test',

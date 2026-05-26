@@ -34,7 +34,7 @@ const PPTX_TABLE_ATTR = 'data-osd-pptx-table';
 const PPTX_CHART_ATTR = 'data-osd-pptx-chart';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-const TEXT_CONTAINER_TAGS = new Set(['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'SPAN']);
+const TEXT_CONTAINER_TAGS = new Set(['DIV', 'P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'SPAN']);
 const INLINE_TEXT_TAGS = new Set([
   'A',
   'ABBR',
@@ -302,7 +302,7 @@ function collectEquationNode(
   const fallbackText =
     el.getAttribute(PPTX_EQUATION_FALLBACK_ATTR) ?? readElementText(el) ?? latex ?? mathml;
   const reason =
-    'Equation exported as native OfficeMath with reduced LaTeX conversion; verify in PowerPoint Desktop';
+    'Equation exported as native OfficeMath from LaTeX; verify complex equations in PowerPoint Desktop';
   diagnostics.push({ level: 'warn', message: reason, nodeKind: 'equation' });
 
   const node = {

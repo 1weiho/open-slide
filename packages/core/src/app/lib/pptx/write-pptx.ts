@@ -194,17 +194,23 @@ export function addEquationNode(
 export function addTableNode(slide: PptxSlide, node: PptxTableNode): void {
   const header = node.columns.map((column) => ({
     text: column,
-    options: { bold: true, fill: { color: 'F3F0E8' } },
+    options: { bold: true, fill: { color: 'FFFAF0' }, margin: 0.04 },
   }));
-  const rows = node.rows.map((row) => row.map((cell) => ({ text: cell })));
+  const rows = node.rows.map((row) =>
+    row.map((cell) => ({
+      options: { fill: { color: 'FFFAF0' }, margin: 0.04 },
+      text: cell,
+    })),
+  );
 
   slide.addTable([header, ...rows], {
     ...positionProps(node),
-    border: { color: 'D9CDB8', pt: 1 },
+    border: { type: 'none' },
     color: node.style.color,
+    fill: { color: 'FFFAF0' },
     fontFace: node.style.fontFace,
     fontSize: pxToPt(node.style.fontSize),
-    margin: 0.08,
+    margin: 0.04,
   });
 }
 
@@ -404,7 +410,23 @@ function replaceEquationParagraph(xml: string, replacement: PptxEquationReplacem
   const paragraphRe = new RegExp(
     `<a:p>(?:(?!</a:p>)[\\s\\S])*?<a:t>${escapedToken}</a:t>(?:(?!</a:p>)[\\s\\S])*?</a:p>`,
   );
-  return xml.replace(paragraphRe, `<a:p>${replacement.omml}</a:p>`);
+  return xml.replace(paragraphRe, (paragraph) => {
+    const defaultRunProperties = extractDefaultRunProperties(paragraph);
+    const paragraphProperties = defaultRunProperties
+      ? `<a:pPr>${defaultRunProperties}</a:pPr>`
+      : '';
+    return `<a:p>${paragraphProperties}<a14:m>${replacement.omml}</a14:m></a:p>`;
+  });
+}
+
+function extractDefaultRunProperties(paragraph: string): string | null {
+  const runProperties = paragraph.match(/<a:rPr(?<attrs>[^>]*)>(?<content>[\s\S]*?)<\/a:rPr>/);
+  if (runProperties?.groups) {
+    return `<a:defRPr${runProperties.groups.attrs}>${runProperties.groups.content}</a:defRPr>`;
+  }
+
+  const emptyRunProperties = paragraph.match(/<a:rPr(?<attrs>[^>]*)\/>/);
+  return emptyRunProperties?.groups ? `<a:defRPr${emptyRunProperties.groups.attrs}/>` : null;
 }
 
 function escapeRegExp(value: string): string {

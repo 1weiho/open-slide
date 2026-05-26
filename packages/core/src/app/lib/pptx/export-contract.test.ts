@@ -97,6 +97,8 @@ describe('PPTX export structural contract', () => {
     expect(slideXml).toContain('Layer');
     expect(slideXml).toContain('Native');
     expect(slideXml).toContain('<m:oMathPara>');
+    expect(slideXml).toContain('<m:sSup>');
+    expect(slideXml).not.toContain('OSD_PPTX_EQUATION');
     expect(slideXml.match(/<a:r>/g)?.length).toBeGreaterThanOrEqual(4);
     expect(chartPath).toBeDefined();
     expect(await readPptxXml(blob, chartPath ?? '')).toContain('Native chart');

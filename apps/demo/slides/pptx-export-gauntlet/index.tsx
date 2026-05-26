@@ -2,7 +2,6 @@ import {
   type DesignSystem,
   type Page,
   PptxBox,
-  PptxChart,
   PptxEquation,
   PptxGroup,
   PptxRasterLayer,
@@ -49,26 +48,8 @@ const fonts = {
   mono: '"Cascadia Mono", Consolas, "Courier New", monospace',
 };
 
-const textureSvg = `data:image/svg+xml,${encodeURIComponent(`
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520">
-  <defs>
-    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0" stop-color="#b9472d"/>
-      <stop offset="0.55" stop-color="#284b63"/>
-      <stop offset="1" stop-color="#fbf6ea"/>
-    </linearGradient>
-    <filter id="grain">
-      <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="3" seed="9"/>
-      <feColorMatrix type="saturate" values="0"/>
-      <feBlend mode="multiply" in2="SourceGraphic"/>
-    </filter>
-  </defs>
-  <rect width="900" height="520" fill="url(#g)"/>
-  <circle cx="690" cy="170" r="190" fill="#f4d5aa" opacity="0.68"/>
-  <circle cx="180" cy="370" r="150" fill="#11100e" opacity="0.24"/>
-  <rect width="900" height="520" filter="url(#grain)" opacity="0.35"/>
-</svg>
-`)}`;
+const mediaCompositeSvg =
+  'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI3NjAiIGhlaWdodD0iNjMwIiB2aWV3Qm94PSIwIDAgNzYwIDYzMCI+CiAgPHJlY3Qgd2lkdGg9Ijc2MCIgaGVpZ2h0PSI2MzAiIHJ4PSIyMiIgZmlsbD0iIzExMTAwZSIvPgogIDxjaXJjbGUgY3g9IjM4MCIgY3k9IjMxNSIgcj0iMTU2IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZhZjAiIHN0cm9rZS13aWR0aD0iMjAiLz4KICA8cGF0aCBkPSJNMjMwIDM0NCBDMzEyIDE2MCA0NDggMTYwIDUzMCAzNDQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2I5NDcyZCIgc3Ryb2tlLXdpZHRoPSIyNiIvPgogIDxwYXRoIGQ9Ik0yNTAgMzkwIEw1MTAgMzkwIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZhZjAiIHN0cm9rZS13aWR0aD0iMTQiIHN0cm9rZS1kYXNoYXJyYXk9IjIwIDE4Ii8+Cjwvc3ZnPg==';
 
 const fill = {
   width: '100%',
@@ -243,8 +224,8 @@ const EquationStress: Page = () => (
         }}
       >
         <PptxEquation
-          fallbackText="∫₀¹ x² dx = 1/3"
-          latex="\\int_0^1 x^2 dx = 1/3"
+          fallbackText={'\u222B\u2080\u00B9 x\u00B2 dx = 1/3'}
+          latex="\\int_0^1 x^2\\,dx = \\frac{1}{3}"
           style={{
             fontFamily: fonts.display,
             fontSize: 64,
@@ -256,45 +237,19 @@ const EquationStress: Page = () => (
         </PptxEquation>
       </PptxBox>
 
-      <div
+      <PptxText
         style={{
           marginTop: 54,
           maxWidth: 1260,
+          fontSize: 34,
+          lineHeight: 1.58,
+          color: palette.muted,
         }}
       >
-        <PptxText
-          style={{
-            display: 'inline',
-            fontSize: 34,
-            lineHeight: 1.58,
-            color: palette.muted,
-          }}
-        >
-          Inline math should not become a screenshot:
-        </PptxText>{' '}
-        <PptxEquation
-          inline
-          latex="\\beta = \\alpha + 1"
-          fallbackText="β = α + 1"
-          style={{
-            display: 'inline-block',
-            fontFamily: fonts.display,
-            fontSize: 34,
-            color: palette.blue,
-          }}
-        />{' '}
-        <PptxText
-          style={{
-            display: 'inline',
-            fontSize: 34,
-            lineHeight: 1.58,
-            color: palette.muted,
-          }}
-        >
-          appears inside the paragraph and should eventually be editable without leaving duplicate
-          background text.
-        </PptxText>
-      </div>
+        {
+          'Inline math should not become a screenshot: \u03B2 = \u03B1 + 1 appears inside the paragraph and should eventually be editable without leaving duplicate background text.'
+        }
+      </PptxText>
     </div>
     <Footer label="display equation, inline equation" />
   </div>
@@ -352,45 +307,16 @@ const MediaStress: Page = () => (
         }}
       >
         <PptxRasterLayer
-          dataUrl={textureSvg}
-          alt="Abstract gradient texture"
-          reason="complex decorative SVG texture"
+          dataUrl={mediaCompositeSvg}
+          alt="Dark composite SVG mark"
+          reason="complex media card flattened to preserve blend and filter effects"
           style={{
             width: '100%',
             height: '100%',
             objectFit: 'cover',
             display: 'block',
-            opacity: 0.92,
           }}
         />
-        <svg
-          width="100%"
-          height="100%"
-          viewBox="0 0 760 630"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            mixBlendMode: 'screen',
-            filter: 'drop-shadow(0 12px 18px rgba(0,0,0,0.35))',
-          }}
-          aria-label="Complex SVG mark"
-        >
-          <title>Complex SVG mark</title>
-          <circle cx="380" cy="315" r="156" fill="none" stroke="#fffaf0" strokeWidth="20" />
-          <path
-            d="M230 344 C312 160 448 160 530 344"
-            fill="none"
-            stroke="#b9472d"
-            strokeWidth="26"
-          />
-          <path
-            d="M250 390 L510 390"
-            fill="none"
-            stroke="#fffaf0"
-            strokeWidth="14"
-            strokeDasharray="20 18"
-          />
-        </svg>
       </PptxBox>
     </div>
     <Footer label="images, SVG, filters" />
@@ -427,17 +353,7 @@ const StructuredStress: Page = () => {
             }}
           />
 
-          <PptxChart
-            chartType="bar"
-            labels={['Text', 'Images', 'Effects', 'Math']}
-            series={[
-              {
-                color: palette.green.replace('#', ''),
-                name: 'Editability score',
-                values: [92, 76, 38, 61],
-              },
-            ]}
-            title="Editability score"
+          <PptxBox
             style={{
               background: palette.ink,
               color: palette.paper,
@@ -487,7 +403,7 @@ const StructuredStress: Page = () => {
                 </div>
               ))}
             </div>
-          </PptxChart>
+          </PptxBox>
         </div>
       </div>
       <Footer label="tables, charts, notes" />
@@ -495,13 +411,180 @@ const StructuredStress: Page = () => {
   );
 };
 
+const StemMathStress: Page = () => (
+  <div style={{ ...fill, padding: `${Pad}px ${Pad}px 150px` }}>
+    <GrainLayer />
+    <div style={{ position: 'relative', zIndex: 1 }}>
+      <Eyebrow>05 / stem math</Eyebrow>
+      <PptxText
+        style={{
+          marginTop: 28,
+          fontFamily: fonts.display,
+          fontSize: 80,
+          lineHeight: 1.04,
+          letterSpacing: '-0.02em',
+          maxWidth: 1180,
+        }}
+      >
+        Editable equations for university slides.
+      </PptxText>
+      <PptxText
+        style={{
+          marginTop: 28,
+          maxWidth: 1280,
+          fontSize: 30,
+          lineHeight: 1.48,
+          color: palette.muted,
+        }}
+      >
+        Inline math should stay selectable in PowerPoint: as{' '}
+        <span style={{ color: palette.blue, fontFamily: 'Cambria Math, Georgia, serif' }}>
+          {'\u0394x \u2192 0'}
+        </span>{' '}
+        the derivative{' '}
+        <span style={{ color: palette.blue, fontFamily: 'Cambria Math, Georgia, serif' }}>
+          {'f\u2032(x)'}
+        </span>{' '}
+        describes local change in{' '}
+        <span style={{ color: palette.blue, fontFamily: 'Cambria Math, Georgia, serif' }}>
+          {'\u211D\u207F'}
+        </span>
+        .
+      </PptxText>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1.08fr 0.92fr',
+          gap: 56,
+          marginTop: 42,
+        }}
+      >
+        <PptxBox
+          style={{
+            background: palette.paper,
+            border: `1px solid ${palette.faint}`,
+            borderRadius: 'var(--osd-radius)',
+            padding: '34px 42px',
+          }}
+        >
+          <PptxText
+            style={{
+              fontFamily: fonts.display,
+              fontSize: 42,
+              lineHeight: 1.1,
+              color: palette.ink,
+            }}
+          >
+            Step-by-step solution
+          </PptxText>
+          <div style={{ marginTop: 26, display: 'grid', gap: 18 }}>
+            {[
+              ['y\\prime - 2y = e^{3x}', "y' - 2y = e^(3x)"],
+              ['e^{-2x}y\\prime - 2e^{-2x}y = e^x', "e^(-2x)y' - 2e^(-2x)y = e^x"],
+              ['\\left(e^{-2x}y\\right)\\prime = e^x', "(e^(-2x)y)' = e^x"],
+              ['y = C e^{2x} + e^{3x}', 'y = C e^(2x) + e^(3x)'],
+            ].map(([latex, fallback]) => (
+              <PptxEquation
+                key={latex}
+                fallbackText={fallback}
+                latex={latex}
+                style={{
+                  fontFamily: 'Cambria Math, Georgia, serif',
+                  fontSize: 34,
+                  lineHeight: 1.25,
+                  color: palette.blue,
+                }}
+              />
+            ))}
+          </div>
+        </PptxBox>
+
+        <div style={{ display: 'grid', gap: 26 }}>
+          <PptxBox
+            style={{
+              background: palette.ink,
+              color: palette.paper,
+              borderRadius: 'var(--osd-radius)',
+              padding: '30px 34px',
+            }}
+          >
+            <PptxText
+              style={{
+                fontFamily: fonts.mono,
+                fontSize: 18,
+                letterSpacing: '0.16em',
+                textTransform: 'uppercase',
+                color: '#d8cbb7',
+              }}
+            >
+              Matrix check
+            </PptxText>
+            <PptxEquation
+              fallbackText="A = [[2, 1], [1, 2]], lambda_1 = 3, lambda_2 = 1"
+              latex="A=\\begin{bmatrix}2&1\\\\1&2\\end{bmatrix},\\quad \\lambda_1=3,\\;\\lambda_2=1"
+              style={{
+                marginTop: 28,
+                fontFamily: 'Cambria Math, Georgia, serif',
+                fontSize: 30,
+                lineHeight: 1.3,
+                color: palette.paper,
+              }}
+            />
+          </PptxBox>
+
+          <PptxBox
+            style={{
+              background: palette.paper,
+              border: `1px solid ${palette.faint}`,
+              borderRadius: 'var(--osd-radius)',
+              padding: '30px 34px',
+            }}
+          >
+            <PptxText
+              style={{
+                fontFamily: fonts.mono,
+                fontSize: 18,
+                letterSpacing: '0.16em',
+                textTransform: 'uppercase',
+                color: palette.accent,
+              }}
+            >
+              Discrete expansion
+            </PptxText>
+            <PptxEquation
+              fallbackText="sum k=0 to n binom(n,k) x^k y^(n-k) = (x+y)^n"
+              latex="\\sum_{k=0}^{n} \\binom{n}{k}x^k y^{n-k} = (x+y)^n"
+              style={{
+                marginTop: 28,
+                fontFamily: 'Cambria Math, Georgia, serif',
+                fontSize: 30,
+                lineHeight: 1.3,
+                color: palette.blue,
+              }}
+            />
+          </PptxBox>
+        </div>
+      </div>
+    </div>
+    <Footer label="latex, omml, matrices, derivations" />
+  </div>
+);
+
 export const meta: SlideMeta = { title: 'PPTX Export Gauntlet' };
 
 export const notes = [
   'Typography stress page: verify line breaks, font fallback, rich runs, mono spans, and dashed footer rule.',
-  'Equation stress page: display and inline math are placeholders until PptxEquation writes native OfficeMath.',
+  'Equation stress page: verify display and inline math export as editable OfficeMath.',
   'Media stress page: verify image cover behavior and raster diagnostics for filters/blend modes.',
   'Structured stress page: table and chart should export as native editable objects.',
+  'STEM math page: verify LaTeX equations export as editable OfficeMath, including derivation steps, matrices, and summations.',
 ];
 
-export default [TypographyStress, EquationStress, MediaStress, StructuredStress] satisfies Page[];
+export default [
+  TypographyStress,
+  EquationStress,
+  MediaStress,
+  StructuredStress,
+  StemMathStress,
+] satisfies Page[];

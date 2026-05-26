@@ -1,4 +1,5 @@
 import type { HTMLAttributes, ImgHTMLAttributes } from 'react';
+import Temml from 'temml';
 
 export type PptxPrimitiveKind =
   | 'text'
@@ -100,7 +101,7 @@ export function PptxEquation({
   ...props
 }: PptxEquationProps) {
   const text = fallbackText ?? latex ?? mathml ?? children;
-  const preview = latex ? renderLatexPreview(latex) : null;
+  const preview = latex ? renderLatexPreview(latex, !inline) : mathml;
   return (
     <div
       {...props}
@@ -111,246 +112,31 @@ export function PptxEquation({
       data-osd-pptx-mathml={mathml}
       data-osd-pptx-inline={inline ? 'true' : undefined}
       data-osd-pptx-fallback={fallbackText}
+      {...(preview ? { dangerouslySetInnerHTML: { __html: preview } } : {})}
     >
-      {preview ?? text}
+      {preview ? undefined : text}
     </div>
   );
 }
 
-function renderLatexPreview(source: string) {
-  const tokens = tokenizeLatex(source);
-  if (tokens.length === 0) {
+function renderLatexPreview(source: string, displayMode: boolean): string | null {
+  try {
+    return Temml.renderToString(normalizeLatexSource(source), {
+      displayMode,
+      throwOnError: false,
+      trust: true,
+    });
+  } catch {
     return null;
   }
-
-  return tokens.map((token, index) => {
-    if (token.kind === 'text') {
-      return token.value;
-    }
-
-    const key = `${token.kind}-${index}`;
-    if (token.kind === 'subsup') {
-      return (
-        <span key={key} style={{ display: 'inline-flex', alignItems: 'center' }}>
-          <span>{token.base}</span>
-          <span
-            style={{
-              display: 'inline-flex',
-              flexDirection: 'column',
-              fontSize: '0.46em',
-              lineHeight: 0.85,
-              marginLeft: '0.04em',
-              marginRight: '0.08em',
-            }}
-          >
-            <span>{token.sup}</span>
-            <span>{token.sub}</span>
-          </span>
-        </span>
-      );
-    }
-
-    if (token.kind === 'sup') {
-      return (
-        <span key={key}>
-          {token.base}
-          <sup style={{ fontSize: '0.58em', lineHeight: 0 }}>{token.sup}</sup>
-        </span>
-      );
-    }
-
-    if (token.kind === 'frac') {
-      return (
-        <span
-          key={key}
-          style={{
-            display: 'inline-flex',
-            flexDirection: 'column',
-            fontSize: '0.82em',
-            lineHeight: 1,
-            marginInline: '0.12em',
-            textAlign: 'center',
-            verticalAlign: '-0.24em',
-          }}
-        >
-          <span style={{ borderBottom: '0.05em solid currentColor', paddingInline: '0.12em' }}>
-            {token.numerator}
-          </span>
-          <span>{token.denominator}</span>
-        </span>
-      );
-    }
-
-    return null;
-  });
 }
 
-type LatexToken =
-  | { kind: 'text'; value: string }
-  | { base: string; kind: 'sup'; sup: string }
-  | { base: string; kind: 'subsup'; sub: string; sup: string }
-  | { denominator: string; kind: 'frac'; numerator: string };
-
-function tokenizeLatex(source: string): LatexToken[] {
-  const tokens: LatexToken[] = [];
-  const normalizedSource = source.replace(/\\\\/g, '\\');
-  let index = 0;
-
-  while (index < normalizedSource.length) {
-    const command = readLatexCommand(normalizedSource, index);
-    if (command) {
-      if (command.name === 'frac') {
-        const numerator = readLatexGroup(normalizedSource, command.nextIndex);
-        const denominator = numerator
-          ? readLatexGroup(normalizedSource, numerator.nextIndex)
-          : null;
-        if (numerator && denominator) {
-          tokens.push({
-            denominator: latexText(denominator.value),
-            kind: 'frac',
-            numerator: latexText(numerator.value),
-          });
-          index = denominator.nextIndex;
-          continue;
-        }
-      }
-
-      const base = latexCommandText(command.name);
-      const sub =
-        normalizedSource[command.nextIndex] === '_'
-          ? readLatexScript(normalizedSource, command.nextIndex + 1)
-          : null;
-      const supStart = sub ? sub.nextIndex : command.nextIndex;
-      const sup =
-        normalizedSource[supStart] === '^' ? readLatexScript(normalizedSource, supStart + 1) : null;
-      if (sub && sup) {
-        tokens.push({
-          base,
-          kind: 'subsup',
-          sub: latexText(sub.value),
-          sup: latexText(sup.value),
-        });
-        index = sup.nextIndex;
-        continue;
-      }
-      if (sup) {
-        tokens.push({ base, kind: 'sup', sup: latexText(sup.value) });
-        index = sup.nextIndex;
-        continue;
-      }
-
-      tokens.push({ kind: 'text', value: base });
-      index = command.nextIndex;
-      continue;
-    }
-
-    const base = normalizedSource[index] ?? '';
-    const sub =
-      normalizedSource[index + 1] === '_' ? readLatexScript(normalizedSource, index + 2) : null;
-    const supStart = sub ? sub.nextIndex : index + 1;
-    const sup =
-      normalizedSource[supStart] === '^' ? readLatexScript(normalizedSource, supStart + 1) : null;
-    if (sub && sup) {
-      tokens.push({
-        base: latexText(base),
-        kind: 'subsup',
-        sub: latexText(sub.value),
-        sup: latexText(sup.value),
-      });
-      index = sup.nextIndex;
-      continue;
-    }
-
-    const directSup =
-      normalizedSource[index + 1] === '^' ? readLatexScript(normalizedSource, index + 2) : null;
-    if (directSup) {
-      tokens.push({ base: latexText(base), kind: 'sup', sup: latexText(directSup.value) });
-      index = directSup.nextIndex;
-      continue;
-    }
-
-    tokens.push({ kind: 'text', value: latexText(base) });
-    index += 1;
+function normalizeLatexSource(source: string): string {
+  if (!/\\\\[A-Za-z]/.test(source)) {
+    return source;
   }
 
-  return mergeTextTokens(tokens);
-}
-
-function readLatexCommand(
-  source: string,
-  index: number,
-): { name: string; nextIndex: number } | null {
-  if (source[index] !== '\\') {
-    return null;
-  }
-
-  const match = source.slice(index + 1).match(/^[a-zA-Z]+/);
-  if (!match) {
-    return null;
-  }
-
-  return { name: match[0], nextIndex: index + 1 + match[0].length };
-}
-
-function readLatexGroup(
-  source: string,
-  index: number,
-): { nextIndex: number; value: string } | null {
-  if (source[index] !== '{') {
-    return null;
-  }
-
-  const end = source.indexOf('}', index + 1);
-  if (end === -1) {
-    return null;
-  }
-
-  return { nextIndex: end + 1, value: source.slice(index + 1, end) };
-}
-
-function readLatexScript(
-  source: string,
-  index: number,
-): { nextIndex: number; value: string } | null {
-  const group = readLatexGroup(source, index);
-  if (group) {
-    return group;
-  }
-
-  const value = source[index];
-  return value ? { nextIndex: index + 1, value } : null;
-}
-
-function latexCommandText(command: string): string {
-  switch (command) {
-    case 'alpha':
-      return 'α';
-    case 'beta':
-      return 'β';
-    case 'int':
-      return '∫';
-    case 'sum':
-      return '∑';
-    default:
-      return command;
-  }
-}
-
-function latexText(value: string): string {
-  return value.replace(/\\([a-zA-Z]+)/g, (_match, command: string) => latexCommandText(command));
-}
-
-function mergeTextTokens(tokens: LatexToken[]): LatexToken[] {
-  const merged: LatexToken[] = [];
-  for (const token of tokens) {
-    const previous = merged.at(-1);
-    if (token.kind === 'text' && previous?.kind === 'text') {
-      previous.value += token.value;
-      continue;
-    }
-    merged.push(token);
-  }
-  return merged;
+  return source.replace(/\\\\\\\\/g, '\\\\').replace(/\\\\([A-Za-z,;!])/g, '\\$1');
 }
 
 export function PptxTable({ columns, rows, ...props }: PptxTableProps) {

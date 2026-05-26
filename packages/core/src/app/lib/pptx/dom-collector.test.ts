@@ -795,6 +795,49 @@ describe('collectDomPptxScene', () => {
     ]);
   });
 
+  it('collects inline text nodes inside div text rows', () => {
+    const prompt = testElement({
+      style: { color: 'rgb(217, 205, 184)' },
+      tagName: 'SPAN',
+      text: '$ ',
+    });
+    const packageName = testElement({
+      style: { color: 'rgb(224, 163, 124)' },
+      tagName: 'SPAN',
+      text: '@anthropic-ai/claude-code',
+    });
+    const line = testElement({
+      children: [prompt, packageName],
+      rect: { height: 54, width: 980, x: 140, y: 500 },
+      tagName: 'DIV',
+    });
+    const textNode = { data: 'npm install -g ', textContent: 'npm install -g ' };
+    (line as unknown as { childNodes: unknown[] }).childNodes = [prompt, textNode, packageName];
+    (line as unknown as { textContent: string }).textContent =
+      '$ npm install -g @anthropic-ai/claude-code';
+    (line as unknown as { innerText: string }).innerText =
+      '$ npm install -g @anthropic-ai/claude-code';
+
+    const canvas = testElement({
+      children: [line],
+      rect: { height: 1080, width: 1920, x: 0, y: 0 },
+    });
+    vi.stubGlobal('getComputedStyle', (el: TestElement) => el.__style);
+
+    const scene = collectDomPptxScene(canvas as unknown as HTMLElement);
+
+    expect(scene.nodes).toEqual([
+      expect.objectContaining({
+        kind: 'richText',
+        runs: [
+          expect.objectContaining({ text: '$ ' }),
+          expect.objectContaining({ text: 'npm install -g ' }),
+          expect.objectContaining({ text: '@anthropic-ai/claude-code' }),
+        ],
+      }),
+    ]);
+  });
+
   it('honors explicit primitive shape metadata', () => {
     const ellipse = testElement({
       attributes: { 'data-osd-pptx-kind': 'shape', 'data-osd-pptx-shape': 'ellipse' },
@@ -935,6 +978,31 @@ describe('collectDomPptxScene', () => {
         nodeKind: 'equation',
       }),
     ]);
+  });
+
+  it('collects inline math authored in a text primitive as one paragraph', () => {
+    const paragraph = testElement({
+      attributes: {
+        'data-osd-pptx-kind': 'text',
+      },
+      rect: { height: 90, width: 920, x: 80, y: 140 },
+      text: 'Inline math should stay in flow: \u03B2 = \u03B1 + 1 appears inside the paragraph.',
+    });
+    const canvas = testElement({
+      children: [paragraph],
+      rect: { height: 1080, width: 1920, x: 0, y: 0 },
+    });
+    vi.stubGlobal('getComputedStyle', (el: TestElement) => el.__style);
+
+    const scene = collectDomPptxScene(canvas as unknown as HTMLElement);
+
+    expect(scene.nodes).toEqual([
+      expect.objectContaining({
+        kind: 'text',
+        text: 'Inline math should stay in flow: \u03B2 = \u03B1 + 1 appears inside the paragraph.',
+      }),
+    ]);
+    expect(scene.nodes).not.toContainEqual(expect.objectContaining({ kind: 'equation' }));
   });
 
   it('collects explicit table primitives as native table nodes', () => {
