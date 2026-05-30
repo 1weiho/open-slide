@@ -68,6 +68,7 @@ import { exportSlideAsPdf, isSafari } from '../lib/export-pdf';
 import { exportSlideAsPngZip, exportSlidePageAsPng } from '../lib/export-png';
 import { exportSlideAsImagePptx } from '../lib/export-pptx';
 import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
+import { waitForPageReady } from '../lib/print-ready';
 import type { SlideModule } from '../lib/sdk';
 import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
 import { useSlideModule } from '../lib/use-slide-module';
@@ -111,6 +112,30 @@ export function Slide() {
   const rawIndex = Number(searchParams.get('p') ?? '1') - 1;
   const index = Number.isFinite(rawIndex) ? Math.max(0, Math.min(pageCount - 1, rawIndex)) : 0;
   const view = searchParams.get('view') === 'assets' ? 'assets' : 'slides';
+  const exportMode = searchParams.get('export');
+
+  useEffect(() => {
+    if (exportMode !== 'png') return;
+    if (!slide || pageCount === 0) return;
+    void index;
+    let cancelled = false;
+    const viewport = slideViewportRef.current;
+    const frame = viewport?.querySelector<HTMLElement>('[data-osd-canvas]') ?? null;
+    if (!frame) return;
+    (async () => {
+      await waitForPageReady(frame);
+      if (cancelled) return;
+      frame.setAttribute('data-os-export-ready', 'true');
+      (window as unknown as { __OPEN_SLIDE_EXPORT_READY?: boolean }).__OPEN_SLIDE_EXPORT_READY =
+        true;
+    })();
+    return () => {
+      cancelled = true;
+      frame.removeAttribute('data-os-export-ready');
+      (window as unknown as { __OPEN_SLIDE_EXPORT_READY?: boolean }).__OPEN_SLIDE_EXPORT_READY =
+        false;
+    };
+  }, [exportMode, slide, pageCount, index]);
 
   useEffect(() => {
     if (!import.meta.hot) return;

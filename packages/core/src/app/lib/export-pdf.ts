@@ -2,7 +2,13 @@ import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { designToCssVars } from './design';
 import { SlidePageProvider } from './page-context';
-import { isFrameAnimationSettled, waitForDataWaitfor, waitForFonts } from './print-ready';
+import {
+  ANIMATION_TIMEOUT_MS,
+  isFrameAnimationSettled,
+  POLL_INTERVAL_MS,
+  waitForDataWaitfor,
+  waitForFonts,
+} from './print-ready';
 import type { SlideModule } from './sdk';
 
 const PRINT_ROOT_ID = 'os-print-root';
@@ -94,9 +100,6 @@ export type PdfExportProgress = {
   /** 0–99 while processing, 99 during printing, 100 when done. */
   percent: number;
 };
-
-const ANIMATION_TIMEOUT_MS = 15_000;
-const POLL_INTERVAL_MS = 100;
 
 export async function exportSlideAsPdf(
   slide: SlideModule,

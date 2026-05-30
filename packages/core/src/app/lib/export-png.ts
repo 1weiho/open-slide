@@ -34,7 +34,7 @@ import {
   type Rasteriser,
 } from './export-png.rasterize';
 import { SlidePageProvider } from './page-context';
-import { isFrameAnimationSettled, waitForDataWaitfor, waitForFonts } from './print-ready';
+import { waitForPageReady } from './print-ready';
 import { CANVAS_HEIGHT, CANVAS_WIDTH, type SlideModule } from './sdk';
 
 /**
@@ -57,8 +57,6 @@ export type PngExportProgress = {
   percent: number;
 };
 
-const ANIMATION_TIMEOUT_MS = 15_000;
-const POLL_INTERVAL_MS = 100;
 const PNG_HOST_ATTR = 'data-png-export-host';
 
 let rasteriserImpl: Rasteriser = (url, width, height) =>
@@ -208,14 +206,7 @@ async function renderPageToPng(slide: SlideModule, pageIndex: number): Promise<B
     await nextPaint();
     await nextPaint();
 
-    await waitForFonts();
-    await waitForDataWaitfor(host);
-
-    const deadline = performance.now() + ANIMATION_TIMEOUT_MS;
-    while (performance.now() < deadline) {
-      if (isFrameAnimationSettled(host)) break;
-      await sleep(POLL_INTERVAL_MS);
-    }
+    await waitForPageReady(host);
 
     const clone = cloneWithInlinedStyles(host);
     await inlineGeistFonts(clone);
@@ -227,10 +218,6 @@ async function renderPageToPng(slide: SlideModule, pageIndex: number): Promise<B
     if (root) root.unmount();
     host.remove();
   }
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function nextPaint(): Promise<void> {

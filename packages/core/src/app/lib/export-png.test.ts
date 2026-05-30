@@ -11,6 +11,7 @@
 
 import { createElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { cloneWithInlinedStyles, nodeToSvgDataUrl } from './export-png.rasterize.ts';
 import {
   __setRasteriserForTesting,
   computePercent,
@@ -19,7 +20,6 @@ import {
   type PngExportProgress,
   pngFilenameFor,
 } from './export-png.ts';
-import { cloneWithInlinedStyles, nodeToSvgDataUrl } from './export-png.rasterize.ts';
 import type { SlideModule } from './sdk.ts';
 
 function blankPage(): () => ReturnType<typeof createElement> {
