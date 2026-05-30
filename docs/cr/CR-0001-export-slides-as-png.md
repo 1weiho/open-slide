@@ -2,16 +2,17 @@
 name: export-slides-as-png
 description: Add PNG export to the open-slide runtime so users can download the current slide page (or every page) as PNG image files from the viewer.
 id: "CR-0001"
-status: "draft"
+status: "completed"
 date: 2026-05-30
+completed-date: 2026-05-30
 requestor: Framework maintainers
 stakeholders:
   - "@open-slide/core maintainers"
   - Slide authors using `@open-slide/core` in `apps/demo` and downstream projects
 priority: "medium"
 target-version: "@open-slide/core 1.8.0"
-source-branch: main
-source-commit: 155049f
+source-branch: feat/export-slides-as-png
+source-commit: 1edb9a7
 ---
 
 # Export slides as PNG
@@ -668,36 +669,36 @@ Then a sonner toast is shown informing the user that PNG export is best-effort o
 
 ### Build & Compilation
 
-- [ ] `pnpm build` completes for `packages/core` without errors
-- [ ] No new TypeScript compiler errors or warnings
+- [x] `pnpm build` completes for `packages/core` without errors
+- [x] No new TypeScript compiler errors or warnings
 
 ### Linting & Code Style
 
-- [ ] `pnpm check` (Biome) passes with zero warnings/errors
-- [ ] No code added under `packages/core/src/app/components/ui/` (shadcn-generated)
-- [ ] No casual comments; only comments where the WHY is non-obvious
-- [ ] File names follow hierarchical-namespace convention
+- [x] `pnpm check` (Biome) passes with zero warnings/errors
+- [x] No code added under `packages/core/src/app/components/ui/` (shadcn-generated)
+- [x] No casual comments; only comments where the WHY is non-obvious
+- [x] File names follow hierarchical-namespace convention
   (`export-png.ts`, `png-progress-toast.tsx`, `download.ts`)
 
 ### Test Execution
 
-- [ ] `pnpm test` passes locally
-- [ ] New tests in `export-png.test.ts` and `download.test.ts` pass
-- [ ] No existing test in `packages/core` regresses
+- [x] `pnpm test` passes locally
+- [x] New tests in `export-png.test.ts` and `download.test.ts` pass
+- [x] No existing test in `packages/core` regresses
 
 ### Documentation
 
-- [ ] Every exported function in `export-png.ts` has a docstring explaining intent
-- [ ] `PngExportProgress` type has field-level docstrings matching `PdfExportProgress`
-- [ ] No changes to `README.md` are required (the download menu is self-explanatory)
+- [x] Every exported function in `export-png.ts` has a docstring explaining intent
+- [x] `PngExportProgress` type has field-level docstrings matching `PdfExportProgress`
+- [x] No changes to `README.md` are required (the download menu is self-explanatory)
 
 ### Code Review
 
-- [ ] Changes submitted via a single pull request
-- [ ] PR title follows Conventional Commits, e.g.
+- [x] Changes submitted via a single pull request
+- [x] PR title follows Conventional Commits, e.g.
   `feat(core): add PNG export to the viewer download menu`
-- [ ] Squash-merged to maintain linear history
-- [ ] Changeset committed under `.changeset/`
+- [x] Squash-merged to maintain linear history
+- [x] Changeset committed under `.changeset/`
 
 ### Verification Commands
 

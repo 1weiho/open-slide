@@ -1,8 +1,25 @@
+/**
+ * Toast component that renders the progress of a multi-page PNG export.
+ *
+ * Mirrors the visual treatment and contract of `pdf-progress-toast.tsx` so
+ * both the PDF and PNG exporters can reuse the same progress rendering pattern.
+ * Displays the current phase (processing, rasterising, zipping, done) with
+ * localized text and a progress bar.
+ *
+ * @agents-index PNG export progress toast — mirrors PDF progress toast.
+ */
+
 import { Loader2 } from 'lucide-react';
 import { format, useLocale } from '@/lib/use-locale';
 import type { PngExportProgress } from '../lib/export-png';
 import { Progress } from './ui/progress';
 
+/**
+ * Render the progress state of a multi-page PNG export (processing, rasterising,
+ * zipping, done) with localized text and a progress bar. Reuses the same visual
+ * treatment as the PDF exporter so authors see consistent progress feedback
+ * across all export pathways.
+ */
 export function PngProgressToast({ progress }: { progress: PngExportProgress }) {
   const t = useLocale();
   const text =
