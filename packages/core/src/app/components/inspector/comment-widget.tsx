@@ -1,5 +1,5 @@
 import { MessageSquare, Trash2, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { format, plural, useLocale } from '@/lib/use-locale';
 import { useInspector } from './inspector-provider';
 
@@ -8,9 +8,23 @@ export function CommentWidget() {
   const { comments, remove, error } = useInspector();
   const [open, setOpen] = useState(false);
   const count = comments.length;
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [open]);
 
   return (
-    <div data-inspector-ui className="absolute right-4 bottom-4 z-20 flex flex-col items-end gap-2">
+    <div
+      ref={ref}
+      data-inspector-ui
+      className="absolute right-4 bottom-4 z-20 flex flex-col items-end gap-2"
+    >
       {open && (
         <div className="w-80 rounded-md border bg-card shadow-xl animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
           <div className="flex items-center justify-between border-b px-3 py-2">

@@ -242,7 +242,7 @@ function SortControl({ value, onChange }: { value: SortKey; onChange: (next: Sor
         <button
           type="button"
           aria-label={`${t.home.sortLabel}: ${labels[value]}`}
-          className="flex h-8 items-center gap-1.5 rounded-[6px] border border-border bg-background pl-2 pr-1.5 text-[12.5px] font-medium text-foreground outline-none hover:bg-muted focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30"
+          className="flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[6px] border border-border bg-background pl-2 pr-1.5 text-[12.5px] font-medium text-foreground outline-none hover:bg-muted focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30"
         >
           <FieldIcon k={value} className="size-3.5 text-muted-foreground" />
           <span>{labels[value]}</span>

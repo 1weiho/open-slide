@@ -10,7 +10,6 @@ import {
   Loader2,
   Maximize,
   MonitorSpeaker,
-  Pencil,
   Play,
 } from 'lucide-react';
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -40,10 +39,11 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useFolders } from '@/lib/folders';
 import { useAgentSocketConnected } from '@/lib/use-agent-socket';
+import { useClickPageNavigation } from '@/lib/use-click-page-navigation';
+import { useIsMobile } from '@/lib/use-is-mobile';
 import { format, useLocale } from '@/lib/use-locale';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
-import { ClickNavZones } from '../components/click-nav-zones';
 import { NotesDrawer } from '../components/notes-drawer';
 import { PdfProgressToast } from '../components/pdf-progress-toast';
 import { openPresenterWindow, Player } from '../components/player';
@@ -348,7 +348,7 @@ export function Slide() {
         <SelectionReporter />
         <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
           {/* Editorial toolbar — three zones, hairline separators, mono-folio center */}
-          <header className="flex h-12 shrink-0 items-center gap-2 border-b border-hairline bg-sidebar/85 px-2 backdrop-blur-md md:px-3">
+          <header className="relative flex h-12 shrink-0 items-center gap-2 border-b border-hairline bg-sidebar/85 px-2 backdrop-blur-md md:px-3">
             <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
               {showSlideBrowser && (
                 <Button asChild variant="ghost" size="icon-sm" title={t.slide.home}>
@@ -382,14 +382,14 @@ export function Slide() {
               {import.meta.env.DEV && <AgentConnectedBadge />}
             </div>
 
-            {/* Centered title — the rail and mobile pill carry the page count. */}
-            <div className="flex min-w-0 flex-1 justify-center px-2">
-              <div className="min-w-0 max-w-[34rem]">
+            {/* Title centered to the viewport, not the leftover space between the side groups. */}
+            <div className="pointer-events-none absolute inset-x-0 flex justify-center px-2">
+              <div className="pointer-events-auto min-w-0 max-w-[34rem]">
                 <InlineTitleEditor title={title} onSubmit={(next) => renameSlide(slideId, next)} />
               </div>
             </div>
 
-            <div className="flex shrink-0 items-center gap-1">
+            <div className="ml-auto flex shrink-0 items-center gap-1">
               {view === 'slides' && (
                 <button
                   type="button"
@@ -581,7 +581,7 @@ export function Slide() {
                     data-slide-id={slideId}
                     className="paper relative min-h-0 min-w-0 flex-1 bg-canvas p-2 md:p-10"
                   >
-                    <SlideWheelNavigation
+                    <SlideViewportNavigation
                       targetRef={slideViewportRef}
                       onPrev={() => goTo(index - 1)}
                       onNext={() => goTo(index + 1)}
@@ -597,12 +597,6 @@ export function Slide() {
                         disabled={prefersReducedMotion}
                       />
                     </SlideCanvas>
-                    <ClickNavZones
-                      onPrev={() => goTo(index - 1)}
-                      onNext={() => goTo(index + 1)}
-                      canPrev={index > 0}
-                      canNext={index < pageCount - 1}
-                    />
                     <InspectOverlay />
                     <SaveBar />
                     {import.meta.env.DEV && <CommentWidget />}
@@ -814,7 +808,7 @@ function SelectionReporter() {
   return null;
 }
 
-function SlideWheelNavigation({
+function SlideViewportNavigation({
   targetRef,
   onPrev,
   onNext,
@@ -828,10 +822,24 @@ function SlideWheelNavigation({
   canNext: boolean;
 }) {
   const { active } = useInspector();
+  const isMobile = useIsMobile();
 
   useWheelPageNavigation({
     ref: targetRef,
     enabled: !active,
+    canPrev,
+    canNext,
+    onPrev,
+    onNext,
+  });
+
+  // Tap-to-navigate is a touch affordance — desktop has visible prev/next
+  // chrome, so it stays edge-only on small screens (matches the old md:hidden
+  // zones). Interactive slide content keeps its tap via the hook's passthrough.
+  useClickPageNavigation({
+    ref: targetRef,
+    enabled: isMobile && !active,
+    edgeRatio: 0.18,
     canPrev,
     canNext,
     onPrev,
@@ -890,49 +898,65 @@ function InlineTitleEditor({
 
   if (editing) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <input
-          ref={inputRef}
-          value={value}
-          disabled={saving}
-          onChange={(e) => setValue(e.target.value)}
-          onBlur={() => {
-            if (!saving) commit();
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              commit();
-            } else if (e.key === 'Escape') {
-              e.preventDefault();
-              cancel();
-            }
-          }}
-          maxLength={80}
-          className="min-w-0 max-w-[min(34rem,90%)] rounded-[5px] border border-foreground/30 bg-card px-2 py-0.5 text-center font-heading text-[13px] font-medium tracking-tight outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-        />
+      <div className="flex min-w-0 flex-1 items-center justify-center">
+        <div className="inline-grid max-w-full items-center">
+          <span
+            aria-hidden
+            className="invisible col-start-1 row-start-1 overflow-hidden whitespace-pre border border-transparent px-2 py-0.5 font-heading text-[13.5px] font-semibold tracking-[-0.01em]"
+          >
+            {value || ' '}
+          </span>
+          <input
+            ref={inputRef}
+            size={1}
+            value={value}
+            disabled={saving}
+            onChange={(e) => setValue(e.target.value)}
+            onBlur={() => {
+              if (!saving) commit();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                commit();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                cancel();
+              }
+            }}
+            maxLength={80}
+            className="col-start-1 row-start-1 w-full min-w-0 rounded-[5px] border border-foreground/30 bg-card px-2 py-0.5 text-center font-heading text-[13.5px] font-semibold tracking-[-0.01em] outline-none"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (!import.meta.env.DEV) {
+    return (
+      <div className="flex min-w-0 items-baseline justify-center">
+        <h1 className="truncate font-heading text-[13.5px] font-semibold tracking-[-0.01em]">
+          {title}
+        </h1>
       </div>
     );
   }
 
   return (
-    <div className="group/title flex min-w-0 items-baseline justify-center gap-1.5">
-      <h1 className="truncate font-heading text-[13.5px] font-semibold tracking-[-0.01em]">
-        {title}
-      </h1>
-      {import.meta.env.DEV && (
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          aria-label={t.slide.renameSlide}
-          className={cn(
-            'flex size-5 shrink-0 items-center justify-center rounded-[4px] text-muted-foreground transition-opacity hover:bg-muted hover:text-foreground',
-            'opacity-0 group-hover/title:opacity-100 focus-visible:opacity-100',
-          )}
-        >
-          <Pencil className="size-3" />
-        </button>
-      )}
+    <div className="flex min-w-0 items-center justify-center">
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        aria-label={t.slide.renameSlide}
+        className={cn(
+          'min-w-0 max-w-full cursor-text rounded-[5px] border border-transparent px-2 py-0.5 transition-colors',
+          'hover:border-foreground/30 hover:bg-card focus-visible:border-foreground/30 focus-visible:bg-card focus-visible:outline-none',
+        )}
+      >
+        <h1 className="truncate font-heading text-[13.5px] font-semibold tracking-[-0.01em]">
+          {title}
+        </h1>
+      </button>
     </div>
   );
 }

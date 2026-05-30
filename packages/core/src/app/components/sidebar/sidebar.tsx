@@ -5,12 +5,15 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { Folder, FolderIcon } from '@/lib/sdk';
 import { format, useLocale } from '@/lib/use-locale';
+import { cn } from '@/lib/utils';
 import { FolderIconChip, FolderItem } from './folder-item';
 import { IconPicker, PRESET_COLORS } from './icon-picker';
 
 export const DRAFT_ID = 'draft';
 export const THEMES_ID = '__themes__';
 export const ASSETS_ID = '__assets__';
+
+export const FOLDER_DND_MIME = 'application/x-folder-id';
 
 export function Sidebar({
   folders,
@@ -25,6 +28,7 @@ export function Sidebar({
   onDelete,
   onDropToFolder,
   onDropToDraft,
+  onReorder,
 }: {
   folders: Folder[];
   countFor: (folderId: string | null) => number;
@@ -38,7 +42,23 @@ export function Sidebar({
   onDelete: (id: string) => void;
   onDropToFolder: (folderId: string, slideId: string) => void;
   onDropToDraft: (slideId: string) => void;
+  onReorder: (ids: string[]) => void;
 }) {
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<{ id: string; before: boolean } | null>(null);
+
+  const finishReorder = (toId: string, before: boolean) => {
+    const fromId = dragId;
+    setDragId(null);
+    setDropTarget(null);
+    if (!fromId || fromId === toId) return;
+    const ids = folders.map((f) => f.id);
+    if (!ids.includes(fromId) || !ids.includes(toId)) return;
+    const next = ids.filter((id) => id !== fromId);
+    next.splice(next.indexOf(toId) + (before ? 0 : 1), 0, fromId);
+    if (next.every((id, i) => id === ids[i])) return;
+    onReorder(next);
+  };
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [newIcon, setNewIcon] = useState<FolderIcon>(() => ({
@@ -139,22 +159,73 @@ export function Sidebar({
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 pb-2">
-        {folders.map((folder) => (
-          <FolderItem
-            key={folder.id}
-            row={{
-              kind: 'folder',
-              folder,
-              onRename: (name) => onRename(folder.id, name),
-              onChangeIcon: (icon) => onChangeIcon(folder.id, icon),
-              onDelete: () => onDelete(folder.id),
-            }}
-            count={countFor(folder.id)}
-            selected={selectedId === folder.id}
-            onSelect={() => onSelect(folder.id)}
-            onDropSlide={(slideId) => onDropToFolder(folder.id, slideId)}
-          />
-        ))}
+        {folders.map((folder) => {
+          const isDropTarget = dropTarget?.id === folder.id;
+          const before = isDropTarget && dropTarget.before;
+          const after = isDropTarget && !dropTarget.before;
+          return (
+            // biome-ignore lint/a11y/noStaticElementInteractions: drag-and-drop handle wraps the row
+            <div
+              key={folder.id}
+              className={cn(
+                'relative',
+                before &&
+                  'before:absolute before:inset-x-2 before:-top-px before:h-[2px] before:rounded-full before:bg-brand',
+                after &&
+                  'after:absolute after:inset-x-2 after:-bottom-px after:h-[2px] after:rounded-full after:bg-brand',
+                dragId === folder.id && 'opacity-50',
+              )}
+              draggable={import.meta.env.DEV}
+              onDragStart={(e) => {
+                if (!import.meta.env.DEV) return;
+                e.dataTransfer.setData(FOLDER_DND_MIME, folder.id);
+                e.dataTransfer.effectAllowed = 'move';
+                setDragId(folder.id);
+              }}
+              onDragEnd={() => {
+                setDragId(null);
+                setDropTarget(null);
+              }}
+              onDragOver={(e) => {
+                if (!e.dataTransfer.types.includes(FOLDER_DND_MIME)) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                const rect = e.currentTarget.getBoundingClientRect();
+                const isBefore = e.clientY < rect.top + rect.height / 2;
+                if (!dropTarget || dropTarget.id !== folder.id || dropTarget.before !== isBefore) {
+                  setDropTarget({ id: folder.id, before: isBefore });
+                }
+              }}
+              onDragLeave={(e) => {
+                if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+                if (dropTarget?.id === folder.id) setDropTarget(null);
+              }}
+              onDrop={(e) => {
+                const fromId = e.dataTransfer.getData(FOLDER_DND_MIME);
+                if (!fromId) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const rect = e.currentTarget.getBoundingClientRect();
+                const isBefore = e.clientY < rect.top + rect.height / 2;
+                finishReorder(folder.id, isBefore);
+              }}
+            >
+              <FolderItem
+                row={{
+                  kind: 'folder',
+                  folder,
+                  onRename: (name) => onRename(folder.id, name),
+                  onChangeIcon: (icon) => onChangeIcon(folder.id, icon),
+                  onDelete: () => onDelete(folder.id),
+                }}
+                count={countFor(folder.id)}
+                selected={selectedId === folder.id}
+                onSelect={() => onSelect(folder.id)}
+                onDropSlide={(slideId) => onDropToFolder(folder.id, slideId)}
+              />
+            </div>
+          );
+        })}
 
         {import.meta.env.DEV &&
           (creating ? (

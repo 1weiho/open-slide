@@ -86,6 +86,7 @@ export const en: Locale = {
     toastSlideMoveFailed: 'Failed to move slide',
     toastFolderDeleted: 'Deleted folder “{name}”',
     toastFolderDeleteFailed: 'Failed to delete folder',
+    toastFolderReorderFailed: 'Failed to reorder folders',
     pickIcon: 'Pick icon',
   },
 
@@ -350,11 +351,6 @@ export const en: Locale = {
     light: 'Light',
     dark: 'Dark',
     system: 'System',
-  },
-
-  clickNav: {
-    prevAria: 'Previous page',
-    nextAria: 'Next page',
   },
 
   imagePlaceholder: {

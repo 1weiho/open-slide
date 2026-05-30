@@ -90,6 +90,7 @@ export type Locale = {
     /** template: "Deleted folder “{name}”" */
     toastFolderDeleted: string;
     toastFolderDeleteFailed: string;
+    toastFolderReorderFailed: string;
     pickIcon: string;
   };
 
@@ -373,11 +374,6 @@ export type Locale = {
     light: string;
     dark: string;
     system: string;
-  };
-
-  clickNav: {
-    prevAria: string;
-    nextAria: string;
   };
 
   imagePlaceholder: {

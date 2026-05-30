@@ -62,8 +62,21 @@ export type LocTagsPluginOptions = {
   slidesDir?: string;
 };
 
+// Vite normally hands `id` to plugins with forward slashes, but other
+// plugins or virtual modules can pass through Windows-style paths.
+// Compare both sides in POSIX shape so the match doesn't depend on
+// which separator the caller happened to use.
+export function isSlideSourceFile(id: string, slidesRootPosix: string): boolean {
+  const filePath = id.split(/[?#]/)[0].replace(/\\/g, '/');
+  if (!filePath.startsWith(`${slidesRootPosix}/`)) return false;
+  if (!filePath.endsWith('.tsx')) return false;
+  if (filePath.endsWith('.d.ts') || filePath.endsWith('.test.tsx')) return false;
+  const rel = filePath.slice(slidesRootPosix.length + 1);
+  return rel.includes('/');
+}
+
 export function locTagsPlugin(opts: LocTagsPluginOptions): Plugin {
-  const slidesRoot = path.resolve(opts.userCwd, opts.slidesDir ?? 'slides');
+  const slidesRoot = path.resolve(opts.userCwd, opts.slidesDir ?? 'slides').replace(/\\/g, '/');
   return {
     name: 'open-slide:loc-tags',
     apply: 'serve',
@@ -71,12 +84,7 @@ export function locTagsPlugin(opts: LocTagsPluginOptions): Plugin {
     // sees our injected attributes.
     enforce: 'pre',
     transform(code, id) {
-      const filePath = id.split('?')[0];
-      if (!filePath.startsWith(slidesRoot + path.sep)) return null;
-      if (!filePath.endsWith('.tsx')) return null;
-      if (filePath.endsWith('.d.ts') || filePath.endsWith('.test.tsx')) return null;
-      const rel = filePath.slice(slidesRoot.length + path.sep.length);
-      if (!rel.includes(path.sep)) return null;
+      if (!isSlideSourceFile(id, slidesRoot)) return null;
       const next = injectLocTags(code);
       if (next === null) return null;
       return { code: next, map: null };

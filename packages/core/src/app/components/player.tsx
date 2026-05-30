@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useClickPageNavigation } from '@/lib/use-click-page-navigation';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
 import type { DesignSystem } from '../lib/design';
@@ -91,6 +92,15 @@ export function Player({
   }, [index, pages.length, onIndexChange]);
 
   const overlayActive = controls && (overviewOpen || helpOpen);
+
+  useClickPageNavigation({
+    ref: rootRef,
+    enabled: !overlayActive,
+    canPrev,
+    canNext,
+    onPrev: goPrev,
+    onNext: goNext,
+  });
 
   useWheelPageNavigation({
     ref: rootRef,
@@ -308,23 +318,8 @@ export function Player({
         />
       </SlideCanvas>
 
-      <button
-        type="button"
-        aria-label="Previous page"
-        onClick={goPrev}
-        disabled={!canPrev}
-        className={cn('absolute inset-y-0 left-0 z-10 w-[30%]', hideCursor && 'cursor-none')}
-      />
-      <button
-        type="button"
-        aria-label="Next page"
-        onClick={goNext}
-        disabled={!canNext}
-        className={cn('absolute inset-y-0 right-0 z-10 w-[30%]', hideCursor && 'cursor-none')}
-      />
-
       {controls && (
-        <>
+        <div data-osd-chrome style={{ display: 'contents' }}>
           <PresentProgressBar index={index} total={pages.length} visible={chromeVisible} />
           <PresentBlackoutOverlay mode={blackout} />
           <PresentJumpInput pageCount={pages.length} onJump={onIndexChange} />
@@ -358,7 +353,7 @@ export function Player({
             onSelect={onIndexChange}
           />
           <PresentHelpOverlay open={helpOpen} onOpenChange={setHelpOpen} container={rootEl} />
-        </>
+        </div>
       )}
     </div>
   );

@@ -181,9 +181,14 @@ export function FolderItem({
           </PopoverContent>
         </Popover>
       ) : (
-        <span className="flex size-5 shrink-0 items-center justify-center">
+        <button
+          type="button"
+          onClick={onSelect}
+          aria-label={label}
+          className="flex size-5 shrink-0 items-center justify-center"
+        >
           <FolderIconChip icon={icon} />
-        </span>
+        </button>
       )}
 
       {renaming && row.kind === 'folder' ? (

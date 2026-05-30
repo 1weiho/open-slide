@@ -1,5 +1,11 @@
 # @open-slide/cli
 
+## 1.2.6
+
+### Patch Changes
+
+- [#181](https://github.com/1weiho/open-slide/pull/181) [`fb1db62`](https://github.com/1weiho/open-slide/commit/fb1db6207c07e84933589f02bf0eb1fa9bc8c3d1) Thanks [@1weiho](https://github.com/1weiho)! - Re-sync scaffolded skills with core so a fresh project no longer reports skills out of date on first dev run.
+
 ## 1.2.5
 
 ### Patch Changes

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyRevertAsset, findAssetUsages } from './revert-asset.ts';
+import { applyRevertAsset, findAssetUsages, findReferencedAssets } from './revert-asset.ts';
 
 describe('findAssetUsages', () => {
   it('returns 0 when the import is absent', () => {
@@ -35,6 +35,61 @@ describe('findAssetUsages', () => {
       '',
     ].join('\n');
     expect(findAssetUsages(src, './assets/hero.png')).toBe(0);
+  });
+});
+
+describe('findReferencedAssets', () => {
+  it('detects direct <img src={ident}> usage', () => {
+    const src = [
+      "import hero from './assets/hero.png';",
+      'export default [() => (<img src={hero} alt="h" />)];',
+      '',
+    ].join('\n');
+    const refs = findReferencedAssets(src, ['./assets/hero.png']);
+    expect(refs.has('./assets/hero.png')).toBe(true);
+  });
+
+  it('detects ident passed as a prop to a wrapper component', () => {
+    const src = [
+      "import diagram from './assets/diagram.webp';",
+      'const DiagramImage = ({ src }) => <img src={src} />;',
+      'export default [() => (<DiagramImage src={diagram} />)];',
+      '',
+    ].join('\n');
+    const refs = findReferencedAssets(src, ['./assets/diagram.webp']);
+    expect(refs.has('./assets/diagram.webp')).toBe(true);
+  });
+
+  it('detects ident used as a value in any expression position', () => {
+    const src = [
+      "import bg from './assets/bg.png';",
+      'export default [() => (<div style={{ backgroundImage: bg }} />)];',
+      '',
+    ].join('\n');
+    const refs = findReferencedAssets(src, ['./assets/bg.png']);
+    expect(refs.has('./assets/bg.png')).toBe(true);
+  });
+
+  it('returns empty set when the import is never referenced beyond the declaration', () => {
+    const src = [
+      "import unused from './assets/unused.png';",
+      'export default [() => (<div />)];',
+      '',
+    ].join('\n');
+    const refs = findReferencedAssets(src, ['./assets/unused.png']);
+    expect(refs.has('./assets/unused.png')).toBe(false);
+  });
+
+  it('only flags paths that appear in the wanted set', () => {
+    const src = [
+      "import hero from './assets/hero.png';",
+      "import logo from './assets/logo.svg';",
+      'export default [() => (<img src={hero} alt="h" />)];',
+      '',
+    ].join('\n');
+    const refs = findReferencedAssets(src, ['./assets/hero.png', './assets/logo.svg']);
+    expect(refs.has('./assets/hero.png')).toBe(true);
+    expect(refs.has('./assets/logo.svg')).toBe(false);
   });
 });
 
