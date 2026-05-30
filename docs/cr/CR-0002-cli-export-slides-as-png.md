@@ -2,8 +2,9 @@
 name: cli-export-slides-as-png
 description: Add an `open-slide export` CLI subcommand that renders deck slides to PNG files on disk via headless Chromium (Playwright), as a follow-up to CR-0001's in-viewer client-side PNG export.
 id: "CR-0002"
-status: "draft"
+status: "completed"
 date: 2026-05-30
+completed-date: 2026-05-30
 requestor: Framework maintainers
 stakeholders:
   - "@open-slide/core maintainers"
@@ -11,7 +12,7 @@ stakeholders:
 priority: "medium"
 target-version: "@open-slide/core 1.9.0"
 source-branch: feat/export-slides-as-png
-source-commit: 6e4dfab
+source-commit: 52c0d91
 ---
 
 # Export slides as PNG from the CLI (headless)
