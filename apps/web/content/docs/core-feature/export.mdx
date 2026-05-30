@@ -45,6 +45,27 @@ toast appears and any offscreen state is torn down.
 Both PNG entries sit alongside the other export formats in the same dropdown
 and are gated by `build.allowHtmlDownload`.
 
+### Headless CLI export
+
+For CI thumbnail regeneration, batch pipelines, or slides whose CSS
+(filters, blend modes, `backdrop-filter`) strains the client rasterizer,
+use the `open-slide export` CLI instead. It boots the dev server
+in-process, drives a headless Chromium via Playwright, and writes
+1920×1080 PNGs straight to disk:
+
+```bash
+pnpm add -D playwright-chromium
+npx playwright install chromium
+
+open-slide export --all --out ./png-export
+```
+
+`playwright-chromium` is **not** a runtime dependency of `@open-slide/core`
+— end-user installs stay lean and the CLI prompts with a copy-pasteable
+install hint on first run if Playwright is missing. See
+[open-slide export](/docs/cli/export) for the full flag list and exit
+codes.
+
 ## What gets shipped
 
 The build pipeline only includes:

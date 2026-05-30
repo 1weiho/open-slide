@@ -1,0 +1,103 @@
+---
+title: open-slide export
+description: Render every page of every deck to PNG via headless Chromium.
+---
+
+```npm
+open-slide export --all
+# or
+open-slide export --slide intro --page 2
+```
+
+Boots an in-process Vite dev server on `127.0.0.1`, launches headless
+Chromium via [Playwright](https://playwright.dev/), navigates the real
+viewer route per page, waits for the same readiness signals the in-viewer
+exporter uses (fonts, `data-waitfor`, animation settle), and writes one
+1920×1080 PNG per page to `--out`.
+
+This is the pixel-perfect, scriptable counterpart to the in-viewer PNG
+export ([Export](/docs/core-feature/export)): the browser's own compositor
+paints, so advanced CSS (filters, blend modes, `backdrop-filter`) renders
+faithfully, and there is no human in the loop — suitable for CI thumbnail
+regeneration and batch pipelines.
+
+## Prerequisite: install Playwright
+
+`playwright-chromium` is **not** a runtime dependency of `@open-slide/core`
+— end-user installs stay lean. Install it on demand in the workspace that
+runs the export:
+
+```bash
+pnpm add -D playwright-chromium
+npx playwright install chromium
+```
+
+If Playwright is missing, `open-slide export` preflight-fails before
+booting anything, exits with code `2`, and prints both commands above as a
+single-paragraph, copy-pasteable hint. On Linux CI images you may also need
+`npx playwright install-deps chromium` for the Chromium shared libraries.
+
+## Flags
+
+| Flag                  | Default        | Description                                                                 |
+| --------------------- | -------------- | --------------------------------------------------------------------------- |
+| `--slide <id>`        | —              | Restrict to a single deck (the `slideId` that appears in `/s/:slideId`).    |
+| `--all`               | off            | Export every discoverable deck. Mutually exclusive with `--slide`.          |
+| `--page <n>`          | —              | Export a single 1-based page index. Requires `--slide`.                     |
+| `--out <dir>`         | `./png-export` | Destination directory (created if missing).                                 |
+| `--port <port>`       | OS-assigned    | Pin the in-process dev server's port instead of an ephemeral one.           |
+| `--timeout <ms>`      | `15000`        | Per-page readiness timeout. On timeout the page is captured anyway.         |
+
+Either `--slide` or `--all` is required. `--page` without `--slide` is a
+usage error. Misuse exits with code `2`.
+
+## Output
+
+Files are written atomically (write to `<file>.tmp`, then rename) into
+`--out` as:
+
+```text
+{slideId}-p{N}.png
+```
+
+`N` is the 1-based page index, zero-padded to the total page count's width
+— so a 9-page deck yields `slide-p1.png`…`slide-p9.png` (width 1) and a
+100-page deck yields `slide-p001.png`…`slide-p100.png` (width 3). This
+matches the in-viewer PNG export's filename convention.
+
+Each file is exactly 1920×1080, enforced by both Playwright's viewport
+size and a `clip` on `page.screenshot()`.
+
+## Console output
+
+One greppable line per page, plus a summary on success:
+
+```text
+intro:p1 → png-export/intro-p1.png
+intro:p2 → png-export/intro-p2.png
+outro:p1 → png-export/outro-p1.png
+Exported 3 page(s) from 2 deck(s) to png-export
+```
+
+If a page's readiness signal does not resolve within `--timeout`, the CLI
+logs a single warning naming the slide and page, captures the current
+frame anyway, and continues.
+
+## Exit codes
+
+| Code | Meaning                                                                   |
+| ---- | ------------------------------------------------------------------------- |
+| `0`  | Success.                                                                  |
+| `1`  | Unrecoverable runtime error (dev server failed, Chromium crashed, etc.).  |
+| `2`  | Usage / preflight error (missing Playwright, bad flags, unknown `--slide`). |
+
+The presenter route (`/s/:slideId/presenter`) is not captured — only the
+viewer surface. JPEG, WebP, PDF, custom resolutions, and parallel
+rendering are out of scope; see CR-0002.
+
+## In-viewer vs. headless
+
+| Path                                  | Where               | Renderer                                | Use when                                                |
+| ------------------------------------- | ------------------- | --------------------------------------- | ------------------------------------------------------- |
+| Toolbar **Export → … as PNG**         | Browser (live deck) | Client-side `<foreignObject>` rasterise | Interactive: an author wants a PNG of what's on screen. |
+| `open-slide export`                   | Headless Chromium   | `page.screenshot()` via Playwright      | CI, batch, or any slide whose CSS strains the rasterizer. |
