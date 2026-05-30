@@ -13,5 +13,5 @@ export default defineConfig({
   clean: true,
   dts: true,
   shims: false,
-  external: ['vite', 'react', 'react-dom', 'react-router-dom'],
+  external: ['vite', 'react', 'react-dom', 'react-router-dom', 'playwright-chromium'],
 });
