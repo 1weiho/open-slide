@@ -115,7 +115,7 @@ async function renderAndCapture(
 
       let imageDataUrl = '';
       try {
-        const { snapdom } = await import('@zumer/snapdom');
+        const { snapdom } = await import('`@zumer/snapdom`');
         const img = await snapdom.toPng(host, {
           scale: 2,
           width: CANVAS_WIDTH,
@@ -126,6 +126,7 @@ async function renderAndCapture(
         imageDataUrl = img.src;
       } catch (err) {
         console.error('[open-slide] PPTX export: capture failed:', err);
+        throw new Error(`Failed to capture page ${i + 1}`, { cause: err });
       }
 
       const bg = detectBackground(host) || designBg;
