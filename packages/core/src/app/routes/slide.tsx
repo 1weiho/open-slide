@@ -119,10 +119,17 @@ export function Slide() {
     if (!slide || pageCount === 0) return;
     void index;
     let cancelled = false;
-    const viewport = slideViewportRef.current;
-    const frame = viewport?.querySelector<HTMLElement>('[data-osd-canvas]') ?? null;
-    if (!frame) return;
     (async () => {
+      // Export mode renders only the bare slide (the Player branch below), so
+      // the canvas is unambiguous in the document. Poll briefly in case it
+      // mounts a tick after this effect runs.
+      let frame: HTMLElement | null = null;
+      for (let i = 0; i < 100 && !cancelled; i++) {
+        frame = document.querySelector<HTMLElement>('[data-osd-canvas]');
+        if (frame) break;
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      if (!frame || cancelled) return;
       await waitForPageReady(frame);
       if (cancelled) return;
       frame.setAttribute('data-os-export-ready', 'true');
@@ -131,7 +138,9 @@ export function Slide() {
     })();
     return () => {
       cancelled = true;
-      frame.removeAttribute('data-os-export-ready');
+      document
+        .querySelector<HTMLElement>('[data-osd-canvas]')
+        ?.removeAttribute('data-os-export-ready');
       (window as unknown as { __OPEN_SLIDE_EXPORT_READY?: boolean }).__OPEN_SLIDE_EXPORT_READY =
         false;
     };
@@ -390,7 +399,10 @@ export function Slide() {
 
   // Hold the loader while a hidden layer warms the whole deck's images and
   // fonts, so the slide UI first paints with every asset already in cache.
-  if (view !== 'assets' && !isDeckWarmed(slideId)) {
+  // Export mode skips it: the loader would keep `[data-osd-canvas]` out of the
+  // document past the readiness poll's window, and `waitForPageReady` already
+  // waits on the single frame being captured.
+  if (view !== 'assets' && exportMode !== 'png' && !isDeckWarmed(slideId)) {
     return (
       <div className="grid min-h-dvh place-items-center px-8 text-muted-foreground">
         <div className="flex flex-col items-center gap-4">
@@ -416,7 +428,7 @@ export function Slide() {
     );
   }
 
-  if (!showSlideUi) {
+  if (!showSlideUi || exportMode === 'png') {
     return (
       <Player
         pages={pages}
