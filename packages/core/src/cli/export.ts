@@ -190,7 +190,7 @@ export class ExportUsageError extends Error {
  * tooling watching the output dir never observes a half-written PNG, even if
  * the process is killed mid-write.
  */
-async function atomicWriteFile(file: string, bytes: Buffer | Uint8Array): Promise<void> {
+export async function atomicWriteFile(file: string, bytes: Buffer | Uint8Array): Promise<void> {
   const tmp = `${file}.tmp`;
   try {
     await fs.writeFile(tmp, bytes);
