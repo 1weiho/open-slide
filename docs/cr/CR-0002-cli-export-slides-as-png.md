@@ -139,9 +139,11 @@ The exporter MUST:
    so it does not conflict with a running `open-slide dev`.
 4. Launch headless Chromium via Playwright, open one page sized
    `{ width: 1920, height: 1080 }`, navigate per slide+page to
-   `http://127.0.0.1:<port>/s/<slideId>?page=<n>&export=png` (or an equivalent
+   `http://127.0.0.1:<port>/s/<slideId>?p=<n>&export=png` (or an equivalent
    route that the viewer recognises as an export render — see "readiness
-   signalling" below).
+   signalling" below). The `p` query-param name (1-based) matches the
+   existing viewer convention in `routes/slide.tsx` (`searchParams.get('p')`);
+   `?page=` is **not** read by the viewer.
 5. Wait for a deterministic "ready" signal that maps to the same conditions
    CR-0001 awaits client-side: fonts loaded, `data-waitfor` selectors resolved,
    and `isFrameAnimationSettled` for the current frame. Implementors MUST
@@ -169,7 +171,7 @@ flowchart TD
     StartVite --> Resolve["Resolve slides & pages<br/>(--slide / --all / --page)"]
     Resolve --> Browser["Launch headless Chromium<br/>viewport 1920×1080"]
     Browser --> Loop{"For each (slideId, pageIndex)"}
-    Loop --> Nav["page.goto /s/<id>?page=N&export=png"]
+    Loop --> Nav["page.goto /s/<id>?p=N&export=png"]
     Nav --> Ready["page.waitForFunction<br/>window.__OPEN_SLIDE_EXPORT_READY"]
     Ready --> Shot["page.screenshot<br/>{type:'png', clip 1920×1080}"]
     Shot --> Write["Write <outDir>/<slideId>-p<N>.png"]
@@ -226,13 +228,40 @@ flowchart TD
    `--port` is provided. The subcommand **MUST NOT** require the user to have
    `open-slide dev` already running.
 6a. The subcommand **MUST** enumerate available decks (and their page counts)
-   by querying the in-process Vite dev server's `/__slides` API — the same
-   read-only endpoint the viewer itself uses to list and navigate decks. The
-   subcommand **MUST NOT** walk `slidesDir` from disk via `node:fs` as its
-   primary enumeration source: the dev server is the single source of truth
-   for "which decks compile and what pages they have", and using it ensures a
-   deck that fails to build is surfaced as an enumeration error rather than a
-   broken render.
+   through the same compile-time source of truth the viewer itself uses — the
+   virtual module `virtual:open-slide/slides` exposed by the open-slide Vite
+   plugin (see `packages/core/src/vite/open-slide-plugin.ts`, constant
+   `SLIDES_VMOD`, and the client-side wrapper `app/lib/slides.ts` exporting
+   `slideIds`). This guarantees the CLI sees the same set of decks (and page
+   counts) the viewer would render and surfaces compile errors as enumeration
+   errors rather than as broken renders. The subcommand **MUST NOT** walk
+   `slidesDir` from disk via `node:fs` as its primary enumeration source.
+
+   **Important drift note for implementors:** there is no `GET /__slides`
+   listing endpoint in the current codebase — the `/__slides` middleware in
+   `packages/core/src/vite/routes/slides.ts` only handles per-slide mutations
+   (PATCH/DELETE for the slide, PUT `/reorder`, POST `/duplicate`,
+   DELETE/POST on `/pages/:i`). Two acceptable mechanisms exist; the
+   implementor **MUST** pick exactly one in Phase 3 and document the choice
+   in the PR description:
+
+   * **(a) Virtual-module bridge.** Navigate Playwright to a tiny in-viewer
+     bootstrap route (e.g. the existing `/` Home route, or a dedicated
+     `/__export/enumerate` route added under `apply: 'serve'` in
+     `open-slide-plugin.ts`) and read `window.__OPEN_SLIDE_SLIDES` (a small
+     additive bridge in `app/main.tsx` or `app/lib/slides.ts` that publishes
+     `{ id, pageCount }[]` for `export=png` runs only). Reuses the existing
+     virtual-module pipeline; no new HTTP surface.
+   * **(b) New read-only HTTP endpoint.** Add a `GET /__slides` (or
+     `/__export/slides`) handler to `packages/core/src/vite/routes/slides.ts`
+     that returns `[{ id, pageCount }]` derived from the same data the
+     virtual module is generated from in `open-slide-plugin.ts`. The CLI
+     then `fetch()`-es it from Node. Adds a small new endpoint that is also
+     reusable by other tooling.
+
+   Option (a) keeps the dev-server surface unchanged; option (b) keeps the
+   CLI independent of a running viewer page. The choice is recorded as
+   **Unresolved** in this CR pending architect review (see Open Questions).
 7. Each rendered PNG **MUST** be exactly `CANVAS_WIDTH` × `CANVAS_HEIGHT`
    (1920×1080), enforced via Playwright's viewport size **and** the
    `clip: { x: 0, y: 0, width: 1920, height: 1080 }` parameter passed to
@@ -340,6 +369,16 @@ flowchart TD
   `packages/core/src/app/` that currently inline `waitForFonts` +
   `waitForDataWaitfor` + `isFrameAnimationSettled` before a capture) — migrate
   to `waitForPageReady`.
+* **Enumeration mechanism (one of, chosen at Phase 3 — currently UNRESOLVED
+  per Open Question 2):**
+  * (a) `packages/core/src/app/main.tsx` or `packages/core/src/app/lib/slides.ts`
+    — publish `window.__OPEN_SLIDE_SLIDES` (a `{ id, pageCount }[]` payload)
+    when `export=png` is set, so a Playwright bootstrap page can read it;
+    OR
+  * (b) `packages/core/src/vite/routes/slides.ts` — add a new
+    `GET /__slides` (or `GET /__export/slides`) handler returning
+    `[{ id, pageCount }]` derived from the same data
+    `open-slide-plugin.ts` uses to generate the virtual module.
 * `packages/core/package.json` — add `playwright-chromium` under
   `devDependencies` only (NOT `dependencies`, NOT `optionalDependencies`), so
   end users of the published package do not pull it transitively. The
@@ -428,11 +467,16 @@ flowchart TD
   rejected for the same reason as bundling Chromium directly: ~150 MB of dep
   weight for a feature most users will never call.
 * **Walking `slidesDir` from disk via `node:fs` for slide enumeration.**
-  Rejected. The in-process Vite dev server already exposes `/__slides`, which
-  is what the viewer itself uses; reading from it guarantees the CLI sees the
-  same set of decks (and page counts) the viewer would render, and surfaces
-  compile errors as enumeration errors rather than as broken renders. A disk
-  walk would silently include decks that fail to compile.
+  Rejected. The viewer enumerates decks through the compile-time virtual
+  module `virtual:open-slide/slides` generated by `open-slide-plugin.ts`;
+  reading from that same source (either via a Playwright-loaded bootstrap
+  page or via a thin new dev-server HTTP endpoint that surfaces the same
+  data — see FR-6a) guarantees the CLI sees the same set of decks (and
+  page counts) the viewer would render, and surfaces compile errors as
+  enumeration errors rather than as broken renders. A disk walk would
+  silently include decks that fail to compile. (Note: the existing
+  `/__slides` middleware handles per-slide mutations only — there is no
+  `GET /__slides` listing endpoint in the current codebase.)
 * **Bundling Chromium with `@open-slide/core` directly.** Hard rejected.
   Chromium is ~150 MB and would inflate every `npm install` for users who
   never touch this subcommand. CLAUDE.md's "core runtime ships to users;
@@ -547,14 +591,20 @@ three predicates (migrate them to the helper).
    `await server.listen(0, '127.0.0.1')` (or the explicit `--port`), and
    returns `{ server, port }`. Mirrors `cli/dev.ts` but binds to the
    loopback interface and an ephemeral port.
-2. Implement `enumerateSlides()` that lists deck IDs and page counts by
-   issuing a read-only HTTP GET to the in-process dev server's `/__slides`
-   API — the same endpoint the viewer itself uses (FR-6a). Disk-walking
-   `slidesDir` is **not** an acceptable substitute here: the dev server is
-   the single source of truth and surfaces compile errors as enumeration
-   errors.
+2. Implement `enumerateSlides()` that lists deck IDs and page counts from
+   the same compile-time source the viewer uses (the virtual module
+   `virtual:open-slide/slides`, per FR-6a). Pick exactly one of the two
+   mechanisms documented in FR-6a (virtual-module bridge via a Playwright
+   bootstrap page, or a new `GET /__slides` HTTP endpoint registered in
+   `packages/core/src/vite/routes/slides.ts`) and implement it here.
+   Disk-walking `slidesDir` is **not** an acceptable substitute: the
+   virtual module / dev server is the single source of truth and surfaces
+   compile errors as enumeration errors. **The choice between (a) and (b)
+   is currently UNRESOLVED — see Open Questions.**
 3. Implement `renderOne(page, slideId, pageIndex, totalPages, outDir)` that:
-   1. Navigates `page.goto('http://127.0.0.1:<port>/s/<slideId>?page=<n>&export=png')`.
+   1. Navigates `page.goto('http://127.0.0.1:<port>/s/<slideId>?p=<n>&export=png')`
+      (note: the viewer reads `?p=` per `routes/slide.tsx`; `?page=` is
+      ignored).
    2. Awaits the readiness signal via
       `page.waitForFunction(() => (window as any).__OPEN_SLIDE_EXPORT_READY === true, { timeout })`.
    3. Calls `page.screenshot({ type: 'png', clip: { x: 0, y: 0, width: 1920, height: 1080 } })`.
@@ -1015,12 +1065,36 @@ in `CLAUDE.md` without compromise.
    "very high" — this is the default path, not an edge case), the test matrix
    (the missing-Playwright row is now a first-class test), AC-4, AC-10, AC-12,
    and Decision Outcome.
-2. **Slide enumeration source.** **Resolved.** Decision: read from the
-   running dev server's `/__slides` API (the same endpoint the viewer uses).
-   Locked into FR-6a as a MUST, with disk-walking explicitly disallowed as
-   the primary enumeration source. The disk-walk alternative is recorded
-   under Alternative Approaches Considered as rejected. Phase 3 step 2 and
-   the Affected Components / Test Strategy were updated accordingly.
+2. **Slide enumeration source.** **Partially resolved — disk-walking is
+   out; mechanism is UNRESOLVED.** Original decision (per the v2 of this
+   CR) named "the running dev server's `/__slides` API" as the source. On
+   review against the actual codebase that endpoint does **not** exist:
+   the `/__slides` middleware in
+   `packages/core/src/vite/routes/slides.ts` only handles per-slide
+   mutations (PATCH/DELETE for the slide, PUT `/reorder`, POST `/duplicate`,
+   DELETE/POST on `/pages/:i`). There is no `GET /__slides` listing
+   handler. Slide enumeration in the viewer goes through the compile-time
+   virtual module `virtual:open-slide/slides` produced by
+   `packages/core/src/vite/open-slide-plugin.ts` and consumed by
+   `app/lib/slides.ts`.
+
+   Therefore: disk-walking is still rejected (consistent with the original
+   intent), but the **concrete enumeration mechanism is UNRESOLVED** and
+   needs a human decision before Phase 3 can begin. The two viable options
+   are documented in FR-6a:
+   * **(a) Virtual-module bridge** — Playwright navigates to an in-viewer
+     bootstrap page (the existing `/` Home route, or a new
+     `/__export/enumerate` route under `apply: 'serve'`) and reads a small
+     `window.__OPEN_SLIDE_SLIDES` payload published by the client when
+     `export=png` is set. No new dev-server HTTP surface.
+   * **(b) New `GET /__slides` (or `/__export/slides`) handler** in
+     `packages/core/src/vite/routes/slides.ts` that returns
+     `[{ id, pageCount }]` derived from the same data the virtual module
+     is generated from. The CLI `fetch()`-es it directly from Node. Adds
+     a small new HTTP surface that is reusable by other tooling.
+
+   Pick exactly one in the implementor's first PR; update FR-6a,
+   Phase 3 step 2, Affected Components, and Test Strategy to match.
 3. **Whether to extract `waitForPageReady(frame)` in Phase 2.** **Resolved.**
    Decision: yes, extract it; the helper is canonical across the in-viewer
    PNG/PDF exporters and the new headless `?export=png` path. Phase 2 now
@@ -1034,5 +1108,113 @@ in `CLAUDE.md` without compromise.
    only. `--concurrency N` remains documented under Future Enhancements as a
    follow-up once real-deck profiling exists.
 
-**Unresolved (0):** all four open questions are resolved; no items remain
-for human decision.
+**Unresolved (1):** Open Question 2 — concrete enumeration mechanism
+(virtual-module bridge vs. new dev-server endpoint) — requires a human
+decision before Phase 3 can begin, because the originally-named
+`GET /__slides` endpoint does not exist in the codebase. The other three
+open questions remain resolved.
+
+<!-- review-summary -->
+## Review summary (CR Reviewer, 2026-05-30)
+
+**Findings: 5 total (2 drift, 3 non-drift)**
+
+### Drift findings (2)
+
+1. **`/__slides` is not a deck-enumeration endpoint.** The CR (FR-6a,
+   Phase 3 step 2, Alternative Approaches, Dependencies, Open Question 2)
+   stated the viewer "uses the `/__slides` API" to list decks. Verified
+   against `packages/core/src/vite/routes/slides.ts`: the middleware only
+   handles **per-slide mutations** (PATCH/DELETE on the slide, PUT
+   `/reorder`, POST `/duplicate`, DELETE/POST on `/pages/:i`). There is no
+   `GET /__slides` listing handler. The viewer itself enumerates decks via
+   the compile-time virtual module `virtual:open-slide/slides` (defined in
+   `packages/core/src/vite/open-slide-plugin.ts`, consumed via
+   `packages/core/src/app/lib/slides.ts`).
+2. **Page-index query param drift.** The CR repeatedly used `?page=<N>` in
+   URLs (FR-2 navigation example, Proposed-State Mermaid diagram, Phase 3
+   step 3.1, several ACs). Verified against
+   `packages/core/src/app/routes/slide.tsx:91`: the viewer reads
+   `searchParams.get('p')` (1-based). `?page=` is silently ignored, which
+   would mean every screenshot would capture page 1.
+
+### Non-drift findings (3)
+
+3. **FR-6a contradicted reality.** The "MUST query `/__slides`" requirement
+   was unimplementable as written and conflicted with the Implementation
+   Approach (Phase 3 step 2 named the same nonexistent endpoint).
+4. **Open Question 2 was marked resolved against a nonexistent mechanism.**
+   The "resolution" pointed at the imagined `GET /__slides`; on review this
+   has to be re-opened.
+5. **Alternative-Approaches bullet repeated the same false claim** about
+   the dev-server already exposing `/__slides`, propagating the error.
+
+### Fixes applied (8)
+
+- **FR-6a rewritten** to name the actual source of truth
+  (`virtual:open-slide/slides` produced by `open-slide-plugin.ts`) and
+  enumerate the two viable concrete mechanisms (virtual-module bridge vs.
+  new HTTP endpoint).
+- **Phase 3 step 2 rewritten** to match FR-6a and explicitly mark the
+  mechanism choice as UNRESOLVED.
+- **Alternative-Approaches bullet** ("Walking `slidesDir` from disk")
+  updated to drop the false `/__slides` claim and reference the real
+  virtual-module source.
+- **Open Question 2** flipped from "Resolved" to "Partially resolved —
+  mechanism UNRESOLVED" with concrete options (a)/(b).
+- **Trailing "Unresolved (0)" footer** updated to "Unresolved (1)" naming
+  the enumeration mechanism.
+- **Proposed-Change step 4 URL example** changed from
+  `?page=<n>&export=png` to `?p=<n>&export=png` with a note that `?page=`
+  is not read by the viewer.
+- **Proposed-State Mermaid diagram** edge label updated from
+  `page.goto /s/<id>?page=N&export=png` to `?p=N`.
+- **Phase 3 step 3.1 URL** updated to `?p=<n>&export=png` with a code-path
+  citation to `routes/slide.tsx`.
+- **Affected Components** extended with a new "Enumeration mechanism"
+  entry naming the file(s) the implementor would touch for option (a) vs.
+  option (b).
+
+### Items not changed (deliberate)
+
+- The four "Open Questions resolved by the maintainer" listed in the
+  reviewer brief (devDependencies for playwright-chromium, virtual-module
+  enumeration over disk-walk, mandatory `waitForPageReady` extraction, no
+  `--concurrency`) are preserved as resolved. Only the **concrete
+  enumeration HTTP mechanism** within question 2 is flipped to
+  UNRESOLVED — the broader decision ("not disk-walk, use the same source
+  the viewer uses") is unchanged.
+- AC URLs (AC-1/AC-3/AC-6 do not embed URLs, so no AC text changes were
+  needed). All ACs remain consistent with the corrected FRs because the
+  ACs assert behaviour (`./tmp-png/intro-p2.png` exists) rather than
+  query-string syntax.
+- All other cited paths verified present:
+  `packages/core/src/cli/{run,dev,build,preview,sync}.ts`,
+  `packages/core/src/app/app.tsx` (routes `/s/:slideId` and
+  `/s/:slideId/presenter`),
+  `packages/core/src/app/lib/sdk.ts` (`CANVAS_WIDTH = 1920`,
+  `CANVAS_HEIGHT = 1080`),
+  `packages/core/src/app/lib/print-ready.ts` (`waitForFonts`,
+  `waitForDataWaitfor`, `isFrameAnimationSettled`),
+  `packages/core/src/app/lib/export-png.ts` and `export-pdf.ts`
+  (both already import and call the three predicates in-line —
+  Phase 2's `waitForPageReady` extraction has real refactor targets),
+  `packages/core/src/app/components/slide-canvas.tsx`,
+  `packages/core/src/vite/config.ts` (`createViteConfig`).
+- `ANIMATION_TIMEOUT_MS = 15_000` and `POLL_INTERVAL_MS = 100` confirmed
+  in both `export-png.ts` and `export-pdf.ts`.
+
+### Unresolved items (1) — require human decision
+
+1. **Enumeration mechanism for `enumerateSlides()`** (Open Question 2,
+   FR-6a, Phase 3 step 2): pick exactly one of
+   * **(a)** virtual-module bridge via a Playwright bootstrap page
+     reading `window.__OPEN_SLIDE_SLIDES`, or
+   * **(b)** a new `GET /__slides` (or `/__export/slides`) HTTP handler
+     registered in `packages/core/src/vite/routes/slides.ts`.
+
+   Both are viable. (a) keeps the dev-server surface unchanged and
+   reuses the existing virtual-module pipeline; (b) keeps the CLI
+   independent of a running viewer page and is reusable by other tooling.
+   Decision needed before Phase 3 work begins.
+<!-- /review-summary -->
