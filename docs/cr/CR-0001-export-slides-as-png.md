@@ -96,17 +96,34 @@ The export MUST be a pure client-side rasterisation that reuses the same offscre
 `print-ready.ts` (fonts, `data-waitfor`, animation settle), and the same `fflate`
 dependency for ZIP bundling that `export-html.ts` already uses.
 
-Implementation MUST use the `html-to-image` library to rasterise the mounted DOM node
-to a PNG `Blob`. `html-to-image` is preferred over `html2canvas` because it has zero
-runtime dependencies (vs. html2canvas's larger footprint) and produces correct output
-for modern CSS (gradients, filters, transforms) that the viewer relies on.
+Implementation MUST use a **hand-rolled, zero-dependency `<foreignObject>` → canvas
+rasterizer**. No new runtime dependency is introduced. The pipeline is:
 
-> **Assumption** (open question, see end of document): we depend on `html-to-image`
-> rather than a hand-rolled `foreignObject`-into-`<canvas>` snippet. Rationale: a
-> from-scratch implementation has to re-derive computed style inlining, web-font
-> embedding, srcset resolution, and `dataURI`-rewriting of cross-origin images, all of
-> which `html-to-image` already handles. The "no casual dependencies" rule still
-> applies — this is justified, not casual.
+1. Reuse the existing offscreen-mount + readiness flow from `export-pdf.ts`: mount each
+   page offscreen at 1920×1080, apply `designToCssVars(slide.design)`, wrap in
+   `<SlidePageProvider>`, and gate on `waitForFonts()`, `waitForDataWaitfor()`, and
+   `isFrameAnimationSettled()`.
+2. **Clone** the mounted slide node and **inline computed styles** onto the clone — a
+   `<foreignObject>` only renders styles that are present in its serialised markup, so
+   per-node `getComputedStyle` must be flattened onto inline `style` attributes before
+   serialisation.
+3. **Inline resources** into the cloned subtree: embed open-slide's bundled Geist fonts
+   as `@font-face` `data:` URIs (open-slide ships Geist itself, so this is fully
+   first-party), and rewrite same-origin `<img>` sources as `data:` URLs.
+4. Serialise the cloned subtree inside an SVG `<foreignObject>` of the canonical
+   1920×1080 viewBox, load it as an `Image`, and `drawImage()` it onto an offscreen
+   `<canvas>` supersampled ×2 (mirroring the `zoom: 2` / `transform: scale(0.5)`
+   supersample trick that `export-pdf.ts` already uses), then `canvas.toBlob(blob,
+   'image/png')`.
+5. Bundle multiple pages with **`fflate`** (already a runtime dependency, used by
+   `export-html.ts`) — no second ZIP library.
+
+Open-slide controls its own render surface — a fixed 1920×1080 frame, bundled Geist
+fonts, and a known set of design tokens — so the rasterizer does not need to handle the
+arbitrary third-party DOM that `html-to-image` / `dom-to-image` / `html2canvas` exist
+to support. That bounded scope is what makes a hand-rolled implementation tractable
+here and lets the "core runtime ships to users; every dep inflates install size" rule
+in `CLAUDE.md` hold without compromise.
 
 ### Proposed State Diagram
 
@@ -122,9 +139,12 @@ flowchart TD
     ExportPng --> Mount["Mount page in hidden<br/>1920×1080 host"]
     ExportPngAll --> Mount
     Mount --> Wait["waitForFonts<br/>waitForDataWaitfor<br/>isFrameAnimationSettled"]
-    Wait --> Rasterise["html-to-image → PNG Blob"]
-    Rasterise --> Single["{slideId}-p{N}.png"]
-    Rasterise --> ZipAll["fflate zipSync → {slideId}.zip"]
+    Wait --> Clone["Clone node + inline computed styles<br/>+ inline Geist @font-face + same-origin imgs"]
+    Clone --> SvgFo["Serialise into SVG &lt;foreignObject&gt;<br/>1920×1080 viewBox"]
+    SvgFo --> Canvas["drawImage onto offscreen canvas<br/>(×2 supersample)"]
+    Canvas --> Blob["canvas.toBlob('image/png') → PNG Blob"]
+    Blob --> Single["{slideId}-p{N}.png"]
+    Blob --> ZipAll["fflate zipSync → {slideId}.zip"]
 ```
 
 ## Requirements
@@ -156,6 +176,20 @@ flowchart TD
 9. The exporter **MUST** poll `isFrameAnimationSettled` for each mounted frame with the
    same 15 000 ms timeout used by the PDF exporter, and rasterise the frame only after
    it settles or the timeout elapses.
+9a. The exporter **MUST** rasterise via a hand-rolled SVG `<foreignObject>` → canvas
+    pipeline: clone the mounted slide node, inline computed styles onto the clone,
+    embed open-slide's bundled Geist font(s) as `@font-face` `data:` URIs, rewrite
+    same-origin `<img>` sources as `data:` URIs, serialise the clone inside an SVG
+    `<foreignObject>` with a 1920×1080 viewBox, load that SVG as an `Image`, and
+    `drawImage` it onto an offscreen `<canvas>`. The exporter **MUST NOT** introduce a
+    new runtime dependency for rasterisation (no `html-to-image`, no `html2canvas`,
+    no `dom-to-image`).
+9b. The offscreen `<canvas>` **MUST** be supersampled at ×2 (canvas backing-store
+    sized 3840×2160, drawn down to the 1920×1080 output) using the same `zoom: 2` /
+    `transform: scale(0.5)` supersample technique used by `export-pdf.ts`, so the
+    resulting PNG matches the visual sharpness of the PDF exporter.
+9c. The full-deck ZIP archive **MUST** be built with `fflate` (already a runtime
+    dependency via `export-html.ts`). No additional ZIP library may be added.
 10. The full-deck (`exportSlideAsPngZip`) exporter **MUST** report progress through an
     optional `onProgress` callback shaped as
     `{ phase: 'processing' | 'rasterising' | 'zipping' | 'done', current: number, total: number, percent: number }`,
@@ -190,9 +224,9 @@ flowchart TD
 1. The PNG exporter module **MUST** stay under ~250 lines of TypeScript, in line with
    the project's small-single-purpose-files rule, and **MUST** live in a single file
    `packages/core/src/app/lib/export-png.ts` with hierarchical-namespace naming.
-2. The added dependency `html-to-image` **MUST** be the only new runtime dependency
-   introduced by this CR, and its bundle impact **MUST** be documented in the
-   changeset description.
+2. This CR **MUST NOT** introduce any new runtime dependency in
+   `packages/core/package.json`. The rasterizer is hand-rolled and ZIP bundling reuses
+   the existing `fflate` dependency.
 3. The exporter **MUST** complete a single-page PNG export of a representative slide
    in under 4 seconds on a 2024-class laptop running Chromium, measured locally
    during review.
@@ -218,7 +252,9 @@ flowchart TD
 * `packages/core/src/locale/types.ts` — adds the new locale keys to the type contract.
 * `packages/core/src/locale/en.ts`, `ja.ts`, `zh-cn.ts`, `zh-tw.ts` — adds the
   translated strings.
-* `packages/core/package.json` — adds `html-to-image` to `dependencies`.
+* `packages/core/package.json` — **unchanged**; no new runtime dependency is added.
+  The rasterizer is hand-rolled and ZIP bundling reuses the existing `fflate`
+  dependency that `export-html.ts` already depends on.
 * `.changeset/<slug>.md` — minor bump for `@open-slide/core` (new public-ish API
   surface in the viewer download menu).
 
@@ -231,9 +267,10 @@ flowchart TD
 * Progress toast for the multi-page export.
 * Locale strings in all four supported locales.
 * Reuse of existing `waitForFonts`, `waitForDataWaitfor`, `isFrameAnimationSettled`,
-  `designToCssVars`, and `SlidePageProvider`.
-* Adding `html-to-image` as a `@open-slide/core` runtime dependency and documenting it
-  in the changeset.
+  `designToCssVars`, `SlidePageProvider`, and the `fflate` ZIP dependency already used
+  by `export-html.ts`.
+* A hand-rolled `<foreignObject>` → canvas rasterizer module that adds no new runtime
+  dependency.
 * Updating `packages/core/src/app/routes/slide.tsx` so the download dropdown shows the
   new entries when `allowHtmlDownload` is true.
 
@@ -259,23 +296,48 @@ flowchart TD
 
 ## Alternative Approaches Considered
 
-* **Headless Chromium via the `open-slide build` CLI.** Produces the most reliable
-  raster (server-managed fonts, no tab visibility issues). Rejected because
-  `puppeteer` / `playwright` would balloon `@open-slide/core`'s install size and
-  break the "runtime ships to users" constraint in `CLAUDE.md`.
-* **Hand-rolled `<foreignObject>` + `<canvas>.drawImage`.** Zero new dependencies.
-  Rejected because we would re-implement computed-style inlining, web-font embedding,
-  CORS-safe image rewriting, and SVG-`<foreignObject>` quirk handling — all of which
-  `html-to-image` already solves. The maintenance surface outweighs the dependency.
-* **`html2canvas`.** Larger footprint, weaker support for modern CSS (filters,
-  `mix-blend-mode`, modern gradients) than `html-to-image`. Rejected for output
-  fidelity.
+* **Client-side `<foreignObject>` → canvas via an existing library
+  (`html-to-image` / `dom-to-image` / `html2canvas`).** The `<foreignObject>` → canvas
+  technique was originated by **dom-to-image** (`tsayen/dom-to-image`) and refined by
+  **`html-to-image`** and **`html2canvas`**, which between them solve computed-style
+  inlining, web-font embedding, CORS-safe image rewriting, and an array of browser
+  quirks. The reason these libraries exist is to rasterise *arbitrary* third-party
+  DOM — the long tail of CSS features that random apps put on screen. Open-slide does
+  not have that problem: it controls its own render surface (a fixed 1920×1080 frame,
+  bundled Geist fonts, a known set of design tokens, no untrusted user CSS), which
+  neutralises most of the library's reason to exist and makes a hand-rolled
+  rasterizer tractable. **Chosen** in its hand-rolled form for this CR, with the
+  documented limitation that all client-side `<foreignObject>` approaches only
+  rasterise CSS that is expressible in SVG — no client-side technique is
+  pixel-perfect for the heaviest modern CSS (advanced filters, certain
+  `mix-blend-mode` combinations, some compositing edge-cases). Pixel-perfect output
+  is addressed under "Future enhancements" below.
+* **Headless Chromium via Playwright at build time.** This is the path **Slidev**
+  takes for `slidev export --format png`: an optional `playwright-chromium`
+  dependency, `page.screenshot()` per slide, with `--wait`, `--wait-until`, and
+  `--omit-background` flags. It produces the most reliable raster because the browser
+  itself does the painting. **Rejected as the primary mechanism** because (a) it adds
+  a heavy dependency, even as an optional one, and (b) it is CLI-centric, which is
+  inconsistent with open-slide's in-viewer download dropdown where HTML and PDF
+  export already live. The Playwright path is preserved as a future opt-in CLI
+  enhancement (see below), never in the client bundle.
 * **Reuse the PDF print path and convert PDF → PNG client-side.** Requires a PDF
-  rasteriser in the bundle (e.g. `pdf.js`), which is heavier than `html-to-image` and
-  inherits the Safari `window.print()` limitation already documented for PDF export.
+  rasteriser in the bundle (e.g. `pdf.js`), which is heavier than the hand-rolled
+  approach and inherits the Safari `window.print()` limitation already documented for
+  PDF export. Rejected.
 * **Save the visible viewer DOM directly (no offscreen mount).** Rejected because the
   viewer renders a fitted, transformed `<SlideCanvas>`; the visible DOM is the wrong
   size and includes the UI chrome.
+
+### Future Enhancements (documented follow-up)
+
+A pixel-perfect export path can be offered later as an **optional** Playwright
+dependency, used only by the `open-slide build` / export CLI in `packages/cli` and
+**never bundled into the client runtime** that `@open-slide/core` ships to users.
+This mirrors Slidev's optional-dependency pattern (`playwright-chromium` is installed
+on demand by the user, not by default) and keeps the "core runtime ships to users;
+every dep inflates install size" rule in `CLAUDE.md` intact. Triggering and scoping
+this CLI subcommand is out of scope for this CR and is left for a follow-up CR.
 
 ## Impact Assessment
 
@@ -288,9 +350,9 @@ flowchart TD
 
 ### Technical Impact
 
-* Adds one new runtime dependency (`html-to-image`) to `@open-slide/core`. Install
-  size increases by the size of that package; the changeset description must call
-  this out so downstream consumers see it on upgrade.
+* No new runtime dependency is added to `@open-slide/core`. The rasterizer is
+  hand-rolled and ZIP bundling reuses the existing `fflate` dependency. Install size
+  grows only by the new TypeScript module's own footprint.
 * No breaking API changes. `index.ts` is not expanded — the new exports are internal
   to the viewer.
 * The added `slide.tsx` UI must continue to satisfy Biome formatting / lint, and the
@@ -311,17 +373,15 @@ Sequenced so each phase is independently reviewable.
 
 ### Phase 1: Foundation — locale + module skeleton
 
-1. Add `html-to-image` to `packages/core/package.json` `dependencies`. Pin to the
-   current latest stable. Run `pnpm install` at the repo root.
-2. Create `packages/core/src/app/lib/export-png.ts` with the public signatures
+1. Create `packages/core/src/app/lib/export-png.ts` with the public signatures
    `exportSlidePageAsPng` and `exportSlideAsPngZip`, plus a `PngExportProgress` type
    shaped identically to `PdfExportProgress` (substituting the `phase` enum).
-3. Add new locale keys to `packages/core/src/locale/types.ts`
+2. Add new locale keys to `packages/core/src/locale/types.ts`
    (`slide.exportCurrentPageAsPng`, `slide.exportAllPagesAsPng`,
    `slide.pngExportFailed`, the full `pngToast` block).
-4. Translate the new keys in `en.ts`, `ja.ts`, `zh-cn.ts`, `zh-tw.ts`.
+3. Translate the new keys in `en.ts`, `ja.ts`, `zh-cn.ts`, `zh-tw.ts`.
 
-**Affected components:** `packages/core/package.json`,
+**Affected components:**
 `packages/core/src/app/lib/export-png.ts` (new),
 `packages/core/src/locale/types.ts`, `packages/core/src/locale/en.ts`,
 `packages/core/src/locale/ja.ts`, `packages/core/src/locale/zh-cn.ts`,
@@ -342,8 +402,29 @@ Sequenced so each phase is independently reviewable.
    5. Awaits `waitForDataWaitfor(host)`.
    6. Polls `isFrameAnimationSettled(host)` with the same `ANIMATION_TIMEOUT_MS` /
       `POLL_INTERVAL_MS` as `export-pdf.ts`.
-   7. Calls `htmlToImage.toBlob(host, { width: 1920, height: 1080, pixelRatio: 1,
-      cacheBust: false, backgroundColor: '#ffffff' })`.
+   7. Rasterises the host via the hand-rolled pipeline (broken out as small helpers in
+      the same file):
+      a. `cloneWithInlinedStyles(host)` — deep-clones the mounted node and, for every
+         element in the clone, copies the source element's `getComputedStyle()` values
+         onto an inline `style` attribute, because `<foreignObject>` only renders
+         styles present in the serialised markup.
+      b. `inlineGeistFonts(clone)` — embeds open-slide's bundled Geist font files as
+         `@font-face` `data:` URIs in a `<style>` prepended to the clone. Geist is
+         shipped by open-slide itself, so this is fully first-party and same-origin.
+      c. `inlineSameOriginImages(clone)` — for each `<img>` in the clone whose `src`
+         is same-origin, fetches the bytes and rewrites the `src` to a `data:` URI.
+         Cross-origin `<img>` elements are left untouched and documented as a
+         limitation.
+      d. `nodeToSvgDataUrl(clone, 1920, 1080)` — wraps the clone in an SVG
+         `<foreignObject>` with `width="1920" height="1080"` and `viewBox="0 0 1920
+         1080"`, serialises with `XMLSerializer`, and produces a
+         `data:image/svg+xml;charset=utf-8,…` URL.
+      e. `rasteriseSvgToPng(url)` — loads the SVG URL into a new `Image`, awaits
+         `onload`, creates an offscreen `<canvas>` with backing-store size 3840×2160
+         (×2 supersample) and CSS size 1920×1080, calls `ctx.drawImage(img, 0, 0,
+         3840, 2160)`, then `canvas.toBlob(resolve, 'image/png')`. The ×2 supersample
+         mirrors the `zoom: 2` / `transform: scale(0.5)` trick used by `export-pdf.ts`
+         for crisp output.
    8. Unmounts the React root and removes the host on both success and failure.
 2. Implement `exportSlidePageAsPng(slide, slideId, pageIndex)` as a thin wrapper that
    calls `renderPageToPng`, names the file
@@ -413,10 +494,9 @@ shared import).
 ```mermaid
 flowchart LR
     subgraph P1["Phase 1: Foundation"]
-        A1[Add html-to-image dep]
-        A2[Skeleton export-png.ts]
-        A3[Locale types + 4 locales]
-        A1 --> A2 --> A3
+        A1[Skeleton export-png.ts]
+        A2[Locale types + 4 locales]
+        A1 --> A2
     end
     subgraph P2["Phase 2: Single PNG"]
         B1[renderPageToPng helper]
@@ -451,7 +531,7 @@ flowchart LR
 |-----------|-----------|-------------|--------|-----------------|
 | `packages/core/src/app/lib/export-png.test.ts` | `filename for single-page export uses zero-padded page index` | Verifies the helper that names files produces `slide-p01.png` for a 9-page deck and `slide-p001.png` for a 100-page deck. | `slideId = 'slide'`, `pageIndex = 0`, `total = 9` and `total = 100` | `'slide-p1.png'` (width 1) and `'slide-p001.png'` (width 3) — exact format set by implementation, asserted in test. |
 | `packages/core/src/app/lib/export-png.test.ts` | `progress emitter produces monotonically non-decreasing percent` | Calls the internal progress reducer with a sequence of phase/current/total inputs and asserts `percent` never decreases. | Sequence of `{phase, current, total}` tuples covering processing → rasterising → zipping → done. | Each successive `percent` is `>=` previous. |
-| `packages/core/src/app/lib/export-png.test.ts` | `exportSlidePageAsPng rejects with no DOM residue when html-to-image throws` | Mocks `html-to-image.toBlob` to reject. Asserts the offscreen container has been removed from `document.body` after the rejection. | Mocked `toBlob` rejection; jsdom environment. | Promise rejects; `document.querySelectorAll('[data-png-export-host]')` returns empty NodeList. |
+| `packages/core/src/app/lib/export-png.test.ts` | `exportSlidePageAsPng rejects with no DOM residue when the rasterizer throws` | Mocks the internal `rasteriseSvgToPng` helper to reject. Asserts the offscreen container has been removed from `document.body` after the rejection. | Mocked `toBlob` rejection; jsdom environment. | Promise rejects; `document.querySelectorAll('[data-png-export-host]')` returns empty NodeList. |
 | `packages/core/src/app/lib/export-png.test.ts` | `exportSlideAsPngZip calls onProgress at least once per phase` | Mocks `toBlob` to resolve and asserts onProgress sees all four phases at least once. | 2-page slide module; mocked `toBlob`. | onProgress called with `processing`, `rasterising`, `zipping`, `done` at least once each. |
 | `packages/core/src/app/lib/download.test.ts` | `downloadBlob creates and revokes object URL` | Verifies the extracted helper triggers an `<a download>` click and revokes the URL afterwards. | `Blob` + filename. | `URL.createObjectURL` called once; `URL.revokeObjectURL` called once; `<a>` removed from DOM. |
 
@@ -562,6 +642,23 @@ Then a new markdown file exists with a `minor` bump for `@open-slide/core`
   And the description is a single line, present-tense, user-perspective sentence
 ```
 
+### AC-10: Safari behaviour is explicit and graceful
+
+```gherkin
+Given the viewer is running in Safari (detected via the existing `isSafari()` helper
+   in `export-pdf.ts`)
+When the user opens the download dropdown and interacts with a PNG export entry
+Then the chosen Safari strategy applies consistently:
+  * If the "best-effort + warn" strategy is selected, a sonner toast is shown
+    informing the user that PNG export is best-effort on Safari, and the export
+    pipeline proceeds; on any rasterisation failure the standard
+    `slide.pngExportFailed` toast is shown and no DOM residue remains.
+  * If the "hard disable" strategy is selected, both PNG dropdown items are
+    rendered as disabled, and clicking the dropdown surfaces a toast directing
+    the user to a Chromium-based browser; no rasterisation is attempted.
+  And in either strategy, the existing HTML and PDF entries are unaffected.
+```
+
 ## Quality Standards Compliance
 
 ### Build & Compilation
@@ -613,23 +710,31 @@ pnpm dev   # opens apps/demo, exercise the new dropdown items
 
 ## Risks and Mitigation
 
-### Risk 1: `html-to-image` produces incorrect output for advanced CSS used by themes
+### Risk 1: The hand-rolled rasterizer mis-renders advanced CSS used by themes
 
 **Likelihood:** medium
 **Impact:** medium
-**Mitigation:** Smoke-test against every preset in
-`packages/core/src/app/lib/design-presets.ts` during Phase 5. If a specific CSS feature
-breaks, replicate the `neutralizeGradientBackgrounds` workaround the PDF exporter
-already uses, scoped to the offscreen host only.
+**Mitigation:** Only SVG-expressible CSS rasterises reliably through `<foreignObject>`
+— this is an inherent limitation of every client-side approach (`dom-to-image`,
+`html-to-image`, `html2canvas` all share it). Smoke-test against every preset in
+`packages/core/src/app/lib/design-presets.ts` during Phase 5. If a specific CSS
+feature breaks, replicate the `neutralizeGradientBackgrounds` workaround the PDF
+exporter already uses, scoped to the offscreen host only. Pixel-perfect output for
+the heaviest CSS is deferred to the future Playwright-based CLI path described under
+"Future Enhancements".
 
-### Risk 2: Bundle size growth from `html-to-image` exceeds tolerance
+### Risk 2: Safari `<foreignObject>` quirks produce broken or empty PNGs
 
-**Likelihood:** low
+**Likelihood:** medium
 **Impact:** medium
-**Mitigation:** Confirm the installed size before merging. If unacceptable,
-dynamically `await import('html-to-image')` from inside `renderPageToPng` so the
-chunk is only fetched when the user clicks Export PNG, matching how `export-html.ts`
-already lazy-loads `fflate` via `await import('fflate')`.
+**Mitigation:** Safari has long-standing `<foreignObject>` issues (tainted canvases,
+missed fonts, dimension miscalculations) — the same family of issues that already
+motivates the `isSafari()` helper in `export-pdf.ts`. Reuse that helper to gate the
+PNG export: if `isSafari()` returns true, either (a) short-circuit with a
+user-visible "PNG export is best-effort on Safari" warning via `sonner` and proceed,
+or (b) disable the dropdown items and surface a clear "use Chromium for PNG export"
+toast. Decision between (a) and (b) is taken in Phase 4 review; AC-10 (below) covers
+whichever is chosen.
 
 ### Risk 3: Animation-settle timeout differs from PDF behaviour and confuses users
 
@@ -643,12 +748,13 @@ animations are skipped at this point" behaviour is identical across exports.
 
 **Likelihood:** medium
 **Impact:** medium
-**Mitigation:** `html-to-image` fetches assets via `fetch` and inlines them as
-data URIs. For assets served by the open-slide dev server this is same-origin and
-safe. Document the cross-origin limitation in the changeset; if a real failure
-surfaces in dogfood, fall back to converting visible `<img>` elements to data URIs
-before calling `toBlob`, reusing the `findHtmlAssetUrls` / `toAbsolute` helpers from
-`export-html.ts`.
+**Mitigation:** The hand-rolled `inlineSameOriginImages(clone)` helper fetches
+same-origin assets and rewrites them as `data:` URIs before serialisation. For assets
+served by the open-slide dev server this is same-origin and safe. Cross-origin
+images are explicitly left untouched (fetching them would taint the canvas anyway);
+document this limitation in the changeset. If a real failure surfaces in dogfood,
+extend `inlineSameOriginImages` to reuse the `findHtmlAssetUrls` / `toAbsolute`
+helpers from `export-html.ts` for a broader sweep.
 
 ### Risk 5: Memory pressure when exporting decks with many pages
 
@@ -668,8 +774,8 @@ by smoke-test in Phase 5 (download a `.html` and a `.zip` from the demo deck).
 
 ## Dependencies
 
-* Runtime dependency on `html-to-image` (new) must be added to
-  `packages/core/package.json`.
+* **No new runtime dependency.** Rasterisation is hand-rolled; ZIP bundling reuses the
+  existing `fflate` dependency that `export-html.ts` already pulls in.
 * No blocking CRs — this is `CR-0001`.
 * No infrastructure or third-party-service dependencies.
 * Indirectly depends on the existing `print-ready.ts` helpers staying stable; if a
@@ -686,14 +792,18 @@ by smoke-test in Phase 5 (download a `.html` and a `.zip` from the demo deck).
 
 ## Decision Outcome
 
-Chosen approach: **client-side rasterisation with `html-to-image`, reusing the
-offscreen-mount pattern from the existing PDF exporter and the ZIP pattern from the
-existing HTML exporter**, because it keeps `@open-slide/core` shippable as a pure
-client-side npm package, matches the architecture authors already trust, and avoids a
-headless-browser dependency that would conflict with the "runtime ships to users"
-constraint codified in `CLAUDE.md`. The added dependency is justified, not casual: a
-hand-rolled DOM→PNG implementation would re-derive computed-style inlining, web-font
-embedding, and CORS-safe image rewriting, all of which `html-to-image` already solves.
+Chosen approach: **client-side rasterisation via a hand-rolled `<foreignObject>` →
+canvas pipeline, reusing the offscreen-mount pattern from the existing PDF exporter
+and the `fflate` ZIP pattern from the existing HTML exporter**, with **zero new
+runtime dependencies**. This keeps `@open-slide/core` shippable as a pure client-side
+npm package and honours the "runtime ships to users; every dep inflates install size"
+constraint codified in `CLAUDE.md` without compromise. The hand-rolled implementation
+is tractable here — and is *not* tractable for arbitrary third-party-DOM use cases —
+because open-slide controls its own render surface (fixed 1920×1080 frame, bundled
+Geist fonts, known design tokens), which neutralises most of the complexity that
+libraries like `dom-to-image` / `html-to-image` / `html2canvas` exist to solve. A
+pixel-perfect Playwright-based path remains available as an opt-in CLI follow-up (see
+"Future Enhancements"), never in the client bundle.
 
 ## Related Items
 
@@ -706,20 +816,24 @@ embedding, and CORS-safe image rewriting, all of which `html-to-image` already s
 
 ## Open Questions
 
-1. **Dependency choice — `html-to-image` vs. hand-rolled.** This CR proceeds on the
-   assumption that adding `html-to-image` is acceptable because it is the smallest
-   credible dependency that solves the inlining problems we would otherwise have to
-   re-implement. If maintainers veto the dependency, the fallback is a hand-rolled
-   `<foreignObject>`-into-`<canvas>` implementation, which would push Phase 2 from
-   ~4 hours to ~12+ hours and add ongoing maintenance burden. **Decision needed
-   before Phase 1 starts.**
-2. **Lazy import vs. eager bundle.** Should `html-to-image` be `await import(...)`-ed
-   on first click (matching how `export-html.ts` lazy-loads `fflate`) to keep it out
-   of the initial viewer bundle? The CR currently assumes yes for parity with the
-   existing pattern, but this is worth confirming in review.
-3. **Filename padding width.** Should `{N}` be padded to the width of the page count
+1. **Dependency choice — `html-to-image` vs. hand-rolled.** **Resolved.** Decision:
+   no new runtime dependency; rasterisation is a hand-rolled `<foreignObject>` →
+   canvas pipeline. Open-slide's bounded render surface (fixed 1920×1080, bundled
+   Geist fonts, known design tokens) makes the in-house implementation tractable,
+   and the resulting build stays within the "core runtime ships to users" rule in
+   `CLAUDE.md`. The library path (`html-to-image` / `dom-to-image` / `html2canvas`)
+   remains documented under "Alternative Approaches Considered" as the precedent the
+   technique is borrowed from. The Playwright-based pixel-perfect path is captured
+   under "Future Enhancements" as an opt-in CLI follow-up.
+2. **Filename padding width.** Should `{N}` be padded to the width of the page count
    (e.g. `p01` for a 9-page deck) or always to 2 digits, or never padded? The CR
    assumes "padded to the width of the total page count", which keeps file-system
    sort order matching slide order for any deck size.
+3. **Safari fallback — best-effort warn vs. hard disable.** When `isSafari()` (from
+   `export-pdf.ts`) returns true, should the dropdown items render with a
+   "best-effort on Safari" toast (option a) or be disabled with a "use Chromium for
+   PNG export" toast (option b)? AC-10 codifies whichever option Phase 4 review
+   picks. The CR's leaning is (a) — best-effort with warn — because it preserves
+   user agency.
 4. **Export from presenter / fullscreen modes.** Out of scope for this CR. If
    authors ask for it, it becomes a follow-up CR rather than an expansion here.
