@@ -1,6 +1,6 @@
 ---
 title: Export
-description: One command to a self-contained static HTML site or PDF.
+description: One command to a self-contained static HTML site, PDF, or PNG.
 ---
 
 `open-slide build` produces a plain static site under `dist/` — everything
@@ -24,8 +24,26 @@ The **Export** menu in the slide toolbar exports the active deck directly:
   assets download as a zip (HTML file + assets folder).
 - **PDF** — one 1920 × 1080 landscape PDF page per deck page. Not supported
   in Safari.
+- **PNG** — the current page as a single 1920 × 1080 PNG, or the whole deck as
+  a ZIP of PNGs. See [PNG](#png) below.
 - **PPTX (images)** — each page rendered as an image on a PowerPoint slide.
   Native editable PPTX export is not available yet.
+
+## PNG
+
+From the toolbar pick **Export → Export current slide as PNG** for a single
+1920×1080 PNG of the active page, or **Export all slides as PNG** for a ZIP
+containing one PNG per page (named `{slideId}-p{N}.png`). Rasterisation runs
+entirely client-side — no server, no headless browser, no extra dependency.
+
+A progress toast surfaces the `processing → rasterising → zipping → done`
+phases for the full-deck export. On Safari the exporter shows a best-effort
+notice before running because Safari's `<foreignObject>` pipeline has
+long-standing quirks; if rasterisation fails the standard export-failed
+toast appears and any offscreen state is torn down.
+
+Both PNG entries sit alongside the other export formats in the same dropdown
+and are gated by `build.allowHtmlDownload`.
 
 ## What gets shipped
 
@@ -45,7 +63,7 @@ const config: OpenSlideConfig = {
   build: {
     showSlideBrowser: false,    // hide the deck index
     showSlideUi: false,         // hide on-canvas UI (toolbar etc.)
-    allowHtmlDownload: false,   // hide the export menu (HTML / PDF / PPTX)
+    allowHtmlDownload: false,   // hide the export menu (HTML / PDF / PNG / PPTX)
   },
 };
 

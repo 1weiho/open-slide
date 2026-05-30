@@ -49,9 +49,9 @@ Manage images, videos, and fonts per deck through a built-in assets panel. Searc
 
 Fullscreen playback with keyboard navigation, plus a **presenter mode** with current/next slide preview, speaker notes, and a timer. Built for the stage, not just the browser tab.
 
-### 📦 Export to static HTML & PDF
+### 📦 Export to static HTML, PDF & PNG
 
-One command exports your deck as a self-contained static HTML site or a print-ready PDF. Share without a server.
+One command exports your deck as a self-contained static HTML site, a print-ready PDF, or 1920×1080 PNGs (current slide or a ZIP of every page). Share without a server.
 
 ### 📁 Slide manager
 
