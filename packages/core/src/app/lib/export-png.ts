@@ -8,7 +8,9 @@
  * fonts + same-origin images are inlined onto the clone, the clone is wrapped
  * in an SVG `<foreignObject>` of the canonical 1920×1080 viewBox, loaded as
  * an `Image`, drawn onto an offscreen canvas supersampled ×2, and encoded as
- * PNG via `canvas.toBlob`. The whole-deck ZIP path lands in Phase 3.
+ * PNG via `canvas.toBlob`. Phase 3 layers the full-deck ZIP path on top:
+ * pages are rasterised one at a time and bundled flat via the existing
+ * `fflate` dependency, with progress reported through `onProgress`.
  *
  * @agents-index PNG export pipeline — single-page rasterisation via a
  *               hand-rolled <foreignObject> -> canvas path, zero new deps.
@@ -82,14 +84,56 @@ export async function exportSlidePageAsPng(
  * the same shape as `PdfExportProgress` so the toast component can render
  * either pipeline.
  *
- * Phase 2 skeleton: the multi-page + ZIP pipeline lands in Phase 3.
+ * Pages are mounted and torn down one at a time (rather than concurrently
+ * like the PDF exporter) to bound peak DOM size to a single 1920×1080 host
+ * plus one in-flight PNG `Blob`, per Risk 5 of the CR.
  */
 export async function exportSlideAsPngZip(
-  _slide: SlideModule,
-  _slideId: string,
-  _onProgress?: (progress: PngExportProgress) => void,
+  slide: SlideModule,
+  slideId: string,
+  onProgress?: (progress: PngExportProgress) => void,
 ): Promise<void> {
-  throw new Error('exportSlideAsPngZip is not implemented yet');
+  const pages = slide.default ?? [];
+  const total = pages.length;
+  if (total === 0) return;
+
+  const emit = (phase: PngExportProgress['phase'], current: number): void => {
+    if (!onProgress) return;
+    onProgress({ phase, current, total, percent: computePercent(phase, current, total) });
+  };
+
+  const blobs: { name: string; bytes: Uint8Array }[] = [];
+  emit('processing', 0);
+
+  for (let i = 0; i < total; i++) {
+    emit('processing', i);
+    const blob = await renderPageToPng(slide, i);
+    emit('rasterising', i + 1);
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    blobs.push({ name: pngFilenameFor(slideId, i, total), bytes });
+  }
+
+  emit('zipping', total);
+  const { zipSync } = await import('fflate');
+  const zipTree: Record<string, Uint8Array> = {};
+  for (const { name, bytes } of blobs) zipTree[name] = bytes;
+  const zipped = zipSync(zipTree);
+  downloadBlob(new Blob([zipped as BlobPart], { type: 'application/zip' }), `${slideId}.zip`);
+  emit('done', total);
+}
+
+/**
+ * Map a `{phase, current, total}` tuple onto a monotonically non-decreasing
+ * 0–100 percent. Processing and rasterising share the per-page band so the
+ * bar advances as each page completes; zipping pins to 99 until the archive
+ * is built, and `done` snaps to 100.
+ */
+function computePercent(phase: PngExportProgress['phase'], current: number, total: number): number {
+  if (phase === 'done') return 100;
+  if (phase === 'zipping') return 99;
+  if (total <= 0) return 0;
+  const clamped = Math.max(0, Math.min(current, total));
+  return Math.min(98, Math.floor((clamped / total) * 98));
 }
 
 /**
