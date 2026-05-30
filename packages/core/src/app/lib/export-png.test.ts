@@ -19,6 +19,7 @@ import {
   type PngExportProgress,
   pngFilenameFor,
 } from './export-png';
+import { cloneWithInlinedStyles, nodeToSvgDataUrl } from './export-png.rasterize';
 import type { SlideModule } from './sdk';
 
 function blankPage(): () => ReturnType<typeof createElement> {
@@ -77,6 +78,36 @@ describe('exportSlidePageAsPng cleanup', () => {
     const slide = makeSlide(1);
     await expect(exportSlidePageAsPng(slide, 'slide', 0)).rejects.toThrow(/boom/);
     expect(document.querySelectorAll('[data-png-export-host]').length).toBe(0);
+  });
+});
+
+describe('cloneWithInlinedStyles', () => {
+  it('neutralises the offscreen host positioning so the clone is not pushed out of the foreignObject viewport', () => {
+    const host = document.createElement('div');
+    Object.assign(host.style, { position: 'fixed', left: '-99999px', top: '0' });
+    host.appendChild(document.createElement('span'));
+    document.body.appendChild(host);
+    try {
+      const clone = cloneWithInlinedStyles(host);
+      expect(clone.style.position).toBe('static');
+      expect(clone.style.left).toBe('0px');
+      expect(clone.style.transform).toBe('none');
+      expect(clone.style.left).not.toContain('99999');
+    } finally {
+      host.remove();
+    }
+  });
+});
+
+describe('nodeToSvgDataUrl', () => {
+  it('renders at 2x density with a 1x viewBox so the canvas can draw down to the exact output size', () => {
+    const node = document.createElement('div');
+    const url = nodeToSvgDataUrl(node, 1920, 1080);
+    const svg = decodeURIComponent(url.replace(/^data:image\/svg\+xml;charset=utf-8,/, ''));
+    expect(svg).toContain('width="3840"');
+    expect(svg).toContain('height="2160"');
+    expect(svg).toContain('viewBox="0 0 1920 1080"');
+    expect(svg).toContain('<foreignObject');
   });
 });
 

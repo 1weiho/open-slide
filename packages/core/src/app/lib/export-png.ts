@@ -27,6 +27,7 @@ import { downloadBlob } from './download';
 import {
   cloneWithInlinedStyles,
   defaultRasteriseSvgToPng,
+  inlineBackgroundImages,
   inlineGeistFonts,
   inlineSameOriginImages,
   nodeToSvgDataUrl,
@@ -219,6 +220,7 @@ async function renderPageToPng(slide: SlideModule, pageIndex: number): Promise<B
     const clone = cloneWithInlinedStyles(host);
     await inlineGeistFonts(clone);
     await inlineSameOriginImages(clone);
+    await inlineBackgroundImages(clone);
     const svgUrl = nodeToSvgDataUrl(clone, CANVAS_WIDTH, CANVAS_HEIGHT);
     return await rasteriserImpl(svgUrl, CANVAS_WIDTH, CANVAS_HEIGHT);
   } finally {
