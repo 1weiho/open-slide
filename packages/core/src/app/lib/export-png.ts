@@ -48,6 +48,19 @@ const ANIMATION_TIMEOUT_MS = 15_000;
 const POLL_INTERVAL_MS = 100;
 const PNG_HOST_ATTR = 'data-png-export-host';
 
+type Rasteriser = (url: string, width: number, height: number) => Promise<Blob>;
+let rasteriserImpl: Rasteriser = (url, width, height) =>
+  defaultRasteriseSvgToPng(url, width, height);
+
+/**
+ * Test-only seam: swap the SVG-to-PNG rasteriser so unit tests can simulate
+ * success or failure without depending on a real `Image`/`canvas.toBlob`
+ * pipeline. Production code paths never call this.
+ */
+export function __setRasteriserForTesting(next: Rasteriser | null): void {
+  rasteriserImpl = next ?? ((url, w, h) => defaultRasteriseSvgToPng(url, w, h));
+}
+
 /**
  * Compute the per-page PNG filename, padding the 1-based page number to the
  * width of the total page count so file-system sort order matches slide order
@@ -128,7 +141,11 @@ export async function exportSlideAsPngZip(
  * bar advances as each page completes; zipping pins to 99 until the archive
  * is built, and `done` snaps to 100.
  */
-function computePercent(phase: PngExportProgress['phase'], current: number, total: number): number {
+export function computePercent(
+  phase: PngExportProgress['phase'],
+  current: number,
+  total: number,
+): number {
   if (phase === 'done') return 100;
   if (phase === 'zipping') return 99;
   if (total <= 0) return 0;
@@ -192,7 +209,7 @@ async function renderPageToPng(slide: SlideModule, pageIndex: number): Promise<B
     await inlineGeistFonts(clone);
     await inlineSameOriginImages(clone);
     const svgUrl = nodeToSvgDataUrl(clone, CANVAS_WIDTH, CANVAS_HEIGHT);
-    return await rasteriseSvgToPng(svgUrl, CANVAS_WIDTH, CANVAS_HEIGHT);
+    return await rasteriserImpl(svgUrl, CANVAS_WIDTH, CANVAS_HEIGHT);
   } finally {
     if (root) root.unmount();
     host.remove();
@@ -348,7 +365,7 @@ function nodeToSvgDataUrl(node: HTMLElement, width: number, height: number): str
  * trick `export-pdf.ts` uses so the PNG matches the PDF's perceived
  * sharpness on filtered / composited layers.
  */
-function rasteriseSvgToPng(url: string, width: number, height: number): Promise<Blob> {
+function defaultRasteriseSvgToPng(url: string, width: number, height: number): Promise<Blob> {
   return new Promise<Blob>((resolve, reject) => {
     const img = new Image();
     img.decoding = 'sync';
