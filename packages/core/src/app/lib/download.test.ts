@@ -10,7 +10,7 @@
 // @vitest-environment happy-dom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { downloadBlob } from './download';
+import { downloadBlob } from './download.ts';
 
 describe('downloadBlob', () => {
   const originalCreate = URL.createObjectURL;
