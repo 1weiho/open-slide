@@ -125,6 +125,11 @@ export const en: Locale = {
     imagePptxExportFailed: 'PPTX export failed',
     pdfExportSafariUnsupported:
       'Export as PDF is not supported on Safari. Please try a Chromium-based browser instead.',
+    exportCurrentPageAsPng: 'Export current slide as PNG',
+    exportAllPagesAsPng: 'Export all slides as PNG',
+    pngExportFailed: 'PNG export failed',
+    pngSafariBestEffort:
+      'PNG export is best-effort on Safari and may produce broken output. Try a Chromium-based browser for reliable results.',
     present: 'Present',
     presentMenuAria: 'Present options',
     presentInWindow: 'Play',
@@ -431,6 +436,14 @@ export const en: Locale = {
     hintNavigate: 'Navigate',
     hintSelect: 'Select',
     hintClose: 'Close',
+  },
+
+  pngToast: {
+    title: 'Exporting PNG',
+    processing: 'Processing page {current} of {total}',
+    rasterising: 'Rasterising page {current} of {total}',
+    zipping: 'Building archive…',
+    done: 'Done',
   },
 
   themeToggle: {

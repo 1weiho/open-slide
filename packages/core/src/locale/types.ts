@@ -125,6 +125,10 @@ export type Locale = {
     pdfExportFailed: string;
     imagePptxExportFailed: string;
     pdfExportSafariUnsupported: string;
+    exportCurrentPageAsPng: string;
+    exportAllPagesAsPng: string;
+    pngExportFailed: string;
+    pngSafariBestEffort: string;
     present: string;
     presentMenuAria: string;
     presentInWindow: string;
@@ -461,6 +465,16 @@ export type Locale = {
     hintNavigate: string;
     hintSelect: string;
     hintClose: string;
+  };
+
+  pngToast: {
+    title: string;
+    /** template: "Processing page {current} of {total}" */
+    processing: string;
+    /** template: "Rasterising page {current} of {total}" */
+    rasterising: string;
+    zipping: string;
+    done: string;
   };
 
   themeToggle: {
