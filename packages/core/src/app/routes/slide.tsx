@@ -7,6 +7,8 @@ import {
   FileCode2,
   FileImage,
   FileText,
+  Image,
+  Images,
   Link2,
   Loader2,
   Maximize,
@@ -55,6 +57,7 @@ import { NotesDrawer } from '../components/notes-drawer';
 import { OverviewGrid } from '../components/overview-grid';
 import { PdfProgressToast } from '../components/pdf-progress-toast';
 import { openPresenterWindow, Player } from '../components/player';
+import { PngProgressToast } from '../components/png-progress-toast';
 import { PptxProgressToast } from '../components/pptx-progress-toast';
 import { SlideCanvas } from '../components/slide-canvas';
 import { isDeckWarmed, markDeckWarmed, SlidePreloadLayer } from '../components/slide-preload-layer';
@@ -62,6 +65,7 @@ import { SlideTransitionLayer } from '../components/slide-transition-layer';
 import { type ThumbnailActions, ThumbnailRail } from '../components/thumbnail-rail';
 import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf, isSafari } from '../lib/export-pdf';
+import { exportSlideAsPngZip, exportSlidePageAsPng } from '../lib/export-png';
 import { exportSlideAsImagePptx } from '../lib/export-pptx';
 import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
 import type { SlideModule } from '../lib/sdk';
@@ -498,6 +502,50 @@ export function Slide() {
     }
   };
 
+  const exportPngPage = async () => {
+    if (!slide || exporting) return;
+    if (isSafari()) {
+      toast.message(t.slide.pngSafariBestEffort, { duration: 5000 });
+    }
+    setExporting(true);
+    try {
+      await exportSlidePageAsPng(slide, slideId, index);
+    } catch (err) {
+      console.error('[open-slide] png export failed', err);
+      toast.error(t.slide.pngExportFailed, { duration: 4000 });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const exportPngZip = async () => {
+    if (!slide || exporting) return;
+    if (isSafari()) {
+      toast.message(t.slide.pngSafariBestEffort, { duration: 5000 });
+    }
+    setExporting(true);
+    const toastId = `png-export-${slideId}`;
+    toast.custom(
+      () => (
+        <PngProgressToast
+          progress={{ phase: 'processing', current: 0, total: pages.length, percent: 0 }}
+        />
+      ),
+      { id: toastId, duration: Infinity },
+    );
+    try {
+      await exportSlideAsPngZip(slide, slideId, (p) => {
+        toast.custom(() => <PngProgressToast progress={p} />, { id: toastId, duration: Infinity });
+      });
+    } catch (err) {
+      console.error('[open-slide] png zip export failed', err);
+      toast.error(t.slide.pngExportFailed, { id: toastId, duration: 4000 });
+    } finally {
+      setExporting(false);
+      toast.dismiss(toastId);
+    }
+  };
+
   const exportMenuItems = (
     <>
       <DropdownMenuItem disabled={exporting} onClick={exportHtml}>
@@ -507,6 +555,14 @@ export function Slide() {
       <DropdownMenuItem disabled={exporting} onClick={exportPdf}>
         <FileText />
         {t.slide.exportAsPdf}
+      </DropdownMenuItem>
+      <DropdownMenuItem disabled={exporting} onClick={exportPngPage}>
+        <Image />
+        {t.slide.exportCurrentPageAsPng}
+      </DropdownMenuItem>
+      <DropdownMenuItem disabled={exporting} onClick={exportPngZip}>
+        <Images />
+        {t.slide.exportAllPagesAsPng}
       </DropdownMenuItem>
       <DropdownMenuSeparator />
       <DropdownMenuItem disabled={exporting} onClick={exportImagePptx}>
