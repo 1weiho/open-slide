@@ -4,7 +4,7 @@ import path from 'node:path';
 import fg from 'fast-glob';
 import { loadConfigFromFile, normalizePath, type Plugin, type ViteDevServer } from 'vite';
 import type { OpenSlideConfig } from '../config.ts';
-import { SLIDE_ID_RE } from '../editing/slide-ops.ts';
+import { countDefaultExportPagesInSource, SLIDE_ID_RE } from '../editing/slide-ops.ts';
 import { hasRecentWrite } from './recent-writes.ts';
 
 export type { OpenSlideConfig };
@@ -188,6 +188,44 @@ ${cases}
 }
 `;
   return { code, ignored };
+}
+
+/**
+ * Enumerate the deck ids and page counts the viewer would render.
+ *
+ * Reuses the exact disk-walk (`findSlides`) that feeds the
+ * `virtual:open-slide/slides` virtual module so the dev-server's
+ * `GET /__slides` endpoint (consumed by `open-slide export`) sees the same
+ * set of decks the viewer does — no ad-hoc parallel walk of `slidesDir`.
+ *
+ * Page counts come from parsing each deck's `export default [...]` via
+ * `countDefaultExportPagesInSource`; a deck whose source does not parse or
+ * whose default export is not an array literal is reported with `pages: 0`
+ * rather than silently dropped, so enumeration errors surface as visible
+ * zero-page decks rather than missing ones.
+ */
+export async function enumerateSlideIdsAndPages(
+  userCwd: string,
+  slidesDir: string,
+): Promise<Array<{ id: string; pages: number }>> {
+  const slidesRoot = path.resolve(userCwd, slidesDir);
+  const files = await findSlides(userCwd, slidesDir);
+  const entries = await Promise.all(
+    files.map(async (abs) => {
+      const id = toId(abs, slidesRoot);
+      let pages = 0;
+      try {
+        const src = await fs.readFile(abs, 'utf8');
+        const counted = countDefaultExportPagesInSource(src);
+        if (counted !== null) pages = counted;
+      } catch {
+        pages = 0;
+      }
+      return { id, pages };
+    }),
+  );
+  entries.sort((a, b) => a.id.localeCompare(b.id));
+  return entries;
 }
 
 export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {

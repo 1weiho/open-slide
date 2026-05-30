@@ -16,6 +16,7 @@ import {
 } from '../../editing/slide-ops.ts';
 import { readManifest, writeManifest } from '../../files/folders.ts';
 import { validateMutationRequest } from '../../http/request-guard.ts';
+import { enumerateSlideIdsAndPages } from '../open-slide-plugin.ts';
 import { type ApiContext, json, readBody } from './context.ts';
 
 // PUT    /__slides/:id/reorder            reorder pages { order: number[] }
@@ -34,6 +35,15 @@ export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): voi
     const method = req.method ?? 'GET';
 
     try {
+      if (method === 'GET' && (url.pathname === '/' || url.pathname === '')) {
+        // Read-only deck enumeration backing the `open-slide export` CLI. The
+        // CLI fetches this against an in-process dev server so it sees exactly
+        // the decks (and page counts) the viewer's `virtual:open-slide/slides`
+        // virtual module would expose — never a parallel disk walk.
+        const entries = await enumerateSlideIdsAndPages(ctx.userCwd, ctx.slidesDir);
+        return json(res, 200, entries);
+      }
+
       const reorderMatch = url.pathname.match(/^\/([^/]+)\/reorder$/);
       if (reorderMatch && method === 'PUT') {
         const requestCheck = validateMutationRequest(req, { requireJsonBody: true });
