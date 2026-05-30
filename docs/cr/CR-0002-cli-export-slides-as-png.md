@@ -32,11 +32,19 @@ pipeline cannot be reused. Using the real browser via Playwright also sidesteps
 the pixel-fidelity caveats documented in CR-0001 (advanced CSS, blend modes,
 filters), because the browser itself does the painting.
 
-To keep `@open-slide/core` shippable as a lean npm package, **Playwright is an
-optional / dev-only dependency**, never bundled into the client runtime. The
-exporter degrades gracefully with a clear, actionable install message when
-Playwright is not present, mirroring Slidev's `playwright-chromium`
-optional-dependency pattern (`slidev export --format png`).
+To keep `@open-slide/core` shippable as a lean npm package, **Playwright is a
+`devDependency` only** of `packages/core`, never bundled into the client runtime
+and never installed transitively for end users of the published package. This
+means the "Playwright not installed" path is the **expected default** for
+end-user installs of the published CLI — not a rare edge case — so the
+subcommand MUST preflight-check for Playwright and exit with a clear non-zero
+code and a copy-pasteable install instruction when it is absent. We follow
+Slidev's `playwright-chromium` precedent in spirit (a clear, actionable install
+prompt) but deliberately diverge on packaging: Slidev uses an
+`optionalDependencies` entry; open-slide uses a `devDependency` because export
+is a contributor/CI tool, not an end-user runtime feature, and a `devDependency`
+gives the smallest possible install footprint for the 99% of consumers who
+never run `open-slide export`.
 
 ## Motivation and Background
 
@@ -194,22 +202,37 @@ flowchart TD
 3. The subcommand **MUST** exit non-zero with a clear, single-paragraph,
    actionable message when neither `--slide` nor `--all` is provided, telling
    the user which flag to pass.
-4. The subcommand **MUST** detect whether the optional Playwright dependency is
-   importable (via a dynamic `import('playwright')` or
-   `import('playwright-chromium')` inside a `try/catch`) and **MUST** exit with
-   a non-zero status and a single-paragraph install message
+4. The subcommand **MUST** preflight-check whether Playwright is importable
+   (via a dynamic `import('playwright-chromium')` inside a `try/catch`) **before**
+   booting the Vite dev server or doing any other work. Because Playwright is a
+   `devDependency` of `packages/core` (FR-5, NFR-2), this preflight failing is
+   the **expected default path for end users of the published CLI**, not a rare
+   edge case. On failure the subcommand **MUST** exit with a non-zero status
+   (code 2 per FR-13) and a single-paragraph, copy-pasteable install message
    (`slide.pngCliPlaywrightMissing`-equivalent prose, hard-coded in
-   `cli/export.ts` because CLI output is not locale-routed) when it is not.
+   `cli/export.ts` because CLI output is not locale-routed) naming both the
+   `pnpm add -D playwright-chromium` install command **and** the
+   `npx playwright install chromium` browser-download command. The message
+   **MUST NOT** be a stack trace.
 5. The subcommand **MUST NOT** import Playwright at the top level of any module
    that is part of the runtime bundle, and **MUST NOT** add Playwright to
-   `packages/core`'s `dependencies`. Playwright **MUST** appear only under
-   `optionalDependencies` or `devDependencies` in
-   `packages/core/package.json`.
+   `packages/core`'s `dependencies` **or** `optionalDependencies`. Playwright
+   **MUST** appear only under `devDependencies` in `packages/core/package.json`,
+   so it is installed for workspace contributors and CI but **not** for end
+   users of the published `@open-slide/core` package.
 6. The subcommand **MUST** boot a Vite dev server in-process using the same
    `createViteConfig({ userCwd: process.cwd() })` + `createServer(config)`
    pattern as `cli/dev.ts`, on `127.0.0.1`, on an ephemeral port unless
    `--port` is provided. The subcommand **MUST NOT** require the user to have
    `open-slide dev` already running.
+6a. The subcommand **MUST** enumerate available decks (and their page counts)
+   by querying the in-process Vite dev server's `/__slides` API — the same
+   read-only endpoint the viewer itself uses to list and navigate decks. The
+   subcommand **MUST NOT** walk `slidesDir` from disk via `node:fs` as its
+   primary enumeration source: the dev server is the single source of truth
+   for "which decks compile and what pages they have", and using it ensures a
+   deck that fails to build is surfaced as an enumeration error rather than a
+   broken render.
 7. Each rendered PNG **MUST** be exactly `CANVAS_WIDTH` × `CANVAS_HEIGHT`
    (1920×1080), enforced via Playwright's viewport size **and** the
    `clip: { x: 0, y: 0, width: 1920, height: 1080 }` parameter passed to
@@ -262,11 +285,15 @@ flowchart TD
    Helpers (filename padding, slide enumeration, ready-flag waiting) **MAY**
    be split into sibling files in the same `cli/export.*` namespace if the
    line count is exceeded.
-2. This CR **MUST NOT** add any new entry under `dependencies` in
-   `packages/core/package.json`. Playwright **MUST** be added under
-   `optionalDependencies` (preferred, so `npm install --no-optional` users
-   never pull it) or `devDependencies` (acceptable for the workspace's own
-   dev loop). The CR **MUST** record which of the two was chosen and why.
+2. This CR **MUST NOT** add any new entry under `dependencies` or
+   `optionalDependencies` in `packages/core/package.json`. Playwright
+   (`playwright-chromium`) **MUST** be added under `devDependencies` only, so
+   end users of the published `@open-slide/core` package never pull it
+   transitively. The trade-off — that running `open-slide export` from a
+   published install requires a one-time `pnpm add -D playwright-chromium` plus
+   `npx playwright install chromium` — is acceptable because export is a
+   contributor/CI tool, not an end-user runtime feature, and the preflight
+   message (FR-4) makes that one-time setup self-service.
 3. The subcommand **SHOULD** complete a 10-page deck export in under 30
    seconds on a 2024-class laptop, measured locally during review. Slower runs
    in CI environments without Chromium pre-installed are acceptable.
@@ -281,9 +308,10 @@ flowchart TD
 7. The subcommand **MUST** print its full help text via `--help` listing every
    flag with a short example, matching Commander's existing rendering for the
    other subcommands.
-8. The optional-Playwright-not-installed message **MUST** include the exact
-   `pnpm add -D playwright-chromium` (or equivalent `npm` / `yarn`) command,
-   so the user can copy-paste it. The message **MUST NOT** be a stack trace.
+8. The Playwright-not-installed message **MUST** include the exact
+   `pnpm add -D playwright-chromium` (or equivalent `npm` / `yarn`) command
+   **and** the `npx playwright install chromium` browser-download command, so
+   the user can copy-paste both. The message **MUST NOT** be a stack trace.
 
 ## Affected Components
 
@@ -302,14 +330,20 @@ flowchart TD
   after `waitForFonts`, `waitForDataWaitfor`, and `isFrameAnimationSettled`
   have all resolved for the current page. This **MUST** be a no-op when the
   query param is absent so the interactive viewer is unaffected.
-* `packages/core/src/app/lib/print-ready.ts` — unchanged unless a small helper
-  (e.g. a unified `waitForPageReady(frame)` that wraps the three existing
-  predicates) is extracted; if extracted, the in-viewer PNG/PDF exporters
-  **MUST** be updated to call it too, to avoid two readiness implementations.
-* `packages/core/package.json` — add `playwright-chromium` (or `playwright`)
-  to `optionalDependencies` (preferred) **or** `devDependencies` (acceptable
-  for the workspace's own dev loop). Decision recorded in the changeset
-  prose.
+* `packages/core/src/app/lib/print-ready.ts` — extract a new
+  `waitForPageReady(frame)` helper that composes `waitForFonts`,
+  `waitForDataWaitfor`, and `isFrameAnimationSettled` into the single canonical
+  "ready to capture" gate. This helper becomes the source of truth used by
+  the headless `?export=png` path **and** by the in-viewer PNG (CR-0001) and
+  PDF exporter call sites, which **MUST** be migrated to it in the same PR.
+* In-viewer PNG and PDF exporter call sites (the places under
+  `packages/core/src/app/` that currently inline `waitForFonts` +
+  `waitForDataWaitfor` + `isFrameAnimationSettled` before a capture) — migrate
+  to `waitForPageReady`.
+* `packages/core/package.json` — add `playwright-chromium` under
+  `devDependencies` only (NOT `dependencies`, NOT `optionalDependencies`), so
+  end users of the published package do not pull it transitively. The
+  changeset prose names this explicitly.
 * `.changeset/<slug>.md` — minor bump for `@open-slide/core` with a
   one-line, present-tense, user-perspective description.
 * `docs/cr/CR-0002-cli-export-slides-as-png.md` — this file.
@@ -378,9 +412,27 @@ flowchart TD
   (b) explicit `playwright-chromium` package that ships only the Chromium
   bits (smaller install for users who only need PNGs), (c) better
   cross-platform reliability for headless screenshots in CI, and (d)
-  precedent: Slidev's `slidev export` already uses Playwright (specifically
-  `playwright-chromium` as an optional dep), giving authors a familiar
-  install story.
+  precedent: Slidev's `slidev export` already uses `playwright-chromium`,
+  giving authors a familiar install story. Note: Slidev declares it as an
+  `optionalDependencies` entry; open-slide deliberately diverges and declares
+  it as a `devDependency` only (see next bullet).
+* **`optionalDependencies` for `playwright-chromium`** (the Slidev pattern).
+  Rejected. `optionalDependencies` still attempts to install the package by
+  default, which adds ~150 MB of disk + download cost to every end user of
+  the published `@open-slide/core` package, even though the vast majority will
+  never run `open-slide export`. Choosing `devDependencies` instead keeps the
+  end-user install footprint at zero overhead and pushes the install cost to
+  the small set of users who actually opt in to the export workflow, guided by
+  the preflight message in FR-4 / NFR-8.
+* **`dependencies` (hard runtime dep) for `playwright-chromium`.** Hard
+  rejected for the same reason as bundling Chromium directly: ~150 MB of dep
+  weight for a feature most users will never call.
+* **Walking `slidesDir` from disk via `node:fs` for slide enumeration.**
+  Rejected. The in-process Vite dev server already exposes `/__slides`, which
+  is what the viewer itself uses; reading from it guarantees the CLI sees the
+  same set of decks (and page counts) the viewer would render, and surfaces
+  compile errors as enumeration errors rather than as broken renders. A disk
+  walk would silently include decks that fail to compile.
 * **Bundling Chromium with `@open-slide/core` directly.** Hard rejected.
   Chromium is ~150 MB and would inflate every `npm install` for users who
   never touch this subcommand. CLAUDE.md's "core runtime ships to users;
@@ -410,14 +462,19 @@ flowchart TD
 * Authors and CI pipelines gain a scriptable PNG export with one command.
 * The in-viewer PNG export from CR-0001 is unchanged. Users who never run
   `open-slide export` see no behavioural change.
-* Users who do run it pay a one-time install cost for `playwright-chromium`
-  (the first time they run the command), with a clear, copy-pasteable error
-  message guiding them through it.
+* Users of the published `@open-slide/core` package who do run it pay a
+  one-time install cost for `playwright-chromium` (the first time they run
+  the command), because Playwright is a `devDependency` only and is not
+  installed transitively for end users. The preflight message guides them
+  through both `pnpm add -D playwright-chromium` and
+  `npx playwright install chromium`. This is the expected default path, not
+  an error condition.
 
 ### Technical Impact
 
-* No new entry under `dependencies` in `packages/core/package.json`. Install
-  size for non-export users is unchanged.
+* No new entry under `dependencies` or `optionalDependencies` in
+  `packages/core/package.json`; `playwright-chromium` is `devDependencies`
+  only. Install size for end users of the published package is unchanged.
 * New small additive code path in the viewer to surface a readiness signal
   under `?export=png`. The path is gated on the query param and is a no-op
   for the interactive viewer.
@@ -447,9 +504,9 @@ Sequenced so each phase is independently reviewable.
    returns either the imported `{ chromium }` namespace or `null`. On `null`,
    the subcommand prints the single-paragraph install instructions and exits
    with code `2`.
-4. Add the optional dependency to `packages/core/package.json` under
-   `optionalDependencies` (preferred) and capture the decision in the
-   changeset.
+4. Add `playwright-chromium` to `packages/core/package.json` under
+   `devDependencies` only (NOT `dependencies`, NOT `optionalDependencies`),
+   and capture this packaging decision in the changeset prose.
 
 **Affected components:** `packages/core/src/cli/run.ts`,
 `packages/core/src/cli/export.ts` (new),
@@ -469,13 +526,19 @@ Sequenced so each phase is independently reviewable.
       `data-os-export-ready="true"` to the page frame element.
 2. Ensure the path is a strict no-op when the query param is absent (the
    interactive viewer must not pay any cost or render any extra DOM).
-3. Optionally extract a unified `waitForPageReady(frame)` helper into
-   `packages/core/src/app/lib/print-ready.ts` so the in-viewer PNG/PDF
-   exporters and the headless path call the same predicate.
+3. Extract a unified `waitForPageReady(frame)` helper into
+   `packages/core/src/app/lib/print-ready.ts` that composes the three existing
+   predicates (`waitForFonts`, `waitForDataWaitfor`, `isFrameAnimationSettled`)
+   into a single canonical "page is ready to capture" gate. The `?export=png`
+   path **MUST** call this helper; CR-0001's in-viewer PNG exporter and the
+   existing in-viewer PDF exporter **MUST** also be updated to call it, so
+   readiness logic lives in exactly one place across all three capture paths.
 
 **Affected components:** `packages/core/src/app/routes/slide.tsx` or
 `packages/core/src/app/components/slide-canvas.tsx`,
-`packages/core/src/app/lib/print-ready.ts` (optional helper extraction).
+`packages/core/src/app/lib/print-ready.ts` (extract `waitForPageReady`),
+plus the in-viewer PNG and PDF exporter call sites that currently inline the
+three predicates (migrate them to the helper).
 
 ### Phase 3: Headless render loop
 
@@ -484,10 +547,12 @@ Sequenced so each phase is independently reviewable.
    `await server.listen(0, '127.0.0.1')` (or the explicit `--port`), and
    returns `{ server, port }`. Mirrors `cli/dev.ts` but binds to the
    loopback interface and an ephemeral port.
-2. Implement `enumerateSlides()` that lists deck IDs by reading from the
-   server's known slide manifest path (`/__slides` is the same API the viewer
-   already uses for reorder/duplicate operations — confirm the right
-   read-only endpoint or read the filesystem under `slidesDir` directly).
+2. Implement `enumerateSlides()` that lists deck IDs and page counts by
+   issuing a read-only HTTP GET to the in-process dev server's `/__slides`
+   API — the same endpoint the viewer itself uses (FR-6a). Disk-walking
+   `slidesDir` is **not** an acceptable substitute here: the dev server is
+   the single source of truth and surfaces compile errors as enumeration
+   errors.
 3. Implement `renderOne(page, slideId, pageIndex, totalPages, outDir)` that:
    1. Navigates `page.goto('http://127.0.0.1:<port>/s/<slideId>?page=<n>&export=png')`.
    2. Awaits the readiness signal via
@@ -570,7 +635,7 @@ render as a manual / e2e verification step against `apps/demo`.
 | `packages/core/src/cli/export.test.ts` | `filename for headless export uses page-count-width zero padding` | Verifies the filename helper matches CR-0001's convention (FR-8): produces `slide-p1.png` for a 9-page deck (width 1, no padding) and `slide-p001.png` for a 100-page deck (width 3). | `slideId = 'slide'`, `pageIndex = 0`, `total = 9` and `total = 100` | `'slide-p1.png'` (width 1) and `'slide-p001.png'` (width 3). |
 | `packages/core/src/cli/export.test.ts` | `flag preflight rejects --page without --slide with exit code 2` | Calls the CLI flag preflight with `{ page: 1 }` and asserts it throws a typed preflight error mapped to exit code 2 (FR-13). | `{ page: 1, all: false, slide: undefined }` | Preflight error mentioning `--page requires --slide`; mapped exit code 2. |
 | `packages/core/src/cli/export.test.ts` | `flag preflight rejects --slide and --all together with exit code 2` | Mutually exclusive flags (FR-2) produce a preflight error mapped to exit code 2. | `{ slide: 'intro', all: true }` | Preflight error; mapped exit code 2. |
-| `packages/core/src/cli/export.test.ts` | `missing Playwright produces a single-paragraph install message and exit code 2` | Mocks the dynamic import to throw `ERR_MODULE_NOT_FOUND`, captures stderr, and asserts the output contains the exact `pnpm add -D playwright-chromium` install hint and exits with code 2 (FR-4, NFR-8). | Mocked `tryImportPlaywright()` returning `null`. | stderr includes `pnpm add -D playwright-chromium`; process exit code 2. |
+| `packages/core/src/cli/export.test.ts` | `missing Playwright produces a single-paragraph install message and exit code 2 (the default end-user path)` | Mocks the dynamic import to throw `ERR_MODULE_NOT_FOUND`, captures stderr, and asserts the output contains both the `pnpm add -D playwright-chromium` install hint and the `npx playwright install chromium` browser-download hint, exits with code 2, and confirms no dev server boot was attempted (FR-4, NFR-8, AC-4). This is the production-default path for end-user installs of the published package, not an edge case. | Mocked `tryImportPlaywright()` returning `null`. | stderr includes `pnpm add -D playwright-chromium` and `npx playwright install chromium`; process exit code 2; no Vite server started. |
 | `packages/core/src/cli/export.test.ts` | `atomic write writes to .tmp then renames` | Verifies the atomic-write helper writes to `<file>.tmp` and renames on success, and removes the `.tmp` on failure (FR-11). | Mocked `fs.promises` with a successful write and a failing write. | On success: one `writeFile` to `*.tmp` and one `rename` to the final name. On failure: `*.tmp` cleaned up; final file never created. |
 | `packages/core/src/cli/export.test.ts` | `slide/page resolution picks one page for --slide + --page` | The resolver under `{ slide: 'intro', page: 2, all: false }` returns exactly one `(slideId, pageIndex)` tuple with `pageIndex === 1` (0-based internally) and the slide's total page count attached. | Mocked enumerator returning `intro: 5 pages`, `outro: 3 pages`. | `[{ slideId: 'intro', pageIndex: 1, total: 5 }]`. |
 | `packages/core/src/cli/export.test.ts` | `slide/page resolution expands --all to every page of every deck` | Asserts cross-product expansion. | Same mocked enumerator. | 8 tuples total: 5 from `intro`, 3 from `outro`, in declared order. |
@@ -624,15 +689,19 @@ Then the command exits with code 0
   And it has pixel dimensions 1920 × 1080
 ```
 
-### AC-4: Missing Playwright produces a copy-pasteable install message
+### AC-4: Missing Playwright produces a copy-pasteable install message (the default end-user path)
 
 ```gherkin
 Given the workspace has `playwright-chromium` uninstalled
+  And the user has installed `@open-slide/core` from npm without dev deps
+   (the expected default for end-user installs, since Playwright is a devDependency only)
 When the user runs `open-slide export --all`
 Then the command exits with code 2
   And stderr contains the literal string `pnpm add -D playwright-chromium`
+  And stderr contains the literal string `npx playwright install chromium`
   And stderr is a single paragraph (not a stack trace)
   And no Vite dev server is started
+  And no Chromium process is launched
 ```
 
 ### AC-5: Mutually exclusive and dependent flag misuse exits 2
@@ -694,8 +763,8 @@ Given the branch contains the full implementation of this CR
 When `pnpm --filter @open-slide/core build` completes
 Then `packages/core/dist/index.js` contains no string `playwright`
   And the published package's `dependencies` contain no `playwright*` entry
-  And `optionalDependencies` (or `devDependencies`) contain exactly one
-   `playwright-chromium` entry
+  And the published package's `optionalDependencies` contain no `playwright*` entry
+  And `devDependencies` contains exactly one `playwright-chromium` entry
 ```
 
 ### AC-11: Biome and TypeScript remain clean
@@ -713,8 +782,8 @@ Given the branch contains the full implementation of this CR
 When the maintainer inspects `.changeset/`
 Then a new markdown file exists with a `minor` bump for `@open-slide/core`
   And the description is a single line, present-tense, user-perspective sentence
-  And the prose names whether Playwright is under `optionalDependencies` or
-   `devDependencies`
+  And the prose explicitly states Playwright is a `devDependency` only (not
+   `dependencies`, not `optionalDependencies`)
 ```
 
 ## Quality Standards Compliance
@@ -777,13 +846,20 @@ ls ./apps/demo/tmp-png   # PNGs land here; open one and eyeball at 100 %
 
 ### Risk 1: Playwright is not installed in the user's environment
 
-**Likelihood:** high (especially first-time use, and CI environments without
-the dep cached)
+**Likelihood:** very high — this is the **expected default** for end users of
+the published `@open-slide/core` package, because Playwright is a
+`devDependency` only (FR-5, NFR-2). It is also the default in any clean CI
+environment without the dep cached.
 **Impact:** medium
-**Mitigation:** FR-4 / NFR-8 / AC-4 codify a single-paragraph,
-copy-pasteable install message and a deterministic exit code 2 so CI logs
-are diagnosable. The detection is a dynamic `import()` in a `try/catch`, so
-the subcommand never fails with a raw module-resolution stack trace.
+**Mitigation:** Because this is a first-class, well-trodden path (not an edge
+case), FR-4 / NFR-8 / AC-4 codify a single-paragraph, copy-pasteable install
+message that names both `pnpm add -D playwright-chromium` and
+`npx playwright install chromium`, and a deterministic exit code 2 so CI
+logs are diagnosable. The detection is a dynamic `import()` in a `try/catch`
+that runs **before** any other work (no Vite boot, no Chromium launch), so
+the subcommand never fails with a raw module-resolution stack trace and
+never leaves state behind. The unit test in AC-4 / the test matrix exercises
+this path explicitly because it is the most common one in production use.
 
 ### Risk 2: CI runs without Chromium system libraries (slim Docker images)
 
@@ -802,12 +878,14 @@ CI-image fix, not a per-run cost.
 **Likelihood:** low
 **Impact:** medium
 **Mitigation:** The readiness signal awaited by Playwright is set by the
-*same* predicates (`waitForFonts`, `waitForDataWaitfor`,
-`isFrameAnimationSettled`) the in-viewer exporters already trust. A
-broken-`data-waitfor` page falls through to the per-page timeout warning
-(FR-10 / AC-8) so the run still produces a PNG and surfaces the issue in
-the log. Extracting `waitForPageReady` into `print-ready.ts` (Phase 2) keeps
-the predicate canonical across the in-viewer and headless paths.
+shared `waitForPageReady(frame)` helper extracted into `print-ready.ts` in
+Phase 2, which composes the same predicates (`waitForFonts`,
+`waitForDataWaitfor`, `isFrameAnimationSettled`) the in-viewer exporters
+already trust. Phase 2 migrates the in-viewer PNG and PDF exporters to the
+same helper, so there is exactly one readiness implementation across all
+capture paths. A broken-`data-waitfor` page falls through to the per-page
+timeout warning (FR-10 / AC-8) so the run still produces a PNG and surfaces
+the issue in the log.
 
 ### Risk 4: Large decks exhaust memory / open too many pages
 
@@ -831,11 +909,13 @@ servers can coexist.
 
 **Likelihood:** low
 **Impact:** medium
-**Mitigation:** If Phase 2's `waitForPageReady(frame)` extraction is taken,
-the in-viewer PNG (CR-0001) and PDF exporters are migrated to the helper in
-the same PR, and the existing in-viewer smoke step from CR-0001 is re-run.
-If the extraction is skipped, the headless path simply duplicates the three
-calls — no regression risk.
+**Mitigation:** Phase 2's `waitForPageReady(frame)` extraction is mandatory
+(see Phase 2 / Affected Components). The in-viewer PNG (CR-0001) and PDF
+exporters are migrated to the helper in the same PR, and the existing
+in-viewer smoke step from CR-0001 is re-run as part of Phase 4 verification
+to confirm no regression. Because the helper composes the *same* three
+predicates the in-viewer exporters already call, the migration is a
+mechanical refactor, not a behaviour change.
 
 ### Risk 7: Cross-origin or filesystem-asset paths render as broken images
 
@@ -849,10 +929,11 @@ be inlined; the browser fetches each asset live from the dev server.
 
 ## Dependencies
 
-* **No new runtime dependency in `@open-slide/core`'s `dependencies`.**
-  Playwright is added under `optionalDependencies` (preferred) or
-  `devDependencies`, never `dependencies`. The runtime bundle remains
-  unchanged.
+* **No new runtime dependency in `@open-slide/core`'s `dependencies` or
+  `optionalDependencies`.** `playwright-chromium` is added under
+  `devDependencies` only, never `dependencies`, never
+  `optionalDependencies`. The runtime bundle and the end-user install
+  footprint of the published package remain unchanged.
 * **Conceptually builds on CR-0001** for the slide enumeration model and the
   filename convention, but the render path is independent (server-side
   Playwright vs. client-side `<foreignObject>` rasterizer). The two paths
@@ -878,12 +959,19 @@ signal, and captures `page.screenshot()` once per page at the canonical
 1920×1080 canvas size, writing files under `{slideId}-p{N}.png` to match
 CR-0001's convention**.
 
-Playwright is **opt-in**: registered under `optionalDependencies` (or
-`devDependencies`) and never imported at the top level of any runtime module,
-so `@open-slide/core` ships to users at the same install size as before. When
-the dep is missing, the subcommand exits with a single-paragraph,
-copy-pasteable install message — mirroring Slidev's `playwright-chromium`
-precedent — rather than a stack trace.
+Playwright is **opt-in**: registered under `devDependencies` only (NOT
+`dependencies`, NOT `optionalDependencies`) and never imported at the top level
+of any runtime module, so `@open-slide/core` ships to end users at the same
+install size as before with zero Playwright-related overhead. This is a
+deliberate divergence from Slidev's `optionalDependencies` precedent: for
+open-slide, export is a contributor/CI tool, not an end-user runtime feature,
+and the smallest possible end-user install footprint wins over default
+auto-install. The consequence — that running `open-slide export` from a
+published install requires a one-time `pnpm add -D playwright-chromium` plus
+`npx playwright install chromium` — is the **expected default path** for
+end-user installs, and FR-4 / NFR-8 / AC-4 make that one-time setup
+self-service via a single-paragraph, copy-pasteable preflight message rather
+than a stack trace.
 
 This decision captures the **Future Enhancement** explicitly deferred in
 CR-0001 (the pixel-perfect Playwright path), keeps the dev-server HTTP
@@ -913,23 +1001,38 @@ in `CLAUDE.md` without compromise.
 ## Open Questions
 
 1. **`optionalDependencies` vs. `devDependencies` for `playwright-chromium`.**
-   Leaning: `optionalDependencies`. Rationale: it installs by default but is
-   not a hard failure under `npm install --no-optional`, which is the most
-   user-friendly default for end users while still letting CI opt out.
-   Recorded here for the implementor to confirm against the maintainer's
-   preference; either choice satisfies NFR-2.
-2. **Slide enumeration source.** Two options: read the slide manifest from
-   the running dev server (the same `/__slides` API the viewer uses) versus
-   walking `slidesDir` on disk via `node:fs`. Leaning: read from the dev
-   server, because it already knows which slides are valid and would catch a
-   slide that fails to compile. Implementor MAY choose disk walk if it
-   simplifies error handling; either way the resolved list MUST match what
-   the viewer would render.
-3. **Whether to extract `waitForPageReady(frame)` in Phase 2.** Leaning:
-   yes. Keeps the readiness predicate canonical across in-viewer PNG/PDF
-   exporters and the new headless path. Implementor MAY defer if the
-   extraction touches more files than expected, but in that case the
-   headless path MUST duplicate the three calls verbatim.
-4. **Whether to support `--concurrency N` in this CR.** No — explicitly
-   out of scope. The first cut is sequential; parallelism comes after real
-   profiling against real decks.
+   **Resolved.** Decision: `devDependencies` only. This is a deliberate
+   divergence from the CR's original leaning (and from Slidev's
+   `optionalDependencies` precedent). Rationale: export is a contributor/CI
+   tool, not an end-user runtime feature, so the smallest possible end-user
+   install footprint wins over default auto-install. The consequence — that
+   running `open-slide export` from a published install requires a one-time
+   `pnpm add -D playwright-chromium` plus `npx playwright install chromium` —
+   is the **expected default path** for end-user installs, and is made
+   self-service by the preflight message in FR-4 / NFR-8 / AC-4. Propagated
+   into FR-5, NFR-2, Affected Components, Alternatives (added an explicit
+   "rejected `optionalDependencies`" bullet), Risk 1 (likelihood raised to
+   "very high" — this is the default path, not an edge case), the test matrix
+   (the missing-Playwright row is now a first-class test), AC-4, AC-10, AC-12,
+   and Decision Outcome.
+2. **Slide enumeration source.** **Resolved.** Decision: read from the
+   running dev server's `/__slides` API (the same endpoint the viewer uses).
+   Locked into FR-6a as a MUST, with disk-walking explicitly disallowed as
+   the primary enumeration source. The disk-walk alternative is recorded
+   under Alternative Approaches Considered as rejected. Phase 3 step 2 and
+   the Affected Components / Test Strategy were updated accordingly.
+3. **Whether to extract `waitForPageReady(frame)` in Phase 2.** **Resolved.**
+   Decision: yes, extract it; the helper is canonical across the in-viewer
+   PNG/PDF exporters and the new headless `?export=png` path. Phase 2 now
+   requires the extraction (not optional), Affected Components lists
+   `print-ready.ts` as edited (no longer "optional helper extraction") and
+   names the in-viewer PNG/PDF exporter call sites as migration targets, and
+   Risk 6's mitigation reflects that the migration is mandatory and verified
+   by Phase 4's smoke step.
+4. **Whether to support `--concurrency N` in this CR.** **Resolved.** No —
+   explicitly out of scope, confirmed. The first cut is sequential render
+   only. `--concurrency N` remains documented under Future Enhancements as a
+   follow-up once real-deck profiling exists.
+
+**Unresolved (0):** all four open questions are resolved; no items remain
+for human decision.
