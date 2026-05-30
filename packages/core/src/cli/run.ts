@@ -171,6 +171,18 @@ export async function run(argv: string[]): Promise<void> {
         parsePositiveInt('timeout'),
       ),
     )
+    .addHelpText(
+      'after',
+      `
+Examples:
+  $ open-slide export --all                       # every page of every deck to ./png-export
+  $ open-slide export --slide intro               # every page of one deck
+  $ open-slide export --slide intro --page 2      # a single page of one deck
+  $ open-slide export --all --out ./tmp-png       # custom output directory
+  $ open-slide export --all --port 5174           # pin the ephemeral dev-server port
+  $ open-slide export --all --timeout 30000       # raise per-page readiness timeout to 30s
+`,
+    )
     .action(async (flags: ExportCliFlags) => {
       const { exportCommand } = await import('./export.ts');
       await exportCommand(flags);

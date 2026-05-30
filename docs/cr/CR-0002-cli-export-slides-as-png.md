@@ -315,8 +315,9 @@ flowchart TD
 3. The subcommand **SHOULD** complete a 10-page deck export in under 30
    seconds on a 2024-class laptop, measured locally during review. Slower runs
    in CI environments without Chromium pre-installed are acceptable.
-4. The new code **MUST** pass `pnpm check` (Biome) and `pnpm typecheck` with
-   zero warnings.
+4. The new code **MUST** pass `pnpm check` (Biome) and `pnpm typecheck`
+   without introducing any new warnings. Pre-existing warnings in files
+   untouched by this CR are out of scope (matches CR-0001's convention).
 5. The change **MUST** include a Changeset entry against `@open-slide/core`
    with a single-line, user-perspective description per `CLAUDE.md`. The bump
    **MUST** be `minor` (new public CLI surface).
@@ -351,13 +352,26 @@ flowchart TD
 * `packages/core/src/app/lib/print-ready.ts` — extract a new
   `waitForPageReady(frame)` helper that composes `waitForFonts`,
   `waitForDataWaitfor`, and `isFrameAnimationSettled` into the single canonical
-  "ready to capture" gate. This helper becomes the source of truth used by
-  the headless `?export=png` path **and** by the in-viewer PNG (CR-0001) and
-  PDF exporter call sites, which **MUST** be migrated to it in the same PR.
-* In-viewer PNG and PDF exporter call sites (the places under
-  `packages/core/src/app/` that currently inline `waitForFonts` +
-  `waitForDataWaitfor` + `isFrameAnimationSettled` before a capture) — migrate
-  to `waitForPageReady`.
+  "ready to capture" gate for single-frame captures. This helper becomes the
+  source of truth used by the headless `?export=png` path **and** by the
+  in-viewer PNG (CR-0001) exporter, both of which gate a single frame at a
+  time. The in-viewer PDF exporter mounts **all** pages at once and runs a
+  parallel per-frame settle poll to drive its progress bar, so it cannot
+  collapse into a single per-frame `waitForPageReady(frame)` call without
+  losing observable progress reporting. Instead, the PDF exporter **MUST**
+  source its readiness primitives (the `waitForFonts`, `waitForDataWaitfor`,
+  and `isFrameAnimationSettled` exports, plus the `ANIMATION_TIMEOUT_MS` and
+  `POLL_INTERVAL_MS` constants) from `print-ready.ts` as the single source of
+  truth, while keeping its parallel multi-frame orchestration in
+  `export-pdf.ts`. The end state is: one set of readiness predicates and
+  timing constants in `print-ready.ts`, one `waitForPageReady(frame)` wrapper
+  used by every single-frame capture path, and one multi-frame parallel
+  poll in `export-pdf.ts` that consumes the same predicates.
+* In-viewer PNG exporter call site (the places under
+  `packages/core/src/app/` that previously inlined `waitForFonts` +
+  `waitForDataWaitfor` + `isFrameAnimationSettled` before a single-frame
+  capture) — migrate to `waitForPageReady`. The in-viewer PDF exporter
+  remains on the unwrapped primitives per the rationale above.
 * `packages/core/src/vite/routes/slides.ts` — **edited**: add a new
   read-only `GET /__slides` handler returning a JSON array of
   `{ id, pages }` (deck id + page count). This file currently only registers
@@ -563,16 +577,26 @@ Sequenced so each phase is independently reviewable.
 3. Extract a unified `waitForPageReady(frame)` helper into
    `packages/core/src/app/lib/print-ready.ts` that composes the three existing
    predicates (`waitForFonts`, `waitForDataWaitfor`, `isFrameAnimationSettled`)
-   into a single canonical "page is ready to capture" gate. The `?export=png`
-   path **MUST** call this helper; CR-0001's in-viewer PNG exporter and the
-   existing in-viewer PDF exporter **MUST** also be updated to call it, so
-   readiness logic lives in exactly one place across all three capture paths.
+   into a single canonical "page is ready to capture" gate for single-frame
+   captures. The `?export=png` path **MUST** call this helper; CR-0001's
+   in-viewer PNG exporter **MUST** also be updated to call it. The in-viewer
+   PDF exporter mounts every page at once and runs a parallel per-frame
+   settle poll to feed its progress bar, so it cannot collapse into a single
+   `waitForPageReady(frame)` call without breaking progress reporting;
+   instead, the PDF exporter **MUST** source the underlying primitives
+   (`waitForFonts`, `waitForDataWaitfor`, `isFrameAnimationSettled`,
+   `ANIMATION_TIMEOUT_MS`, `POLL_INTERVAL_MS`) from `print-ready.ts` so all
+   three capture paths share one set of readiness predicates and timing
+   constants, with the multi-frame parallel orchestration kept in
+   `export-pdf.ts`.
 
 **Affected components:** `packages/core/src/app/routes/slide.tsx` or
 `packages/core/src/app/components/slide-canvas.tsx`,
-`packages/core/src/app/lib/print-ready.ts` (extract `waitForPageReady`),
-plus the in-viewer PNG and PDF exporter call sites that currently inline the
-three predicates (migrate them to the helper).
+`packages/core/src/app/lib/print-ready.ts` (extract `waitForPageReady` and
+re-export the underlying predicates + constants),
+the in-viewer PNG exporter call site (migrate to `waitForPageReady`), and
+the in-viewer PDF exporter (import the shared predicates/constants from
+`print-ready.ts` rather than inlining them).
 
 ### Phase 3: Headless render loop
 
@@ -838,7 +862,9 @@ Then `packages/core/dist/index.js` contains no string `playwright`
 ```gherkin
 Given the branch contains the full implementation of this CR
 When `pnpm check` and `pnpm typecheck` are run from the repo root
-Then both commands exit with code 0 and emit no warnings
+Then both commands exit with code 0
+  And no new warnings are introduced in files touched by this CR
+  (pre-existing warnings in untouched files are out of scope, matching CR-0001)
 ```
 
 ### AC-12: Changeset entry is present
@@ -947,11 +973,15 @@ CI-image fix, not a per-run cost.
 shared `waitForPageReady(frame)` helper extracted into `print-ready.ts` in
 Phase 2, which composes the same predicates (`waitForFonts`,
 `waitForDataWaitfor`, `isFrameAnimationSettled`) the in-viewer exporters
-already trust. Phase 2 migrates the in-viewer PNG and PDF exporters to the
-same helper, so there is exactly one readiness implementation across all
-capture paths. A broken-`data-waitfor` page falls through to the per-page
-timeout warning (FR-10 / AC-8) so the run still produces a PNG and surfaces
-the issue in the log.
+already trust. Phase 2 migrates the in-viewer PNG exporter (single-frame
+capture) to that helper, and the in-viewer PDF exporter (parallel
+multi-frame capture with mid-run progress reporting) imports the same
+underlying predicates and `ANIMATION_TIMEOUT_MS` / `POLL_INTERVAL_MS`
+constants from `print-ready.ts`, so all three capture paths share exactly
+one set of readiness primitives even though the PDF path retains its own
+parallel orchestration loop. A broken-`data-waitfor` page falls through to
+the per-page timeout warning (FR-10 / AC-8) so the run still produces a PNG
+and surfaces the issue in the log.
 
 ### Risk 4: Large decks exhaust memory / open too many pages
 
