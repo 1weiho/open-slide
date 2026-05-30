@@ -204,8 +204,9 @@ flowchart TD
 13. New locale keys **MUST** be added to `packages/core/src/locale/types.ts` and to
     every locale file (`en.ts`, `ja.ts`, `zh-cn.ts`, `zh-tw.ts`):
     `slide.exportCurrentPageAsPng`, `slide.exportAllPagesAsPng`,
-    `slide.pngExportFailed`, `pngToast.title`, `pngToast.processing`,
-    `pngToast.rasterising`, `pngToast.zipping`, `pngToast.done`.
+    `slide.pngExportFailed`, `slide.pngSafariBestEffort`, `pngToast.title`,
+    `pngToast.processing`, `pngToast.rasterising`, `pngToast.zipping`,
+    `pngToast.done`.
 14. The PNG dropdown items **MUST** be gated by the same `config.build.allowHtmlDownload`
     flag that already gates the HTML and PDF items, so a single user-facing toggle
     controls all downloads.
@@ -221,9 +222,11 @@ flowchart TD
 
 ### Non-Functional Requirements
 
-1. The PNG exporter module **MUST** stay under ~250 lines of TypeScript, in line with
-   the project's small-single-purpose-files rule, and **MUST** live in a single file
-   `packages/core/src/app/lib/export-png.ts` with hierarchical-namespace naming.
+1. The PNG exporter module **MUST** live in a single file
+   `packages/core/src/app/lib/export-png.ts` with hierarchical-namespace naming, and
+   **SHOULD** stay under 300 lines of TypeScript in line with the project's
+   small-single-purpose-files rule (helpers may be split into sibling files in the
+   same namespace if the count is exceeded).
 2. This CR **MUST NOT** introduce any new runtime dependency in
    `packages/core/package.json`. The rasterizer is hand-rolled and ZIP bundling reuses
    the existing `fflate` dependency.
@@ -378,7 +381,8 @@ Sequenced so each phase is independently reviewable.
    shaped identically to `PdfExportProgress` (substituting the `phase` enum).
 2. Add new locale keys to `packages/core/src/locale/types.ts`
    (`slide.exportCurrentPageAsPng`, `slide.exportAllPagesAsPng`,
-   `slide.pngExportFailed`, the full `pngToast` block).
+   `slide.pngExportFailed`, `slide.pngSafariBestEffort`, the full `pngToast`
+   block).
 3. Translate the new keys in `en.ts`, `ja.ts`, `zh-cn.ts`, `zh-tw.ts`.
 
 **Affected components:**
@@ -529,7 +533,7 @@ flowchart LR
 
 | Test File | Test Name | Description | Inputs | Expected Output |
 |-----------|-----------|-------------|--------|-----------------|
-| `packages/core/src/app/lib/export-png.test.ts` | `filename for single-page export uses zero-padded page index` | Verifies the helper that names files produces `slide-p01.png` for a 9-page deck and `slide-p001.png` for a 100-page deck. | `slideId = 'slide'`, `pageIndex = 0`, `total = 9` and `total = 100` | `'slide-p1.png'` (width 1) and `'slide-p001.png'` (width 3) — exact format set by implementation, asserted in test. |
+| `packages/core/src/app/lib/export-png.test.ts` | `filename for single-page export uses page-count-width zero padding` | Verifies the helper that names files pads to the width of the total page count (per FR-1): produces `slide-p1.png` for a 9-page deck (width 1, no padding needed) and `slide-p001.png` for a 100-page deck (width 3). | `slideId = 'slide'`, `pageIndex = 0`, `total = 9` and `total = 100` | `'slide-p1.png'` (width 1) and `'slide-p001.png'` (width 3). |
 | `packages/core/src/app/lib/export-png.test.ts` | `progress emitter produces monotonically non-decreasing percent` | Calls the internal progress reducer with a sequence of phase/current/total inputs and asserts `percent` never decreases. | Sequence of `{phase, current, total}` tuples covering processing → rasterising → zipping → done. | Each successive `percent` is `>=` previous. |
 | `packages/core/src/app/lib/export-png.test.ts` | `exportSlidePageAsPng rejects with no DOM residue when the rasterizer throws` | Mocks the internal `rasteriseSvgToPng` helper to reject. Asserts the offscreen container has been removed from `document.body` after the rejection. | Mocked `toBlob` rejection; jsdom environment. | Promise rejects; `document.querySelectorAll('[data-png-export-host]')` returns empty NodeList. |
 | `packages/core/src/app/lib/export-png.test.ts` | `exportSlideAsPngZip calls onProgress at least once per phase` | Mocks `toBlob` to resolve and asserts onProgress sees all four phases at least once. | 2-page slide module; mocked `toBlob`. | onProgress called with `processing`, `rasterising`, `zipping`, `done` at least once each. |
@@ -644,19 +648,20 @@ Then a new markdown file exists with a `minor` bump for `@open-slide/core`
 
 ### AC-10: Safari behaviour is explicit and graceful
 
+Strategy chosen per Open Question 3: **best-effort + warn** (option a), as stated in
+the CR's leaning. Implementors **MUST** implement this branch.
+
 ```gherkin
 Given the viewer is running in Safari (detected via the existing `isSafari()` helper
    in `export-pdf.ts`)
-When the user opens the download dropdown and interacts with a PNG export entry
-Then the chosen Safari strategy applies consistently:
-  * If the "best-effort + warn" strategy is selected, a sonner toast is shown
-    informing the user that PNG export is best-effort on Safari, and the export
-    pipeline proceeds; on any rasterisation failure the standard
-    `slide.pngExportFailed` toast is shown and no DOM residue remains.
-  * If the "hard disable" strategy is selected, both PNG dropdown items are
-    rendered as disabled, and clicking the dropdown surfaces a toast directing
-    the user to a Chromium-based browser; no rasterisation is attempted.
-  And in either strategy, the existing HTML and PDF entries are unaffected.
+  And the user opens the download dropdown
+When the user selects "Export current slide as PNG" or "Export all slides as PNG"
+Then a sonner toast is shown informing the user that PNG export is best-effort on
+   Safari (new locale key `slide.pngSafariBestEffort`)
+  And the export pipeline proceeds
+  And on any rasterisation failure the standard `slide.pngExportFailed` toast is
+   shown and no DOM residue remains
+  And the existing HTML and PDF entries are unaffected
 ```
 
 ## Quality Standards Compliance
@@ -730,11 +735,12 @@ the heaviest CSS is deferred to the future Playwright-based CLI path described u
 **Mitigation:** Safari has long-standing `<foreignObject>` issues (tainted canvases,
 missed fonts, dimension miscalculations) — the same family of issues that already
 motivates the `isSafari()` helper in `export-pdf.ts`. Reuse that helper to gate the
-PNG export: if `isSafari()` returns true, either (a) short-circuit with a
-user-visible "PNG export is best-effort on Safari" warning via `sonner` and proceed,
-or (b) disable the dropdown items and surface a clear "use Chromium for PNG export"
-toast. Decision between (a) and (b) is taken in Phase 4 review; AC-10 (below) covers
-whichever is chosen.
+PNG export. The chosen strategy (Open Question 3, resolved) is **best-effort + warn**:
+if `isSafari()` returns true, show a `slide.pngSafariBestEffort` toast via `sonner`
+and proceed with rasterisation; on failure, surface the standard
+`slide.pngExportFailed` toast and tear down all DOM/React state. The fallback "hard
+disable" path is reserved for a follow-up CR if real Safari runs prove the warn
+strategy unworkable.
 
 ### Risk 3: Animation-settle timeout differs from PDF behaviour and confuses users
 
@@ -825,15 +831,95 @@ pixel-perfect Playwright-based path remains available as an opt-in CLI follow-up
    remains documented under "Alternative Approaches Considered" as the precedent the
    technique is borrowed from. The Playwright-based pixel-perfect path is captured
    under "Future Enhancements" as an opt-in CLI follow-up.
-2. **Filename padding width.** Should `{N}` be padded to the width of the page count
-   (e.g. `p01` for a 9-page deck) or always to 2 digits, or never padded? The CR
-   assumes "padded to the width of the total page count", which keeps file-system
-   sort order matching slide order for any deck size.
-3. **Safari fallback — best-effort warn vs. hard disable.** When `isSafari()` (from
-   `export-pdf.ts`) returns true, should the dropdown items render with a
-   "best-effort on Safari" toast (option a) or be disabled with a "use Chromium for
-   PNG export" toast (option b)? AC-10 codifies whichever option Phase 4 review
-   picks. The CR's leaning is (a) — best-effort with warn — because it preserves
-   user agency.
+2. **Filename padding width.** **Resolved.** Decision: pad `{N}` to the width of the
+   total page count (i.e. `String(pageIndex + 1).padStart(String(total).length, '0')`),
+   which keeps file-system sort order matching slide order for any deck size. This
+   is the convention encoded in FR-1, FR-2, AC-1, AC-2, and the first test row.
+   Examples: a 9-page deck produces `p1`…`p9` (width 1), a 10-page deck produces
+   `p01`…`p10` (width 2), a 100-page deck produces `p001`…`p100` (width 3).
+3. **Safari fallback — best-effort warn vs. hard disable.** **Resolved.** Decision:
+   option (a), best-effort with warn, per the CR's stated leaning ("preserves user
+   agency"). When `isSafari()` returns true a `slide.pngSafariBestEffort` toast is
+   shown and the export pipeline proceeds; rasterisation failures fall through to
+   the standard `slide.pngExportFailed` toast. AC-10 has been updated to codify
+   option (a). Option (b) remains documented under Risk 2 as the fallback if real
+   Safari failures prove the warn path unworkable, and would be promoted via a
+   follow-up CR.
 4. **Export from presenter / fullscreen modes.** Out of scope for this CR. If
    authors ask for it, it becomes a follow-up CR rather than an expansion here.
+
+<!-- review-summary -->
+## Review Summary (CR Reviewer pass — 2026-05-30)
+
+**Drift check:** all cited paths and symbols verified against the current tree at
+`source-commit: 155049f`:
+
+- `packages/core/src/app/lib/{export-html,export-pdf,print-ready,sdk,design,page-context}.ts` — all present.
+- Symbols `CANVAS_WIDTH`, `CANVAS_HEIGHT` (sdk.ts), `waitForFonts`,
+  `waitForDataWaitfor`, `isFrameAnimationSettled` (print-ready.ts),
+  `ANIMATION_TIMEOUT_MS = 15_000`, `POLL_INTERVAL_MS = 100`,
+  `neutralizeGradientBackgrounds`, `isSafari`, `PdfExportProgress`
+  (`phase: 'processing' | 'printing' | 'done'`), `PRINT_ROOT_ID = 'os-print-root'`
+  (export-pdf.ts), `designToCssVars` (design.ts), `SlidePageProvider`,
+  `useSlidePageNumber` (page-context.tsx), `downloadBlob`, `findHtmlAssetUrls`,
+  `toAbsolute` (export-html.ts) — all present with the cited shapes.
+- `packages/core/src/app/components/pdf-progress-toast.tsx` — present.
+- `packages/core/src/app/routes/slide.tsx` — present; `allowHtmlDownload` gate at
+  line 427, `exporting` lock at line 66, dropdown wiring at lines 444–500.
+- `packages/core/src/config.ts` — `build.allowHtmlDownload?: boolean` present.
+- `packages/core/src/locale/{types,en,ja,zh-cn,zh-tw}.ts` — all present; existing
+  `slide.exportAsHtml`, `slide.exportAsPdf`, and full `pdfToast` block confirmed.
+- `packages/core/package.json` — `fflate: ^0.8.2` present.
+- `packages/core/src/app/lib/design-presets.ts` — present (cited in Risk 1).
+
+No drift detected.
+
+**Findings by category:**
+
+- Drift: 0
+- Contradictions: 2 — fixed.
+  - Test-row description for filename padding contradicted its own expected output
+    (claimed `p01` for a 9-page deck, but expected `p1`); rewritten to match the
+    FR-1 "pad to width of total pages" rule. (1)
+  - AC-10 enumerated two mutually exclusive Safari strategies but Risk 2 +
+    Open Question 3 already stated the leaning was option (a); the AC required
+    implementors to pick, which contradicts the rest of the CR. AC-10 collapsed to
+    option (a). (2)
+- Ambiguity / RFC-2119: 1 — fixed.
+  - NFR 1 used "MUST stay under ~250 lines"; a `MUST` cannot be approximate.
+    Reworded to a precise `SHOULD` for the line target while keeping the
+    `MUST` on file location / naming.
+- Requirement → AC coverage: pass (every FR has at least one AC covering it after
+  fixes; the new `slide.pngSafariBestEffort` key is covered by AC-10 and listed
+  in FR-13).
+- AC → Test coverage: pass (AC-1/AC-2 covered by filename and ZIP tests; AC-4 by
+  the rejection-cleanup test; AC-1/AC-2 progress by the progress emitter test;
+  AC-8/AC-9 are repo-level CLI checks; AC-3/AC-5/AC-6/AC-7/AC-10 are exercised in
+  the Phase 5 smoke test plus the Quality Standards checklist).
+- Scope / diagram accuracy: pass (Affected Components matches files referenced in
+  all phases; both Mermaid diagrams match current viewer wiring and the proposed
+  helpers).
+- Project-convention compliance: pass (no new runtime dep per `CLAUDE.md`;
+  hierarchical naming; single-file module; biome + typecheck + test + build via
+  pnpm; changeset required; no `ui/` edits; docstrings on every exported
+  function).
+
+**Fixes applied (3):**
+
+1. Rewrote the filename-padding test row so its description matches its expected
+   output and the FR-1 rule (`p1` for 9 pages, `p001` for 100 pages).
+2. Replaced NFR 1's "MUST stay under ~250 lines" with a precise `SHOULD` under
+   300 lines, keeping the `MUST` on file location and hierarchical-namespace
+   naming.
+3. Resolved AC-10, Risk 2, and Open Question 3 to the CR's stated leaning
+   (Safari → best-effort + warn, option a); added `slide.pngSafariBestEffort`
+   locale key to FR-13 and Phase 1 so the new toast string is part of the
+   contract.
+4. Resolved Open Question 2 (filename padding) to the convention already encoded
+   in FR-1: pad to the width of the total page count.
+
+**Unresolved (0):** the two questions originally flagged for human decision
+(Safari strategy, filename padding) both had clear leanings/defaults stated in
+the CR prose and are now resolved per the orchestrator's "act on stated leanings"
+rule. Open Question 4 (presenter/fullscreen export) is explicitly out of scope.
+<!-- /review-summary -->
