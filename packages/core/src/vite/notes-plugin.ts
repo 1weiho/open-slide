@@ -1,12 +1,9 @@
 import fs from 'node:fs/promises';
-import type { ServerResponse } from 'node:http';
-import path from 'node:path';
 import { parse as babelParse } from '@babel/parser';
 import * as t from '@babel/types';
-import type { Connect, Plugin, ViteDevServer } from 'vite';
+import type { Plugin, ViteDevServer } from 'vite';
 import { validateMutationRequest } from '../http/request-guard.ts';
-
-const SLIDE_ID_RE = /^[a-z0-9_-]+$/i;
+import { json, readBody, resolveSlidePath } from './routes/context.ts';
 
 type NotesBody = {
   slideId?: string;
@@ -17,37 +14,6 @@ type NotesBody = {
 export type ApplyNotesEditResult =
   | { ok: true; source: string }
   | { ok: false; status: number; error: string };
-
-async function readBody(req: Connect.IncomingMessage): Promise<unknown> {
-  return await new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    req.on('data', (c: Buffer) => chunks.push(c));
-    req.on('end', () => {
-      const raw = Buffer.concat(chunks).toString('utf8');
-      if (!raw) return resolve({});
-      try {
-        resolve(JSON.parse(raw));
-      } catch (e) {
-        reject(e);
-      }
-    });
-    req.on('error', reject);
-  });
-}
-
-function json(res: ServerResponse, status: number, body: unknown) {
-  res.statusCode = status;
-  res.setHeader('content-type', 'application/json');
-  res.end(JSON.stringify(body));
-}
-
-function resolveSlidePath(userCwd: string, slidesDir: string, slideId: string): string | null {
-  if (!SLIDE_ID_RE.test(slideId)) return null;
-  const slidesRoot = path.resolve(userCwd, slidesDir);
-  const full = path.resolve(slidesRoot, slideId, 'index.tsx');
-  if (!full.startsWith(slidesRoot + path.sep)) return null;
-  return full;
-}
 
 function parseSource(source: string): t.File | null {
   try {

@@ -7,7 +7,7 @@ const SERIF_GEORGIA = 'Georgia, "Times New Roman", serif';
 const SERIF_TIMES = '"Times New Roman", Times, serif';
 const MONO_SF = '"SF Mono", "JetBrains Mono", Menlo, monospace';
 
-export const designPresets: DesignSystem[] = [
+const designPresets: DesignSystem[] = [
   defaultDesign,
   {
     palette: { bg: '#0f1115', text: '#f5f3ee', accent: '#7cc4ff' },

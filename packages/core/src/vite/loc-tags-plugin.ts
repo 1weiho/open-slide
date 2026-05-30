@@ -66,7 +66,7 @@ export type LocTagsPluginOptions = {
 // plugins or virtual modules can pass through Windows-style paths.
 // Compare both sides in POSIX shape so the match doesn't depend on
 // which separator the caller happened to use.
-export function isSlideSourceFile(id: string, slidesRootPosix: string): boolean {
+function isSlideSourceFile(id: string, slidesRootPosix: string): boolean {
   const filePath = id.split(/[?#]/)[0].replace(/\\/g, '/');
   if (!filePath.startsWith(`${slidesRootPosix}/`)) return false;
   if (!filePath.endsWith('.tsx')) return false;

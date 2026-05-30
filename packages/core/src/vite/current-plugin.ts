@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Plugin, ViteDevServer } from 'vite';
+import { SLIDE_ID_RE } from '../editing/slide-ops.ts';
 
-const SLIDE_ID_RE = /^[a-z0-9_-]+$/i;
 const TEXT_SNIPPET_MAX = 120;
 
 export type CurrentPluginOptions = {

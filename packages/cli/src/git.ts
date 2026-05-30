@@ -24,7 +24,7 @@ async function run(cmd: string, args: string[], cwd: string): Promise<RunResult>
   });
 }
 
-export async function isGitAvailable(): Promise<boolean> {
+async function isGitAvailable(): Promise<boolean> {
   try {
     const res = await run('git', ['--version'], process.cwd());
     return res.code === 0;
@@ -33,7 +33,7 @@ export async function isGitAvailable(): Promise<boolean> {
   }
 }
 
-export async function isInsideWorkTree(cwd: string): Promise<boolean> {
+async function isInsideWorkTree(cwd: string): Promise<boolean> {
   try {
     const res = await run('git', ['rev-parse', '--is-inside-work-tree'], cwd);
     return res.code === 0 && res.stdout.trim() === 'true';
