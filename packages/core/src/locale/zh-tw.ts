@@ -104,6 +104,7 @@ export const zhTW: Locale = {
     toastCopyLinkFailed: '複製連結失敗',
     exportAsHtml: '匯出為 HTML',
     exportAsPdf: '匯出為 PDF',
+    exportAsImagePdf: '匯出為圖片 PDF',
     pdfExportFailed: 'PDF 匯出失敗',
     pdfExportSafariUnsupported:
       '匯出 PDF 目前不支援 Safari 裝置，請嘗試用 Chromium 基底瀏覽器替代。',

@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   Download,
   FileCode2,
+  FileImage,
   FileText,
   Link2,
   Loader2,
@@ -51,6 +52,7 @@ import { SlideCanvas } from '../components/slide-canvas';
 import { SlideTransitionLayer } from '../components/slide-transition-layer';
 import { type ThumbnailActions, ThumbnailRail } from '../components/thumbnail-rail';
 import { exportSlideAsHtml } from '../lib/export-html';
+import { exportSlideAsImagePdf } from '../lib/export-image-pdf';
 import { exportSlideAsPdf, isSafari } from '../lib/export-pdf';
 import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
 import type { SlideModule } from '../lib/sdk';
@@ -499,6 +501,48 @@ export function Slide() {
                     >
                       <FileText />
                       {t.slide.exportAsPdf}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={exporting}
+                      onSelect={async () => {
+                        if (!slide || exporting) return;
+                        if (isSafari()) {
+                          toast.error(t.slide.pdfExportSafariUnsupported, { duration: 5000 });
+                          return;
+                        }
+                        setExporting(true);
+                        const toastId = `image-pdf-export-${slideId}`;
+                        toast.custom(
+                          () => (
+                            <PdfProgressToast
+                              progress={{
+                                phase: 'processing',
+                                current: 0,
+                                total: pages.length,
+                                percent: 0,
+                              }}
+                            />
+                          ),
+                          { id: toastId, duration: Infinity },
+                        );
+                        try {
+                          await exportSlideAsImagePdf(slide, slideId, (p) => {
+                            toast.custom(() => <PdfProgressToast progress={p} />, {
+                              id: toastId,
+                              duration: Infinity,
+                            });
+                          });
+                        } catch (err) {
+                          console.error('[open-slide] image pdf export failed', err);
+                          toast.error(t.slide.pdfExportFailed, { id: toastId, duration: 4000 });
+                        } finally {
+                          setExporting(false);
+                          toast.dismiss(toastId);
+                        }
+                      }}
+                    >
+                      <FileImage />
+                      {t.slide.exportAsImagePdf}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

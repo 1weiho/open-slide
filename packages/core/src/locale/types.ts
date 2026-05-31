@@ -107,6 +107,7 @@ export type Locale = {
     toastCopyLinkFailed: string;
     exportAsHtml: string;
     exportAsPdf: string;
+    exportAsImagePdf: string;
     pdfExportFailed: string;
     pdfExportSafariUnsupported: string;
     present: string;

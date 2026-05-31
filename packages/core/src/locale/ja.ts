@@ -105,6 +105,7 @@ export const ja: Locale = {
     toastCopyLinkFailed: 'リンクのコピーに失敗しました',
     exportAsHtml: 'HTML として書き出し',
     exportAsPdf: 'PDF として書き出し',
+    exportAsImagePdf: '画像 PDF として書き出し',
     pdfExportFailed: 'PDF の書き出しに失敗しました',
     pdfExportSafariUnsupported:
       'PDF の書き出しは現在 Safari では対応していません。Chromium ベースのブラウザでお試しください。',
