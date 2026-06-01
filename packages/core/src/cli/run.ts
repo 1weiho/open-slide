@@ -4,6 +4,7 @@ import * as readline from 'node:readline/promises';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import { Command, Option } from 'commander';
+import type { ShareProvider } from './share.ts';
 import { detectSkillsDrift, syncSkills } from './sync.ts';
 
 async function readVersion(): Promise<string> {
@@ -22,6 +23,11 @@ export function parsePort(value: string): number {
   return n;
 }
 
+export function parseShareProvider(value: string): ShareProvider {
+  if (value === 'tailscale') return value;
+  throw new Error(`Invalid share provider: ${value}`);
+}
+
 interface ServerFlags {
   port?: number;
   host?: string | boolean;
@@ -30,6 +36,7 @@ interface ServerFlags {
 
 interface DevFlags extends ServerFlags {
   skillsCheck?: boolean;
+  share?: ShareProvider;
 }
 
 async function runSkillsDriftCheck(skillsDir: string): Promise<void> {
@@ -103,6 +110,11 @@ export async function run(argv: string[]): Promise<void> {
     .description('Start the dev server')
     .addOption(new Option('-p, --port <port>', 'port to listen on').argParser(parsePort))
     .addOption(new Option('--host [host]', 'expose on the network (optional host)'))
+    .addOption(
+      new Option('--share <provider>', 'share the dev server with a provider')
+        .choices(['tailscale'])
+        .argParser(parseShareProvider),
+    )
     .option('--open', 'open the browser on start')
     .option('--no-skills-check', 'skip the built-in skills drift check')
     .action(async (flags: DevFlags) => {
