@@ -116,6 +116,8 @@ export const ja: Locale = {
     slidesTab: 'スライド',
     assetsTab: 'アセット',
     renameSlide: 'スライドの名前を変更',
+    aspectToggleTitle: 'アスペクト比を切替 (16:9 / 4:3)',
+    aspectToggleAria: 'スライドのアスペクト比を切替',
     loadingEyebrow: '読み込み中',
     emptyEyebrow: '空',
     nothingToShow: '表示する内容がありません。',

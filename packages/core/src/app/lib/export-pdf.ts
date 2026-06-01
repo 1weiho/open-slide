@@ -3,13 +3,14 @@ import { createRoot, type Root } from 'react-dom/client';
 import { designToCssVars } from './design';
 import { SlidePageProvider } from './page-context';
 import { isFrameAnimationSettled, waitForDataWaitfor, waitForFonts } from './print-ready';
-import type { SlideModule } from './sdk';
+import { getCanvasDims, type SlideModule } from './sdk';
 
 const PRINT_ROOT_ID = 'os-print-root';
 const PRINT_STYLE_ID = 'os-print-style';
 
-const PRINT_STYLES = `
-@page { size: 1920px 1080px; margin: 0; }
+function buildPrintStyles(width: number, height: number): string {
+  return `
+@page { size: ${width}px ${height}px; margin: 0; }
 
 @media screen {
   #${PRINT_ROOT_ID} {
@@ -36,8 +37,8 @@ const PRINT_STYLES = `
     background: #fff !important;
   }
   #${PRINT_ROOT_ID} .os-print-frame {
-    width: 1920px !important;
-    height: 1080px !important;
+    width: ${width}px !important;
+    height: ${height}px !important;
     background: #fff;
     color: #000;
     overflow: hidden;
@@ -52,13 +53,13 @@ const PRINT_STYLES = `
   }
   /* Supersample: Chrome rasterizes filtered/composited layers (e.g. filter:
      blur, mix-blend-mode) at the layer's CSS-pixel size, so a blurred
-     gradient on a 1920×1080 page bakes in at ~1× DPI and bands when the PDF
+     gradient on a page bakes in at ~1× DPI and bands when the PDF
      is viewed scaled up. zoom:2 doubles the layer raster size; scale(0.5)
-     composites it back to 1920×1080. Vector content (text, plain CSS
-     gradients, SVG) stays vector through both transforms. */
+     composites it back. Vector content (text, plain CSS gradients, SVG)
+     stays vector through both transforms. */
   #${PRINT_ROOT_ID} .os-print-supersample {
-    width: 1920px !important;
-    height: 1080px !important;
+    width: ${width}px !important;
+    height: ${height}px !important;
     zoom: 2;
     transform: scale(0.5);
     transform-origin: top left;
@@ -79,6 +80,7 @@ const PRINT_STYLES = `
   }
 }
 `;
+}
 
 export function isSafari(): boolean {
   if (typeof navigator === 'undefined') return false;
@@ -107,10 +109,11 @@ export async function exportSlideAsPdf(
   if (pages.length === 0) return;
 
   const total = pages.length;
+  const { width: canvasW, height: canvasH } = getCanvasDims(slide.meta?.aspect);
 
   const style = document.createElement('style');
   style.id = PRINT_STYLE_ID;
-  style.textContent = PRINT_STYLES;
+  style.textContent = buildPrintStyles(canvasW, canvasH);
   document.head.appendChild(style);
 
   const root = document.createElement('div');
@@ -130,15 +133,15 @@ export async function exportSlideAsPdf(
     const host = document.createElement('div');
     host.className = 'os-print-frame';
     host.setAttribute('data-osd-canvas', '');
-    host.style.width = '1920px';
-    host.style.height = '1080px';
+    host.style.width = `${canvasW}px`;
+    host.style.height = `${canvasH}px`;
     if (designVars) {
       for (const [k, v] of Object.entries(designVars)) host.style.setProperty(k, v);
     }
     const inner = document.createElement('div');
     inner.className = 'os-print-supersample';
-    inner.style.width = '1920px';
-    inner.style.height = '1080px';
+    inner.style.width = `${canvasW}px`;
+    inner.style.height = `${canvasH}px`;
     host.appendChild(inner);
     root.appendChild(host);
     frames.push(host);

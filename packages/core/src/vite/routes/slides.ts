@@ -9,7 +9,9 @@ import {
   resolveSlideEntry,
   rmSlideDir,
   SLIDE_ID_RE,
+  setSlideAspect,
   updateMetaTitleInSource,
+  validateSlideAspect,
   validateSlideName,
 } from '../../editing/slide-ops.ts';
 import { readManifest, writeManifest } from '../../files/folders.ts';
@@ -20,6 +22,7 @@ import { type ApiContext, json, readBody } from './context.ts';
 // DELETE /__slides/:id/pages/:i           remove page
 // POST   /__slides/:id/pages/:i/duplicate duplicate page
 // POST   /__slides/:id/duplicate          duplicate slide directory { newId? }
+// PUT    /__slides/:id/aspect             set meta.aspect { aspect: '16:9' | '4:3' }
 // PATCH  /__slides/:id                    rename slide (writes meta.title)
 // DELETE /__slides/:id                    delete slide directory + folder assignment
 
@@ -144,6 +147,25 @@ export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): voi
           await writeManifest(ctx.manifestPath, manifest);
         }
         return json(res, 200, { ok: true, slideId: duplicated.slideId });
+      }
+
+      const aspectMatch = url.pathname.match(/^\/([^/]+)\/aspect$/);
+      if (aspectMatch && method === 'PUT') {
+        const requestCheck = validateMutationRequest(req, { requireJsonBody: true });
+        if (!requestCheck.ok) {
+          return json(res, requestCheck.status, { error: requestCheck.error });
+        }
+        const slideId = aspectMatch[1];
+        if (!SLIDE_ID_RE.test(slideId)) return json(res, 400, { error: 'invalid slideId' });
+
+        const body = (await readBody(req)) as { aspect?: unknown };
+        const aspect = validateSlideAspect(body.aspect);
+        if (!aspect) return json(res, 400, { error: 'invalid aspect' });
+
+        const result = await setSlideAspect(ctx.slidesRoot, slideId, aspect);
+        if (!result.ok) return json(res, result.status, { error: result.error });
+        server.ws.send({ type: 'full-reload' });
+        return json(res, 200, { ok: true, slideId, aspect });
       }
 
       const idMatch = url.pathname.match(/^\/([^/]+)$/);

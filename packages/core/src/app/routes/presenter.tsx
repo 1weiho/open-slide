@@ -10,7 +10,7 @@ import {
 } from '../components/present/use-presenter-channel';
 import { SlideCanvas } from '../components/slide-canvas';
 import { SlidePageProvider } from '../lib/page-context';
-import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
+import { getCanvasDims } from '../lib/sdk';
 import { useSlideModule } from '../lib/use-slide-module';
 
 export function Presenter() {
@@ -122,6 +122,8 @@ export function Presenter() {
 
   const CurrentPage = pages[index];
   const NextPage = hasNext ? pages[nextIndex] : null;
+  const aspect = slide.meta?.aspect;
+  const { width: canvasW, height: canvasH } = getCanvasDims(aspect);
 
   return (
     <div className="dark flex h-dvh w-screen flex-col overflow-hidden bg-background text-foreground">
@@ -138,7 +140,7 @@ export function Presenter() {
         <section className="flex min-h-0 flex-col gap-3">
           <SectionLabel>{t.presenter.nowShowing}</SectionLabel>
           <div className="relative min-h-0 flex-1 overflow-hidden rounded-[8px] bg-black ring-1 ring-border">
-            <SlideCanvas flat design={slide.design}>
+            <SlideCanvas flat design={slide.design} aspect={aspect}>
               <SlidePageProvider index={index} total={total}>
                 <CurrentPage />
               </SlidePageProvider>
@@ -163,10 +165,10 @@ export function Presenter() {
             <SectionLabel>{hasNext ? t.presenter.upNext : t.presenter.lastSlide}</SectionLabel>
             <div
               className="relative w-full overflow-hidden rounded-[8px] bg-black ring-1 ring-border"
-              style={{ aspectRatio: `${CANVAS_WIDTH}/${CANVAS_HEIGHT}` }}
+              style={{ aspectRatio: `${canvasW}/${canvasH}` }}
             >
               {NextPage ? (
-                <SlideCanvas flat freezeMotion design={slide.design}>
+                <SlideCanvas flat freezeMotion design={slide.design} aspect={aspect}>
                   <SlidePageProvider index={nextIndex} total={total}>
                     <NextPage />
                   </SlidePageProvider>

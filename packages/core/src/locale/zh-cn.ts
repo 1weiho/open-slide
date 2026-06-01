@@ -115,6 +115,8 @@ export const zhCN: Locale = {
     slidesTab: '幻灯片',
     assetsTab: '素材',
     renameSlide: '重命名幻灯片',
+    aspectToggleTitle: '切换比例（16:9 / 4:3）',
+    aspectToggleAria: '切换幻灯片比例',
     loadingEyebrow: '加载中',
     emptyEyebrow: '空白',
     nothingToShow: '没有可显示的内容。',

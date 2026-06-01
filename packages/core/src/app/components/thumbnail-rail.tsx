@@ -29,8 +29,8 @@ import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import type { DesignSystem } from '../lib/design';
 import { SlidePageProvider } from '../lib/page-context';
-import type { Page } from '../lib/sdk';
-import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
+import type { Page, SlideAspect } from '../lib/sdk';
+import { getCanvasDims } from '../lib/sdk';
 import { SlideCanvas } from './slide-canvas';
 
 type Orientation = 'vertical' | 'horizontal';
@@ -50,6 +50,7 @@ type Props = {
   orientation?: Orientation;
   /** Vertical-only: total rail width in px. Thumbnails scale to fit. */
   width?: number;
+  aspect?: SlideAspect;
 };
 
 const DEFAULT_VERTICAL_THUMB_WIDTH = 184;
@@ -66,7 +67,9 @@ export function ThumbnailRail({
   actions,
   orientation = 'vertical',
   width,
+  aspect,
 }: Props) {
+  const { width: canvasW, height: canvasH } = getCanvasDims(aspect);
   const activeRef = useRef<HTMLButtonElement | null>(null);
   const t = useLocale();
 
@@ -82,8 +85,8 @@ export function ThumbnailRail({
   }, [current]);
 
   if (orientation === 'horizontal') {
-    const scale = HORIZONTAL_THUMB_HEIGHT / CANVAS_HEIGHT;
-    const width = CANVAS_WIDTH * scale;
+    const scale = HORIZONTAL_THUMB_HEIGHT / canvasH;
+    const width = canvasW * scale;
     return (
       <div className="bg-sidebar">
         <div className="overflow-x-auto overflow-y-hidden">
@@ -118,7 +121,14 @@ export function ThumbnailRail({
                     )}
                     style={{ width, height: HORIZONTAL_THUMB_HEIGHT }}
                   >
-                    <SlideCanvas scale={scale} center={false} flat freezeMotion design={design}>
+                    <SlideCanvas
+                      scale={scale}
+                      center={false}
+                      flat
+                      freezeMotion
+                      design={design}
+                      aspect={aspect}
+                    >
                       <SlidePageProvider index={i} total={pages.length}>
                         <PageComp />
                       </SlidePageProvider>
@@ -150,8 +160,8 @@ export function ThumbnailRail({
     width != null
       ? Math.max(MIN_VERTICAL_THUMB_WIDTH, width - VERTICAL_RAIL_CHROME)
       : DEFAULT_VERTICAL_THUMB_WIDTH;
-  const scale = thumbWidth / CANVAS_WIDTH;
-  const height = CANVAS_HEIGHT * scale;
+  const scale = thumbWidth / canvasW;
+  const height = canvasH * scale;
 
   const renderThumb = (PageComp: Page, i: number) => {
     const active = i === current;
@@ -165,6 +175,7 @@ export function ThumbnailRail({
         scale={scale}
         thumbWidth={thumbWidth}
         height={height}
+        aspect={aspect}
       />
     );
 
@@ -247,6 +258,7 @@ function ThumbContents({
   scale,
   thumbWidth,
   height,
+  aspect,
 }: {
   index: number;
   total: number;
@@ -256,6 +268,7 @@ function ThumbContents({
   scale: number;
   thumbWidth: number;
   height: number;
+  aspect?: SlideAspect;
 }) {
   return (
     <>
@@ -276,7 +289,7 @@ function ThumbContents({
         )}
         style={{ width: thumbWidth, height }}
       >
-        <SlideCanvas scale={scale} center={false} flat freezeMotion design={design}>
+        <SlideCanvas scale={scale} center={false} flat freezeMotion design={design} aspect={aspect}>
           <SlidePageProvider index={index} total={total}>
             <PageComp />
           </SlidePageProvider>
