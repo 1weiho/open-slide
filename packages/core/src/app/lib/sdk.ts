@@ -41,8 +41,6 @@ export const CANVAS_WIDTH = 1920;
 export const CANVAS_HEIGHT = 1080;
 export const CANVAS_WIDTH_4_3 = 1440;
 
-export const DEFAULT_ASPECT: SlideAspect = '16:9';
-
 export function getCanvasDims(aspect: SlideAspect | undefined): { width: number; height: number } {
   return aspect === '4:3'
     ? { width: CANVAS_WIDTH_4_3, height: CANVAS_HEIGHT }

@@ -254,6 +254,8 @@ export function updateMetaTitleInSource(source: string, title: string): string |
   return source.slice(0, exportDefaultIdx) + insertion + source.slice(exportDefaultIdx);
 }
 
+// Mirror of SlideAspect in app/lib/sdk.ts; kept separate so this editor-side
+// module doesn't import the client runtime.
 export type SlideAspectValue = '16:9' | '4:3';
 
 export function validateSlideAspect(v: unknown): SlideAspectValue | null {
