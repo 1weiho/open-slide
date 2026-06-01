@@ -105,6 +105,8 @@ export const en: Locale = {
     toastCopyLinkFailed: 'Failed to copy link',
     exportAsHtml: 'Export as HTML',
     exportAsPdf: 'Export as PDF',
+    exportAsPptx: 'Export as PPTX',
+    pptxExportFailed: 'PPTX export failed',
     pdfExportFailed: 'PDF export failed',
     pdfExportSafariUnsupported:
       'Export as PDF is not supported on Safari. Please try a Chromium-based browser instead.',

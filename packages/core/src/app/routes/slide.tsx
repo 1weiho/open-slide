@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   Download,
   FileCode2,
+  FileSpreadsheet,
   FileText,
   Link2,
   Loader2,
@@ -52,6 +53,7 @@ import { SlideTransitionLayer } from '../components/slide-transition-layer';
 import { type ThumbnailActions, ThumbnailRail } from '../components/thumbnail-rail';
 import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf, isSafari } from '../lib/export-pdf';
+import { exportSlideAsPptx } from '../lib/export-pptx';
 import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
 import type { SlideModule } from '../lib/sdk';
 import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
@@ -500,6 +502,24 @@ export function Slide() {
                       <FileText />
                       {t.slide.exportAsPdf}
                     </DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={exporting}
+                      onSelect={async () => {
+                        if (!slide || exporting) return;
+                        setExporting(true);
+                        try {
+                          await exportSlideAsPptx(slide, slideId);
+                        } catch (err) {
+                          console.error('[open-slide] pptx export failed', err);
+                          toast.error(t.slide.pptxExportFailed, { duration: 4000 });
+                        } finally {
+                          setExporting(false);
+                        }
+                      }}
+                    >
+                      <FileSpreadsheet />
+                      {t.slide.exportAsPptx}
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
@@ -932,25 +952,17 @@ function InlineTitleEditor({
     );
   }
 
-  if (!import.meta.env.DEV) {
-    return (
-      <div className="flex min-w-0 items-baseline justify-center">
-        <h1 className="truncate font-heading text-[13.5px] font-semibold tracking-[-0.01em]">
-          {title}
-        </h1>
-      </div>
-    );
-  }
-
   return (
     <div className="flex min-w-0 items-center justify-center">
       <button
         type="button"
-        onClick={() => setEditing(true)}
-        aria-label={t.slide.renameSlide}
+        onClick={import.meta.env.DEV ? () => setEditing(true) : undefined}
+        aria-label={import.meta.env.DEV ? t.slide.renameSlide : undefined}
         className={cn(
-          'min-w-0 max-w-full cursor-text rounded-[5px] border border-transparent px-2 py-0.5 transition-colors',
-          'hover:border-foreground/30 hover:bg-card focus-visible:border-foreground/30 focus-visible:bg-card focus-visible:outline-none',
+          'min-w-0 max-w-full rounded-[5px] border border-transparent px-2 py-0.5 transition-colors',
+          import.meta.env.DEV &&
+            'cursor-text hover:border-foreground/30 hover:bg-card focus-visible:border-foreground/30 focus-visible:bg-card',
+          'focus-visible:outline-none',
         )}
       >
         <h1 className="truncate font-heading text-[13.5px] font-semibold tracking-[-0.01em]">

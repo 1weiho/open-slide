@@ -104,6 +104,8 @@ export const zhCN: Locale = {
     toastCopyLinkFailed: '复制链接失败',
     exportAsHtml: '导出为 HTML',
     exportAsPdf: '导出为 PDF',
+    exportAsPptx: '导出为 PPTX',
+    pptxExportFailed: 'PPTX 导出失败',
     pdfExportFailed: 'PDF 导出失败',
     pdfExportSafariUnsupported:
       '导出 PDF 目前不支持 Safari 设备，请尝试使用基于 Chromium 的浏览器替代。',
