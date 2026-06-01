@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parsePort } from './run.ts';
+import { parsePort, parseShareProvider } from './run.ts';
 
 describe('parsePort', () => {
   it('accepts valid integer ports', () => {
@@ -22,5 +22,15 @@ describe('parsePort', () => {
 
   it('rejects non-integer numbers', () => {
     expect(() => parsePort('80.5')).toThrow(/Invalid port/);
+  });
+});
+
+describe('parseShareProvider', () => {
+  it('accepts tailscale', () => {
+    expect(parseShareProvider('tailscale')).toBe('tailscale');
+  });
+
+  it('rejects unknown share providers', () => {
+    expect(() => parseShareProvider('ngrok')).toThrow(/Invalid share provider/);
   });
 });

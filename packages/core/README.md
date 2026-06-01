@@ -22,9 +22,13 @@ Once installed, the `open-slide` bin is available in the workspace:
 
 | Command | Description |
 | --- | --- |
-| `open-slide dev` | Start the dev server. Flags: `-p, --port <port>`, `--host [host]`, `--open`. |
+| `open-slide dev` | Start the dev server. Flags: `-p, --port <port>`, `--host [host]`, `--share tailscale`, `--open`. |
 | `open-slide build` | Build a static site. Flags: `--out-dir <dir>` (defaults to `dist`). |
 | `open-slide preview` | Preview the production build. Flags: `-p, --port <port>`, `--host [host]`, `--open`. |
+
+### Tailscale live preview
+
+Use `open-slide dev --share tailscale` to start the dev server on `0.0.0.0` and print this device's Tailscale URL. Open the printed `http://<tailscale-ip>:<port>/` URL from another Tailscale-connected device to view live updates during development.
 
 ## Config
 
