@@ -1,11 +1,8 @@
-import config from 'virtual:open-slide/config';
-import { en } from '../../locale/en';
 import type { Locale } from '../../locale/types';
-
-const resolved: Locale = (config.locale as Locale | undefined) ?? en;
+import { useLocaleContext } from './locale-provider';
 
 export function useLocale(): Locale {
-  return resolved;
+  return useLocaleContext().locale;
 }
 
 export { format, plural } from '../../locale/format';

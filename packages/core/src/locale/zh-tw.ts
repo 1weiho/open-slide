@@ -352,6 +352,11 @@ export const zhTW: Locale = {
     system: '系統',
   },
 
+  languageToggle: {
+    toggleAria: '切換語言',
+    title: '語言',
+  },
+
   imagePlaceholder: {
     dropOverlay: '拖入圖片以使用',
     uploading: '上傳中…',

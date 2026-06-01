@@ -353,6 +353,11 @@ export const en: Locale = {
     system: 'System',
   },
 
+  languageToggle: {
+    toggleAria: 'Change language',
+    title: 'Language',
+  },
+
   imagePlaceholder: {
     dropOverlay: 'Drop image to use here',
     uploading: 'Uploading…',

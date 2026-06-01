@@ -357,6 +357,11 @@ export const ja: Locale = {
     system: 'システム',
   },
 
+  languageToggle: {
+    toggleAria: '言語を切り替え',
+    title: '言語',
+  },
+
   imagePlaceholder: {
     dropOverlay: 'ここにドロップして使用',
     uploading: 'アップロード中…',

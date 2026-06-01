@@ -1,6 +1,7 @@
 import { Plus } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { LanguageToggle } from '@/components/language-toggle';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { Folder, FolderIcon } from '@/lib/sdk';
@@ -124,7 +125,8 @@ export function Sidebar({
     <aside className="paper relative flex h-full w-[16.5rem] shrink-0 flex-col border-r border-hairline bg-sidebar text-sidebar-foreground">
       <div className="flex items-center justify-between px-4 pt-5 pb-4">
         <h1 className="font-heading text-lg font-bold tracking-tight">{t.home.appTitle}</h1>
-        <div className="-mr-1.5">
+        <div className="-mr-1.5 flex items-center">
+          <LanguageToggle />
           <ThemeToggle />
         </div>
       </div>

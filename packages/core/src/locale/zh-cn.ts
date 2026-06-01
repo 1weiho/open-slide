@@ -352,6 +352,11 @@ export const zhCN: Locale = {
     system: '系统',
   },
 
+  languageToggle: {
+    toggleAria: '切换语言',
+    title: '语言',
+  },
+
   imagePlaceholder: {
     dropOverlay: '拖入图片以使用',
     uploading: '上传中…',
