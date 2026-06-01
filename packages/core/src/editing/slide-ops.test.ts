@@ -442,10 +442,20 @@ describe('updateMetaAspectInSource', () => {
     expect(updateMetaAspectInSource(baseMultiline, '16:9')).toBe(baseMultiline);
   });
 
-  it('creates a meta block when none exists and aspect is not the default', () => {
+  it('eats a same-line trailing comment when removing aspect', () => {
+    const source = `export const meta: SlideMeta = {\n  aspect: '4:3', // widescreen off\n  title: 'Hi',\n};\nexport default [];\n`;
+    const out = updateMetaAspectInSource(source, '16:9');
+    expect(out).not.toContain('aspect');
+    expect(out).not.toContain('widescreen off');
+    expect(out).not.toMatch(/\{\n[ \t]+\n/);
+    expect(out).toContain("title: 'Hi'");
+  });
+
+  it('creates an untyped meta block when none exists (no dangling SlideMeta import)', () => {
     const source = `export default [];\n`;
     const out = updateMetaAspectInSource(source, '4:3');
     expect(out).toContain("aspect: '4:3'");
-    expect(out).toContain('export const meta: SlideMeta');
+    expect(out).toContain('export const meta = {');
+    expect(out).not.toContain('SlideMeta');
   });
 });

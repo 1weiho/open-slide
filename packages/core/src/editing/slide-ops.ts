@@ -307,6 +307,11 @@ export function updateMetaAspectInSource(source: string, aspect: SlideAspectValu
           lineStart--;
         }
         let lineEnd = idx + matchLen;
+        // Also eat a same-line trailing comment so it isn't orphaned inside meta.
+        while (body[lineEnd] === ' ' || body[lineEnd] === '\t') lineEnd++;
+        if (body.startsWith('//', lineEnd)) {
+          while (lineEnd < body.length && body[lineEnd] !== '\n') lineEnd++;
+        }
         if (body[lineEnd] === '\n') lineEnd++;
         const before = body.slice(0, lineStart);
         const after = body.slice(lineEnd);
@@ -331,7 +336,9 @@ export function updateMetaAspectInSource(source: string, aspect: SlideAspectValu
 
   const exportDefaultIdx = source.search(/export\s+default\b/);
   if (exportDefaultIdx === -1) return null;
-  const insertion = `export const meta: SlideMeta = { aspect: ${newLiteral} };\n\n`;
+  // Untyped: a slide that had no meta block won't import SlideMeta, and the
+  // annotation would dangle. Inference against SlideModule.meta still checks it.
+  const insertion = `export const meta = { aspect: ${newLiteral} };\n\n`;
   return source.slice(0, exportDefaultIdx) + insertion + source.slice(exportDefaultIdx);
 }
 
