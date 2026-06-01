@@ -105,7 +105,13 @@ export const ja: Locale = {
     toastCopyLinkFailed: 'リンクのコピーに失敗しました',
     exportAsHtml: 'HTML として書き出し',
     exportAsPdf: 'PDF として書き出し',
+    exportAsImagePptx: '画像 PPTX として書き出し',
+    exportAsPptx: 'PPTX として書き出し',
+    comingSoon: '近日公開',
+    pptxComingSoonTooltip:
+      '編集可能な PPTX の書き出しはまだ対応していません。それまでは「画像 PPTX として書き出し」をご利用ください。',
     pdfExportFailed: 'PDF の書き出しに失敗しました',
+    imagePptxExportFailed: 'PPTX の書き出しに失敗しました',
     pdfExportSafariUnsupported:
       'PDF の書き出しは現在 Safari では対応していません。Chromium ベースのブラウザでお試しください。',
     present: '発表',
@@ -346,6 +352,13 @@ export const ja: Locale = {
     title: 'PDF を書き出し中',
     processing: 'ページ {current} / {total} を処理中',
     printing: '印刷ダイアログを開いています…',
+    done: '完了',
+  },
+
+  pptxToast: {
+    title: 'PPTX を書き出し中',
+    processing: 'ページ {current} / {total} を描画中',
+    generating: 'プレゼンテーションを構築中…',
     done: '完了',
   },
 

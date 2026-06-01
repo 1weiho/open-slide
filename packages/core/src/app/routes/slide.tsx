@@ -5,12 +5,14 @@ import {
   ChevronLeft,
   Download,
   FileCode2,
+  FileImage,
   FileText,
   Link2,
   Loader2,
   Maximize,
   MonitorSpeaker,
   Play,
+  Presentation,
 } from 'lucide-react';
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
@@ -33,6 +35,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -47,11 +50,13 @@ import { cn } from '@/lib/utils';
 import { NotesDrawer } from '../components/notes-drawer';
 import { PdfProgressToast } from '../components/pdf-progress-toast';
 import { openPresenterWindow, Player } from '../components/player';
+import { PptxProgressToast } from '../components/pptx-progress-toast';
 import { SlideCanvas } from '../components/slide-canvas';
 import { SlideTransitionLayer } from '../components/slide-transition-layer';
 import { type ThumbnailActions, ThumbnailRail } from '../components/thumbnail-rail';
 import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf, isSafari } from '../lib/export-pdf';
+import { exportSlideAsImagePptx } from '../lib/export-pptx';
 import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
 import type { SlideModule } from '../lib/sdk';
 import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
@@ -500,6 +505,69 @@ export function Slide() {
                       <FileText />
                       {t.slide.exportAsPdf}
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      disabled={exporting}
+                      onSelect={async () => {
+                        if (!slide || exporting) return;
+                        setExporting(true);
+                        const toastId = `pptx-export-${slideId}`;
+                        toast.custom(
+                          () => (
+                            <PptxProgressToast
+                              progress={{
+                                phase: 'processing',
+                                current: 0,
+                                total: pages.length,
+                                percent: 0,
+                              }}
+                            />
+                          ),
+                          { id: toastId, duration: Infinity },
+                        );
+                        try {
+                          await exportSlideAsImagePptx(slide, slideId, (p) => {
+                            toast.custom(() => <PptxProgressToast progress={p} />, {
+                              id: toastId,
+                              duration: Infinity,
+                            });
+                          });
+                        } catch (err) {
+                          console.error('[open-slide] image pptx export failed', err);
+                          toast.error(t.slide.imagePptxExportFailed, {
+                            id: toastId,
+                            duration: 4000,
+                          });
+                        } finally {
+                          setExporting(false);
+                          toast.dismiss(toastId);
+                        }
+                      }}
+                    >
+                      <FileImage />
+                      {t.slide.exportAsImagePptx}
+                    </DropdownMenuItem>
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div
+                            aria-disabled
+                            className="relative flex cursor-help items-center justify-between gap-2 rounded-[5px] px-2 py-1.5 text-[12.5px] opacity-45 select-none [&_svg]:size-3.5 [&_svg]:shrink-0 [&_svg]:opacity-80"
+                          >
+                            <span className="flex items-center gap-2">
+                              <Presentation />
+                              {t.slide.exportAsPptx}
+                            </span>
+                            <span className="rounded-[3px] bg-muted px-1.5 py-0.5 font-mono text-[9.5px] tracking-[0.04em] text-muted-foreground">
+                              {t.slide.comingSoon}
+                            </span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-[240px] leading-relaxed">
+                          {t.slide.pptxComingSoonTooltip}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
