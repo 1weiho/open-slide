@@ -297,8 +297,17 @@ export function updateMetaAspectInSource(source: string, aspect: SlideAspectValu
     if (match) {
       if (remove) {
         const idx = body.indexOf(match[0]);
-        const before = body.slice(0, idx);
-        const after = body.slice(idx + match[0].length);
+        const matchLen = match[0].length;
+        // Eat the indentation + newline of the line we're deleting so we don't
+        // leave a blank, indented line behind in the object literal.
+        let lineStart = idx;
+        while (lineStart > 0 && (body[lineStart - 1] === ' ' || body[lineStart - 1] === '\t')) {
+          lineStart--;
+        }
+        let lineEnd = idx + matchLen;
+        if (body[lineEnd] === '\n') lineEnd++;
+        const before = body.slice(0, lineStart);
+        const after = body.slice(lineEnd);
         const stripped = (before + after).replace(/,(\s*[},])/, '$1');
         return source.slice(0, openBrace + 1) + stripped + source.slice(closeBrace);
       }

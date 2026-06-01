@@ -8,6 +8,7 @@ import {
   removePageFromDefaultExportInSource,
   reorderDefaultExportPagesInSource,
   reorderNotesArrayInSource,
+  updateMetaAspectInSource,
   updateMetaTitleInSource,
   validateSlideName,
 } from './slide-ops.ts';
@@ -410,5 +411,41 @@ export default [
 
   it('returns null when the default export is not an array', () => {
     expect(duplicatePageInDefaultExportInSource(`export default A;\n`, 0)).toBeNull();
+  });
+});
+
+describe('updateMetaAspectInSource', () => {
+  const baseMultiline = `export const meta: SlideMeta = {\n  title: 'Hello',\n};\nexport default [];\n`;
+
+  it('inserts aspect when meta exists without one', () => {
+    const out = updateMetaAspectInSource(baseMultiline, '4:3');
+    expect(out).toContain("aspect: '4:3'");
+    expect(out).toContain("title: 'Hello'");
+  });
+
+  it('rewrites an existing aspect literal', () => {
+    const source = `export const meta: SlideMeta = {\n  aspect: '4:3',\n  title: 'Hi',\n};\nexport default [];\n`;
+    const out = updateMetaAspectInSource(source, '4:3');
+    expect(out).toContain("aspect: '4:3'");
+  });
+
+  it('removes the aspect line entirely when switching back to 16:9', () => {
+    const source = `export const meta: SlideMeta = {\n  aspect: '4:3',\n  title: 'Hi',\n};\nexport default [];\n`;
+    const out = updateMetaAspectInSource(source, '16:9');
+    expect(out).not.toContain('aspect');
+    // No stray indented blank line where the property used to live.
+    expect(out).not.toMatch(/\{\n[ \t]+\n/);
+    expect(out).toContain("title: 'Hi'");
+  });
+
+  it('returns the source unchanged when removing an aspect that does not exist', () => {
+    expect(updateMetaAspectInSource(baseMultiline, '16:9')).toBe(baseMultiline);
+  });
+
+  it('creates a meta block when none exists and aspect is not the default', () => {
+    const source = `export default [];\n`;
+    const out = updateMetaAspectInSource(source, '4:3');
+    expect(out).toContain("aspect: '4:3'");
+    expect(out).toContain('export const meta: SlideMeta');
   });
 });
