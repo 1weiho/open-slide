@@ -53,7 +53,7 @@ import { type ThumbnailActions, ThumbnailRail } from '../components/thumbnail-ra
 import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf, isSafari } from '../lib/export-pdf';
 import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
-import type { SlideModule } from '../lib/sdk';
+import type { SlideAspect, SlideModule } from '../lib/sdk';
 import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
 import { useSlideModule } from '../lib/use-slide-module';
 
@@ -227,6 +227,25 @@ export function Slide() {
     [duplicatePage, deletePage],
   );
 
+  const updateAspect = useCallback(
+    async (next: SlideAspect) => {
+      try {
+        const res = await fetch(`/__slides/${encodeURIComponent(slideId)}/aspect`, {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ aspect: next }),
+        });
+        if (!res.ok) {
+          const detail = await res.json().catch(() => ({ error: res.statusText }));
+          throw new Error(detail.error ?? `HTTP ${res.status}`);
+        }
+      } catch (err) {
+        toast.error(`Failed to set aspect: ${String((err as Error).message ?? err)}`);
+      }
+    },
+    [slideId],
+  );
+
   useEffect(() => {
     if (playMode) return;
     const onKey = (e: KeyboardEvent) => {
@@ -316,6 +335,7 @@ export function Slide() {
       <Player
         pages={pages}
         design={slide.design}
+        aspect={slide.meta?.aspect}
         index={index}
         onIndexChange={goTo}
         onExit={() => {}}
@@ -330,6 +350,7 @@ export function Slide() {
         pages={pages}
         design={slide.design}
         transition={slide.transition}
+        aspect={slide.meta?.aspect}
         index={index}
         onIndexChange={goTo}
         onExit={() => setPlayMode(null)}
@@ -341,6 +362,7 @@ export function Slide() {
   }
 
   const title = slide.meta?.title ?? slideId;
+  const aspect = slide.meta?.aspect;
 
   return (
     <HistoryProvider>
@@ -506,6 +528,18 @@ export function Slide() {
               {view === 'slides' && (
                 <DesignToggleButton active={designOpen} onToggle={() => setDesignOpen((v) => !v)} />
               )}
+              {view === 'slides' && import.meta.env.DEV && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => updateAspect(aspect === '4:3' ? '16:9' : '4:3')}
+                  title={t.slide.aspectToggleTitle}
+                  aria-label={t.slide.aspectToggleAria}
+                  className="font-mono text-[11px] tabular-nums"
+                >
+                  {aspect === '4:3' ? '4:3' : '16:9'}
+                </Button>
+              )}
               {view === 'slides' && <InspectToggleButton />}
               <span aria-hidden className="mx-0.5 hidden h-5 w-px bg-hairline md:block" />
               {view === 'slides' && (
@@ -574,6 +608,7 @@ export function Slide() {
                     onSelect={goTo}
                     onReorder={import.meta.env.DEV ? reorderPage : undefined}
                     actions={thumbnailActions}
+                    aspect={aspect}
                   />
                   <main
                     ref={slideViewportRef}
@@ -588,7 +623,7 @@ export function Slide() {
                       canPrev={index > 0}
                       canNext={index < pageCount - 1}
                     />
-                    <SlideCanvas design={slide.design}>
+                    <SlideCanvas design={slide.design} aspect={aspect}>
                       <SlideTransitionLayer
                         pages={pages}
                         index={index}
@@ -614,6 +649,7 @@ export function Slide() {
                       onSelect={goTo}
                       orientation="horizontal"
                       actions={thumbnailActions}
+                      aspect={aspect}
                     />
                   </div>
                   <InspectorPanel />
@@ -656,6 +692,7 @@ function ResizableRail(props: {
   onSelect: (i: number) => void;
   onReorder?: (from: number, to: number) => void;
   actions?: ThumbnailActions;
+  aspect?: SlideAspect;
 }) {
   const t = useLocale();
   const [width, setWidth] = useState<number>(readStoredRailWidth);

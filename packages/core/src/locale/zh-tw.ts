@@ -115,6 +115,8 @@ export const zhTW: Locale = {
     slidesTab: '投影片',
     assetsTab: '素材',
     renameSlide: '重新命名投影片',
+    aspectToggleTitle: '切換比例（16:9 / 4:3）',
+    aspectToggleAria: '切換投影片比例',
     loadingEyebrow: '載入中',
     emptyEyebrow: '空白',
     nothingToShow: '沒有可顯示的內容。',

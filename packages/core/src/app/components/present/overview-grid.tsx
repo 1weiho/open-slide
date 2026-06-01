@@ -3,23 +3,33 @@ import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import type { DesignSystem } from '../../lib/design';
 import { SlidePageProvider } from '../../lib/page-context';
-import type { Page } from '../../lib/sdk';
-import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../../lib/sdk';
+import type { Page, SlideAspect } from '../../lib/sdk';
+import { getCanvasDims } from '../../lib/sdk';
 import { SlideCanvas } from '../slide-canvas';
 
 const THUMB_W = 320;
-const THUMB_H = (THUMB_W * CANVAS_HEIGHT) / CANVAS_WIDTH;
 
 type Props = {
   pages: Page[];
   design?: DesignSystem;
+  aspect?: SlideAspect;
   open: boolean;
   current: number;
   onClose: () => void;
   onSelect: (index: number) => void;
 };
 
-export function PresentOverviewGrid({ pages, design, open, current, onClose, onSelect }: Props) {
+export function PresentOverviewGrid({
+  pages,
+  design,
+  aspect,
+  open,
+  current,
+  onClose,
+  onSelect,
+}: Props) {
+  const { width: canvasW, height: canvasH } = getCanvasDims(aspect);
+  const thumbH = (THUMB_W * canvasH) / canvasW;
   const [focused, setFocused] = useState(current);
   const gridRef = useRef<HTMLDivElement>(null);
   const focusedRef = useRef<HTMLButtonElement | null>(null);
@@ -128,14 +138,15 @@ export function PresentOverviewGrid({ pages, design, open, current, onClose, onS
                     'relative w-full overflow-hidden rounded-[4px] bg-black ring-1 ring-white/10 transition-shadow',
                     isFocused && 'ring-2 ring-[var(--brand,#ef4444)]',
                   )}
-                  style={{ height: THUMB_H }}
+                  style={{ height: thumbH }}
                 >
                   <SlideCanvas
-                    scale={THUMB_W / CANVAS_WIDTH}
+                    scale={THUMB_W / canvasW}
                     center={false}
                     flat
                     freezeMotion
                     design={design}
+                    aspect={aspect}
                   >
                     <SlidePageProvider index={i} total={pages.length}>
                       <PageComp />

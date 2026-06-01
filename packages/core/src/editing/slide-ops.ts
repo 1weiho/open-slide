@@ -254,6 +254,102 @@ export function updateMetaTitleInSource(source: string, title: string): string |
   return source.slice(0, exportDefaultIdx) + insertion + source.slice(exportDefaultIdx);
 }
 
+export type SlideAspectValue = '16:9' | '4:3';
+
+export function validateSlideAspect(v: unknown): SlideAspectValue | null {
+  return v === '16:9' || v === '4:3' ? v : null;
+}
+
+/**
+ * Rewrite (or insert) the `aspect` field in the slide module's `export const meta`.
+ * Mirrors updateMetaTitleInSource but writes the `aspect` key. Setting to '16:9'
+ * removes the field instead (since it's the default).
+ */
+export function updateMetaAspectInSource(source: string, aspect: SlideAspectValue): string | null {
+  const remove = aspect === '16:9';
+  const newLiteral = `'${aspect}'`;
+
+  const metaStart = source.search(/export\s+const\s+meta\b/);
+  if (metaStart !== -1) {
+    const eqIdx = source.indexOf('=', metaStart);
+    if (eqIdx === -1) return null;
+    const openBrace = source.indexOf('{', eqIdx);
+    if (openBrace === -1) return null;
+
+    let depth = 0;
+    let closeBrace = -1;
+    for (let i = openBrace; i < source.length; i++) {
+      const ch = source[i];
+      if (ch === '{') depth++;
+      else if (ch === '}') {
+        depth--;
+        if (depth === 0) {
+          closeBrace = i;
+          break;
+        }
+      }
+    }
+    if (closeBrace === -1) return null;
+
+    const body = source.slice(openBrace + 1, closeBrace);
+    const aspectRe = /(^|[\s,{])(aspect\s*:\s*)(['"`])((?:\\.|(?!\3).)*)\3(\s*,?)/;
+    const match = body.match(aspectRe);
+    if (match) {
+      if (remove) {
+        const idx = body.indexOf(match[0]);
+        const before = body.slice(0, idx);
+        const after = body.slice(idx + match[0].length);
+        const stripped = (before + after).replace(/,(\s*[},])/, '$1');
+        return source.slice(0, openBrace + 1) + stripped + source.slice(closeBrace);
+      }
+      const newBody = body.replace(aspectRe, `${match[1]}${match[2]}${newLiteral}${match[5]}`);
+      return source.slice(0, openBrace + 1) + newBody + source.slice(closeBrace);
+    }
+
+    if (remove) return source;
+
+    const firstIndentMatch = body.match(/\n([ \t]+)\S/);
+    const indent = firstIndentMatch ? firstIndentMatch[1] : '  ';
+    const trimmedBody = body.replace(/^\s*\n?/, '');
+    const needsSeparator = trimmedBody.trim().length > 0;
+    const insertion = `\n${indent}aspect: ${newLiteral}${needsSeparator ? ',' : ''}`;
+    return source.slice(0, openBrace + 1) + insertion + body + source.slice(closeBrace);
+  }
+
+  if (remove) return source;
+
+  const exportDefaultIdx = source.search(/export\s+default\b/);
+  if (exportDefaultIdx === -1) return null;
+  const insertion = `export const meta: SlideMeta = { aspect: ${newLiteral} };\n\n`;
+  return source.slice(0, exportDefaultIdx) + insertion + source.slice(exportDefaultIdx);
+}
+
+export async function setSlideAspect(
+  slidesRoot: string,
+  slideId: string,
+  aspect: SlideAspectValue,
+): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
+  const entry = resolveSlideEntry(slidesRoot, slideId);
+  if (!entry) return { ok: false, status: 400, error: 'invalid slideId' };
+  let source: string;
+  try {
+    source = await fs.readFile(entry, 'utf8');
+  } catch {
+    return { ok: false, status: 404, error: 'slide not found' };
+  }
+  const updated = updateMetaAspectInSource(source, aspect);
+  if (updated === null) {
+    return { ok: false, status: 422, error: 'could not update slide aspect' };
+  }
+  if (updated === source) return { ok: true };
+  try {
+    await fs.writeFile(entry, updated, 'utf8');
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, status: 500, error: String((err as Error).message ?? err) };
+  }
+}
+
 type ArrayElementRange = { start: number; end: number };
 
 function findDefaultExportArray(

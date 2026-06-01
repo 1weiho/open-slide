@@ -460,7 +460,7 @@ function SlideCard({
           <div className="relative aspect-video overflow-hidden rounded-[6px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] group-hover:shadow-floating group-hover:ring-foreground/20 motion-safe:transition-[box-shadow,--tw-ring-color] motion-safe:duration-200">
             {FirstPage ? (
               <div className="h-full w-full motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-[1.03]">
-                <SlideCanvas flat freezeMotion design={slide?.design}>
+                <SlideCanvas flat freezeMotion design={slide?.design} aspect={slide?.meta?.aspect}>
                   <SlidePageProvider index={0} total={slide?.default.length ?? 1}>
                     <FirstPage />
                   </SlidePageProvider>

@@ -3,7 +3,7 @@ import { useClickPageNavigation } from '@/lib/use-click-page-navigation';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
 import type { DesignSystem } from '../lib/design';
-import type { Page } from '../lib/sdk';
+import type { Page, SlideAspect } from '../lib/sdk';
 import type { SlideTransition } from '../lib/transition';
 import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
 import { PresentBlackoutOverlay } from './present/blackout-overlay';
@@ -31,6 +31,7 @@ type Props = {
   pages: Page[];
   design?: DesignSystem;
   transition?: SlideTransition;
+  aspect?: SlideAspect;
   index: number;
   onIndexChange: (index: number) => void;
   onExit: () => void;
@@ -49,6 +50,7 @@ export function Player({
   pages,
   design,
   transition,
+  aspect,
   index,
   onIndexChange,
   onExit,
@@ -308,7 +310,7 @@ export function Player({
         controls && (hideCursor ? 'cursor-none' : 'cursor-default'),
       )}
     >
-      <SlideCanvas flat design={design}>
+      <SlideCanvas flat design={design} aspect={aspect}>
         <SlideTransitionLayer
           pages={pages}
           index={index}
@@ -347,6 +349,7 @@ export function Player({
           <PresentOverviewGrid
             pages={pages}
             design={design}
+            aspect={aspect}
             open={overviewOpen}
             current={index}
             onClose={() => setOverviewOpen(false)}

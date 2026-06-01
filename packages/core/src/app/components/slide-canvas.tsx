@@ -1,7 +1,7 @@
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { type DesignSystem, designToCssVars } from '../lib/design';
-import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
+import { getCanvasDims, type SlideAspect } from '../lib/sdk';
 
 type Props = {
   children: ReactNode;
@@ -12,6 +12,7 @@ type Props = {
   freezeMotion?: boolean;
   className?: string;
   design?: DesignSystem;
+  aspect?: SlideAspect;
 };
 
 export function SlideCanvas({
@@ -22,9 +23,11 @@ export function SlideCanvas({
   freezeMotion = false,
   className,
   design,
+  aspect,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [fitScale, setFitScale] = useState(1);
+  const { width: canvasW, height: canvasH } = getCanvasDims(aspect);
 
   useEffect(() => {
     if (scale !== undefined) return;
@@ -33,15 +36,15 @@ export function SlideCanvas({
     const ro = new ResizeObserver(() => {
       const { width, height } = el.getBoundingClientRect();
       if (width === 0 || height === 0) return;
-      setFitScale(Math.min(width / CANVAS_WIDTH, height / CANVAS_HEIGHT));
+      setFitScale(Math.min(width / canvasW, height / canvasH));
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, [scale]);
+  }, [scale, canvasW, canvasH]);
 
   const s = scale ?? fitScale;
-  const scaledW = CANVAS_WIDTH * s;
-  const scaledH = CANVAS_HEIGHT * s;
+  const scaledW = canvasW * s;
+  const scaledH = canvasH * s;
 
   return (
     <div ref={containerRef} className={cn('relative h-full w-full overflow-hidden', className)}>
@@ -70,8 +73,8 @@ export function SlideCanvas({
           data-osd-freeze-motion={freezeMotion ? '' : undefined}
           style={
             {
-              width: CANVAS_WIDTH,
-              height: CANVAS_HEIGHT,
+              width: canvasW,
+              height: canvasH,
               transform: `scale(${s})`,
               transformOrigin: 'top left',
               ...(design ? designToCssVars(design) : {}),

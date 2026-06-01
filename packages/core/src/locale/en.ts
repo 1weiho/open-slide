@@ -116,6 +116,8 @@ export const en: Locale = {
     slidesTab: 'Slides',
     assetsTab: 'Assets',
     renameSlide: 'Rename slide',
+    aspectToggleTitle: 'Toggle aspect ratio (16:9 / 4:3)',
+    aspectToggleAria: 'Toggle slide aspect ratio',
     loadingEyebrow: 'Loading',
     emptyEyebrow: 'Empty',
     nothingToShow: 'Nothing to show.',

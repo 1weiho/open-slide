@@ -117,6 +117,8 @@ export type Locale = {
     slidesTab: string;
     assetsTab: string;
     renameSlide: string;
+    aspectToggleTitle: string;
+    aspectToggleAria: string;
     loadingEyebrow: string;
     emptyEyebrow: string;
     nothingToShow: string;
