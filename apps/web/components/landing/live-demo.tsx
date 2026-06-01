@@ -30,8 +30,11 @@ export function LiveDemo() {
   };
 
   return (
-    <section id="demo" className="relative">
+    <section id="demo" className="relative" aria-labelledby="demo-heading">
       <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 pt-4 sm:pt-8 lg:pt-12 pb-20 sm:pb-32">
+        <h2 id="demo-heading" className="sr-only">
+          Live demo
+        </h2>
         <div
           className="relative block w-full overflow-hidden rounded-[8px] border border-[color:var(--color-rule)] bg-black"
           style={{ aspectRatio: '16 / 9' }}

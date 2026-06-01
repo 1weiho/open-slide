@@ -1,7 +1,5 @@
-'use client';
-
-import posthog from 'posthog-js';
 import { CopyCommand } from './copy-command';
+import { HeroDocsLink } from './hero-docs-link';
 
 export function Hero() {
   return (
@@ -36,19 +34,7 @@ export function Hero() {
             style={{ animationDelay: '320ms' }}
           >
             <CopyCommand command="npx @open-slide/cli init" />
-            <a
-              href="/docs"
-              onClick={() => posthog.capture('docs_link_clicked', { location: 'hero' })}
-              className="group inline-flex items-center gap-2 text-[14px] font-[family-name:var(--font-mono)] text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text)] transition-colors"
-            >
-              <span>Read the docs</span>
-              <span
-                aria-hidden
-                className="text-[color:var(--color-muted)] group-hover:translate-x-0.5 transition-transform"
-              >
-                →
-              </span>
-            </a>
+            <HeroDocsLink />
           </div>
         </div>
       </div>

@@ -67,11 +67,21 @@ export const metadata: Metadata = {
     url: siteUrl,
     siteName: appName,
     locale: 'en_US',
+    images: [
+      {
+        url: '/opengraph-image.png',
+        width: 1200,
+        height: 630,
+        alt: `${appName} — React-first slide framework for AI agents`,
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title,
     description,
+    creator: '@1weiho',
+    images: ['/opengraph-image.png'],
   },
   robots: {
     index: true,
