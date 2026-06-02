@@ -566,7 +566,7 @@ export function Slide() {
           ) : (
             <DesignProvider slideId={slideId}>
               <div className="flex min-h-0 flex-1 flex-col">
-                <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+                <div className="flex min-h-0 flex-1 flex-row">
                   <ResizableRail
                     pages={pages}
                     design={slide.design}
@@ -575,49 +575,51 @@ export function Slide() {
                     onReorder={import.meta.env.DEV ? reorderPage : undefined}
                     actions={thumbnailActions}
                   />
-                  <main
-                    ref={slideViewportRef}
-                    data-inspector-root
-                    data-slide-id={slideId}
-                    className="paper relative min-h-0 min-w-0 flex-1 bg-canvas p-2 md:p-10"
-                  >
-                    <SlideViewportNavigation
-                      targetRef={slideViewportRef}
-                      onPrev={() => goTo(index - 1)}
-                      onNext={() => goTo(index + 1)}
-                      canPrev={index > 0}
-                      canNext={index < pageCount - 1}
-                    />
-                    <SlideCanvas design={slide.design}>
-                      <SlideTransitionLayer
-                        pages={pages}
-                        index={index}
-                        total={pageCount}
-                        moduleTransition={slide.transition}
-                        disabled={prefersReducedMotion}
+                  <div className="flex min-h-0 min-w-0 flex-1 flex-row">
+                    <main
+                      ref={slideViewportRef}
+                      data-inspector-root
+                      data-slide-id={slideId}
+                      className="paper relative min-h-0 min-w-0 flex-1 bg-canvas p-2 md:p-10"
+                    >
+                      <SlideViewportNavigation
+                        targetRef={slideViewportRef}
+                        onPrev={() => goTo(index - 1)}
+                        onNext={() => goTo(index + 1)}
+                        canPrev={index > 0}
+                        canNext={index < pageCount - 1}
                       />
-                    </SlideCanvas>
-                    <InspectOverlay />
-                    <SaveBar />
-                    {import.meta.env.DEV && <CommentWidget />}
-                  </main>
-                  {/* Mobile-only horizontal rail. Sits below the canvas and
-                    pads its bottom for the iOS home indicator / Safari URL bar. */}
-                  <div
-                    className="shrink-0 border-t border-hairline md:hidden"
-                    style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-                  >
-                    <ThumbnailRail
-                      pages={pages}
-                      design={slide.design}
-                      current={index}
-                      onSelect={goTo}
-                      orientation="horizontal"
-                      actions={thumbnailActions}
-                    />
+                      <SlideCanvas design={slide.design}>
+                        <SlideTransitionLayer
+                          pages={pages}
+                          index={index}
+                          total={pageCount}
+                          moduleTransition={slide.transition}
+                          disabled={prefersReducedMotion}
+                        />
+                      </SlideCanvas>
+                      <InspectOverlay />
+                      <SaveBar />
+                      {import.meta.env.DEV && <CommentWidget />}
+                    </main>
+                    <InspectorPanel />
+                    <DesignPanel open={designOpen} onClose={() => setDesignOpen(false)} />
                   </div>
-                  <InspectorPanel />
-                  <DesignPanel open={designOpen} onClose={() => setDesignOpen(false)} />
+                </div>
+                {/* Mobile-only horizontal rail. Sits below the canvas and
+                  pads its bottom for the iOS home indicator / Safari URL bar. */}
+                <div
+                  className="shrink-0 border-t border-hairline md:hidden"
+                  style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+                >
+                  <ThumbnailRail
+                    pages={pages}
+                    design={slide.design}
+                    current={index}
+                    onSelect={goTo}
+                    orientation="horizontal"
+                    actions={thumbnailActions}
+                  />
                 </div>
                 {import.meta.env.DEV && (
                   <NotesDrawer

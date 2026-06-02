@@ -28,6 +28,7 @@ export const zhTW: Locale = {
     dark: '深色',
     system: '系統',
     selected: '已選取',
+    resizePanel: '調整面板寬度',
   },
 
   notFound: {

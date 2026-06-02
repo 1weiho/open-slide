@@ -28,6 +28,7 @@ export const ja: Locale = {
     dark: 'ダーク',
     system: 'システム',
     selected: '選択中',
+    resizePanel: 'パネル幅を調整',
   },
 
   notFound: {

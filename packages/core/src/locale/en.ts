@@ -28,6 +28,7 @@ export const en: Locale = {
     dark: 'Dark',
     system: 'System',
     selected: 'Selected',
+    resizePanel: 'Resize panel',
   },
 
   notFound: {

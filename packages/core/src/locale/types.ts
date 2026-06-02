@@ -28,6 +28,7 @@ export type Locale = {
     dark: string;
     system: string;
     selected: string;
+    resizePanel: string;
   };
 
   notFound: {
