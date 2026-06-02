@@ -44,7 +44,7 @@ export const zhTW: Locale = {
     folders: '資料夾',
     newFolder: '新增資料夾',
     folderName: '資料夾名稱',
-    updateAvailable: 'open-slide {version} 已發布 —— 請更新套件以取得最新版本。',
+    updateAvailable: 'open-slide {version} 已發布，請更新套件以取得最新版本。',
     changeIcon: '變更圖示',
     iconEmojiTab: 'Emoji',
     iconColorTab: '顏色',

@@ -44,7 +44,7 @@ export const zhCN: Locale = {
     folders: '文件夹',
     newFolder: '新建文件夹',
     folderName: '文件夹名称',
-    updateAvailable: 'open-slide {version} 已发布 —— 请更新软件包以获取最新版本。',
+    updateAvailable: 'open-slide {version} 已发布，请更新软件包以获取最新版本。',
     changeIcon: '更换图标',
     iconEmojiTab: 'Emoji',
     iconColorTab: '颜色',

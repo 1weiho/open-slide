@@ -25,27 +25,27 @@ export function SidebarFooter() {
 
   const label = `v${config.version}`;
 
-  if (!update?.latest) {
-    return (
-      <div className="px-4 py-3 text-[11px] text-muted-foreground/70 tabular-nums">{label}</div>
-    );
-  }
+  const versionRow = (
+    <span className="inline-flex items-center gap-1.5">
+      {update?.latest && <span className="size-1.5 rounded-full bg-brand" aria-hidden />}
+      {label}
+    </span>
+  );
 
   return (
-    <div className="px-4 py-3">
-      <TooltipProvider delayDuration={200}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground/70 tabular-nums">
-              <span className="size-1.5 rounded-full bg-brand" aria-hidden />
-              {label}
-            </span>
-          </TooltipTrigger>
-          <TooltipContent side="top" sideOffset={6} className="max-w-56">
-            {format(t.home.updateAvailable, { version: update.latest })}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+    <div className="px-4 py-3 text-[11px] text-muted-foreground/70 tabular-nums">
+      {update?.latest ? (
+        <TooltipProvider delayDuration={200}>
+          <Tooltip>
+            <TooltipTrigger asChild>{versionRow}</TooltipTrigger>
+            <TooltipContent side="top" sideOffset={6} className="max-w-56">
+              {format(t.home.updateAvailable, { version: update.latest })}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      ) : (
+        versionRow
+      )}
     </div>
   );
 }
