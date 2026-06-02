@@ -1,5 +1,5 @@
 import config from 'virtual:open-slide/config';
-import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import { en } from '../../locale/en';
 import { ja } from '../../locale/ja';
 import type { Locale } from '../../locale/types';
@@ -23,14 +23,13 @@ export const LOCALE_OPTIONS: ReadonlyArray<{ id: LocaleId; label: string }> = [
 ];
 
 const STORAGE_KEY = 'open-slide:locale';
-
 const configLocale = config.locale as Locale | undefined;
 
 function isLocaleId(value: string | null): value is LocaleId {
   return value === 'en' || value === 'zh-TW' || value === 'zh-CN' || value === 'ja';
 }
 
-function initialLocale(): Locale {
+function readStored(): Locale {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (isLocaleId(stored)) return LOCALES[stored];
@@ -38,34 +37,31 @@ function initialLocale(): Locale {
   return configLocale ?? en;
 }
 
-type LocaleContextValue = {
-  locale: Locale;
-  localeId: LocaleId;
-  setLocale: (id: LocaleId) => void;
-};
+// A module-level store (rather than React context) so every React root the
+// runtime mounts — the app shell plus the standalone roots used for HTML/PDF
+// export — shares one locale without needing a provider above each of them.
+let current: Locale = readStored();
+const listeners = new Set<() => void>();
 
-const LocaleContext = createContext<LocaleContextValue | null>(null);
-
-export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(initialLocale);
-
-  const setLocale = useCallback((id: LocaleId) => {
-    setLocaleState(LOCALES[id]);
-    try {
-      localStorage.setItem(STORAGE_KEY, id);
-    } catch {}
-  }, []);
-
-  const value = useMemo<LocaleContextValue>(
-    () => ({ locale, localeId: locale.id, setLocale }),
-    [locale, setLocale],
-  );
-
-  return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
 }
 
-export function useLocaleContext(): LocaleContextValue {
-  const ctx = useContext(LocaleContext);
-  if (!ctx) throw new Error('useLocaleContext must be used within a LocaleProvider');
-  return ctx;
+function getSnapshot(): Locale {
+  return current;
+}
+
+export function setLocale(id: LocaleId): void {
+  current = LOCALES[id];
+  try {
+    localStorage.setItem(STORAGE_KEY, id);
+  } catch {}
+  for (const listener of listeners) listener();
+}
+
+export function useLocaleValue(): Locale {
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }

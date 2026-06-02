@@ -6,12 +6,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LOCALE_OPTIONS, useLocaleContext } from '@/lib/locale-provider';
+import { LOCALE_OPTIONS, setLocale } from '@/lib/locale-store';
 import { useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 
 export function LanguageToggle() {
-  const { localeId, setLocale } = useLocaleContext();
   const t = useLocale();
 
   return (
@@ -29,7 +28,7 @@ export function LanguageToggle() {
           <DropdownMenuItem
             key={option.id}
             onSelect={() => setLocale(option.id)}
-            data-active={localeId === option.id}
+            data-active={t.id === option.id}
           >
             {option.label}
           </DropdownMenuItem>

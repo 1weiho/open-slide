@@ -1,8 +1,8 @@
 import type { Locale } from '../../locale/types';
-import { useLocaleContext } from './locale-provider';
+import { useLocaleValue } from './locale-store';
 
 export function useLocale(): Locale {
-  return useLocaleContext().locale;
+  return useLocaleValue();
 }
 
 export { format, plural } from '../../locale/format';
