@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { type MutableRefObject, useEffect, useRef, useState } from 'react';
 import { SlidePageProvider } from '../lib/page-context';
 import type { Page } from '../lib/sdk';
+import { type EntryDirection, type StepController, StepHost } from '../lib/step-context';
 import { resolveTransition, type SlideTransition, type TransitionPhase } from '../lib/transition';
 
 type Props = {
@@ -9,6 +10,8 @@ type Props = {
   total: number;
   moduleTransition?: SlideTransition;
   disabled?: boolean;
+  stepControllerRef?: MutableRefObject<StepController | null>;
+  entryDirection?: EntryDirection;
 };
 
 type Direction = 'forward' | 'backward';
@@ -30,7 +33,15 @@ function runPhase(
   });
 }
 
-export function SlideTransitionLayer({ pages, index, total, moduleTransition, disabled }: Props) {
+export function SlideTransitionLayer({
+  pages,
+  index,
+  total,
+  moduleTransition,
+  disabled,
+  stepControllerRef,
+  entryDirection = 'jump',
+}: Props) {
   const [current, setCurrent] = useState(index);
   const [outgoing, setOutgoing] = useState<number | null>(null);
   const [direction, setDirection] = useState<Direction>('forward');
@@ -129,6 +140,15 @@ export function SlideTransitionLayer({ pages, index, total, moduleTransition, di
   const CurrentPage = pages[current];
   const OutgoingPage = outgoing !== null ? pages[outgoing] : null;
 
+  // Outgoing layer mirrors the direction we just navigated so its <Steps>
+  // re-mounts in the state the audience just saw: forward nav → outgoing was
+  // fully revealed; backward nav → outgoing was at zero reveals.
+  const outgoingEntryDirection: EntryDirection =
+    entryDirection === 'backward' ? 'forward' : 'backward';
+
+  const noopControllerRef = useRef<StepController | null>(null);
+  const activeControllerRef = stepControllerRef ?? noopControllerRef;
+
   return (
     <div
       ref={wrapperRef}
@@ -138,14 +158,26 @@ export function SlideTransitionLayer({ pages, index, total, moduleTransition, di
       {OutgoingPage && outgoing !== null ? (
         <div ref={outgoingLayerRef} className="absolute inset-0">
           <SlidePageProvider index={outgoing} total={total}>
-            <OutgoingPage />
+            <StepHost
+              isActivePage={false}
+              entryDirection={outgoingEntryDirection}
+              controllerRef={activeControllerRef}
+            >
+              <OutgoingPage />
+            </StepHost>
           </SlidePageProvider>
         </div>
       ) : null}
       {CurrentPage ? (
         <div ref={incomingLayerRef} className="absolute inset-0">
           <SlidePageProvider index={current} total={total}>
-            <CurrentPage />
+            <StepHost
+              isActivePage
+              entryDirection={entryDirection}
+              controllerRef={activeControllerRef}
+            >
+              <CurrentPage />
+            </StepHost>
           </SlidePageProvider>
         </div>
       ) : null}
