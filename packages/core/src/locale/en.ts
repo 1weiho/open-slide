@@ -44,6 +44,7 @@ export const en: Locale = {
     folders: 'Folders',
     newFolder: 'New folder',
     folderName: 'Folder name',
+    updateAvailable: 'open-slide {version} is available — update the package to get the latest.',
     changeIcon: 'Change icon',
     iconEmojiTab: 'Emoji',
     iconColorTab: 'Color',

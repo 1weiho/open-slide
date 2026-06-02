@@ -9,6 +9,7 @@ import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import { FolderIconChip, FolderItem } from './folder-item';
 import { IconPicker, PRESET_COLORS } from './icon-picker';
+import { SidebarFooter } from './sidebar-footer';
 
 export const DRAFT_ID = 'draft';
 export const THEMES_ID = '__themes__';
@@ -272,6 +273,10 @@ export function Sidebar({
               <span>{t.home.newFolder}</span>
             </button>
           ))}
+      </div>
+
+      <div className="border-t border-hairline">
+        <SidebarFooter />
       </div>
     </aside>
   );

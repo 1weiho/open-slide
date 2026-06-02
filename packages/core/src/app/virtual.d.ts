@@ -13,6 +13,7 @@ declare module 'virtual:open-slide/config' {
     slidesDir?: string;
     port?: number;
     locale?: Locale;
+    version: string;
     build: {
       showSlideBrowser: boolean;
       showSlideUi: boolean;

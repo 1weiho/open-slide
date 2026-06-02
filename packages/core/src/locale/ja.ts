@@ -44,6 +44,8 @@ export const ja: Locale = {
     folders: 'フォルダ',
     newFolder: '新規フォルダ',
     folderName: 'フォルダ名',
+    updateAvailable:
+      'open-slide {version} が利用可能です — パッケージを更新して最新版を入手してください。',
     changeIcon: 'アイコンを変更',
     iconEmojiTab: '絵文字',
     iconColorTab: 'カラー',

@@ -10,6 +10,7 @@ export type { OpenSlideConfig };
 export type OpenSlidePluginOptions = {
   userCwd: string;
   config: OpenSlideConfig;
+  coreVersion: string;
 };
 
 const CONFIG_FILE = 'open-slide.config.ts';
@@ -176,7 +177,7 @@ ${cases}
 }
 
 export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
-  const { userCwd, config } = opts;
+  const { userCwd, config, coreVersion } = opts;
   const slidesDir = config.slidesDir ?? 'slides';
   const slidesRoot = path.resolve(userCwd, slidesDir);
   const foldersManifestPath = path.join(slidesRoot, '.folders.json');
@@ -237,7 +238,7 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
               showSlideUi: userBuild.showSlideUi ?? true,
               allowHtmlDownload: userBuild.allowHtmlDownload ?? true,
             };
-        const resolvedConfig = { ...config, build: buildResolved };
+        const resolvedConfig = { ...config, build: buildResolved, version: coreVersion };
         return `export default ${JSON.stringify(resolvedConfig)};\n`;
       }
       if (id === resolved(FOLDERS_VMOD)) {
