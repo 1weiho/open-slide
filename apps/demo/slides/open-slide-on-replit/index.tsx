@@ -1,10 +1,10 @@
 import type { DesignSystem, Page, SlideMeta, SlideTransition } from '@open-slide/core';
-import createSlideSkill from './assets/create-slide-skill.png';
-import initCommand from './assets/init-command.png';
-import openslideHome from './assets/openslide-home.png';
-import replitAgentHome from './assets/replit-agent-home.png';
-import replitDeploy from './assets/replit-deploy.png';
-import replitFeaturesResult from './assets/replit-features-result.png';
+import createSlideSkill from './assets/create-slide-skill.webp';
+import initCommand from './assets/init-command.webp';
+import openslideHome from './assets/openslide-home.webp';
+import replitAgentHome from './assets/replit-agent-home.webp';
+import replitDeploy from './assets/replit-deploy.webp';
+import replitFeaturesResult from './assets/replit-features-result.webp';
 
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap');
