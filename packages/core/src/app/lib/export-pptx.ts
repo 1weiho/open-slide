@@ -15,6 +15,13 @@ const CAPTURE_PIXEL_RATIO = 2;
 const ANIMATION_TIMEOUT_MS = 15_000;
 const POLL_INTERVAL_MS = 100;
 
+const CAPTURE_CLASS = 'os-pptx-capture';
+const CAPTURE_STYLE_ID = 'os-pptx-capture-style';
+// Properties intro animations drive from a hidden start state to a visible end
+// state. We read them back once settled and pin them inline so the capture clone
+// can't re-run the keyframes from their invisible 0% frame (see freezeForCapture).
+const FROZEN_PROPS = ['opacity', 'transform', 'filter', 'clip-path'] as const;
+
 export type PptxExportProgress = {
   phase: 'processing' | 'generating' | 'done';
   /** Number of pages captured so far (0..total). */
@@ -36,6 +43,7 @@ export async function exportSlideAsImagePptx(
   onProgress?.({ phase: 'processing', current: 0, total, percent: 0 });
 
   const container = document.createElement('div');
+  container.className = CAPTURE_CLASS;
   container.setAttribute('aria-hidden', 'true');
   Object.assign(container.style, {
     position: 'fixed',
@@ -44,6 +52,22 @@ export async function exportSlideAsImagePptx(
     pointerEvents: 'none',
   });
   document.body.appendChild(container);
+
+  // html-to-image clones each frame and copies its computed style — including the
+  // intro animation — into the clone, which then re-runs the keyframes from their
+  // hidden 0% frame in the rasterised SVG. Fast-forward every animation to its end
+  // frame in the live DOM (a large negative delay lands past a 1ms duration, so
+  // even pseudo-elements paint their final state on the first frame).
+  const captureStyle = document.createElement('style');
+  captureStyle.id = CAPTURE_STYLE_ID;
+  captureStyle.textContent = `.${CAPTURE_CLASS} *, .${CAPTURE_CLASS} *::before, .${CAPTURE_CLASS} *::after {
+    animation-delay: -1s !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    animation-fill-mode: forwards !important;
+    transition: none !important;
+  }`;
+  document.head.appendChild(captureStyle);
 
   const designVars = slide.design ? designToCssVars(slide.design) : null;
 
@@ -86,6 +110,7 @@ export async function exportSlideAsImagePptx(
     const { toBlob } = await import('html-to-image');
     const images: Uint8Array[] = [];
     for (let i = 0; i < frames.length; i++) {
+      freezeForCapture(frames[i]);
       const blob = await toBlob(frames[i], {
         width: SLIDE_W,
         height: SLIDE_H,
@@ -115,6 +140,21 @@ export async function exportSlideAsImagePptx(
     onProgress?.({ phase: 'done', current: total, total, percent: 100 });
     for (const r of reactRoots) r.unmount();
     container.remove();
+    captureStyle.remove();
+  }
+}
+
+// Pin each element's settled visual state inline and remove its animation so the
+// clone html-to-image rasterises renders the final frame instead of replaying the
+// (initially invisible) keyframes. Pseudo-elements are handled by CAPTURE_STYLE_ID.
+function freezeForCapture(root: HTMLElement): void {
+  for (const el of root.querySelectorAll<HTMLElement>('*')) {
+    const cs = getComputedStyle(el);
+    for (const prop of FROZEN_PROPS) {
+      el.style.setProperty(prop, cs.getPropertyValue(prop), 'important');
+    }
+    el.style.setProperty('animation', 'none', 'important');
+    el.style.setProperty('transition', 'none', 'important');
   }
 }
 
