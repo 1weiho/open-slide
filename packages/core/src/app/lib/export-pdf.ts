@@ -195,11 +195,75 @@ export async function exportSlideAsPdf(
 function neutralizeGradientBackgrounds(root: HTMLElement): void {
   const elements = root.querySelectorAll<HTMLElement>('*');
   for (const el of elements) {
-    const bg = getComputedStyle(el).backgroundImage;
-    if (bg?.includes('gradient(')) {
-      el.style.backgroundImage = 'none';
+    const styles = getComputedStyle(el);
+    const bg = styles.backgroundImage;
+    if (!bg?.includes('gradient(')) continue;
+
+    const result = removeGradientBackgroundLayers(bg);
+    const size = styles.backgroundSize;
+    const position = styles.backgroundPosition;
+    const repeat = styles.backgroundRepeat;
+
+    el.style.backgroundImage = result.backgroundImage;
+    if (result.keptIndices.length === 0 || result.keptIndices.length === result.layerCount)
+      continue;
+
+    el.style.backgroundSize = reindexBackgroundLayerValues(size, result.keptIndices);
+    el.style.backgroundPosition = reindexBackgroundLayerValues(position, result.keptIndices);
+    el.style.backgroundRepeat = reindexBackgroundLayerValues(repeat, result.keptIndices);
+  }
+}
+
+function removeGradientBackgroundLayers(backgroundImage: string): {
+  backgroundImage: string;
+  keptIndices: number[];
+  layerCount: number;
+} {
+  const layers = splitBackgroundImageLayers(backgroundImage);
+  const keptLayers: string[] = [];
+  const keptIndices: number[] = [];
+
+  for (let i = 0; i < layers.length; i++) {
+    const layer = layers[i];
+    if (!layer) continue;
+    const value = layer.trim();
+    if (value.startsWith('url(') && !value.includes('gradient(')) {
+      keptLayers.push(value);
+      keptIndices.push(i);
     }
   }
+
+  return {
+    backgroundImage: keptLayers.length > 0 ? keptLayers.join(', ') : 'none',
+    keptIndices,
+    layerCount: layers.length,
+  };
+}
+
+function reindexBackgroundLayerValues(value: string, keptIndices: number[]): string {
+  const layers = splitBackgroundImageLayers(value);
+  if (layers.length === 0) return value;
+
+  return keptIndices.map((index) => layers[index % layers.length]).join(', ');
+}
+
+function splitBackgroundImageLayers(backgroundImage: string): string[] {
+  const layers: string[] = [];
+  let depth = 0;
+  let layerStart = 0;
+
+  for (let i = 0; i < backgroundImage.length; i++) {
+    const char = backgroundImage[i];
+    if (char === '(') depth++;
+    if (char === ')') depth = Math.max(0, depth - 1);
+    if (char === ',' && depth === 0) {
+      layers.push(backgroundImage.slice(layerStart, i).trim());
+      layerStart = i + 1;
+    }
+  }
+
+  layers.push(backgroundImage.slice(layerStart).trim());
+  return layers;
 }
 
 function sleep(ms: number): Promise<void> {
