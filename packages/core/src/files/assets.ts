@@ -6,6 +6,7 @@ export const ASSET_MAX_BYTES = 25 * 1024 * 1024;
 
 // biome-ignore lint/suspicious/noControlCharactersInRegex: explicit control-char block list for filename safety
 const ASSET_FORBIDDEN_RE = /[\x00-\x1F\x7F/\\:*?"<>|]/;
+const WINDOWS_RESERVED_BASENAME_RE = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)/i;
 
 const MIME_BY_EXT: Record<string, string> = {
   png: 'image/png',
@@ -38,9 +39,11 @@ export function mimeForFilename(name: string): string {
 export function validateAssetName(v: unknown): string | null {
   if (typeof v !== 'string') return null;
   const trimmed = v.trim();
+  if (trimmed !== v) return null;
   if (trimmed.length < 1 || trimmed.length > 120) return null;
   // No path separators, control chars, or characters Windows/macOS can't store.
   if (ASSET_FORBIDDEN_RE.test(trimmed)) return null;
+  if (trimmed.endsWith('.') || WINDOWS_RESERVED_BASENAME_RE.test(trimmed)) return null;
   // Block leading dots / tildes (hidden files, home expansion) and any `..` segment.
   if (trimmed.startsWith('.') || trimmed.startsWith('~')) return null;
   if (trimmed === '..' || trimmed.split(/[/\\]/).includes('..')) return null;
