@@ -1,5 +1,11 @@
 # @open-slide/core
 
+## 1.10.0
+
+### Minor Changes
+
+- [#164](https://github.com/1weiho/open-slide/pull/164) [`411a8c7`](https://github.com/1weiho/open-slide/commit/411a8c743e94e6703ab4d535529c853822179b3e) Thanks [@1weiho](https://github.com/1weiho)! - Add `Steps` / `Step` primitive for revealing page elements one-by-one via next/previous inputs.
+
 ## 1.9.0
 
 ### Minor Changes
