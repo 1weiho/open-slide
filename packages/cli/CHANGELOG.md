@@ -1,5 +1,11 @@
 # @open-slide/cli
 
+## 1.3.1
+
+### Patch Changes
+
+- [#201](https://github.com/1weiho/open-slide/pull/201) [`9ff819f`](https://github.com/1weiho/open-slide/commit/9ff819fe84218ffe4b22d7df1600dc6601836e1e) Thanks [@1weiho](https://github.com/1weiho)! - Update bundled skills with the `<Steps>` / `<Step>` stepped-reveal authoring guidance.
+
 ## 1.3.0
 
 ### Minor Changes
