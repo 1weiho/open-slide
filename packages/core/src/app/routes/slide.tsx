@@ -642,6 +642,7 @@ export function Slide() {
                     onSelect={goTo}
                     onReorder={import.meta.env.DEV ? reorderPage : undefined}
                     actions={thumbnailActions}
+                    moduleTransition={slide.transition}
                   />
                   <main
                     ref={slideViewportRef}
@@ -724,6 +725,7 @@ function ResizableRail(props: {
   onSelect: (i: number) => void;
   onReorder?: (from: number, to: number) => void;
   actions?: ThumbnailActions;
+  moduleTransition?: SlideModule['transition'];
 }) {
   const t = useLocale();
   const [width, setWidth] = useState<number>(readStoredRailWidth);

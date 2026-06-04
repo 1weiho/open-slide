@@ -15,8 +15,8 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Copy, Trash2 } from 'lucide-react';
-import { Fragment, useEffect, useRef } from 'react';
+import { Copy, ListOrdered, type LucideIcon, Sparkles, Trash2 } from 'lucide-react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -25,12 +25,14 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import type { DesignSystem } from '../lib/design';
 import { SlidePageProvider } from '../lib/page-context';
 import type { Page } from '../lib/sdk';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
+import type { SlideTransition } from '../lib/transition';
 import { SlideCanvas } from './slide-canvas';
 
 type Orientation = 'vertical' | 'horizontal';
@@ -50,6 +52,8 @@ type Props = {
   orientation?: Orientation;
   /** Vertical-only: total rail width in px. Thumbnails scale to fit. */
   width?: number;
+  /** Deck-level transition default; used to flag pages that inherit a transition. */
+  moduleTransition?: SlideTransition;
 };
 
 const DEFAULT_VERTICAL_THUMB_WIDTH = 184;
@@ -66,6 +70,7 @@ export function ThumbnailRail({
   actions,
   orientation = 'vertical',
   width,
+  moduleTransition,
 }: Props) {
   const activeRef = useRef<HTMLButtonElement | null>(null);
   const t = useLocale();
@@ -165,6 +170,7 @@ export function ThumbnailRail({
         scale={scale}
         thumbWidth={thumbWidth}
         height={height}
+        moduleTransition={moduleTransition}
       />
     );
 
@@ -218,15 +224,21 @@ export function ThumbnailRail({
   );
 
   if (!onReorder) {
-    return <ScrollArea className="h-full border-r border-hairline bg-sidebar">{list}</ScrollArea>;
+    return (
+      <TooltipProvider delayDuration={200}>
+        <ScrollArea className="h-full border-r border-hairline bg-sidebar">{list}</ScrollArea>
+      </TooltipProvider>
+    );
   }
 
   return (
-    <ScrollArea className="h-full border-r border-hairline bg-sidebar">
-      <SortableRail pages={pages} onReorder={onReorder} onSelect={onSelect}>
-        {list}
-      </SortableRail>
-    </ScrollArea>
+    <TooltipProvider delayDuration={200}>
+      <ScrollArea className="h-full border-r border-hairline bg-sidebar">
+        <SortableRail pages={pages} onReorder={onReorder} onSelect={onSelect}>
+          {list}
+        </SortableRail>
+      </ScrollArea>
+    </TooltipProvider>
   );
 }
 
@@ -247,6 +259,7 @@ function ThumbContents({
   scale,
   thumbWidth,
   height,
+  moduleTransition,
 }: {
   index: number;
   total: number;
@@ -256,18 +269,45 @@ function ThumbContents({
   scale: number;
   thumbWidth: number;
   height: number;
+  moduleTransition?: SlideTransition;
 }) {
+  const t = useLocale();
+  const boxRef = useRef<HTMLDivElement | null>(null);
+  const [hasSteps, setHasSteps] = useState(false);
+
+  // Steps live in JSX and can't be introspected statically — detect them from
+  // the already-rendered thumbnail DOM, where each Step emits `data-osd-step`.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-detect when the page at this slot changes (reorder/edit reuses the index)
+  useEffect(() => {
+    setHasSteps(boxRef.current?.querySelector('[data-osd-step]') != null);
+  }, [PageComp]);
+
+  const hasTransition = Boolean(PageComp.transition ?? moduleTransition);
+
   return (
     <>
-      <span
-        className={cn(
-          'mt-1.5 w-7 shrink-0 text-right font-mono text-[10px] font-medium tracking-[0.06em] tabular-nums uppercase',
-          active ? 'text-brand' : 'text-muted-foreground/70',
+      <div className="mt-1.5 flex w-7 shrink-0 flex-col items-end gap-1">
+        <span
+          className={cn(
+            'font-mono text-[10px] font-medium tracking-[0.06em] tabular-nums uppercase',
+            active ? 'text-brand' : 'text-muted-foreground/70',
+          )}
+        >
+          {(index + 1).toString().padStart(2, '0')}
+        </span>
+        {(hasTransition || hasSteps) && (
+          <div className="flex flex-col items-end gap-0.5">
+            {hasTransition && (
+              <ThumbIndicator icon={Sparkles} label={t.thumbnailRail.transitionIndicator} />
+            )}
+            {hasSteps && (
+              <ThumbIndicator icon={ListOrdered} label={t.thumbnailRail.stepsIndicator} />
+            )}
+          </div>
         )}
-      >
-        {(index + 1).toString().padStart(2, '0')}
-      </span>
+      </div>
       <div
+        ref={boxRef}
         className={cn(
           'relative shrink-0 overflow-hidden rounded-[4px] border bg-card motion-safe:transition-[border-color,box-shadow]',
           active
@@ -289,6 +329,28 @@ function ThumbContents({
         )}
       </div>
     </>
+  );
+}
+
+function ThumbIndicator({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          role="img"
+          aria-label={label}
+          className={cn(
+            'flex size-3.5 items-center justify-center text-muted-foreground/55',
+            'motion-safe:transition-colors group-hover/thumb:text-muted-foreground/80',
+          )}
+        >
+          <Icon className="size-3" strokeWidth={2} />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="right" sideOffset={6}>
+        {label}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 

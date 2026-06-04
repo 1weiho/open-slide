@@ -348,6 +348,8 @@ export const ja: Locale = {
     toastDuplicateFailed: 'ページを複製できませんでした',
     toastDeleteFailed: 'ページを削除できませんでした',
     resizeRail: 'サムネイル幅を調整',
+    transitionIndicator: 'スライドトランジションあり',
+    stepsIndicator: 'ステップ表示あり',
   },
 
   pdfToast: {

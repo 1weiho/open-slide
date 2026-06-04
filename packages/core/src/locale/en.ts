@@ -343,6 +343,8 @@ export const en: Locale = {
     toastDuplicateFailed: 'Could not duplicate page',
     toastDeleteFailed: 'Could not delete page',
     resizeRail: 'Resize thumbnail rail',
+    transitionIndicator: 'Has slide transition',
+    stepsIndicator: 'Has step-by-step reveals',
   },
 
   pdfToast: {
