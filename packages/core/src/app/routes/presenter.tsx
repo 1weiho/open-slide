@@ -9,6 +9,7 @@ import {
   usePresenterChannel,
 } from '../components/present/use-presenter-channel';
 import { SlideCanvas } from '../components/slide-canvas';
+import { useNotes } from '../lib/inspector/use-notes';
 import { SlidePageProvider } from '../lib/page-context';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
 import { useSlideModule } from '../lib/use-slide-module';
@@ -179,22 +180,26 @@ export function Presenter() {
             </div>
           </div>
 
-          <div className="flex min-h-0 flex-1 flex-col gap-2">
-            <SectionLabel>{t.presenter.speakerNotes}</SectionLabel>
-            <div className="min-h-0 flex-1 overflow-y-auto rounded-[6px] border border-border bg-card p-3 text-[13.5px] leading-relaxed whitespace-pre-wrap text-card-foreground">
-              {note?.trim() ? (
-                note
-              ) : (
-                <span className="text-muted-foreground">
-                  {t.presenter.noNotesPrefix}
-                  <code className="rounded-[3px] bg-muted px-1 py-0.5 font-mono text-[12px]">
-                    export const notes = […]
-                  </code>
-                  {t.presenter.noNotesSuffix}
-                </span>
-              )}
+          {import.meta.env.DEV ? (
+            <PresenterNotesEditor slideId={slideId} index={index} initial={note} />
+          ) : (
+            <div className="flex min-h-0 flex-1 flex-col gap-2">
+              <SectionLabel>{t.presenter.speakerNotes}</SectionLabel>
+              <div className="min-h-0 flex-1 overflow-y-auto rounded-[6px] border border-border bg-card p-3 text-[13.5px] leading-relaxed whitespace-pre-wrap text-card-foreground">
+                {note?.trim() ? (
+                  note
+                ) : (
+                  <span className="text-muted-foreground">
+                    {t.presenter.noNotesPrefix}
+                    <code className="rounded-[3px] bg-muted px-1 py-0.5 font-mono text-[12px]">
+                      export const notes = […]
+                    </code>
+                    {t.presenter.noNotesSuffix}
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           <PresenterJumpControl total={total} current={index} onJump={goTo} />
         </aside>
@@ -208,6 +213,72 @@ export function Presenter() {
         onNext={goNext}
         onBlackout={toggleBlack}
         onWhiteout={toggleWhite}
+      />
+    </div>
+  );
+}
+
+function PresenterNotesEditor({
+  slideId,
+  index,
+  initial,
+}: {
+  slideId: string;
+  index: number;
+  initial: string | undefined;
+}) {
+  const t = useLocale();
+  const { value, setValue, status, flush } = useNotes(slideId, index, initial);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const statusLabel = (() => {
+    switch (status.kind) {
+      case 'saving':
+        return t.notesDrawer.statusSaving;
+      case 'saved':
+        return t.notesDrawer.statusSaved;
+      case 'error':
+        return format(t.notesDrawer.statusError, { msg: status.message });
+      default:
+        return '';
+    }
+  })();
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
+      <div className="flex items-center gap-3">
+        <SectionLabel>{t.presenter.speakerNotes}</SectionLabel>
+        <span
+          className={cn(
+            'ml-auto truncate text-[11px]',
+            status.kind === 'error' ? 'text-destructive' : 'text-muted-foreground',
+          )}
+          aria-live="polite"
+        >
+          {statusLabel}
+        </span>
+      </div>
+      <textarea
+        ref={textareaRef}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={() => {
+          void flush();
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            textareaRef.current?.blur();
+          } else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            void flush();
+          }
+        }}
+        placeholder={t.notesDrawer.placeholder}
+        spellCheck
+        className="block min-h-0 h-full w-full flex-1 resize-none overflow-y-auto rounded-[6px] border border-border bg-card p-3 text-[13.5px] leading-relaxed whitespace-pre-wrap text-card-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
       />
     </div>
   );
