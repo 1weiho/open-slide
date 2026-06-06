@@ -122,7 +122,7 @@ async function generateSlidesModule(
   const entries = await Promise.all(
     files.map(async (abs) => {
       const id = toId(abs, slidesRoot);
-      const importPath = isDev ? `/@fs/${abs.replace(/^\/+/, '')}` : abs;
+      const importPath = isDev ? `@fs/${abs.replace(/^\/+/, '')}` : abs;
       const meta = await readSlideMeta(abs);
       return { id, importPath, theme: meta.theme, createdAt: parseCreatedAtMs(meta.createdAt) };
     }),
@@ -155,7 +155,7 @@ if (import.meta.hot) {
   const cases = entries
     .map((e) => {
       const importExpr = isDev
-        ? `import(/* @vite-ignore */ ${JSON.stringify(`${e.importPath}?t=`)} + slideImportTokens[${JSON.stringify(e.id)}])`
+        ? `import(/* @vite-ignore */ import.meta.env.BASE_URL + ${JSON.stringify(`${e.importPath}?t=`)} + slideImportTokens[${JSON.stringify(e.id)}])`
         : `import(${JSON.stringify(e.importPath)})`;
       return `    case ${JSON.stringify(e.id)}: return ${importExpr};`;
     })

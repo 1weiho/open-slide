@@ -10,6 +10,7 @@ declare module 'virtual:open-slide/config' {
   import type { Locale } from '../locale/types';
 
   const config: {
+    base?: string;
     slidesDir?: string;
     port?: number;
     locale?: Locale;
