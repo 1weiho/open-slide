@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import fg from 'fast-glob';
-import { loadConfigFromFile, type Plugin, type ViteDevServer } from 'vite';
+import { loadConfigFromFile, normalizePath, type Plugin, type ViteDevServer } from 'vite';
 import type { OpenSlideConfig } from '../config.ts';
 
 export type { OpenSlideConfig };
@@ -122,7 +122,7 @@ async function generateSlidesModule(
   const entries = await Promise.all(
     files.map(async (abs) => {
       const id = toId(abs, slidesRoot);
-      const importPath = isDev ? `@fs/${abs.replace(/^\/+/, '')}` : abs;
+      const importPath = isDev ? `@fs/${normalizePath(abs).replace(/^\/+/, '')}` : abs;
       const meta = await readSlideMeta(abs);
       return { id, importPath, theme: meta.theme, createdAt: parseCreatedAtMs(meta.createdAt) };
     }),
