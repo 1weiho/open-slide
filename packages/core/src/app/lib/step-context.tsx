@@ -7,8 +7,8 @@ import {
   type MutableRefObject,
   type PropsWithChildren,
   type ReactElement,
+  useCallback,
   useContext,
-  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -23,9 +23,24 @@ export type StepController = {
   retreat: () => boolean;
 };
 
+export type StepAggregate = {
+  revealed: number;
+  stepCount: number;
+};
+
+type Registration = {
+  id: object;
+  stepCount: number;
+  initialRevealed: number;
+  controller: StepController;
+  setRevealed: (n: number) => void;
+};
+
 type StepHostContextValue = {
-  register: (ctrl: StepController) => () => void;
+  register: (reg: Registration) => () => void;
+  reportRevealed: (id: object, revealed: number) => void;
   entryDirection: EntryDirection;
+  controlled: boolean;
 };
 
 const GLOBAL_KEY = '__open_slide_step_host_context__';
@@ -42,22 +57,39 @@ type StepHostProps = PropsWithChildren<{
   isActivePage: boolean;
   entryDirection: EntryDirection;
   controllerRef: MutableRefObject<StepController | null>;
+  // When set, the host distributes this count across <Steps> children in
+  // mount order — first fills to its stepCount, next takes the remainder.
+  controlledRevealed?: number;
+  onAggregateChange?: (aggregate: StepAggregate) => void;
 }>;
 
-export function StepHost({ isActivePage, entryDirection, controllerRef, children }: StepHostProps) {
-  const controllersRef = useRef<StepController[]>([]);
+export function StepHost({
+  isActivePage,
+  entryDirection,
+  controllerRef,
+  controlledRevealed,
+  onAggregateChange,
+  children,
+}: StepHostProps) {
+  type Tracked = Registration & { revealed: number };
+  const registrationsRef = useRef<Tracked[]>([]);
+
+  const onAggregateChangeRef = useRef(onAggregateChange);
+  onAggregateChangeRef.current = onAggregateChange;
+  const controlledRevealedRef = useRef(controlledRevealed);
+  controlledRevealedRef.current = controlledRevealed;
 
   const composite = useMemo<StepController>(
     () => ({
       advance: () => {
-        for (const c of controllersRef.current) {
-          if (c.advance()) return true;
+        for (const r of registrationsRef.current) {
+          if (r.controller.advance()) return true;
         }
         return false;
       },
       retreat: () => {
-        for (let i = controllersRef.current.length - 1; i >= 0; i--) {
-          if (controllersRef.current[i].retreat()) return true;
+        for (let i = registrationsRef.current.length - 1; i >= 0; i--) {
+          if (registrationsRef.current[i].controller.retreat()) return true;
         }
         return false;
       },
@@ -76,19 +108,63 @@ export function StepHost({ isActivePage, entryDirection, controllerRef, children
     };
   }, [isActivePage, composite, controllerRef]);
 
+  const notifyAggregate = useCallback(() => {
+    const cb = onAggregateChangeRef.current;
+    if (!cb) return;
+    let revealed = 0;
+    let stepCount = 0;
+    for (const r of registrationsRef.current) {
+      revealed += r.revealed;
+      stepCount += r.stepCount;
+    }
+    cb({ revealed, stepCount });
+  }, []);
+
+  const distributeControlled = useCallback(() => {
+    const target = controlledRevealedRef.current;
+    if (target == null) return;
+    let remaining = target;
+    for (const r of registrationsRef.current) {
+      const share = Math.max(0, Math.min(r.stepCount, remaining));
+      remaining -= share;
+      if (r.revealed !== share) {
+        r.revealed = share;
+        r.setRevealed(share);
+      }
+    }
+  }, []);
+
+  useLayoutEffect(() => {
+    if (controlledRevealed == null) return;
+    distributeControlled();
+    notifyAggregate();
+  }, [controlledRevealed, distributeControlled, notifyAggregate]);
+
   const value = useMemo<StepHostContextValue>(
     () => ({
-      register: (ctrl) => {
-        if (!isActivePage) return () => {};
-        controllersRef.current.push(ctrl);
+      register: (reg) => {
+        const tracked: Tracked = { ...reg, revealed: reg.initialRevealed };
+        registrationsRef.current.push(tracked);
+        if (controlledRevealedRef.current != null) {
+          distributeControlled();
+        }
+        notifyAggregate();
         return () => {
-          const i = controllersRef.current.indexOf(ctrl);
-          if (i !== -1) controllersRef.current.splice(i, 1);
+          const i = registrationsRef.current.indexOf(tracked);
+          if (i !== -1) registrationsRef.current.splice(i, 1);
+          notifyAggregate();
         };
       },
+      reportRevealed: (id, revealed) => {
+        const r = registrationsRef.current.find((x) => x.id === id);
+        if (!r) return;
+        r.revealed = revealed;
+        notifyAggregate();
+      },
       entryDirection,
+      controlled: controlledRevealed != null,
     }),
-    [isActivePage, entryDirection],
+    [entryDirection, controlledRevealed, distributeControlled, notifyAggregate],
   );
 
   return <StepHostContext.Provider value={value}>{children}</StepHostContext.Provider>;
@@ -101,28 +177,44 @@ export function Steps({ children }: StepsProps) {
   const flat = Children.toArray(children);
   const stepCount = flat.filter((c) => isValidElement(c) && c.type === Step).length;
 
-  const initial = host?.entryDirection === 'forward' ? 0 : stepCount;
+  // Controlled mode waits for the host to assign a slice in the registration
+  // layout-effect; otherwise the entry direction picks the initial reveal.
+  const initial = host?.controlled ? 0 : host?.entryDirection === 'forward' ? 0 : stepCount;
   const revealedRef = useRef(initial);
   const [revealed, setRevealed] = useState(initial);
 
-  useEffect(() => {
+  const idRef = useRef<object>({});
+
+  const applyRevealed = useCallback((n: number) => {
+    revealedRef.current = n;
+    setRevealed(n);
+  }, []);
+
+  useLayoutEffect(() => {
     if (!host) return;
+    const id = idRef.current;
     const ctrl: StepController = {
       advance: () => {
         if (revealedRef.current >= stepCount) return false;
-        revealedRef.current += 1;
-        setRevealed(revealedRef.current);
+        applyRevealed(revealedRef.current + 1);
+        host.reportRevealed(id, revealedRef.current);
         return true;
       },
       retreat: () => {
         if (revealedRef.current <= 0) return false;
-        revealedRef.current -= 1;
-        setRevealed(revealedRef.current);
+        applyRevealed(revealedRef.current - 1);
+        host.reportRevealed(id, revealedRef.current);
         return true;
       },
     };
-    return host.register(ctrl);
-  }, [host, stepCount]);
+    return host.register({
+      id,
+      stepCount,
+      initialRevealed: revealedRef.current,
+      controller: ctrl,
+      setRevealed: applyRevealed,
+    });
+  }, [host, stepCount, applyRevealed]);
 
   const effectiveRevealed = host ? revealed : stepCount;
 

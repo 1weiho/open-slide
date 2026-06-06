@@ -1,7 +1,12 @@
 import { type MutableRefObject, useEffect, useRef, useState } from 'react';
 import { SlidePageProvider } from '../lib/page-context';
 import type { Page } from '../lib/sdk';
-import { type EntryDirection, type StepController, StepHost } from '../lib/step-context';
+import {
+  type EntryDirection,
+  type StepAggregate,
+  type StepController,
+  StepHost,
+} from '../lib/step-context';
 import { resolveTransition, type SlideTransition, type TransitionPhase } from '../lib/transition';
 
 type Props = {
@@ -12,6 +17,7 @@ type Props = {
   disabled?: boolean;
   stepControllerRef?: MutableRefObject<StepController | null>;
   entryDirection?: EntryDirection;
+  onStepAggregateChange?: (aggregate: StepAggregate) => void;
 };
 
 type Direction = 'forward' | 'backward';
@@ -41,6 +47,7 @@ export function SlideTransitionLayer({
   disabled,
   stepControllerRef,
   entryDirection = 'jump',
+  onStepAggregateChange,
 }: Props) {
   const [current, setCurrent] = useState(index);
   const [outgoing, setOutgoing] = useState<number | null>(null);
@@ -175,6 +182,7 @@ export function SlideTransitionLayer({
               isActivePage
               entryDirection={entryDirection}
               controllerRef={activeControllerRef}
+              onAggregateChange={onStepAggregateChange}
             >
               <CurrentPage />
             </StepHost>

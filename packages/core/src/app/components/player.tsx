@@ -4,7 +4,7 @@ import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
 import type { DesignSystem } from '../lib/design';
 import type { Page } from '../lib/sdk';
-import type { EntryDirection, StepController } from '../lib/step-context';
+import type { EntryDirection, StepAggregate, StepController } from '../lib/step-context';
 import type { SlideTransition } from '../lib/transition';
 import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
 import { PresentBlackoutOverlay } from './present/blackout-overlay';
@@ -87,6 +87,15 @@ export function Player({
 
   const stepControllerRef = useRef<StepController | null>(null);
   const [entryDirection, setEntryDirection] = useState<EntryDirection>('jump');
+  const [stepAggregate, setStepAggregate] = useState<StepAggregate>({
+    revealed: 0,
+    stepCount: 0,
+  });
+  const handleAggregateChange = useCallback((a: StepAggregate) => {
+    setStepAggregate((cur) =>
+      cur.revealed === a.revealed && cur.stepCount === a.stepCount ? cur : a,
+    );
+  }, []);
 
   // Every navigation funnels through here so entryDirection is settled
   // synchronously, before the incoming page's <Steps> reads it on mount.
@@ -164,8 +173,15 @@ export function Player({
   // and answers `request-state` pings so newly opened presenter windows
   // hydrate immediately.
   const presenterState = useMemo<PresenterState>(
-    () => ({ index, pageCount: pages.length, blackout, startedAt }),
-    [index, pages.length, blackout, startedAt],
+    () => ({
+      index,
+      pageCount: pages.length,
+      blackout,
+      startedAt,
+      stepIndex: stepAggregate.revealed,
+      stepCount: stepAggregate.stepCount,
+    }),
+    [index, pages.length, blackout, startedAt, stepAggregate],
   );
   const presenterStateRef = useRef(presenterState);
   presenterStateRef.current = presenterState;
@@ -334,6 +350,7 @@ export function Player({
           disabled={prefersReducedMotion}
           stepControllerRef={stepControllerRef}
           entryDirection={entryDirection}
+          onStepAggregateChange={handleAggregateChange}
         />
       </SlideCanvas>
 
