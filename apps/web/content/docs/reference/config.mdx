@@ -27,6 +27,8 @@ type OpenSlideBuildConfig = {
 };
 
 type OpenSlideConfig = {
+  /** Base public path for subpath hosting (leading + trailing slash). Default: '/'. */
+  base?: string;
   /** Folder that contains your decks. Default: 'slides'. */
   slidesDir?: string;
   /** Folder that holds theme markdown + demo files. Default: 'themes'. */
@@ -55,6 +57,21 @@ const config: OpenSlideConfig = {
   },
 };
 ```
+
+### Host under a subpath
+
+Set `base` to deploy the build under a sub-directory instead of the domain
+root — GitHub Pages project sites, a reverse-proxy folder, an intranet path.
+Use a leading and trailing slash:
+
+```ts
+const config: OpenSlideConfig = {
+  base: '/my-slides/',
+};
+```
+
+The value is passed straight to Vite's `base` and to React Router's
+`basename`, so client-side navigation matches the deployed path.
 
 ### Multiple deck folders
 
