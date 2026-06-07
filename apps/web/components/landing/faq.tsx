@@ -1,3 +1,8 @@
+'use client';
+
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { useState } from 'react';
+
 type QA = { q: string; a: string };
 
 export const faqs: QA[] = [
@@ -39,22 +44,66 @@ export function FAQ() {
           </span>
         </h2>
 
-        <dl className="grid grid-cols-1 md:grid-cols-2 gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[6px] overflow-hidden">
-          {faqs.map((item) => (
-            <div
-              key={item.q}
-              className="bg-[color:var(--color-ink)] p-8 sm:p-10 flex flex-col gap-4"
-            >
-              <dt className="text-[18px] sm:text-[20px] font-medium tracking-[-0.02em] leading-[1.3] text-[color:var(--color-text)]">
-                {item.q}
-              </dt>
-              <dd className="text-[15px] leading-[1.65] text-[color:var(--color-text-soft)] max-w-[60ch]">
-                {item.a}
-              </dd>
-            </div>
+        <dl className="mx-auto max-w-[860px] border border-[color:var(--color-rule)] rounded-[6px] overflow-hidden divide-y divide-[color:var(--color-rule)] bg-[color:var(--color-ink)]">
+          {faqs.map((item, idx) => (
+            <FaqItem key={item.q} item={item} index={idx} />
           ))}
         </dl>
       </div>
     </section>
+  );
+}
+
+function FaqItem({ item, index }: { item: QA; index: number }) {
+  const [open, setOpen] = useState(false);
+  const reduceMotion = useReducedMotion();
+  const panelId = `faq-panel-${index}`;
+  const buttonId = `faq-button-${index}`;
+
+  return (
+    <div>
+      <dt>
+        <button
+          type="button"
+          id={buttonId}
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => setOpen((v) => !v)}
+          className="group flex w-full items-center justify-between gap-6 px-8 sm:px-10 py-7 sm:py-8 text-left transition-colors hover:bg-[color:var(--color-panel)]"
+        >
+          <span className="text-[18px] sm:text-[20px] font-medium tracking-[-0.02em] leading-[1.3] text-[color:var(--color-text)]">
+            {item.q}
+          </span>
+          <span
+            aria-hidden
+            className="relative h-4 w-4 shrink-0 text-[color:var(--color-muted)] transition-colors group-hover:text-[color:var(--color-text)]"
+          >
+            <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-current" />
+            <span
+              className={`absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-current transition-transform duration-300 ${
+                open ? 'rotate-90' : ''
+              }`}
+            />
+          </span>
+        </button>
+      </dt>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.dd
+            id={panelId}
+            aria-labelledby={buttonId}
+            initial={reduceMotion ? false : { height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={reduceMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+            transition={{ duration: 0.28, ease: [0.2, 0.7, 0.2, 1] }}
+            className="overflow-hidden"
+          >
+            <p className="px-8 sm:px-10 pb-7 sm:pb-8 text-[15px] leading-[1.65] text-[color:var(--color-text-soft)] max-w-[60ch]">
+              {item.a}
+            </p>
+          </motion.dd>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
