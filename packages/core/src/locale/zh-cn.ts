@@ -28,6 +28,7 @@ export const zhCN: Locale = {
     dark: '深色',
     system: '系统',
     selected: '已选中',
+    resizePanel: '调整面板宽度',
   },
 
   notFound: {
