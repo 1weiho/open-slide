@@ -41,7 +41,7 @@ export function FAQ() {
           </span>
         </h2>
 
-        <dl className="mx-auto max-w-[860px] border border-[color:var(--color-rule)] rounded-[6px] overflow-hidden divide-y divide-[color:var(--color-rule)] bg-[color:var(--color-ink)]">
+        <dl className="max-w-[860px] border-y border-[color:var(--color-rule)] divide-y divide-[color:var(--color-rule)]">
           {faqs.map((item, idx) => (
             <FaqItem key={item.q} item={item} index={idx} />
           ))}

@@ -19,9 +19,9 @@ export function FaqItem({ item, index }: { item: QA; index: number }) {
           aria-expanded={open}
           aria-controls={panelId}
           onClick={() => setOpen((v) => !v)}
-          className="group flex w-full items-center justify-between gap-6 px-8 sm:px-10 py-7 sm:py-8 text-left transition-colors hover:bg-[color:var(--color-panel)]"
+          className="group flex w-full items-center justify-between gap-6 py-7 sm:py-8 text-left"
         >
-          <span className="text-[18px] sm:text-[20px] font-medium tracking-[-0.02em] leading-[1.3] text-[color:var(--color-text)]">
+          <span className="text-[18px] sm:text-[20px] font-medium tracking-[-0.02em] leading-[1.3] text-[color:var(--color-text)] transition-colors group-hover:text-[color:var(--color-accent)]">
             {item.q}
           </span>
           <span
@@ -48,7 +48,7 @@ export function FaqItem({ item, index }: { item: QA; index: number }) {
             transition={{ duration: 0.28, ease: [0.2, 0.7, 0.2, 1] }}
             className="overflow-hidden"
           >
-            <p className="px-8 sm:px-10 pb-7 sm:pb-8 text-[15px] leading-[1.65] text-[color:var(--color-text-soft)] max-w-[60ch]">
+            <p className="pb-7 sm:pb-8 text-[15px] leading-[1.65] text-[color:var(--color-text-soft)] max-w-[60ch]">
               {item.a}
             </p>
           </motion.dd>
