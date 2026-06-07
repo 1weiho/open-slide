@@ -15,7 +15,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Copy, ListOrdered, type LucideIcon, Sparkles, Trash2 } from 'lucide-react';
+import { Copy, Grid2x2, ListOrdered, type LucideIcon, Sparkles, Trash2 } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import {
   ContextMenu,
@@ -54,6 +54,8 @@ type Props = {
   width?: number;
   /** Deck-level transition default; used to flag pages that inherit a transition. */
   moduleTransition?: SlideTransition;
+  /** When provided, the vertical rail header renders a button that opens the overview grid. */
+  onOverview?: () => void;
 };
 
 const DEFAULT_VERTICAL_THUMB_WIDTH = 184;
@@ -71,6 +73,7 @@ export function ThumbnailRail({
   orientation = 'vertical',
   width,
   moduleTransition,
+  onOverview,
 }: Props) {
   const activeRef = useRef<HTMLButtonElement | null>(null);
   const t = useLocale();
@@ -214,10 +217,35 @@ export function ThumbnailRail({
   };
 
   const list = (
-    <aside className="flex flex-col gap-2 px-3 py-3">
-      <div className="flex items-baseline justify-between px-1 pb-1">
-        <span className="eyebrow">{t.thumbnailRail.pages}</span>
-        <span className="folio">{pages.length.toString().padStart(2, '0')}</span>
+    <aside className="flex flex-col gap-2 px-3 pb-3">
+      <div className="-mx-3 sticky top-0 z-10 bg-sidebar px-4 pt-3 pb-1">
+        <div className="flex items-center justify-between gap-2">
+          <span className="eyebrow">{t.thumbnailRail.pages}</span>
+          <div className="flex items-center gap-1.5">
+            <span className="folio">{pages.length.toString().padStart(2, '0')}</span>
+            {onOverview && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={onOverview}
+                    aria-label={t.thumbnailRail.overviewAria}
+                    className={cn(
+                      'flex size-5 items-center justify-center rounded-[3px] text-muted-foreground/70 outline-none',
+                      'motion-safe:transition-colors hover:bg-muted hover:text-foreground',
+                      'focus-visible:ring-1 focus-visible:ring-brand',
+                    )}
+                  >
+                    <Grid2x2 className="size-3.5" strokeWidth={1.75} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={6}>
+                  {t.thumbnailRail.overviewAria}
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        </div>
       </div>
       {pages.map(renderThumb)}
     </aside>
@@ -226,14 +254,16 @@ export function ThumbnailRail({
   if (!onReorder) {
     return (
       <TooltipProvider delayDuration={200}>
-        <ScrollArea className="h-full border-r border-hairline bg-sidebar">{list}</ScrollArea>
+        <ScrollArea className="h-full border-r border-hairline bg-sidebar [&_[data-slot=scroll-area-scrollbar]]:z-20">
+          {list}
+        </ScrollArea>
       </TooltipProvider>
     );
   }
 
   return (
     <TooltipProvider delayDuration={200}>
-      <ScrollArea className="h-full border-r border-hairline bg-sidebar">
+      <ScrollArea className="h-full border-r border-hairline bg-sidebar [&_[data-slot=scroll-area-scrollbar]]:z-20">
         <SortableRail pages={pages} onReorder={onReorder} onSelect={onSelect}>
           {list}
         </SortableRail>

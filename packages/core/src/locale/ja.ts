@@ -350,6 +350,7 @@ export const ja: Locale = {
     resizeRail: 'サムネイル幅を調整',
     transitionIndicator: 'スライドトランジションあり',
     stepsIndicator: 'ステップ表示あり',
+    overviewAria: 'スライド一覧 (O)',
   },
 
   pdfToast: {

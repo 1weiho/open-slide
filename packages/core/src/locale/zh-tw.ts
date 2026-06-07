@@ -343,6 +343,7 @@ export const zhTW: Locale = {
     resizeRail: '調整縮圖欄寬度',
     transitionIndicator: '有換頁轉場',
     stepsIndicator: '有逐步揭示',
+    overviewAria: '投影片總覽 (O)',
   },
 
   pdfToast: {

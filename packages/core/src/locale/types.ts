@@ -366,6 +366,7 @@ export type Locale = {
     resizeRail: string;
     transitionIndicator: string;
     stepsIndicator: string;
+    overviewAria: string;
   };
 
   pdfToast: {

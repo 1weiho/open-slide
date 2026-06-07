@@ -49,6 +49,7 @@ import { format, useLocale } from '@/lib/use-locale';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
 import { NotesDrawer } from '../components/notes-drawer';
+import { OverviewGrid } from '../components/overview-grid';
 import { PdfProgressToast } from '../components/pdf-progress-toast';
 import { openPresenterWindow, Player } from '../components/player';
 import { PptxProgressToast } from '../components/pptx-progress-toast';
@@ -74,6 +75,7 @@ export function Slide() {
   const [linkCopied, setLinkCopied] = useState(false);
   const linkCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [designOpen, setDesignOpen] = useState(false);
+  const [overviewOpen, setOverviewOpen] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -237,6 +239,18 @@ export function Slide() {
     if (playMode) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLElement && e.target.matches('input, textarea')) return;
+      // Letter shortcuts only fire bare so browser combos (Cmd/Ctrl-P, ⌘F…) stay intact.
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      // Toggle overview from either state — the overview's own capture-phase
+      // handler doesn't consume O, so this stays consistent open ↔ closed.
+      if (e.key === 'o' || e.key === 'O') {
+        e.preventDefault();
+        setOverviewOpen((v) => !v);
+        return;
+      }
+      // Once overview owns focus, swallow everything else here — its
+      // capture-phase listener drives the focused thumbnail.
+      if (overviewOpen) return;
       if (
         e.key === 'ArrowRight' ||
         e.key === 'ArrowDown' ||
@@ -252,8 +266,6 @@ export function Slide() {
         goTo(index - 1);
         return;
       }
-      // Letter shortcuts only fire bare so browser combos (Cmd/Ctrl-P, ⌘F…) stay intact.
-      if (e.altKey || e.ctrlKey || e.metaKey) return;
       if (e.key === 'f' || e.key === 'F') {
         setPlayMode('fullscreen');
       } else if (e.key === 'Enter') {
@@ -267,7 +279,7 @@ export function Slide() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [index, goTo, playMode, slideId]);
+  }, [index, goTo, playMode, slideId, overviewOpen]);
 
   if (error) {
     return (
@@ -653,7 +665,7 @@ export function Slide() {
             </div>
           ) : (
             <DesignProvider slideId={slideId}>
-              <div className="flex min-h-0 flex-1 flex-col">
+              <div className="relative flex min-h-0 flex-1 flex-col">
                 <div className="flex min-h-0 flex-1 flex-col md:flex-row">
                   <ResizableRail
                     pages={pages}
@@ -663,6 +675,7 @@ export function Slide() {
                     onReorder={import.meta.env.DEV ? reorderPage : undefined}
                     actions={thumbnailActions}
                     moduleTransition={slide.transition}
+                    onOverview={() => setOverviewOpen(true)}
                   />
                   <main
                     ref={slideViewportRef}
@@ -716,6 +729,15 @@ export function Slide() {
                     initial={slide.notes?.[index]}
                   />
                 )}
+                <OverviewGrid
+                  pages={pages}
+                  design={slide.design}
+                  open={overviewOpen}
+                  current={index}
+                  onClose={() => setOverviewOpen(false)}
+                  onSelect={goTo}
+                  variant="editor"
+                />
               </div>
             </DesignProvider>
           )}
@@ -746,6 +768,7 @@ function ResizableRail(props: {
   onReorder?: (from: number, to: number) => void;
   actions?: ThumbnailActions;
   moduleTransition?: SlideModule['transition'];
+  onOverview?: () => void;
 }) {
   const t = useLocale();
   const [width, setWidth] = useState<number>(readStoredRailWidth);

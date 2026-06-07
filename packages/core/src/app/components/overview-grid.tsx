@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
-import type { DesignSystem } from '../../lib/design';
-import { SlidePageProvider } from '../../lib/page-context';
-import type { Page } from '../../lib/sdk';
-import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../../lib/sdk';
-import { SlideCanvas } from '../slide-canvas';
+import type { DesignSystem } from '../lib/design';
+import { SlidePageProvider } from '../lib/page-context';
+import type { Page } from '../lib/sdk';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
+import { SlideCanvas } from './slide-canvas';
 
 const THUMB_W = 320;
 const THUMB_H = (THUMB_W * CANVAS_HEIGHT) / CANVAS_WIDTH;
+
+export type OverviewVariant = 'present' | 'editor';
 
 type Props = {
   pages: Page[];
@@ -17,9 +19,18 @@ type Props = {
   current: number;
   onClose: () => void;
   onSelect: (index: number) => void;
+  variant?: OverviewVariant;
 };
 
-export function PresentOverviewGrid({ pages, design, open, current, onClose, onSelect }: Props) {
+export function OverviewGrid({
+  pages,
+  design,
+  open,
+  current,
+  onClose,
+  onSelect,
+  variant = 'present',
+}: Props) {
   const [focused, setFocused] = useState(current);
   const gridRef = useRef<HTMLDivElement>(null);
   const focusedRef = useRef<HTMLButtonElement | null>(null);
@@ -82,16 +93,19 @@ export function PresentOverviewGrid({ pages, design, open, current, onClose, onS
   }, [open, pages.length, focused, onClose, onSelect]);
 
   if (!open) return null;
+
+  const styles = variant === 'present' ? presentStyles : editorStyles;
+
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-label={t.present.overviewDialogAria}
-      className="absolute inset-0 z-50 flex flex-col bg-black/95 backdrop-blur-sm"
+      className={cn('absolute inset-0 z-50 flex flex-col backdrop-blur-sm', styles.surface)}
     >
       <div className="flex shrink-0 items-baseline justify-between px-8 pt-6 pb-3">
-        <span className="eyebrow text-white/55">{t.present.overviewEyebrow}</span>
-        <span className="font-mono text-[11px] text-white/55 tabular-nums">
+        <span className={cn('eyebrow', styles.eyebrow)}>{t.present.overviewEyebrow}</span>
+        <span className={cn('font-mono text-[11px] tabular-nums', styles.eyebrow)}>
           {(focused + 1).toString().padStart(2, '0')} · {pages.length.toString().padStart(2, '0')}
         </span>
       </div>
@@ -120,13 +134,14 @@ export function PresentOverviewGrid({ pages, design, open, current, onClose, onS
                 aria-current={isCurrent ? 'true' : undefined}
                 className={cn(
                   'group/thumb flex flex-col items-start gap-2 rounded-[6px] p-1.5 outline-none transition-colors',
-                  isFocused ? 'bg-white/10' : 'hover:bg-white/5',
+                  isFocused ? styles.thumbFocused : styles.thumbHover,
                 )}
               >
                 <div
                   className={cn(
-                    'relative w-full overflow-hidden rounded-[4px] bg-black ring-1 ring-white/10 transition-shadow',
-                    isFocused && 'ring-2 ring-[var(--brand,#ef4444)]',
+                    'relative w-full overflow-hidden rounded-[4px] ring-1 transition-shadow',
+                    styles.thumbSurface,
+                    isFocused ? 'ring-2 ring-[var(--brand,#ef4444)]' : styles.thumbRing,
                   )}
                   style={{ height: THUMB_H }}
                 >
@@ -153,7 +168,7 @@ export function PresentOverviewGrid({ pages, design, open, current, onClose, onS
                 <span
                   className={cn(
                     'font-mono text-[10.5px] tracking-[0.08em] tabular-nums uppercase',
-                    isFocused || isCurrent ? 'text-white/85' : 'text-white/45',
+                    isFocused || isCurrent ? styles.labelActive : styles.labelMuted,
                   )}
                 >
                   {(i + 1).toString().padStart(2, '0')}
@@ -166,6 +181,28 @@ export function PresentOverviewGrid({ pages, design, open, current, onClose, onS
     </div>
   );
 }
+
+const presentStyles = {
+  surface: 'bg-black/95',
+  eyebrow: 'text-white/55',
+  thumbFocused: 'bg-white/10',
+  thumbHover: 'hover:bg-white/5',
+  thumbSurface: 'bg-black',
+  thumbRing: 'ring-white/10',
+  labelActive: 'text-white/85',
+  labelMuted: 'text-white/45',
+} as const;
+
+const editorStyles = {
+  surface: 'bg-background/95',
+  eyebrow: 'text-muted-foreground',
+  thumbFocused: 'bg-muted',
+  thumbHover: 'hover:bg-muted/60',
+  thumbSurface: 'bg-card',
+  thumbRing: 'ring-hairline',
+  labelActive: 'text-foreground',
+  labelMuted: 'text-muted-foreground/60',
+} as const;
 
 function computeCols(grid: HTMLDivElement | null) {
   if (!grid) return 4;

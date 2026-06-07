@@ -343,6 +343,7 @@ export const zhCN: Locale = {
     resizeRail: '调整缩略图栏宽度',
     transitionIndicator: '有换页转场',
     stepsIndicator: '有逐步揭示',
+    overviewAria: '幻灯片总览 (O)',
   },
 
   pdfToast: {
