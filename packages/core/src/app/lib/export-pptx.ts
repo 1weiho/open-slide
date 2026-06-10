@@ -301,7 +301,6 @@ function notesMasterXml(): string {
 
 function noteParagraphs(note: string): string {
   const lines = note.replace(/\r\n?/g, '\n').split('\n');
-  if (lines.length === 0) return '<a:p/>';
   return lines
     .map((line) => {
       if (line.trim() === '') return '<a:p/>';
