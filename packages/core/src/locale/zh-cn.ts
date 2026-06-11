@@ -221,6 +221,7 @@ export const zhCN: Locale = {
     cropDialogTitle: '裁剪图片',
     cropDialogDescription: '拖动框线决定要保留的可见区域。',
     cropFitCover: '填满',
+    cropFitFreeform: '自由裁剪',
     cropFitContain: '完整显示',
     cropApply: '应用',
     cropResetAria: '重置裁剪',

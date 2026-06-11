@@ -228,6 +228,7 @@ export const en: Locale = {
     cropDialogTitle: 'Crop image',
     cropDialogDescription: 'Drag the frame to choose what stays visible.',
     cropFitCover: 'Fill',
+    cropFitFreeform: 'Freeform',
     cropFitContain: 'Fit',
     cropApply: 'Apply',
     cropResetAria: 'Reset crop',

@@ -230,6 +230,7 @@ export type Locale = {
     cropDialogTitle: string;
     cropDialogDescription: string;
     cropFitCover: string;
+    cropFitFreeform: string;
     cropFitContain: string;
     cropApply: string;
     cropResetAria: string;
