@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
@@ -103,11 +104,24 @@ export function OverviewGrid({
       aria-label={t.present.overviewDialogAria}
       className={cn('absolute inset-0 z-50 flex flex-col backdrop-blur-sm', styles.surface)}
     >
-      <div className="flex shrink-0 items-baseline justify-between px-8 pt-6 pb-3">
+      <div className="flex shrink-0 items-center justify-between px-8 pt-6 pb-3">
         <span className={cn('eyebrow', styles.eyebrow)}>{t.present.overviewEyebrow}</span>
-        <span className={cn('font-mono text-[11px] tabular-nums', styles.eyebrow)}>
-          {(focused + 1).toString().padStart(2, '0')} · {pages.length.toString().padStart(2, '0')}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className={cn('font-mono text-[11px] tabular-nums', styles.eyebrow)}>
+            {(focused + 1).toString().padStart(2, '0')} · {pages.length.toString().padStart(2, '0')}
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t.common.close}
+            className={cn(
+              'flex size-6 items-center justify-center rounded-[4px] outline-none transition-colors',
+              styles.closeButton,
+            )}
+          >
+            <X className="size-3.5" />
+          </button>
+        </div>
       </div>
       <div ref={gridRef} className="min-h-0 flex-1 overflow-auto px-8 pb-8">
         <div
@@ -191,6 +205,8 @@ const presentStyles = {
   thumbRing: 'ring-white/10',
   labelActive: 'text-white/85',
   labelMuted: 'text-white/45',
+  closeButton:
+    'text-white/55 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/40',
 } as const;
 
 const editorStyles = {
@@ -202,6 +218,8 @@ const editorStyles = {
   thumbRing: 'ring-hairline',
   labelActive: 'text-foreground',
   labelMuted: 'text-muted-foreground/60',
+  closeButton:
+    'text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring',
 } as const;
 
 function computeCols(grid: HTMLDivElement | null) {
