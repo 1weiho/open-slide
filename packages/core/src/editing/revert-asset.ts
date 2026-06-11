@@ -113,21 +113,24 @@ export function findReferencedAssets(source: string, assetPaths: readonly string
   if (!ast) return referenced;
   const wanted = new Set(assetPaths);
   const identToPath = new Map<string, string>();
+  const importLocals = new Set<t.Identifier>();
   for (const imp of findImports(ast)) {
     if (!imp.defaultIdent) continue;
-    if (wanted.has(imp.source)) identToPath.set(imp.defaultIdent, imp.source);
+    if (!wanted.has(imp.source)) continue;
+    identToPath.set(imp.defaultIdent, imp.source);
+    for (const spec of imp.node.specifiers) {
+      if (t.isImportDefaultSpecifier(spec) && spec.local.name === imp.defaultIdent) {
+        importLocals.add(spec.local);
+      }
+    }
   }
   if (identToPath.size === 0) return referenced;
-  walkJsx(ast, (n) => {
-    if (!t.isJSXElement(n)) return;
-    const opening = n.openingElement;
-    if (!t.isJSXIdentifier(opening.name) || opening.name.name !== 'img') return;
-    const src = findJsxAttr(opening, 'src');
-    if (!src?.value || !t.isJSXExpressionContainer(src.value)) return;
-    const expr = src.value.expression;
-    if (!t.isIdentifier(expr)) return;
-    const p = identToPath.get(expr.name);
-    if (p) referenced.add(p);
+  walkAll(ast, (n) => {
+    if (!t.isIdentifier(n)) return;
+    const p = identToPath.get(n.name);
+    if (!p) return;
+    if (importLocals.has(n)) return;
+    referenced.add(p);
   });
   return referenced;
 }

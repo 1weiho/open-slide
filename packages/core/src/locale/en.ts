@@ -44,6 +44,7 @@ export const en: Locale = {
     folders: 'Folders',
     newFolder: 'New folder',
     folderName: 'Folder name',
+    updateAvailable: 'open-slide {version} is available — update the package to get the latest.',
     changeIcon: 'Change icon',
     iconEmojiTab: 'Emoji',
     iconColorTab: 'Color',
@@ -86,6 +87,7 @@ export const en: Locale = {
     toastSlideMoveFailed: 'Failed to move slide',
     toastFolderDeleted: 'Deleted folder “{name}”',
     toastFolderDeleteFailed: 'Failed to delete folder',
+    toastFolderReorderFailed: 'Failed to reorder folders',
     pickIcon: 'Pick icon',
   },
 
@@ -104,7 +106,13 @@ export const en: Locale = {
     toastCopyLinkFailed: 'Failed to copy link',
     exportAsHtml: 'Export as HTML',
     exportAsPdf: 'Export as PDF',
+    exportAsImagePptx: 'Export as image PPTX',
+    exportAsPptx: 'Export as PPTX',
+    comingSoon: 'Coming soon',
+    pptxComingSoonTooltip:
+      'Editable PPTX export isn’t ready yet. For now, use “Export as image PPTX” instead.',
     pdfExportFailed: 'PDF export failed',
+    imagePptxExportFailed: 'PPTX export failed',
     pdfExportSafariUnsupported:
       'Export as PDF is not supported on Safari. Please try a Chromium-based browser instead.',
     present: 'Present',
@@ -355,12 +363,21 @@ export const en: Locale = {
     toastDuplicateFailed: 'Could not duplicate page',
     toastDeleteFailed: 'Could not delete page',
     resizeRail: 'Resize thumbnail rail',
+    transitionIndicator: 'Has slide transition',
+    stepsIndicator: 'Has step-by-step reveals',
   },
 
   pdfToast: {
     title: 'Exporting PDF',
     processing: 'Processing page {current} of {total}',
     printing: 'Opening print dialog…',
+    done: 'Done',
+  },
+
+  pptxToast: {
+    title: 'Exporting PPTX',
+    processing: 'Rendering page {current} of {total}',
+    generating: 'Building presentation…',
     done: 'Done',
   },
 
@@ -372,9 +389,9 @@ export const en: Locale = {
     system: 'System',
   },
 
-  clickNav: {
-    prevAria: 'Previous page',
-    nextAria: 'Next page',
+  languageToggle: {
+    toggleAria: 'Change language',
+    title: 'Language',
   },
 
   imagePlaceholder: {

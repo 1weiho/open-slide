@@ -181,9 +181,14 @@ export function FolderItem({
           </PopoverContent>
         </Popover>
       ) : (
-        <span className="flex size-5 shrink-0 items-center justify-center">
+        <button
+          type="button"
+          onClick={onSelect}
+          aria-label={label}
+          className="flex size-5 shrink-0 items-center justify-center"
+        >
           <FolderIconChip icon={icon} />
-        </span>
+        </button>
       )}
 
       {renaming && row.kind === 'folder' ? (
@@ -192,6 +197,7 @@ export function FolderItem({
           onChange={(e) => setDraftName(e.target.value)}
           onBlur={commitRename}
           onKeyDown={(e) => {
+            if (e.nativeEvent.isComposing) return;
             if (e.key === 'Enter') commitRename();
             if (e.key === 'Escape') {
               setDraftName(row.folder.name);

@@ -7,6 +7,7 @@ import { registerFolderRoutes } from './routes/folders.ts';
 import { registerOgRoutes } from './routes/og.ts';
 import { registerSlideRoutes } from './routes/slides.ts';
 import { registerSvglRoutes } from './routes/svgl.ts';
+import { registerUpdateRoutes } from './routes/update.ts';
 import { registerWatchers } from './routes/watchers.ts';
 
 export type { ApiPluginOptions };
@@ -28,6 +29,7 @@ export function apiPlugin(opts: ApiPluginOptions): Plugin {
       registerSvglRoutes(server);
       registerFolderRoutes(server, ctx);
       registerOgRoutes(server, ctx);
+      registerUpdateRoutes(server, ctx.coreVersion);
     },
   };
 }

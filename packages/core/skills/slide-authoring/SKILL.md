@@ -308,6 +308,45 @@ const Footer = () => {
 
 `current` is 1-indexed (matches what readers see) and `total` is the slide's page count. The hook works in every render context (main viewer, thumbnails, overview grid, present mode, presenter window, HTML/PDF export) — the same `<Footer />` JSX is correct everywhere. Call the hook inside a component that's used **per page**; don't try to call it at module top level.
 
+## Stepped reveals (`<Steps>` / `<Step>`)
+
+Reveal a page one beat at a time instead of showing everything at once. Wrap the deferred parts in `<Step>`, wrap the group in `<Steps>`. Each `→` reveals the next `<Step>`; `→` after the last one advances to the next page. `←` peels the last reveal back. Use it to stage attention — show framing first, then the consequence, then the turn — so the audience reads at the speaker's pace, not ahead.
+
+`slides/build-on-reveal/` is the canonical worked example; study it before authoring a stepped page.
+
+```tsx
+import { Step, Steps } from '@open-slide/core';
+
+<Steps>
+  <Step><div style={BULLET_ROW}>An audience reads faster than a presenter speaks.</div></Step>
+  <Step><div style={BULLET_ROW}>Showing every bullet at once invites pre-reading.</div></Step>
+  <Step><div style={BULLET_ROW}>Revealing in time stages attention.</div></Step>
+</Steps>
+```
+
+### Rules
+
+- **`<Step>` must be a *direct* child of `<Steps>`.** A `<Step>` nested deeper (or used without a `<Steps>` parent) renders fully revealed and defers nothing.
+- **Non-`Step` children render immediately.** Put a headline or intro paragraph *inside* `<Steps>` as a plain element and it shows from the start; only the `<Step>` blocks wait. This is the "headline always, body in turn" pattern:
+  ```tsx
+  <Steps>
+    <h2>Not everything has to wait.</h2>{/* visible immediately */}
+    <Step><p>First, set the stage…</p></Step>
+    <Step><p>Then, layer the consequence…</p></Step>
+  </Steps>
+  ```
+- **Multiple `<Steps>` blocks on one page compose in document order.** The first block reveals all its steps before the second begins; `←` unwinds in reverse. Use this for two columns that build left-then-right, each column owning its own `<Steps>`:
+  ```tsx
+  <div style={COL}><Steps><Step>…</Step><Step>…</Step></Steps></div>{/* finishes first */}
+  <div style={COL}><Steps><Step>…</Step><Step>…</Step></Steps></div>{/* then this */}
+  ```
+- **Entry direction decides the starting state — same content, two rhythms.** Entering forward (`→` from the previous page) starts empty and builds up. Jumping in via the overview grid, or arriving backward from a later page, shows the page **fully composed** with every step already revealed. Design the page to read well both ways: a thumbnail or overview jump should look complete, not blank.
+- **`<Step>` fades in over `duration` ms (default 180).** Pass `<Step duration={...}>` to adjust. `prefers-reduced-motion: reduce` collapses it to an instant cut automatically — don't write a fallback.
+
+### When to reach for it
+
+Use stepped reveals when the *order* of ideas is the point — a list whose payoff is the last item, a build-up to a conclusion, a before/after. Don't wrap every page's content in `<Step>` reflexively: a page the audience should take in at a glance (a hero title, a single quote, a diagram) is stronger shown whole. Reveals are timing, not decoration — same restraint as transitions.
+
 ## Page transitions
 
 The framework can run an enter/exit animation between every slide change. There's **no default** — pages snap unless you declare a `SlideTransition`. Snap-swap is a perfectly tasteful default; only opt in when motion adds something.
@@ -541,6 +580,7 @@ This applies whenever the *visual element* repeats, not whenever the *data* does
 - [ ] Visually repeated elements (cards, tiles, logo rows) are rendered as explicit `<Component />` instances, not via `array.map` over a data list.
 - [ ] All imported assets exist on disk — slide-local under `slides/<id>/assets/`, or global under `assets/` (imported via `@assets/...`).
 - [ ] Every `<ImagePlaceholder>` corresponds to a real image the user must supply — not decorative filler. If it could be replaced by typography or layout, it should be.
+- [ ] If a page uses `<Steps>`/`<Step>`, every `<Step>` is a direct child of a `<Steps>`, and the page still reads as complete when jumped to via the overview grid (entering forward builds up; jumping in shows it fully revealed).
 - [ ] If a `SlideTransition` is declared, every page sits in one family — same duration band (140–280 ms), same easing pair, same out-then-in stagger, magnitude under 12 px / 3%. No six-different-vocabularies decks. When in doubt, omit transitions entirely.
 - [ ] Nothing outside `slides/<id>/` was edited.
 
@@ -561,3 +601,5 @@ This applies whenever the *visual element* repeats, not whenever the *data* does
 - ❌ Sprinkling `<ImagePlaceholder>` across pages "for visual interest". Placeholders are for content the user owns; they're not stock-photo slots.
 - ❌ Using a placeholder for an icon or decorative shape — those are typography/SVG problems, not asset problems.
 - ❌ Rendering visually repeated elements with `array.map(...)` over a data array. Define a component and instantiate it explicitly per item (`<Card />`, `<Card />`, `<Card />`) so the inspector can edit each independently — a shared `map` body mutates every instance at once.
+- ❌ Wrapping every page's content in `<Step>` reflexively. Stepped reveals are for content whose *order* is the point; a glance-and-get-it page (hero title, single quote, diagram) is stronger shown whole.
+- ❌ A `<Step>` that isn't a direct child of `<Steps>` (nested deeper, or with no `<Steps>` parent). It renders fully revealed and defers nothing — the reveal silently does nothing.

@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
@@ -25,6 +25,17 @@ function findPackageRoot(fromFile: string): string {
 const PKG_ROOT = findPackageRoot(fileURLToPath(import.meta.url));
 const APP_ROOT = path.join(PKG_ROOT, 'src', 'app');
 
+function readCoreVersion(): string {
+  try {
+    const raw = readFileSync(path.join(PKG_ROOT, 'package.json'), 'utf8');
+    return (JSON.parse(raw) as { version?: string }).version ?? '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+}
+
+const CORE_VERSION = readCoreVersion();
+
 export type CreateViteConfigOptions = {
   userCwd: string;
   config?: OpenSlideConfig;
@@ -42,6 +53,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
   const assetsAbs = path.resolve(userCwd, assetsDir);
 
   return {
+    base: config.base ?? '/',
     root: APP_ROOT,
     configFile: false,
     envDir: userCwd,
@@ -49,10 +61,10 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
       locTagsPlugin({ userCwd, slidesDir }),
       react(),
       tailwindcss(),
-      openSlidePlugin({ userCwd, config }),
+      openSlidePlugin({ userCwd, config, coreVersion: CORE_VERSION }),
       themesPlugin({ userCwd, config }),
       designPlugin({ userCwd }),
-      apiPlugin({ userCwd, slidesDir, assetsDir }),
+      apiPlugin({ userCwd, slidesDir, assetsDir, coreVersion: CORE_VERSION }),
       notesPlugin({ userCwd, slidesDir }),
       currentPlugin({ userCwd, slidesDir }),
       ogBuildPlugin({ userCwd, config }),

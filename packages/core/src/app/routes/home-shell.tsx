@@ -39,6 +39,7 @@ export function HomeShell() {
     create,
     update,
     remove,
+    reorder,
     assign,
     renameSlide,
     duplicateSlide,
@@ -147,6 +148,13 @@ export function HomeShell() {
           }}
           onDropToFolder={(folderId, slideId) => moveSlideWithToast(slideId, folderId)}
           onDropToDraft={(slideId) => moveSlideWithToast(slideId, null)}
+          onReorder={async (ids) => {
+            try {
+              await reorder(ids);
+            } catch {
+              toast.error(t.home.toastFolderReorderFailed);
+            }
+          }}
         />
       </div>
 

@@ -44,3 +44,18 @@ const config: OpenSlideConfig = {
 ```
 
 See [Export](/docs/core-feature/export) for the full set of build knobs.
+
+## Deploying under a subpath
+
+If the build won't sit at the domain root (GitHub Pages project sites,
+a reverse-proxy folder, an intranet path), set `base` in
+`open-slide.config.ts` so asset URLs and client-side navigation resolve
+against the deployed path:
+
+```ts
+const config: OpenSlideConfig = {
+  base: '/my-slides/',
+};
+```
+
+See [Config](/docs/reference/config) for details.

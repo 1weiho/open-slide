@@ -44,6 +44,7 @@ export const zhCN: Locale = {
     folders: '文件夹',
     newFolder: '新建文件夹',
     folderName: '文件夹名称',
+    updateAvailable: 'open-slide {version} 已发布，请更新软件包以获取最新版本。',
     changeIcon: '更换图标',
     iconEmojiTab: 'Emoji',
     iconColorTab: '颜色',
@@ -86,6 +87,7 @@ export const zhCN: Locale = {
     toastSlideMoveFailed: '移动幻灯片失败',
     toastFolderDeleted: '已删除文件夹"{name}"',
     toastFolderDeleteFailed: '删除文件夹失败',
+    toastFolderReorderFailed: '文件夹排序失败',
     pickIcon: '选择图标',
   },
 
@@ -103,7 +105,12 @@ export const zhCN: Locale = {
     toastCopyLinkFailed: '复制链接失败',
     exportAsHtml: '导出为 HTML',
     exportAsPdf: '导出为 PDF',
+    exportAsImagePptx: '导出图片 PPTX',
+    exportAsPptx: '导出 PPTX',
+    comingSoon: '即将推出',
+    pptxComingSoonTooltip: '可编辑的 PPTX 导出尚未支持，在此之前可以先使用“导出图片 PPTX”。',
     pdfExportFailed: 'PDF 导出失败',
+    imagePptxExportFailed: 'PPTX 导出失败',
     pdfExportSafariUnsupported:
       '导出 PDF 目前不支持 Safari 设备，请尝试使用基于 Chromium 的浏览器替代。',
     present: '演示',
@@ -354,12 +361,21 @@ export const zhCN: Locale = {
     toastDuplicateFailed: '无法复制页面',
     toastDeleteFailed: '无法删除页面',
     resizeRail: '调整缩略图栏宽度',
+    transitionIndicator: '有换页转场',
+    stepsIndicator: '有逐步揭示',
   },
 
   pdfToast: {
     title: '导出 PDF',
     processing: '正在处理第 {current} / {total} 页',
     printing: '正在打开打印对话框…',
+    done: '完成',
+  },
+
+  pptxToast: {
+    title: '导出 PPTX',
+    processing: '正在渲染第 {current} / {total} 页',
+    generating: '正在组合演示文稿…',
     done: '完成',
   },
 
@@ -371,9 +387,9 @@ export const zhCN: Locale = {
     system: '系统',
   },
 
-  clickNav: {
-    prevAria: '上一页',
-    nextAria: '下一页',
+  languageToggle: {
+    toggleAria: '切换语言',
+    title: '语言',
   },
 
   imagePlaceholder: {

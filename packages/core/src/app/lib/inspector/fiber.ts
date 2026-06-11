@@ -28,6 +28,12 @@ function getSource(fiber: FiberLike) {
   return fiber._debugSource ?? fiber.memoizedProps?.__source;
 }
 
+// `_debugSource.fileName` may carry Vite's HMR query (`?t=…`) and, on
+// Windows, backslash separators. Both break the naive `endsWith` match.
+function normalizeDebugFileName(fileName: string): string {
+  return fileName.split(/[?#]/)[0].replace(/\\/g, '/');
+}
+
 export function findSlideSource(
   el: HTMLElement,
   slideId: string,
@@ -58,7 +64,12 @@ export function findSlideSource(
   while (fiber) {
     const src = getSource(fiber);
     const isHost = fiber.stateNode instanceof HTMLElement;
-    if (src?.fileName?.endsWith(needle) && src.lineNumber && (!opts?.hostOnly || isHost)) {
+    if (
+      src?.fileName &&
+      normalizeDebugFileName(src.fileName).endsWith(needle) &&
+      src.lineNumber &&
+      (!opts?.hostOnly || isHost)
+    ) {
       return {
         line: src.lineNumber,
         column: src.columnNumber ?? 0,

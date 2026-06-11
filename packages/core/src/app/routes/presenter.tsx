@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, RotateCcw, Square, Sun } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { format, useLocale } from '@/lib/use-locale';
@@ -11,6 +11,7 @@ import {
 import { SlideCanvas } from '../components/slide-canvas';
 import { SlidePageProvider } from '../lib/page-context';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
+import { type StepController, StepHost } from '../lib/step-context';
 import { useSlideModule } from '../lib/use-slide-module';
 
 export function Presenter() {
@@ -114,14 +115,20 @@ export function Presenter() {
   const pages = slide.default;
   const total = pages.length;
   const index = Math.max(0, Math.min(total - 1, state?.index ?? 0));
-  const nextIndex = Math.min(total - 1, index + 1);
-  const hasNext = index < total - 1;
   const note = slide.notes?.[index];
   const blackout = state?.blackout ?? null;
   const startedAt = state?.startedAt ?? localStart;
+  const stepIndex = Math.max(0, state?.stepIndex ?? 0);
+  const stepCount = Math.max(0, state?.stepCount ?? 0);
+
+  const stepsRemaining = stepIndex < stepCount;
+  const hasNextSlide = index < total - 1;
+  const hasNext = stepsRemaining || hasNextSlide;
+  const nextPageIndex = stepsRemaining ? index : Math.min(total - 1, index + 1);
+  const nextRevealed = stepsRemaining ? stepIndex + 1 : 0;
 
   const CurrentPage = pages[index];
-  const NextPage = hasNext ? pages[nextIndex] : null;
+  const NextPage = hasNext ? pages[nextPageIndex] : null;
 
   return (
     <div className="dark flex h-dvh w-screen flex-col overflow-hidden bg-background text-foreground">
@@ -140,7 +147,9 @@ export function Presenter() {
           <div className="relative min-h-0 flex-1 overflow-hidden rounded-[8px] bg-black ring-1 ring-border">
             <SlideCanvas flat design={slide.design}>
               <SlidePageProvider index={index} total={total}>
-                <CurrentPage />
+                <PreviewStepHost revealed={stepIndex}>
+                  <CurrentPage />
+                </PreviewStepHost>
               </SlidePageProvider>
             </SlideCanvas>
             {blackout && (
@@ -167,8 +176,10 @@ export function Presenter() {
             >
               {NextPage ? (
                 <SlideCanvas flat freezeMotion design={slide.design}>
-                  <SlidePageProvider index={nextIndex} total={total}>
-                    <NextPage />
+                  <SlidePageProvider index={nextPageIndex} total={total}>
+                    <PreviewStepHost revealed={nextRevealed}>
+                      <NextPage />
+                    </PreviewStepHost>
                   </SlidePageProvider>
                 </SlideCanvas>
               ) : (
@@ -348,6 +359,20 @@ function PresenterJumpControl({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return <span className="eyebrow">{children}</span>;
+}
+
+function PreviewStepHost({ revealed, children }: { revealed: number; children: ReactNode }) {
+  const noopControllerRef = useRef<StepController | null>(null);
+  return (
+    <StepHost
+      isActivePage={false}
+      entryDirection="jump"
+      controllerRef={noopControllerRef}
+      controlledRevealed={revealed}
+    >
+      {children}
+    </StepHost>
+  );
 }
 
 function Clock() {

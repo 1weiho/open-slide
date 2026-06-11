@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import path from 'node:path';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { injectLocTags, locTagsPlugin } from './loc-tags-plugin.ts';
 
 const pluginTransformSource = 'export default [() => <div />];';
@@ -6,10 +7,17 @@ const pluginTransformSource = 'export default [() => <div />];';
 type LocTagsTransformResult = null | { code: string; map: null };
 
 function transformWithLocTags(id: string) {
-  const plugin = locTagsPlugin({ userCwd: '/repo' });
-  const transform = plugin.transform;
-  if (typeof transform !== 'function') throw new Error('expected transform function');
-  return transform.call({} as never, pluginTransformSource, id) as LocTagsTransformResult;
+  // Force `path.resolve` to return a POSIX slidesRoot so this suite
+  // exercises the same code path regardless of host OS.
+  const resolveSpy = vi.spyOn(path, 'resolve').mockReturnValue('/repo/slides');
+  try {
+    const plugin = locTagsPlugin({ userCwd: '/repo' });
+    const transform = plugin.transform;
+    if (typeof transform !== 'function') throw new Error('expected transform function');
+    return transform.call({} as never, pluginTransformSource, id) as LocTagsTransformResult;
+  } finally {
+    resolveSpy.mockRestore();
+  }
 }
 
 function expectTaggedTransform(id: string) {
@@ -151,5 +159,55 @@ describe('locTagsPlugin', () => {
 
   it('skips colocated test files', () => {
     expect(transformWithLocTags('/repo/slides/cover/index.test.tsx')).toBeNull();
+  });
+});
+
+describe('locTagsPlugin on Windows-style paths', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function transformWithMockedResolve(resolvedSlidesRoot: string, id: string) {
+    vi.spyOn(path, 'resolve').mockReturnValue(resolvedSlidesRoot);
+    const plugin = locTagsPlugin({ userCwd: 'C:\\repo' });
+    const transform = plugin.transform;
+    if (typeof transform !== 'function') throw new Error('expected transform function');
+    return transform.call({} as never, pluginTransformSource, id) as LocTagsTransformResult;
+  }
+
+  function expectTagged(resolvedSlidesRoot: string, id: string) {
+    const out = transformWithMockedResolve(resolvedSlidesRoot, id);
+    if (out === null) throw new Error(`expected tagged transform result for ${id}`);
+    expect(out.code).toContain('data-slide-loc');
+  }
+
+  it('tags slide index files with forward-slash ids under a Windows slidesRoot', () => {
+    expectTagged('C:\\repo\\slides', 'C:/repo/slides/cover/index.tsx');
+  });
+
+  it('strips HMR ?t= query before matching', () => {
+    expectTagged('C:\\repo\\slides', 'C:/repo/slides/cover/index.tsx?t=1700000000000');
+  });
+
+  it('tags nested slide source files under a Windows slidesRoot', () => {
+    expectTagged('C:\\repo\\slides', 'C:/repo/slides/cover/components/Card.tsx');
+  });
+
+  it('skips tsx files directly under the Windows slides directory', () => {
+    expect(transformWithMockedResolve('C:\\repo\\slides', 'C:/repo/slides/index.tsx')).toBeNull();
+  });
+
+  it('skips tsx files outside the Windows slides directory', () => {
+    expect(transformWithMockedResolve('C:\\repo\\slides', 'C:/repo/apps/demo/foo.tsx')).toBeNull();
+  });
+
+  it('skips colocated test files under a Windows slidesRoot', () => {
+    expect(
+      transformWithMockedResolve('C:\\repo\\slides', 'C:/repo/slides/cover/index.test.tsx'),
+    ).toBeNull();
+  });
+
+  it('still tags POSIX ids when path.resolve returns a POSIX slidesRoot (regression guard)', () => {
+    expectTagged('/repo/slides', '/repo/slides/cover/index.tsx');
   });
 });

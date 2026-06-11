@@ -23,9 +23,9 @@ export function Agents() {
     <section id="agents" className="relative overflow-hidden">
       <div className="border-y border-[color:var(--color-rule)] bg-[color:var(--color-panel)]">
         <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-10 sm:py-12">
-          <span className="font-[family-name:var(--font-sans)] text-[18px] sm:text-[20px] text-[color:var(--color-text-soft)]">
+          <h2 className="font-[family-name:var(--font-sans)] text-[18px] sm:text-[20px] text-[color:var(--color-text-soft)] font-normal">
             Bring your own agent. Anything that edits React works.
-          </span>
+          </h2>
         </div>
 
         <div

@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import fg from 'fast-glob';
-import { loadConfigFromFile, type Plugin, type ViteDevServer } from 'vite';
+import { loadConfigFromFile, normalizePath, type Plugin, type ViteDevServer } from 'vite';
 import type { OpenSlideConfig } from '../config.ts';
 import { findMetaObject } from '../editing/slide-ops.ts';
 
@@ -11,6 +11,7 @@ export type { OpenSlideConfig };
 export type OpenSlidePluginOptions = {
   userCwd: string;
   config: OpenSlideConfig;
+  coreVersion: string;
 };
 
 const CONFIG_FILE = 'open-slide.config.ts';
@@ -123,7 +124,7 @@ async function generateSlidesModule(
   const entries = await Promise.all(
     files.map(async (abs) => {
       const id = toSlideId(abs, slidesRoot);
-      const importPath = isDev ? `/@fs/${abs.replace(/^\/+/, '')}` : abs;
+      const importPath = isDev ? `@fs/${normalizePath(abs).replace(/^\/+/, '')}` : abs;
       const meta = await readSlideMeta(abs);
       return {
         id,
@@ -161,7 +162,7 @@ if (import.meta.hot) {
   const cases = entries
     .map((e) => {
       const importExpr = isDev
-        ? `import(/* @vite-ignore */ ${JSON.stringify(`${e.importPath}?t=`)} + slideImportTokens[${JSON.stringify(e.id)}])`
+        ? `import(/* @vite-ignore */ import.meta.env.BASE_URL + ${JSON.stringify(`${e.importPath}?t=`)} + slideImportTokens[${JSON.stringify(e.id)}])`
         : `import(${JSON.stringify(e.importPath)})`;
       return `    case ${JSON.stringify(e.id)}: return ${importExpr};`;
     })
@@ -183,7 +184,7 @@ ${cases}
 }
 
 export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
-  const { userCwd, config } = opts;
+  const { userCwd, config, coreVersion } = opts;
   const slidesDir = config.slidesDir ?? 'slides';
   const slidesRoot = path.resolve(userCwd, slidesDir);
   const foldersManifestPath = path.join(slidesRoot, '.folders.json');
@@ -244,7 +245,7 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
               showSlideUi: userBuild.showSlideUi ?? true,
               allowHtmlDownload: userBuild.allowHtmlDownload ?? true,
             };
-        const resolvedConfig = { ...config, build: buildResolved };
+        const resolvedConfig = { ...config, build: buildResolved, version: coreVersion };
         return `export default ${JSON.stringify(resolvedConfig)};\n`;
       }
       if (id === resolved(FOLDERS_VMOD)) {

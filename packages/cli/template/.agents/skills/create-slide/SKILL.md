@@ -13,7 +13,7 @@ You only write files under `slides/<id>/`. Never modify `package.json`, `open-sl
 
 List files under `themes/`. If any theme markdown files exist (anything other than `README.md`), call `AskUserQuestion` with each theme id as an option plus a final **"no theme — design from scratch"** option.
 
-- If the user picks a theme: read `themes/<id>.md` end-to-end. The theme's palette, typography, layout, and Title/Footer components are now authoritative — copy them directly into the slide. In Step 2, skip the **aesthetic direction** question (the theme already commits to one direction); you still need the topic itself, so confirm it before moving on. Page count, text density, and motion are independent of theme — ask those normally.
+- If the user picks a theme: read `themes/<id>.md` end-to-end. The theme's palette, typography, layout, and Title/Footer components are now authoritative — copy them directly into the slide. **Also set `theme: '<theme-id>'` on the `meta` export in `index.tsx`** (e.g. `export const meta: SlideMeta = { title: '…', theme: '<theme-id>' };`) so the slide back-links to the theme (chip on the slide card + listing on `/themes/<id>`). In Step 2, skip the **aesthetic direction** question (the theme already commits to one direction); you still need the topic itself, so confirm it before moving on. Page count, text density, and motion are independent of theme — ask those normally.
 - If the user picks "no theme", or `themes/` is empty (or contains only `README.md`): proceed to Step 2 unchanged.
 
 If you skip the aesthetic question because a theme was picked, restate the theme name in Step 2 so the user can correct course before you start writing.

@@ -5,13 +5,14 @@ import {
   ChevronLeft,
   Download,
   FileCode2,
+  FileImage,
   FileText,
   Link2,
   Loader2,
   Maximize,
   MonitorSpeaker,
-  Pencil,
   Play,
+  Presentation,
 } from 'lucide-react';
 import {
   lazy,
@@ -44,24 +45,29 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useFolders } from '@/lib/folders';
 import { useAgentSocketConnected } from '@/lib/use-agent-socket';
+import { useClickPageNavigation } from '@/lib/use-click-page-navigation';
+import { useIsMobile } from '@/lib/use-is-mobile';
 import { format, useLocale } from '@/lib/use-locale';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
-import { ClickNavZones } from '../components/click-nav-zones';
 import { NotesDrawer } from '../components/notes-drawer';
 import { PdfProgressToast } from '../components/pdf-progress-toast';
 import { openPresenterWindow, Player } from '../components/player';
+import { PptxProgressToast } from '../components/pptx-progress-toast';
 import { SlideCanvas } from '../components/slide-canvas';
 import { SlideTransitionLayer } from '../components/slide-transition-layer';
 import { type ThumbnailActions, ThumbnailRail } from '../components/thumbnail-rail';
 import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf, isSafari } from '../lib/export-pdf';
+import { exportSlideAsImagePptx } from '../lib/export-pptx';
 import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
 import type { SlideModule } from '../lib/sdk';
 import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
@@ -246,14 +252,30 @@ export function Slide() {
     if (playMode) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLElement && e.target.matches('input, textarea')) return;
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') {
+      if (
+        e.key === 'ArrowRight' ||
+        e.key === 'ArrowDown' ||
+        e.key === ' ' ||
+        e.key === 'PageDown'
+      ) {
         e.preventDefault();
         goTo(index + 1);
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
+        return;
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
         e.preventDefault();
         goTo(index - 1);
-      } else if (e.key === 'f' || e.key === 'F') {
+        return;
+      }
+      // Letter shortcuts only fire bare so browser combos (Cmd/Ctrl-P, ⌘F…) stay intact.
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      if (e.key === 'f' || e.key === 'F') {
         setPlayMode('fullscreen');
+      } else if (e.key === 'Enter') {
+        setPlayMode('window');
+      } else if (e.key === 'p' || e.key === 'P') {
+        if (slideId) openPresenterWindow(slideId);
+        setPlayMode('window');
       } else if (import.meta.env.DEV && (e.key === 'd' || e.key === 'D')) {
         setDesignOpen((v) => {
           const next = !v;
@@ -270,7 +292,7 @@ export function Slide() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [index, goTo, playMode, view]);
+  }, [index, goTo, playMode, view, slideId]);
 
   if (error) {
     return (
@@ -373,7 +395,7 @@ export function Slide() {
         <SelectionReporter />
         <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
           {/* Editorial toolbar — three zones, hairline separators, mono-folio center */}
-          <header className="flex h-12 shrink-0 items-center gap-2 border-b border-hairline bg-sidebar/85 px-2 backdrop-blur-md md:px-3">
+          <header className="relative flex h-12 shrink-0 items-center gap-2 border-b border-hairline bg-sidebar/85 px-2 backdrop-blur-md md:px-3">
             <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
               {showSlideBrowser && (
                 <Button asChild variant="ghost" size="icon-sm" title={t.slide.home}>
@@ -407,14 +429,14 @@ export function Slide() {
               {import.meta.env.DEV && <AgentConnectedBadge />}
             </div>
 
-            {/* Centered title — the rail and mobile pill carry the page count. */}
-            <div className="flex min-w-0 flex-1 justify-center px-2">
-              <div className="min-w-0 max-w-[34rem]">
+            {/* Title centered to the viewport, not the leftover space between the side groups. */}
+            <div className="pointer-events-none absolute inset-x-0 flex justify-center px-2">
+              <div className="pointer-events-auto min-w-0 max-w-[34rem]">
                 <InlineTitleEditor title={title} onSubmit={(next) => renameSlide(slideId, next)} />
               </div>
             </div>
 
-            <div className="flex shrink-0 items-center gap-1">
+            <div className="ml-auto flex shrink-0 items-center gap-1">
               {view === 'slides' && (
                 <button
                   type="button"
@@ -525,6 +547,69 @@ export function Slide() {
                       <FileText />
                       {t.slide.exportAsPdf}
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      disabled={exporting}
+                      onSelect={async () => {
+                        if (!slide || exporting) return;
+                        setExporting(true);
+                        const toastId = `pptx-export-${slideId}`;
+                        toast.custom(
+                          () => (
+                            <PptxProgressToast
+                              progress={{
+                                phase: 'processing',
+                                current: 0,
+                                total: pages.length,
+                                percent: 0,
+                              }}
+                            />
+                          ),
+                          { id: toastId, duration: Infinity },
+                        );
+                        try {
+                          await exportSlideAsImagePptx(slide, slideId, (p) => {
+                            toast.custom(() => <PptxProgressToast progress={p} />, {
+                              id: toastId,
+                              duration: Infinity,
+                            });
+                          });
+                        } catch (err) {
+                          console.error('[open-slide] image pptx export failed', err);
+                          toast.error(t.slide.imagePptxExportFailed, {
+                            id: toastId,
+                            duration: 4000,
+                          });
+                        } finally {
+                          setExporting(false);
+                          toast.dismiss(toastId);
+                        }
+                      }}
+                    >
+                      <FileImage />
+                      {t.slide.exportAsImagePptx}
+                    </DropdownMenuItem>
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div
+                            aria-disabled
+                            className="relative flex cursor-help items-center justify-between gap-2 rounded-[5px] px-2 py-1.5 text-[12.5px] opacity-45 select-none [&_svg]:size-3.5 [&_svg]:shrink-0 [&_svg]:opacity-80"
+                          >
+                            <span className="flex items-center gap-2">
+                              <Presentation />
+                              {t.slide.exportAsPptx}
+                            </span>
+                            <span className="rounded-[3px] bg-muted px-1.5 py-0.5 font-mono text-[9.5px] tracking-[0.04em] text-muted-foreground">
+                              {t.slide.comingSoon}
+                            </span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-[240px] leading-relaxed">
+                          {t.slide.pptxComingSoonTooltip}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
@@ -584,10 +669,12 @@ export function Slide() {
                       <DropdownMenuItem onSelect={() => setPlayMode('window')}>
                         <Play />
                         {t.slide.presentInWindow}
+                        <DropdownMenuShortcut>↵</DropdownMenuShortcut>
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => setPlayMode('fullscreen')}>
                         <Maximize />
                         {t.slide.presentFullscreen}
+                        <DropdownMenuShortcut>F</DropdownMenuShortcut>
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onSelect={() => {
@@ -597,6 +684,7 @@ export function Slide() {
                       >
                         <MonitorSpeaker />
                         {t.slide.presentPresenter}
+                        <DropdownMenuShortcut>P</DropdownMenuShortcut>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -620,6 +708,7 @@ export function Slide() {
                     onSelect={goTo}
                     onReorder={import.meta.env.DEV ? reorderPage : undefined}
                     actions={thumbnailActions}
+                    moduleTransition={slide.transition}
                   />
                   <main
                     ref={slideViewportRef}
@@ -627,7 +716,7 @@ export function Slide() {
                     data-slide-id={slideId}
                     className="paper relative min-h-0 min-w-0 flex-1 bg-canvas p-2 md:p-10"
                   >
-                    <SlideWheelNavigation
+                    <SlideViewportNavigation
                       targetRef={slideViewportRef}
                       onPrev={() => goTo(index - 1)}
                       onNext={() => goTo(index + 1)}
@@ -643,12 +732,6 @@ export function Slide() {
                         disabled={prefersReducedMotion}
                       />
                     </SlideCanvas>
-                    <ClickNavZones
-                      onPrev={() => goTo(index - 1)}
-                      onNext={() => goTo(index + 1)}
-                      canPrev={index > 0}
-                      canNext={index < pageCount - 1}
-                    />
                     <InspectOverlay />
                     <SaveBar />
                     {import.meta.env.DEV && <CommentWidget />}
@@ -718,6 +801,7 @@ function ResizableRail(props: {
   onSelect: (i: number) => void;
   onReorder?: (from: number, to: number) => void;
   actions?: ThumbnailActions;
+  moduleTransition?: SlideModule['transition'];
 }) {
   const t = useLocale();
   const [width, setWidth] = useState<number>(readStoredRailWidth);
@@ -870,7 +954,7 @@ function SelectionReporter() {
   return null;
 }
 
-function SlideWheelNavigation({
+function SlideViewportNavigation({
   targetRef,
   onPrev,
   onNext,
@@ -884,10 +968,24 @@ function SlideWheelNavigation({
   canNext: boolean;
 }) {
   const { active } = useInspector();
+  const isMobile = useIsMobile();
 
   useWheelPageNavigation({
     ref: targetRef,
     enabled: !active,
+    canPrev,
+    canNext,
+    onPrev,
+    onNext,
+  });
+
+  // Tap-to-navigate is a touch affordance — desktop has visible prev/next
+  // chrome, so it stays edge-only on small screens (matches the old md:hidden
+  // zones). Interactive slide content keeps its tap via the hook's passthrough.
+  useClickPageNavigation({
+    ref: targetRef,
+    enabled: isMobile && !active,
+    edgeRatio: 0.18,
     canPrev,
     canNext,
     onPrev,
@@ -946,49 +1044,66 @@ function InlineTitleEditor({
 
   if (editing) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <input
-          ref={inputRef}
-          value={value}
-          disabled={saving}
-          onChange={(e) => setValue(e.target.value)}
-          onBlur={() => {
-            if (!saving) commit();
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              commit();
-            } else if (e.key === 'Escape') {
-              e.preventDefault();
-              cancel();
-            }
-          }}
-          maxLength={80}
-          className="min-w-0 max-w-[min(34rem,90%)] rounded-[5px] border border-foreground/30 bg-card px-2 py-0.5 text-center font-heading text-[13px] font-medium tracking-tight outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-        />
+      <div className="flex min-w-0 flex-1 items-center justify-center">
+        <div className="inline-grid max-w-full items-center">
+          <span
+            aria-hidden
+            className="invisible col-start-1 row-start-1 overflow-hidden whitespace-pre border border-transparent px-2 py-0.5 font-heading text-[13.5px] font-semibold tracking-[-0.01em]"
+          >
+            {value || ' '}
+          </span>
+          <input
+            ref={inputRef}
+            size={1}
+            value={value}
+            disabled={saving}
+            onChange={(e) => setValue(e.target.value)}
+            onBlur={() => {
+              if (!saving) commit();
+            }}
+            onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing) return;
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                commit();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                cancel();
+              }
+            }}
+            maxLength={80}
+            className="col-start-1 row-start-1 w-full min-w-0 rounded-[5px] border border-foreground/30 bg-card px-2 py-0.5 text-center font-heading text-[13.5px] font-semibold tracking-[-0.01em] outline-none"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (!import.meta.env.DEV) {
+    return (
+      <div className="flex min-w-0 items-baseline justify-center">
+        <h1 className="truncate font-heading text-[13.5px] font-semibold tracking-[-0.01em]">
+          {title}
+        </h1>
       </div>
     );
   }
 
   return (
-    <div className="group/title flex min-w-0 items-baseline justify-center gap-1.5">
-      <h1 className="truncate font-heading text-[13.5px] font-semibold tracking-[-0.01em]">
-        {title}
-      </h1>
-      {import.meta.env.DEV && (
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          aria-label={t.slide.renameSlide}
-          className={cn(
-            'flex size-5 shrink-0 items-center justify-center rounded-[4px] text-muted-foreground transition-opacity hover:bg-muted hover:text-foreground',
-            'opacity-0 group-hover/title:opacity-100 focus-visible:opacity-100',
-          )}
-        >
-          <Pencil className="size-3" />
-        </button>
-      )}
+    <div className="flex min-w-0 items-center justify-center">
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        aria-label={t.slide.renameSlide}
+        className={cn(
+          'min-w-0 max-w-full cursor-text rounded-[5px] border border-transparent px-2 py-0.5 transition-colors',
+          'hover:border-foreground/30 hover:bg-card focus-visible:border-foreground/30 focus-visible:bg-card focus-visible:outline-none',
+        )}
+      >
+        <h1 className="truncate font-heading text-[13.5px] font-semibold tracking-[-0.01em]">
+          {title}
+        </h1>
+      </button>
     </div>
   );
 }
