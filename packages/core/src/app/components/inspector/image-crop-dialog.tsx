@@ -45,6 +45,11 @@ export function ImageCropDialog({
   const onImageLoad = (e: SyntheticEvent<HTMLImageElement>) => {
     const im = e.currentTarget;
     if (initialRect && fit === 'cover') {
+      if (!initialRect.height || !im.naturalHeight || !Number.isFinite(im.naturalWidth)) {
+        setFit('freeform');
+        setCrop({ unit: '%', ...initialRect });
+        return;
+      }
       const rectAspect =
         (initialRect.width * im.naturalWidth) / (initialRect.height * im.naturalHeight);
       if (Math.abs(rectAspect - aspect) > 0.05) {
