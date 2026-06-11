@@ -1,5 +1,17 @@
 # @open-slide/core
 
+## 1.11.1
+
+### Patch Changes
+
+- [#218](https://github.com/1weiho/open-slide/pull/218) [`ba26721`](https://github.com/1weiho/open-slide/commit/ba267217e4c66e5040123fc27847bc8a82ef82e1) Thanks [@adawang1210](https://github.com/adawang1210)! - Keep the notes textarea focused when Escape is pressed during IME composition.
+
+- [#220](https://github.com/1weiho/open-slide/pull/220) [`336bade`](https://github.com/1weiho/open-slide/commit/336badec7d2384457830c0db0a6c7242a2ea349f) Thanks [@adawang1210](https://github.com/adawang1210)! - Ignore Enter/Escape during IME composition in slide title, slide rename, asset rename, and folder name inputs.
+
+- [#217](https://github.com/1weiho/open-slide/pull/217) [`b8916e3`](https://github.com/1weiho/open-slide/commit/b8916e37a0071ed53bc6d5ef8c5c826f76da6c4c) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Fix PPTX export producing a theme that triggers PowerPoint's repair prompt by ensuring the fill style list has the schema-required three entries.
+
+- [#221](https://github.com/1weiho/open-slide/pull/221) [`9052f44`](https://github.com/1weiho/open-slide/commit/9052f4416f9835b0831dfe7aed546b3a74647d7a) Thanks [@adawang1210](https://github.com/adawang1210)! - Remove the touchcancel listener on cleanup in the present-mode swipe handler so listeners no longer accumulate while navigating.
+
 ## 1.11.0
 
 ### Minor Changes
