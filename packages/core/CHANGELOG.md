@@ -1,5 +1,19 @@
 # @open-slide/core
 
+## 1.12.0
+
+### Minor Changes
+
+- [#211](https://github.com/1weiho/open-slide/pull/211) [`12ee858`](https://github.com/1weiho/open-slide/commit/12ee8587458843c8389344336d93fe07bd99a674) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Open the slide overview grid from the pages editor — press O or click the grid button next to the page count. The overlay adopts the editor theme instead of the present-mode black.
+
+### Patch Changes
+
+- [#230](https://github.com/1weiho/open-slide/pull/230) [`75653e1`](https://github.com/1weiho/open-slide/commit/75653e1abed5aed93ec9835fe5eee299ddde24e5) Thanks [@1weiho](https://github.com/1weiho)! - Add a one-click update action that upgrades open-slide and syncs bundled skills from the home sidebar.
+
+- [#219](https://github.com/1weiho/open-slide/pull/219) [`f5a60ad`](https://github.com/1weiho/open-slide/commit/f5a60ade563dd9e80f0ecb02fe696cb8bb70968c) Thanks [@adawang1210](https://github.com/adawang1210)! - Stop force-loading every registered font face before PDF export, which hung or crashed the tab on subsetted CJK webfonts.
+
+- [#216](https://github.com/1weiho/open-slide/pull/216) [`80dda4e`](https://github.com/1weiho/open-slide/commit/80dda4e687242bafd6bf56bfd64a5641e64034d2) Thanks [@poterpan](https://github.com/poterpan)! - Add webfont guidance to the slide-authoring skill: load the stylesheet once in `<head>`, list only the weights used, and subset CJK with `&text=`.
+
 ## 1.11.1
 
 ### Patch Changes
