@@ -224,6 +224,11 @@ export const zhTW: Locale = {
     crop: '裁切…',
     cropDialogTitle: '裁切圖片',
     cropDialogDescription: '拖曳框線決定要保留的可見範圍。',
+    sharedImageWarning:
+      '這張圖片由共用元件渲染在 {count} 個位置——這次編輯會同時改變全部。想讓每張圖獨立編輯，請在你的 agent 執行 ',
+    sharedImageWarningMap:
+      '這張圖片來自同一個原始碼位置、被渲染多次——這次編輯會同時改變每一份。想拆成可獨立編輯的元素，請在你的 agent 執行 ',
+    sharedImageHintSuffix: '。',
     cropFitCover: '填滿',
     cropFitContain: '完整顯示',
     cropApply: '套用',

@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useLocale } from '@/lib/use-locale';
+import { SharedImageNotice, type SharedNotice } from './shared-image-notice';
 
 export type ImageCropRect = { x: number; y: number; width: number; height: number };
 
@@ -24,6 +25,7 @@ export function ImageCropDialog({
   initialFit,
   initialPosition,
   initialRect,
+  sharedNotice = null,
   onClose,
   onApply,
 }: {
@@ -33,6 +35,7 @@ export function ImageCropDialog({
   initialFit: 'cover' | 'contain';
   initialPosition: { x: number; y: number };
   initialRect: ImageCropRect | null;
+  sharedNotice?: SharedNotice | null;
   onClose: () => void;
   onApply: (result: ImageCropResult) => void;
 }) {
@@ -77,6 +80,7 @@ export function ImageCropDialog({
           <DialogTitle>{t.inspector.cropDialogTitle}</DialogTitle>
           <DialogDescription>{t.inspector.cropDialogDescription}</DialogDescription>
         </DialogHeader>
+        <SharedImageNotice notice={sharedNotice} />
         <div className="flex justify-center">
           <ToggleGroup
             type="single"

@@ -228,6 +228,11 @@ export const ja: Locale = {
     crop: 'トリミング…',
     cropDialogTitle: '画像をトリミング',
     cropDialogDescription: '枠をドラッグして表示する範囲を選択します。',
+    sharedImageWarning:
+      'この画像は共有コンポーネントによって {count} か所に描画されています。この編集はすべての箇所に反映されます。個別に編集するには、エージェントで ',
+    sharedImageWarningMap:
+      'この画像は同じソース位置から複数回描画されています。この編集はすべてのコピーに反映されます。個別に編集できる要素へ分割するには、エージェントで ',
+    sharedImageHintSuffix: ' を実行してください。',
     cropFitCover: '塗りつぶす',
     cropFitContain: '全体表示',
     cropApply: '適用',

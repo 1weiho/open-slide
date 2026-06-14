@@ -543,17 +543,25 @@ Define the component **in the same `index.tsx`**, alongside the `Page` component
 
 ```tsx
 // ✅ Each card is its own JSX node — inspector edits one at a time.
-const Card = ({ src, label }: { src: string; label: string }) => (
+//    The <img> is written at the call site (passed as children) so each
+//    image has its own source location the inspector can replace alone.
+const Card = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-    <img src={src} style={{ width: 320, height: 320, objectFit: 'cover', borderRadius: 12 }} />
+    {children}
     <p style={{ fontSize: 32 }}>{label}</p>
   </div>
 );
 
 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 64 }}>
-  <Card src={alpha} label="Alpha" />
-  <Card src={beta}  label="Beta"  />
-  <Card src={gamma} label="Gamma" />
+  <Card label="Alpha">
+    <img src={alpha} style={{ width: 320, height: 320, objectFit: 'cover', borderRadius: 12 }} />
+  </Card>
+  <Card label="Beta">
+    <img src={beta} style={{ width: 320, height: 320, objectFit: 'cover', borderRadius: 12 }} />
+  </Card>
+  <Card label="Gamma">
+    <img src={gamma} style={{ width: 320, height: 320, objectFit: 'cover', borderRadius: 12 }} />
+  </Card>
 </div>
 ```
 
@@ -575,7 +583,9 @@ items.map((item) => (
 
 The inspector edits source JSX in place. A `map` body is **one source location** shared by every rendered instance, so when the user replaces an image or tweaks a label there, every card mutates together. Explicit instances give each card its own JSX node and its own props — the unit the inspector can target.
 
-The component definition stays the single source of truth for layout/styling (change it once → all cards update). Only the per-instance data — `src`, `label`, accent color — lives at the call site.
+**Images are the sharp edge here.** The inspector's *Replace image* and *Crop* resolve a click to the host `<img>`'s source location, and — unlike text — they can't trace a `src` prop back to the call site. So an `<img src={src}>` written *inside* a shared component is **one** location: replacing or cropping any single image rewrites that line and every instance changes together. Keep the `<img>` at the call site (pass it as `children`, as above) so each image is its own node. Layout, styling, and text props are safe inside the component — only the `<img>` itself must live at the call site to stay independently editable.
+
+The component definition stays the single source of truth for layout/styling (change it once → all cards update). Only the per-instance content — the `<img>`, `label`, accent color — lives at the call site.
 
 This applies whenever the *visual element* repeats, not whenever the *data* does. Pure-text lists (`<ul><li>` bullets) are fine: each `<li>` is already its own JSX node, so plain literal markup is the correct shape — no need to wrap them in a component.
 
@@ -598,6 +608,7 @@ This applies whenever the *visual element* repeats, not whenever the *data* does
 - [ ] Slide declares a top-level `export const design: DesignSystem = { … }` and references the values via `var(--osd-X)` (use `design.X` only when you need a JS number for arithmetic). Only omit the `design` const for a one-off slide whose palette is intentionally locked.
 - [ ] One idea per page.
 - [ ] Visually repeated elements (cards, tiles, logo rows) are rendered as explicit `<Component />` instances, not via `array.map` over a data list.
+- [ ] No shared component contains an `<img>` fed by a `src` prop — every `<img>` is written at its call site (passed as `children` if a wrapper component is involved), so the inspector can replace/crop each image independently.
 - [ ] All imported assets exist on disk — slide-local under `slides/<id>/assets/`, or global under `assets/` (imported via `@assets/...`).
 - [ ] Every `<ImagePlaceholder>` corresponds to a real image the user must supply — not decorative filler. If it could be replaced by typography or layout, it should be.
 - [ ] If a page uses `<Steps>`/`<Step>`, every `<Step>` is a direct child of a `<Steps>`, and the page still reads as complete when jumped to via the overview grid (entering forward builds up; jumping in shows it fully revealed).
@@ -621,5 +632,6 @@ This applies whenever the *visual element* repeats, not whenever the *data* does
 - ❌ Sprinkling `<ImagePlaceholder>` across pages "for visual interest". Placeholders are for content the user owns; they're not stock-photo slots.
 - ❌ Using a placeholder for an icon or decorative shape — those are typography/SVG problems, not asset problems.
 - ❌ Rendering visually repeated elements with `array.map(...)` over a data array. Define a component and instantiate it explicitly per item (`<Card />`, `<Card />`, `<Card />`) so the inspector can edit each independently — a shared `map` body mutates every instance at once.
+- ❌ An `<img src={src}>` inside a shared component. The inspector resolves image edits to the `<img>`'s own source line, so one shared `<img>` means replacing or cropping any instance changes all of them. Write the `<img>` at each call site and pass it as `children`.
 - ❌ Wrapping every page's content in `<Step>` reflexively. Stepped reveals are for content whose *order* is the point; a glance-and-get-it page (hero title, single quote, diagram) is stronger shown whole.
 - ❌ A `<Step>` that isn't a direct child of `<Steps>` (nested deeper, or with no `<Steps>` parent). It renders fully revealed and defers nothing — the reveal silently does nothing.

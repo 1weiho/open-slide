@@ -231,6 +231,11 @@ export const en: Locale = {
     crop: 'Crop…',
     cropDialogTitle: 'Crop image',
     cropDialogDescription: 'Drag the frame to choose what stays visible.',
+    sharedImageWarning:
+      'This image is rendered in {count} places by a shared component — this edit changes all of them. To edit each image independently, run ',
+    sharedImageWarningMap:
+      'This image is rendered multiple times from one source location — this edit changes every copy. To split them into independently editable elements, run ',
+    sharedImageHintSuffix: ' in your agent.',
     cropFitCover: 'Fill',
     cropFitContain: 'Fit',
     cropApply: 'Apply',

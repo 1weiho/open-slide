@@ -18,6 +18,8 @@ export type Edit = { line: number; column: number; ops: EditOp[] };
 
 export type EditResult = { ok: boolean; error?: string };
 
+export type ElementSharing = { instances: number; viaMap: boolean };
+
 export class NoOpEditError extends Error {
   constructor() {
     super(
@@ -69,5 +71,26 @@ export function useEditor(slideId: string) {
     [slideId],
   );
 
-  return { applyEdit, applyEdits };
+  // Best-effort probe — the warning it feeds is advisory, so any
+  // failure (old server, parse error) degrades to "no warning".
+  const fetchElementSharing = useCallback(
+    async (line: number, column: number): Promise<ElementSharing | null> => {
+      try {
+        const params = new URLSearchParams({
+          slideId,
+          line: String(line),
+          column: String(column),
+        });
+        const res = await fetch(`/__edit/element-info?${params}`);
+        if (!res.ok) return null;
+        const body = (await res.json()) as ElementSharing;
+        return typeof body.instances === 'number' && typeof body.viaMap === 'boolean' ? body : null;
+      } catch {
+        return null;
+      }
+    },
+    [slideId],
+  );
+
+  return { applyEdit, applyEdits, fetchElementSharing };
 }

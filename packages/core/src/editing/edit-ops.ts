@@ -1162,6 +1162,57 @@ function planReplacePlaceholder(
   return { importSplice, elementSplice: spliceRange(element, replacement) };
 }
 
+export type ElementSharing = { instances: number; viaMap: boolean };
+
+// A page repeated by reference (`export default [A, B, A]`) shares its
+// source the same way a twice-invoked component does.
+function countDefaultExportArrayRefs(ast: t.File, name: string): number {
+  for (const decl of ast.program.body) {
+    if (!t.isExportDefaultDeclaration(decl)) continue;
+    let expr: t.Node = decl.declaration;
+    while (t.isTSSatisfiesExpression(expr) || t.isTSAsExpression(expr)) {
+      expr = expr.expression;
+    }
+    if (!t.isArrayExpression(expr)) return 0;
+    let count = 0;
+    for (const el of expr.elements) {
+      if (el && t.isIdentifier(el) && el.name === name) count++;
+    }
+    return count;
+  }
+  return 0;
+}
+
+// How many rendered instances share the JSX element at `line:column` as
+// their single source location — JSX call sites of the enclosing
+// component plus repeated page references in the default export, and
+// whether the element sits inside a `.map` body. The inspector warns
+// before image edits that would mutate all of them.
+export function probeElementSharing(
+  source: string,
+  line: number,
+  column: number,
+): ElementSharing | null {
+  const ast = parseSource(source);
+  if (!ast) return null;
+  const element = findInnermostJsxElement(ast, line, column);
+  if (!element) return null;
+  const viaMap = findEnclosingMapCallback(ast, element) !== null;
+  const component = findEnclosingComponent(ast, element);
+  let instances = 1;
+  if (component) {
+    const name = component.name;
+    let count = countDefaultExportArrayRefs(ast, name);
+    walkJsx(ast, (n) => {
+      if (!t.isJSXElement(n)) return;
+      const elName = n.openingElement.name;
+      if (t.isJSXIdentifier(elName) && elName.name === name) count++;
+    });
+    if (count > 1) instances = count;
+  }
+  return { instances, viaMap };
+}
+
 export function applyEdit(
   source: string,
   line: number,

@@ -233,6 +233,9 @@ export type Locale = {
     crop: string;
     cropDialogTitle: string;
     cropDialogDescription: string;
+    sharedImageWarning: string;
+    sharedImageWarningMap: string;
+    sharedImageHintSuffix: string;
     cropFitCover: string;
     cropFitContain: string;
     cropApply: string;

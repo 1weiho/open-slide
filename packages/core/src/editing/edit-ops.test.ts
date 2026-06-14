@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyEdit, safeAssetIdentifier } from './edit-ops.ts';
+import { applyEdit, probeElementSharing, safeAssetIdentifier } from './edit-ops.ts';
 
 describe('applyEdit / set-style', () => {
   // Every JSX opening tag in these synthetic sources sits at column 0;
@@ -1142,5 +1142,67 @@ describe('applyEdit / replace-placeholder-with-image', () => {
     expect(r.ok).toBe(false);
     if (r.ok) throw new Error('expected failure');
     expect(r.error).toMatch(/\.\/assets\//);
+  });
+});
+
+describe('probeElementSharing', () => {
+  it('counts call sites of the enclosing shared component', () => {
+    const src = [
+      'const Shot = ({ src }: { src: string }) => (',
+      '  <img src={src} />',
+      ');',
+      'export default [() => (',
+      '  <section>',
+      '    <Shot src="a" />',
+      '    <Shot src="b" />',
+      '    <Shot src="c" />',
+      '  </section>',
+      ')];',
+      '',
+    ].join('\n');
+    expect(probeElementSharing(src, 2, 2)).toEqual({ instances: 3, viaMap: false });
+  });
+
+  it('reports a single instance for an element directly inside a page', () => {
+    const src = [
+      'const Cover = () => (',
+      '  <img src="a" />',
+      ');',
+      'export default [Cover];',
+      '',
+    ].join('\n');
+    expect(probeElementSharing(src, 2, 2)).toEqual({ instances: 1, viaMap: false });
+  });
+
+  it('counts a page repeated by reference in the default export array', () => {
+    const src = [
+      'const Repeated = () => (',
+      '  <img src="a" />',
+      ');',
+      'const Other = () => <div />;',
+      'export default [Other, Repeated, Repeated] satisfies Page[];',
+      '',
+    ].join('\n');
+    expect(probeElementSharing(src, 2, 2)).toEqual({ instances: 2, viaMap: false });
+  });
+
+  it('flags an element rendered from a map body', () => {
+    const src = [
+      'const items = ["a", "b"];',
+      'export default [() => (',
+      '  <section>',
+      '    {items.map((s) => (',
+      '      <img src={s} key={s} />',
+      '    ))}',
+      '  </section>',
+      ')];',
+      '',
+    ].join('\n');
+    expect(probeElementSharing(src, 5, 6)).toEqual({ instances: 1, viaMap: true });
+  });
+
+  it('returns null when no JSX element sits at the location', () => {
+    const src = ['const x = 1;', ''].join('\n');
+    expect(probeElementSharing(src, 1, 0)).toBeNull();
   });
 });

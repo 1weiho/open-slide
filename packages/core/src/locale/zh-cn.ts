@@ -224,6 +224,11 @@ export const zhCN: Locale = {
     crop: '裁剪…',
     cropDialogTitle: '裁剪图片',
     cropDialogDescription: '拖动框线决定要保留的可见区域。',
+    sharedImageWarning:
+      '这张图片由共用组件渲染在 {count} 个位置——本次编辑会同时改变全部。要让每张图独立编辑，请在你的 agent 运行 ',
+    sharedImageWarningMap:
+      '这张图片来自同一个源码位置、被渲染多次——本次编辑会同时改变每一份。要拆成可独立编辑的元素，请在你的 agent 运行 ',
+    sharedImageHintSuffix: '。',
     cropFitCover: '填满',
     cropFitContain: '完整显示',
     cropApply: '应用',

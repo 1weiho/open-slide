@@ -13,16 +13,19 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { type AssetEntry, uploadWithAutoRename, useAssets } from '@/lib/assets';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
+import { SharedImageNotice, type SharedNotice } from './shared-image-notice';
 
 export type PickerScope = 'slide' | 'global';
 const GLOBAL_PICKER_SLIDE_ID = '@global';
 
 export function AssetPickerDialog({
   slideId,
+  sharedNotice = null,
   onClose,
   onPick,
 }: {
   slideId: string;
+  sharedNotice?: SharedNotice | null;
   onClose: () => void;
   onPick: (asset: AssetEntry, scope: PickerScope) => void;
 }) {
@@ -68,6 +71,7 @@ export function AssetPickerDialog({
             {descSuffix}
           </DialogDescription>
         </DialogHeader>
+        <SharedImageNotice notice={sharedNotice} />
         <Tabs value={scope} onValueChange={(next) => setScope(next as PickerScope)}>
           <TabsList>
             <TabsTrigger value="slide">{t.asset.scopeSlide}</TabsTrigger>

@@ -287,7 +287,7 @@ export function InspectorProvider({
   const [active, setActive] = useState(false);
   const [selected, setSelected] = useState<SelectedTarget | null>(null);
   const { comments, error, refetch, add, remove } = useComments(slideId);
-  const { applyEdit, applyEdits } = useEditor(slideId);
+  const { applyEdit, applyEdits, fetchElementSharing } = useEditor(slideId);
   const history = useHistory();
 
   const pendingRef = useRef<Map<string, Bucket>>(new Map());
@@ -311,7 +311,34 @@ export function InspectorProvider({
     column: number;
     anchor: HTMLElement;
   } | null>(null);
+  // Keyed by loc so a slow probe response can't attach to a dialog that
+  // was reopened on a different element in the meantime.
+  const [sharing, setSharing] = useState<{
+    line: number;
+    column: number;
+    instances: number;
+    viaMap: boolean;
+  } | null>(null);
   const t = useLocale();
+
+  const probeSharing = useCallback(
+    (line: number, column: number) => {
+      setSharing(null);
+      void fetchElementSharing(line, column).then((info) => {
+        if (info) setSharing({ line, column, ...info });
+      });
+    },
+    [fetchElementSharing],
+  );
+
+  const sharingFor = (target: { line: number; column: number } | null) =>
+    sharing &&
+    target &&
+    sharing.line === target.line &&
+    sharing.column === target.column &&
+    (sharing.instances > 1 || sharing.viaMap)
+      ? { instances: sharing.instances, viaMap: sharing.viaMap }
+      : null;
 
   const ensureInstanceId = useCallback((el: HTMLElement): string => {
     const existing = el.getAttribute(INSTANCE_ID_ATTR);
@@ -927,15 +954,19 @@ export function InspectorProvider({
     setSelected(null);
   }, []);
 
-  const openReplace = useCallback((anchor: HTMLElement) => {
-    const loc = anchor.dataset.slideLoc;
-    if (!loc) return;
-    const [lineStr, columnStr] = loc.split(':');
-    const line = Number(lineStr);
-    const column = Number(columnStr);
-    if (!Number.isFinite(line) || !Number.isFinite(column)) return;
-    setReplaceTarget({ line, column, anchor });
-  }, []);
+  const openReplace = useCallback(
+    (anchor: HTMLElement) => {
+      const loc = anchor.dataset.slideLoc;
+      if (!loc) return;
+      const [lineStr, columnStr] = loc.split(':');
+      const line = Number(lineStr);
+      const column = Number(columnStr);
+      if (!Number.isFinite(line) || !Number.isFinite(column)) return;
+      setReplaceTarget({ line, column, anchor });
+      probeSharing(line, column);
+    },
+    [probeSharing],
+  );
 
   useEffect(() => {
     if (import.meta.env.PROD) return;
@@ -948,26 +979,30 @@ export function InspectorProvider({
     return () => window.removeEventListener('keydown', onKey);
   }, [toggle]);
 
-  const openCrop = useCallback((anchor: HTMLImageElement) => {
-    const loc = anchor.dataset.slideLoc;
-    if (!loc) return;
-    const [lineStr, columnStr] = loc.split(':');
-    const line = Number(lineStr);
-    const column = Number(columnStr);
-    if (!Number.isFinite(line) || !Number.isFinite(column)) return;
-    const cs = window.getComputedStyle(anchor);
-    setCropTarget({
-      line,
-      column,
-      anchor,
-      src: anchor.currentSrc || anchor.src,
-      targetWidth: anchor.offsetWidth || anchor.getBoundingClientRect().width,
-      targetHeight: anchor.offsetHeight || anchor.getBoundingClientRect().height,
-      initialFit: cs.objectFit === 'contain' ? 'contain' : 'cover',
-      initialPosition: parseObjectPosition(cs.objectPosition),
-      initialRect: parseObjectViewBox(cs.getPropertyValue('object-view-box')),
-    });
-  }, []);
+  const openCrop = useCallback(
+    (anchor: HTMLImageElement) => {
+      const loc = anchor.dataset.slideLoc;
+      if (!loc) return;
+      const [lineStr, columnStr] = loc.split(':');
+      const line = Number(lineStr);
+      const column = Number(columnStr);
+      if (!Number.isFinite(line) || !Number.isFinite(column)) return;
+      const cs = window.getComputedStyle(anchor);
+      setCropTarget({
+        line,
+        column,
+        anchor,
+        src: anchor.currentSrc || anchor.src,
+        targetWidth: anchor.offsetWidth || anchor.getBoundingClientRect().width,
+        targetHeight: anchor.offsetHeight || anchor.getBoundingClientRect().height,
+        initialFit: cs.objectFit === 'contain' ? 'contain' : 'cover',
+        initialPosition: parseObjectPosition(cs.objectPosition),
+        initialRect: parseObjectViewBox(cs.getPropertyValue('object-view-box')),
+      });
+      probeSharing(line, column);
+    },
+    [probeSharing],
+  );
 
   const value = useMemo<InspectorCtx>(
     () => ({
@@ -1021,6 +1056,7 @@ export function InspectorProvider({
       {replaceTarget && (
         <AssetPickerDialog
           slideId={slideId}
+          sharedNotice={sharingFor(replaceTarget)}
           onClose={() => setReplaceTarget(null)}
           onPick={(asset, scope) => {
             const { line, column, anchor } = replaceTarget;
@@ -1052,6 +1088,7 @@ export function InspectorProvider({
       {cropTarget && (
         <ImageCropDialog
           src={cropTarget.src}
+          sharedNotice={sharingFor(cropTarget)}
           targetWidth={cropTarget.targetWidth}
           targetHeight={cropTarget.targetHeight}
           initialFit={cropTarget.initialFit}

@@ -16,6 +16,7 @@ You are authoring **slides** in this repo. Every slide is arbitrary React code t
 - **Applying inspector comments** (`@slide-comment` markers in a page) — use the `apply-comments` skill.
 - **Creating or extracting a theme** — use the `create-theme` skill. Themes live as markdown under `themes/<id>.md` and are read by `create-slide` before authoring.
 - **Resolving "this page" / "this element"** — when the user references the current slide or selection without naming it, consult the `current-slide` skill. It reads the dev server's `node_modules/.open-slide/current.json` to find which slide, page, and inspector-picked element they mean.
+- **Making images independently editable** — when replacing or cropping one image changes others too (the inspector warns about this), use the `split-shared-images` skill. It moves each `<img>` out of shared components to its own call site.
 - **Any other slide edit** — read the `slide-authoring` skill before writing. It is the technical reference for everything inside `slides/<id>/`: file contract, the 1920×1080 canvas, type scale, palette, layout, assets, self-review checklist, and anti-patterns. `create-slide` and `apply-comments` both defer to it for the *how*.
 
 Keep this file short: hard rules only. All deeper guidance lives in the skills above.

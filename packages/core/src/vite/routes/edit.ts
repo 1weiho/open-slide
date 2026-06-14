@@ -1,10 +1,11 @@
 import fs from 'node:fs/promises';
 import type { ViteDevServer } from 'vite';
-import { applyEdit, type EditOp } from '../../editing/edit-ops.ts';
+import { applyEdit, type EditOp, probeElementSharing } from '../../editing/edit-ops.ts';
 import { applyRevertAsset } from '../../editing/revert-asset.ts';
 import { validateMutationRequest } from '../../http/request-guard.ts';
 import { type ApiContext, json, readBody, resolveSlideEntryPath } from './context.ts';
 
+// GET  /__edit/element-info   probeElementSharing — ?slideId&line&column
 // POST /__edit                applyEdit({ slideId, line, column, ops })
 // POST /__edit/revert-asset   applyRevertAsset({ slideId, assetPath })
 // POST /__edit/batch          applyEdit × N — single FS write per request
@@ -25,6 +26,31 @@ export function registerEditRoutes(server: ViteDevServer, ctx: ApiContext): void
   server.middlewares.use('/__edit', async (req, res, next) => {
     const url = new URL(req.url ?? '/', 'http://local');
     const method = req.method ?? 'GET';
+
+    if (method === 'GET' && url.pathname === '/element-info') {
+      try {
+        const slideId = url.searchParams.get('slideId') ?? '';
+        const line = Number(url.searchParams.get('line') ?? '');
+        const columnRaw = Number(url.searchParams.get('column') ?? '0');
+        const file = resolveSlideEntryPath(ctx, slideId);
+        if (!file) return json(res, 400, { error: 'invalid slideId' });
+        if (!Number.isFinite(line) || line < 1) return json(res, 400, { error: 'invalid line' });
+
+        let source: string;
+        try {
+          source = await fs.readFile(file, 'utf8');
+        } catch {
+          return json(res, 404, { error: 'slide not found' });
+        }
+
+        const info = probeElementSharing(source, line, Number.isFinite(columnRaw) ? columnRaw : 0);
+        if (!info) return json(res, 422, { error: 'no JSX element at location' });
+        return json(res, 200, info);
+      } catch (err) {
+        return json(res, 500, { error: String((err as Error).message ?? err) });
+      }
+    }
+
     if (method !== 'POST') return next();
     const requestCheck = validateMutationRequest(req, { requireJsonBody: true });
     if (!requestCheck.ok) return json(res, requestCheck.status, { error: requestCheck.error });
