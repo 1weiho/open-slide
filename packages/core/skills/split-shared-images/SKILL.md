@@ -15,7 +15,7 @@ Your job: find those shared image locations in one slide and rewrite them so eac
 
 Scan `slides/<id>/index.tsx` for:
 
-1. **A component whose `<img>` (or `<video>`) renders from a prop** — `const Shot = ({ src, … }) => … <img src={src} …/>` — and that has **two or more** `<Shot …/>` call sites. One call site is technically fine, but refactor it too if you're already touching the component: a second use will silently reintroduce the bug.
+1. **A component whose `<img>` renders from a prop** — `const Shot = ({ src, … }) => … <img src={src} …/>` — and that has **two or more** `<Shot …/>` call sites. One call site is technically fine, but refactor it too if you're already touching the component: a second use will silently reintroduce the bug.
 2. **An `<img>` inside an `array.map` body** — one source location rendered N times.
 
 `grep -n "<img" slides/<id>/index.tsx` plus a read of the surrounding components is usually enough. Don't read the whole file blindly — locate the image components first.

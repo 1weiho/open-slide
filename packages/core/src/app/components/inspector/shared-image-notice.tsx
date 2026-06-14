@@ -6,10 +6,9 @@ export type SharedNotice = { instances: number; viaMap: boolean };
 export function SharedImageNotice({ notice }: { notice: SharedNotice | null }) {
   const t = useLocale();
   if (!notice) return null;
-  const message =
-    notice.instances > 1
-      ? format(t.inspector.sharedImageWarning, { count: notice.instances })
-      : t.inspector.sharedImageWarningMap;
+  const message = notice.viaMap
+    ? t.inspector.sharedImageWarningMap
+    : format(t.inspector.sharedImageWarning, { count: notice.instances });
   return (
     <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-700 text-xs leading-relaxed dark:text-amber-400">
       <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden />

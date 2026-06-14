@@ -31,10 +31,13 @@ export function registerEditRoutes(server: ViteDevServer, ctx: ApiContext): void
       try {
         const slideId = url.searchParams.get('slideId') ?? '';
         const line = Number(url.searchParams.get('line') ?? '');
-        const columnRaw = Number(url.searchParams.get('column') ?? '0');
+        const column = Number(url.searchParams.get('column') ?? '');
         const file = resolveSlideEntryPath(ctx, slideId);
         if (!file) return json(res, 400, { error: 'invalid slideId' });
         if (!Number.isFinite(line) || line < 1) return json(res, 400, { error: 'invalid line' });
+        if (!Number.isInteger(column) || column < 0) {
+          return json(res, 400, { error: 'invalid column' });
+        }
 
         let source: string;
         try {
@@ -43,7 +46,7 @@ export function registerEditRoutes(server: ViteDevServer, ctx: ApiContext): void
           return json(res, 404, { error: 'slide not found' });
         }
 
-        const info = probeElementSharing(source, line, Number.isFinite(columnRaw) ? columnRaw : 0);
+        const info = probeElementSharing(source, line, column);
         if (!info) return json(res, 422, { error: 'no JSX element at location' });
         return json(res, 200, info);
       } catch (err) {
