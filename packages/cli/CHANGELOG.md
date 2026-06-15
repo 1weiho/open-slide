@@ -1,5 +1,11 @@
 # @open-slide/cli
 
+## 1.3.2
+
+### Patch Changes
+
+- [#216](https://github.com/1weiho/open-slide/pull/216) [`80dda4e`](https://github.com/1weiho/open-slide/commit/80dda4e687242bafd6bf56bfd64a5641e64034d2) Thanks [@poterpan](https://github.com/poterpan)! - Add webfont guidance to the slide-authoring skill: load the stylesheet once in `<head>`, list only the weights used, and subset CJK with `&text=`.
+
 ## 1.3.1
 
 ### Patch Changes

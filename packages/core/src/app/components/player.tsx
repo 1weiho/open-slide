@@ -7,12 +7,12 @@ import type { Page } from '../lib/sdk';
 import type { EntryDirection, StepAggregate, StepController } from '../lib/step-context';
 import type { SlideTransition } from '../lib/transition';
 import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
+import { OverviewGrid } from './overview-grid';
 import { PresentBlackoutOverlay } from './present/blackout-overlay';
 import { PresentControlBar } from './present/control-bar';
 import { PresentHelpOverlay } from './present/help-overlay';
 import { PresentJumpInput } from './present/jump-input';
 import { PresentLaserPointer } from './present/laser-pointer';
-import { PresentOverviewGrid } from './present/overview-grid';
 import { PresentProgressBar } from './present/progress-bar';
 import { useIdle } from './present/use-idle';
 import { usePointerNearBottom } from './present/use-pointer-near-bottom';
@@ -380,13 +380,14 @@ export function Player({
             onHelp={() => setHelpOpen(true)}
             onExit={onExit}
           />
-          <PresentOverviewGrid
+          <OverviewGrid
             pages={pages}
             design={design}
             open={overviewOpen}
             current={index}
             onClose={() => setOverviewOpen(false)}
             onSelect={handleIndexChange}
+            variant="present"
           />
           <PresentHelpOverlay open={helpOpen} onOpenChange={setHelpOpen} container={rootEl} />
         </div>

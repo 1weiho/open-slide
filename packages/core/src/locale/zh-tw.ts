@@ -45,6 +45,10 @@ export const zhTW: Locale = {
     newFolder: '新增資料夾',
     folderName: '資料夾名稱',
     updateAvailable: 'open-slide {version} 已發布，請更新套件以取得最新版本。',
+    updatePackage: '更新',
+    updatingPackage: '更新中',
+    updatePackageDone: '已更新。請重新啟動 dev server 以使用新版本。',
+    updatePackageFailed: '更新失敗，請查看 dev server 輸出。',
     changeIcon: '變更圖示',
     iconEmojiTab: 'Emoji',
     iconColorTab: '顏色',
@@ -363,6 +367,7 @@ export const zhTW: Locale = {
     resizeRail: '調整縮圖欄寬度',
     transitionIndicator: '有換頁轉場',
     stepsIndicator: '有逐步揭示',
+    overviewAria: '投影片總覽 (O)',
   },
 
   pdfToast: {

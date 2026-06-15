@@ -1,15 +1,12 @@
 const DEFAULT_WAITFOR_TIMEOUT_MS = 10_000;
 
+// `document.fonts.ready` already waits for every in-flight face. Never call
+// `face.load()` on the rest: unloaded faces were never requested by CSS, and
+// `load()` ignores `unicode-range`, so a subsetted CJK family (hundreds of
+// faces) would be force-downloaded in full and hang or crash the tab.
 export async function waitForFonts(): Promise<void> {
   if (!('fonts' in document)) return;
   await document.fonts.ready;
-  const pending: Promise<unknown>[] = [];
-  for (const face of document.fonts) {
-    if (face.status !== 'loaded') pending.push(face.load());
-  }
-  if (pending.length) {
-    await Promise.all(pending.map((p) => p.catch(() => undefined)));
-  }
 }
 
 export async function waitForDataWaitfor(

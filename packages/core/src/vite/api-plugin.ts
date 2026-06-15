@@ -29,7 +29,7 @@ export function apiPlugin(opts: ApiPluginOptions): Plugin {
       registerSvglRoutes(server);
       registerFolderRoutes(server, ctx);
       registerOgRoutes(server, ctx);
-      registerUpdateRoutes(server, ctx.coreVersion);
+      registerUpdateRoutes(server, ctx);
     },
   };
 }

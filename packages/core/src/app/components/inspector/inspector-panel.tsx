@@ -862,7 +862,11 @@ function AgentWatchingBadge() {
             {connected ? t.inspector.agentWatching : t.inspector.agentNotWatching}
           </button>
         </TooltipTrigger>
-        <TooltipContent side="bottom" align="end" className="max-w-[260px] leading-relaxed">
+        <TooltipContent
+          side="bottom"
+          align="end"
+          className="w-max max-w-[min(520px,calc(100vw-2rem))] text-center leading-relaxed"
+        >
           {connected ? t.inspector.agentWatchingTooltip : t.inspector.agentNotWatchingTooltip}
         </TooltipContent>
       </Tooltip>
