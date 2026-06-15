@@ -105,6 +105,7 @@ export const zhTW: Locale = {
     backToHome: '返回首頁',
     download: '下載',
     copyLink: '複製連結',
+    moreActions: '更多動作',
     toastCopyLinkSuccess: '已複製連結到剪貼簿',
     toastCopyLinkFailed: '複製連結失敗',
     exportAsHtml: '匯出為 HTML',
