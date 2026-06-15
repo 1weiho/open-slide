@@ -5,12 +5,14 @@ import {
   ChevronLeft,
   Download,
   FileCode2,
+  FileImage,
   FileText,
   Link2,
   Loader2,
   Maximize,
   MonitorSpeaker,
   Play,
+  Presentation,
 } from 'lucide-react';
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
@@ -33,6 +35,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -45,13 +49,16 @@ import { format, useLocale } from '@/lib/use-locale';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
 import { NotesDrawer } from '../components/notes-drawer';
+import { OverviewGrid } from '../components/overview-grid';
 import { PdfProgressToast } from '../components/pdf-progress-toast';
 import { openPresenterWindow, Player } from '../components/player';
+import { PptxProgressToast } from '../components/pptx-progress-toast';
 import { SlideCanvas } from '../components/slide-canvas';
 import { SlideTransitionLayer } from '../components/slide-transition-layer';
 import { type ThumbnailActions, ThumbnailRail } from '../components/thumbnail-rail';
 import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf, isSafari } from '../lib/export-pdf';
+import { exportSlideAsImagePptx } from '../lib/export-pptx';
 import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
 import type { SlideModule } from '../lib/sdk';
 import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
@@ -68,6 +75,7 @@ export function Slide() {
   const [linkCopied, setLinkCopied] = useState(false);
   const linkCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [designOpen, setDesignOpen] = useState(false);
+  const [overviewOpen, setOverviewOpen] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -231,21 +239,47 @@ export function Slide() {
     if (playMode) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLElement && e.target.matches('input, textarea')) return;
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') {
+      // Letter shortcuts only fire bare so browser combos (Cmd/Ctrl-P, ⌘F…) stay intact.
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      // Toggle overview from either state — the overview's own capture-phase
+      // handler doesn't consume O, so this stays consistent open ↔ closed.
+      if (e.key === 'o' || e.key === 'O') {
+        e.preventDefault();
+        setOverviewOpen((v) => !v);
+        return;
+      }
+      // Once overview owns focus, swallow everything else here — its
+      // capture-phase listener drives the focused thumbnail.
+      if (overviewOpen) return;
+      if (
+        e.key === 'ArrowRight' ||
+        e.key === 'ArrowDown' ||
+        e.key === ' ' ||
+        e.key === 'PageDown'
+      ) {
         e.preventDefault();
         goTo(index + 1);
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
+        return;
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
         e.preventDefault();
         goTo(index - 1);
-      } else if (e.key === 'f' || e.key === 'F') {
+        return;
+      }
+      if (e.key === 'f' || e.key === 'F') {
         setPlayMode('fullscreen');
+      } else if (e.key === 'Enter') {
+        setPlayMode('window');
+      } else if (e.key === 'p' || e.key === 'P') {
+        if (slideId) openPresenterWindow(slideId);
+        setPlayMode('window');
       } else if (import.meta.env.DEV && (e.key === 'd' || e.key === 'D')) {
         setDesignOpen((v) => !v);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [index, goTo, playMode]);
+  }, [index, goTo, playMode, slideId, overviewOpen]);
 
   if (error) {
     return (
@@ -500,6 +534,72 @@ export function Slide() {
                       <FileText />
                       {t.slide.exportAsPdf}
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      disabled={exporting}
+                      onSelect={async () => {
+                        if (!slide || exporting) return;
+                        setExporting(true);
+                        const toastId = `pptx-export-${slideId}`;
+                        toast.custom(
+                          () => (
+                            <PptxProgressToast
+                              progress={{
+                                phase: 'processing',
+                                current: 0,
+                                total: pages.length,
+                                percent: 0,
+                              }}
+                            />
+                          ),
+                          { id: toastId, duration: Infinity },
+                        );
+                        try {
+                          await exportSlideAsImagePptx(slide, slideId, (p) => {
+                            toast.custom(() => <PptxProgressToast progress={p} />, {
+                              id: toastId,
+                              duration: Infinity,
+                            });
+                          });
+                        } catch (err) {
+                          console.error('[open-slide] image pptx export failed', err);
+                          toast.error(t.slide.imagePptxExportFailed, {
+                            id: toastId,
+                            duration: 4000,
+                          });
+                        } finally {
+                          setExporting(false);
+                          toast.dismiss(toastId);
+                        }
+                      }}
+                    >
+                      <FileImage />
+                      {t.slide.exportAsImagePptx}
+                    </DropdownMenuItem>
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div
+                            aria-disabled
+                            className="relative flex cursor-help items-center justify-between gap-2 rounded-[5px] px-2 py-1.5 text-[12.5px] opacity-45 select-none [&_svg]:size-3.5 [&_svg]:shrink-0 [&_svg]:opacity-80"
+                          >
+                            <span className="flex items-center gap-2">
+                              <Presentation />
+                              {t.slide.exportAsPptx}
+                            </span>
+                            <span className="rounded-[3px] bg-muted px-1.5 py-0.5 font-mono text-[9.5px] tracking-[0.04em] text-muted-foreground">
+                              {t.slide.comingSoon}
+                            </span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="left"
+                          className="w-max max-w-[min(520px,calc(100vw-2rem))] text-center leading-relaxed"
+                        >
+                          {t.slide.pptxComingSoonTooltip}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
@@ -538,10 +638,12 @@ export function Slide() {
                       <DropdownMenuItem onSelect={() => setPlayMode('window')}>
                         <Play />
                         {t.slide.presentInWindow}
+                        <DropdownMenuShortcut>↵</DropdownMenuShortcut>
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => setPlayMode('fullscreen')}>
                         <Maximize />
                         {t.slide.presentFullscreen}
+                        <DropdownMenuShortcut>F</DropdownMenuShortcut>
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onSelect={() => {
@@ -551,6 +653,7 @@ export function Slide() {
                       >
                         <MonitorSpeaker />
                         {t.slide.presentPresenter}
+                        <DropdownMenuShortcut>P</DropdownMenuShortcut>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -565,7 +668,7 @@ export function Slide() {
             </div>
           ) : (
             <DesignProvider slideId={slideId}>
-              <div className="flex min-h-0 flex-1 flex-col">
+              <div className="relative flex min-h-0 flex-1 flex-col">
                 <div className="flex min-h-0 flex-1 flex-col md:flex-row">
                   <ResizableRail
                     pages={pages}
@@ -574,6 +677,8 @@ export function Slide() {
                     onSelect={goTo}
                     onReorder={import.meta.env.DEV ? reorderPage : undefined}
                     actions={thumbnailActions}
+                    moduleTransition={slide.transition}
+                    onOverview={() => setOverviewOpen(true)}
                   />
                   <main
                     ref={slideViewportRef}
@@ -627,6 +732,15 @@ export function Slide() {
                     initial={slide.notes?.[index]}
                   />
                 )}
+                <OverviewGrid
+                  pages={pages}
+                  design={slide.design}
+                  open={overviewOpen}
+                  current={index}
+                  onClose={() => setOverviewOpen(false)}
+                  onSelect={goTo}
+                  variant="editor"
+                />
               </div>
             </DesignProvider>
           )}
@@ -656,6 +770,8 @@ function ResizableRail(props: {
   onSelect: (i: number) => void;
   onReorder?: (from: number, to: number) => void;
   actions?: ThumbnailActions;
+  moduleTransition?: SlideModule['transition'];
+  onOverview?: () => void;
 }) {
   const t = useLocale();
   const [width, setWidth] = useState<number>(readStoredRailWidth);
@@ -783,7 +899,11 @@ function AgentConnectedBadge() {
             {connected ? t.slide.agentConnected : t.slide.agentDisconnected}
           </button>
         </TooltipTrigger>
-        <TooltipContent side="bottom" align="start" className="max-w-[280px] leading-relaxed">
+        <TooltipContent
+          side="bottom"
+          align="start"
+          className="w-max max-w-[min(520px,calc(100vw-2rem))] text-center leading-relaxed"
+        >
           {connected ? t.slide.agentConnectedTooltip : t.slide.agentDisconnectedTooltip}
         </TooltipContent>
       </Tooltip>
@@ -916,6 +1036,7 @@ function InlineTitleEditor({
               if (!saving) commit();
             }}
             onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing) return;
               if (e.key === 'Enter') {
                 e.preventDefault();
                 commit();

@@ -3,27 +3,22 @@ title: Locale
 description: Translate the runtime UI — home, inspector, presenter, toasts.
 ---
 
-The runtime ships with four built-in dictionaries. Pick one in
-`open-slide.config.ts`, or pass your own object that satisfies the `Locale`
-type.
+The runtime ships with four built-in dictionaries. Switch between them from
+the language picker in the slide UI (next to the theme toggle) — your choice
+is remembered in the browser.
 
 The locale only affects the **runtime UI** that open-slide renders around
 your slides (the home screen, slide browser, inspector, asset panel,
 presenter mode, toasts, etc.). It does **not** translate slide content —
 that lives in your own React code.
 
+## Picking a language
+
+Open the language picker in the top-right of the home sidebar and choose one
+of the four built-in languages. The selection is saved locally and applies
+across the runtime UI.
+
 ## Presets
-
-```ts title="open-slide.config.ts"
-import type { OpenSlideConfig } from '@open-slide/core';
-import { zhTW } from '@open-slide/core/locale';
-
-const config: OpenSlideConfig = {
-  locale: zhTW,
-};
-
-export default config;
-```
 
 | Import   | `id`      | Language            |
 | -------- | --------- | ------------------- |
@@ -38,7 +33,25 @@ All presets are re-exported from the `@open-slide/core/locale` subpath:
 import { en, zhTW, zhCN, ja } from '@open-slide/core/locale';
 ```
 
-If `locale` is omitted, the runtime falls back to `en`.
+Until a language is picked in the UI, the runtime defaults to `en`.
+
+## The deprecated `locale` config
+
+<Callout type="warn">
+  `config.locale` is **deprecated** — use the in-UI language picker instead.
+  When set, it only seeds the initial language until the user picks one.
+</Callout>
+
+```ts title="open-slide.config.ts"
+import type { OpenSlideConfig } from '@open-slide/core';
+import { zhTW } from '@open-slide/core/locale';
+
+const config: OpenSlideConfig = {
+  locale: zhTW,
+};
+
+export default config;
+```
 
 ## Custom dictionaries
 

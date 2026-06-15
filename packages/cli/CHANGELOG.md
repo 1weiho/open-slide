@@ -1,5 +1,27 @@
 # @open-slide/cli
 
+## 1.3.2
+
+### Patch Changes
+
+- [#216](https://github.com/1weiho/open-slide/pull/216) [`80dda4e`](https://github.com/1weiho/open-slide/commit/80dda4e687242bafd6bf56bfd64a5641e64034d2) Thanks [@poterpan](https://github.com/poterpan)! - Add webfont guidance to the slide-authoring skill: load the stylesheet once in `<head>`, list only the weights used, and subset CJK with `&text=`.
+
+## 1.3.1
+
+### Patch Changes
+
+- [#201](https://github.com/1weiho/open-slide/pull/201) [`9ff819f`](https://github.com/1weiho/open-slide/commit/9ff819fe84218ffe4b22d7df1600dc6601836e1e) Thanks [@1weiho](https://github.com/1weiho)! - Update bundled skills with the `<Steps>` / `<Step>` stepped-reveal authoring guidance.
+
+## 1.3.0
+
+### Minor Changes
+
+- [#189](https://github.com/1weiho/open-slide/pull/189) [`6ae2dd9`](https://github.com/1weiho/open-slide/commit/6ae2dd9b188032d0b21bf43a7e3ab549b98db282) Thanks [@1weiho](https://github.com/1weiho)! - Add an in-UI language switcher (next to the theme toggle) that remembers the choice locally; deprecate `config.locale` and drop the `init` language prompt and `--locale` flag.
+
+### Patch Changes
+
+- [#180](https://github.com/1weiho/open-slide/pull/180) [`9b8202e`](https://github.com/1weiho/open-slide/commit/9b8202e8b17abc85caf5cd5a62c59e277a4f91ef) Thanks [@1weiho](https://github.com/1weiho)! - Remove duplicated internal helpers (HTTP `readBody`/`json`, slide-path resolution, the `SLIDE_ID_RE` pattern, and locale `format`/`plural`) by routing them through a single source.
+
 ## 1.2.6
 
 ### Patch Changes

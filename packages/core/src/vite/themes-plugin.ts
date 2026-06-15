@@ -94,8 +94,11 @@ function generateThemesModule(themes: ParsedTheme[], isDev: boolean): string {
     .flatMap((t) => {
       const abs = t.demoAbs;
       if (!abs) return [];
-      const importPath = isDev ? `/@fs/${normalizePath(abs).replace(/^\/+/, '')}` : abs;
-      return [`    case ${JSON.stringify(t.id)}: return import(${JSON.stringify(importPath)});`];
+      const importPath = isDev ? `@fs/${normalizePath(abs).replace(/^\/+/, '')}` : abs;
+      const importExpr = isDev
+        ? `import(/* @vite-ignore */ import.meta.env.BASE_URL + ${JSON.stringify(importPath)})`
+        : `import(${JSON.stringify(importPath)})`;
+      return [`    case ${JSON.stringify(t.id)}: return ${importExpr};`];
     })
     .join('\n');
 

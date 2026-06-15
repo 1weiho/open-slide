@@ -44,6 +44,12 @@ export const ja: Locale = {
     folders: 'フォルダ',
     newFolder: '新規フォルダ',
     folderName: 'フォルダ名',
+    updateAvailable:
+      'open-slide {version} が利用可能です — パッケージを更新して最新版を入手してください。',
+    updatePackage: '更新',
+    updatingPackage: '更新中',
+    updatePackageDone: '更新しました。新しいバージョンを使うには dev server を再起動してください。',
+    updatePackageFailed: '更新に失敗しました。dev server の出力を確認してください。',
     changeIcon: 'アイコンを変更',
     iconEmojiTab: '絵文字',
     iconColorTab: 'カラー',
@@ -105,7 +111,13 @@ export const ja: Locale = {
     toastCopyLinkFailed: 'リンクのコピーに失敗しました',
     exportAsHtml: 'HTML として書き出し',
     exportAsPdf: 'PDF として書き出し',
+    exportAsImagePptx: '画像 PPTX として書き出し',
+    exportAsPptx: 'PPTX として書き出し',
+    comingSoon: '近日公開',
+    pptxComingSoonTooltip:
+      '編集可能な PPTX の書き出しはまだ対応していません。それまでは「画像 PPTX として書き出し」をご利用ください。',
     pdfExportFailed: 'PDF の書き出しに失敗しました',
+    imagePptxExportFailed: 'PPTX の書き出しに失敗しました',
     pdfExportSafariUnsupported:
       'PDF の書き出しは現在 Safari では対応していません。Chromium ベースのブラウザでお試しください。',
     present: '発表',
@@ -342,6 +354,9 @@ export const ja: Locale = {
     toastDuplicateFailed: 'ページを複製できませんでした',
     toastDeleteFailed: 'ページを削除できませんでした',
     resizeRail: 'サムネイル幅を調整',
+    transitionIndicator: 'スライドトランジションあり',
+    stepsIndicator: 'ステップ表示あり',
+    overviewAria: 'スライド一覧 (O)',
   },
 
   pdfToast: {
@@ -351,12 +366,24 @@ export const ja: Locale = {
     done: '完了',
   },
 
+  pptxToast: {
+    title: 'PPTX を書き出し中',
+    processing: 'ページ {current} / {total} を描画中',
+    generating: 'プレゼンテーションを構築中…',
+    done: '完了',
+  },
+
   themeToggle: {
     toggleAria: 'テーマを切り替え',
     title: 'テーマ',
     light: 'ライト',
     dark: 'ダーク',
     system: 'システム',
+  },
+
+  languageToggle: {
+    toggleAria: '言語を切り替え',
+    title: '言語',
   },
 
   imagePlaceholder: {

@@ -44,6 +44,11 @@ export type Locale = {
     folders: string;
     newFolder: string;
     folderName: string;
+    updateAvailable: string;
+    updatePackage: string;
+    updatingPackage: string;
+    updatePackageDone: string;
+    updatePackageFailed: string;
     changeIcon: string;
     iconEmojiTab: string;
     iconColorTab: string;
@@ -107,7 +112,12 @@ export type Locale = {
     toastCopyLinkFailed: string;
     exportAsHtml: string;
     exportAsPdf: string;
+    exportAsImagePptx: string;
+    exportAsPptx: string;
+    comingSoon: string;
+    pptxComingSoonTooltip: string;
     pdfExportFailed: string;
+    imagePptxExportFailed: string;
     pdfExportSafariUnsupported: string;
     present: string;
     presentMenuAria: string;
@@ -360,6 +370,9 @@ export type Locale = {
     toastDuplicateFailed: string;
     toastDeleteFailed: string;
     resizeRail: string;
+    transitionIndicator: string;
+    stepsIndicator: string;
+    overviewAria: string;
   };
 
   pdfToast: {
@@ -370,12 +383,25 @@ export type Locale = {
     done: string;
   };
 
+  pptxToast: {
+    title: string;
+    /** template: "Rendering page {current} of {total}" */
+    processing: string;
+    generating: string;
+    done: string;
+  };
+
   themeToggle: {
     toggleAria: string;
     title: string;
     light: string;
     dark: string;
     system: string;
+  };
+
+  languageToggle: {
+    toggleAria: string;
+    title: string;
   };
 
   imagePlaceholder: {

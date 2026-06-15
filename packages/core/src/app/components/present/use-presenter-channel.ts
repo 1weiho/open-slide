@@ -6,6 +6,8 @@ export type PresenterState = {
   blackout: 'black' | 'white' | null;
   startedAt: number; // epoch ms when present mode began
   slideStartedAt: number; // epoch ms when the current slide was reached
+  stepIndex: number;
+  stepCount: number;
 };
 
 export type PresenterCommand =

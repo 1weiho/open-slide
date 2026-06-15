@@ -1,6 +1,7 @@
 import { Plus } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { LanguageToggle } from '@/components/language-toggle';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { Folder, FolderIcon } from '@/lib/sdk';
@@ -8,6 +9,7 @@ import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import { FolderIconChip, FolderItem } from './folder-item';
 import { IconPicker, PRESET_COLORS } from './icon-picker';
+import { SidebarFooter } from './sidebar-footer';
 
 export const DRAFT_ID = 'draft';
 export const THEMES_ID = '__themes__';
@@ -124,7 +126,8 @@ export function Sidebar({
     <aside className="paper relative flex h-full w-[16.5rem] shrink-0 flex-col border-r border-hairline bg-sidebar text-sidebar-foreground">
       <div className="flex items-center justify-between px-4 pt-5 pb-4">
         <h1 className="font-heading text-lg font-bold tracking-tight">{t.home.appTitle}</h1>
-        <div className="-mr-1.5">
+        <div className="-mr-1.5 flex items-center">
+          <LanguageToggle />
           <ThemeToggle />
         </div>
       </div>
@@ -252,6 +255,7 @@ export function Sidebar({
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => {
+                  if (e.nativeEvent.isComposing) return;
                   if (e.key === 'Enter') commitCreate();
                   if (e.key === 'Escape') exitCreate();
                 }}
@@ -270,6 +274,10 @@ export function Sidebar({
               <span>{t.home.newFolder}</span>
             </button>
           ))}
+      </div>
+
+      <div className="border-t border-hairline">
+        <SidebarFooter />
       </div>
     </aside>
   );

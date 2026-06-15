@@ -97,6 +97,9 @@ export function NotesDrawer({ slideId, index, total, initial }: Props) {
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Escape') {
+                  // Escape during IME composition dismisses the candidate
+                  // list; it must not blur the textarea.
+                  if (e.nativeEvent.isComposing) return;
                   e.preventDefault();
                   textareaRef.current?.blur();
                 } else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {

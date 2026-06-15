@@ -197,6 +197,7 @@ export function FolderItem({
           onChange={(e) => setDraftName(e.target.value)}
           onBlur={commitRename}
           onKeyDown={(e) => {
+            if (e.nativeEvent.isComposing) return;
             if (e.key === 'Enter') commitRename();
             if (e.key === 'Escape') {
               setDraftName(row.folder.name);

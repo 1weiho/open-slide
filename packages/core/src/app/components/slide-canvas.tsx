@@ -1,4 +1,4 @@
-import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react';
+import { type CSSProperties, type ReactNode, useLayoutEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { type DesignSystem, designToCssVars } from '../lib/design';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
@@ -24,22 +24,27 @@ export function SlideCanvas({
   design,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [fitScale, setFitScale] = useState(1);
+  const [fitScale, setFitScale] = useState<number | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (scale !== undefined) return;
     const el = containerRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => {
+    const measure = () => {
       const { width, height } = el.getBoundingClientRect();
       if (width === 0 || height === 0) return;
       setFitScale(Math.min(width / CANVAS_WIDTH, height / CANVAS_HEIGHT));
-    });
+    };
+    // Measure synchronously before paint so the fitted scale is applied on the
+    // first visible frame — otherwise the canvas flashes at full size.
+    measure();
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
   }, [scale]);
 
-  const s = scale ?? fitScale;
+  const measured = scale ?? fitScale;
+  const s = measured ?? 1;
   const scaledW = CANVAS_WIDTH * s;
   const scaledH = CANVAS_HEIGHT * s;
 
@@ -55,6 +60,7 @@ export function SlideCanvas({
         style={{
           width: scaledW,
           height: scaledH,
+          visibility: measured === null ? 'hidden' : undefined,
           ...(center
             ? {
                 position: 'absolute',
