@@ -6,7 +6,8 @@ export const ASSET_MAX_BYTES = 25 * 1024 * 1024;
 
 // biome-ignore lint/suspicious/noControlCharactersInRegex: explicit control-char block list for filename safety
 const ASSET_FORBIDDEN_RE = /[\x00-\x1F\x7F/\\:*?"<>|]/;
-const WINDOWS_RESERVED_BASENAME_RE = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)/i;
+const WINDOWS_RESERVED_BASENAME_RE =
+  /^(con|prn|aux|nul|com(?:[1-9]|[\u00B9\u00B2\u00B3\u2074-\u2079])|lpt(?:[1-9]|[\u00B9\u00B2\u00B3\u2074-\u2079]))(\.|$)/i;
 
 const MIME_BY_EXT: Record<string, string> = {
   png: 'image/png',
