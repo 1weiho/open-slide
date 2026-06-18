@@ -16,17 +16,13 @@ const FRAME_MORPH_MS = 180;
 const LAYOUT_TRACK_MS = PANEL_TRANSITION_MS + FRAME_MORPH_MS;
 
 export function InspectOverlay() {
-  const { active, slideId, selected, setSelected, cancel, openCrop } = useInspector();
+  const { active, activate, slideId, selected, setSelected, cancel, openCrop } = useInspector();
   const overlayRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<Highlight | null>(null);
 
   useEffect(() => {
-    if (!active) {
-      setHover(null);
-      return;
-    }
-
     const onKey = (e: KeyboardEvent) => {
+      if (!active) return;
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
@@ -35,6 +31,7 @@ export function InspectOverlay() {
     };
 
     const onMove = (e: PointerEvent) => {
+      if (!active) return;
       if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) {
         return setHover(null);
       }
@@ -46,6 +43,7 @@ export function InspectOverlay() {
     };
 
     const onClick = (e: MouseEvent) => {
+      if (!active) return;
       if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) return;
       const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
       if (!el) return;
@@ -53,6 +51,7 @@ export function InspectOverlay() {
       if (!hit) return;
       e.preventDefault();
       e.stopPropagation();
+      activate();
       setSelected({ line: hit.line, column: hit.column, anchor: hit.anchor });
       setHover({ hit });
     };
@@ -63,11 +62,12 @@ export function InspectOverlay() {
       if (!el) return;
       const hit = findSlideSource(el, slideId, { hostOnly: true });
       if (!hit) return;
-      if (!(hit.anchor instanceof HTMLImageElement)) return;
       e.preventDefault();
       e.stopPropagation();
+      if (!active) activate();
       setSelected({ line: hit.line, column: hit.column, anchor: hit.anchor });
-      openCrop(hit.anchor);
+      setHover({ hit });
+      if (active && hit.anchor instanceof HTMLImageElement) openCrop(hit.anchor);
     };
 
     window.addEventListener('pointermove', onMove, true);
@@ -80,7 +80,11 @@ export function InspectOverlay() {
       window.removeEventListener('dblclick', onDblClick, true);
       window.removeEventListener('keydown', onKey, true);
     };
-  }, [active, slideId, setSelected, cancel, openCrop]);
+  }, [active, activate, slideId, setSelected, cancel, openCrop]);
+
+  useEffect(() => {
+    if (!active) setHover(null);
+  }, [active]);
 
   const hoverAnchor = hover?.hit.anchor.isConnected ? hover.hit.anchor : null;
   const selectedAnchor = selected?.anchor.isConnected ? selected.anchor : null;
