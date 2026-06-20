@@ -787,12 +787,18 @@ function buildTextRangeStyleSplices(
 // `<Wrap>{children}</Wrap>` and `<h2>{title}</h2>` — sole child is a
 // JSXExpressionContainer wrapping a bare Identifier. Returns the identifier
 // name; callers branch on `'children'` vs. a generic prop passthrough.
-function propPassthroughName(element: t.JSXElement): string | null {
-  const meaningful = meaningfulChildren(element);
-  if (meaningful.length !== 1) return null;
-  const child = meaningful[0];
-  if (!t.isJSXExpressionContainer(child)) return null;
-  return t.isIdentifier(child.expression) ? child.expression.name : null;
+// Names of `{prop}` / `{children}` pass-throughs among the element's *direct* children.
+// A host element can mix a pass-through with other content
+// (e.g. `<div><span>{label}</span>{children}</div>`), so we don't require the pass-through to be
+// the sole child — only that it is a direct child expression container wrapping a bare identifier.
+function directPassthroughNames(element: t.JSXElement): string[] {
+  const names: string[] = [];
+  for (const child of element.children) {
+    if (t.isJSXExpressionContainer(child) && t.isIdentifier(child.expression)) {
+      names.push(child.expression.name);
+    }
+  }
+  return names;
 }
 
 type EnclosingComponent = {
@@ -1028,12 +1034,19 @@ function collectElementTextCandidates(ast: t.File, element: t.JSXElement): TextC
   const candidates: TextCandidate[] = [];
   collectTextCandidates(element, candidates);
   if (candidates.length === 0) {
-    const passthrough = propPassthroughName(element);
-    const enclosing = passthrough ? findEnclosingComponent(ast, element) : null;
-    if (passthrough === 'children' && enclosing) {
-      candidates.push(...collectCallSiteCandidates(ast, enclosing.name));
-    } else if (passthrough && enclosing && componentDestructuresProp(enclosing.fn, passthrough)) {
-      candidates.push(...collectPropCallSiteCandidates(ast, enclosing.name, passthrough));
+    const passthroughs = directPassthroughNames(element);
+    const enclosing = passthroughs.length > 0 ? findEnclosingComponent(ast, element) : null;
+    if (enclosing) {
+      const seen = new Set<string>();
+      for (const passthrough of passthroughs) {
+        if (seen.has(passthrough)) continue;
+        seen.add(passthrough);
+        if (passthrough === 'children') {
+          candidates.push(...collectCallSiteCandidates(ast, enclosing.name));
+        } else if (componentDestructuresProp(enclosing.fn, passthrough)) {
+          candidates.push(...collectPropCallSiteCandidates(ast, enclosing.name, passthrough));
+        }
+      }
     }
   }
   if (candidates.length === 0) {
