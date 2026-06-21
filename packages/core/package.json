@@ -76,7 +76,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "commander": "^15.0.0",
-    "emoji-picker-react": "^4.18.0",
+    "emoji-picker-react": "^4.19.1",
     "fast-glob": "^3.3.2",
     "fflate": "^0.8.2",
     "html-to-image": "^1.11.13",
