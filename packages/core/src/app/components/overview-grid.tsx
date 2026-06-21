@@ -24,6 +24,7 @@ type Props = {
   onSelect: (index: number) => void;
   variant?: OverviewVariant;
   moduleTransition?: SlideTransition;
+  tooltipContainer?: HTMLElement | null;
 };
 
 export function OverviewGrid({
@@ -35,6 +36,7 @@ export function OverviewGrid({
   onSelect,
   variant = 'present',
   moduleTransition,
+  tooltipContainer,
 }: Props) {
   const [focused, setFocused] = useState(current);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -151,6 +153,7 @@ export function OverviewGrid({
                   isCurrent={isCurrent}
                   styles={styles}
                   moduleTransition={moduleTransition}
+                  tooltipContainer={tooltipContainer}
                   onFocus={() => setFocused(i)}
                   onSelect={() => {
                     onSelect(i);
@@ -175,6 +178,7 @@ function OverviewThumb({
   isCurrent,
   styles,
   moduleTransition,
+  tooltipContainer,
   onFocus,
   onSelect,
   buttonRef,
@@ -187,6 +191,7 @@ function OverviewThumb({
   isCurrent: boolean;
   styles: OverviewStyles;
   moduleTransition?: SlideTransition;
+  tooltipContainer?: HTMLElement | null;
   onFocus: () => void;
   onSelect: () => void;
   buttonRef?: Ref<HTMLButtonElement>;
@@ -207,6 +212,7 @@ function OverviewThumb({
       type="button"
       onClick={onSelect}
       onMouseEnter={onFocus}
+      onFocus={onFocus}
       aria-label={format(t.present.overviewGoToAria, { n: index + 1 })}
       aria-current={isCurrent ? 'true' : undefined}
       className={cn(
@@ -259,6 +265,7 @@ function OverviewThumb({
                 icon={Sparkles}
                 label={t.thumbnailRail.transitionIndicator}
                 className={styles.indicator}
+                tooltipContainer={tooltipContainer}
               />
             )}
             {hasSteps && (
@@ -266,6 +273,7 @@ function OverviewThumb({
                 icon={ListOrdered}
                 label={t.thumbnailRail.stepsIndicator}
                 className={styles.indicator}
+                tooltipContainer={tooltipContainer}
               />
             )}
           </span>
@@ -279,10 +287,12 @@ function OverviewIndicator({
   icon: Icon,
   label,
   className,
+  tooltipContainer,
 }: {
   icon: LucideIcon;
   label: string;
   className: string;
+  tooltipContainer?: HTMLElement | null;
 }) {
   return (
     <Tooltip>
@@ -295,7 +305,7 @@ function OverviewIndicator({
           <Icon className="size-3.5" strokeWidth={1.9} />
         </span>
       </TooltipTrigger>
-      <TooltipContent side="top" sideOffset={6}>
+      <TooltipContent side="top" sideOffset={6} container={tooltipContainer ?? undefined}>
         {label}
       </TooltipContent>
     </Tooltip>

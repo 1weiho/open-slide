@@ -389,6 +389,7 @@ export function Player({
             onSelect={handleIndexChange}
             variant="present"
             moduleTransition={transition}
+            tooltipContainer={rootEl}
           />
           <PresentHelpOverlay open={helpOpen} onOpenChange={setHelpOpen} container={rootEl} />
         </div>
