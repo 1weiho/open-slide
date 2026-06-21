@@ -35,22 +35,27 @@ export function InspectOverlay() {
       if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) {
         return setHover(null);
       }
-      const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
-      if (!el) return setHover(null);
-      const hit = findSlideSource(el, slideId, { hostOnly: true });
+      const hit = findInspectorHitAtPoint(e.clientX, e.clientY, slideId);
       if (!hit) return setHover(null);
       setHover({ hit });
+    };
+
+    const onMouseDown = (e: MouseEvent) => {
+      if (!active && e.detail < 2) return;
+      if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) return;
+      const hit = findInspectorHitAtPoint(e.clientX, e.clientY, slideId);
+      if (!hit) return;
+      e.preventDefault();
     };
 
     const onClick = (e: MouseEvent) => {
       if (!active) return;
       if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) return;
-      const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
-      if (!el) return;
-      const hit = findSlideSource(el, slideId, { hostOnly: true });
+      const hit = findInspectorHitAtPoint(e.clientX, e.clientY, slideId);
       if (!hit) return;
       e.preventDefault();
       e.stopPropagation();
+      clearTextSelection();
       activate();
       setSelected({ line: hit.line, column: hit.column, anchor: hit.anchor });
       setHover({ hit });
@@ -58,12 +63,11 @@ export function InspectOverlay() {
 
     const onDblClick = (e: MouseEvent) => {
       if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) return;
-      const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
-      if (!el) return;
-      const hit = findSlideSource(el, slideId, { hostOnly: true });
+      const hit = findInspectorHitAtPoint(e.clientX, e.clientY, slideId);
       if (!hit) return;
       e.preventDefault();
       e.stopPropagation();
+      clearTextSelection();
       if (!active) activate();
       setSelected({ line: hit.line, column: hit.column, anchor: hit.anchor });
       setHover({ hit });
@@ -71,11 +75,13 @@ export function InspectOverlay() {
     };
 
     window.addEventListener('pointermove', onMove, true);
+    window.addEventListener('mousedown', onMouseDown, true);
     window.addEventListener('click', onClick, true);
     window.addEventListener('dblclick', onDblClick, true);
     window.addEventListener('keydown', onKey, true);
     return () => {
       window.removeEventListener('pointermove', onMove, true);
+      window.removeEventListener('mousedown', onMouseDown, true);
       window.removeEventListener('click', onClick, true);
       window.removeEventListener('dblclick', onDblClick, true);
       window.removeEventListener('keydown', onKey, true);
@@ -321,6 +327,17 @@ function pickElement(x: number, y: number): HTMLElement | null {
     return el;
   }
   return null;
+}
+
+function findInspectorHitAtPoint(x: number, y: number, slideId: string): SlideSourceHit | null {
+  const el = pickInspectorTarget(pickElement(x, y));
+  if (!el) return null;
+  return findSlideSource(el, slideId, { hostOnly: true });
+}
+
+function clearTextSelection() {
+  const selection = window.getSelection();
+  if (selection && !selection.isCollapsed) selection.removeAllRanges();
 }
 
 const INLINE_TEXT_TAGS = new Set([
