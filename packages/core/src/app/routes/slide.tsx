@@ -53,6 +53,7 @@ import { NotesDrawer } from '../components/notes-drawer';
 import { OverviewGrid } from '../components/overview-grid';
 import { PdfProgressToast } from '../components/pdf-progress-toast';
 import { openPresenterWindow, Player } from '../components/player';
+import { PptxPlaywrightMissingToast } from '../components/pptx-playwright-missing-toast';
 import { PptxProgressToast } from '../components/pptx-progress-toast';
 import { SlideCanvas } from '../components/slide-canvas';
 import { SlideTransitionLayer } from '../components/slide-transition-layer';
@@ -60,6 +61,7 @@ import { type ThumbnailActions, ThumbnailRail } from '../components/thumbnail-ra
 import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf, isSafari } from '../lib/export-pdf';
 import { exportSlideAsImagePptx } from '../lib/export-pptx';
+import { exportSlideAsPptx } from '../lib/export-pptx-native';
 import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
 import type { SlideModule } from '../lib/sdk';
 import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
@@ -456,6 +458,40 @@ export function Slide() {
     }
   };
 
+  // Editable PPTX export. The deck is rendered to real shapes server-side by
+  // @open-slide/core (via Playwright), streamed back over SSE. Playwright is an
+  // optional peer dependency: when it is missing the server replies with an
+  // install prompt instead of a stream, surfaced via onPlaywrightMissing on a
+  // separate toast id so it survives the progress-toast dismissal below.
+  const exportPptx = async () => {
+    if (!slide || exporting) return;
+    setExporting(true);
+    const progressToastId = `pptx-native-export-${slideId}`;
+    const noticeToastId = `${progressToastId}-notice`;
+    try {
+      await exportSlideAsPptx(slideId, {
+        onProgress: (p) => {
+          toast.custom(() => <PptxProgressToast progress={p} />, {
+            id: progressToastId,
+            duration: Infinity,
+          });
+        },
+        onPlaywrightMissing: ({ command }) => {
+          toast.custom(
+            () => <PptxPlaywrightMissingToast command={command} toastId={noticeToastId} />,
+            { id: noticeToastId, duration: 12000, style: { width: 'auto', maxWidth: '720px' } },
+          );
+        },
+      });
+    } catch (err) {
+      console.error('[open-slide] pptx export failed', err);
+      toast.error(t.slide.pptxExportFailed, { id: noticeToastId, duration: 4000 });
+    } finally {
+      setExporting(false);
+      toast.dismiss(progressToastId);
+    }
+  };
+
   const exportMenuItems = (
     <>
       <DropdownMenuItem disabled={exporting} onSelect={exportHtml}>
@@ -467,34 +503,14 @@ export function Slide() {
         {t.slide.exportAsPdf}
       </DropdownMenuItem>
       <DropdownMenuSeparator />
+      <DropdownMenuItem disabled={exporting} onSelect={exportPptx}>
+        <Presentation />
+        {t.slide.exportAsPptx}
+      </DropdownMenuItem>
       <DropdownMenuItem disabled={exporting} onSelect={exportImagePptx}>
         <FileImage />
         {t.slide.exportAsImagePptx}
       </DropdownMenuItem>
-      <TooltipProvider delayDuration={200}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div
-              aria-disabled
-              className="relative flex cursor-help items-center justify-between gap-2 rounded-[5px] px-2 py-1.5 text-[12.5px] opacity-45 select-none [&_svg]:size-3.5 [&_svg]:shrink-0 [&_svg]:opacity-80"
-            >
-              <span className="flex items-center gap-2">
-                <Presentation />
-                {t.slide.exportAsPptx}
-              </span>
-              <span className="rounded-[3px] bg-muted px-1.5 py-0.5 font-mono text-[9.5px] tracking-[0.04em] text-muted-foreground">
-                {t.slide.comingSoon}
-              </span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent
-            side="left"
-            className="w-max max-w-[min(520px,calc(100vw-2rem))] text-center leading-relaxed"
-          >
-            {t.slide.pptxComingSoonTooltip}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
     </>
   );
 

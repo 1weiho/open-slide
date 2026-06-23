@@ -28,6 +28,7 @@ export type Locale = {
     dark: string;
     system: string;
     selected: string;
+    copyCommand: string;
   };
 
   notFound: {
@@ -115,10 +116,10 @@ export type Locale = {
     exportAsPdf: string;
     exportAsImagePptx: string;
     exportAsPptx: string;
-    comingSoon: string;
-    pptxComingSoonTooltip: string;
     pdfExportFailed: string;
     imagePptxExportFailed: string;
+    pptxExportFailed: string;
+    pptxPlaywrightMissing: string;
     pdfExportSafariUnsupported: string;
     present: string;
     presentMenuAria: string;
