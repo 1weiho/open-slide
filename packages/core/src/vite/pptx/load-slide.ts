@@ -1,7 +1,7 @@
 import { build, type Plugin } from 'esbuild';
-import { writeFile, mkdir } from 'node:fs/promises';
+import { writeFile, mkdir, rename, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import path from 'node:path';
 import os from 'node:os';
 import { createRequire } from 'node:module';
@@ -128,7 +128,17 @@ export async function loadSlideModule(slideDir: string): Promise<SlideModule> {
   const hash = createHash('sha1').update(code).digest('hex').slice(0, 16);
   const bundlePath = path.join(CACHE_ROOT, `slide-${hash}.mjs`);
   if (!existsSync(bundlePath)) {
-    await writeFile(bundlePath, code, 'utf8');
+    // Write to a unique temp file then atomically rename into place. A bare
+    // writeFile(bundlePath) would let two concurrent exports of the same deck
+    // write it at once, so import() could observe a half-written file. rename()
+    // on the same filesystem is atomic; if a racing export already created
+    // bundlePath the content is identical (same hash), so a failed rename just
+    // discards our temp copy.
+    const tmp = `${bundlePath}.${randomUUID()}.tmp`;
+    await writeFile(tmp, code, 'utf8');
+    await rename(tmp, bundlePath).catch(async () => {
+      await rm(tmp, { force: true }).catch(() => {});
+    });
   }
   return (await import(pathToFileURL(bundlePath).href)) as SlideModule;
 }
