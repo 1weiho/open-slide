@@ -269,6 +269,7 @@ function textLeafToRich(t: TextLeaf, id: string): IRRichText {
         ? (t.textAlign as any)
         : 'left',
     valign: 'top',
+    letterSpacing: t.letterSpacing,
     domLeafId: t.leafId,
     classification,
     fallbackImageDataUrl: t.fallbackImageDataUrl,

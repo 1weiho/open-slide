@@ -60,6 +60,8 @@ export type IRRichText = {
   fontFamily?: 'mono' | 'body' | 'display';
   align?: 'left' | 'center' | 'right';
   valign?: 'top' | 'middle' | 'bottom';
+  /** CSS letter-spacing in canvas px; emitted as pptx charSpacing. */
+  letterSpacing?: number;
   domLeafId?: string;
   fallbackImageDataUrl?: string;
   classification?: LeafClassification;

@@ -15,7 +15,9 @@ export function detectPackageManager(cwd: string): PackageManager {
   } catch {}
 
   if (fs.existsSync(path.join(cwd, 'pnpm-lock.yaml'))) return { name: 'pnpm' };
-  if (fs.existsSync(path.join(cwd, 'bun.lockb'))) return { name: 'bun' };
+  // Bun: bun.lockb (legacy binary) or bun.lock (current text default).
+  if (fs.existsSync(path.join(cwd, 'bun.lockb')) || fs.existsSync(path.join(cwd, 'bun.lock')))
+    return { name: 'bun' };
   if (fs.existsSync(path.join(cwd, 'yarn.lock'))) return { name: 'yarn' };
   if (fs.existsSync(path.join(cwd, 'package-lock.json'))) return { name: 'npm' };
 

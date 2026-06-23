@@ -63,6 +63,7 @@ export type TextLeaf = {
   textAlign: string;
   padding: { t: number; r: number; b: number; l: number };
   cssFeatureFlags: CssFeatureFlags;
+  letterSpacing?: number;
   groupId: string | null; // NEW
   leafId: string;
   fallbackImageDataUrl?: string;
@@ -240,6 +241,17 @@ const EXTRACT_SCRIPT = `(() => {
     return toHex(c.a < 1 ? blendOver(c) : c);
   };
   const parsePx = (v) => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
+  // CSS text-transform is a render-time presentation effect; textContent keeps
+  // the source casing. Apply it to the extracted string so the pptx text reads
+  // (and measures) like the browser — this is representation conversion, not
+  // geometry. uppercase/lowercase are exact; capitalize is a close approximation.
+  const applyTextTransform = (s, tt) => {
+    if (!s) return s;
+    if (tt === 'uppercase') return s.toUpperCase();
+    if (tt === 'lowercase') return s.toLowerCase();
+    if (tt === 'capitalize') return s.replace(/\\b\\w/g, (m) => m.toUpperCase());
+    return s;
+  };
 
   const images = [];
   for (const img of document.querySelectorAll('img')) {
@@ -270,8 +282,17 @@ const EXTRACT_SCRIPT = `(() => {
       const v = m[1].split(',').map((s) => parseFloat(s.trim()));
       if (v.length === 6) {
         const [a, b, c, d] = v;
-        const isPureRotate = Math.abs(a*a + b*b - 1) < 1e-3 && Math.abs(c*c + d*d - 1) < 1e-3;
-        return isPureRotate;
+        // Only an identity linear part (pure translate) is trivial: the measured
+        // leaf carries an axis-aligned rect that cannot represent rotation, scale
+        // or skew, so any non-identity matrix must fall through to an image
+        // fallback to stay faithful to Chromium. (translate e/f is already
+        // reflected in getBoundingClientRect, so it is safe to ignore here.)
+        return (
+          Math.abs(a - 1) < 1e-3 &&
+          Math.abs(b) < 1e-3 &&
+          Math.abs(c) < 1e-3 &&
+          Math.abs(d - 1) < 1e-3
+        );
       }
     }
     return false;
@@ -337,11 +358,12 @@ const EXTRACT_SCRIPT = `(() => {
   };
   const collectRuns = (el) => {
     const own = styleSig(el);
+    const tt = getComputedStyle(el).textTransform;
     const out = [];
     for (const child of el.childNodes) {
       if (child.nodeType === 3) {
         const t = child.textContent;
-        if (t && t.length) out.push({ text: t, ...own });
+        if (t && t.length) out.push({ text: applyTextTransform(t, tt), ...own });
       } else if (child.nodeType === 1) {
         if (INLINE_TAGS.has(child.tagName)) {
           if (child.tagName === 'BR') {
@@ -371,8 +393,21 @@ const EXTRACT_SCRIPT = `(() => {
       if (c.nodeType === 3) {
         if (c.textContent && c.textContent.trim()) hasOwnText = true;
       } else if (c.nodeType === 1) {
-        if (!isInlineEl(c)) hasBlockChild = true;
-        else if (c.textContent && c.textContent.trim()) hasOwnText = true;
+        const childHasText = !!(c.textContent && c.textContent.trim());
+        if (isInlineEl(c)) {
+          if (childHasText) hasOwnText = true;
+        } else if (childHasText) {
+          // A non-inline child that carries its own text makes this a block
+          // container — that text must be emitted from the child, not merged
+          // here.
+          hasBlockChild = true;
+        }
+        // A text-LESS non-inline child (a decorative <svg>/<img> icon, or a
+        // spacer) contributes no text and is captured by the svg / image /
+        // decor collectors. It must NOT disqualify the row, or sibling label
+        // text (e.g. "▲ Brand", "<icon> Label") gets dropped. NB: flexbox/grid
+        // "blockify" children so their computed display reads 'block' even when
+        // laid out inline — text presence, not display, is the reliable signal.
       }
     }
     // Only emit when element is a leaf-of-block: contains text (own or inline)
@@ -413,7 +448,7 @@ const EXTRACT_SCRIPT = `(() => {
     //
     // Height pad always applies (line-height differences are small and
     // a hair of extra vertical room never causes wrap regression).
-    const padRect = (r, fs, content) => {
+    const padRect = (r, fs, content, ls) => {
       // Range covers CJK Unified Ideographs (U+4E00–U+9FFF), CJK
       // symbols/punctuation/kana (U+3000–U+303F, U+3040–U+30FF) and
       // Bopomofo (U+3100–U+312F) via the [　-鿿] block, Hangul
@@ -430,6 +465,12 @@ const EXTRACT_SCRIPT = `(() => {
       // still needs POSITIVE pad because PowerPoint's Cascadia / Segoe
       // fallback is wider than Chromium's bundled sans.
       r.w += hasCJK ? -Math.min(r.w * 0.05, fs * 0.3) : Math.max(24, fs * 0.35);
+      // Letter-spacing widens the rendered text and pptx charSpacing tends to
+      // exceed the captured rect, wrapping the trailing word (e.g. "SHOWCASE
+      // 2026" → "2026" on its own line). Add one char-gap-worth per character
+      // of headroom; over-padding is safe (text is left-aligned), under-padding
+      // wraps.
+      if (ls && content) r.w += ls * content.length;
       r.h += Math.max(8, fs * 0.15);
       return r;
     };
@@ -440,10 +481,10 @@ const EXTRACT_SCRIPT = `(() => {
         const crect = pickTextRect(c);
         if (crect.w <= 0 || crect.h <= 0) continue;
         const cfs = parsePx(ccs.fontSize);
-        padRect(crect, cfs, trim(c.textContent));
+        padRect(crect, cfs, trim(c.textContent), parsePx(ccs.letterSpacing));
         texts.push({
           rect: crect,
-          text: trim(c.textContent),
+          text: applyTextTransform(trim(c.textContent), ccs.textTransform),
           runs: collectRuns(c),
           fontSize: cfs,
           fontFamily: ccs.fontFamily,
@@ -460,6 +501,7 @@ const EXTRACT_SCRIPT = `(() => {
             l: parsePx(ccs.paddingLeft),
           },
           cssFeatureFlags: buildCssFeatureFlags(ccs),
+          letterSpacing: parsePx(ccs.letterSpacing),
           leafId: leafIdOf(c),
           groupId: c.closest('[data-prim-id]')?.getAttribute('data-prim-id') || null,
         });
@@ -482,10 +524,10 @@ const EXTRACT_SCRIPT = `(() => {
       }
       if (bestFs > 0) effFontSize = bestFs;
     }
-    padRect(rect, effFontSize, trim(el.textContent));
+    padRect(rect, effFontSize, trim(el.textContent), parsePx(cs.letterSpacing));
     texts.push({
       rect,
-      text: trim(el.textContent),
+      text: applyTextTransform(trim(el.textContent), cs.textTransform),
       runs: collectRuns(el),
       fontSize: effFontSize,
       fontFamily: cs.fontFamily,
@@ -502,6 +544,7 @@ const EXTRACT_SCRIPT = `(() => {
         l: parsePx(cs.paddingLeft),
       },
       cssFeatureFlags: buildCssFeatureFlags(cs),
+      letterSpacing: parsePx(cs.letterSpacing),
       leafId: leafIdOf(el),
       groupId: el.closest('[data-prim-id]')?.getAttribute('data-prim-id') || null,
     });
@@ -943,7 +986,18 @@ export async function measureSlide(
         }, f.leafId)) as Rect | null;
         if (!leafBbox) continue;
         const clipped = intersectSlide(leafBbox);
-        if (clipped.w <= 0 || clipped.h <= 0) continue;
+        if (clipped.w <= 0 || clipped.h <= 0) {
+          // Wholly off-canvas: record a 1×1 transparent placeholder (mirroring
+          // the primitive branch below) so the attach loop sets
+          // fallbackImageDataUrl. Without it the leaf keeps its ImageFallback
+          // classification but no URL, falling through to native emission at
+          // its off-slide rect.
+          seenLeafResults.set(f.leafId, {
+            rect: { x: clipped.x, y: clipped.y, w: 1, h: 1 },
+            url: TRANSPARENT_PNG_1X1,
+          });
+          continue;
+        }
         await page.evaluate((id) => {
           const sel = `[data-leaf-id="${id.replace(/"/g, '\\"')}"]`;
           const target = document.querySelector(sel);

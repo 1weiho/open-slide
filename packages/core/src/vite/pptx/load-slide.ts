@@ -1,5 +1,7 @@
 import { build, type Plugin } from 'esbuild';
-import { writeFile, mkdtemp, mkdir, rm } from 'node:fs/promises';
+import { writeFile, mkdir } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import os from 'node:os';
 import { createRequire } from 'node:module';
@@ -117,15 +119,16 @@ export async function loadSlideModule(slideDir: string): Promise<SlideModule> {
   });
   const code = result.outputFiles[0].text;
   await mkdir(CACHE_ROOT, { recursive: true });
-  const dir = await mkdtemp(path.join(CACHE_ROOT, 'slide-bundle-'));
-  const bundlePath = path.join(dir, 'slide.mjs');
-  await writeFile(bundlePath, code, 'utf8');
-  try {
-    // Node caches the module in memory after import, so the bundle file
-    // is safe to delete immediately. This keeps .cache/ from accumulating
-    // a slide-bundle-XXXXXX directory per CLI invocation.
-    return (await import(pathToFileURL(bundlePath).href)) as SlideModule;
-  } finally {
-    await rm(dir, { recursive: true, force: true });
+  // Content-addressed bundle path. Node's ESM loader caches every imported URL
+  // for the process lifetime and never evicts it, so a unique temp path per
+  // export would leak one module record per export in the long-lived Vite dev
+  // server. Keying the URL by a hash of the bundle means re-exporting the same
+  // deck reuses the cached module — the cache is bounded by distinct deck
+  // content, not by export count. The file is the cache key, so it is kept.
+  const hash = createHash('sha1').update(code).digest('hex').slice(0, 16);
+  const bundlePath = path.join(CACHE_ROOT, `slide-${hash}.mjs`);
+  if (!existsSync(bundlePath)) {
+    await writeFile(bundlePath, code, 'utf8');
   }
+  return (await import(pathToFileURL(bundlePath).href)) as SlideModule;
 }

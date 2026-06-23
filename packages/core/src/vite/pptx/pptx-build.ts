@@ -128,6 +128,10 @@ function renderRichText(slide: pptxgen.Slide, it: IRRichText, groupChain: string
       fontSize: fs,
       align: (it.align as any) || 'left',
       valign: (it.valign as any) || 'top',
+      // CSS letter-spacing → pptx charSpacing (points). Without it, letter-
+      // spaced labels render narrower than chromium measured, so the text sits
+      // left-aligned in an over-wide box (visible word gaps in eyebrow/nav rows).
+      charSpacing: it.letterSpacing ? fpt(it.letterSpacing) : undefined,
       // Auto-shrink when CJK / display-font fallback in PowerPoint renders
       // wider than chromium measured. Without this, large headings overflow
       // and wrap onto an extra line because the captured rect is too tight.

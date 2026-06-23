@@ -21,9 +21,17 @@ export function PptxPlaywrightMissingToast({
           <button
             type="button"
             onClick={() => {
-              navigator.clipboard?.writeText(command).catch(() => {});
-              toast.success(t.common.copyCommand, { duration: 1500 });
-              toast.dismiss(toastId);
+              // Clipboard API may be absent (insecure context); the ?. then
+              // yields undefined, so guard before chaining. Only report success
+              // once the copy actually resolves.
+              const copied = navigator.clipboard?.writeText(command);
+              if (!copied) return;
+              copied
+                .then(() => {
+                  toast.success(t.common.copyCommand, { duration: 1500 });
+                  toast.dismiss(toastId);
+                })
+                .catch(() => {});
             }}
             className="inline-flex shrink-0 items-center gap-1 rounded border border-border bg-background px-2 py-0.5 font-mono text-[10.5px] tracking-[0.04em] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >

@@ -53,6 +53,14 @@ describe('detectPackageManager', () => {
     expect(detectPackageManager(cwd).name).toBe('bun');
   });
 
+  it('detects bun via bun.lock (current text default)', () => {
+    const cwd = makeFixture((dir) => {
+      writeFileSync(path.join(dir, 'package.json'), '{}');
+      writeFileSync(path.join(dir, 'bun.lock'), '');
+    });
+    expect(detectPackageManager(cwd).name).toBe('bun');
+  });
+
   it('falls back to pnpm when nothing is found', () => {
     const cwd = makeFixture((dir) => {
       writeFileSync(path.join(dir, 'package.json'), '{}');

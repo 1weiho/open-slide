@@ -84,6 +84,14 @@ export function instrumentTree(
       return React.cloneElement(el, {}, children as any);
     }
 
+    // React.Fragment (and other symbol-typed wrappers) carry children but no
+    // DOM of their own. Without walking them, any primitive nested inside a
+    // `<>...</>` (e.g. the Steps stub) would miss data-prim-id instrumentation.
+    if (type === React.Fragment) {
+      const children = walk((props as any)?.children, false);
+      return React.cloneElement(el, {}, children as any);
+    }
+
     return node;
   }
 

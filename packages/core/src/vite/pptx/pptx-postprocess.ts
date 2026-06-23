@@ -170,24 +170,25 @@ function processSpTree(spTreeChildren: any[]): any[] {
       arr.push(i);
     }
 
-    let target: { key: string; idxs: number[] } | null = null;
+    let target: { key: string; idxs: number[]; sorted: number[] } | null = null;
     for (const [k, idxs] of byDeepKey) {
       if (idxs.length < 2) continue;
+      const sorted = [...idxs].sort((a, b) => a - b);
+      const contiguous = sorted.every((v, j) => j === 0 || v === sorted[j - 1] + 1);
+      if (!contiguous) {
+        // Members are interleaved with non-members, so they can't form one
+        // contiguous group. Skip THIS key but keep evaluating the rest — a
+        // single non-contiguous key must not abort grouping for the whole
+        // slide (the previous `break` left every other group flat too).
+        console.warn('[postprocess] non-contiguous group members for', k, '— flat emit retained');
+        continue;
+      }
       if (!target || k.split('/').length > target.key.split('/').length) {
-        target = { key: k, idxs };
+        target = { key: k, idxs, sorted };
       }
     }
     if (!target) break;
-    const sorted = [...target.idxs].sort((a, b) => a - b);
-    const contiguous = sorted.every((v, j) => j === 0 || v === sorted[j - 1] + 1);
-    if (!contiguous) {
-      console.warn(
-        '[postprocess] non-contiguous group members for',
-        target.key,
-        '— flat emit retained',
-      );
-      break;
-    }
+    const sorted = target.sorted;
     const start = sorted[0];
     const end = sorted[sorted.length - 1];
     const members = work.slice(start, end + 1);
