@@ -1,8 +1,10 @@
 import fs from 'node:fs/promises';
 import type { ViteDevServer } from 'vite';
 import {
+  duplicateNotesElementInSource,
   duplicatePageInDefaultExportInSource,
   duplicateSlideDir,
+  removeNotesElementInSource,
   removePageFromDefaultExportInSource,
   reorderDefaultExportPagesInSource,
   reorderNotesArrayInSource,
@@ -114,8 +116,18 @@ export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): voi
               : 'could not duplicate page — index out of range or default export is not an array',
           });
         }
-        if (updated !== source) {
-          await fs.writeFile(entry, updated, 'utf8');
+        const withNotes = isDelete
+          ? removeNotesElementInSource(updated, pageIndex)
+          : duplicateNotesElementInSource(updated, pageIndex);
+        if (withNotes === null) {
+          return json(res, 422, {
+            error: isDelete
+              ? 'could not delete page — `notes` export has an unexpected shape'
+              : 'could not duplicate page — `notes` export has an unexpected shape',
+          });
+        }
+        if (withNotes !== source) {
+          await fs.writeFile(entry, withNotes, 'utf8');
         }
         return json(res, 200, { ok: true, slideId, index: pageIndex });
       }

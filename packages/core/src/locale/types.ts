@@ -108,6 +108,7 @@ export type Locale = {
     agentDisconnectedTooltip: string;
     download: string;
     copyLink: string;
+    moreActions: string;
     toastCopyLinkSuccess: string;
     toastCopyLinkFailed: string;
     exportAsHtml: string;

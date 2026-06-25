@@ -1,5 +1,19 @@
 # @open-slide/core
 
+## 1.12.1
+
+### Patch Changes
+
+- [#233](https://github.com/1weiho/open-slide/pull/233) [`0128ba4`](https://github.com/1weiho/open-slide/commit/0128ba43b75a6e9a4760708c20064a8c570db962) Thanks [@1weiho](https://github.com/1weiho)! - Center longer slide UI tooltip messages.
+
+- [#242](https://github.com/1weiho/open-slide/pull/242) [`949bdbf`](https://github.com/1weiho/open-slide/commit/949bdbfd4580eceec0f0710d67561ad6d56754ed) Thanks [@poterpan](https://github.com/poterpan)! - Fix HTML export distorting the slide aspect ratio on narrow viewports.
+
+- [#241](https://github.com/1weiho/open-slide/pull/241) [`3c57091`](https://github.com/1weiho/open-slide/commit/3c5709153e80244545957f8d9ee8039429068eb9) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Fix the slide toolbar on narrow screens: keep the title from overlapping the icons, and collapse the copy-link and download actions into a single overflow menu.
+
+- [#244](https://github.com/1weiho/open-slide/pull/244) [`57e2845`](https://github.com/1weiho/open-slide/commit/57e2845b80b4a1f52bd947524fb4eeb5dea06ef8) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Block pointer input on frozen slide previews so interactive content no longer hijacks thumbnail and overview clicks.
+
+- [#235](https://github.com/1weiho/open-slide/pull/235) [`ef265e8`](https://github.com/1weiho/open-slide/commit/ef265e8bad56355e52bda6d12d1b6e2676f68f4b) Thanks [@1weiho](https://github.com/1weiho)! - Show transition and step indicators in the slide overview grid.
+
 ## 1.12.0
 
 ### Minor Changes

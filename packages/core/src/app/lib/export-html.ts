@@ -260,7 +260,7 @@ ${opts.externalLinks}
 <style>
 html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
 .os-stage { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
-.os-frame { width: 1920px; height: 1080px; background: #fff; color: #000; transform-origin: center center; overflow: hidden; position: relative; }
+.os-frame { width: 1920px; height: 1080px; flex-shrink: 0; background: #fff; color: #000; transform-origin: center center; overflow: hidden; position: relative; }
 .os-page { position: absolute; inset: 0; }
 .os-page[hidden] { display: none !important; }
 .os-counter { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); color: #fff; background: rgba(0,0,0,.5); padding: 2px 10px; border-radius: 999px; font-size: 12px; z-index: 10; font-variant-numeric: tabular-nums; }

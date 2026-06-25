@@ -417,15 +417,66 @@ export function reorderNotesArrayInSource(source: string, order: number[]): stri
   const { arrayStart, arrayEnd, elementTexts } = found;
   const pick = (i: number): string =>
     i >= 0 && i < elementTexts.length ? elementTexts[i] : 'undefined';
-  const reordered = order.map(pick);
-  while (reordered.length > 0 && reordered[reordered.length - 1] === 'undefined') {
-    reordered.pop();
+  return rebuildNotesArray(source, arrayStart, arrayEnd, order.map(pick));
+}
+
+/**
+ * Remove the note aligned with the page at `index` so the `notes` export stays
+ * index-aligned with `export default [...]` after a page deletion. Mirrors
+ * {@link removePageFromDefaultExportInSource}.
+ *
+ * Returns the rewritten source, the original source if no `notes` export exists
+ * or the index falls past the recorded notes, or `null` if the `notes` export's
+ * shape is too surprising to touch safely.
+ */
+export function removeNotesElementInSource(source: string, index: number): string | null {
+  if (!Number.isInteger(index) || index < 0) return null;
+  const found = findNotesArray(source);
+  if (found === 'invalid') return null;
+  if (found === null) return source;
+
+  const { arrayStart, arrayEnd, elementTexts } = found;
+  if (index >= elementTexts.length) return source;
+  const next = elementTexts.slice();
+  next.splice(index, 1);
+  return rebuildNotesArray(source, arrayStart, arrayEnd, next);
+}
+
+/**
+ * Duplicate the note aligned with the page at `index`, inserting the copy right
+ * after it so the `notes` export stays index-aligned with `export default [...]`
+ * after a page duplication. Mirrors {@link duplicatePageInDefaultExportInSource}.
+ *
+ * Returns the rewritten source, the original source if no `notes` export exists
+ * or the index falls past the recorded notes (the new slot and everything after
+ * it are absent, so nothing shifts), or `null` if the shape is too surprising.
+ */
+export function duplicateNotesElementInSource(source: string, index: number): string | null {
+  if (!Number.isInteger(index) || index < 0) return null;
+  const found = findNotesArray(source);
+  if (found === 'invalid') return null;
+  if (found === null) return source;
+
+  const { arrayStart, arrayEnd, elementTexts } = found;
+  if (index >= elementTexts.length) return source;
+  const next = elementTexts.slice();
+  next.splice(index + 1, 0, next[index]);
+  return rebuildNotesArray(source, arrayStart, arrayEnd, next);
+}
+
+function rebuildNotesArray(
+  source: string,
+  arrayStart: number,
+  arrayEnd: number,
+  elements: string[],
+): string {
+  const trimmed = elements.slice();
+  while (trimmed.length > 0 && trimmed[trimmed.length - 1] === 'undefined') {
+    trimmed.pop();
   }
-
   const replacement =
-    reordered.length === 0 ? '[]' : `[\n${reordered.map((s) => `  ${s},`).join('\n')}\n]`;
+    trimmed.length === 0 ? '[]' : `[\n${trimmed.map((s) => `  ${s},`).join('\n')}\n]`;
   if (replacement === source.slice(arrayStart, arrayEnd)) return source;
-
   return source.slice(0, arrayStart) + replacement + source.slice(arrayEnd);
 }
 

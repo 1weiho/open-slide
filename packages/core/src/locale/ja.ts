@@ -107,6 +107,7 @@ export const ja: Locale = {
     backToHome: 'ホームへ戻る',
     download: 'ダウンロード',
     copyLink: 'リンクをコピー',
+    moreActions: 'その他の操作',
     toastCopyLinkSuccess: 'リンクをクリップボードにコピーしました',
     toastCopyLinkFailed: 'リンクのコピーに失敗しました',
     exportAsHtml: 'HTML として書き出し',

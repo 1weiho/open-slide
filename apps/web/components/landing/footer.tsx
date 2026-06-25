@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import { VercelOssBadge } from './vercel-oss-badge';
 
 export function Footer() {
   return (
@@ -48,8 +49,8 @@ export function Footer() {
       </div>
 
       <div className="border-t border-[color:var(--color-rule)]">
-        <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.18em] uppercase text-[color:var(--color-muted)]">
-          <span>© open-slide · MIT</span>
+        <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.18em] uppercase text-[color:var(--color-muted)]">
+          <VercelOssBadge imageClassName="h-4 sm:h-5" />
           <span>
             Crafted with 🤍 by{' '}
             <a
