@@ -2,4 +2,4 @@
 "@open-slide/core": patch
 ---
 
-Make present mode controls easier to use on phones with compact always-available controls.
+Make present mode easier to use on phones with single-tap playback and compact auto-hiding controls.

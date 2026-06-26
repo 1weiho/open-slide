@@ -173,13 +173,6 @@ export type Locale = {
     exitFullscreenAria: string;
     helpAria: string;
     exitAria: string;
-    moreAria: string;
-    overviewLabel: string;
-    blackoutLabel: string;
-    whiteoutLabel: string;
-    laserLabel: string;
-    fullscreenLabel: string;
-    exitLabel: string;
     elapsedTime: string;
     helpEyebrow: string;
     helpTitle: string;

@@ -8,7 +8,6 @@ import {
   Maximize,
   Minimize,
   MonitorSpeaker,
-  MoreHorizontal,
   Square,
   Sun,
 } from 'lucide-react';
@@ -28,11 +27,9 @@ type Props = {
   laser: boolean;
   allowExit: boolean;
   windowed: boolean;
-  mobileMenuOpen: boolean;
   onPrev: () => void;
   onNext: () => void;
   onMobileInteraction: () => void;
-  onMobileMenuOpenChange: (open: boolean) => void;
   onOverview: () => void;
   onBlackout: (mode: 'black' | 'white') => void;
   onLaser: () => void;
@@ -57,11 +54,9 @@ export function PresentControlBar({
   laser,
   allowExit,
   windowed,
-  mobileMenuOpen,
   onPrev,
   onNext,
   onMobileInteraction,
-  onMobileMenuOpenChange,
   onOverview,
   onBlackout,
   onLaser,
@@ -73,9 +68,8 @@ export function PresentControlBar({
 }: Props) {
   const t = useLocale();
   const fullscreenAria = windowed ? t.present.enterFullscreenAria : t.present.exitFullscreenAria;
-  const handleMobileAction = (action: () => void, closeMenu = false) => {
+  const handleMobileAction = (action: () => void) => {
     action();
-    if (closeMenu) onMobileMenuOpenChange(false);
     onMobileInteraction();
   };
 
@@ -94,7 +88,12 @@ export function PresentControlBar({
     >
       <TooltipProvider delayDuration={300}>
         <TooltipContainerCtx.Provider value={tooltipContainer ?? null}>
-          <div className="pointer-events-auto hidden h-11 items-center gap-1 rounded-full border border-white/10 bg-black/55 px-2 text-white/85 shadow-[0_8px_30px_-8px_oklch(0_0_0/0.6)] backdrop-blur-md md:flex">
+          <div
+            className={cn(
+              'hidden h-11 items-center gap-1 rounded-full border border-white/10 bg-black/55 px-2 text-white/85 shadow-[0_8px_30px_-8px_oklch(0_0_0/0.6)] backdrop-blur-md md:flex',
+              visible ? 'pointer-events-auto' : 'pointer-events-none',
+            )}
+          >
             <BarButton label={t.present.prevSlideAria} onClick={onPrev} disabled={index === 0}>
               <ChevronLeft className="size-4" />
             </BarButton>
@@ -160,70 +159,21 @@ export function PresentControlBar({
             )}
           </div>
 
-          <div className="pointer-events-auto relative flex w-full max-w-[22rem] md:hidden">
-            {mobileMenuOpen && (
-              <div className="absolute inset-x-0 bottom-[calc(100%+0.5rem)] rounded-[12px] border border-white/10 bg-black/70 p-1.5 text-white shadow-[0_12px_42px_-12px_oklch(0_0_0/0.72)] backdrop-blur-xl motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 motion-safe:duration-150">
-                <div className="grid grid-cols-3 gap-1">
-                  <MobileMenuButton
-                    label={t.present.overviewLabel}
-                    ariaLabel={t.present.overviewAria}
-                    onClick={() => handleMobileAction(onOverview, true)}
-                  >
-                    <Grid2x2 className="size-4" />
-                  </MobileMenuButton>
-                  <MobileMenuButton
-                    label={t.present.blackoutLabel}
-                    ariaLabel={t.present.blackoutAria}
-                    active={blackout === 'black'}
-                    onClick={() => handleMobileAction(() => onBlackout('black'), true)}
-                  >
-                    <Square className="size-4 fill-current" />
-                  </MobileMenuButton>
-                  <MobileMenuButton
-                    label={t.present.whiteoutLabel}
-                    ariaLabel={t.present.whiteoutAria}
-                    active={blackout === 'white'}
-                    onClick={() => handleMobileAction(() => onBlackout('white'), true)}
-                  >
-                    <Sun className="size-4" />
-                  </MobileMenuButton>
-                  <MobileMenuButton
-                    label={t.present.laserLabel}
-                    ariaLabel={t.present.laserAria}
-                    active={laser}
-                    onClick={() => handleMobileAction(onLaser, true)}
-                  >
-                    <Crosshair className="size-4" />
-                  </MobileMenuButton>
-                  <MobileMenuButton
-                    label={t.present.fullscreenLabel}
-                    ariaLabel={fullscreenAria}
-                    onClick={() => handleMobileAction(onToggleFullscreen, true)}
-                  >
-                    {windowed ? <Maximize className="size-4" /> : <Minimize className="size-4" />}
-                  </MobileMenuButton>
-                  {allowExit && (
-                    <MobileMenuButton
-                      label={t.present.exitLabel}
-                      ariaLabel={t.present.exitAria}
-                      onClick={() => handleMobileAction(onExit, true)}
-                    >
-                      <LogOut className="size-4" />
-                    </MobileMenuButton>
-                  )}
-                </div>
-              </div>
+          <div
+            className={cn(
+              'flex w-fit max-w-[calc(100vw-1.5rem)] md:hidden',
+              visible ? 'pointer-events-auto' : 'pointer-events-none',
             )}
-
-            <div className="flex h-12 w-full items-center justify-between gap-1 rounded-full border border-white/10 bg-black/60 px-1.5 text-white/85 shadow-[0_8px_30px_-8px_oklch(0_0_0/0.65)] backdrop-blur-md">
+          >
+            <div className="flex h-10 w-fit items-center gap-0.5 rounded-full border border-white/10 bg-black/60 px-1 text-white/85 shadow-[0_8px_30px_-8px_oklch(0_0_0/0.65)] backdrop-blur-md">
               <MobileBarButton
                 label={t.present.prevSlideAria}
                 onClick={() => handleMobileAction(onPrev)}
                 disabled={index === 0}
               >
-                <ChevronLeft className="size-5" />
+                <ChevronLeft className="size-4" />
               </MobileBarButton>
-              <span className="min-w-0 flex-1 px-1 text-center font-mono text-[12px] tabular-nums text-white/80 select-none">
+              <span className="min-w-[3.5rem] px-1 text-center font-mono text-[11.5px] tabular-nums text-white/80 select-none">
                 <span className="text-white">{index + 1}</span>
                 <span className="px-1 text-white/35">/</span>
                 <span>{total}</span>
@@ -233,15 +183,23 @@ export function PresentControlBar({
                 onClick={() => handleMobileAction(onNext)}
                 disabled={index >= total - 1}
               >
-                <ChevronRight className="size-5" />
+                <ChevronRight className="size-4" />
               </MobileBarButton>
+              <MobileDivider />
               <MobileBarButton
-                label={t.present.moreAria}
-                expanded={mobileMenuOpen}
-                onClick={() => onMobileMenuOpenChange(!mobileMenuOpen)}
+                label={t.present.overviewAria}
+                onClick={() => handleMobileAction(onOverview)}
               >
-                <MoreHorizontal className="size-5" />
+                <Grid2x2 className="size-4" />
               </MobileBarButton>
+              {allowExit && (
+                <MobileBarButton
+                  label={t.present.exitAria}
+                  onClick={() => handleMobileAction(onExit)}
+                >
+                  <LogOut className="size-4" />
+                </MobileBarButton>
+              )}
             </div>
           </div>
         </TooltipContainerCtx.Provider>
@@ -255,29 +213,25 @@ function MobileBarButton({
   label,
   onClick,
   disabled,
-  expanded,
 }: {
   children: React.ReactNode;
   label: string;
   onClick: () => void;
   disabled?: boolean;
-  expanded?: boolean;
 }) {
   return (
     <button
       type="button"
       aria-label={label}
-      aria-expanded={expanded}
       disabled={disabled}
       onClick={(event) => {
         event.stopPropagation();
         onClick();
       }}
       className={cn(
-        'inline-flex size-11 shrink-0 touch-manipulation items-center justify-center rounded-full transition-colors',
+        'inline-flex size-8 shrink-0 touch-manipulation items-center justify-center rounded-full transition-colors',
         'text-white/85 hover:bg-white/12 focus-visible:bg-white/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35',
         'disabled:pointer-events-none disabled:opacity-30',
-        expanded && 'bg-white/12 text-white',
       )}
     >
       {children}
@@ -285,38 +239,8 @@ function MobileBarButton({
   );
 }
 
-function MobileMenuButton({
-  children,
-  label,
-  ariaLabel,
-  onClick,
-  active,
-}: {
-  children: React.ReactNode;
-  label: string;
-  ariaLabel: string;
-  onClick: () => void;
-  active?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={ariaLabel}
-      aria-pressed={active}
-      onClick={(event) => {
-        event.stopPropagation();
-        onClick();
-      }}
-      className={cn(
-        'flex h-14 min-w-0 touch-manipulation flex-col items-center justify-center gap-1 rounded-[8px] px-1 text-white/75 transition-colors',
-        'hover:bg-white/10 focus-visible:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35',
-        active && 'bg-[var(--brand,#ef4444)]/85 text-white hover:bg-[var(--brand,#ef4444)]',
-      )}
-    >
-      {children}
-      <span className="block max-w-full truncate text-[10.5px] leading-none">{label}</span>
-    </button>
-  );
+function MobileDivider() {
+  return <span aria-hidden className="mx-0.5 h-3.5 w-px shrink-0 bg-white/15" />;
 }
 
 function BarButton({

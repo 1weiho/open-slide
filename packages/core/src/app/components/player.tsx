@@ -28,6 +28,7 @@ import { SlideTransitionLayer } from './slide-transition-layer';
 
 const IDLE_HIDE_MS = 2000;
 const BAR_HOTZONE_PX = 160;
+const MOBILE_CHROME_HIDE_MS = 2200;
 
 type Props = {
   pages: Page[];
@@ -77,7 +78,7 @@ export function Player({
   const [laser, setLaser] = useState(false);
   const [keyboardDriven, setKeyboardDriven] = useState(false);
   const [mobileChromeVisible, setMobileChromeVisible] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileChromeDeadline, setMobileChromeDeadline] = useState(0);
   const [startedAt] = useState(() => Date.now());
   const [windowed, setWindowed] = useState(!fullscreen);
   // Mirror windowed into a ref so the fullscreenchange listener can read the
@@ -125,24 +126,44 @@ export function Player({
   const showMobileChrome = useCallback(() => {
     if (!controls || !isMobile) return;
     setMobileChromeVisible(true);
+    setMobileChromeDeadline(Date.now() + MOBILE_CHROME_HIDE_MS);
   }, [controls, isMobile]);
-  const handleMobileCenterClick = useCallback(() => {
-    if (!controls || !isMobile || !mobileMenuOpen) return;
-    setMobileMenuOpen(false);
-  }, [controls, isMobile, mobileMenuOpen]);
-  const setMobileMenu = useCallback((open: boolean) => {
-    setMobileMenuOpen(open);
-    setMobileChromeVisible(true);
-  }, []);
+  const handleMobileViewportClick = useCallback(
+    ({ y }: { x: number; y: number }) => {
+      if (!controls || !isMobile || y < 0.5) return;
+      showMobileChrome();
+    },
+    [controls, isMobile, showMobileChrome],
+  );
 
   useEffect(() => {
     if (!controls || !isMobile) {
       setMobileChromeVisible(false);
-      setMobileMenuOpen(false);
+      setMobileChromeDeadline(0);
       return;
     }
     setMobileChromeVisible(true);
+    setMobileChromeDeadline(Date.now() + MOBILE_CHROME_HIDE_MS);
   }, [controls, isMobile]);
+
+  useEffect(() => {
+    if (
+      !controls ||
+      !isMobile ||
+      overlayActive ||
+      !mobileChromeVisible ||
+      mobileChromeDeadline === 0
+    ) {
+      return;
+    }
+    const id = window.setTimeout(
+      () => {
+        setMobileChromeVisible(false);
+      },
+      Math.max(0, mobileChromeDeadline - Date.now()),
+    );
+    return () => window.clearTimeout(id);
+  }, [controls, isMobile, mobileChromeDeadline, mobileChromeVisible, overlayActive]);
 
   useClickPageNavigation({
     ref: rootRef,
@@ -151,7 +172,7 @@ export function Player({
     canNext,
     onPrev: goPrev,
     onNext: goNext,
-    onCenterClick: controls && isMobile ? handleMobileCenterClick : undefined,
+    onViewportClick: controls && isMobile ? handleMobileViewportClick : undefined,
   });
 
   useWheelPageNavigation({
@@ -401,11 +422,9 @@ export function Player({
             laser={laser}
             allowExit={allowExit}
             windowed={windowed}
-            mobileMenuOpen={mobileMenuOpen}
             onPrev={goPrev}
             onNext={goNext}
             onMobileInteraction={showMobileChrome}
-            onMobileMenuOpenChange={setMobileMenu}
             onOverview={() => setOverviewOpen(true)}
             onBlackout={(mode) => setBlackout((c) => (c === mode ? null : mode))}
             onLaser={() => setLaser((v) => !v)}
