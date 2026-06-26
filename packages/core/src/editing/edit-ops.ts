@@ -1162,6 +1162,68 @@ function planReplacePlaceholder(
   return { importSplice, elementSplice: spliceRange(element, replacement) };
 }
 
+export type ElementSharing = { instances: number; viaMap: boolean };
+
+function countDefaultExportArrayRefs(ast: t.File, name: string): number {
+  for (const decl of ast.program.body) {
+    if (!t.isExportDefaultDeclaration(decl)) continue;
+    let expr: t.Node = decl.declaration;
+    while (t.isTSSatisfiesExpression(expr) || t.isTSAsExpression(expr)) {
+      expr = expr.expression;
+    }
+    if (!t.isArrayExpression(expr)) return 0;
+    let count = 0;
+    for (const el of expr.elements) {
+      if (el && t.isIdentifier(el) && el.name === name) count++;
+    }
+    return count;
+  }
+  return 0;
+}
+
+function mapRenderMultiplier(ast: t.Node, target: t.Node): number {
+  const map = findEnclosingMapCallback(ast, target);
+  if (!map) return 1;
+  const elements = resolveArrayLiteralElements(ast, map.arrayArg);
+  return elements ? Math.max(1, elements.length) : 2;
+}
+
+function componentRenderCount(ast: t.File, name: string, seen = new Set<string>()): number {
+  if (seen.has(name)) return 1;
+  const nextSeen = new Set(seen);
+  nextSeen.add(name);
+  let count = countDefaultExportArrayRefs(ast, name);
+  walkJsx(ast, (n) => {
+    if (!t.isJSXElement(n)) return;
+    const elName = n.openingElement.name;
+    if (!t.isJSXIdentifier(elName) || elName.name !== name) return;
+    const parent = findEnclosingComponent(ast, n);
+    const parentCount =
+      parent && parent.name !== name ? componentRenderCount(ast, parent.name, nextSeen) : 1;
+    count += parentCount * mapRenderMultiplier(ast, n);
+  });
+  return count;
+}
+
+export function probeElementSharing(
+  source: string,
+  line: number,
+  column: number,
+): ElementSharing | null {
+  const ast = parseSource(source);
+  if (!ast) return null;
+  const element = findInnermostJsxElement(ast, line, column);
+  if (!element) return null;
+  const viaMap = findEnclosingMapCallback(ast, element) !== null;
+  const component = findEnclosingComponent(ast, element);
+  let instances = 1;
+  if (component) {
+    const count = componentRenderCount(ast, component.name);
+    if (count > 1) instances = count;
+  }
+  return { instances, viaMap };
+}
+
 export function applyEdit(
   source: string,
   line: number,

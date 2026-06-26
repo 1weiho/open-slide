@@ -21,6 +21,7 @@ import { ImageCropDialog, type ImageCropRect } from './image-crop-dialog';
 export type SelectedTarget = {
   line: number;
   column: number;
+  sourceFile?: string;
   anchor: HTMLElement;
 };
 
@@ -250,8 +251,8 @@ type InspectorCtx = {
   comments: SlideComment[];
   error: string | null;
   refetch: () => Promise<void>;
-  add: (line: number, column: number, text: string) => Promise<void>;
-  remove: (id: string) => Promise<void>;
+  add: (line: number, column: number, text: string, sourceFile?: string) => Promise<void>;
+  remove: (id: string, sourceFile?: string) => Promise<void>;
   selected: SelectedTarget | null;
   setSelected: (s: SelectedTarget | null) => void;
   applyEdit: (line: number, column: number, ops: EditOp[]) => Promise<void>;

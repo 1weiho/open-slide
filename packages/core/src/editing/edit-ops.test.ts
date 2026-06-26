@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyEdit, safeAssetIdentifier } from './edit-ops.ts';
+import { applyEdit, probeElementSharing, safeAssetIdentifier } from './edit-ops.ts';
 
 describe('applyEdit / set-style', () => {
   // Every JSX opening tag in these synthetic sources sits at column 0;
@@ -956,6 +956,87 @@ describe('applyEdit / combined ops', () => {
     const r = applyEdit(src, 1, 0, []);
     if (!r.ok) throw new Error('expected ok');
     expect(r.source).toBe(src);
+  });
+});
+
+describe('probeElementSharing', () => {
+  it('reports a direct page element as a single instance', () => {
+    const src = [
+      'const Page = () => <h2>Hello</h2>;',
+      'export default [Page] satisfies Page[];',
+      '',
+    ].join('\n');
+    expect(probeElementSharing(src, 1, 19)).toEqual({ instances: 1, viaMap: false });
+  });
+
+  it('counts reused component call sites that share one JSX definition', () => {
+    const src = [
+      'const PageShell = ({ children, heading }: { children: React.ReactNode; heading?: string }) => (',
+      '  <section>',
+      '    <h2>{heading}</h2>',
+      '    <div>{children}</div>',
+      '  </section>',
+      ');',
+      'const PageA = () => <PageShell heading="Intro">content A</PageShell>;',
+      'const PageB = () => <PageShell heading="Details">content B</PageShell>;',
+      'export default [PageA, PageB] satisfies Page[];',
+      '',
+    ].join('\n');
+    expect(probeElementSharing(src, 3, 4)).toEqual({ instances: 2, viaMap: false });
+  });
+
+  it('counts repeated default-export page references', () => {
+    const src = [
+      'const Page = () => (',
+      '  <h2>Hello</h2>',
+      ');',
+      'export default [Page, Page] satisfies Page[];',
+      '',
+    ].join('\n');
+    expect(probeElementSharing(src, 2, 2)).toEqual({ instances: 2, viaMap: false });
+  });
+
+  it('counts shared components rendered by a repeated page', () => {
+    const src = [
+      'const Shared = () => (',
+      '  <h2>Hello</h2>',
+      ');',
+      'const Page = () => (',
+      '  <Shared />',
+      ');',
+      'export default [Page, Page] satisfies Page[];',
+      '',
+    ].join('\n');
+    expect(probeElementSharing(src, 2, 2)).toEqual({ instances: 2, viaMap: false });
+  });
+
+  it('flags elements rendered inside map callbacks', () => {
+    const src = [
+      'const Page = () => (',
+      '  <section>',
+      '    {["A", "B"].map((label) => <span>{label}</span>)}',
+      '  </section>',
+      ');',
+      'export default [Page] satisfies Page[];',
+      '',
+    ].join('\n');
+    expect(probeElementSharing(src, 3, 33)).toEqual({ instances: 1, viaMap: true });
+  });
+
+  it('counts shared components rendered from map callbacks', () => {
+    const src = [
+      'const Shared = () => (',
+      '  <h2>Hello</h2>',
+      ');',
+      'const Page = () => (',
+      '  <section>',
+      '    {["A", "B"].map((label) => <Shared key={label} />)}',
+      '  </section>',
+      ');',
+      'export default [Page] satisfies Page[];',
+      '',
+    ].join('\n');
+    expect(probeElementSharing(src, 2, 2)).toEqual({ instances: 2, viaMap: false });
   });
 });
 
