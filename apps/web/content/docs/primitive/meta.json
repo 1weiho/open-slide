@@ -1,4 +1,4 @@
 {
   "title": "Primitive",
-  "pages": ["page", "transition", "step", "share-element"]
+  "pages": ["page", "transition", "step", "shared-element"]
 }

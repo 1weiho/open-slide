@@ -67,9 +67,9 @@ timeline marker, product card, badge, or highlight. Keep changing copy outside
 the shared element. If the content changes while moving, the audience reads it
 as one object turning into another, not continuity.
 
-`unstable_SharedElement` accepts one child. If the child is a DOM element, the
-runtime writes the `data-osd-shared-element` marker onto that child. Otherwise
-it wraps the content in a `div`.
+`unstable_SharedElement` works best with a single DOM child. If there is
+exactly one DOM child, the runtime writes the `data-osd-shared-element`
+marker onto that child. Otherwise it wraps the content in a `div`.
 
 ## Transition Required
 

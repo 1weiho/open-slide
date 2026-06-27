@@ -582,6 +582,7 @@ export function SlideTransitionLayer({
       const shared = runSharedElementTransition(wrapper, out, inc, sharedPhase);
       anims.push(...shared.animations);
       cleanups.push(shared.cleanup);
+      if (!exitAnim && shared.animations.length > 0) cleanups.push(hideOriginal(out));
     }
     animsRef.current = anims;
 
