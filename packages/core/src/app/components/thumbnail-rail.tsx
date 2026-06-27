@@ -380,8 +380,9 @@ function VirtualThumbList({
     }
   }, [activeRef, current, rowHeight]);
 
+  const visibleRange = clampVisibleRange(range, current, pages.length);
   const visible = [];
-  for (let i = range.start; i < range.end; i++) {
+  for (let i = visibleRange.start; i < visibleRange.end; i++) {
     visible.push(
       <div
         key={i}
@@ -400,20 +401,32 @@ function VirtualThumbList({
   );
 }
 
+type VisibleRange = { start: number; end: number };
+
+function clampVisibleRange(range: VisibleRange, current: number, count: number): VisibleRange {
+  if (count <= 0) return { start: 0, end: 0 };
+  if (range.start >= 0 && range.start < count && range.start < range.end) {
+    return { start: range.start, end: Math.min(range.end, count) };
+  }
+  const clampedCurrent = Math.min(Math.max(current, 0), count - 1);
+  return getInitialVisibleRange(clampedCurrent, count);
+}
+
 function getVisibleRange(
-  scrollTopOrIndex: number,
+  scrollTop: number,
   count: number,
   viewportHeight: number,
   rowHeight: number,
-) {
+): VisibleRange {
   if (count <= 0) return { start: 0, end: 0 };
-  const visibleRows = Math.ceil(viewportHeight / rowHeight);
-  const start = Math.max(0, Math.floor(scrollTopOrIndex / rowHeight) - VIRTUAL_OVERSCAN);
-  const end = Math.min(count, start + visibleRows + VIRTUAL_OVERSCAN * 2 + 1);
+  const visibleRows = Math.max(1, Math.ceil(viewportHeight / rowHeight));
+  const firstVisible = Math.min(count - 1, Math.max(0, Math.floor(scrollTop / rowHeight)));
+  const start = Math.max(0, firstVisible - VIRTUAL_OVERSCAN);
+  const end = Math.min(count, firstVisible + visibleRows + VIRTUAL_OVERSCAN + 1);
   return { start, end };
 }
 
-function getInitialVisibleRange(current: number, count: number) {
+function getInitialVisibleRange(current: number, count: number): VisibleRange {
   if (count <= 0) return { start: 0, end: 0 };
   const start = Math.max(0, current - VIRTUAL_OVERSCAN);
   const end = Math.min(count, current + VIRTUAL_OVERSCAN + 1);
