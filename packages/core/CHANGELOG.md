@@ -1,5 +1,13 @@
 # @open-slide/core
 
+## 1.13.1
+
+### Patch Changes
+
+- [#260](https://github.com/1weiho/open-slide/pull/260) [`3adaa7c`](https://github.com/1weiho/open-slide/commit/3adaa7c332bac124a3a5fa6ad1c814d275b58858) Thanks [@1weiho](https://github.com/1weiho)! - Keep shared-element borders at their intended width while elements resize.
+
+- [#261](https://github.com/1weiho/open-slide/pull/261) [`5f167f7`](https://github.com/1weiho/open-slide/commit/5f167f7c6f3dcbbf48bf2388238d5d0b11bf1856) Thanks [@1weiho](https://github.com/1weiho)! - Virtualize the editor thumbnail rail for smoother navigation in large decks.
+
 ## 1.13.0
 
 ### Minor Changes
