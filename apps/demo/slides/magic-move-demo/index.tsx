@@ -69,8 +69,8 @@ const Title = () => (
   </SharedElement>
 );
 
-const Caption = ({ text }: { text: string }) => (
-  <SharedElement id="caption">
+const Caption = ({ id, text }: { id: string; text: string }) => (
+  <SharedElement id={`caption-${id}`}>
     <div
       style={{
         position: 'absolute',
@@ -141,7 +141,7 @@ const Ring = ({ left, top, size }: { left: number; top: number; size: number }) 
 
 const Arrange: Page = () => (
   <Stage>
-    <Caption text="01 Arrange" />
+    <Caption id="arrange" text="01 Arrange" />
     <Dot id="a" left={676} top={494} size={122} color="var(--osd-accent)" />
     <Dot id="b" left={904} top={510} size={88} color={blue} />
     <Dot id="c" left={1084} top={528} size={56} color={coral} />
@@ -150,7 +150,7 @@ const Arrange: Page = () => (
 
 const Shift: Page = () => (
   <Stage>
-    <Caption text="02 Shift" />
+    <Caption id="shift" text="02 Shift" />
     <Ring left={844} top={330} size={392} />
     <Dot id="a" left={748} top={346} size={76} color="var(--osd-accent)" />
     <Dot id="b" left={1006} top={430} size={164} color={blue} />
@@ -161,7 +161,7 @@ const Shift: Page = () => (
 
 const Scale: Page = () => (
   <Stage>
-    <Caption text="03 Scale" />
+    <Caption id="scale" text="03 Scale" />
     <Ring left={676} top={292} size={560} />
     <Dot id="a" left={574} top={320} size={154} color="var(--osd-accent)" />
     <Dot id="b" left={942} top={408} size={74} color={blue} />
@@ -172,7 +172,7 @@ const Scale: Page = () => (
 
 const Settle: Page = () => (
   <Stage>
-    <Caption text="04 Settle" />
+    <Caption id="settle" text="04 Settle" />
     <Dot id="a" left={776} top={476} size={96} color="var(--osd-accent)" />
     <Dot id="b" left={916} top={476} size={96} color={blue} />
     <Dot id="c" left={1056} top={476} size={96} color={coral} />
