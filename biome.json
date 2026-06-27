@@ -28,7 +28,12 @@
   },
   "overrides": [
     {
-      "includes": ["**/slides/**", "apps/web/components/landing/**"],
+      "includes": [
+        "**/slides/**",
+        "apps/demo-standalone/index.tsx",
+        "packages/cli/template-standalone/index.tsx",
+        "apps/web/components/landing/**"
+      ],
       "linter": {
         "rules": {
           "a11y": {

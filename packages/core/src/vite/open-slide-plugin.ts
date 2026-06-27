@@ -3,7 +3,13 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import fg from 'fast-glob';
 import { loadConfigFromFile, normalizePath, type Plugin, type ViteDevServer } from 'vite';
-import type { OpenSlideConfig } from '../config.ts';
+import type { OpenSlideConfig, SlideMode } from '../config.ts';
+import { STANDALONE_SLIDE_ID } from '../editing/slide-ops.ts';
+import {
+  findStandaloneEntry,
+  isStandaloneEntryPath,
+  standaloneEntryCandidates,
+} from '../files/standalone-entry.ts';
 
 export type { OpenSlideConfig };
 
@@ -118,10 +124,11 @@ async function generateSlidesModule(
   files: string[],
   slidesRoot: string,
   isDev: boolean,
+  mode: SlideMode,
 ): Promise<string> {
   const entries = await Promise.all(
     files.map(async (abs) => {
-      const id = toId(abs, slidesRoot);
+      const id = mode === 'standalone' ? STANDALONE_SLIDE_ID : toId(abs, slidesRoot);
       const importPath = isDev ? `@fs/${normalizePath(abs).replace(/^\/+/, '')}` : abs;
       const meta = await readSlideMeta(abs);
       return { id, importPath, theme: meta.theme, createdAt: parseCreatedAtMs(meta.createdAt) };
@@ -178,12 +185,17 @@ ${cases}
 
 export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
   const { userCwd, config, coreVersion } = opts;
+  const mode = config.mode ?? 'workspace';
+  const isStandalone = mode === 'standalone';
   const slidesDir = config.slidesDir ?? 'slides';
-  const slidesRoot = path.resolve(userCwd, slidesDir);
+  const slidesRoot = isStandalone ? userCwd : path.resolve(userCwd, slidesDir);
   const foldersManifestPath = path.join(slidesRoot, '.folders.json');
 
   let isDev = false;
   const slideIdForEntry = (p: string): string | null => {
+    if (isStandalone) {
+      return isStandaloneEntryPath(userCwd, p) ? STANDALONE_SLIDE_ID : null;
+    }
     const rel = path.relative(slidesRoot, p);
     if (rel.startsWith('..') || path.isAbsolute(rel)) return null;
     const parts = rel.split(path.sep);
@@ -226,19 +238,36 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
     },
     async load(id) {
       if (id === resolved(SLIDES_VMOD)) {
-        const files = await findSlides(userCwd, slidesDir);
-        return await generateSlidesModule(files, slidesRoot, isDev);
+        const standaloneEntry = findStandaloneEntry(userCwd);
+        const files = isStandalone
+          ? standaloneEntry === null
+            ? []
+            : [standaloneEntry]
+          : await findSlides(userCwd, slidesDir);
+        return await generateSlidesModule(files, slidesRoot, isDev, mode);
       }
       if (id === resolved(CONFIG_VMOD)) {
         const userBuild = config.build ?? {};
+        // Standalone has no home browser in any environment; dev otherwise
+        // forces it on so the listing is always reachable while authoring.
         const buildResolved = isDev
-          ? { showSlideBrowser: true, showSlideUi: true, allowHtmlDownload: true }
+          ? {
+              showSlideBrowser: !isStandalone,
+              showSlideUi: true,
+              allowHtmlDownload: true,
+            }
           : {
-              showSlideBrowser: userBuild.showSlideBrowser ?? true,
+              showSlideBrowser: isStandalone ? false : (userBuild.showSlideBrowser ?? true),
               showSlideUi: userBuild.showSlideUi ?? true,
               allowHtmlDownload: userBuild.allowHtmlDownload ?? true,
             };
-        const resolvedConfig = { ...config, build: buildResolved, version: coreVersion };
+        const resolvedConfig = {
+          ...config,
+          mode,
+          standaloneSlideId: isStandalone ? STANDALONE_SLIDE_ID : null,
+          build: buildResolved,
+          version: coreVersion,
+        };
         return `export default ${JSON.stringify(resolvedConfig)};\n`;
       }
       if (id === resolved(FOLDERS_VMOD)) {
@@ -269,14 +298,18 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
       // Vite's `root` is the core app dir, so chokidar doesn't watch the
       // user's slides folder by default. Add it explicitly — and pass the
       // directory itself, since Vite sets `disableGlobbing: true` and would
-      // otherwise treat a glob pattern as a literal path.
-      if (existsSync(slidesRoot)) server.watcher.add(slidesRoot);
+      // otherwise treat a glob pattern as a literal path. Standalone has no
+      // slides dir; watch the root entry so add/unlink still triggers a reload.
+      if (isStandalone) server.watcher.add(standaloneEntryCandidates(userCwd));
+      else if (existsSync(slidesRoot)) server.watcher.add(slidesRoot);
       server.watcher.on('add', (p) => {
         if (isSlideEntry(p)) reload();
       });
       server.watcher.on('unlink', (p) => {
         if (isSlideEntry(p)) reload();
       });
+
+      if (isStandalone) return;
 
       let foldersTimer: ReturnType<typeof setTimeout> | null = null;
       const invalidateFolders = () => {

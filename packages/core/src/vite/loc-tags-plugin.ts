@@ -2,7 +2,9 @@ import path from 'node:path';
 import { parse as babelParse } from '@babel/parser';
 import * as t from '@babel/types';
 import type { Plugin } from 'vite';
+import type { SlideMode } from '../config.ts';
 import { walkJsx } from '../editing/babel-walk.ts';
+import { resolveStandaloneEntry } from '../files/standalone-entry.ts';
 
 // Inject `data-slide-loc="<line>:<col>"` onto every host JSX element in
 // slide source files so the inspector can map a click straight to a
@@ -60,6 +62,7 @@ export function injectLocTags(code: string): string | null {
 export type LocTagsPluginOptions = {
   userCwd: string;
   slidesDir?: string;
+  mode?: SlideMode;
 };
 
 // Vite normally hands `id` to plugins with forward slashes, but other
@@ -76,7 +79,17 @@ function isSlideSourceFile(id: string, slidesRootPosix: string): boolean {
 }
 
 export function locTagsPlugin(opts: LocTagsPluginOptions): Plugin {
+  const isStandalone = (opts.mode ?? 'workspace') === 'standalone';
   const slidesRoot = path.resolve(opts.userCwd, opts.slidesDir ?? 'slides').replace(/\\/g, '/');
+  const standaloneEntry = isStandalone
+    ? resolveStandaloneEntry(opts.userCwd).replace(/\\/g, '/')
+    : null;
+  const matches = (id: string): boolean => {
+    if (standaloneEntry) {
+      return id.split(/[?#]/)[0].replace(/\\/g, '/') === standaloneEntry;
+    }
+    return isSlideSourceFile(id, slidesRoot);
+  };
   return {
     name: 'open-slide:loc-tags',
     apply: 'serve',
@@ -84,7 +97,7 @@ export function locTagsPlugin(opts: LocTagsPluginOptions): Plugin {
     // sees our injected attributes.
     enforce: 'pre',
     transform(code, id) {
-      if (!isSlideSourceFile(id, slidesRoot)) return null;
+      if (!matches(id)) return null;
       const next = injectLocTags(code);
       if (next === null) return null;
       return { code: next, map: null };

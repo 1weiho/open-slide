@@ -4,6 +4,7 @@ import * as readline from 'node:readline/promises';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import { Command, Option } from 'commander';
+import { loadUserConfig } from '../vite/open-slide-plugin.ts';
 import { detectSkillsDrift, syncSkills } from './sync.ts';
 
 async function readVersion(): Promise<string> {
@@ -81,6 +82,16 @@ interface SyncFlags {
   dryRun?: boolean;
 }
 
+async function loadUserConfigForCommand(): Promise<Awaited<ReturnType<typeof loadUserConfig>>> {
+  try {
+    return await loadUserConfig(process.cwd());
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    process.stderr.write(`${chalk.red('Failed to load config:')} ${message}\n`);
+    process.exit(1);
+  }
+}
+
 function resolveBuiltinSkillsDir(): string {
   // dist/cli/bin.js → ../../skills (package root + /skills)
   const here = path.dirname(fileURLToPath(import.meta.url));
@@ -106,7 +117,10 @@ export async function run(argv: string[]): Promise<void> {
     .option('--open', 'open the browser on start')
     .option('--no-skills-check', 'skip the built-in skills drift check')
     .action(async (flags: DevFlags) => {
-      if (flags.skillsCheck !== false) {
+      const userConfig = await loadUserConfigForCommand();
+      // Standalone projects don't ship the authoring skills, so there's
+      // nothing to drift-check against the built-in set.
+      if (flags.skillsCheck !== false && userConfig.mode !== 'standalone') {
         await runSkillsDriftCheck(resolveBuiltinSkillsDir());
       }
       const { dev } = await import('./dev.ts');
@@ -138,6 +152,11 @@ export async function run(argv: string[]): Promise<void> {
     .description('Sync built-in skills from @open-slide/core into this workspace')
     .option('--dry-run', 'show what would change without writing')
     .action(async (flags: SyncFlags) => {
+      const userConfig = await loadUserConfigForCommand();
+      if (userConfig.mode === 'standalone') {
+        process.stdout.write(chalk.dim('Standalone projects have no authoring skills to sync.\n'));
+        return;
+      }
       const { syncSkills } = await import('./sync.ts');
       await syncSkills(resolveBuiltinSkillsDir(), flags);
     });

@@ -10,6 +10,8 @@ import {
   removePageFromDefaultExportInSource,
   reorderDefaultExportPagesInSource,
   reorderNotesArrayInSource,
+  resolveSlideEntry,
+  STANDALONE_SLIDE_ID,
   updateMetaTitleInSource,
   validateSlideName,
 } from './slide-ops.ts';
@@ -32,6 +34,37 @@ async function writeSlide(root: string, id: string, title = id): Promise<void> {
   );
   await fs.writeFile(path.join(root, id, 'assets', 'hero.txt'), 'hero', 'utf8');
 }
+
+describe('resolveSlideEntry', () => {
+  it('resolves <slidesRoot>/<id>/index.tsx in workspace mode', () => {
+    expect(resolveSlideEntry('/repo/slides', 'cover')).toBe(
+      path.join('/repo/slides', 'cover', 'index.tsx'),
+    );
+  });
+
+  it('rejects ids that escape the slides root', () => {
+    expect(resolveSlideEntry('/repo/slides', '../secret')).toBeNull();
+  });
+
+  it('maps the synthetic id to the root index.tsx in standalone mode', () => {
+    expect(resolveSlideEntry('/repo', STANDALONE_SLIDE_ID, 'standalone')).toBe(
+      path.join('/repo', 'index.tsx'),
+    );
+  });
+
+  it('maps the synthetic id to the resolved root entry in standalone mode', async () => {
+    await withSlidesRoot(async (root) => {
+      await fs.writeFile(path.join(root, 'index.jsx'), '');
+      expect(resolveSlideEntry(root, STANDALONE_SLIDE_ID, 'standalone')).toBe(
+        path.join(root, 'index.jsx'),
+      );
+    });
+  });
+
+  it('rejects any other id in standalone mode', () => {
+    expect(resolveSlideEntry('/repo', 'cover', 'standalone')).toBeNull();
+  });
+});
 
 describe('duplicateSlideDir', () => {
   it('duplicates a slide directory with an automatic copy id', async () => {

@@ -44,6 +44,7 @@ export type CreateViteConfigOptions = {
 export async function createViteConfig(opts: CreateViteConfigOptions): Promise<InlineConfig> {
   const userCwd = path.resolve(opts.userCwd);
   const config = opts.config ?? (await loadUserConfig(userCwd));
+  const mode = config.mode ?? 'workspace';
   const slidesDir = config.slidesDir ?? 'slides';
   const themesDir = config.themesDir ?? 'themes';
   const assetsDir = config.assetsDir ?? 'assets';
@@ -57,15 +58,15 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
     configFile: false,
     envDir: userCwd,
     plugins: [
-      locTagsPlugin({ userCwd, slidesDir }),
+      locTagsPlugin({ userCwd, slidesDir, mode }),
       react(),
       tailwindcss(),
       openSlidePlugin({ userCwd, config, coreVersion: CORE_VERSION }),
       themesPlugin({ userCwd, config }),
-      designPlugin({ userCwd }),
-      apiPlugin({ userCwd, slidesDir, assetsDir, coreVersion: CORE_VERSION }),
-      notesPlugin({ userCwd, slidesDir }),
-      currentPlugin({ userCwd, slidesDir }),
+      designPlugin({ userCwd, slidesDir, mode }),
+      apiPlugin({ userCwd, slidesDir, assetsDir, coreVersion: CORE_VERSION, mode }),
+      notesPlugin({ userCwd, slidesDir, mode }),
+      currentPlugin({ userCwd, slidesDir, mode }),
     ],
     resolve: {
       alias: {

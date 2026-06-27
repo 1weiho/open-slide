@@ -7,9 +7,12 @@ declare module 'virtual:open-slide/slides' {
 }
 
 declare module 'virtual:open-slide/config' {
+  import type { SlideMode } from '../config';
   import type { Locale } from '../locale/types';
 
   const config: {
+    mode: SlideMode;
+    standaloneSlideId: string | null;
     base?: string;
     slidesDir?: string;
     port?: number;

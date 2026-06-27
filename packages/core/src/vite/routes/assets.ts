@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { ViteDevServer } from 'vite';
 import { findAssetUsages, findReferencedAssets } from '../../editing/revert-asset.ts';
-import { resolveSlideEntry, SLIDE_ID_RE } from '../../editing/slide-ops.ts';
+import { resolveSlideEntry, SLIDE_ID_RE, STANDALONE_SLIDE_ID } from '../../editing/slide-ops.ts';
 import {
   ASSET_MAX_BYTES,
   GLOBAL_SCOPE,
@@ -13,6 +13,19 @@ import {
 } from '../../files/assets.ts';
 import { validateMutationRequest } from '../../http/request-guard.ts';
 import { type ApiContext, json, readBody } from './context.ts';
+
+// The set of slide ids whose `index.tsx` may reference a global asset. A
+// standalone project's only slide lives at the root, so directory scanning
+// (which finds `slides/<id>/`) doesn't apply.
+async function enumerateSlideIds(ctx: ApiContext): Promise<string[]> {
+  if (ctx.mode === 'standalone') return [STANDALONE_SLIDE_ID];
+  try {
+    const entries = await fs.readdir(ctx.slidesRoot, { withFileTypes: true });
+    return entries.filter((e) => e.isDirectory() && SLIDE_ID_RE.test(e.name)).map((e) => e.name);
+  } catch {
+    return [];
+  }
+}
 
 // GET    /__assets/:scope                     list assets in slide or @global
 // GET    /__assets/:scope/:file               serve raw asset bytes
@@ -41,14 +54,7 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
 
         let slideIds: string[];
         if (isGlobal) {
-          try {
-            const entries = await fs.readdir(ctx.slidesRoot, { withFileTypes: true });
-            slideIds = entries
-              .filter((e) => e.isDirectory() && SLIDE_ID_RE.test(e.name))
-              .map((e) => e.name);
-          } catch {
-            slideIds = [];
-          }
+          slideIds = await enumerateSlideIds(ctx);
         } else {
           if (!SLIDE_ID_RE.test(scope)) return json(res, 400, { error: 'invalid slideId' });
           slideIds = [scope];
@@ -57,7 +63,7 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
         const usages: Array<{ slideId: string; count: number }> = [];
         let totalCount = 0;
         for (const sid of slideIds) {
-          const entry = resolveSlideEntry(ctx.slidesRoot, sid);
+          const entry = resolveSlideEntry(ctx.slidesRoot, sid, ctx.mode);
           if (!entry) continue;
           let source: string;
           try {
@@ -76,7 +82,12 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
 
       if (listMatch && method === 'GET') {
         const slideId = listMatch[1];
-        const scopedDir = resolveScopedAssetsDir(ctx.slidesRoot, ctx.globalAssetsRoot, slideId);
+        const scopedDir = resolveScopedAssetsDir(
+          ctx.slidesRoot,
+          ctx.globalAssetsRoot,
+          slideId,
+          ctx.mode,
+        );
         if (!scopedDir) return json(res, 400, { error: 'invalid slideId' });
 
         let entries: string[];
@@ -116,21 +127,14 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
           const isGlobal = slideId === GLOBAL_SCOPE;
           let scanIds: string[];
           if (isGlobal) {
-            try {
-              const dirs = await fs.readdir(ctx.slidesRoot, { withFileTypes: true });
-              scanIds = dirs
-                .filter((e) => e.isDirectory() && SLIDE_ID_RE.test(e.name))
-                .map((e) => e.name);
-            } catch {
-              scanIds = [];
-            }
+            scanIds = await enumerateSlideIds(ctx);
           } else {
             scanIds = SLIDE_ID_RE.test(slideId) ? [slideId] : [];
           }
           const paths = assets.map((a) => (isGlobal ? `@assets/${a.name}` : `./assets/${a.name}`));
           const pathToAsset = new Map(paths.map((p, i) => [p, assets[i]]));
           for (const sid of scanIds) {
-            const entry = resolveSlideEntry(ctx.slidesRoot, sid);
+            const entry = resolveSlideEntry(ctx.slidesRoot, sid, ctx.mode);
             if (!entry) continue;
             let source: string;
             try {
@@ -156,6 +160,7 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
           ctx.globalAssetsRoot,
           slideId,
           filename,
+          ctx.mode,
         );
         if (!file) return json(res, 400, { error: 'invalid path' });
 
@@ -196,7 +201,12 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
             }
           }
 
-          const scopedDir = resolveScopedAssetsDir(ctx.slidesRoot, ctx.globalAssetsRoot, slideId);
+          const scopedDir = resolveScopedAssetsDir(
+            ctx.slidesRoot,
+            ctx.globalAssetsRoot,
+            slideId,
+            ctx.mode,
+          );
           if (!scopedDir) return json(res, 400, { error: 'invalid slideId' });
           await fs.mkdir(scopedDir, { recursive: true });
 
@@ -243,6 +253,7 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
             ctx.globalAssetsRoot,
             slideId,
             target,
+            ctx.mode,
           );
           if (!dest) return json(res, 400, { error: 'invalid name' });
 

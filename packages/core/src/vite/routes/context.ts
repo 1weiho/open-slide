@@ -1,7 +1,9 @@
 import type { ServerResponse } from 'node:http';
 import path from 'node:path';
 import type { Connect } from 'vite';
-import { SLIDE_ID_RE } from '../../editing/slide-ops.ts';
+import type { SlideMode } from '../../config.ts';
+import { SLIDE_ID_RE, STANDALONE_SLIDE_ID } from '../../editing/slide-ops.ts';
+import { resolveStandaloneEntry } from '../../files/standalone-entry.ts';
 
 export type ApiContext = {
   userCwd: string;
@@ -10,6 +12,7 @@ export type ApiContext = {
   globalAssetsRoot: string;
   manifestPath: string;
   coreVersion: string;
+  mode: SlideMode;
 };
 
 export type ApiPluginOptions = {
@@ -17,13 +20,17 @@ export type ApiPluginOptions = {
   slidesDir?: string;
   assetsDir?: string;
   coreVersion: string;
+  mode?: SlideMode;
 };
 
 export function makeContext(opts: ApiPluginOptions): ApiContext {
   const userCwd = opts.userCwd;
+  const mode = opts.mode ?? 'workspace';
   const slidesDir = opts.slidesDir ?? 'slides';
   const assetsDir = opts.assetsDir ?? 'assets';
-  const slidesRoot = path.resolve(userCwd, slidesDir);
+  // Standalone decks have no `slides/` dir; the project root itself holds the
+  // single slide entry, so slide-scoped resolution roots at userCwd.
+  const slidesRoot = mode === 'standalone' ? userCwd : path.resolve(userCwd, slidesDir);
   const globalAssetsRoot = path.resolve(userCwd, assetsDir);
   const manifestPath = path.join(slidesRoot, '.folders.json');
   return {
@@ -33,6 +40,7 @@ export function makeContext(opts: ApiPluginOptions): ApiContext {
     globalAssetsRoot,
     manifestPath,
     coreVersion: opts.coreVersion,
+    mode,
   };
 }
 
@@ -63,8 +71,12 @@ export function resolveSlidePath(
   userCwd: string,
   slidesDir: string,
   slideId: string,
+  mode: SlideMode = 'workspace',
 ): string | null {
   if (!SLIDE_ID_RE.test(slideId)) return null;
+  if (mode === 'standalone') {
+    return slideId === STANDALONE_SLIDE_ID ? resolveStandaloneEntry(userCwd) : null;
+  }
   const slidesRoot = path.resolve(userCwd, slidesDir);
   const full = path.resolve(slidesRoot, slideId, 'index.tsx');
   if (!full.startsWith(slidesRoot + path.sep)) return null;
@@ -72,5 +84,5 @@ export function resolveSlidePath(
 }
 
 export function resolveSlideEntryPath(ctx: ApiContext, slideId: string): string | null {
-  return resolveSlidePath(ctx.userCwd, ctx.slidesDir, slideId);
+  return resolveSlidePath(ctx.userCwd, ctx.slidesDir, slideId, ctx.mode);
 }

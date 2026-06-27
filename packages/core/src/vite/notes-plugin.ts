@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import { parse as babelParse } from '@babel/parser';
 import * as t from '@babel/types';
 import type { Plugin, ViteDevServer } from 'vite';
+import type { SlideMode } from '../config.ts';
 import { validateMutationRequest } from '../http/request-guard.ts';
 import { json, readBody, resolveSlidePath } from './routes/context.ts';
 
@@ -153,11 +154,13 @@ export function applyNotesEdit(source: string, index: number, text: string): App
 export type NotesPluginOptions = {
   userCwd: string;
   slidesDir?: string;
+  mode?: SlideMode;
 };
 
 export function notesPlugin(opts: NotesPluginOptions): Plugin {
   const userCwd = opts.userCwd;
   const slidesDir = opts.slidesDir ?? 'slides';
+  const mode = opts.mode ?? 'workspace';
   // Suppress HMR for our own writes — RFR bails on the slide's mixed exports
   // and remounts the tree, stealing textarea focus mid-typing.
   const recentWrites = new Map<string, number>();
@@ -185,7 +188,7 @@ export function notesPlugin(opts: NotesPluginOptions): Plugin {
         try {
           const body = (await readBody(req)) as NotesBody;
           const slideId = body.slideId ?? '';
-          const file = resolveSlidePath(userCwd, slidesDir, slideId);
+          const file = resolveSlidePath(userCwd, slidesDir, slideId, mode);
           if (!file) return json(res, 400, { error: 'invalid slideId' });
           if (typeof body.index !== 'number') return json(res, 400, { error: 'missing index' });
           if (typeof body.text !== 'string') return json(res, 400, { error: 'missing text' });

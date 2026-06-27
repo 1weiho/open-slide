@@ -6,7 +6,15 @@ export type OpenSlideBuildConfig = {
   allowHtmlDownload?: boolean;
 };
 
+/**
+ * `'workspace'` (default) hosts many slides under `slides/<id>/` with a home
+ * browser, folders, and themes. `'standalone'` is a single deck whose entry is
+ * the project-root `index.tsx` — no slide listing, folders, or themes.
+ */
+export type SlideMode = 'workspace' | 'standalone';
+
 export type OpenSlideConfig = {
+  mode?: SlideMode;
   base?: string;
   slidesDir?: string;
   themesDir?: string;

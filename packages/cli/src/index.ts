@@ -4,7 +4,13 @@ import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import prompts from 'prompts';
-import { type InitOptions, init, isDirNonEmpty, sanitizeDirName } from './init.ts';
+import {
+  type InitOptions,
+  init,
+  isDirNonEmpty,
+  type ProjectMode,
+  sanitizeDirName,
+} from './init.ts';
 import { detectPackageManager, PACKAGE_MANAGERS, type PackageManager } from './package-manager.ts';
 
 async function readVersion(): Promise<string> {
@@ -18,6 +24,8 @@ async function readVersion(): Promise<string> {
 interface InitCliFlags {
   force?: boolean;
   name?: string;
+  standalone?: boolean;
+  workspace?: boolean;
   useNpm?: boolean;
   usePnpm?: boolean;
   useYarn?: boolean;
@@ -29,6 +37,15 @@ interface InitCliFlags {
 function onCancel(): never {
   process.stdout.write(chalk.dim('\nCancelled.\n'));
   process.exit(130);
+}
+
+function modeFromFlags(flags: InitCliFlags): ProjectMode | undefined {
+  if (flags.standalone && flags.workspace) {
+    throw new Error('Only one of --standalone / --workspace may be specified.');
+  }
+  if (flags.standalone) return 'standalone';
+  if (flags.workspace) return 'workspace';
+  return undefined;
 }
 
 function packageManagerFromFlags(flags: InitCliFlags): PackageManager | undefined {
@@ -52,6 +69,7 @@ async function runInit(dirArg: string | undefined, flags: InitCliFlags): Promise
   let dir = dirArg;
   const name = flags.name;
   let force = flags.force ?? false;
+  let mode = modeFromFlags(flags);
   let packageManager = packageManagerFromFlags(flags);
 
   if (isTTY && dir === undefined) {
@@ -90,6 +108,31 @@ async function runInit(dirArg: string | undefined, flags: InitCliFlags): Promise
       );
       dir = sanitizeDirName(answers.dir ?? safe);
     }
+  }
+
+  if (isTTY && mode === undefined) {
+    const answers = await prompts(
+      {
+        type: 'select',
+        name: 'mode',
+        message: 'Project type',
+        choices: [
+          {
+            title: 'Workspace',
+            description: 'Many slides, themes, and a home browser',
+            value: 'workspace',
+          },
+          {
+            title: 'Single slide',
+            description: 'One standalone deck — opens straight to the slide',
+            value: 'standalone',
+          },
+        ],
+        initial: 0,
+      },
+      { onCancel },
+    );
+    mode = answers.mode as ProjectMode | undefined;
   }
 
   if (isTTY && packageManager === undefined && flags.install !== false) {
@@ -132,6 +175,7 @@ async function runInit(dirArg: string | undefined, flags: InitCliFlags): Promise
 
   const opts: InitOptions = {
     dir: resolvedDir,
+    mode: mode ?? 'workspace',
     force,
     name,
     packageManager: packageManager ?? detectPackageManager(),
@@ -154,10 +198,12 @@ export async function run(argv: string[]): Promise<void> {
 
   program
     .command('init')
-    .description('Create a new open-slide workspace')
+    .description('Create a new open-slide project')
     .argument('[dir]', 'target directory', undefined)
     .option('-f, --force', 'overwrite non-empty target directory', false)
     .option('-n, --name <name>', 'override package name (defaults to folder name)')
+    .option('--standalone', 'scaffold a single standalone slide (no workspace)')
+    .option('--workspace', 'scaffold a multi-slide workspace (default)')
     .option('--use-npm', 'use npm to install dependencies')
     .option('--use-pnpm', 'use pnpm to install dependencies')
     .option('--use-yarn', 'use yarn to install dependencies')

@@ -8,11 +8,18 @@ import { gitInitAndCommit } from './git.ts';
 import type { PackageManager } from './package-manager.ts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const TEMPLATE_DIR = resolve(HERE, '..', 'template');
 const IS_WINDOWS = process.platform === 'win32';
+
+export type ProjectMode = 'workspace' | 'standalone';
+
+const TEMPLATE_DIRS: Record<ProjectMode, string> = {
+  workspace: resolve(HERE, '..', 'template'),
+  standalone: resolve(HERE, '..', 'template-standalone'),
+};
 
 export interface InitOptions {
   dir: string;
+  mode: ProjectMode;
   force: boolean;
   name: string | undefined;
   packageManager: PackageManager;
@@ -87,11 +94,12 @@ async function runInstall(pm: PackageManager, cwd: string): Promise<void> {
 }
 
 export async function init(opts: InitOptions): Promise<void> {
-  const { dir, force, name, packageManager, install, git } = opts;
+  const { dir, mode, force, name, packageManager, install, git } = opts;
+  const templateDir = TEMPLATE_DIRS[mode];
 
-  if (!existsSync(TEMPLATE_DIR)) {
+  if (!existsSync(templateDir)) {
     throw new Error(
-      `Template missing at ${TEMPLATE_DIR}. If you are running from source, run \`pnpm --filter @open-slide/cli build\` first.`,
+      `Template missing at ${templateDir}. If you are running from source, run \`pnpm --filter @open-slide/cli build\` first.`,
     );
   }
 
@@ -102,7 +110,7 @@ export async function init(opts: InitOptions): Promise<void> {
     throw new Error(`Target ${target} is not empty. Pass --force to scaffold into it anyway.`);
   }
 
-  await cp(TEMPLATE_DIR, target, { recursive: true });
+  await cp(templateDir, target, { recursive: true });
   await materializeTemplateLinks(target);
 
   const pkgPath = join(target, 'package.json');
@@ -122,9 +130,9 @@ export async function init(opts: InitOptions): Promise<void> {
   await writeFile(join(target, '.gitignore'), 'node_modules\ndist\n.DS_Store\n');
 
   const cdTarget = dir === '.' ? basename(target) : dir;
-  process.stdout.write(
-    `\n${chalk.green.bold('✔ Created open-slide workspace')} ${chalk.dim(`in ${target}`)}\n`,
-  );
+  const createdLabel =
+    mode === 'standalone' ? '✔ Created open-slide single slide' : '✔ Created open-slide workspace';
+  process.stdout.write(`\n${chalk.green.bold(createdLabel)} ${chalk.dim(`in ${target}`)}\n`);
 
   let installed = false;
   if (install) {

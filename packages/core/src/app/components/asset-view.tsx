@@ -1,3 +1,4 @@
+import config from 'virtual:open-slide/config';
 import {
   ArrowDownToLine,
   CloudOff,
@@ -57,9 +58,14 @@ type ConflictState = {
 };
 
 export function AssetView({ slideId }: Props) {
+  // Standalone decks have a single root `assets/` dir, so the slide/global
+  // scope split collapses to one scope.
+  const isStandalone = config.mode === 'standalone';
   const lockedToGlobal = slideId === null;
-  const [scope, setScope] = useState<Scope>(lockedToGlobal ? 'global' : 'slide');
-  const effectiveSlideId = scope === 'global' || slideId === null ? GLOBAL_SLIDE_ID : slideId;
+  const singleScope = lockedToGlobal || isStandalone;
+  const [scope, setScope] = useState<Scope>(singleScope ? 'global' : 'slide');
+  const effectiveSlideId =
+    singleScope || scope === 'global' || slideId === null ? GLOBAL_SLIDE_ID : slideId;
   const { assets, loading, available, upload, rename, remove } = useAssets(effectiveSlideId);
   const [dragActive, setDragActive] = useState(false);
   const [conflict, setConflict] = useState<ConflictState | null>(null);
@@ -146,7 +152,7 @@ export function AssetView({ slideId }: Props) {
     >
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-hairline bg-sidebar px-6 py-3">
         <div className="flex min-w-0 items-center gap-3">
-          {lockedToGlobal ? (
+          {singleScope ? (
             <span className="eyebrow">{t.asset.eyebrow}</span>
           ) : (
             <Tabs value={scope} onValueChange={(next) => setScope(next as Scope)}>
@@ -158,7 +164,7 @@ export function AssetView({ slideId }: Props) {
           )}
           <p className="min-w-0 truncate text-[12px] text-muted-foreground">
             <span className="font-mono text-[11.5px]">
-              {scope === 'global' ? 'assets/' : `slides/${slideId}/assets/`}
+              {isStandalone || scope === 'global' ? 'assets/' : `slides/${slideId}/assets/`}
             </span>
             {!loading && (
               <>

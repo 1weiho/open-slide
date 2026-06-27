@@ -1,5 +1,6 @@
 import path from 'node:path';
-import { SLIDE_ID_RE } from '../editing/slide-ops.ts';
+import type { SlideMode } from '../config.ts';
+import { SLIDE_ID_RE, STANDALONE_SLIDE_ID } from '../editing/slide-ops.ts';
 
 export const GLOBAL_SCOPE = '@global';
 export const ASSET_MAX_BYTES = 25 * 1024 * 1024;
@@ -72,8 +73,14 @@ export function resolveScopedAssetsDir(
   slidesRoot: string,
   globalAssetsRoot: string,
   scope: string,
+  mode: SlideMode = 'workspace',
 ): string | null {
+  // A standalone deck has a single root `assets/` dir that doubles as both its
+  // own scope and the global scope, so the synthetic slide maps straight to it.
   if (scope === GLOBAL_SCOPE) return globalAssetsRoot;
+  if (mode === 'standalone') {
+    return scope === STANDALONE_SLIDE_ID ? globalAssetsRoot : null;
+  }
   return resolveAssetsDir(slidesRoot, scope);
 }
 
@@ -82,12 +89,14 @@ export function resolveScopedAssetFile(
   globalAssetsRoot: string,
   scope: string,
   filename: string,
+  mode: SlideMode = 'workspace',
 ): string | null {
-  if (scope === GLOBAL_SCOPE) {
+  if (scope === GLOBAL_SCOPE || (mode === 'standalone' && scope === STANDALONE_SLIDE_ID)) {
     if (!validateAssetName(filename)) return null;
     const file = path.resolve(globalAssetsRoot, filename);
     if (!file.startsWith(globalAssetsRoot + path.sep)) return null;
     return file;
   }
+  if (mode === 'standalone') return null;
   return resolveAssetFile(slidesRoot, scope, filename);
 }

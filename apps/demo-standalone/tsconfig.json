@@ -13,5 +13,5 @@
     "skipLibCheck": true,
     "types": ["@open-slide/core/env", "react", "react-dom"]
   },
-  "include": ["slides/**/*", "open-slide.config.ts"]
+  "include": ["index.tsx", "open-slide.config.ts"]
 }

@@ -1,13 +1,16 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Plugin, ViteDevServer } from 'vite';
+import type { SlideMode } from '../config.ts';
 import { SLIDE_ID_RE } from '../editing/slide-ops.ts';
+import { standalonePagePath } from '../files/standalone-entry.ts';
 
 const TEXT_SNIPPET_MAX = 120;
 
 export type CurrentPluginOptions = {
   userCwd: string;
   slidesDir?: string;
+  mode?: SlideMode;
 };
 
 type IncomingPayload = {
@@ -66,6 +69,7 @@ function parseSelection(raw: unknown): Selection | null {
 export function currentPlugin(opts: CurrentPluginOptions): Plugin {
   const userCwd = opts.userCwd;
   const slidesDir = opts.slidesDir ?? 'slides';
+  const isStandalone = (opts.mode ?? 'workspace') === 'standalone';
   const outDir = path.join(userCwd, 'node_modules', '.open-slide');
   const outFile = path.join(outDir, 'current.json');
   const tmpFile = `${outFile}.tmp`;
@@ -106,7 +110,9 @@ export function currentPlugin(opts: CurrentPluginOptions): Plugin {
           const pageIndex = Math.max(0, Math.min(totalPages - 1, rawIndex));
           const slideTitle = typeof raw.slideTitle === 'string' ? raw.slideTitle : raw.slideId;
           const view = raw.view === 'assets' ? 'assets' : 'slides';
-          const pagePath = path.join(slidesDir, raw.slideId, 'index.tsx').split(path.sep).join('/');
+          const pagePath = isStandalone
+            ? standalonePagePath(userCwd)
+            : path.join(slidesDir, raw.slideId, 'index.tsx').split(path.sep).join('/');
 
           if (cached?.slideId !== raw.slideId || cached?.pageIndex !== pageIndex) {
             next.selection = null;

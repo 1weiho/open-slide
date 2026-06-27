@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import { parse as babelParse } from '@babel/parser';
 import type { Plugin, ViteDevServer } from 'vite';
 import { type DesignSystem, defaultDesign } from '../app/lib/design.ts';
+import type { SlideMode } from '../config.ts';
 import type { AstNode } from '../editing/babel-walk.ts';
 import { validateMutationRequest } from '../http/request-guard.ts';
 import { json, readBody, resolveSlidePath } from './routes/context.ts';
@@ -330,11 +331,13 @@ export function applyDesignWrite(source: string, next: DesignSystem): WriteResul
 export type DesignPluginOptions = {
   userCwd: string;
   slidesDir?: string;
+  mode?: SlideMode;
 };
 
 export function designPlugin(opts: DesignPluginOptions): Plugin {
   const userCwd = opts.userCwd;
   const slidesDir = opts.slidesDir ?? 'slides';
+  const mode = opts.mode ?? 'workspace';
 
   return {
     name: 'open-slide:design',
@@ -344,7 +347,7 @@ export function designPlugin(opts: DesignPluginOptions): Plugin {
         const url = new URL(req.url ?? '/', 'http://local');
         const method = req.method ?? 'GET';
         const slideId = url.searchParams.get('slideId') ?? '';
-        const file = resolveSlidePath(userCwd, slidesDir, slideId);
+        const file = resolveSlidePath(userCwd, slidesDir, slideId, mode);
         if (!file) return json(res, 400, { error: 'invalid slideId' });
 
         try {

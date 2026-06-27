@@ -13,5 +13,5 @@ export { CANVAS_HEIGHT, CANVAS_WIDTH } from './app/lib/sdk.ts';
 export type { StepProps, StepsProps } from './app/lib/step-context.tsx';
 export { Step, Steps } from './app/lib/step-context.tsx';
 export type { SlideTransition, TransitionPhase } from './app/lib/transition.ts';
-export type { OpenSlideConfig } from './config.ts';
+export type { OpenSlideConfig, SlideMode } from './config.ts';
 export type { Locale, Plural } from './locale/types.ts';

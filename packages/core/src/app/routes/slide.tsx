@@ -29,8 +29,10 @@ import {
   useInspector,
 } from '@/components/inspector/inspector-provider';
 import { SaveBar } from '@/components/inspector/save-bar';
+import { LanguageToggle } from '@/components/language-toggle';
 import { DesignProvider } from '@/components/style-panel/design-provider';
 import { DesignPanel, DesignToggleButton } from '@/components/style-panel/style-panel';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -68,7 +70,8 @@ import { useSlideModule } from '../lib/use-slide-module';
 const { showSlideUi, showSlideBrowser, allowHtmlDownload } = config.build;
 
 export function Slide() {
-  const { slideId = '' } = useParams();
+  const params = useParams();
+  const slideId = params.slideId ?? config.standaloneSlideId ?? '';
   const [searchParams, setSearchParams] = useSearchParams();
   const { slide, error } = useSlideModule(slideId);
   const [playMode, setPlayMode] = useState<'window' | 'fullscreen' | null>(null);
@@ -335,7 +338,7 @@ export function Slide() {
         </h2>
         <p className="mt-3 text-[13px] leading-relaxed">
           <code className="rounded-[4px] bg-muted px-1.5 py-0.5 font-mono text-[11.5px]">
-            slides/{slideId}/index.tsx
+            {config.mode === 'standalone' ? 'index.tsx' : `slides/${slideId}/index.tsx`}
           </code>
           {t.slide.emptyHintMust}
           <code className="rounded-[4px] bg-muted px-1.5 py-0.5 font-mono text-[11.5px]">
@@ -549,6 +552,12 @@ export function Slide() {
             </div>
 
             <div className="flex flex-1 items-center justify-end gap-1 md:ml-auto md:flex-none">
+              {config.mode === 'standalone' && (
+                <>
+                  <LanguageToggle />
+                  <ThemeToggle />
+                </>
+              )}
               {view === 'slides' && (
                 <button
                   type="button"
