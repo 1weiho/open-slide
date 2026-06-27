@@ -62,6 +62,11 @@ const DEFAULT_VERTICAL_THUMB_WIDTH = 184;
 const VERTICAL_RAIL_CHROME = 80;
 const MIN_VERTICAL_THUMB_WIDTH = 120;
 const HORIZONTAL_THUMB_HEIGHT = 64;
+const HORIZONTAL_THUMB_GAP = 8;
+const HORIZONTAL_RAIL_PADDING_X = 12;
+const HORIZONTAL_RAIL_PADDING_Y = 10;
+const HORIZONTAL_LABEL_HEIGHT = 12;
+const HORIZONTAL_LABEL_GAP = 6;
 const VERTICAL_THUMB_PADDING_Y = 12;
 const VERTICAL_THUMB_GAP = 8;
 const VIRTUAL_OVERSCAN = 4;
@@ -177,60 +182,16 @@ export function ThumbnailRail({
     return (
       <div className="bg-sidebar">
         <div className="overflow-x-auto overflow-y-hidden">
-          <div className="flex items-center gap-2 px-3 py-2.5">
-            {pages.map((PageComp, i) => {
-              const active = i === current;
-              const button = (
-                <button
-                  // biome-ignore lint/suspicious/noArrayIndexKey: pages list is render-stable
-                  key={i}
-                  type="button"
-                  ref={active ? activeRef : undefined}
-                  onClick={() => onSelect(i)}
-                  aria-label={format(t.thumbnailRail.goToPageAria, { n: i + 1 })}
-                  aria-current={active ? 'true' : undefined}
-                  className={cn('group/thumb relative flex shrink-0 flex-col items-center gap-1.5')}
-                >
-                  <span
-                    className={cn(
-                      'font-mono text-[9.5px] font-medium tracking-[0.06em] tabular-nums uppercase',
-                      active ? 'text-brand' : 'text-muted-foreground/70',
-                    )}
-                  >
-                    {(i + 1).toString().padStart(2, '0')}
-                  </span>
-                  <div
-                    className={cn(
-                      'relative shrink-0 overflow-hidden rounded-[4px] border bg-card motion-safe:transition-[border-color,box-shadow]',
-                      active
-                        ? 'border-brand shadow-[0_0_0_1px_var(--brand)]'
-                        : 'border-hairline group-hover/thumb:border-foreground/25',
-                    )}
-                    style={{ width: horizontalWidth, height: HORIZONTAL_THUMB_HEIGHT }}
-                  >
-                    <SlideCanvas scale={scale} center={false} flat freezeMotion design={design}>
-                      <SlidePageProvider index={i} total={pages.length}>
-                        <PageComp />
-                      </SlidePageProvider>
-                    </SlideCanvas>
-                  </div>
-                </button>
-              );
-              if (!actions) return button;
-              return (
-                <ThumbContextMenu
-                  // biome-ignore lint/suspicious/noArrayIndexKey: pages list is render-stable
-                  key={i}
-                  index={i}
-                  actions={actions}
-                  pageCount={pages.length}
-                  ariaLabel={format(t.thumbnailRail.pageActionsAria, { n: i + 1 })}
-                >
-                  {button}
-                </ThumbContextMenu>
-              );
-            })}
-          </div>
+          <HorizontalVirtualThumbList
+            pages={pages}
+            design={design}
+            current={current}
+            actions={actions}
+            activeRef={activeRef}
+            onSelect={onSelect}
+            scale={scale}
+            thumbWidth={horizontalWidth}
+          />
         </div>
       </div>
     );
@@ -303,6 +264,166 @@ function thumbButtonClass(active: boolean): string {
     'group/thumb flex w-full items-start gap-2.5 rounded-[6px] p-1.5 text-left motion-safe:transition-colors',
     'hover:bg-muted/60',
     active && 'bg-muted',
+  );
+}
+
+function HorizontalVirtualThumbList({
+  pages,
+  design,
+  current,
+  actions,
+  activeRef,
+  onSelect,
+  scale,
+  thumbWidth,
+}: {
+  pages: Page[];
+  design?: DesignSystem;
+  current: number;
+  actions?: ThumbnailActions;
+  activeRef: React.MutableRefObject<HTMLButtonElement | null>;
+  onSelect: (index: number) => void;
+  scale: number;
+  thumbWidth: number;
+}) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const viewportRef = useRef<HTMLElement | null>(null);
+  const t = useLocale();
+  const itemWidth = thumbWidth + HORIZONTAL_THUMB_GAP;
+  const listHeight =
+    HORIZONTAL_RAIL_PADDING_Y * 2 +
+    HORIZONTAL_LABEL_HEIGHT +
+    HORIZONTAL_LABEL_GAP +
+    HORIZONTAL_THUMB_HEIGHT;
+  const [range, setRange] = useState(() => getInitialVisibleRange(current, pages.length));
+
+  const updateRange = useCallback(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const scrollLeft = Math.max(0, viewport.scrollLeft - HORIZONTAL_RAIL_PADDING_X);
+    setRange(getVisibleRange(scrollLeft, pages.length, viewport.clientWidth, itemWidth));
+  }, [itemWidth, pages.length]);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    const viewport = root?.parentElement;
+    if (!viewport) return;
+    viewportRef.current = viewport;
+
+    let frame = 0;
+    const scheduleUpdate = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(updateRange);
+    };
+    const resizeObserver = new ResizeObserver(scheduleUpdate);
+
+    viewport.addEventListener('scroll', scheduleUpdate, { passive: true });
+    resizeObserver.observe(viewport);
+    scheduleUpdate();
+
+    return () => {
+      cancelAnimationFrame(frame);
+      viewport.removeEventListener('scroll', scheduleUpdate);
+      resizeObserver.disconnect();
+      if (viewportRef.current === viewport) viewportRef.current = null;
+    };
+  }, [updateRange]);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const left = HORIZONTAL_RAIL_PADDING_X + current * itemWidth;
+    const right = left + thumbWidth;
+    const viewportLeft = viewport.scrollLeft;
+    const viewportRight = viewportLeft + viewport.clientWidth;
+
+    if (left < viewportLeft) {
+      viewport.scrollTo({ left, behavior: scrollBehavior() });
+    } else if (right > viewportRight) {
+      viewport.scrollTo({ left: right - viewport.clientWidth, behavior: scrollBehavior() });
+    } else {
+      activeRef.current?.scrollIntoView({
+        block: 'nearest',
+        inline: 'nearest',
+        behavior: scrollBehavior(),
+      });
+    }
+  }, [activeRef, current, itemWidth, thumbWidth]);
+
+  const visibleRange = clampVisibleRange(range, current, pages.length);
+  const visible = [];
+  for (let i = visibleRange.start; i < visibleRange.end; i++) {
+    const PageComp = pages[i];
+    const active = i === current;
+    const button = (
+      <button
+        type="button"
+        ref={active ? activeRef : undefined}
+        onClick={() => onSelect(i)}
+        aria-label={format(t.thumbnailRail.goToPageAria, { n: i + 1 })}
+        aria-current={active ? 'true' : undefined}
+        className={cn('group/thumb relative flex shrink-0 flex-col items-center gap-1.5')}
+      >
+        <span
+          className={cn(
+            'font-mono text-[9.5px] font-medium tracking-[0.06em] tabular-nums uppercase',
+            active ? 'text-brand' : 'text-muted-foreground/70',
+          )}
+        >
+          {(i + 1).toString().padStart(2, '0')}
+        </span>
+        <div
+          className={cn(
+            'relative shrink-0 overflow-hidden rounded-[4px] border bg-card motion-safe:transition-[border-color,box-shadow]',
+            active
+              ? 'border-brand shadow-[0_0_0_1px_var(--brand)]'
+              : 'border-hairline group-hover/thumb:border-foreground/25',
+          )}
+          style={{ width: thumbWidth, height: HORIZONTAL_THUMB_HEIGHT }}
+        >
+          <SlideCanvas scale={scale} center={false} flat freezeMotion design={design}>
+            <SlidePageProvider index={i} total={pages.length}>
+              <PageComp />
+            </SlidePageProvider>
+          </SlideCanvas>
+        </div>
+      </button>
+    );
+
+    visible.push(
+      <div
+        key={i}
+        className="absolute top-2.5"
+        style={{ left: HORIZONTAL_RAIL_PADDING_X + i * itemWidth, width: thumbWidth }}
+      >
+        {actions ? (
+          <ThumbContextMenu
+            index={i}
+            actions={actions}
+            pageCount={pages.length}
+            ariaLabel={format(t.thumbnailRail.pageActionsAria, { n: i + 1 })}
+          >
+            {button}
+          </ThumbContextMenu>
+        ) : (
+          button
+        )}
+      </div>,
+    );
+  }
+
+  return (
+    <div
+      ref={rootRef}
+      className="relative"
+      style={{
+        width: HORIZONTAL_RAIL_PADDING_X * 2 + pages.length * itemWidth - HORIZONTAL_THUMB_GAP,
+        height: listHeight,
+      }}
+    >
+      {visible}
+    </div>
   );
 }
 
