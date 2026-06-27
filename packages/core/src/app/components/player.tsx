@@ -123,6 +123,7 @@ export function Player({
   }, [index, pages.length, handleIndexChange]);
 
   const overlayActive = controls && (overviewOpen || helpOpen);
+  const overlayActiveRef = useRef(overlayActive);
   const showMobileChrome = useCallback(() => {
     if (!controls || !isMobile) return;
     setMobileChromeVisible(true);
@@ -145,6 +146,12 @@ export function Player({
     setMobileChromeVisible(true);
     setMobileChromeDeadline(Date.now() + MOBILE_CHROME_HIDE_MS);
   }, [controls, isMobile]);
+
+  useEffect(() => {
+    const wasOverlayActive = overlayActiveRef.current;
+    overlayActiveRef.current = overlayActive;
+    if (wasOverlayActive && !overlayActive) showMobileChrome();
+  }, [overlayActive, showMobileChrome]);
 
   useEffect(() => {
     if (
