@@ -1,5 +1,19 @@
 # @open-slide/core
 
+## 1.13.0
+
+### Minor Changes
+
+- [#257](https://github.com/1weiho/open-slide/pull/257) [`e000a81`](https://github.com/1weiho/open-slide/commit/e000a8147ed4e6dd592c856e5530b042263563b4) Thanks [@1weiho](https://github.com/1weiho)! - Add unstable_SharedElement for shared-element transitions across slide pages.
+
+### Patch Changes
+
+- [#256](https://github.com/1weiho/open-slide/pull/256) [`0e61272`](https://github.com/1weiho/open-slide/commit/0e61272daaa40efbf05f489c97dacf28c2b5aeb8) Thanks [@1weiho](https://github.com/1weiho)! - Make present mode easier to use on phones with single-tap playback and compact auto-hiding controls.
+
+- [#247](https://github.com/1weiho/open-slide/pull/247) [`ac33d70`](https://github.com/1weiho/open-slide/commit/ac33d70acf8aa98c6203326b772b1a6b6131ff13) Thanks [@1weiho](https://github.com/1weiho)! - Let the inspector open while holding Command on macOS or Control elsewhere, and select elements by double-clicking them without selecting slide text.
+
+- [#239](https://github.com/1weiho/open-slide/pull/239) [`45f6882`](https://github.com/1weiho/open-slide/commit/45f6882cf5cdcc112aa71fc963f41e5a07cec64f) Thanks [@adawang1210](https://github.com/adawang1210)! - Keep speaker notes aligned with pages when deleting or duplicating a page.
+
 ## 1.12.1
 
 ### Patch Changes
