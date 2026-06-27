@@ -16,7 +16,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Copy, Grid2x2, ListOrdered, type LucideIcon, Sparkles, Trash2 } from 'lucide-react';
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -62,6 +62,9 @@ const DEFAULT_VERTICAL_THUMB_WIDTH = 184;
 const VERTICAL_RAIL_CHROME = 80;
 const MIN_VERTICAL_THUMB_WIDTH = 120;
 const HORIZONTAL_THUMB_HEIGHT = 64;
+const VERTICAL_THUMB_PADDING_Y = 12;
+const VERTICAL_THUMB_GAP = 8;
+const VIRTUAL_OVERSCAN = 4;
 
 export function ThumbnailRail({
   pages,
@@ -89,9 +92,88 @@ export function ThumbnailRail({
     });
   }, [current]);
 
+  const thumbWidth =
+    width != null
+      ? Math.max(MIN_VERTICAL_THUMB_WIDTH, width - VERTICAL_RAIL_CHROME)
+      : DEFAULT_VERTICAL_THUMB_WIDTH;
+  const scale = thumbWidth / CANVAS_WIDTH;
+  const height = CANVAS_HEIGHT * scale;
+  const rowHeight = height + VERTICAL_THUMB_PADDING_Y + VERTICAL_THUMB_GAP;
+
+  const renderThumb = useCallback(
+    (PageComp: Page, i: number) => {
+      const active = i === current;
+      const inner = (
+        <ThumbContents
+          index={i}
+          total={pages.length}
+          active={active}
+          page={PageComp}
+          design={design}
+          scale={scale}
+          thumbWidth={thumbWidth}
+          height={height}
+          moduleTransition={moduleTransition}
+        />
+      );
+
+      const node = onReorder ? (
+        <SortableThumb
+          index={i}
+          active={active}
+          activeRef={active ? activeRef : undefined}
+          onSelect={() => onSelect(i)}
+          ariaLabel={format(t.thumbnailRail.goToPageAria, { n: i + 1 })}
+        >
+          {inner}
+        </SortableThumb>
+      ) : (
+        <button
+          type="button"
+          ref={active ? activeRef : undefined}
+          onClick={() => onSelect(i)}
+          aria-label={format(t.thumbnailRail.goToPageAria, { n: i + 1 })}
+          aria-current={active ? 'true' : undefined}
+          className={thumbButtonClass(active)}
+        >
+          {inner}
+        </button>
+      );
+
+      if (!actions) {
+        return <Fragment key={i}>{node}</Fragment>;
+      }
+      return (
+        <ThumbContextMenu
+          key={i}
+          index={i}
+          actions={actions}
+          pageCount={pages.length}
+          ariaLabel={format(t.thumbnailRail.pageActionsAria, { n: i + 1 })}
+        >
+          {node}
+        </ThumbContextMenu>
+      );
+    },
+    [
+      actions,
+      current,
+      design,
+      height,
+      moduleTransition,
+      onReorder,
+      onSelect,
+      pages.length,
+      scale,
+      thumbWidth,
+      t.thumbnailRail.goToPageAria,
+      t.thumbnailRail.pageActionsAria,
+    ],
+  );
+
   if (orientation === 'horizontal') {
     const scale = HORIZONTAL_THUMB_HEIGHT / CANVAS_HEIGHT;
-    const width = CANVAS_WIDTH * scale;
+    const horizontalWidth = CANVAS_WIDTH * scale;
     return (
       <div className="bg-sidebar">
         <div className="overflow-x-auto overflow-y-hidden">
@@ -124,7 +206,7 @@ export function ThumbnailRail({
                         ? 'border-brand shadow-[0_0_0_1px_var(--brand)]'
                         : 'border-hairline group-hover/thumb:border-foreground/25',
                     )}
-                    style={{ width, height: HORIZONTAL_THUMB_HEIGHT }}
+                    style={{ width: horizontalWidth, height: HORIZONTAL_THUMB_HEIGHT }}
                   >
                     <SlideCanvas scale={scale} center={false} flat freezeMotion design={design}>
                       <SlidePageProvider index={i} total={pages.length}>
@@ -153,68 +235,6 @@ export function ThumbnailRail({
       </div>
     );
   }
-
-  const thumbWidth =
-    width != null
-      ? Math.max(MIN_VERTICAL_THUMB_WIDTH, width - VERTICAL_RAIL_CHROME)
-      : DEFAULT_VERTICAL_THUMB_WIDTH;
-  const scale = thumbWidth / CANVAS_WIDTH;
-  const height = CANVAS_HEIGHT * scale;
-
-  const renderThumb = (PageComp: Page, i: number) => {
-    const active = i === current;
-    const inner = (
-      <ThumbContents
-        index={i}
-        total={pages.length}
-        active={active}
-        page={PageComp}
-        design={design}
-        scale={scale}
-        thumbWidth={thumbWidth}
-        height={height}
-        moduleTransition={moduleTransition}
-      />
-    );
-
-    const node = onReorder ? (
-      <SortableThumb
-        index={i}
-        active={active}
-        activeRef={active ? activeRef : undefined}
-        onSelect={() => onSelect(i)}
-        ariaLabel={format(t.thumbnailRail.goToPageAria, { n: i + 1 })}
-      >
-        {inner}
-      </SortableThumb>
-    ) : (
-      <button
-        type="button"
-        ref={active ? activeRef : undefined}
-        onClick={() => onSelect(i)}
-        aria-label={format(t.thumbnailRail.goToPageAria, { n: i + 1 })}
-        aria-current={active ? 'true' : undefined}
-        className={thumbButtonClass(active)}
-      >
-        {inner}
-      </button>
-    );
-
-    if (!actions) {
-      return <Fragment key={i}>{node}</Fragment>;
-    }
-    return (
-      <ThumbContextMenu
-        key={i}
-        index={i}
-        actions={actions}
-        pageCount={pages.length}
-        ariaLabel={format(t.thumbnailRail.pageActionsAria, { n: i + 1 })}
-      >
-        {node}
-      </ThumbContextMenu>
-    );
-  };
 
   const list = (
     <aside className="flex flex-col gap-2 px-3 pb-3">
@@ -247,7 +267,13 @@ export function ThumbnailRail({
           </div>
         </div>
       </div>
-      {pages.map(renderThumb)}
+      <VirtualThumbList
+        pages={pages}
+        current={current}
+        rowHeight={rowHeight}
+        activeRef={activeRef}
+        renderThumb={renderThumb}
+      />
     </aside>
   );
 
@@ -278,6 +304,124 @@ function thumbButtonClass(active: boolean): string {
     'hover:bg-muted/60',
     active && 'bg-muted',
   );
+}
+
+function VirtualThumbList({
+  pages,
+  current,
+  rowHeight,
+  activeRef,
+  renderThumb,
+}: {
+  pages: Page[];
+  current: number;
+  rowHeight: number;
+  activeRef: React.MutableRefObject<HTMLButtonElement | null>;
+  renderThumb: (page: Page, index: number) => React.ReactNode;
+}) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const viewportRef = useRef<HTMLElement | null>(null);
+  const [range, setRange] = useState(() => getInitialVisibleRange(current, pages.length));
+
+  const updateRange = useCallback(() => {
+    const viewport = viewportRef.current;
+    const root = rootRef.current;
+    if (!viewport || !root) return;
+    const scrollTop = Math.max(0, viewport.scrollTop - root.offsetTop);
+    setRange(getVisibleRange(scrollTop, pages.length, viewport.clientHeight, rowHeight));
+  }, [pages.length, rowHeight]);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const viewport = root.closest('[data-slot="scroll-area-viewport"]') as HTMLElement | null;
+    if (!viewport) return;
+    viewportRef.current = viewport;
+
+    let frame = 0;
+    const scheduleUpdate = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(updateRange);
+    };
+    const resizeObserver = new ResizeObserver(scheduleUpdate);
+
+    viewport.addEventListener('scroll', scheduleUpdate, { passive: true });
+    resizeObserver.observe(viewport);
+    scheduleUpdate();
+
+    return () => {
+      cancelAnimationFrame(frame);
+      viewport.removeEventListener('scroll', scheduleUpdate);
+      resizeObserver.disconnect();
+      if (viewportRef.current === viewport) viewportRef.current = null;
+    };
+  }, [updateRange]);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    const root = rootRef.current;
+    if (!viewport || !root) return;
+
+    const top = root.offsetTop + current * rowHeight;
+    const bottom = top + rowHeight;
+    const viewportTop = viewport.scrollTop;
+    const viewportBottom = viewportTop + viewport.clientHeight;
+
+    if (top < viewportTop) {
+      viewport.scrollTo({ top, behavior: scrollBehavior() });
+    } else if (bottom > viewportBottom) {
+      viewport.scrollTo({ top: bottom - viewport.clientHeight, behavior: scrollBehavior() });
+    } else {
+      activeRef.current?.scrollIntoView({
+        block: 'nearest',
+        inline: 'nearest',
+        behavior: scrollBehavior(),
+      });
+    }
+  }, [activeRef, current, rowHeight]);
+
+  const visible = [];
+  for (let i = range.start; i < range.end; i++) {
+    visible.push(
+      <div
+        key={i}
+        className="absolute right-0 left-0"
+        style={{ top: i * rowHeight, height: rowHeight }}
+      >
+        {renderThumb(pages[i], i)}
+      </div>,
+    );
+  }
+
+  return (
+    <div ref={rootRef} className="relative" style={{ height: pages.length * rowHeight }}>
+      {visible}
+    </div>
+  );
+}
+
+function getVisibleRange(
+  scrollTopOrIndex: number,
+  count: number,
+  viewportHeight: number,
+  rowHeight: number,
+) {
+  if (count <= 0) return { start: 0, end: 0 };
+  const visibleRows = Math.ceil(viewportHeight / rowHeight);
+  const start = Math.max(0, Math.floor(scrollTopOrIndex / rowHeight) - VIRTUAL_OVERSCAN);
+  const end = Math.min(count, start + visibleRows + VIRTUAL_OVERSCAN * 2 + 1);
+  return { start, end };
+}
+
+function getInitialVisibleRange(current: number, count: number) {
+  if (count <= 0) return { start: 0, end: 0 };
+  const start = Math.max(0, current - VIRTUAL_OVERSCAN);
+  const end = Math.min(count, current + VIRTUAL_OVERSCAN + 1);
+  return { start, end };
+}
+
+function scrollBehavior(): ScrollBehavior {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
 }
 
 function ThumbContents({
