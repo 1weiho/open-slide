@@ -359,7 +359,7 @@ function runSharedElementTransition(
   Object.assign(overlay.style, {
     position: 'absolute',
     inset: '0',
-    zIndex: '5',
+    zIndex: '2147483647',
     pointerEvents: 'none',
   });
 
