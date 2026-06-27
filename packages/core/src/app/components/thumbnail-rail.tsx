@@ -16,7 +16,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Copy, Grid2x2, ListOrdered, type LucideIcon, Sparkles, Trash2 } from 'lucide-react';
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -304,7 +304,7 @@ function HorizontalVirtualThumbList({
     setRange(getVisibleRange(scrollLeft, pages.length, viewport.clientWidth, itemWidth));
   }, [itemWidth, pages.length]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = rootRef.current;
     const viewport = root?.parentElement;
     if (!viewport) return;
@@ -329,27 +329,27 @@ function HorizontalVirtualThumbList({
     };
   }, [updateRange]);
 
-  useEffect(() => {
-    const viewport = viewportRef.current;
+  useLayoutEffect(() => {
+    if (pages.length <= 0) return;
+    const viewport = viewportRef.current ?? rootRef.current?.parentElement;
     if (!viewport) return;
+    viewportRef.current = viewport;
 
-    const left = HORIZONTAL_RAIL_PADDING_X + current * itemWidth;
+    const clampedCurrent = Math.min(Math.max(current, 0), pages.length - 1);
+    const left = HORIZONTAL_RAIL_PADDING_X + clampedCurrent * itemWidth;
     const right = left + thumbWidth;
     const viewportLeft = viewport.scrollLeft;
     const viewportRight = viewportLeft + viewport.clientWidth;
 
     if (left < viewportLeft) {
-      viewport.scrollTo({ left, behavior: scrollBehavior() });
+      viewport.scrollLeft = left;
     } else if (right > viewportRight) {
-      viewport.scrollTo({ left: right - viewport.clientWidth, behavior: scrollBehavior() });
-    } else {
-      activeRef.current?.scrollIntoView({
-        block: 'nearest',
-        inline: 'nearest',
-        behavior: scrollBehavior(),
-      });
+      viewport.scrollLeft = right - viewport.clientWidth;
     }
-  }, [activeRef, current, itemWidth, thumbWidth]);
+
+    const scrollLeft = Math.max(0, viewport.scrollLeft - HORIZONTAL_RAIL_PADDING_X);
+    setRange(getVisibleRange(scrollLeft, pages.length, viewport.clientWidth, itemWidth));
+  }, [current, itemWidth, pages.length, thumbWidth]);
 
   const visibleRange = clampVisibleRange(range, current, pages.length);
   const visible = [];
