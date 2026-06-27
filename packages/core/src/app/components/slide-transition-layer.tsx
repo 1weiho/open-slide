@@ -45,6 +45,46 @@ const SHARED_ELEMENT_VISUAL_PROPERTIES = [
   'fill',
   'stroke',
 ] as const;
+const BORDER_COLOR_PROPERTIES = [
+  'border-top-color',
+  'border-right-color',
+  'border-bottom-color',
+  'border-left-color',
+] as const;
+const BORDER_SIDE_PROPERTIES = [
+  {
+    width: 'borderTopWidth',
+    style: 'borderTopStyle',
+    color: 'borderTopColor',
+    cssWidth: 'border-top-width',
+    cssStyle: 'border-top-style',
+    cssColor: 'border-top-color',
+  },
+  {
+    width: 'borderRightWidth',
+    style: 'borderRightStyle',
+    color: 'borderRightColor',
+    cssWidth: 'border-right-width',
+    cssStyle: 'border-right-style',
+    cssColor: 'border-right-color',
+  },
+  {
+    width: 'borderBottomWidth',
+    style: 'borderBottomStyle',
+    color: 'borderBottomColor',
+    cssWidth: 'border-bottom-width',
+    cssStyle: 'border-bottom-style',
+    cssColor: 'border-bottom-color',
+  },
+  {
+    width: 'borderLeftWidth',
+    style: 'borderLeftStyle',
+    color: 'borderLeftColor',
+    cssWidth: 'border-left-width',
+    cssStyle: 'border-left-style',
+    cssColor: 'border-left-color',
+  },
+] as const;
 const INHERITED_VISUAL_PROPERTIES = new Set<string>([
   'color',
   'text-decoration-color',
@@ -222,18 +262,106 @@ function sharedElementTransform(
     .join(' ');
 }
 
+function sharedElementTranslateTransform(rect: LocalRect, local: string): string {
+  return [`translate(${rect.left}px, ${rect.top}px)`, local].filter(Boolean).join(' ');
+}
+
 function getStyleProperty(styles: CSSStyleDeclaration, css: string): string {
   return styles.getPropertyValue(css);
 }
 
-function visualStyleKeyframe(styles: CSSStyleDeclaration, opacity?: string): Keyframe {
+function visualStyleKeyframe(
+  styles: CSSStyleDeclaration,
+  opacity?: string,
+  options: { includeBorderColors?: boolean } = {},
+): Keyframe {
   const frame: Record<string, string> = {};
   for (const prop of SHARED_ELEMENT_VISUAL_PROPERTIES) {
+    if (
+      options.includeBorderColors === false &&
+      (BORDER_COLOR_PROPERTIES as readonly string[]).includes(prop)
+    ) {
+      continue;
+    }
     const value = getStyleProperty(styles, prop);
     if (prop === TEXT_FILL_COLOR_PROPERTY && value === styles.color) continue;
     if (value) frame[prop] = value;
   }
   if (opacity !== undefined) frame.opacity = opacity;
+  return frame;
+}
+
+function hideBorderColors(el: HTMLElement): void {
+  for (const { color } of BORDER_SIDE_PROPERTIES) {
+    el.style[color] = 'transparent';
+  }
+}
+
+function isVisibleBorderSide(
+  styles: CSSStyleDeclaration,
+  side: (typeof BORDER_SIDE_PROPERTIES)[number],
+): boolean {
+  const width = parsePx(getStyleProperty(styles, side.cssWidth)) ?? 0;
+  const borderStyle = getStyleProperty(styles, side.cssStyle);
+  return width > 0 && borderStyle !== 'none' && borderStyle !== 'hidden';
+}
+
+function hasVisibleBorder(styles: CSSStyleDeclaration): boolean {
+  return BORDER_SIDE_PROPERTIES.some((side) => isVisibleBorderSide(styles, side));
+}
+
+function borderFrameKeyframe(
+  rect: LocalRect,
+  styles: CSSStyleDeclaration,
+  opacity: string,
+): Keyframe {
+  const frame: Keyframe = {
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+    opacity,
+    transform: sharedElementTranslateTransform(rect, localTransform(styles)),
+    ...radiusKeyframe(styles),
+  };
+
+  for (const side of BORDER_SIDE_PROPERTIES) {
+    frame[side.width] = getStyleProperty(styles, side.cssWidth);
+    frame[side.color] = getStyleProperty(styles, side.cssColor);
+  }
+
+  return frame;
+}
+
+function appendBorderFrame(
+  wrapper: HTMLElement,
+  overlay: HTMLElement,
+  sourceStyles: CSSStyleDeclaration,
+  targetStyles: CSSStyleDeclaration,
+  rect: LocalRect,
+): HTMLElement {
+  if (!overlay.parentElement) wrapper.appendChild(overlay);
+
+  const frame = document.createElement('div');
+  Object.assign(frame.style, {
+    position: 'absolute',
+    left: '0',
+    top: '0',
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+    margin: '0',
+    transformOrigin: 'top left',
+    pointerEvents: 'none',
+    boxSizing: 'border-box',
+    background: 'transparent',
+  });
+
+  for (const side of BORDER_SIDE_PROPERTIES) {
+    const styles = isVisibleBorderSide(sourceStyles, side) ? sourceStyles : targetStyles;
+    frame.style[side.style] = getStyleProperty(styles, side.cssStyle);
+    frame.style[side.width] = getStyleProperty(sourceStyles, side.cssWidth);
+    frame.style[side.color] = getStyleProperty(sourceStyles, side.cssColor);
+  }
+
+  overlay.appendChild(frame);
   return frame;
 }
 
@@ -456,20 +584,40 @@ function runSharedElementTransition(
     const targetStyles = getComputedStyle(target);
     const fromOpacity = effectiveOpacity(source, outgoingLayer);
     const toOpacity = effectiveOpacity(target, incomingLayer);
+    const needsBorderFrame = hasVisibleBorder(sourceStyles) || hasVisibleBorder(targetStyles);
     const scaleX = to.width / from.width;
     const scaleY = to.height / from.height;
     const fromTransform = sharedElementTransform(from, 1, 1, localTransform(sourceStyles));
     const toTransform = sharedElementTransform(to, scaleX, scaleY, localTransform(targetStyles));
+
+    if (needsBorderFrame) {
+      hideBorderColors(clone);
+      const borderFrame = appendBorderFrame(wrapper, overlay, sourceStyles, targetStyles, from);
+      animations.push(
+        borderFrame.animate(
+          [
+            borderFrameKeyframe(from, sourceStyles, fromOpacity),
+            borderFrameKeyframe(to, targetStyles, toOpacity),
+          ],
+          sharedElementAnimationOptions(phase),
+        ),
+      );
+    }
+
     animations.push(
       clone.animate(
         [
           {
-            ...visualStyleKeyframe(sourceStyles, fromOpacity),
+            ...visualStyleKeyframe(sourceStyles, fromOpacity, {
+              includeBorderColors: !needsBorderFrame,
+            }),
             ...radiusKeyframe(sourceStyles),
             transform: fromTransform,
           },
           {
-            ...visualStyleKeyframe(targetStyles, toOpacity),
+            ...visualStyleKeyframe(targetStyles, toOpacity, {
+              includeBorderColors: !needsBorderFrame,
+            }),
             ...radiusKeyframe(targetStyles, scaleX, scaleY),
             transform: toTransform,
           },
