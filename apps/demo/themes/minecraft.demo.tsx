@@ -23,7 +23,7 @@ const css = `
 .mc-pop     { opacity: 0; animation: mc-pop 0.45s steps(5, end) forwards; }
 .mc-blink   { animation: mc-blink 1s steps(1, end) infinite; }
 .mc-flicker { animation: mc-flicker 0.5s steps(2, end) infinite; }
-.mc-portal-glow { animation: mc-portal-glow 2.6s ease-in-out infinite; }
+.mc-portal-glow { animation: mc-portal-glow 2.6s steps(6, end) infinite; }
 `;
 
 const Styles = () => <style>{css}</style>;
