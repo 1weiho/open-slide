@@ -94,8 +94,23 @@ type LocalRect = {
   height: number;
 };
 
+function measureUntransformedClientRect(el: HTMLElement): DOMRect {
+  const styles = getComputedStyle(el);
+  if (!localTransform(styles)) return el.getBoundingClientRect();
+
+  const value = el.style.getPropertyValue('transform');
+  const priority = el.style.getPropertyPriority('transform');
+  el.style.setProperty('transform', 'none', 'important');
+  try {
+    return el.getBoundingClientRect();
+  } finally {
+    if (value) el.style.setProperty('transform', value, priority);
+    else el.style.removeProperty('transform');
+  }
+}
+
 function measureLocalRect(el: HTMLElement, wrapper: HTMLElement, wrapperRect: DOMRect): LocalRect {
-  const rect = el.getBoundingClientRect();
+  const rect = measureUntransformedClientRect(el);
   const scaleX = wrapperRect.width / (wrapper.offsetWidth || wrapperRect.width || 1) || 1;
   const scaleY = wrapperRect.height / (wrapper.offsetHeight || wrapperRect.height || 1) || 1;
   return {
