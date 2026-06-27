@@ -167,7 +167,9 @@ function cloneSharedElement(source: HTMLElement): HTMLElement {
 }
 
 function parsePx(value: string): number | null {
-  const n = Number.parseFloat(value);
+  const match = value.trim().match(/^(-?\d*\.?\d+)px$/);
+  if (!match) return null;
+  const n = Number.parseFloat(match[1]);
   return Number.isFinite(n) ? n : null;
 }
 
