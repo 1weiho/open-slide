@@ -404,57 +404,10 @@ type SlideTransition = {
   easing?: string;           // top-level fallback
   enter?: TransitionPhase;   // runs on incoming page
   exit?:  TransitionPhase;   // runs on outgoing page
-  sharedElements?: boolean | SharedElementTransition;
-};
-type SharedElementTransition = {
-  duration?: number;  // ms (falls back to top-level duration)
-  easing?: string;    // CSS easing
-  delay?: number;     // ms
 };
 ```
 
 The framework also exposes `--osd-dir` (`1` forward, `-1` backward) and `data-osd-dir` on the wrapper, so a single keyframe can mirror direction without a JS callback.
-
-### Shared elements / Magic Move
-
-> This feature is currently unstable and subject to change. It is not
-> recommended for production. Try it out and share your feedback on
-> [GitHub](https://github.com/1weiho/open-slide/issues).
-
-For Keynote-style continuity, import `unstable_sharedElement` from `@open-slide/core` and
-wrap the same visual object on both pages with the same `id`.
-
-```tsx
-import {
-  unstable_sharedElement as SharedElement,
-  type Page,
-  type SlideTransition,
-} from '@open-slide/core';
-
-const Badge = ({ x, y, size }: { x: number; y: number; size: number }) => (
-  <SharedElement id="badge">
-    <div style={{ position: 'absolute', left: x, top: y, width: size, height: size }} />
-  </SharedElement>
-);
-
-export const transition: SlideTransition = {
-  duration: 900,
-  sharedElements: { duration: 900, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
-};
-```
-
-Use it only when the object is truly the same object in a new position or size.
-If text or contents change, keep that changing content outside `unstable_sharedElement`;
-otherwise the motion reads as one thing flying over and turning into another.
-
-For the smoothest Magic Move feel, let shared elements carry the continuity
-instead of stacking a whole-page opacity transition on top of them. When
-`sharedElements` is enabled, a marked object that only exists on the incoming
-page fades in automatically, and one that only exists on the outgoing page fades
-out automatically. Lines, badges, highlights, and other supporting marks should
-be marked as shared elements when they are part of the diagram being built. When
-opacity changes are prominent, prefer a balanced ease-in-out curve so objects do
-not pop in during the first few frames.
 
 ### Design principles (hold the line)
 
