@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 
-export type unstable_sharedElementProps = {
+export type UnstableSharedElementProps = {
   id: string;
   children: ReactNode;
   className?: string;
@@ -20,15 +20,19 @@ type SharedElementChildProps = {
   'data-osd-shared-element'?: string;
 };
 
-export function unstable_sharedElement({
+export function UnstableSharedElement({
   id,
   children,
   className,
   style,
-}: unstable_sharedElementProps) {
+}: UnstableSharedElementProps) {
   const child = Children.toArray(children)[0] ?? null;
 
-  if (Children.count(children) === 1 && isValidElement<SharedElementChildProps>(child)) {
+  if (
+    Children.count(children) === 1 &&
+    isValidElement<SharedElementChildProps>(child) &&
+    typeof child.type === 'string'
+  ) {
     return cloneElement(child as ReactElement<SharedElementChildProps>, {
       'data-osd-shared-element': id,
       className: [child.props.className, className].filter(Boolean).join(' ') || undefined,

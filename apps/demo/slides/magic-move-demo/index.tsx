@@ -1,7 +1,7 @@
 import {
   type DesignSystem,
   type Page,
-  unstable_sharedElement as SharedElement,
+  UnstableSharedElement as SharedElement,
   type SlideMeta,
   type SlideTransition,
 } from '@open-slide/core';

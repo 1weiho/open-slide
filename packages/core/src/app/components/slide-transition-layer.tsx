@@ -190,6 +190,21 @@ function radiusKeyframe(styles: CSSStyleDeclaration, scaleX = 1, scaleY = 1): Ke
   };
 }
 
+function localTransform(styles: CSSStyleDeclaration): string {
+  return styles.transform && styles.transform !== 'none' ? styles.transform : '';
+}
+
+function sharedElementTransform(
+  rect: LocalRect,
+  scaleX: number,
+  scaleY: number,
+  local: string,
+): string {
+  return [`translate(${rect.left}px, ${rect.top}px)`, `scale(${scaleX}, ${scaleY})`, local]
+    .filter(Boolean)
+    .join(' ');
+}
+
 function getStyleProperty(styles: CSSStyleDeclaration, css: string): string {
   return styles.getPropertyValue(css);
 }
@@ -307,7 +322,7 @@ function runStationarySharedElementAnimation(
   toOpacity: string,
   phase: ResolvedSharedElementTransition,
 ): Animation {
-  const transform = `translate(${rect.left}px, ${rect.top}px) scale(1, 1)`;
+  const transform = sharedElementTransform(rect, 1, 1, localTransform(styles));
   return clone.animate(
     [
       {
@@ -426,18 +441,20 @@ function runSharedElementTransition(
     const toOpacity = effectiveOpacity(target, incomingLayer);
     const scaleX = to.width / from.width;
     const scaleY = to.height / from.height;
+    const fromTransform = sharedElementTransform(from, 1, 1, localTransform(sourceStyles));
+    const toTransform = sharedElementTransform(to, scaleX, scaleY, localTransform(targetStyles));
     animations.push(
       clone.animate(
         [
           {
             ...visualStyleKeyframe(sourceStyles, fromOpacity),
             ...radiusKeyframe(sourceStyles),
-            transform: `translate(${from.left}px, ${from.top}px) scale(1, 1)`,
+            transform: fromTransform,
           },
           {
             ...visualStyleKeyframe(targetStyles, toOpacity),
             ...radiusKeyframe(targetStyles, scaleX, scaleY),
-            transform: `translate(${to.left}px, ${to.top}px) scale(${scaleX}, ${scaleY})`,
+            transform: toTransform,
           },
         ],
         sharedElementAnimationOptions(phase),

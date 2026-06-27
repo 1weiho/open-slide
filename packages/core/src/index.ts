@@ -1,7 +1,7 @@
 export type { ImagePlaceholderProps } from './app/components/image-placeholder.tsx';
 export { ImagePlaceholder } from './app/components/image-placeholder.tsx';
-export type { unstable_sharedElementProps } from './app/components/shared-element.tsx';
-export { unstable_sharedElement } from './app/components/shared-element.tsx';
+export type { UnstableSharedElementProps } from './app/components/shared-element.tsx';
+export { UnstableSharedElement } from './app/components/shared-element.tsx';
 export type {
   DesignFonts,
   DesignPalette,
