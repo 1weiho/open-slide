@@ -74,7 +74,12 @@ function planEnsureImagePlaceholderImport(ast: t.File): Splice | null {
       const specIsTypeOnly = readKind(spec) || declIsTypeOnly;
       if (!specIsTypeOnly) return null;
     }
-    if (!declIsTypeOnly && !valueImport) valueImport = imp;
+    if (!declIsTypeOnly && !valueImport) {
+      const lastSpec = imp.node.specifiers[imp.node.specifiers.length - 1];
+      if (lastSpec && (t.isImportSpecifier(lastSpec) || t.isImportDefaultSpecifier(lastSpec))) {
+        valueImport = imp;
+      }
+    }
   }
   if (valueImport) {
     const node = valueImport.node;
@@ -87,8 +92,6 @@ function planEnsureImagePlaceholderImport(ast: t.File): Splice | null {
       const insertAt = lastSpec.end ?? 0;
       return { from: insertAt, to: insertAt, text: ', { ImagePlaceholder }' };
     }
-    const insertAt = (node.source.start ?? 0) - 'from '.length;
-    return { from: insertAt, to: insertAt, text: '{ ImagePlaceholder } ' };
   }
   return {
     from: 0,
