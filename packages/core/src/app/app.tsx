@@ -6,6 +6,7 @@ import { AssetsPage } from './routes/assets';
 import { Home } from './routes/home';
 import { HomeShell } from './routes/home-shell';
 import { Presenter } from './routes/presenter';
+import { Screen } from './routes/screen';
 import { Slide } from './routes/slide';
 import { ThemeDetailPage, ThemesGalleryPage } from './routes/themes';
 
@@ -25,6 +26,7 @@ export function App() {
         )}
         <Route path="/s/:slideId" element={<Slide />} />
         <Route path="/s/:slideId/presenter" element={<Presenter />} />
+        <Route path="/s/:slideId/screen" element={<Screen />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster />

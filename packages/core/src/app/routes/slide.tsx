@@ -52,7 +52,7 @@ import { cn } from '@/lib/utils';
 import { NotesDrawer } from '../components/notes-drawer';
 import { OverviewGrid } from '../components/overview-grid';
 import { PdfProgressToast } from '../components/pdf-progress-toast';
-import { openPresenterWindow, Player } from '../components/player';
+import { openAudienceWindow, Player } from '../components/player';
 import { PptxProgressToast } from '../components/pptx-progress-toast';
 import { SlideCanvas } from '../components/slide-canvas';
 import { SlideTransitionLayer } from '../components/slide-transition-layer';
@@ -64,6 +64,7 @@ import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
 import type { SlideModule } from '../lib/sdk';
 import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
 import { useSlideModule } from '../lib/use-slide-module';
+import { Presenter } from './presenter';
 
 const { showSlideUi, showSlideBrowser, allowHtmlDownload } = config.build;
 
@@ -71,7 +72,7 @@ export function Slide() {
   const { slideId = '' } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const { slide, error } = useSlideModule(slideId);
-  const [playMode, setPlayMode] = useState<'window' | 'fullscreen' | null>(null);
+  const [playMode, setPlayMode] = useState<'window' | 'fullscreen' | 'presenter' | null>(null);
   const [exporting, setExporting] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const linkCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -125,6 +126,17 @@ export function Slide() {
     },
     [pageCount, setSearchParams],
   );
+
+  /**
+   * Open the slides in a second window (audience) and turn this window into the
+   * presenter console. The audience window is the source of truth; this console
+   * mirrors it and drives navigation over the channel.
+   */
+  const startPresenterMode = useCallback(() => {
+    if (!slideId) return;
+    openAudienceWindow(slideId, index);
+    setPlayMode('presenter');
+  }, [slideId, index]);
 
   const reorderPage = useCallback(
     async (from: number, to: number) => {
@@ -273,15 +285,14 @@ export function Slide() {
       } else if (e.key === 'Enter') {
         setPlayMode('window');
       } else if (e.key === 'p' || e.key === 'P') {
-        if (slideId) openPresenterWindow(slideId);
-        setPlayMode('window');
+        startPresenterMode();
       } else if (import.meta.env.DEV && (e.key === 'd' || e.key === 'D')) {
         setDesignOpen((v) => !v);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [index, goTo, playMode, slideId, overviewOpen]);
+  }, [index, goTo, playMode, overviewOpen, startPresenterMode]);
 
   if (error) {
     return (
@@ -358,6 +369,10 @@ export function Slide() {
         allowExit={false}
       />
     );
+  }
+
+  if (playMode === 'presenter') {
+    return <Presenter slideId={slideId} onExit={() => setPlayMode(null)} />;
   }
 
   if (playMode) {
@@ -669,12 +684,7 @@ export function Slide() {
                         {t.slide.presentFullscreen}
                         <DropdownMenuShortcut>F</DropdownMenuShortcut>
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onSelect={() => {
-                          if (slideId) openPresenterWindow(slideId);
-                          setPlayMode('window');
-                        }}
-                      >
+                      <DropdownMenuItem onSelect={startPresenterMode}>
                         <MonitorSpeaker />
                         {t.slide.presentPresenter}
                         <DropdownMenuShortcut>P</DropdownMenuShortcut>

@@ -464,3 +464,14 @@ export function openPresenterWindow(slideId: string) {
   const url = `${import.meta.env.BASE_URL}s/${encodeURIComponent(slideId)}/presenter`;
   window.open(url, `open-slide-presenter-${slideId}`, 'popup,width=1280,height=800');
 }
+
+/**
+ * Opens the audience slide window. Kept synchronous (not behind an async
+ * function) so the click still counts as user activation — otherwise some
+ * browsers open a tab instead of a window.
+ */
+export function openAudienceWindow(slideId: string, startIndex = 0): Window | null {
+  if (typeof window === 'undefined') return null;
+  const url = `${import.meta.env.BASE_URL}s/${encodeURIComponent(slideId)}/screen?p=${startIndex + 1}`;
+  return window.open(url, `open-slide-screen-${slideId}`, 'popup,width=1280,height=800');
+}
