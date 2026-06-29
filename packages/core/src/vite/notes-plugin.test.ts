@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { applyNotesEdit, renderNoteLiteral } from './notes-plugin.ts';
+import { hasRecentWrite, RECENT_WRITE_WINDOW_MS, recordWrite } from './recent-writes.ts';
 
 describe('renderNoteLiteral', () => {
   it('returns undefined for empty strings', () => {
@@ -120,5 +121,28 @@ describe('applyNotesEdit / existing export', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.status).toBe(422);
+  });
+});
+
+describe('recent-writes window', () => {
+  it('reports a freshly recorded write as recent for the whole window', () => {
+    const file = '/slides/recent-a/index.tsx';
+    const now = 1_000_000;
+    recordWrite(file, now);
+    expect(hasRecentWrite(file, now)).toBe(true);
+    expect(hasRecentWrite(file, now + RECENT_WRITE_WINDOW_MS - 1)).toBe(true);
+  });
+
+  it('treats an unrecorded file as not recent', () => {
+    expect(hasRecentWrite('/slides/never-written/index.tsx', 1)).toBe(false);
+  });
+
+  it('expires entries after the window so a later genuine edit is not suppressed', () => {
+    const file = '/slides/recent-b/index.tsx';
+    const now = 2_000_000;
+    recordWrite(file, now);
+    expect(hasRecentWrite(file, now + RECENT_WRITE_WINDOW_MS)).toBe(false);
+    // The expired entry is pruned, so a subsequent check stays false too.
+    expect(hasRecentWrite(file, now + RECENT_WRITE_WINDOW_MS + 5_000)).toBe(false);
   });
 });
