@@ -2,7 +2,8 @@ const SLIDE_W = 1920;
 const SLIDE_H = 1080;
 const EMU_W = 12192000;
 const EMU_H = 6858000;
-const CSS_PX_EMU = 9525;
+const CSS_PX_EMU = EMU_W / SLIDE_W;
+const CSS_PX_PT = CSS_PX_EMU / 12700;
 const XML_DECL = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
 const REL_NS = 'http://schemas.openxmlformats.org/package/2006/relationships';
 const OD_REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
@@ -53,6 +54,7 @@ type PptxTextRun = {
   fontSize?: number;
   letterSpacing?: number;
   opacity?: number;
+  textTransform?: string;
 };
 
 type PptxTextStyle = Omit<PptxTextRun, 'text'>;
@@ -72,6 +74,7 @@ type PptxTextObject = PptxBox & {
   color?: string;
   fontFamily?: string;
   fontSize?: number;
+  wrap?: boolean;
 };
 
 type PptxImageObject = PptxBox & {
@@ -167,6 +170,7 @@ export async function collectEditableSlide(frame: HTMLElement): Promise<Editable
 
     const fill = fillFromStyles(styles);
     const stroke = strokeFromStyles(styles);
+    const borderShapes = stroke ? [] : borderShapesFromStyles(box, styles);
     if (fill || stroke) {
       objects.push({
         kind: 'shape',
@@ -177,6 +181,7 @@ export async function collectEditableSlide(frame: HTMLElement): Promise<Editable
         shadow: parseCssShadow(styles.boxShadow),
       });
     }
+    objects.push(...borderShapes);
 
     const text = textFromElement(el, box, styles);
     if (text) {
@@ -265,18 +270,87 @@ function fillFromStyles(styles: CSSStyleDeclaration): PptxFill {
 }
 
 function strokeFromStyles(styles: CSSStyleDeclaration): PptxStroke | null {
-  const width = Math.max(
-    parseCssPx(styles.borderTopWidth),
-    parseCssPx(styles.borderRightWidth),
-    parseCssPx(styles.borderBottomWidth),
-    parseCssPx(styles.borderLeftWidth),
-  );
+  const sides = borderSidesFromStyles(styles);
+  if (sides.some((side) => !side)) return null;
+  const [top, right, bottom, left] = sides as [PptxStroke, PptxStroke, PptxStroke, PptxStroke];
+  if (
+    top.width !== right.width ||
+    top.width !== bottom.width ||
+    top.width !== left.width ||
+    top.color !== right.color ||
+    top.color !== bottom.color ||
+    top.color !== left.color
+  ) {
+    return null;
+  }
+  return top;
+}
+
+function borderShapesFromStyles(box: PptxBox, styles: CSSStyleDeclaration): PptxShapeObject[] {
+  const [top, right, bottom, left] = borderSidesFromStyles(styles);
+  const shapes: PptxShapeObject[] = [];
+  if (top) {
+    shapes.push({
+      kind: 'shape',
+      x: box.x,
+      y: box.y,
+      w: box.w,
+      h: top.width,
+      fill: top.color,
+      opacity: box.opacity,
+    });
+  }
+  if (right) {
+    shapes.push({
+      kind: 'shape',
+      x: box.x + box.w - right.width,
+      y: box.y,
+      w: right.width,
+      h: box.h,
+      fill: right.color,
+      opacity: box.opacity,
+    });
+  }
+  if (bottom) {
+    shapes.push({
+      kind: 'shape',
+      x: box.x,
+      y: box.y + box.h - bottom.width,
+      w: box.w,
+      h: bottom.width,
+      fill: bottom.color,
+      opacity: box.opacity,
+    });
+  }
+  if (left) {
+    shapes.push({
+      kind: 'shape',
+      x: box.x,
+      y: box.y,
+      w: left.width,
+      h: box.h,
+      fill: left.color,
+      opacity: box.opacity,
+    });
+  }
+  return shapes;
+}
+
+function borderSidesFromStyles(
+  styles: CSSStyleDeclaration,
+): [PptxStroke | null, PptxStroke | null, PptxStroke | null, PptxStroke | null] {
+  return [
+    borderSideFromStyles(styles.borderTopWidth, styles.borderTopColor),
+    borderSideFromStyles(styles.borderRightWidth, styles.borderRightColor),
+    borderSideFromStyles(styles.borderBottomWidth, styles.borderBottomColor),
+    borderSideFromStyles(styles.borderLeftWidth, styles.borderLeftColor),
+  ];
+}
+
+function borderSideFromStyles(widthValue: string, colorValue: string): PptxStroke | null {
+  const width = parseCssPx(widthValue);
   if (width <= 0) return null;
-  const color =
-    colorWithPaint(styles.borderTopColor) ??
-    colorWithPaint(styles.borderRightColor) ??
-    colorWithPaint(styles.borderBottomColor) ??
-    colorWithPaint(styles.borderLeftColor);
+  const color = colorWithPaint(colorValue);
   if (!color) return null;
   return { color, width };
 }
@@ -295,6 +369,7 @@ function textFromElement(
     bold: isBold(styles.fontWeight),
     italic: styles.fontStyle === 'italic' || styles.fontStyle === 'oblique',
     letterSpacing: parseCssPx(styles.letterSpacing),
+    textTransform: styles.textTransform,
   });
   const hasText = paragraphs.some((paragraph) => paragraph.some((run) => run.text.trim()));
   if (!hasText) return null;
@@ -307,19 +382,33 @@ function textFromElement(
     color: colorWithPaint(styles.color) ?? undefined,
     fontFamily: normalizeFontFamily(styles.fontFamily),
     fontSize: parseCssPx(styles.fontSize) || undefined,
+    wrap: shouldWrapTextBox(box, styles),
     shadow: parseCssShadow(styles.textShadow),
   };
+}
+
+function shouldWrapTextBox(box: PptxBox, styles: CSSStyleDeclaration): boolean {
+  if (/\bnowrap\b|\bpre\b/.test(styles.whiteSpace)) return false;
+  const fontSize = parseCssPx(styles.fontSize) || 16;
+  const lineHeight = parseCssPx(styles.lineHeight) || fontSize * 1.2;
+  return box.h > lineHeight * 1.35;
 }
 
 function isTextCandidate(el: HTMLElement): boolean {
   if (['SCRIPT', 'STYLE', 'SVG', 'CANVAS', 'IMG', 'VIDEO', 'PICTURE'].includes(el.tagName)) {
     return false;
   }
+  const display = getComputedStyle(el).display;
+  if (isLayoutTextContainer(display)) return false;
   if (!el.textContent?.trim()) return false;
   for (const child of Array.from(el.children)) {
     if (!isInlineTextElement(child as HTMLElement)) return false;
   }
   return true;
+}
+
+function isLayoutTextContainer(display: string): boolean {
+  return /\b(flex|grid|table)\b/.test(display);
 }
 
 function isInlineTextElement(el: HTMLElement): boolean {
@@ -355,7 +444,7 @@ function collectTextParagraphs(el: HTMLElement, inherited: PptxTextStyle): PptxT
 
   const walk = (node: Node, style: PptxTextStyle) => {
     if (node.nodeType === Node.TEXT_NODE) {
-      const text = collapseText(node.textContent ?? '');
+      const text = applyTextTransform(collapseText(node.textContent ?? ''), style.textTransform);
       if (text) paragraphs[paragraphs.length - 1].push({ ...style, text });
       return;
     }
@@ -385,6 +474,10 @@ function collectTextParagraphs(el: HTMLElement, inherited: PptxTextStyle): PptxT
         style.italic,
       letterSpacing: parseCssPx(computed.letterSpacing) || style.letterSpacing,
       opacity: opacity < 1 ? opacity : style.opacity,
+      textTransform:
+        computed.textTransform && computed.textTransform !== 'none'
+          ? computed.textTransform
+          : style.textTransform,
     };
     for (const child of Array.from(node.childNodes)) walk(child, next);
   };
@@ -401,8 +494,46 @@ function shouldRasterizeElement(el: HTMLElement, styles: CSSStyleDeclaration): b
   ) {
     return true;
   }
-  if (styles.filter && styles.filter !== 'none') return true;
+  if (hasNonIdentityFilter(styles.filter)) return true;
+  if (hasNonIdentityFilter(styles.backdropFilter)) return true;
+  if (isTextlessDecorativeElement(el) && hasUnsupportedVisualStyle(styles)) return true;
   return Boolean(styles.mixBlendMode && styles.mixBlendMode !== 'normal');
+}
+
+function isTextlessDecorativeElement(el: HTMLElement): boolean {
+  return !el.textContent?.trim();
+}
+
+function hasUnsupportedVisualStyle(styles: CSSStyleDeclaration): boolean {
+  if (hasUnsupportedBackgroundImage(styles.backgroundImage)) return true;
+  const maskImage =
+    styles.maskImage ||
+    (styles as CSSStyleDeclaration & { webkitMaskImage?: string }).webkitMaskImage;
+  if (maskImage && maskImage !== 'none') return true;
+  if (hasNonIdentityClipPath(styles.clipPath)) return true;
+  return false;
+}
+
+function hasNonIdentityFilter(value?: string | null): boolean {
+  if (!value || value === 'none') return false;
+  const normalized = value.replace(/\s+/g, '').toLowerCase();
+  return !/^(?:blur\\(0(?:\\.0+)?px\\)|opacity\\(1\\)|opacity\\(100%\\)|brightness\\(1\\)|brightness\\(100%\\)|contrast\\(1\\)|contrast\\(100%\\)|saturate\\(1\\)|saturate\\(100%\\)|grayscale\\(0\\)|grayscale\\(0%\\)|sepia\\(0\\)|sepia\\(0%\\)|hue-rotate\\(0(?:\\.0+)?deg\\))+$/.test(
+    normalized,
+  );
+}
+
+function hasNonIdentityClipPath(value?: string | null): boolean {
+  if (!value || value === 'none') return false;
+  const normalized = value.replace(/\s+/g, '').toLowerCase();
+  return !/^inset\\(0(?:px|%)?(?:0(?:px|%)?){0,3}\\)$/.test(normalized);
+}
+
+function hasUnsupportedBackgroundImage(value?: string | null): boolean {
+  if (!value || value === 'none') return false;
+  if (/radial-gradient|conic-gradient|repeating-/i.test(value)) return true;
+  const layers = splitTopLevel(value);
+  if (layers.length > 1) return true;
+  return !parseLinearGradient(value);
 }
 
 async function rasterizeElement(el: HTMLElement, box: PptxBox): Promise<PptxImageObject | null> {
@@ -540,7 +671,8 @@ function shapeXml(shape: PptxShapeObject, ctx: SlideBuildContext): string {
 function textXml(text: PptxTextObject, ctx: SlideBuildContext): string {
   const id = ctx.shapeId++;
   const paragraphs = text.paragraphs.map((paragraph) => paragraphXml(paragraph, text)).join('');
-  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Text ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr>${xfrmXml(text)}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln>${effectXml(text.shadow ?? null, text.opacity)}</p:spPr><p:txBody><a:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0"/><a:lstStyle/>${paragraphs}</p:txBody></p:sp>`;
+  const wrap = text.wrap === false ? 'none' : 'square';
+  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Text ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr>${xfrmXml(text)}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln>${effectXml(text.shadow ?? null, text.opacity)}</p:spPr><p:txBody><a:bodyPr wrap="${wrap}" lIns="0" tIns="0" rIns="0" bIns="0"/><a:lstStyle/>${paragraphs}</p:txBody></p:sp>`;
 }
 
 function paragraphXml(paragraph: PptxTextRun[], text: PptxTextObject): string {
@@ -551,12 +683,12 @@ function paragraphXml(paragraph: PptxTextRun[], text: PptxTextObject): string {
 }
 
 function runXml(run: PptxTextRun, text: PptxTextObject): string {
-  const fontSize = Math.max(1, Math.round((run.fontSize ?? text.fontSize ?? 18) * 100));
+  const fontSize = cssPxToTextPoint(run.fontSize ?? text.fontSize ?? 18);
   const attrs = [
     `sz="${fontSize}"`,
     run.bold ? 'b="1"' : '',
     run.italic ? 'i="1"' : '',
-    run.letterSpacing ? `spc="${Math.round(run.letterSpacing * 100)}"` : '',
+    run.letterSpacing ? `spc="${Math.round(run.letterSpacing * CSS_PX_PT * 100)}"` : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -608,7 +740,7 @@ function tableXml(table: PptxTableObject, ctx: SlideBuildContext): string {
 function tableCellXml(cell: PptxTableCell): string {
   const align =
     cell.align && cell.align !== 'left' ? ` algn="${pptxTextAlignValue(cell.align)}"` : '';
-  const fontSize = Math.max(1, Math.round((cell.fontSize ?? 18) * 100));
+  const fontSize = cssPxToTextPoint(cell.fontSize ?? 18);
   const attrs = [`sz="${fontSize}"`, cell.bold ? 'b="1"' : '', cell.italic ? 'i="1"' : '']
     .filter(Boolean)
     .join(' ');
@@ -617,7 +749,10 @@ function tableCellXml(cell: PptxTableCell): string {
 }
 
 function pptxTextAlignValue(align: NonNullable<PptxTextObject['align']>): string {
-  return align === 'justify' ? 'just' : align;
+  if (align === 'center') return 'ctr';
+  if (align === 'right') return 'r';
+  if (align === 'justify') return 'just';
+  return 'l';
 }
 
 function xfrmXml(box: PptxBox): string {
@@ -653,7 +788,7 @@ function fillXml(fill: PptxFill, opacity?: number): string {
 
 function lineXml(stroke: PptxStroke | null, opacity?: number): string {
   if (!stroke) return '<a:ln><a:noFill/></a:ln>';
-  return `<a:ln w="${Math.round(stroke.width * 12700)}"><a:solidFill>${colorXml(stroke.color, opacity, '000000')}</a:solidFill><a:prstDash val="solid"/></a:ln>`;
+  return `<a:ln w="${Math.round(stroke.width * CSS_PX_EMU)}"><a:solidFill>${colorXml(stroke.color, opacity, '000000')}</a:solidFill><a:prstDash val="solid"/></a:ln>`;
 }
 
 function effectXml(shadow: PptxShadow | null, opacity?: number): string {
@@ -1069,10 +1204,39 @@ function textAlign(value: string): PptxTextObject['align'] {
 }
 
 function normalizeFontFamily(value: string): string | undefined {
-  return value
-    .split(',')[0]
-    ?.trim()
-    .replace(/^['"]|['"]$/g, '');
+  const families = value
+    .split(',')
+    .map((part) => part.trim().replace(/^['"]|['"]$/g, ''))
+    .filter(Boolean);
+  for (const family of families) {
+    const mapped = mapPowerPointFontFamily(family);
+    if (mapped) return mapped;
+  }
+  return families[0];
+}
+
+function mapPowerPointFontFamily(family: string): string | undefined {
+  const normalized = family.toLowerCase();
+  if (
+    normalized.includes('sf mono') ||
+    normalized === 'ui-monospace' ||
+    normalized === 'monospace' ||
+    normalized.includes('consolas')
+  ) {
+    return 'Menlo';
+  }
+  if (
+    normalized === 'sf pro display' ||
+    normalized === 'sf pro text' ||
+    normalized === '-apple-system' ||
+    normalized === 'blinkmacsystemfont' ||
+    normalized === 'system-ui' ||
+    normalized === 'sans-serif'
+  ) {
+    return 'Arial';
+  }
+  if (normalized === 'serif') return 'Times New Roman';
+  return family;
 }
 
 function isBold(weight: string): boolean {
@@ -1097,6 +1261,19 @@ function parseCssPx(value: string): number {
 
 function collapseText(value: string): string {
   return value.replace(/\s+/g, ' ');
+}
+
+function applyTextTransform(text: string, transform?: string): string {
+  if (!transform || transform === 'none') return text;
+  if (transform === 'uppercase') return text.toLocaleUpperCase();
+  if (transform === 'lowercase') return text.toLocaleLowerCase();
+  if (transform === 'capitalize') {
+    return text.replace(/\p{L}[\p{L}\p{N}'-]*/gu, (word) => {
+      const [first = '', ...rest] = Array.from(word);
+      return `${first.toLocaleUpperCase()}${rest.join('').toLocaleLowerCase()}`;
+    });
+  }
+  return text;
 }
 
 function markDescendants(el: Element, skipped: WeakSet<Element>): void {
@@ -1124,6 +1301,10 @@ function pxToEmuX(px: number): number {
 
 function pxToEmuY(px: number): number {
   return Math.round((px / SLIDE_H) * EMU_H);
+}
+
+function cssPxToTextPoint(px: number): number {
+  return Math.max(1, Math.round(px * CSS_PX_PT * 100));
 }
 
 function clamp(value: number, min: number, max: number): number {

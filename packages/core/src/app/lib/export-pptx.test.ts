@@ -40,7 +40,7 @@ describe('editable PPTX OOXML', () => {
             align: 'center',
             paragraphs: [
               [
-                { text: 'Hello ', bold: true },
+                { text: 'Hello ', bold: true, letterSpacing: 2 },
                 { text: 'world', italic: true, color: '#ef4444' },
               ],
             ],
@@ -70,6 +70,9 @@ describe('editable PPTX OOXML', () => {
     expect(slide).toContain('name="Text 3"');
     expect(slide).toContain('<a:t>Hello </a:t>');
     expect(slide).toContain('<a:t>world</a:t>');
+    expect(slide).toContain('<a:pPr algn="ctr"/>');
+    expect(slide).toContain('sz="2400"');
+    expect(slide).toContain('spc="100"');
     expect(slide).toContain('b="1"');
     expect(slide).toContain('i="1"');
     expect(slide).toContain('<p:pic>');
@@ -111,6 +114,29 @@ describe('editable PPTX OOXML', () => {
     expect(slide).toContain('<a:lin ang="5400000" scaled="0"/>');
   });
 
+  it('can disable wrapping for single-line text boxes', async () => {
+    const bytes = await buildEditablePptx([
+      {
+        background: '#ffffff',
+        objects: [
+          {
+            kind: 'text',
+            x: 80,
+            y: 96,
+            w: 180,
+            h: 28,
+            wrap: false,
+            paragraphs: [[{ text: 'open-slide dev' }]],
+          },
+        ],
+      },
+    ]);
+
+    const slide = xml(unzip(bytes), 'ppt/slides/slide1.xml');
+
+    expect(slide).toContain('<a:bodyPr wrap="none"');
+  });
+
   it('preserves transparent colors, opacity, shadows, and rotation', async () => {
     const bytes = await buildEditablePptx([
       {
@@ -146,7 +172,7 @@ describe('editable PPTX OOXML', () => {
     expect(slide).toContain('<a:xfrm rot="720000">');
     expect(slide).toContain('<a:srgbClr val="0F172A"><a:alpha val="30000"/></a:srgbClr>');
     expect(slide).toContain('<a:srgbClr val="6EE7FF"><a:alpha val="22500"/></a:srgbClr>');
-    expect(slide).toContain('<a:outerShdw blurRad="171450" dist="57150" dir="8100000"');
+    expect(slide).toContain('<a:outerShdw blurRad="114300" dist="38100" dir="8100000"');
     expect(slide).toContain('<a:srgbClr val="6EE7FF"><a:alpha val="25000"/></a:srgbClr>');
     expect(slide).toContain('<a:srgbClr val="FFFFFF"><a:alpha val="60000"/></a:srgbClr>');
   });
