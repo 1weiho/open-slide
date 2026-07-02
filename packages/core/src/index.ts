@@ -9,6 +9,8 @@ export type {
   DesignTypeScale,
 } from './app/lib/design.ts';
 export { cssVarsToString, defaultDesign, designToCssVars } from './app/lib/design.ts';
+export type { PptxExportProgress } from './app/lib/export-pptx.ts';
+export { exportSlideAsPptx } from './app/lib/export-pptx.ts';
 export { useSlidePageNumber } from './app/lib/page-context.tsx';
 export type { Page, SlideMeta, SlideModule } from './app/lib/sdk.ts';
 export { CANVAS_HEIGHT, CANVAS_WIDTH } from './app/lib/sdk.ts';
