@@ -2,6 +2,7 @@ const SLIDE_W = 1920;
 const SLIDE_H = 1080;
 const EMU_W = 12192000;
 const EMU_H = 6858000;
+const CSS_PX_EMU = 9525;
 const XML_DECL = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
 const REL_NS = 'http://schemas.openxmlformats.org/package/2006/relationships';
 const OD_REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
@@ -26,11 +27,21 @@ type PptxStroke = {
   width: number;
 };
 
+type PptxShadow = {
+  color: string;
+  blur: number;
+  distance: number;
+  angle: number;
+};
+
 type PptxBox = {
   x: number;
   y: number;
   w: number;
   h: number;
+  rotate?: number;
+  opacity?: number;
+  shadow?: PptxShadow | null;
 };
 
 type PptxTextRun = {
@@ -41,6 +52,7 @@ type PptxTextRun = {
   fontFamily?: string;
   fontSize?: number;
   letterSpacing?: number;
+  opacity?: number;
 };
 
 type PptxTextStyle = Omit<PptxTextRun, 'text'>;
@@ -50,6 +62,7 @@ type PptxShapeObject = PptxBox & {
   radius?: number;
   fill?: PptxFill;
   stroke?: PptxStroke | null;
+  shadow?: PptxShadow | null;
 };
 
 type PptxTextObject = PptxBox & {
@@ -99,6 +112,11 @@ type MediaRef = {
   relId: string;
 };
 
+type ParsedColor = {
+  hex: string;
+  alpha: number;
+};
+
 type SlideRels = {
   rels: string[];
   media: MediaRef[];
@@ -126,7 +144,7 @@ export async function collectEditableSlide(frame: HTMLElement): Promise<Editable
     if (shouldRasterizeElement(el, styles)) {
       const image = await rasterizeElement(el, box);
       if (image) {
-        objects.push(image);
+        objects.push({ ...image, shadow: parseCssShadow(styles.boxShadow) });
         markDescendants(el, skipped);
       }
       continue;
@@ -134,7 +152,7 @@ export async function collectEditableSlide(frame: HTMLElement): Promise<Editable
 
     if (el instanceof HTMLImageElement) {
       const image = await imageFromElement(el, box);
-      if (image) objects.push(image);
+      if (image) objects.push({ ...image, shadow: parseCssShadow(styles.boxShadow) });
       continue;
     }
 
@@ -156,6 +174,7 @@ export async function collectEditableSlide(frame: HTMLElement): Promise<Editable
         radius: maxBorderRadius(styles),
         fill,
         stroke,
+        shadow: parseCssShadow(styles.boxShadow),
       });
     }
 
@@ -220,11 +239,13 @@ function elementBox(
   styles: CSSStyleDeclaration,
 ): PptxBox | null {
   if (styles.display === 'none' || styles.visibility === 'hidden') return null;
-  if (Number(styles.opacity) <= 0) return null;
+  const opacity = parseOpacity(styles.opacity);
+  if (opacity <= 0) return null;
 
   const rect = el.getBoundingClientRect();
   const w = clamp(rect.width, 0, SLIDE_W);
   const h = clamp(rect.height, 0, SLIDE_H);
+  const rotate = rotationFromTransform(styles.transform);
   if (w < 1 || h < 1) return null;
 
   return {
@@ -232,13 +253,15 @@ function elementBox(
     y: clamp(rect.top - rootRect.top, 0, SLIDE_H),
     w,
     h,
+    opacity: opacity < 1 ? opacity : undefined,
+    rotate,
   };
 }
 
 function fillFromStyles(styles: CSSStyleDeclaration): PptxFill {
   const gradient = parseLinearGradient(styles.backgroundImage);
   if (gradient) return gradient;
-  return normalizeColor(styles.backgroundColor);
+  return colorWithPaint(styles.backgroundColor);
 }
 
 function strokeFromStyles(styles: CSSStyleDeclaration): PptxStroke | null {
@@ -250,10 +273,10 @@ function strokeFromStyles(styles: CSSStyleDeclaration): PptxStroke | null {
   );
   if (width <= 0) return null;
   const color =
-    normalizeColor(styles.borderTopColor) ??
-    normalizeColor(styles.borderRightColor) ??
-    normalizeColor(styles.borderBottomColor) ??
-    normalizeColor(styles.borderLeftColor);
+    colorWithPaint(styles.borderTopColor) ??
+    colorWithPaint(styles.borderRightColor) ??
+    colorWithPaint(styles.borderBottomColor) ??
+    colorWithPaint(styles.borderLeftColor);
   if (!color) return null;
   return { color, width };
 }
@@ -266,7 +289,7 @@ function textFromElement(
   if (!isTextCandidate(el)) return null;
 
   const paragraphs = collectTextParagraphs(el, {
-    color: normalizeColor(styles.color) ?? '#000000',
+    color: colorOrFallback(styles.color, '#000000'),
     fontFamily: normalizeFontFamily(styles.fontFamily),
     fontSize: parseCssPx(styles.fontSize) || 18,
     bold: isBold(styles.fontWeight),
@@ -281,9 +304,10 @@ function textFromElement(
     ...box,
     paragraphs,
     align: textAlign(styles.textAlign),
-    color: normalizeColor(styles.color) ?? undefined,
+    color: colorWithPaint(styles.color) ?? undefined,
     fontFamily: normalizeFontFamily(styles.fontFamily),
     fontSize: parseCssPx(styles.fontSize) || undefined,
+    shadow: parseCssShadow(styles.textShadow),
   };
 }
 
@@ -342,9 +366,10 @@ function collectTextParagraphs(el: HTMLElement, inherited: PptxTextStyle): PptxT
     }
 
     const computed = getComputedStyle(node);
+    const opacity = (style.opacity ?? 1) * parseOpacity(computed.opacity);
     const next: PptxTextStyle = {
       ...style,
-      color: normalizeColor(computed.color) ?? style.color,
+      color: colorWithPaint(computed.color) ?? style.color,
       fontFamily: normalizeFontFamily(computed.fontFamily) ?? style.fontFamily,
       fontSize: parseCssPx(computed.fontSize) || style.fontSize,
       bold:
@@ -359,6 +384,7 @@ function collectTextParagraphs(el: HTMLElement, inherited: PptxTextStyle): PptxT
         computed.fontStyle === 'oblique' ||
         style.italic,
       letterSpacing: parseCssPx(computed.letterSpacing) || style.letterSpacing,
+      opacity: opacity < 1 ? opacity : style.opacity,
     };
     for (const child of Array.from(node.childNodes)) walk(child, next);
   };
@@ -441,7 +467,7 @@ function tableFromElement(table: HTMLTableElement, box: PptxBox): PptxTableObjec
       return {
         text: collapseText(cell.innerText || cell.textContent || '').trim(),
         fill: fillFromStyles(styles),
-        color: normalizeColor(styles.color) ?? undefined,
+        color: colorWithPaint(styles.color) ?? undefined,
         fontFamily: normalizeFontFamily(styles.fontFamily),
         fontSize: parseCssPx(styles.fontSize) || undefined,
         bold: isBold(styles.fontWeight),
@@ -492,7 +518,7 @@ function readDataUrl(src: string): { mime: string; data: Uint8Array } | null {
 
 function editableSlideXml(slide: EditablePptxSlide, ctx: SlideBuildContext): string {
   const background = slide.background
-    ? `<p:bg><p:bgPr>${fillXml(slide.background)}</p:bgPr></p:bg>`
+    ? `<p:bg><p:bgPr>${fillXml(slide.background)}<a:effectLst/></p:bgPr></p:bg>`
     : '';
   const objects = slide.objects.map((object) => objectXml(object, ctx)).join('');
   return `${XML_DECL}<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="${OD_REL}" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld>${background}<p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>${objects}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
@@ -508,13 +534,13 @@ function objectXml(object: PptxObject, ctx: SlideBuildContext): string {
 function shapeXml(shape: PptxShapeObject, ctx: SlideBuildContext): string {
   const id = ctx.shapeId++;
   const geom = shape.radius && shape.radius > 0 ? 'roundRect' : 'rect';
-  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Shape ${id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr>${xfrmXml(shape)}<a:prstGeom prst="${geom}"><a:avLst/></a:prstGeom>${fillXml(shape.fill ?? null)}${lineXml(shape.stroke ?? null)}</p:spPr></p:sp>`;
+  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Shape ${id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr>${xfrmXml(shape)}<a:prstGeom prst="${geom}"><a:avLst/></a:prstGeom>${fillXml(shape.fill ?? null, shape.opacity)}${lineXml(shape.stroke ?? null, shape.opacity)}${effectXml(shape.shadow ?? null, shape.opacity)}</p:spPr></p:sp>`;
 }
 
 function textXml(text: PptxTextObject, ctx: SlideBuildContext): string {
   const id = ctx.shapeId++;
   const paragraphs = text.paragraphs.map((paragraph) => paragraphXml(paragraph, text)).join('');
-  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Text ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr>${xfrmXml(text)}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln></p:spPr><p:txBody><a:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0"/><a:lstStyle/>${paragraphs}</p:txBody></p:sp>`;
+  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Text ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr>${xfrmXml(text)}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln>${effectXml(text.shadow ?? null, text.opacity)}</p:spPr><p:txBody><a:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0"/><a:lstStyle/>${paragraphs}</p:txBody></p:sp>`;
 }
 
 function paragraphXml(paragraph: PptxTextRun[], text: PptxTextObject): string {
@@ -525,7 +551,6 @@ function paragraphXml(paragraph: PptxTextRun[], text: PptxTextObject): string {
 }
 
 function runXml(run: PptxTextRun, text: PptxTextObject): string {
-  const color = normalizeColor(run.color ?? text.color ?? '#000000') ?? '000000';
   const fontSize = Math.max(1, Math.round((run.fontSize ?? text.fontSize ?? 18) * 100));
   const attrs = [
     `sz="${fontSize}"`,
@@ -537,7 +562,11 @@ function runXml(run: PptxTextRun, text: PptxTextObject): string {
     .join(' ');
   const fontFamily = run.fontFamily ?? text.fontFamily;
   const latin = fontFamily ? `<a:latin typeface="${escapeXml(fontFamily)}"/>` : '';
-  return `<a:r><a:rPr ${attrs}><a:solidFill><a:srgbClr val="${color}"/></a:solidFill>${latin}</a:rPr><a:t>${escapeXml(run.text)}</a:t></a:r>`;
+  return `<a:r><a:rPr ${attrs}><a:solidFill>${colorXml(
+    run.color ?? text.color ?? '#000000',
+    combinedOpacity(text.opacity, run.opacity),
+    '#000000',
+  )}</a:solidFill>${latin}</a:rPr><a:t>${escapeXml(run.text)}</a:t></a:r>`;
 }
 
 function pictureXml(image: PptxImageObject, ctx: SlideBuildContext): string {
@@ -545,7 +574,12 @@ function pictureXml(image: PptxImageObject, ctx: SlideBuildContext): string {
   const relId = `rId${ctx.media.length + 2}`;
   ctx.media.push({ data: image.data, ext: imageExt(image.mime), relId });
   const name = escapeXml(image.alt || `Picture ${id}`);
-  return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="${name}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="${relId}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr>${xfrmXml(image)}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;
+  const opacity = image.opacity === undefined ? 1 : clamp(image.opacity, 0, 1);
+  const blipAlpha = opacity < 1 ? `<a:alphaModFix amt="${Math.round(opacity * 100000)}"/>` : '';
+  const blip = blipAlpha
+    ? `<a:blip r:embed="${relId}">${blipAlpha}</a:blip>`
+    : `<a:blip r:embed="${relId}"/>`;
+  return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="${name}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill>${blip}<a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr>${xfrmXml(image)}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>${effectXml(image.shadow ?? null, image.opacity)}</p:spPr></p:pic>`;
 }
 
 function tableXml(table: PptxTableObject, ctx: SlideBuildContext): string {
@@ -574,13 +608,12 @@ function tableXml(table: PptxTableObject, ctx: SlideBuildContext): string {
 function tableCellXml(cell: PptxTableCell): string {
   const align =
     cell.align && cell.align !== 'left' ? ` algn="${pptxTextAlignValue(cell.align)}"` : '';
-  const color = normalizeColor(cell.color ?? '#000000') ?? '000000';
   const fontSize = Math.max(1, Math.round((cell.fontSize ?? 18) * 100));
   const attrs = [`sz="${fontSize}"`, cell.bold ? 'b="1"' : '', cell.italic ? 'i="1"' : '']
     .filter(Boolean)
     .join(' ');
   const latin = cell.fontFamily ? `<a:latin typeface="${escapeXml(cell.fontFamily)}"/>` : '';
-  return `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr${align}/><a:r><a:rPr ${attrs}><a:solidFill><a:srgbClr val="${color}"/></a:solidFill>${latin}</a:rPr><a:t>${escapeXml(cell.text)}</a:t></a:r></a:p></a:txBody><a:tcPr>${fillXml(cell.fill ?? null)}</a:tcPr></a:tc>`;
+  return `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr${align}/><a:r><a:rPr ${attrs}><a:solidFill>${colorXml(cell.color ?? '#000000', 1, '#000000')}</a:solidFill>${latin}</a:rPr><a:t>${escapeXml(cell.text)}</a:t></a:r></a:p></a:txBody><a:tcPr>${fillXml(cell.fill ?? null)}</a:tcPr></a:tc>`;
 }
 
 function pptxTextAlignValue(align: NonNullable<PptxTextObject['align']>): string {
@@ -588,18 +621,19 @@ function pptxTextAlignValue(align: NonNullable<PptxTextObject['align']>): string
 }
 
 function xfrmXml(box: PptxBox): string {
-  return `<a:xfrm><a:off x="${pxToEmuX(box.x)}" y="${pxToEmuY(box.y)}"/><a:ext cx="${pxToEmuX(box.w)}" cy="${pxToEmuY(box.h)}"/></a:xfrm>`;
+  const rotate = box.rotate ? ` rot="${angleToOoxml(box.rotate)}"` : '';
+  return `<a:xfrm${rotate}><a:off x="${pxToEmuX(box.x)}" y="${pxToEmuY(box.y)}"/><a:ext cx="${pxToEmuX(box.w)}" cy="${pxToEmuY(box.h)}"/></a:xfrm>`;
 }
 
 function graphicFrameXfrmXml(box: PptxBox): string {
   return `<p:xfrm><a:off x="${pxToEmuX(box.x)}" y="${pxToEmuY(box.y)}"/><a:ext cx="${pxToEmuX(box.w)}" cy="${pxToEmuY(box.h)}"/></p:xfrm>`;
 }
 
-function fillXml(fill: PptxFill): string {
+function fillXml(fill: PptxFill, opacity?: number): string {
   if (!fill) return '<a:noFill/>';
   if (typeof fill === 'string') {
-    const color = normalizeColor(fill);
-    return color ? `<a:solidFill><a:srgbClr val="${color}"/></a:solidFill>` : '<a:noFill/>';
+    const color = parseColor(fill);
+    return color ? `<a:solidFill>${colorXml(fill, opacity)}</a:solidFill>` : '<a:noFill/>';
   }
 
   const stops = fill.stops.length
@@ -611,15 +645,20 @@ function fillXml(fill: PptxFill): string {
   const gs = stops
     .map((stop) => {
       const pos = clamp(Math.round(stop.position * 100000), 0, 100000);
-      return `<a:gs pos="${pos}"><a:srgbClr val="${normalizeColor(stop.color) ?? 'FFFFFF'}"/></a:gs>`;
+      return `<a:gs pos="${pos}">${colorXml(stop.color, opacity)}</a:gs>`;
     })
     .join('');
   return `<a:gradFill rotWithShape="1"><a:gsLst>${gs}</a:gsLst><a:lin ang="${Math.round(fill.angle * 60000)}" scaled="0"/></a:gradFill>`;
 }
 
-function lineXml(stroke: PptxStroke | null): string {
+function lineXml(stroke: PptxStroke | null, opacity?: number): string {
   if (!stroke) return '<a:ln><a:noFill/></a:ln>';
-  return `<a:ln w="${Math.round(stroke.width * 12700)}"><a:solidFill><a:srgbClr val="${normalizeColor(stroke.color) ?? '000000'}"/></a:solidFill><a:prstDash val="solid"/></a:ln>`;
+  return `<a:ln w="${Math.round(stroke.width * 12700)}"><a:solidFill>${colorXml(stroke.color, opacity, '000000')}</a:solidFill><a:prstDash val="solid"/></a:ln>`;
+}
+
+function effectXml(shadow: PptxShadow | null, opacity?: number): string {
+  if (!shadow) return '';
+  return `<a:effectLst><a:outerShdw blurRad="${Math.round(shadow.blur * CSS_PX_EMU)}" dist="${Math.round(shadow.distance * CSS_PX_EMU)}" dir="${angleToOoxml(shadow.angle)}" algn="ctr" rotWithShape="0">${colorXml(shadow.color, opacity, '000000')}</a:outerShdw></a:effectLst>`;
 }
 
 function editableContentTypesXml(n: number): string {
@@ -714,7 +753,7 @@ function parseGradientStop(input: string, index: number, count: number): PptxGra
     input.trim(),
   );
   if (!colorMatch) return null;
-  const color = normalizeColor(colorMatch[1]);
+  const color = parseColor(colorMatch[1]);
   if (!color) return null;
   const posMatch = /(-?\d+(?:\.\d+)?)%/.exec(colorMatch[2] ?? '');
   const position = posMatch
@@ -722,7 +761,7 @@ function parseGradientStop(input: string, index: number, count: number): PptxGra
     : count <= 1
       ? 0
       : index / (count - 1);
-  return { color, position };
+  return { color: colorMatch[1], position };
 }
 
 function contentInFunction(value: string, fn: string): string | null {
@@ -764,41 +803,264 @@ function directionToAngle(direction: string): number {
   return 180;
 }
 
-function normalizeColor(value?: string | null): string | null {
+function parseColor(value?: string | null): ParsedColor | null {
   if (!value) return null;
   const color = value.trim();
-  if (!color || color === 'transparent') return null;
+  const lower = color.toLowerCase();
+  if (!color) return null;
+  if (lower === 'transparent') return { hex: '000000', alpha: 0 };
+  if (lower === 'black') return { hex: '000000', alpha: 1 };
+  if (lower === 'white') return { hex: 'FFFFFF', alpha: 1 };
   if (color.startsWith('#')) {
     const hex = color.slice(1);
-    if (hex.length === 3) return hex.replace(/./g, (char) => char + char).toUpperCase();
-    if (hex.length === 4) {
-      if (hex[3] === '0') return null;
-      return hex
-        .slice(0, 3)
-        .replace(/./g, (char) => char + char)
-        .toUpperCase();
+    if (hex.length === 3) {
+      return { hex: hex.replace(/./g, (char) => char + char).toUpperCase(), alpha: 1 };
     }
-    if (hex.length === 6) return hex.toUpperCase();
-    if (hex.length === 8) return hex.slice(6) === '00' ? null : hex.slice(0, 6).toUpperCase();
+    if (hex.length === 4) {
+      const alpha = Number.parseInt(hex[3], 16) / 15;
+      return {
+        hex: hex
+          .slice(0, 3)
+          .replace(/./g, (char) => char + char)
+          .toUpperCase(),
+        alpha,
+      };
+    }
+    if (hex.length === 6) return { hex: hex.toUpperCase(), alpha: 1 };
+    if (hex.length === 8) {
+      const alpha = Number.parseInt(hex.slice(6), 16) / 255;
+      return { hex: hex.slice(0, 6).toUpperCase(), alpha };
+    }
   }
 
   const rgb = /^rgba?\((.+)\)$/i.exec(color);
   if (rgb) {
-    const parts = rgb[1].split(',').map((part) => part.trim());
-    const alpha = parts[3] === undefined ? 1 : Number.parseFloat(parts[3]);
-    if (alpha <= 0) return null;
-    return parts
-      .slice(0, 3)
-      .map((part) =>
-        clamp(Math.round(Number.parseFloat(part)), 0, 255)
-          .toString(16)
-          .padStart(2, '0'),
-      )
-      .join('')
-      .toUpperCase();
+    const parsed = parseColorParts(rgb[1]);
+    if (!parsed) return null;
+    return {
+      hex: parsed.channels.map((part) => byteToHex(parseRgbChannel(part))).join(''),
+      alpha: parsed.alpha,
+    };
   }
 
+  const srgb = /^color\(\s*srgb\s+(.+)\)$/i.exec(color);
+  if (srgb) {
+    const parsed = parseColorParts(srgb[1]);
+    if (!parsed) return null;
+    return {
+      hex: parsed.channels.map((part) => byteToHex(parseSrgbChannel(part))).join(''),
+      alpha: parsed.alpha,
+    };
+  }
+
+  const oklch = /^oklch\((.+)\)$/i.exec(color);
+  if (oklch) return parseOklch(oklch[1]);
+
   return null;
+}
+
+function colorXml(value: string, opacity = 1, fallback = 'FFFFFF'): string {
+  const color = parseColor(value) ?? parseColor(fallback) ?? { hex: fallback, alpha: 1 };
+  const alpha = clamp(color.alpha * opacity, 0, 1);
+  const alphaXml = alpha < 1 ? `<a:alpha val="${Math.round(alpha * 100000)}"/>` : '';
+  return alphaXml
+    ? `<a:srgbClr val="${color.hex}">${alphaXml}</a:srgbClr>`
+    : `<a:srgbClr val="${color.hex}"/>`;
+}
+
+function colorWithPaint(value?: string | null): string | null {
+  const color = parseColor(value);
+  if (!color || color.alpha <= 0) return null;
+  return value?.trim() ?? null;
+}
+
+function colorOrFallback(value: string, fallback: string): string {
+  return colorWithPaint(value) ?? fallback;
+}
+
+function parseOpacity(value?: string | null): number {
+  const opacity = Number.parseFloat(value ?? '');
+  return Number.isFinite(opacity) ? clamp(opacity, 0, 1) : 1;
+}
+
+function combinedOpacity(...values: (number | undefined)[]): number {
+  let opacity = 1;
+  for (const value of values) {
+    if (value === undefined || !Number.isFinite(value)) continue;
+    opacity *= clamp(value, 0, 1);
+  }
+  return opacity;
+}
+
+function rotationFromTransform(value?: string | null): number | undefined {
+  if (!value || value === 'none') return undefined;
+
+  const matrix = /^matrix\((.+)\)$/i.exec(value);
+  if (matrix) {
+    const parts = matrix[1].split(',').map((part) => Number.parseFloat(part.trim()));
+    if (parts.length >= 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1])) {
+      const angle = (Math.atan2(parts[1], parts[0]) * 180) / Math.PI;
+      return normalizedVisibleAngle(angle);
+    }
+  }
+
+  const matrix3d = /^matrix3d\((.+)\)$/i.exec(value);
+  if (matrix3d) {
+    const parts = matrix3d[1].split(',').map((part) => Number.parseFloat(part.trim()));
+    if (parts.length >= 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1])) {
+      const angle = (Math.atan2(parts[1], parts[0]) * 180) / Math.PI;
+      return normalizedVisibleAngle(angle);
+    }
+  }
+
+  return undefined;
+}
+
+function parseCssShadow(value?: string | null): PptxShadow | null {
+  if (!value || value === 'none') return null;
+  const layer = splitTopLevel(value)[0]?.trim();
+  if (!layer || layer === 'none' || /\binset\b/i.test(layer)) return null;
+
+  const color = firstCssColorToken(layer);
+  const colorValue = color?.value ?? 'rgba(0, 0, 0, 0.35)';
+  const lengthSource = color
+    ? `${layer.slice(0, color.index)} ${layer.slice(color.index + color.value.length)}`
+    : layer;
+  const lengths = lengthSource
+    .split(/\s+/)
+    .filter((part) => /^-?\d/.test(part))
+    .map(parseCssPx);
+  if (lengths.length < 2) return null;
+
+  const [offsetX, offsetY, blur = 0] = lengths;
+  return {
+    color: colorValue,
+    blur: Math.max(0, blur),
+    distance: Math.hypot(offsetX, offsetY),
+    angle: shadowAngle(offsetX, offsetY),
+  };
+}
+
+function firstCssColorToken(input: string): { value: string; index: number } | null {
+  const pattern = /#[0-9a-f]{3,8}\b|(?:rgba?|color)\([^)]+\)|\b[a-z]+\b/gi;
+  for (const match of input.matchAll(pattern)) {
+    if (parseColor(match[0])) return { value: match[0], index: match.index ?? 0 };
+  }
+  return null;
+}
+
+function shadowAngle(offsetX: number, offsetY: number): number {
+  if (offsetX === 0 && offsetY === 0) return 0;
+  return normalizeDegrees((Math.atan2(offsetY, offsetX) * 180) / Math.PI);
+}
+
+function angleToOoxml(angle: number): number {
+  return Math.round(normalizeDegrees(angle) * 60000);
+}
+
+function normalizedVisibleAngle(angle: number): number | undefined {
+  const normalized = normalizeDegrees(angle);
+  return Math.abs(normalized) < 0.001 ? undefined : normalized;
+}
+
+function normalizeDegrees(angle: number): number {
+  const normalized = ((angle % 360) + 360) % 360;
+  return Math.abs(normalized - 360) < 0.001 ? 0 : normalized;
+}
+
+function parseColorParts(input: string): { channels: string[]; alpha: number } | null {
+  const [channelInput = '', alphaInput] = input.split('/').map((part) => part.trim());
+  const commaParts = channelInput.includes(',')
+    ? channelInput.split(',').map((part) => part.trim())
+    : channelInput.split(/\s+/).filter(Boolean);
+  if (commaParts.length < 3) return null;
+
+  return {
+    channels: commaParts.slice(0, 3),
+    alpha: parseAlpha(alphaInput ?? commaParts[3]),
+  };
+}
+
+function parseOklch(input: string): ParsedColor | null {
+  const [channelInput = '', alphaInput] = input.split('/').map((part) => part.trim());
+  const [lightnessInput, chromaInput, hueInput] = channelInput.split(/\s+/).filter(Boolean);
+  if (!lightnessInput || !chromaInput || !hueInput) return null;
+
+  const lightness = parseOklchLightness(lightnessInput);
+  const chroma = parseOklchChroma(chromaInput);
+  const hue = parseHue(hueInput);
+  if (!Number.isFinite(lightness) || !Number.isFinite(chroma) || !Number.isFinite(hue)) {
+    return null;
+  }
+
+  return {
+    hex: oklchToSrgbHex(lightness, chroma, hue),
+    alpha: parseAlpha(alphaInput),
+  };
+}
+
+function parseOklchLightness(value: string): number {
+  if (value.endsWith('%')) return Number.parseFloat(value) / 100;
+  return Number.parseFloat(value);
+}
+
+function parseOklchChroma(value: string): number {
+  if (value.endsWith('%')) return Number.parseFloat(value) / 100;
+  return Number.parseFloat(value);
+}
+
+function parseHue(value: string): number {
+  if (value.endsWith('turn')) return Number.parseFloat(value) * 360;
+  if (value.endsWith('rad')) return (Number.parseFloat(value) * 180) / Math.PI;
+  if (value.endsWith('grad')) return Number.parseFloat(value) * 0.9;
+  return Number.parseFloat(value);
+}
+
+function oklchToSrgbHex(lightness: number, chroma: number, hue: number): string {
+  const radians = (hue * Math.PI) / 180;
+  const a = chroma * Math.cos(radians);
+  const b = chroma * Math.sin(radians);
+  const lPrime = lightness + 0.3963377774 * a + 0.2158037573 * b;
+  const mPrime = lightness - 0.1055613458 * a - 0.0638541728 * b;
+  const sPrime = lightness - 0.0894841775 * a - 1.291485548 * b;
+  const l = lPrime ** 3;
+  const m = mPrime ** 3;
+  const s = sPrime ** 3;
+  const r = 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
+  const g = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
+  const blue = -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s;
+  return [r, g, blue].map((channel) => byteToHex(linearSrgbToByte(channel))).join('');
+}
+
+function linearSrgbToByte(value: number): number {
+  const channel = clamp(value, 0, 1);
+  const encoded = channel <= 0.0031308 ? 12.92 * channel : 1.055 * channel ** (1 / 2.4) - 0.055;
+  return encoded * 255;
+}
+
+function parseRgbChannel(value: string): number {
+  const channel = value.endsWith('%')
+    ? (Number.parseFloat(value) / 100) * 255
+    : Number.parseFloat(value);
+  return Number.isFinite(channel) ? channel : 0;
+}
+
+function parseSrgbChannel(value: string): number {
+  const channel = value.endsWith('%')
+    ? (Number.parseFloat(value) / 100) * 255
+    : Number.parseFloat(value) * 255;
+  return Number.isFinite(channel) ? channel : 0;
+}
+
+function parseAlpha(value?: string): number {
+  if (!value) return 1;
+  const alpha = value.endsWith('%') ? Number.parseFloat(value) / 100 : Number.parseFloat(value);
+  return Number.isFinite(alpha) ? clamp(alpha, 0, 1) : 1;
+}
+
+function byteToHex(value: number): string {
+  const byte = Number.isFinite(value) ? value : 0;
+  return clamp(Math.round(byte), 0, 255).toString(16).padStart(2, '0').toUpperCase();
 }
 
 function textAlign(value: string): PptxTextObject['align'] {

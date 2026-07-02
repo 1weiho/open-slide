@@ -63,6 +63,9 @@ describe('editable PPTX OOXML', () => {
     const slide = xml(files, 'ppt/slides/slide1.xml');
     const rels = xml(files, 'ppt/slides/_rels/slide1.xml.rels');
 
+    expect(slide).toContain(
+      '<p:bg><p:bgPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:effectLst/></p:bgPr></p:bg>',
+    );
     expect(slide).toContain('<p:sp>');
     expect(slide).toContain('name="Text 3"');
     expect(slide).toContain('<a:t>Hello </a:t>');
@@ -106,6 +109,94 @@ describe('editable PPTX OOXML', () => {
     expect(slide).toContain('<a:gs pos="0"><a:srgbClr val="FF0000"/></a:gs>');
     expect(slide).toContain('<a:gs pos="100000"><a:srgbClr val="0000FF"/></a:gs>');
     expect(slide).toContain('<a:lin ang="5400000" scaled="0"/>');
+  });
+
+  it('preserves transparent colors, opacity, shadows, and rotation', async () => {
+    const bytes = await buildEditablePptx([
+      {
+        background: '#ffffff',
+        objects: [
+          {
+            kind: 'shape',
+            x: 100,
+            y: 120,
+            w: 320,
+            h: 180,
+            rotate: 12,
+            opacity: 0.5,
+            fill: 'rgba(15, 23, 42, 0.6)',
+            stroke: { color: 'rgba(110, 231, 255, 0.45)', width: 2 },
+            shadow: { color: 'rgba(110, 231, 255, 0.5)', blur: 18, distance: 6, angle: 135 },
+          },
+          {
+            kind: 'text',
+            x: 140,
+            y: 150,
+            w: 240,
+            h: 80,
+            opacity: 0.75,
+            paragraphs: [[{ text: 'Dim text', color: 'rgba(255, 255, 255, 0.8)' }]],
+          },
+        ],
+      },
+    ]);
+
+    const slide = xml(unzip(bytes), 'ppt/slides/slide1.xml');
+
+    expect(slide).toContain('<a:xfrm rot="720000">');
+    expect(slide).toContain('<a:srgbClr val="0F172A"><a:alpha val="30000"/></a:srgbClr>');
+    expect(slide).toContain('<a:srgbClr val="6EE7FF"><a:alpha val="22500"/></a:srgbClr>');
+    expect(slide).toContain('<a:outerShdw blurRad="171450" dist="57150" dir="8100000"');
+    expect(slide).toContain('<a:srgbClr val="6EE7FF"><a:alpha val="25000"/></a:srgbClr>');
+    expect(slide).toContain('<a:srgbClr val="FFFFFF"><a:alpha val="60000"/></a:srgbClr>');
+  });
+
+  it('normalizes CSS Color 4 srgb colors from computed styles', async () => {
+    const bytes = await buildEditablePptx([
+      {
+        background: 'color(srgb 0.039216 0.043137 0.058824)',
+        objects: [
+          {
+            kind: 'text',
+            x: 60,
+            y: 52,
+            w: 120,
+            h: 40,
+            color: 'color(srgb 0.952941 0.94902 0.92549)',
+            paragraphs: [[{ text: 'Tone' }]],
+          },
+        ],
+      },
+    ]);
+
+    const slide = xml(unzip(bytes), 'ppt/slides/slide1.xml');
+
+    expect(slide).toContain('<p:bg><p:bgPr><a:solidFill><a:srgbClr val="0A0B0F"/>');
+    expect(slide).toContain('<a:srgbClr val="F3F2EC"/>');
+  });
+
+  it('normalizes OKLCH colors from computed styles', async () => {
+    const bytes = await buildEditablePptx([
+      {
+        background: 'oklch(0.66 0.19 28 / 0.5)',
+        objects: [
+          {
+            kind: 'text',
+            x: 60,
+            y: 52,
+            w: 120,
+            h: 40,
+            color: 'oklch(0.945 0.005 80)',
+            paragraphs: [[{ text: 'Tone' }]],
+          },
+        ],
+      },
+    ]);
+
+    const slide = xml(unzip(bytes), 'ppt/slides/slide1.xml');
+
+    expect(slide).toContain('<a:srgbClr val="F0584B"><a:alpha val="50000"/></a:srgbClr>');
+    expect(slide).toContain('<a:srgbClr val="EEECE9"/>');
   });
 
   it('writes tables as native PowerPoint table objects', async () => {
