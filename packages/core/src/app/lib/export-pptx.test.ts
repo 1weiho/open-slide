@@ -326,6 +326,134 @@ describe('editable PPTX OOXML', () => {
     expect(slideXml).toContain('<a:pPr algn="ctr"/>');
   });
 
+  it('exports text labels from flex chips that also contain SVG icons', async () => {
+    const icon = fakeSvgElement({
+      rect: { left: 88, top: 136, width: 20, height: 20 },
+      styles: {
+        color: '#6EE7B7',
+        fill: 'none',
+        stroke: '#6EE7B7',
+      },
+    });
+    const label = fakeTextNode('知识库');
+    const chip = fakeElement('DIV', {
+      rect: { left: 72, top: 112, width: 226, height: 73 },
+      textContent: label.textContent,
+      children: [icon],
+      childNodes: [icon, label],
+      queryResults: [icon],
+      styles: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '12px',
+        backgroundColor: 'rgba(110, 231, 183, 0.11)',
+        color: '#6EE7B7',
+        fontSize: '28px',
+        fontWeight: '700',
+      },
+    });
+    const frame = fakeElement('DIV', {
+      rect: { left: 0, top: 0, width: 1920, height: 1080 },
+      children: [chip],
+      queryResults: [chip, icon],
+      styles: { backgroundColor: '#050505', display: 'block' },
+    });
+    stubDom();
+    vi.stubGlobal(
+      'XMLSerializer',
+      class FakeXmlSerializer {
+        serializeToString(node: FakeSvgElement) {
+          return `<svg stroke="${node.getAttribute('stroke')}"></svg>`;
+        }
+      },
+    );
+
+    const slide = await collectEditableSlide(frame as unknown as HTMLElement);
+
+    expect(slide.objects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'shape', x: 72, y: 112, w: 226, h: 73 }),
+        expect.objectContaining({ kind: 'image', x: 88, y: 136, w: 20, h: 20 }),
+        expect.objectContaining({
+          kind: 'text',
+          x: 104,
+          y: 112,
+          w: 194,
+          h: 73,
+          align: 'center',
+          vertical: 'middle',
+        }),
+      ]),
+    );
+
+    const slideXml = xml(unzip(await buildEditablePptx([slide])), 'ppt/slides/slide1.xml');
+    expect(slideXml).toContain('<a:t>知识库</a:t>');
+    expect(slideXml).toContain('<p:pic>');
+  });
+
+  it('keeps SVG plus span rows from exporting the parent as a duplicate text box', async () => {
+    const icon = fakeSvgElement({
+      rect: { left: 112, top: 142, width: 20, height: 20 },
+      styles: {
+        color: '#6EE7B7',
+        fill: 'none',
+        stroke: '#6EE7B7',
+      },
+    });
+    const text = fakeTextNode('直播 / 社交：BIGO LIVE 周报');
+    const span = fakeElement('SPAN', {
+      rect: { left: 145, top: 136, width: 620, height: 36 },
+      textContent: text.textContent,
+      childNodes: [text],
+      styles: {
+        display: 'inline',
+        color: '#F7F8F8',
+        fontSize: '23px',
+      },
+    });
+    const row = fakeElement('DIV', {
+      rect: { left: 112, top: 128, width: 787, height: 56 },
+      textContent: text.textContent,
+      children: [icon, span],
+      childNodes: [icon, span],
+      queryResults: [icon, span],
+      styles: {
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '13px',
+        fontSize: '23px',
+      },
+    });
+    const frame = fakeElement('DIV', {
+      rect: { left: 0, top: 0, width: 1920, height: 1080 },
+      children: [row],
+      queryResults: [row, icon, span],
+      styles: { backgroundColor: '#050505', display: 'block' },
+    });
+    stubDom();
+    vi.stubGlobal(
+      'XMLSerializer',
+      class FakeXmlSerializer {
+        serializeToString(node: FakeSvgElement) {
+          return `<svg stroke="${node.getAttribute('stroke')}"></svg>`;
+        }
+      },
+    );
+
+    const slide = await collectEditableSlide(frame as unknown as HTMLElement);
+    const textObjects = slide.objects.filter((object) => object.kind === 'text');
+
+    expect(textObjects).toHaveLength(1);
+    expect(textObjects[0]).toMatchObject({
+      kind: 'text',
+      x: 145,
+      y: 136,
+      w: 620,
+      h: 36,
+    });
+  });
+
   it('centers text inside rounded single-line chips', async () => {
     const text = fakeTextNode('设计结构化');
     const chip = fakeElement('SPAN', {

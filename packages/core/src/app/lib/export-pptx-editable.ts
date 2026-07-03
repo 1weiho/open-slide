@@ -206,7 +206,7 @@ export async function collectEditableSlide(frame: HTMLElement): Promise<Editable
     const text = textFromElement(el, box, styles);
     if (text) {
       objects.push(text);
-      markDescendants(el, skipped);
+      markTextDescendants(el, skipped);
     }
   }
 
@@ -447,19 +447,57 @@ function textFromElement(
   });
   const hasText = paragraphs.some((paragraph) => paragraph.some((run) => run.text.trim()));
   if (!hasText) return null;
+  const textBox = adjustedTextBoxForEmbeddedLeadingContent(el, box, styles);
 
   return {
     kind: 'text',
-    ...box,
+    ...textBox,
     paragraphs,
-    align: horizontalTextAlign(box, styles),
-    vertical: verticalTextAnchor(box, styles),
+    align: horizontalTextAlign(textBox, styles),
+    vertical: verticalTextAnchor(textBox, styles),
     color: colorWithPaint(styles.color) ?? undefined,
     fontFamily: normalizeFontFamily(styles.fontFamily),
     fontSize: parseCssPx(styles.fontSize) || undefined,
-    wrap: shouldWrapTextBox(box, styles),
+    wrap: shouldWrapTextBox(textBox, styles),
     shadow: parseCssShadow(styles.textShadow),
   };
+}
+
+function adjustedTextBoxForEmbeddedLeadingContent(
+  el: HTMLElement,
+  box: PptxBox,
+  styles: CSSStyleDeclaration,
+): PptxBox {
+  const offset = leadingEmbeddedInlineOffset(el, styles);
+  if (offset <= 0 || offset >= box.w) return box;
+  return {
+    ...box,
+    x: box.x + offset,
+    w: box.w - offset,
+  };
+}
+
+function leadingEmbeddedInlineOffset(el: HTMLElement, styles: CSSStyleDeclaration): number {
+  if (!/\bflex\b/.test(styles.display)) return 0;
+  if (styles.flexDirection && !styles.flexDirection.startsWith('row')) return 0;
+  if (!hasDirectText(el)) return 0;
+
+  let embeddedWidth = 0;
+  let hasLeadingEmbedded = false;
+  for (const child of Array.from(el.childNodes)) {
+    if (child.nodeType === Node.TEXT_NODE) {
+      if (child.textContent?.trim()) break;
+      continue;
+    }
+    if (!(child instanceof Element)) continue;
+    if (!isTextlessEmbeddedElement(child)) break;
+    embeddedWidth += child.getBoundingClientRect().width;
+    hasLeadingEmbedded = true;
+  }
+  if (!hasLeadingEmbedded) return 0;
+
+  const gap = parseCssPx(styles.columnGap) || parseCssPx(styles.gap);
+  return embeddedWidth + gap;
 }
 
 function shouldWrapTextBox(box: PptxBox, styles: CSSStyleDeclaration): boolean {
@@ -476,8 +514,12 @@ function isTextCandidate(el: HTMLElement): boolean {
   const display = getComputedStyle(el).display;
   if (isTableLayoutTextContainer(display)) return false;
   if (!el.textContent?.trim()) return false;
-  for (const child of Array.from(el.children)) {
-    if (!isInlineTextElement(child as HTMLElement)) return false;
+  const children = Array.from(el.children);
+  if (children.some(isTextlessEmbeddedElement) && !hasDirectText(el)) return false;
+  for (const child of children) {
+    if (isInlineTextElement(child as HTMLElement)) continue;
+    if (isTextlessEmbeddedElement(child)) continue;
+    return false;
   }
   return true;
 }
@@ -507,6 +549,23 @@ function isInlineTextElement(el: HTMLElement): boolean {
       'SUP',
       'U',
     ].includes(el.tagName)
+  );
+}
+
+function isTextlessEmbeddedElement(el: Element): boolean {
+  if (el.textContent?.trim()) return false;
+  return (
+    el instanceof SVGElement ||
+    el instanceof HTMLImageElement ||
+    el instanceof HTMLCanvasElement ||
+    el instanceof HTMLVideoElement ||
+    ['IMG', 'SVG', 'CANVAS', 'VIDEO', 'PICTURE'].includes(el.tagName)
+  );
+}
+
+function hasDirectText(el: HTMLElement): boolean {
+  return Array.from(el.childNodes).some(
+    (child) => child.nodeType === Node.TEXT_NODE && Boolean(child.textContent?.trim()),
   );
 }
 
@@ -1729,6 +1788,12 @@ function applyTextTransform(text: string, transform?: string): string {
 
 function markDescendants(el: Element, skipped: WeakSet<Element>): void {
   for (const child of Array.from(el.querySelectorAll('*'))) skipped.add(child);
+}
+
+function markTextDescendants(el: Element, skipped: WeakSet<Element>): void {
+  for (const child of Array.from(el.querySelectorAll('*'))) {
+    if (!isTextlessEmbeddedElement(child)) skipped.add(child);
+  }
 }
 
 function imageExt(mime: string): string {
