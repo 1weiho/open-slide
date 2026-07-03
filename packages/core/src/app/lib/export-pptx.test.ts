@@ -1,8 +1,12 @@
 import { strFromU8, unzipSync } from 'fflate';
-import { describe, expect, it } from 'vitest';
-import { buildEditablePptx } from './export-pptx-editable';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { buildEditablePptx, collectEditableSlide } from './export-pptx-editable';
 
 const pngBytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 function unzip(bytes: Uint8Array): Record<string, Uint8Array> {
   return unzipSync(bytes);
@@ -137,6 +141,115 @@ describe('editable PPTX OOXML', () => {
     expect(slide).toContain('<a:bodyPr wrap="none"');
   });
 
+  it('keeps pre-line text boxes wrappable', async () => {
+    const text = fakeTextNode('From AI Coding to AI Engineering');
+    const heading = fakeElement('H1', {
+      rect: { left: 0, top: 0, width: 900, height: 128 },
+      textContent: text.textContent,
+      childNodes: [text],
+      styles: {
+        display: 'block',
+        fontSize: '48px',
+        lineHeight: '56px',
+        whiteSpace: 'pre-line',
+      },
+    });
+    const frame = fakeElement('DIV', {
+      rect: { left: 0, top: 0, width: 1920, height: 1080 },
+      children: [heading],
+      queryResults: [heading],
+      styles: { backgroundColor: '#ffffff', display: 'block' },
+    });
+    stubDom();
+
+    const slide = await collectEditableSlide(frame as unknown as HTMLElement);
+    const textObject = slide.objects.find((object) => object.kind === 'text');
+
+    expect(textObject).toMatchObject({ kind: 'text', wrap: true });
+  });
+
+  it('writes image source cropping for cover-fitted images', async () => {
+    const bytes = await buildEditablePptx([
+      {
+        background: '#ffffff',
+        objects: [
+          {
+            kind: 'image',
+            x: 0,
+            y: 0,
+            w: 400,
+            h: 300,
+            mime: 'image/png',
+            data: pngBytes,
+            crop: { left: 0.125, right: 0.125, top: 0, bottom: 0 },
+          },
+        ],
+      },
+    ]);
+
+    const slide = xml(unzip(bytes), 'ppt/slides/slide1.xml');
+
+    expect(slide).toContain('<a:srcRect l="12500" r="12500"/>');
+  });
+
+  it('writes an East Asian font fallback for CJK text runs', async () => {
+    const bytes = await buildEditablePptx([
+      {
+        background: '#ffffff',
+        objects: [
+          {
+            kind: 'text',
+            x: 80,
+            y: 96,
+            w: 360,
+            h: 80,
+            fontFamily: 'Arial',
+            paragraphs: [[{ text: '研发效率', fontFamily: 'Arial' }]],
+          },
+        ],
+      },
+    ]);
+
+    const slide = xml(unzip(bytes), 'ppt/slides/slide1.xml');
+
+    expect(slide).toContain('<a:latin typeface="Arial"/><a:ea typeface="PingFang SC"/>');
+  });
+
+  it('places a high-fidelity visual snapshot above editable objects', async () => {
+    const bytes = await buildEditablePptx([
+      {
+        background: '#ffffff',
+        objects: [
+          {
+            kind: 'text',
+            x: 80,
+            y: 96,
+            w: 360,
+            h: 80,
+            paragraphs: [[{ text: 'Editable title' }]],
+          },
+        ],
+        visualSnapshot: {
+          kind: 'image',
+          x: 0,
+          y: 0,
+          w: 1920,
+          h: 1080,
+          alt: 'High fidelity visual snapshot',
+          mime: 'image/png',
+          data: pngBytes,
+        },
+      },
+    ]);
+
+    const slide = xml(unzip(bytes), 'ppt/slides/slide1.xml');
+
+    expect(slide.indexOf('name="Text 2"')).toBeLessThan(
+      slide.indexOf('name="High fidelity visual snapshot"'),
+    );
+    expect(slide).toContain('name="High fidelity visual snapshot"');
+  });
+
   it('preserves transparent colors, opacity, shadows, and rotation', async () => {
     const bytes = await buildEditablePptx([
       {
@@ -258,3 +371,133 @@ describe('editable PPTX OOXML', () => {
     expect(slide).toContain('<a:solidFill><a:srgbClr val="E2E8F0"/></a:solidFill>');
   });
 });
+
+type FakeRect = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
+type FakeElementOptions = {
+  rect: FakeRect;
+  textContent?: string;
+  children?: FakeElement[];
+  childNodes?: unknown[];
+  queryResults?: FakeElement[];
+  styles?: Partial<CSSStyleDeclaration>;
+};
+
+class FakeElement {
+  tagName: string;
+  textContent: string;
+  children: FakeElement[];
+  childNodes: unknown[];
+  private rect: FakeRect;
+  private queryResults: FakeElement[];
+  private styles: Partial<CSSStyleDeclaration>;
+
+  constructor(tagName: string, options: FakeElementOptions) {
+    this.tagName = tagName;
+    this.textContent = options.textContent ?? '';
+    this.children = options.children ?? [];
+    this.childNodes = options.childNodes ?? this.children;
+    this.rect = options.rect;
+    this.queryResults = options.queryResults ?? [];
+    this.styles = options.styles ?? {};
+  }
+
+  getBoundingClientRect() {
+    const { left, top, width, height } = this.rect;
+    return {
+      left,
+      top,
+      width,
+      height,
+      right: left + width,
+      bottom: top + height,
+    };
+  }
+
+  querySelectorAll() {
+    return this.queryResults;
+  }
+
+  get styleMap() {
+    return this.styles;
+  }
+}
+
+function fakeElement(tagName: string, options: FakeElementOptions): FakeElement {
+  return new FakeElement(tagName, options);
+}
+
+function fakeTextNode(textContent: string) {
+  return { nodeType: 3, textContent };
+}
+
+function stubDom(): void {
+  vi.stubGlobal('Node', { TEXT_NODE: 3 });
+  vi.stubGlobal('Element', FakeElement);
+  vi.stubGlobal('HTMLElement', FakeElement);
+  vi.stubGlobal('HTMLImageElement', class FakeImageElement extends FakeElement {});
+  vi.stubGlobal('HTMLTableElement', class FakeTableElement extends FakeElement {});
+  vi.stubGlobal('HTMLCanvasElement', class FakeCanvasElement extends FakeElement {});
+  vi.stubGlobal('SVGElement', class FakeSvgElement extends FakeElement {});
+  vi.stubGlobal('HTMLVideoElement', class FakeVideoElement extends FakeElement {});
+  vi.stubGlobal('getComputedStyle', (el: FakeElement) =>
+    styleDeclaration({
+      display: 'block',
+      visibility: 'visible',
+      opacity: '1',
+      backgroundColor: 'rgba(0, 0, 0, 0)',
+      backgroundImage: 'none',
+      borderTopWidth: '0px',
+      borderRightWidth: '0px',
+      borderBottomWidth: '0px',
+      borderLeftWidth: '0px',
+      borderTopColor: 'rgba(0, 0, 0, 0)',
+      borderRightColor: 'rgba(0, 0, 0, 0)',
+      borderBottomColor: 'rgba(0, 0, 0, 0)',
+      borderLeftColor: 'rgba(0, 0, 0, 0)',
+      borderTopLeftRadius: '0px',
+      borderTopRightRadius: '0px',
+      borderBottomRightRadius: '0px',
+      borderBottomLeftRadius: '0px',
+      boxShadow: 'none',
+      textShadow: 'none',
+      color: '#000000',
+      fontFamily: 'Arial',
+      fontSize: '18px',
+      fontStyle: 'normal',
+      fontWeight: '400',
+      letterSpacing: 'normal',
+      lineHeight: 'normal',
+      textAlign: 'left',
+      textTransform: 'none',
+      whiteSpace: 'normal',
+      filter: 'none',
+      backdropFilter: 'none',
+      clipPath: 'none',
+      maskImage: 'none',
+      mixBlendMode: 'normal',
+      transform: 'none',
+      ...el.styleMap,
+    }),
+  );
+}
+
+function styleDeclaration(styles: Record<string, unknown>): CSSStyleDeclaration {
+  return new Proxy(styles, {
+    get(target, prop) {
+      if (prop === 'getPropertyValue') {
+        return (name: string) => {
+          const value = target[name];
+          return typeof value === 'string' ? value : '';
+        };
+      }
+      const value = target[prop as string];
+      return typeof value === 'string' ? value : '';
+    },
+  }) as unknown as CSSStyleDeclaration;
+}

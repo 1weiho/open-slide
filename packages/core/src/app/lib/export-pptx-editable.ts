@@ -82,6 +82,14 @@ type PptxImageObject = PptxBox & {
   alt?: string;
   mime: string;
   data: Uint8Array;
+  crop?: PptxImageCrop;
+};
+
+type PptxImageCrop = {
+  left?: number;
+  right?: number;
+  top?: number;
+  bottom?: number;
 };
 
 type PptxTableCell = {
@@ -107,6 +115,7 @@ type PptxObject = PptxShapeObject | PptxTextObject | PptxImageObject | PptxTable
 export type EditablePptxSlide = {
   background?: PptxFill;
   objects: PptxObject[];
+  visualSnapshot?: PptxImageObject;
 };
 
 type MediaRef = {
@@ -154,7 +163,7 @@ export async function collectEditableSlide(frame: HTMLElement): Promise<Editable
     }
 
     if (el instanceof HTMLImageElement) {
-      const image = await imageFromElement(el, box);
+      const image = await imageFromElement(el, box, styles);
       if (image) objects.push({ ...image, shadow: parseCssShadow(styles.boxShadow) });
       continue;
     }
@@ -388,7 +397,7 @@ function textFromElement(
 }
 
 function shouldWrapTextBox(box: PptxBox, styles: CSSStyleDeclaration): boolean {
-  if (/\bnowrap\b|\bpre\b/.test(styles.whiteSpace)) return false;
+  if (styles.whiteSpace === 'nowrap' || styles.whiteSpace === 'pre') return false;
   const fontSize = parseCssPx(styles.fontSize) || 16;
   const lineHeight = parseCssPx(styles.lineHeight) || fontSize * 1.2;
   return box.h > lineHeight * 1.35;
@@ -572,20 +581,125 @@ async function rasterizeElement(el: HTMLElement, box: PptxBox): Promise<PptxImag
 async function imageFromElement(
   img: HTMLImageElement,
   box: PptxBox,
+  styles: CSSStyleDeclaration,
 ): Promise<PptxImageObject | null> {
   const src = img.currentSrc || img.src;
   if (!src) return null;
 
   const image = await readImage(src);
   if (!image) return null;
+  const fitted = fitImageBox(img, box, styles);
 
   return {
     kind: 'image',
-    ...box,
+    ...fitted.box,
     alt: img.alt || undefined,
     mime: image.mime,
     data: image.data,
+    crop: fitted.crop,
   };
+}
+
+function fitImageBox(
+  img: HTMLImageElement,
+  box: PptxBox,
+  styles: CSSStyleDeclaration,
+): { box: PptxBox; crop?: PptxImageCrop } {
+  const naturalW = img.naturalWidth || img.width || 0;
+  const naturalH = img.naturalHeight || img.height || 0;
+  if (naturalW <= 0 || naturalH <= 0 || box.w <= 0 || box.h <= 0) return { box };
+
+  const fit = styles.objectFit || 'fill';
+  if (fit === 'cover') {
+    const scale = Math.max(box.w / naturalW, box.h / naturalH);
+    const visibleW = Math.min(naturalW, box.w / scale);
+    const visibleH = Math.min(naturalH, box.h / scale);
+    const overflowX = Math.max(0, naturalW - visibleW);
+    const overflowY = Math.max(0, naturalH - visibleH);
+    const position = parseObjectPosition(styles.objectPosition);
+    return {
+      box,
+      crop: normalizeCrop({
+        left: (overflowX * position.x) / naturalW,
+        right: (overflowX * (1 - position.x)) / naturalW,
+        top: (overflowY * position.y) / naturalH,
+        bottom: (overflowY * (1 - position.y)) / naturalH,
+      }),
+    };
+  }
+
+  if (fit === 'contain' || fit === 'scale-down') {
+    const containScale = Math.min(box.w / naturalW, box.h / naturalH);
+    const scale = fit === 'scale-down' ? Math.min(1, containScale) : containScale;
+    const w = naturalW * scale;
+    const h = naturalH * scale;
+    const position = parseObjectPosition(styles.objectPosition);
+    return {
+      box: {
+        ...box,
+        x: box.x + (box.w - w) * position.x,
+        y: box.y + (box.h - h) * position.y,
+        w,
+        h,
+      },
+    };
+  }
+
+  return { box };
+}
+
+function parseObjectPosition(value?: string | null): { x: number; y: number } {
+  const parts = value?.trim().split(/\s+/).filter(Boolean) ?? [];
+  if (parts.length === 0) return { x: 0.5, y: 0.5 };
+  if (parts.length === 1) {
+    const only = objectPositionPart(parts[0], 'x');
+    return { x: only.axis === 'y' ? 0.5 : only.value, y: only.axis === 'y' ? only.value : 0.5 };
+  }
+
+  let x = 0.5;
+  let y = 0.5;
+  for (const part of parts) {
+    const parsed = objectPositionPart(part, x === 0.5 ? 'x' : 'y');
+    if (parsed.axis === 'x') x = parsed.value;
+    else y = parsed.value;
+  }
+  return { x, y };
+}
+
+function objectPositionPart(
+  part: string,
+  fallbackAxis: 'x' | 'y',
+): { axis: 'x' | 'y'; value: number } {
+  const lower = part.toLowerCase();
+  if (lower === 'left') return { axis: 'x', value: 0 };
+  if (lower === 'right') return { axis: 'x', value: 1 };
+  if (lower === 'top') return { axis: 'y', value: 0 };
+  if (lower === 'bottom') return { axis: 'y', value: 1 };
+  if (lower === 'center') return { axis: fallbackAxis, value: 0.5 };
+  if (lower.endsWith('%')) {
+    return { axis: fallbackAxis, value: clamp(Number.parseFloat(lower) / 100, 0, 1) };
+  }
+  return { axis: fallbackAxis, value: 0.5 };
+}
+
+function normalizeCrop(crop: Required<PptxImageCrop>): PptxImageCrop | undefined {
+  const normalized = {
+    left: clamp(crop.left, 0, 1),
+    right: clamp(crop.right, 0, 1),
+    top: clamp(crop.top, 0, 1),
+    bottom: clamp(crop.bottom, 0, 1),
+  };
+  if (normalized.left + normalized.right >= 0.999) {
+    normalized.left = 0;
+    normalized.right = 0;
+  }
+  if (normalized.top + normalized.bottom >= 0.999) {
+    normalized.top = 0;
+    normalized.bottom = 0;
+  }
+  return normalized.left || normalized.right || normalized.top || normalized.bottom
+    ? normalized
+    : undefined;
 }
 
 function tableFromElement(table: HTMLTableElement, box: PptxBox): PptxTableObject | null {
@@ -651,7 +765,9 @@ function editableSlideXml(slide: EditablePptxSlide, ctx: SlideBuildContext): str
   const background = slide.background
     ? `<p:bg><p:bgPr>${fillXml(slide.background)}<a:effectLst/></p:bgPr></p:bg>`
     : '';
-  const objects = slide.objects.map((object) => objectXml(object, ctx)).join('');
+  const objects = [...slide.objects, ...(slide.visualSnapshot ? [slide.visualSnapshot] : [])]
+    .map((object) => objectXml(object, ctx))
+    .join('');
   return `${XML_DECL}<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="${OD_REL}" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld>${background}<p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>${objects}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
 }
 
@@ -693,12 +809,12 @@ function runXml(run: PptxTextRun, text: PptxTextObject): string {
     .filter(Boolean)
     .join(' ');
   const fontFamily = run.fontFamily ?? text.fontFamily;
-  const latin = fontFamily ? `<a:latin typeface="${escapeXml(fontFamily)}"/>` : '';
+  const font = fontXml(fontFamily, run.text);
   return `<a:r><a:rPr ${attrs}><a:solidFill>${colorXml(
     run.color ?? text.color ?? '#000000',
     combinedOpacity(text.opacity, run.opacity),
     '#000000',
-  )}</a:solidFill>${latin}</a:rPr><a:t>${escapeXml(run.text)}</a:t></a:r>`;
+  )}</a:solidFill>${font}</a:rPr><a:t>${escapeXml(run.text)}</a:t></a:r>`;
 }
 
 function pictureXml(image: PptxImageObject, ctx: SlideBuildContext): string {
@@ -711,7 +827,7 @@ function pictureXml(image: PptxImageObject, ctx: SlideBuildContext): string {
   const blip = blipAlpha
     ? `<a:blip r:embed="${relId}">${blipAlpha}</a:blip>`
     : `<a:blip r:embed="${relId}"/>`;
-  return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="${name}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill>${blip}<a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr>${xfrmXml(image)}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>${effectXml(image.shadow ?? null, image.opacity)}</p:spPr></p:pic>`;
+  return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="${name}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill>${blip}${sourceRectXml(image.crop)}<a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr>${xfrmXml(image)}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>${effectXml(image.shadow ?? null, image.opacity)}</p:spPr></p:pic>`;
 }
 
 function tableXml(table: PptxTableObject, ctx: SlideBuildContext): string {
@@ -744,8 +860,8 @@ function tableCellXml(cell: PptxTableCell): string {
   const attrs = [`sz="${fontSize}"`, cell.bold ? 'b="1"' : '', cell.italic ? 'i="1"' : '']
     .filter(Boolean)
     .join(' ');
-  const latin = cell.fontFamily ? `<a:latin typeface="${escapeXml(cell.fontFamily)}"/>` : '';
-  return `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr${align}/><a:r><a:rPr ${attrs}><a:solidFill>${colorXml(cell.color ?? '#000000', 1, '#000000')}</a:solidFill>${latin}</a:rPr><a:t>${escapeXml(cell.text)}</a:t></a:r></a:p></a:txBody><a:tcPr>${fillXml(cell.fill ?? null)}</a:tcPr></a:tc>`;
+  const font = fontXml(cell.fontFamily, cell.text);
+  return `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr${align}/><a:r><a:rPr ${attrs}><a:solidFill>${colorXml(cell.color ?? '#000000', 1, '#000000')}</a:solidFill>${font}</a:rPr><a:t>${escapeXml(cell.text)}</a:t></a:r></a:p></a:txBody><a:tcPr>${fillXml(cell.fill ?? null)}</a:tcPr></a:tc>`;
 }
 
 function pptxTextAlignValue(align: NonNullable<PptxTextObject['align']>): string {
@@ -789,6 +905,42 @@ function fillXml(fill: PptxFill, opacity?: number): string {
 function lineXml(stroke: PptxStroke | null, opacity?: number): string {
   if (!stroke) return '<a:ln><a:noFill/></a:ln>';
   return `<a:ln w="${Math.round(stroke.width * CSS_PX_EMU)}"><a:solidFill>${colorXml(stroke.color, opacity, '000000')}</a:solidFill><a:prstDash val="solid"/></a:ln>`;
+}
+
+function sourceRectXml(crop?: PptxImageCrop): string {
+  if (!crop) return '';
+  const attrs = [
+    crop.left ? `l="${Math.round(clamp(crop.left, 0, 1) * 100000)}"` : '',
+    crop.right ? `r="${Math.round(clamp(crop.right, 0, 1) * 100000)}"` : '',
+    crop.top ? `t="${Math.round(clamp(crop.top, 0, 1) * 100000)}"` : '',
+    crop.bottom ? `b="${Math.round(clamp(crop.bottom, 0, 1) * 100000)}"` : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+  return attrs ? `<a:srcRect ${attrs}/>` : '';
+}
+
+function fontXml(fontFamily: string | undefined, text: string): string {
+  const latin = fontFamily ? `<a:latin typeface="${escapeXml(fontFamily)}"/>` : '';
+  const eastAsian = eastAsianFontFamily(fontFamily, text);
+  const ea = eastAsian ? `<a:ea typeface="${escapeXml(eastAsian)}"/>` : '';
+  return `${latin}${ea}`;
+}
+
+function eastAsianFontFamily(fontFamily: string | undefined, text: string): string | undefined {
+  if (!hasEastAsianText(text)) return undefined;
+  if (fontFamily && isEastAsianFontFamily(fontFamily)) return fontFamily;
+  return 'PingFang SC';
+}
+
+function hasEastAsianText(text: string): boolean {
+  return /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(text);
+}
+
+function isEastAsianFontFamily(fontFamily: string): boolean {
+  return /pingfang|hiragino|noto sans cjk|source han|microsoft yahei|yahei|simsun|simhei|heiti|songti|kaiti|malgun|meiryo|yu gothic/i.test(
+    fontFamily,
+  );
 }
 
 function effectXml(shadow: PptxShadow | null, opacity?: number): string {
