@@ -215,41 +215,6 @@ describe('editable PPTX OOXML', () => {
     expect(slide).toContain('<a:latin typeface="Arial"/><a:ea typeface="PingFang SC"/>');
   });
 
-  it('places a high-fidelity visual snapshot above editable objects', async () => {
-    const bytes = await buildEditablePptx([
-      {
-        background: '#ffffff',
-        objects: [
-          {
-            kind: 'text',
-            x: 80,
-            y: 96,
-            w: 360,
-            h: 80,
-            paragraphs: [[{ text: 'Editable title' }]],
-          },
-        ],
-        visualSnapshot: {
-          kind: 'image',
-          x: 0,
-          y: 0,
-          w: 1920,
-          h: 1080,
-          alt: 'High fidelity visual snapshot',
-          mime: 'image/png',
-          data: pngBytes,
-        },
-      },
-    ]);
-
-    const slide = xml(unzip(bytes), 'ppt/slides/slide1.xml');
-
-    expect(slide.indexOf('name="Text 2"')).toBeLessThan(
-      slide.indexOf('name="High fidelity visual snapshot"'),
-    );
-    expect(slide).toContain('name="High fidelity visual snapshot"');
-  });
-
   it('preserves transparent colors, opacity, shadows, and rotation', async () => {
     const bytes = await buildEditablePptx([
       {

@@ -115,7 +115,6 @@ type PptxObject = PptxShapeObject | PptxTextObject | PptxImageObject | PptxTable
 export type EditablePptxSlide = {
   background?: PptxFill;
   objects: PptxObject[];
-  visualSnapshot?: PptxImageObject;
 };
 
 type MediaRef = {
@@ -765,9 +764,7 @@ function editableSlideXml(slide: EditablePptxSlide, ctx: SlideBuildContext): str
   const background = slide.background
     ? `<p:bg><p:bgPr>${fillXml(slide.background)}<a:effectLst/></p:bgPr></p:bg>`
     : '';
-  const objects = [...slide.objects, ...(slide.visualSnapshot ? [slide.visualSnapshot] : [])]
-    .map((object) => objectXml(object, ctx))
-    .join('');
+  const objects = slide.objects.map((object) => objectXml(object, ctx)).join('');
   return `${XML_DECL}<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="${OD_REL}" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld>${background}<p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>${objects}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
 }
 

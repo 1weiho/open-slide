@@ -103,32 +103,10 @@ export async function exportSlideAsPptx(
     }
     await waitForDataWaitfor(container);
 
-    const { toBlob } = await import('html-to-image');
     const editableSlides = [];
     for (let i = 0; i < frames.length; i++) {
       freezeForCapture(frames[i]);
-      const editableSlide = await collectEditableSlide(frames[i]);
-      const snapshot = await toBlob(frames[i], {
-        width: SLIDE_W,
-        height: SLIDE_H,
-        pixelRatio: CAPTURE_PIXEL_RATIO,
-        backgroundColor: '#ffffff',
-        cacheBust: true,
-      });
-      if (!snapshot) throw new Error(`failed to capture page ${i + 1}`);
-      editableSlides.push({
-        ...editableSlide,
-        visualSnapshot: {
-          kind: 'image' as const,
-          x: 0,
-          y: 0,
-          w: SLIDE_W,
-          h: SLIDE_H,
-          alt: 'High fidelity visual snapshot',
-          mime: 'image/png',
-          data: new Uint8Array(await snapshot.arrayBuffer()),
-        },
-      });
+      editableSlides.push(await collectEditableSlide(frames[i]));
       onProgress?.({
         phase: 'processing',
         current: i + 1,
