@@ -123,8 +123,8 @@ export async function exportSlideAsPptx(
       }),
       `${slideId}.pptx`,
     );
-  } finally {
     onProgress?.({ phase: 'done', current: total, total, percent: 100 });
+  } finally {
     for (const r of reactRoots) r.unmount();
     container.remove();
     captureStyle.remove();
