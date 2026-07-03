@@ -14,14 +14,13 @@ type PptxGradientStop = {
   position: number;
 };
 
-type PptxFill =
-  | string
-  | {
-      kind: 'linearGradient';
-      angle: number;
-      stops: PptxGradientStop[];
-    }
-  | null;
+type PptxLinearGradientFill = {
+  kind: 'linearGradient';
+  angle: number;
+  stops: PptxGradientStop[];
+};
+
+type PptxFill = string | PptxLinearGradientFill | null;
 
 type PptxStroke = {
   color: string;
@@ -71,6 +70,7 @@ type PptxTextObject = PptxBox & {
   kind: 'text';
   paragraphs: PptxTextRun[][];
   align?: 'left' | 'center' | 'right' | 'justify';
+  vertical?: 'top' | 'middle' | 'bottom';
   color?: string;
   fontFamily?: string;
   fontSize?: number;
@@ -83,6 +83,7 @@ type PptxImageObject = PptxBox & {
   mime: string;
   data: Uint8Array;
   crop?: PptxImageCrop;
+  svgData?: Uint8Array;
 };
 
 type PptxImageCrop = {
@@ -142,6 +143,8 @@ type SlideBuildContext = {
 export async function collectEditableSlide(frame: HTMLElement): Promise<EditablePptxSlide> {
   const rootRect = frame.getBoundingClientRect();
   const rootStyles = getComputedStyle(frame);
+  const background = fillFromStyles(rootStyles) ?? '#ffffff';
+  const compositeBase = frameCompositeBase(frame, rootRect, background);
   const objects: PptxObject[] = [];
   const skipped = new WeakSet<Element>();
 
@@ -151,6 +154,15 @@ export async function collectEditableSlide(frame: HTMLElement): Promise<Editable
     const styles = getComputedStyle(el);
     const box = elementBox(el, rootRect, styles);
     if (!box) continue;
+
+    if (el instanceof SVGElement && !el.ownerSVGElement) {
+      const image = await svgImageFromElement(el, box, styles);
+      if (image) {
+        objects.push({ ...image, shadow: parseCssShadow(styles.boxShadow) });
+        markDescendants(el, skipped);
+        continue;
+      }
+    }
 
     if (shouldRasterizeElement(el, styles)) {
       const image = await rasterizeElement(el, box);
@@ -176,7 +188,7 @@ export async function collectEditableSlide(frame: HTMLElement): Promise<Editable
       continue;
     }
 
-    const fill = fillFromStyles(styles);
+    const fill = fillFromStyles(styles, compositeBase);
     const stroke = strokeFromStyles(styles);
     const borderShapes = stroke ? [] : borderShapesFromStyles(box, styles);
     if (fill || stroke) {
@@ -199,7 +211,7 @@ export async function collectEditableSlide(frame: HTMLElement): Promise<Editable
   }
 
   return {
-    background: fillFromStyles(rootStyles) ?? '#ffffff',
+    background,
     objects,
   };
 }
@@ -271,10 +283,64 @@ function elementBox(
   };
 }
 
-function fillFromStyles(styles: CSSStyleDeclaration): PptxFill {
+function fillFromStyles(styles: CSSStyleDeclaration, compositeBase?: ParsedColor | null): PptxFill {
   const gradient = parseLinearGradient(styles.backgroundImage);
-  if (gradient) return gradient;
+  if (gradient) return compositeBase ? compositeGradientStops(gradient, compositeBase) : gradient;
   return colorWithPaint(styles.backgroundColor);
+}
+
+function solidCompositeBase(fill: PptxFill): ParsedColor | null {
+  if (typeof fill !== 'string') return null;
+  const color = parseColor(fill);
+  if (!color || color.alpha < 0.999) return null;
+  return color;
+}
+
+function frameCompositeBase(
+  frame: HTMLElement,
+  rootRect: DOMRect,
+  fallback: PptxFill,
+): ParsedColor | null {
+  for (const el of Array.from(frame.querySelectorAll<HTMLElement>('*'))) {
+    const styles = getComputedStyle(el);
+    const box = elementBox(el, rootRect, styles);
+    if (!box || box.opacity !== undefined || !coversSlide(box)) continue;
+    const fill = fillFromStyles(styles);
+    const base = solidCompositeBase(fill);
+    if (base) return base;
+  }
+  return solidCompositeBase(fallback);
+}
+
+function coversSlide(box: PptxBox): boolean {
+  return box.x <= 1 && box.y <= 1 && box.w >= SLIDE_W - 1 && box.h >= SLIDE_H - 1;
+}
+
+function compositeGradientStops(
+  gradient: PptxLinearGradientFill,
+  base: ParsedColor,
+): PptxLinearGradientFill {
+  return {
+    ...gradient,
+    stops: gradient.stops.map((stop) => ({
+      ...stop,
+      color: compositeColorOverBase(stop.color, base),
+    })),
+  };
+}
+
+function compositeColorOverBase(value: string, base: ParsedColor): string {
+  const foreground = parseColor(value);
+  if (!foreground) return value;
+  if (foreground.alpha >= 0.999) return `#${foreground.hex}`;
+  if (foreground.alpha <= 0.001) return `#${base.hex}`;
+
+  const fg = hexToRgb(foreground.hex);
+  const bg = hexToRgb(base.hex);
+  const alpha = foreground.alpha;
+  return `#${byteToHex(fg.r * alpha + bg.r * (1 - alpha))}${byteToHex(
+    fg.g * alpha + bg.g * (1 - alpha),
+  )}${byteToHex(fg.b * alpha + bg.b * (1 - alpha))}`;
 }
 
 function strokeFromStyles(styles: CSSStyleDeclaration): PptxStroke | null {
@@ -386,7 +452,8 @@ function textFromElement(
     kind: 'text',
     ...box,
     paragraphs,
-    align: textAlign(styles.textAlign),
+    align: horizontalTextAlign(box, styles),
+    vertical: verticalTextAnchor(box, styles),
     color: colorWithPaint(styles.color) ?? undefined,
     fontFamily: normalizeFontFamily(styles.fontFamily),
     fontSize: parseCssPx(styles.fontSize) || undefined,
@@ -407,7 +474,7 @@ function isTextCandidate(el: HTMLElement): boolean {
     return false;
   }
   const display = getComputedStyle(el).display;
-  if (isLayoutTextContainer(display)) return false;
+  if (isTableLayoutTextContainer(display)) return false;
   if (!el.textContent?.trim()) return false;
   for (const child of Array.from(el.children)) {
     if (!isInlineTextElement(child as HTMLElement)) return false;
@@ -415,8 +482,8 @@ function isTextCandidate(el: HTMLElement): boolean {
   return true;
 }
 
-function isLayoutTextContainer(display: string): boolean {
-  return /\b(flex|grid|table)\b/.test(display);
+function isTableLayoutTextContainer(display: string): boolean {
+  return /\btable\b/.test(display);
 }
 
 function isInlineTextElement(el: HTMLElement): boolean {
@@ -575,6 +642,111 @@ async function rasterizeElement(el: HTMLElement, box: PptxBox): Promise<PptxImag
   } catch {
     return null;
   }
+}
+
+async function svgImageFromElement(
+  svg: SVGElement,
+  box: PptxBox,
+  styles: CSSStyleDeclaration,
+): Promise<PptxImageObject | null> {
+  const serialized = serializeSvgElement(svg, box, styles);
+  if (!serialized) return null;
+  const svgData = new TextEncoder().encode(serialized);
+  const fallback = await rasterizeElement(svg as unknown as HTMLElement, box);
+  if (fallback) return { ...fallback, svgData };
+
+  return {
+    kind: 'image',
+    ...box,
+    mime: 'image/svg+xml',
+    data: svgData,
+  };
+}
+
+function serializeSvgElement(
+  svg: SVGElement,
+  box: PptxBox,
+  styles: CSSStyleDeclaration,
+): string | null {
+  try {
+    const clone = svg.cloneNode(true) as SVGElement;
+    if (clone.tagName.toLowerCase() !== 'svg') return null;
+
+    if (!clone.getAttribute('xmlns')) clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    if (!clone.getAttribute('width')) clone.setAttribute('width', String(Math.max(1, box.w)));
+    if (!clone.getAttribute('height')) clone.setAttribute('height', String(Math.max(1, box.h)));
+    if (!clone.getAttribute('viewBox')) {
+      clone.setAttribute('viewBox', `0 0 ${Math.max(1, box.w)} ${Math.max(1, box.h)}`);
+    }
+    if (!clone.getAttribute('preserveAspectRatio')) {
+      clone.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    }
+
+    const color = colorWithPaint(styles.color);
+    if (color) clone.setAttribute('color', svgColorValue(color));
+    inlineSvgComputedPaint(svg, clone);
+
+    return new XMLSerializer().serializeToString(clone);
+  } catch {
+    return null;
+  }
+}
+
+function inlineSvgComputedPaint(sourceRoot: SVGElement, cloneRoot: SVGElement): void {
+  const sourceElements = [sourceRoot, ...Array.from(sourceRoot.querySelectorAll<SVGElement>('*'))];
+  const cloneElements = [cloneRoot, ...Array.from(cloneRoot.querySelectorAll<SVGElement>('*'))];
+  for (let i = 0; i < sourceElements.length; i++) {
+    const source = sourceElements[i];
+    const clone = cloneElements[i];
+    if (!source || !clone) continue;
+    const styles = getComputedStyle(source);
+
+    const color = colorWithPaint(styles.color);
+    if (color && (!clone.getAttribute('color') || clone.getAttribute('color') === 'currentColor')) {
+      clone.setAttribute('color', svgColorValue(color));
+    }
+
+    inlineSvgPaintAttr(clone, 'fill', styles.fill, color);
+    inlineSvgPaintAttr(clone, 'stroke', styles.stroke, color);
+
+    const opacity = parseOpacity(styles.opacity);
+    if (opacity < 1 && !clone.getAttribute('opacity')) {
+      clone.setAttribute('opacity', String(round4(opacity)));
+    }
+  }
+}
+
+function inlineSvgPaintAttr(
+  el: SVGElement,
+  attr: 'fill' | 'stroke',
+  computedValue: string,
+  currentColor: string | null,
+): void {
+  const existing = el.getAttribute(attr);
+  if (existing && existing !== 'currentColor') {
+    normalizeSvgPaintAttr(el, attr, existing);
+    return;
+  }
+  if (existing === 'currentColor' && currentColor) {
+    normalizeSvgPaintAttr(el, attr, currentColor);
+    return;
+  }
+  const color = colorWithPaint(computedValue);
+  if (color) normalizeSvgPaintAttr(el, attr, color);
+}
+
+function normalizeSvgPaintAttr(el: SVGElement, attr: 'fill' | 'stroke', value: string): void {
+  const color = parseColor(value);
+  if (!color) return;
+  el.setAttribute(attr, `#${color.hex}`);
+  if (color.alpha < 0.999) {
+    el.setAttribute(`${attr}-opacity`, String(round4(color.alpha)));
+  }
+}
+
+function svgColorValue(value: string): string {
+  const color = parseColor(value);
+  return color ? `#${color.hex}` : value;
 }
 
 async function imageFromElement(
@@ -777,15 +949,15 @@ function objectXml(object: PptxObject, ctx: SlideBuildContext): string {
 
 function shapeXml(shape: PptxShapeObject, ctx: SlideBuildContext): string {
   const id = ctx.shapeId++;
-  const geom = shape.radius && shape.radius > 0 ? 'roundRect' : 'rect';
-  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Shape ${id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr>${xfrmXml(shape)}<a:prstGeom prst="${geom}"><a:avLst/></a:prstGeom>${fillXml(shape.fill ?? null, shape.opacity)}${lineXml(shape.stroke ?? null, shape.opacity)}${effectXml(shape.shadow ?? null, shape.opacity)}</p:spPr></p:sp>`;
+  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Shape ${id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr>${xfrmXml(shape)}${shapeGeometryXml(shape)}${fillXml(shape.fill ?? null, shape.opacity)}${lineXml(shape.stroke ?? null, shape.opacity)}${effectXml(shape.shadow ?? null, shape.opacity)}</p:spPr></p:sp>`;
 }
 
 function textXml(text: PptxTextObject, ctx: SlideBuildContext): string {
   const id = ctx.shapeId++;
   const paragraphs = text.paragraphs.map((paragraph) => paragraphXml(paragraph, text)).join('');
   const wrap = text.wrap === false ? 'none' : 'square';
-  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Text ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr>${xfrmXml(text)}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln>${effectXml(text.shadow ?? null, text.opacity)}</p:spPr><p:txBody><a:bodyPr wrap="${wrap}" lIns="0" tIns="0" rIns="0" bIns="0"/><a:lstStyle/>${paragraphs}</p:txBody></p:sp>`;
+  const anchor = textAnchorXml(text.vertical);
+  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Text ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr>${xfrmXml(text)}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln>${effectXml(text.shadow ?? null, text.opacity)}</p:spPr><p:txBody><a:bodyPr wrap="${wrap}"${anchor} lIns="0" tIns="0" rIns="0" bIns="0"/><a:lstStyle/>${paragraphs}</p:txBody></p:sp>`;
 }
 
 function paragraphXml(paragraph: PptxTextRun[], text: PptxTextObject): string {
@@ -816,15 +988,27 @@ function runXml(run: PptxTextRun, text: PptxTextObject): string {
 
 function pictureXml(image: PptxImageObject, ctx: SlideBuildContext): string {
   const id = ctx.shapeId++;
-  const relId = `rId${ctx.media.length + 2}`;
+  const relId = nextMediaRelId(ctx);
   ctx.media.push({ data: image.data, ext: imageExt(image.mime), relId });
+  const svgRelId = image.svgData ? nextMediaRelId(ctx) : null;
+  if (image.svgData && svgRelId) {
+    ctx.media.push({ data: image.svgData, ext: 'svg', relId: svgRelId });
+  }
   const name = escapeXml(image.alt || `Picture ${id}`);
   const opacity = image.opacity === undefined ? 1 : clamp(image.opacity, 0, 1);
   const blipAlpha = opacity < 1 ? `<a:alphaModFix amt="${Math.round(opacity * 100000)}"/>` : '';
-  const blip = blipAlpha
-    ? `<a:blip r:embed="${relId}">${blipAlpha}</a:blip>`
+  const svgBlip = svgRelId
+    ? `<a:extLst><a:ext uri="{96DAC541-7B7A-43D3-8B79-37D633B846F1}"><asvg:svgBlip xmlns:asvg="http://schemas.microsoft.com/office/drawing/2016/SVG/main" r:embed="${svgRelId}"/></a:ext></a:extLst>`
+    : '';
+  const blipChildren = `${blipAlpha}${svgBlip}`;
+  const blip = blipChildren
+    ? `<a:blip r:embed="${relId}">${blipChildren}</a:blip>`
     : `<a:blip r:embed="${relId}"/>`;
   return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="${name}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill>${blip}${sourceRectXml(image.crop)}<a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr>${xfrmXml(image)}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>${effectXml(image.shadow ?? null, image.opacity)}</p:spPr></p:pic>`;
+}
+
+function nextMediaRelId(ctx: SlideBuildContext): string {
+  return `rId${ctx.media.length + 2}`;
 }
 
 function tableXml(table: PptxTableObject, ctx: SlideBuildContext): string {
@@ -859,6 +1043,40 @@ function tableCellXml(cell: PptxTableCell): string {
     .join(' ');
   const font = fontXml(cell.fontFamily, cell.text);
   return `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr${align}/><a:r><a:rPr ${attrs}><a:solidFill>${colorXml(cell.color ?? '#000000', 1, '#000000')}</a:solidFill>${font}</a:rPr><a:t>${escapeXml(cell.text)}</a:t></a:r></a:p></a:txBody><a:tcPr>${fillXml(cell.fill ?? null)}</a:tcPr></a:tc>`;
+}
+
+function shapeGeometryXml(shape: PptxShapeObject): string {
+  if (!shape.radius || shape.radius <= 0) return '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>';
+  if (isCircleLikeShape(shape)) return '<a:prstGeom prst="ellipse"><a:avLst/></a:prstGeom>';
+  const adj = roundRectAdjustment(shape.radius, shape.w, shape.h);
+  return `<a:prstGeom prst="roundRect"><a:avLst><a:gd name="adj" fmla="val ${adj}"/></a:avLst></a:prstGeom>`;
+}
+
+function isCircleLikeShape(shape: PptxShapeObject): boolean {
+  return isCircleLikeBox(shape.w, shape.h, shape.radius);
+}
+
+function isCircleLikeBox(width: number, height: number, radius?: number): boolean {
+  if (!radius || radius <= 0) return false;
+  const shortest = Math.min(width, height);
+  const longest = Math.max(width, height);
+  if (shortest <= 0) return false;
+  const nearlySquare = longest - shortest <= Math.max(1, shortest * 0.05);
+  const fullyRounded = radius >= shortest / 2 - 0.5;
+  return nearlySquare && fullyRounded;
+}
+
+function roundRectAdjustment(radius: number, width: number, height: number): number {
+  const shortest = Math.min(width, height);
+  if (shortest <= 0) return 0;
+  const clampedRadius = clamp(radius, 0, shortest / 2);
+  return Math.round(clamp(clampedRadius / shortest, 0, 0.5) * 100000);
+}
+
+function textAnchorXml(vertical: PptxTextObject['vertical']): string {
+  if (vertical === 'middle') return ' anchor="ctr"';
+  if (vertical === 'bottom') return ' anchor="b"';
+  return '';
 }
 
 function pptxTextAlignValue(align: NonNullable<PptxTextObject['align']>): string {
@@ -896,7 +1114,7 @@ function fillXml(fill: PptxFill, opacity?: number): string {
       return `<a:gs pos="${pos}">${colorXml(stop.color, opacity)}</a:gs>`;
     })
     .join('');
-  return `<a:gradFill rotWithShape="1"><a:gsLst>${gs}</a:gsLst><a:lin ang="${Math.round(fill.angle * 60000)}" scaled="0"/></a:gradFill>`;
+  return `<a:gradFill rotWithShape="1"><a:gsLst>${gs}</a:gsLst><a:lin ang="${cssGradientAngleToOoxml(fill.angle)}" scaled="0"/></a:gradFill>`;
 }
 
 function lineXml(stroke: PptxStroke | null, opacity?: number): string {
@@ -1007,7 +1225,7 @@ function themeXml(): string {
   return `${XML_DECL}<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Office Theme"><a:themeElements><a:clrScheme name="Office"><a:dk1><a:sysClr val="windowText" lastClr="000000"/></a:dk1><a:lt1><a:sysClr val="window" lastClr="FFFFFF"/></a:lt1><a:dk2><a:srgbClr val="44546A"/></a:dk2><a:lt2><a:srgbClr val="E7E6E6"/></a:lt2><a:accent1><a:srgbClr val="4472C4"/></a:accent1><a:accent2><a:srgbClr val="ED7D31"/></a:accent2><a:accent3><a:srgbClr val="A5A5A5"/></a:accent3><a:accent4><a:srgbClr val="FFC000"/></a:accent4><a:accent5><a:srgbClr val="5B9BD5"/></a:accent5><a:accent6><a:srgbClr val="70AD47"/></a:accent6><a:hlink><a:srgbClr val="0563C1"/></a:hlink><a:folHlink><a:srgbClr val="954F72"/></a:folHlink></a:clrScheme><a:fontScheme name="Office"><a:majorFont><a:latin typeface="Calibri Light"/><a:ea typeface=""/><a:cs typeface=""/></a:majorFont><a:minorFont><a:latin typeface="Calibri"/><a:ea typeface=""/><a:cs typeface=""/></a:minorFont></a:fontScheme><a:fmtScheme name="Office"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"><a:lumMod val="110000"/><a:satMod val="105000"/><a:tint val="67000"/></a:schemeClr></a:gs><a:gs pos="50000"><a:schemeClr val="phClr"><a:lumMod val="105000"/><a:satMod val="103000"/><a:tint val="73000"/></a:schemeClr></a:gs><a:gs pos="100000"><a:schemeClr val="phClr"><a:lumMod val="105000"/><a:satMod val="109000"/><a:tint val="81000"/></a:schemeClr></a:gs></a:gsLst><a:lin ang="5400000" scaled="0"/></a:gradFill><a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"><a:satMod val="103000"/><a:lumMod val="102000"/><a:tint val="94000"/></a:schemeClr></a:gs><a:gs pos="50000"><a:schemeClr val="phClr"><a:satMod val="110000"/><a:lumMod val="100000"/><a:shade val="100000"/></a:schemeClr></a:gs><a:gs pos="100000"><a:schemeClr val="phClr"><a:lumMod val="99000"/><a:satMod val="120000"/><a:shade val="78000"/></a:schemeClr></a:gs></a:gsLst><a:lin ang="5400000" scaled="0"/></a:gradFill></a:fillStyleLst><a:lnStyleLst><a:ln w="6350" cap="flat" cmpd="sng" algn="ctr"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:prstDash val="solid"/><a:miter lim="800000"/></a:ln><a:ln w="12700" cap="flat" cmpd="sng" algn="ctr"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:prstDash val="solid"/><a:miter lim="800000"/></a:ln><a:ln w="19050" cap="flat" cmpd="sng" algn="ctr"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:prstDash val="solid"/><a:miter lim="800000"/></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"><a:tint val="95000"/><a:satMod val="170000"/></a:schemeClr></a:solidFill><a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"><a:tint val="93000"/><a:satMod val="150000"/><a:shade val="98000"/><a:lumMod val="102000"/></a:schemeClr></a:gs><a:gs pos="50000"><a:schemeClr val="phClr"><a:tint val="98000"/><a:satMod val="130000"/><a:shade val="90000"/><a:lumMod val="103000"/></a:schemeClr></a:gs><a:gs pos="100000"><a:schemeClr val="phClr"><a:shade val="63000"/><a:satMod val="120000"/></a:schemeClr></a:gs></a:gsLst><a:lin ang="5400000" scaled="0"/></a:gradFill></a:bgFillStyleLst></a:fmtScheme></a:themeElements></a:theme>`;
 }
 
-function parseLinearGradient(value: string): PptxFill {
+function parseLinearGradient(value: string): PptxLinearGradientFill | null {
   if (!value?.includes('linear-gradient(')) return null;
   const start = value.indexOf('linear-gradient(');
   const inner = contentInFunction(value.slice(start), 'linear-gradient');
@@ -1081,9 +1299,17 @@ function splitTopLevel(input: string): string[] {
 }
 
 function directionToAngle(direction: string): number {
-  if (direction.includes('right')) return 90;
-  if (direction.includes('left')) return 270;
-  if (direction.includes('top')) return 0;
+  const hasTop = direction.includes('top');
+  const hasBottom = direction.includes('bottom');
+  const hasRight = direction.includes('right');
+  const hasLeft = direction.includes('left');
+  if (hasTop && hasRight) return 45;
+  if (hasBottom && hasRight) return 135;
+  if (hasBottom && hasLeft) return 225;
+  if (hasTop && hasLeft) return 315;
+  if (hasRight) return 90;
+  if (hasLeft) return 270;
+  if (hasTop) return 0;
   return 180;
 }
 
@@ -1242,6 +1468,10 @@ function angleToOoxml(angle: number): number {
   return Math.round(normalizeDegrees(angle) * 60000);
 }
 
+function cssGradientAngleToOoxml(angle: number): number {
+  return angleToOoxml(angle - 90);
+}
+
 function normalizedVisibleAngle(angle: number): number | undefined {
   const normalized = normalizeDegrees(angle);
   return Math.abs(normalized) < 0.001 ? undefined : normalized;
@@ -1347,6 +1577,66 @@ function byteToHex(value: number): string {
   return clamp(Math.round(byte), 0, 255).toString(16).padStart(2, '0').toUpperCase();
 }
 
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  return {
+    r: Number.parseInt(hex.slice(0, 2), 16),
+    g: Number.parseInt(hex.slice(2, 4), 16),
+    b: Number.parseInt(hex.slice(4, 6), 16),
+  };
+}
+
+function horizontalTextAlign(box: PptxBox, styles: CSSStyleDeclaration): PptxTextObject['align'] {
+  const explicit = textAlign(styles.textAlign);
+  if (explicit !== 'left') return explicit;
+  if (isCircleLikeBox(box.w, box.h, maxBorderRadius(styles))) return 'center';
+  if (isRoundedChipTextBox(box, styles)) return 'center';
+
+  const display = styles.display;
+  if (!/\b(flex|grid)\b/.test(display)) return explicit;
+
+  const flexColumn = styles.flexDirection?.startsWith('column');
+  const source = flexColumn ? styles.alignItems : styles.justifyContent;
+  if (isCenterAlignment(source)) return 'center';
+  if (isEndAlignment(source)) return 'right';
+  return explicit;
+}
+
+function verticalTextAnchor(
+  box: PptxBox,
+  styles: CSSStyleDeclaration,
+): PptxTextObject['vertical'] | undefined {
+  if (isRoundedChipTextBox(box, styles)) return 'middle';
+
+  const display = styles.display;
+  if (!/\b(flex|grid)\b/.test(display)) return undefined;
+
+  const flexColumn = styles.flexDirection?.startsWith('column');
+  const source = flexColumn ? styles.justifyContent : styles.alignItems;
+  if (isCenterAlignment(source)) return 'middle';
+  if (isEndAlignment(source)) return 'bottom';
+  return undefined;
+}
+
+function isCenterAlignment(value?: string | null): boolean {
+  return value === 'center';
+}
+
+function isEndAlignment(value?: string | null): boolean {
+  return value === 'flex-end' || value === 'end' || value === 'right' || value === 'bottom';
+}
+
+function isRoundedChipTextBox(box: PptxBox, styles: CSSStyleDeclaration): boolean {
+  if (box.h > 56 || !maxBorderRadius(styles)) return false;
+  if (styles.whiteSpace && !['normal', 'nowrap'].includes(styles.whiteSpace)) return false;
+  return hasVisibleBoxDecoration(styles);
+}
+
+function hasVisibleBoxDecoration(styles: CSSStyleDeclaration): boolean {
+  if (colorWithPaint(styles.backgroundColor)) return true;
+  if (parseLinearGradient(styles.backgroundImage)) return true;
+  return borderSidesFromStyles(styles).some(Boolean);
+}
+
 function textAlign(value: string): PptxTextObject['align'] {
   if (value === 'center' || value === 'right' || value === 'justify') return value;
   return 'left';
@@ -1406,6 +1696,10 @@ function parseCssPx(value: string): number {
   if (!value || value === 'normal' || value === 'medium' || value === 'none') return 0;
   const n = Number.parseFloat(value);
   return Number.isFinite(n) ? n : 0;
+}
+
+function round4(value: number): number {
+  return Math.round(value * 10000) / 10000;
 }
 
 function collapseText(value: string): string {

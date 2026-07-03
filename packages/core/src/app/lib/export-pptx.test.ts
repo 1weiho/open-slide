@@ -71,6 +71,7 @@ describe('editable PPTX OOXML', () => {
       '<p:bg><p:bgPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:effectLst/></p:bgPr></p:bg>',
     );
     expect(slide).toContain('<p:sp>');
+    expect(slide).toContain('<a:gd name="adj" fmla="val 16000"/>');
     expect(slide).toContain('name="Text 3"');
     expect(slide).toContain('<a:t>Hello </a:t>');
     expect(slide).toContain('<a:t>world</a:t>');
@@ -115,7 +116,123 @@ describe('editable PPTX OOXML', () => {
     expect(slide).toContain('<a:gradFill rotWithShape="1">');
     expect(slide).toContain('<a:gs pos="0"><a:srgbClr val="FF0000"/></a:gs>');
     expect(slide).toContain('<a:gs pos="100000"><a:srgbClr val="0000FF"/></a:gs>');
-    expect(slide).toContain('<a:lin ang="5400000" scaled="0"/>');
+    expect(slide).toContain('<a:lin ang="0" scaled="0"/>');
+  });
+
+  it('uses ellipse geometry for square fully-rounded number badges', async () => {
+    const bytes = await buildEditablePptx([
+      {
+        background: '#ffffff',
+        objects: [
+          {
+            kind: 'shape',
+            x: 80,
+            y: 96,
+            w: 41,
+            h: 41,
+            radius: 999,
+            fill: '#0f172a',
+          },
+          {
+            kind: 'shape',
+            x: 160,
+            y: 96,
+            w: 120,
+            h: 41,
+            radius: 999,
+            fill: '#0f172a',
+          },
+        ],
+      },
+    ]);
+
+    const slide = xml(unzip(bytes), 'ppt/slides/slide1.xml');
+
+    expect(slide).toContain('<a:prstGeom prst="ellipse"><a:avLst/></a:prstGeom>');
+    expect(slide).toContain('<a:prstGeom prst="roundRect">');
+    expect(slide).toContain('<a:gd name="adj" fmla="val 50000"/>');
+  });
+
+  it('maps diagonal CSS linear-gradient directions to PowerPoint angles', async () => {
+    const panel = fakeElement('DIV', {
+      rect: { left: 40, top: 48, width: 320, height: 180 },
+      styles: {
+        display: 'block',
+        backgroundImage: 'linear-gradient(to bottom right, #ff0000 0%, #0000ff 100%)',
+      },
+    });
+    const frame = fakeElement('DIV', {
+      rect: { left: 0, top: 0, width: 1920, height: 1080 },
+      children: [panel],
+      queryResults: [panel],
+      styles: { backgroundColor: '#050505', display: 'block' },
+    });
+    stubDom();
+
+    const slide = await collectEditableSlide(frame as unknown as HTMLElement);
+    const shape = slide.objects.find((object) => object.kind === 'shape');
+
+    expect(shape).toMatchObject({
+      kind: 'shape',
+      fill: { kind: 'linearGradient', angle: 135 },
+    });
+
+    const bytes = await buildEditablePptx([slide]);
+    expect(xml(unzip(bytes), 'ppt/slides/slide1.xml')).toContain(
+      '<a:lin ang="2700000" scaled="0"/>',
+    );
+  });
+
+  it('keeps vertical gradient direction and 8px corner radius for planning cards', async () => {
+    const slideRoot = fakeElement('SECTION', {
+      rect: { left: 0, top: 0, width: 1920, height: 1080 },
+      styles: { backgroundColor: '#050505', display: 'block' },
+    });
+    const panel = fakeElement('DIV', {
+      rect: { left: 75, top: 295, width: 510, height: 265 },
+      styles: {
+        display: 'block',
+        backgroundImage:
+          'linear-gradient(180deg, rgba(7,35,28,0.72) 0%, rgba(255,255,255,0.025) 100%)',
+        borderTopLeftRadius: '8px',
+        borderTopRightRadius: '8px',
+        borderBottomRightRadius: '8px',
+        borderBottomLeftRadius: '8px',
+        borderTopWidth: '1px',
+        borderRightWidth: '1px',
+        borderBottomWidth: '1px',
+        borderLeftWidth: '1px',
+        borderTopColor: 'rgba(110,231,183,0.34)',
+        borderRightColor: 'rgba(110,231,183,0.34)',
+        borderBottomColor: 'rgba(110,231,183,0.34)',
+        borderLeftColor: 'rgba(110,231,183,0.34)',
+      },
+    });
+    const frame = fakeElement('DIV', {
+      rect: { left: 0, top: 0, width: 1920, height: 1080 },
+      children: [slideRoot, panel],
+      queryResults: [slideRoot, panel],
+      styles: { backgroundColor: '#ffffff', display: 'block' },
+    });
+    stubDom();
+
+    const slide = await collectEditableSlide(frame as unknown as HTMLElement);
+    const shape = slide.objects.find(
+      (object) => object.kind === 'shape' && object.x === 75 && object.y === 295,
+    );
+
+    expect(shape).toMatchObject({
+      kind: 'shape',
+      radius: 8,
+      fill: { kind: 'linearGradient', angle: 180 },
+    });
+
+    const slideXml = xml(unzip(await buildEditablePptx([slide])), 'ppt/slides/slide1.xml');
+    expect(slideXml).toContain('<a:gd name="adj" fmla="val 3019"/>');
+    expect(slideXml).toContain('<a:gs pos="0"><a:srgbClr val="061B16"/></a:gs>');
+    expect(slideXml).toContain('<a:gs pos="100000"><a:srgbClr val="0B0B0B"/></a:gs>');
+    expect(slideXml).toContain('<a:lin ang="5400000" scaled="0"/>');
+    expect(slideXml).toContain('<a:srgbClr val="6EE7B7"><a:alpha val="34000"/></a:srgbClr>');
   });
 
   it('can disable wrapping for single-line text boxes', async () => {
@@ -166,6 +283,251 @@ describe('editable PPTX OOXML', () => {
     const textObject = slide.objects.find((object) => object.kind === 'text');
 
     expect(textObject).toMatchObject({ kind: 'text', wrap: true });
+  });
+
+  it('uses flex centering for native PowerPoint text boxes', async () => {
+    const text = fakeTextNode('Center');
+    const badge = fakeElement('DIV', {
+      rect: { left: 32, top: 44, width: 180, height: 72 },
+      textContent: text.textContent,
+      childNodes: [text],
+      styles: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        fontSize: '24px',
+      },
+    });
+    const frame = fakeElement('DIV', {
+      rect: { left: 0, top: 0, width: 1920, height: 1080 },
+      children: [badge],
+      queryResults: [badge],
+      styles: { backgroundColor: '#ffffff', display: 'block' },
+    });
+    stubDom();
+
+    const slide = await collectEditableSlide(frame as unknown as HTMLElement);
+    const textObject = slide.objects.find((object) => object.kind === 'text');
+
+    expect(textObject).toMatchObject({
+      kind: 'text',
+      x: 32,
+      y: 44,
+      w: 180,
+      h: 72,
+      align: 'center',
+      vertical: 'middle',
+    });
+
+    const bytes = await buildEditablePptx([slide]);
+    const slideXml = xml(unzip(bytes), 'ppt/slides/slide1.xml');
+    expect(slideXml).toContain('<a:bodyPr wrap="square" anchor="ctr"');
+    expect(slideXml).toContain('<a:pPr algn="ctr"/>');
+  });
+
+  it('centers text inside rounded single-line chips', async () => {
+    const text = fakeTextNode('设计结构化');
+    const chip = fakeElement('SPAN', {
+      rect: { left: 1127, top: 686, width: 171, height: 31 },
+      textContent: text.textContent,
+      childNodes: [text],
+      styles: {
+        display: 'block',
+        whiteSpace: 'nowrap',
+        fontSize: '15px',
+        lineHeight: '15px',
+        borderTopLeftRadius: '8px',
+        borderTopRightRadius: '8px',
+        borderBottomRightRadius: '8px',
+        borderBottomLeftRadius: '8px',
+        borderTopWidth: '1px',
+        borderRightWidth: '1px',
+        borderBottomWidth: '1px',
+        borderLeftWidth: '1px',
+        borderTopColor: 'rgba(110,231,183,0.36)',
+        borderRightColor: 'rgba(110,231,183,0.36)',
+        borderBottomColor: 'rgba(110,231,183,0.36)',
+        borderLeftColor: 'rgba(110,231,183,0.36)',
+        backgroundColor: 'rgba(110,231,183,0.08)',
+      },
+    });
+    const frame = fakeElement('DIV', {
+      rect: { left: 0, top: 0, width: 1920, height: 1080 },
+      children: [chip],
+      queryResults: [chip],
+      styles: { backgroundColor: '#050505', display: 'block' },
+    });
+    stubDom();
+
+    const slide = await collectEditableSlide(frame as unknown as HTMLElement);
+    const textObject = slide.objects.find((object) => object.kind === 'text');
+
+    expect(textObject).toMatchObject({
+      kind: 'text',
+      align: 'center',
+      vertical: 'middle',
+    });
+
+    const slideXml = xml(unzip(await buildEditablePptx([slide])), 'ppt/slides/slide1.xml');
+    expect(slideXml).toContain('<a:bodyPr wrap="none" anchor="ctr"');
+    expect(slideXml).toContain('<a:pPr algn="ctr"/>');
+  });
+
+  it('centers text inside circle-like number badges', async () => {
+    const text = fakeTextNode('01');
+    const badge = fakeElement('DIV', {
+      rect: { left: 91, top: 239, width: 41, height: 41 },
+      textContent: text.textContent,
+      childNodes: [text],
+      styles: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'normal',
+        borderTopLeftRadius: '999px',
+        borderTopRightRadius: '999px',
+        borderBottomRightRadius: '999px',
+        borderBottomLeftRadius: '999px',
+        backgroundColor: '#0f172a',
+      },
+    });
+    const frame = fakeElement('DIV', {
+      rect: { left: 0, top: 0, width: 1920, height: 1080 },
+      children: [badge],
+      queryResults: [badge],
+      styles: { backgroundColor: '#ffffff', display: 'block' },
+    });
+    stubDom();
+
+    const slide = await collectEditableSlide(frame as unknown as HTMLElement);
+    const shape = slide.objects.find((object) => object.kind === 'shape');
+    const textObject = slide.objects.find((object) => object.kind === 'text');
+
+    expect(shape).toMatchObject({ kind: 'shape', radius: 999 });
+    expect(textObject).toMatchObject({
+      kind: 'text',
+      align: 'center',
+      vertical: 'middle',
+    });
+
+    const slideXml = xml(unzip(await buildEditablePptx([slide])), 'ppt/slides/slide1.xml');
+    expect(slideXml).toContain('<a:prstGeom prst="ellipse"><a:avLst/></a:prstGeom>');
+    expect(slideXml).toContain('<a:bodyPr wrap="square" anchor="ctr"');
+    expect(slideXml).toContain('<a:pPr algn="ctr"/>');
+  });
+
+  it('collects inline SVG roots as vector SVG media', async () => {
+    const svg = fakeSvgElement({
+      rect: { left: 12, top: 24, width: 96, height: 48 },
+      styles: {
+        color: 'rgb(110, 231, 183)',
+        fill: 'none',
+        stroke: 'rgb(110, 231, 183)',
+      },
+    });
+    const frame = fakeElement('DIV', {
+      rect: { left: 0, top: 0, width: 1920, height: 1080 },
+      children: [svg],
+      queryResults: [svg],
+      styles: { backgroundColor: '#ffffff', display: 'block' },
+    });
+    stubDom();
+    vi.stubGlobal(
+      'XMLSerializer',
+      class FakeXmlSerializer {
+        serializeToString(node: FakeSvgElement) {
+          return `<svg xmlns="${node.getAttribute('xmlns')}" width="${node.getAttribute('width')}" height="${node.getAttribute('height')}" color="${node.getAttribute('color')}"></svg>`;
+        }
+      },
+    );
+
+    const slide = await collectEditableSlide(frame as unknown as HTMLElement);
+    const image = slide.objects.find((object) => object.kind === 'image');
+
+    expect(image).toMatchObject({
+      kind: 'image',
+      mime: 'image/svg+xml',
+      x: 12,
+      y: 24,
+      w: 96,
+      h: 48,
+    });
+    expect(new TextDecoder().decode((image as { data: Uint8Array }).data)).toContain('#6EE7B7');
+
+    const bytes = await buildEditablePptx([slide]);
+    const files = unzip(bytes);
+    expect(files['ppt/media/image1.svg']).toEqual((image as { data: Uint8Array }).data);
+  });
+
+  it('normalizes SVG rgba paint attributes for PowerPoint compatibility', async () => {
+    const svg = fakeSvgElement({
+      rect: { left: 12, top: 24, width: 96, height: 48 },
+      styles: {
+        color: 'rgb(110, 231, 183)',
+        fill: 'rgba(110, 231, 183, 0.2)',
+        stroke: 'rgba(255, 255, 255, 0.34)',
+      },
+    });
+    svg.setAttribute('fill', 'rgba(110, 231, 183, 0.2)');
+    svg.setAttribute('stroke', 'rgba(255, 255, 255, 0.34)');
+    const frame = fakeElement('DIV', {
+      rect: { left: 0, top: 0, width: 1920, height: 1080 },
+      children: [svg],
+      queryResults: [svg],
+      styles: { backgroundColor: '#ffffff', display: 'block' },
+    });
+    stubDom();
+    vi.stubGlobal(
+      'XMLSerializer',
+      class FakeXmlSerializer {
+        serializeToString(node: FakeSvgElement) {
+          return `<svg fill="${node.getAttribute('fill')}" fill-opacity="${node.getAttribute('fill-opacity')}" stroke="${node.getAttribute('stroke')}" stroke-opacity="${node.getAttribute('stroke-opacity')}"></svg>`;
+        }
+      },
+    );
+
+    const slide = await collectEditableSlide(frame as unknown as HTMLElement);
+    const image = slide.objects.find((object) => object.kind === 'image');
+    const svgText = new TextDecoder().decode((image as { data: Uint8Array }).data);
+
+    expect(svgText).toContain('fill="#6EE7B7"');
+    expect(svgText).toContain('fill-opacity="0.2"');
+    expect(svgText).toContain('stroke="#FFFFFF"');
+    expect(svgText).toContain('stroke-opacity="0.34"');
+    expect(svgText).not.toContain('rgba(');
+  });
+
+  it('writes SVG images with a PNG fallback blip for PowerPoint compatibility', async () => {
+    const svgBytes = new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"/>');
+    const bytes = await buildEditablePptx([
+      {
+        background: '#ffffff',
+        objects: [
+          {
+            kind: 'image',
+            x: 0,
+            y: 0,
+            w: 120,
+            h: 80,
+            mime: 'image/png',
+            data: pngBytes,
+            svgData: svgBytes,
+          },
+        ],
+      },
+    ]);
+
+    const files = unzip(bytes);
+    const slide = xml(files, 'ppt/slides/slide1.xml');
+    const rels = xml(files, 'ppt/slides/_rels/slide1.xml.rels');
+
+    expect(slide).toContain('<a:blip r:embed="rId2">');
+    expect(slide).toContain('<asvg:svgBlip');
+    expect(slide).toContain('r:embed="rId3"');
+    expect(rels).toContain('Target="../media/image1.png"');
+    expect(rels).toContain('Target="../media/image2.svg"');
+    expect(files['ppt/media/image1.png']).toEqual(pngBytes);
+    expect(files['ppt/media/image2.svg']).toEqual(svgBytes);
   });
 
   it('writes image source cropping for cover-fitted images', async () => {
@@ -397,18 +759,46 @@ function fakeElement(tagName: string, options: FakeElementOptions): FakeElement 
   return new FakeElement(tagName, options);
 }
 
+class FakeSvgElement extends FakeElement {
+  ownerSVGElement: FakeSvgElement | null = null;
+  private attrs = new Map<string, string>();
+
+  getAttribute(name: string) {
+    return this.attrs.get(name) ?? null;
+  }
+
+  setAttribute(name: string, value: string) {
+    this.attrs.set(name, value);
+  }
+
+  cloneNode() {
+    const clone = new FakeSvgElement('svg', {
+      rect: { left: 0, top: 0, width: 1, height: 1 },
+      styles: this.styleMap,
+    });
+    clone.attrs = new Map(this.attrs);
+    return clone;
+  }
+}
+
+function fakeSvgElement(options: FakeElementOptions): FakeSvgElement {
+  return new FakeSvgElement('svg', options);
+}
+
 function fakeTextNode(textContent: string) {
   return { nodeType: 3, textContent };
 }
 
 function stubDom(): void {
-  vi.stubGlobal('Node', { TEXT_NODE: 3 });
+  function FakeNode() {}
+  Object.assign(FakeNode, { TEXT_NODE: 3 });
+  vi.stubGlobal('Node', FakeNode);
   vi.stubGlobal('Element', FakeElement);
   vi.stubGlobal('HTMLElement', FakeElement);
   vi.stubGlobal('HTMLImageElement', class FakeImageElement extends FakeElement {});
   vi.stubGlobal('HTMLTableElement', class FakeTableElement extends FakeElement {});
   vi.stubGlobal('HTMLCanvasElement', class FakeCanvasElement extends FakeElement {});
-  vi.stubGlobal('SVGElement', class FakeSvgElement extends FakeElement {});
+  vi.stubGlobal('SVGElement', FakeSvgElement);
   vi.stubGlobal('HTMLVideoElement', class FakeVideoElement extends FakeElement {});
   vi.stubGlobal('getComputedStyle', (el: FakeElement) =>
     styleDeclaration({
@@ -441,6 +831,11 @@ function stubDom(): void {
       textAlign: 'left',
       textTransform: 'none',
       whiteSpace: 'normal',
+      alignItems: 'normal',
+      justifyContent: 'normal',
+      flexDirection: 'row',
+      fill: 'rgb(0, 0, 0)',
+      stroke: 'none',
       filter: 'none',
       backdropFilter: 'none',
       clipPath: 'none',

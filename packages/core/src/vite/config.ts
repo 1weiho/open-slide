@@ -34,6 +34,9 @@ function readCoreVersion(): string {
 }
 
 const CORE_VERSION = readCoreVersion();
+const REACT_ROOT = path.join(PKG_ROOT, 'node_modules', 'react');
+const REACT_DOM_ROOT = path.join(PKG_ROOT, 'node_modules', 'react-dom');
+const WORKSPACE_NODE_MODULES = path.resolve(PKG_ROOT, '..', '..', 'node_modules');
 
 export type CreateViteConfigOptions = {
   userCwd: string;
@@ -68,13 +71,20 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
       currentPlugin({ userCwd, slidesDir }),
     ],
     resolve: {
-      alias: {
-        '@': APP_ROOT,
-        '@assets': assetsAbs,
-      },
+      alias: [
+        { find: /^@open-slide\/core$/, replacement: path.join(PKG_ROOT, 'src', 'index.ts') },
+        { find: /^react$/, replacement: path.join(REACT_ROOT, 'index.js') },
+        { find: /^react\/jsx-runtime$/, replacement: path.join(REACT_ROOT, 'jsx-runtime.js') },
+        { find: /^react-dom$/, replacement: path.join(REACT_DOM_ROOT, 'index.js') },
+        { find: /^react-dom\/client$/, replacement: path.join(REACT_DOM_ROOT, 'client.js') },
+        { find: '@assets', replacement: assetsAbs },
+        { find: '@', replacement: APP_ROOT },
+      ],
+      dedupe: ['react', 'react-dom', '@open-slide/core'],
     },
     optimizeDeps: {
       entries: [path.join(APP_ROOT, 'main.tsx')],
+      exclude: ['@open-slide/core'],
       include: [
         'react',
         'react-dom',
@@ -107,7 +117,18 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
     },
     server: {
       port: config.port ?? 5173,
-      fs: { allow: [APP_ROOT, userCwd, slidesAbs, themesAbs, assetsAbs] },
+      fs: {
+        allow: [
+          APP_ROOT,
+          PKG_ROOT,
+          path.join(PKG_ROOT, 'node_modules'),
+          WORKSPACE_NODE_MODULES,
+          userCwd,
+          slidesAbs,
+          themesAbs,
+          assetsAbs,
+        ],
+      },
     },
     build: {
       outDir: path.resolve(userCwd, 'dist'),
