@@ -685,6 +685,7 @@ function serializeSvgElement(
     const color = colorWithPaint(styles.color);
     if (color) clone.setAttribute('color', svgColorValue(color));
     inlineSvgComputedPaint(svg, clone);
+    stripSvgCaptureAttributes(clone);
 
     return new XMLSerializer().serializeToString(clone);
   } catch {
@@ -747,6 +748,13 @@ function normalizeSvgPaintAttr(el: SVGElement, attr: 'fill' | 'stroke', value: s
 function svgColorValue(value: string): string {
   const color = parseColor(value);
   return color ? `#${color.hex}` : value;
+}
+
+function stripSvgCaptureAttributes(root: SVGElement): void {
+  for (const el of [root, ...Array.from(root.querySelectorAll<SVGElement>('*'))]) {
+    el.removeAttribute('style');
+    el.removeAttribute('data-slide-loc');
+  }
 }
 
 async function imageFromElement(

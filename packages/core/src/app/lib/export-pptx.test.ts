@@ -497,6 +497,48 @@ describe('editable PPTX OOXML', () => {
     expect(svgText).not.toContain('rgba(');
   });
 
+  it('removes capture-only SVG style attributes before embedding', async () => {
+    const svg = fakeSvgElement({
+      rect: { left: 12, top: 24, width: 96, height: 48 },
+      styles: {
+        color: 'rgb(110, 231, 183)',
+        fill: 'none',
+        stroke: 'rgb(110, 231, 183)',
+      },
+    });
+    svg.setAttribute(
+      'style',
+      'opacity: 1 !important; filter: none !important; transition: none !important;',
+    );
+    svg.setAttribute('data-slide-loc', '1927:4');
+    const frame = fakeElement('DIV', {
+      rect: { left: 0, top: 0, width: 1920, height: 1080 },
+      children: [svg],
+      queryResults: [svg],
+      styles: { backgroundColor: '#ffffff', display: 'block' },
+    });
+    stubDom();
+    vi.stubGlobal(
+      'XMLSerializer',
+      class FakeXmlSerializer {
+        serializeToString(node: FakeSvgElement) {
+          const style = node.getAttribute('style');
+          const loc = node.getAttribute('data-slide-loc');
+          return `<svg${style ? ` style="${style}"` : ''}${loc ? ` data-slide-loc="${loc}"` : ''} stroke="${node.getAttribute('stroke')}"></svg>`;
+        }
+      },
+    );
+
+    const slide = await collectEditableSlide(frame as unknown as HTMLElement);
+    const image = slide.objects.find((object) => object.kind === 'image');
+    const svgText = new TextDecoder().decode((image as { data: Uint8Array }).data);
+
+    expect(svgText).not.toContain('!important');
+    expect(svgText).not.toContain('style=');
+    expect(svgText).not.toContain('data-slide-loc');
+    expect(svgText).toContain('stroke="#6EE7B7"');
+  });
+
   it('writes SVG images with a PNG fallback blip for PowerPoint compatibility', async () => {
     const svgBytes = new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"/>');
     const bytes = await buildEditablePptx([
@@ -769,6 +811,10 @@ class FakeSvgElement extends FakeElement {
 
   setAttribute(name: string, value: string) {
     this.attrs.set(name, value);
+  }
+
+  removeAttribute(name: string) {
+    this.attrs.delete(name);
   }
 
   cloneNode() {
