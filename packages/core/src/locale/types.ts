@@ -115,10 +115,9 @@ export type Locale = {
     exportAsPdf: string;
     exportAsImagePptx: string;
     exportAsPptx: string;
-    comingSoon: string;
-    pptxComingSoonTooltip: string;
     pdfExportFailed: string;
     imagePptxExportFailed: string;
+    pptxExportFailed: string;
     pdfExportSafariUnsupported: string;
     present: string;
     presentMenuAria: string;
