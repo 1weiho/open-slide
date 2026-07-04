@@ -2,6 +2,8 @@ import { Menu } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { LanguageToggle } from '@/components/language-toggle';
+import { ThemeToggle } from '@/components/theme-toggle';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -170,47 +172,51 @@ export function HomeShell() {
       <div className="paper relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-canvas">
         <div className="flex items-center justify-between border-b border-hairline bg-sidebar px-4 py-3 md:hidden">
           <h1 className="font-heading text-lg font-bold tracking-tight">{t.home.appTitle}</h1>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                aria-label={t.home.menu}
-                className="-mr-1.5 flex size-8 items-center justify-center rounded-[6px] text-muted-foreground hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground"
-              >
-                <Menu className="size-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[200px]">
-              <DropdownMenuItem
-                onSelect={() => selectFolder(DRAFT_ID)}
-                className={cn(
-                  selectedId !== THEMES_ID &&
-                    selectedId !== ASSETS_ID &&
-                    'bg-muted text-foreground',
-                )}
-              >
-                <FolderIconChip icon={{ type: 'emoji', value: '📝' }} />
-                <span className="flex-1 truncate">{t.home.slides}</span>
-                <span className="folio">{slideIds.length.toString().padStart(2, '0')}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => selectFolder(THEMES_ID)}
-                className={cn(selectedId === THEMES_ID && 'bg-muted text-foreground')}
-              >
-                <FolderIconChip icon={{ type: 'emoji', value: '🎨' }} />
-                <span className="flex-1 truncate">{t.home.themes}</span>
-                <span className="folio">{themeRegistry.length.toString().padStart(2, '0')}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => selectFolder(ASSETS_ID)}
-                className={cn(selectedId === ASSETS_ID && 'bg-muted text-foreground')}
-              >
-                <FolderIconChip icon={{ type: 'emoji', value: '🗂️' }} />
-                <span className="flex-1 truncate">{t.home.assets}</span>
-                <span className="folio">{globalAssets.length.toString().padStart(2, '0')}</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="-mr-1.5 flex items-center gap-0.5">
+            <LanguageToggle />
+            <ThemeToggle />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={t.home.menu}
+                  className="flex size-8 items-center justify-center rounded-[6px] text-muted-foreground hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground"
+                >
+                  <Menu className="size-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[200px]">
+                <DropdownMenuItem
+                  onSelect={() => selectFolder(DRAFT_ID)}
+                  className={cn(
+                    selectedId !== THEMES_ID &&
+                      selectedId !== ASSETS_ID &&
+                      'bg-muted text-foreground',
+                  )}
+                >
+                  <FolderIconChip icon={{ type: 'emoji', value: '📝' }} />
+                  <span className="flex-1 truncate">{t.home.slides}</span>
+                  <span className="folio">{slideIds.length.toString().padStart(2, '0')}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => selectFolder(THEMES_ID)}
+                  className={cn(selectedId === THEMES_ID && 'bg-muted text-foreground')}
+                >
+                  <FolderIconChip icon={{ type: 'emoji', value: '🎨' }} />
+                  <span className="flex-1 truncate">{t.home.themes}</span>
+                  <span className="folio">{themeRegistry.length.toString().padStart(2, '0')}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => selectFolder(ASSETS_ID)}
+                  className={cn(selectedId === ASSETS_ID && 'bg-muted text-foreground')}
+                >
+                  <FolderIconChip icon={{ type: 'emoji', value: '🗂️' }} />
+                  <span className="flex-1 truncate">{t.home.assets}</span>
+                  <span className="folio">{globalAssets.length.toString().padStart(2, '0')}</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         <div
