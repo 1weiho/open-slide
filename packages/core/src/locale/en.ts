@@ -42,6 +42,7 @@ export const en: Locale = {
     themes: 'Themes',
     assets: 'Assets',
     folders: 'Folders',
+    slides: 'Slides',
     menu: 'Menu',
     newFolder: 'New folder',
     folderName: 'Folder name',

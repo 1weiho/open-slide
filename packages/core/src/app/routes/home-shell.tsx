@@ -183,11 +183,15 @@ export function HomeShell() {
             <DropdownMenuContent align="end" className="min-w-[200px]">
               <DropdownMenuItem
                 onSelect={() => selectFolder(DRAFT_ID)}
-                className={cn(selectedId === DRAFT_ID && 'bg-muted text-foreground')}
+                className={cn(
+                  selectedId !== THEMES_ID &&
+                    selectedId !== ASSETS_ID &&
+                    'bg-muted text-foreground',
+                )}
               >
                 <FolderIconChip icon={{ type: 'emoji', value: '📝' }} />
-                <span className="flex-1 truncate">{t.home.draft}</span>
-                <span className="folio">{countFor(null).toString().padStart(2, '0')}</span>
+                <span className="flex-1 truncate">{t.home.slides}</span>
+                <span className="folio">{slideIds.length.toString().padStart(2, '0')}</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={() => selectFolder(THEMES_ID)}

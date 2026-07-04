@@ -42,6 +42,7 @@ export const zhCN: Locale = {
     themes: '主题',
     assets: '素材',
     folders: '文件夹',
+    slides: '幻灯片',
     menu: '菜单',
     newFolder: '新建文件夹',
     folderName: '文件夹名称',

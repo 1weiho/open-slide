@@ -42,6 +42,7 @@ export const zhTW: Locale = {
     themes: '主題',
     assets: '素材',
     folders: '資料夾',
+    slides: '投影片',
     menu: '選單',
     newFolder: '新增資料夾',
     folderName: '資料夾名稱',
