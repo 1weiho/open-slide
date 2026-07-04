@@ -42,6 +42,7 @@ export const zhTW: Locale = {
     themes: '主題',
     assets: '素材',
     folders: '資料夾',
+    menu: '選單',
     newFolder: '新增資料夾',
     folderName: '資料夾名稱',
     updateAvailable: 'open-slide {version} 已發布，請更新套件以取得最新版本。',

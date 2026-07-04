@@ -1,11 +1,18 @@
+import { Menu } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useAssets } from '@/lib/assets';
 import { useFolders } from '@/lib/folders';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
-import { MobileFolderPill } from '../components/sidebar/mobile-pill';
+import { FolderIconChip } from '../components/sidebar/folder-item';
 import { ASSETS_ID, DRAFT_ID, Sidebar, THEMES_ID } from '../components/sidebar/sidebar';
 import type { FoldersManifest } from '../lib/sdk';
 import { slideIds } from '../lib/slides';
@@ -18,6 +25,7 @@ export type HomeOutletContext = {
   slidesByFolder: Record<string, string[]>;
   /** Selected folder id when on `/`; equals DRAFT_ID, a folder id, or THEMES_ID. */
   selectedId: string;
+  selectFolder: (id: string) => void;
   reportTitle: (slideId: string, title: string) => void;
   titleMap: Record<string, string>;
   assign: (slideId: string, folderId: string | null) => Promise<void>;
@@ -115,6 +123,7 @@ export function HomeShell() {
     draftSlides,
     slidesByFolder,
     selectedId,
+    selectFolder,
     reportTitle,
     titleMap,
     assign,
@@ -161,41 +170,43 @@ export function HomeShell() {
       <div className="paper relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-canvas">
         <div className="flex items-center justify-between border-b border-hairline bg-sidebar px-4 py-3 md:hidden">
           <h1 className="font-heading text-lg font-bold tracking-tight">{t.home.appTitle}</h1>
-        </div>
-        <div className="border-b border-hairline bg-sidebar px-4 py-2 md:hidden">
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            <MobileFolderPill
-              icon={{ type: 'emoji', value: '📝' }}
-              label={t.home.draft}
-              count={countFor(null)}
-              active={selectedId === DRAFT_ID}
-              onClick={() => selectFolder(DRAFT_ID)}
-            />
-            <MobileFolderPill
-              icon={{ type: 'emoji', value: '🎨' }}
-              label={t.home.themes}
-              count={themeRegistry.length}
-              active={selectedId === THEMES_ID}
-              onClick={() => selectFolder(THEMES_ID)}
-            />
-            <MobileFolderPill
-              icon={{ type: 'emoji', value: '🗂️' }}
-              label={t.home.assets}
-              count={globalAssets.length}
-              active={selectedId === ASSETS_ID}
-              onClick={() => selectFolder(ASSETS_ID)}
-            />
-            {manifest.folders.map((f) => (
-              <MobileFolderPill
-                key={f.id}
-                icon={f.icon}
-                label={f.name}
-                count={countFor(f.id)}
-                active={selectedId === f.id}
-                onClick={() => selectFolder(f.id)}
-              />
-            ))}
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label={t.home.menu}
+                className="-mr-1.5 flex size-8 items-center justify-center rounded-[6px] text-muted-foreground hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground"
+              >
+                <Menu className="size-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[200px]">
+              <DropdownMenuItem
+                onSelect={() => selectFolder(DRAFT_ID)}
+                className={cn(selectedId === DRAFT_ID && 'bg-muted text-foreground')}
+              >
+                <FolderIconChip icon={{ type: 'emoji', value: '📝' }} />
+                <span className="flex-1 truncate">{t.home.draft}</span>
+                <span className="folio">{countFor(null).toString().padStart(2, '0')}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => selectFolder(THEMES_ID)}
+                className={cn(selectedId === THEMES_ID && 'bg-muted text-foreground')}
+              >
+                <FolderIconChip icon={{ type: 'emoji', value: '🎨' }} />
+                <span className="flex-1 truncate">{t.home.themes}</span>
+                <span className="folio">{themeRegistry.length.toString().padStart(2, '0')}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => selectFolder(ASSETS_ID)}
+                className={cn(selectedId === ASSETS_ID && 'bg-muted text-foreground')}
+              >
+                <FolderIconChip icon={{ type: 'emoji', value: '🗂️' }} />
+                <span className="flex-1 truncate">{t.home.assets}</span>
+                <span className="folio">{globalAssets.length.toString().padStart(2, '0')}</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <div

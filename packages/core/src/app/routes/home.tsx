@@ -76,6 +76,7 @@ export function Home() {
     draftSlides,
     slidesByFolder,
     selectedId,
+    selectFolder,
     reportTitle,
     titleMap,
     assign,
@@ -133,6 +134,42 @@ export function Home() {
           <h1 className="font-heading text-[32px] font-semibold leading-[1.05] tracking-[-0.025em] md:text-[44px]">
             {title}
           </h1>
+          {manifest.folders.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={t.home.folders}
+                  className="flex size-7 items-center justify-center rounded-[6px] border border-border bg-card text-muted-foreground hover:text-foreground aria-expanded:border-foreground/40 aria-expanded:text-foreground md:hidden"
+                >
+                  <ChevronDown className="size-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="min-w-[200px]">
+                <DropdownMenuItem
+                  onSelect={() => selectFolder(DRAFT_ID)}
+                  className={cn(isDraft && 'bg-muted text-foreground')}
+                >
+                  <FolderIconChip icon={{ type: 'emoji', value: '📝' }} />
+                  <span className="flex-1 truncate">{t.home.draft}</span>
+                  <span className="folio">{draftSlides.length.toString().padStart(2, '0')}</span>
+                </DropdownMenuItem>
+                {manifest.folders.map((f) => (
+                  <DropdownMenuItem
+                    key={f.id}
+                    onSelect={() => selectFolder(f.id)}
+                    className={cn(selectedId === f.id && 'bg-muted text-foreground')}
+                  >
+                    <FolderIconChip icon={f.icon} />
+                    <span className="flex-1 truncate">{f.name}</span>
+                    <span className="folio">
+                      {(slidesByFolder[f.id]?.length ?? 0).toString().padStart(2, '0')}
+                    </span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           {!loading && (
             <span className="folio ml-1 self-end pb-2">
               {(isSearching ? filteredSlides.length : visibleSlides.length)
