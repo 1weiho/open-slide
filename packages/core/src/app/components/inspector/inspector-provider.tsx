@@ -244,7 +244,6 @@ function replayDomTextRangeStyles(el: HTMLElement, html: string, ops: TextRangeS
 type InspectorCtx = {
   slideId: string;
   active: boolean;
-  activate: () => void;
   toggle: () => void;
   cancel: () => void;
   comments: SlideComment[];
@@ -285,14 +284,11 @@ export function InspectorProvider({
   pageIndex: number;
   children: ReactNode;
 }) {
-  const [manualActive, setManualActive] = useState(false);
-  const [heldActive, setHeldActive] = useState(false);
+  const [active, setActive] = useState(false);
   const [selected, setSelected] = useState<SelectedTarget | null>(null);
   const { comments, error, refetch, add, remove } = useComments(slideId);
   const { applyEdit, applyEdits } = useEditor(slideId);
   const history = useHistory();
-  const active = manualActive || heldActive;
-  const manualActiveRef = useRef(manualActive);
 
   const pendingRef = useRef<Map<string, Bucket>>(new Map());
   const instanceCounterRef = useRef(0);
@@ -919,24 +915,15 @@ export function InspectorProvider({
     return () => observer.disconnect();
   }, [selected]);
 
-  const activate = useCallback(() => {
-    manualActiveRef.current = true;
-    setManualActive(true);
+  const toggle = useCallback(() => {
+    setActive((a) => {
+      if (a) setSelected(null);
+      return !a;
+    });
   }, []);
 
-  const toggle = useCallback(() => {
-    setManualActive((a) => {
-      if (a && !heldActive) setSelected(null);
-      const next = !a;
-      manualActiveRef.current = next;
-      return next;
-    });
-  }, [heldActive]);
-
   const cancel = useCallback(() => {
-    manualActiveRef.current = false;
-    setManualActive(false);
-    setHeldActive(false);
+    setActive(false);
     setSelected(null);
   }, []);
 
@@ -960,39 +947,6 @@ export function InspectorProvider({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [toggle]);
-
-  useEffect(() => {
-    if (import.meta.env.PROD) return;
-
-    const isApplePlatform = /Mac|iPhone|iPad|iPod/.test(
-      `${navigator.platform} ${navigator.userAgent}`,
-    );
-    const holdKey = isApplePlatform ? 'Meta' : 'Control';
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.repeat) return;
-      if (e.target instanceof HTMLElement && e.target.matches('input, textarea')) return;
-      if (e.key !== holdKey) return;
-      setHeldActive(true);
-    };
-
-    const releaseHeld = (e?: KeyboardEvent) => {
-      if (e && e.key !== holdKey) return;
-      setHeldActive(false);
-      if (!manualActiveRef.current) setSelected(null);
-    };
-
-    const onBlur = () => releaseHeld();
-
-    window.addEventListener('keydown', onKeyDown, true);
-    window.addEventListener('keyup', releaseHeld, true);
-    window.addEventListener('blur', onBlur, true);
-    return () => {
-      window.removeEventListener('keydown', onKeyDown, true);
-      window.removeEventListener('keyup', releaseHeld, true);
-      window.removeEventListener('blur', onBlur, true);
-    };
-  }, []);
 
   const openCrop = useCallback((anchor: HTMLImageElement) => {
     const loc = anchor.dataset.slideLoc;
@@ -1019,7 +973,6 @@ export function InspectorProvider({
     () => ({
       slideId,
       active,
-      activate,
       toggle,
       cancel,
       comments,
@@ -1042,7 +995,6 @@ export function InspectorProvider({
     [
       slideId,
       active,
-      activate,
       toggle,
       cancel,
       comments,
