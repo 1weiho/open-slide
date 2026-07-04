@@ -505,10 +505,12 @@ function blobToDataUri(blob: Blob): Promise<string> {
   });
 }
 
+// Order matters: sans is tested before serif so a "sans-serif" token isn't
+// captured by the serif rule (which would map every sans stack to Georgia).
 const FONT_SUBSTITUTIONS: { test: RegExp; face: string }[] = [
   { test: /mono|consol|courier|jetbrains/i, face: 'Consolas' },
-  { test: /georgia|times|serif|iowan|charter/i, face: 'Georgia' },
   { test: /inter|geist|aptos|helvetica|arial|system-ui|sans/i, face: 'Aptos' },
+  { test: /georgia|times|serif|iowan|charter/i, face: 'Georgia' },
 ];
 
 function substituteFont(fontFamily: string): string {
@@ -517,8 +519,10 @@ function substituteFont(fontFamily: string): string {
       .split(',')[0]
       ?.trim()
       .replace(/^["']|["']$/g, '') ?? '';
+  // Match the first declared family, not the whole stack — otherwise the
+  // trailing generic (e.g. `sans-serif`) drives the substitution.
   for (const { test, face } of FONT_SUBSTITUTIONS) {
-    if (test.test(fontFamily)) return face;
+    if (test.test(first)) return face;
   }
   return first || 'Aptos';
 }

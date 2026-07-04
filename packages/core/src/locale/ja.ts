@@ -116,7 +116,7 @@ export const ja: Locale = {
     exportAsPptx: 'PPTX として書き出し',
     pdfExportFailed: 'PDF の書き出しに失敗しました',
     imagePptxExportFailed: 'PPTX の書き出しに失敗しました',
-    pptxExportFailed: 'PPTX の書き出しに失敗しました',
+    pptxExportFailed: '編集可能な PPTX の書き出しに失敗しました',
     pdfExportSafariUnsupported:
       'PDF の書き出しは現在 Safari では対応していません。Chromium ベースのブラウザでお試しください。',
     present: '発表',

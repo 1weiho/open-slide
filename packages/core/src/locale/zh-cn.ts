@@ -114,7 +114,7 @@ export const zhCN: Locale = {
     exportAsPptx: '导出 PPTX',
     pdfExportFailed: 'PDF 导出失败',
     imagePptxExportFailed: 'PPTX 导出失败',
-    pptxExportFailed: 'PPTX 导出失败',
+    pptxExportFailed: '可编辑 PPTX 导出失败',
     pdfExportSafariUnsupported:
       '导出 PDF 目前不支持 Safari 设备，请尝试使用基于 Chromium 的浏览器替代。',
     present: '演示',
