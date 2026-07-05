@@ -1,5 +1,13 @@
 # @open-slide/core
 
+## 1.13.3
+
+### Patch Changes
+
+- [#284](https://github.com/1weiho/open-slide/pull/284) [`0d4e669`](https://github.com/1weiho/open-slide/commit/0d4e6698aefe043f97c1cf437124dddc18cecabb) Thanks [@1weiho](https://github.com/1weiho)! - Add an all-slides "Slides" view as the default home page, move Draft into the sidebar folders list, and give the mobile home a hamburger menu, folder dropdown, and theme/language toggles.
+
+- [#282](https://github.com/1weiho/open-slide/pull/282) [`1ef7f84`](https://github.com/1weiho/open-slide/commit/1ef7f84f7d435cd61f7c8b4db0853b3ada3739a5) Thanks [@1weiho](https://github.com/1weiho)! - Revert inspector quick activation gestures (Command/Control hold and double-click selection).
+
 ## 1.13.2
 
 ### Patch Changes
