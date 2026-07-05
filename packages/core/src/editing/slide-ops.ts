@@ -191,6 +191,105 @@ function escapeSingleQuoted(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
+const SLIDE_ENTRY_NAMES = ['index.tsx', 'index.jsx', 'index.ts', 'index.js'];
+
+/**
+ * Remove the `theme: '<themeId>'` field from a slide module's `export const meta`,
+ * but only when it names `themeId`. Returns the rewritten source, or `null` when
+ * nothing changed (no meta object, no theme field, or it points at a different
+ * theme). Best-effort: returns `null` rather than guessing when the meta shape is
+ * too surprising to edit safely.
+ */
+export function removeMetaThemeFromSource(source: string, themeId: string): string | null {
+  const metaStart = source.search(/export\s+const\s+meta\b/);
+  if (metaStart === -1) return null;
+  const eqIdx = source.indexOf('=', metaStart);
+  if (eqIdx === -1) return null;
+  const openBrace = source.indexOf('{', eqIdx);
+  if (openBrace === -1) return null;
+
+  let depth = 0;
+  let closeBrace = -1;
+  for (let i = openBrace; i < source.length; i++) {
+    const ch = source[i];
+    if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) {
+        closeBrace = i;
+        break;
+      }
+    }
+  }
+  if (closeBrace === -1) return null;
+
+  const body = source.slice(openBrace + 1, closeBrace);
+  // The leading boundary keeps this from matching inside a longer key (e.g.
+  // `subtheme:`); the trailing lookahead keeps it from matching `theme: '…'`
+  // embedded in a string value, where the quote isn't followed by a separator.
+  const propRe = /(^|[\s,{])theme\s*:\s*(['"`])((?:\\.|(?!\2).)*)\2(?=\s*(?:[,}\n]|$))/;
+  const match = propRe.exec(body);
+  if (!match || match[3] !== themeId) return null;
+
+  let start = match.index + match[1].length;
+  let end = match.index + match[0].length;
+
+  // Consume exactly one separator comma so the object stays well-formed: prefer a
+  // trailing comma, otherwise fall back to a leading one.
+  const trailingComma = body.slice(end).match(/^[ \t]*,[ \t]*/);
+  if (trailingComma) {
+    end += trailingComma[0].length;
+  } else {
+    const leadingComma = body.slice(0, start).match(/,[ \t]*$/);
+    if (leadingComma) start -= leadingComma[0].length;
+  }
+
+  // If the property sat alone on its line, drop the now-empty line entirely.
+  const lineStart = body.lastIndexOf('\n', start - 1);
+  if (/^[ \t]*$/.test(body.slice(lineStart + 1, start))) {
+    start = lineStart === -1 ? 0 : lineStart;
+    const trailingWs = body.slice(end).match(/^[ \t]*(?=\n|$)/);
+    if (trailingWs) end += trailingWs[0].length;
+  }
+
+  const newBody = body.slice(0, start) + body.slice(end);
+  return source.slice(0, openBrace + 1) + newBody + source.slice(closeBrace);
+}
+
+/**
+ * Strip `meta.theme` from every slide that names `themeId`, in place. Returns the
+ * ids of the slides that were edited.
+ */
+export async function clearThemeFromSlides(slidesRoot: string, themeId: string): Promise<string[]> {
+  const dirents = await fs.readdir(slidesRoot, { withFileTypes: true }).catch(() => null);
+  if (!dirents) return [];
+
+  const cleared: string[] = [];
+  for (const dirent of dirents) {
+    if (!dirent.isDirectory() || !SLIDE_ID_RE.test(dirent.name)) continue;
+    for (const name of SLIDE_ENTRY_NAMES) {
+      const entry = path.join(slidesRoot, dirent.name, name);
+      let src: string;
+      try {
+        src = await fs.readFile(entry, 'utf8');
+      } catch {
+        continue;
+      }
+      const next = removeMetaThemeFromSource(src, themeId);
+      if (next !== null) {
+        // One unwritable slide must not abort the sweep mid-way — a dangling
+        // meta.theme is the same state as deleting the theme files by hand.
+        try {
+          await fs.writeFile(entry, next);
+          cleared.push(dirent.name);
+        } catch {}
+      }
+      break;
+    }
+  }
+  return cleared;
+}
+
 /**
  * Rewrite (or insert) the `title` field in the slide module's `export const meta`.
  *

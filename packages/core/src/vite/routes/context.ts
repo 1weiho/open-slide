@@ -8,6 +8,8 @@ export type ApiContext = {
   slidesDir: string;
   slidesRoot: string;
   globalAssetsRoot: string;
+  themesRoot: string;
+  themeImportAllowedHosts?: string[];
   manifestPath: string;
   coreVersion: string;
 };
@@ -16,6 +18,8 @@ export type ApiPluginOptions = {
   userCwd: string;
   slidesDir?: string;
   assetsDir?: string;
+  themesDir?: string;
+  themeImportAllowedHosts?: string[];
   coreVersion: string;
 };
 
@@ -23,14 +27,18 @@ export function makeContext(opts: ApiPluginOptions): ApiContext {
   const userCwd = opts.userCwd;
   const slidesDir = opts.slidesDir ?? 'slides';
   const assetsDir = opts.assetsDir ?? 'assets';
+  const themesDir = opts.themesDir ?? 'themes';
   const slidesRoot = path.resolve(userCwd, slidesDir);
   const globalAssetsRoot = path.resolve(userCwd, assetsDir);
+  const themesRoot = path.resolve(userCwd, themesDir);
   const manifestPath = path.join(slidesRoot, '.folders.json');
   return {
     userCwd,
     slidesDir,
     slidesRoot,
     globalAssetsRoot,
+    themesRoot,
+    themeImportAllowedHosts: opts.themeImportAllowedHosts,
     manifestPath,
     coreVersion: opts.coreVersion,
   };

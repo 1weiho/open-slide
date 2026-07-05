@@ -2,6 +2,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useLocale } from '@/lib/use-locale';
 import { FolderIconChip } from '../components/sidebar/folder-item';
 import { ThemeDetail } from '../components/themes/theme-detail';
+import { ThemeImportDialog } from '../components/themes/theme-import-dialog';
 import { ThemesGallery } from '../components/themes/themes-gallery';
 import { themes as themeRegistry } from '../lib/themes';
 
@@ -19,6 +20,11 @@ export function ThemesGalleryPage() {
           <span className="folio ml-1 self-end pb-2">
             {themeRegistry.length.toString().padStart(2, '0')}
           </span>
+          {import.meta.env.DEV ? (
+            <div className="ml-auto self-center">
+              <ThemeImportDialog />
+            </div>
+          ) : null}
         </div>
       </header>
       <ThemesGallery onOpen={(id) => navigate(`/themes/${encodeURIComponent(id)}`)} />

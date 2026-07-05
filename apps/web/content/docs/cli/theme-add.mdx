@@ -1,0 +1,80 @@
+---
+title: open-slide theme add
+description: Import a theme from another deployed open-slide site into your workspace.
+---
+
+Pull a theme — its `<id>.md` recipe and `<id>.demo.tsx` preview — from any
+deployed open-slide site (or a running dev server) straight into your local
+`themes/` folder.
+
+```text
+open-slide theme add <url>
+```
+
+The `open-slide` bin lives in your workspace, not on your global `PATH`, so
+run it through your package manager from the project root:
+
+```text
+npx open-slide theme add <url>          # npm
+pnpm exec open-slide theme add <url>    # pnpm
+yarn open-slide theme add <url>         # yarn
+bunx open-slide theme add <url>         # bun
+```
+
+`<url>` can be any of:
+
+- a deployed site root — `https://example.com`
+- a theme manifest — `https://example.com/themes/index.json`
+- a single theme file — `https://example.com/themes/corporate.md`
+- a copied theme page link — `https://example.com/themes/corporate`
+
+When a site exposes several themes and you don't pass `--id` or `--all`, the
+CLI lists them and prompts you to pick one.
+
+## Trust prompt
+
+A theme's `.demo` file is code that runs in your dev server and build. Before
+importing from a host you haven't allow-listed, the CLI shows the source and
+asks for confirmation. Pass `--yes` to skip it in scripts, or restrict imports
+to known hosts via [`themeImport.allowedHosts`](#restricting-sources).
+
+## Name collisions
+
+Importing a theme whose id already exists copies it in as `<id>-1`, `<id>-2`,
+… (with a matching suffixed display name) instead of overwriting — so
+duplicates stay distinguishable. Pass `--force` to replace the existing theme
+in place.
+
+## Flags
+
+| Flag           | Default | Description                                              |
+| -------------- | ------- | -------------------------------------------------------- |
+| `--id <id>`    | —       | Pick one theme by id when the source exposes several.    |
+| `--all`        | off     | Import every theme the source exposes.                   |
+| `--force`      | off     | Overwrite existing theme files instead of renaming.      |
+| `-y, --yes`    | off     | Skip the source-trust confirmation prompt.               |
+
+## Restricting sources
+
+To lock imports down to hosts you trust, set `themeImport.allowedHosts` in
+`open-slide.config.ts`. An entry matches the host exactly or any subdomain of
+it. When set, off-list hosts are rejected and the trust prompt is skipped.
+
+```ts title="open-slide.config.ts"
+import type { OpenSlideConfig } from '@open-slide/core';
+
+const openSlideConfig: OpenSlideConfig = {
+  themeImport: {
+    allowedHosts: ['themes.mycompany.com'],
+  },
+};
+
+export default openSlideConfig;
+```
+
+## From the dev UI
+
+The same import is available in the **Themes** panel's **Import from URL**
+button while running `open-slide dev`. Each theme page also has a **Copy theme
+URL** button to grab a link others can import from. See
+[Themes](/docs/core-feature/themes#sharing-themes).

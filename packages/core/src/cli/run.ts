@@ -81,6 +81,13 @@ interface SyncFlags {
   dryRun?: boolean;
 }
 
+interface ThemeAddFlags {
+  id?: string;
+  all?: boolean;
+  force?: boolean;
+  yes?: boolean;
+}
+
 function resolveBuiltinSkillsDir(): string {
   // dist/cli/bin.js → ../../skills (package root + /skills)
   const here = path.dirname(fileURLToPath(import.meta.url));
@@ -131,6 +138,20 @@ export async function run(argv: string[]): Promise<void> {
     .action(async (flags: ServerFlags) => {
       const { preview } = await import('./preview.ts');
       await preview(flags);
+    });
+
+  const theme = program.command('theme').description('Manage themes');
+  theme
+    .command('add')
+    .argument('<url>', 'theme .md URL, themes/index.json, or a deployed open-slide site URL')
+    .description('Add a theme from a deployed open-slide URL into this workspace')
+    .option('--id <id>', 'pick a theme by id when the source exposes several')
+    .option('--all', 'import every theme the source exposes')
+    .option('--force', 'overwrite existing theme files')
+    .option('-y, --yes', 'skip the source-trust confirmation prompt')
+    .action(async (url: string, flags: ThemeAddFlags) => {
+      const { themeAdd } = await import('./theme.ts');
+      await themeAdd(url, flags);
     });
 
   program

@@ -3,9 +3,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  clearThemeFromSlides,
   duplicateNotesElementInSource,
   duplicatePageInDefaultExportInSource,
   duplicateSlideDir,
+  removeMetaThemeFromSource,
   removeNotesElementInSource,
   removePageFromDefaultExportInSource,
   reorderDefaultExportPagesInSource,
@@ -147,6 +149,90 @@ describe('updateMetaTitleInSource', () => {
 
   it('returns null if there is no meta and no default export', () => {
     expect(updateMetaTitleInSource('// nothing here', 'x')).toBeNull();
+  });
+});
+
+describe('removeMetaThemeFromSource', () => {
+  it('drops the theme line from a multi-line meta and leaves siblings intact', () => {
+    const source = `export const meta: SlideMeta = {\n  title: 'Raycast',\n  theme: 'aurora',\n  createdAt: '2026-04-25',\n};\nexport default [];\n`;
+    const out = removeMetaThemeFromSource(source, 'aurora');
+    expect(out).toBe(
+      `export const meta: SlideMeta = {\n  title: 'Raycast',\n  createdAt: '2026-04-25',\n};\nexport default [];\n`,
+    );
+  });
+
+  it('handles theme as the trailing property with no comma', () => {
+    const source = `export const meta = {\n  title: 'X',\n  theme: 'aurora'\n};\nexport default [];\n`;
+    const out = removeMetaThemeFromSource(source, 'aurora');
+    expect(out).toBe(`export const meta = {\n  title: 'X',\n};\nexport default [];\n`);
+  });
+
+  it('removes the leading comma when theme is inline and trailing', () => {
+    const source = `export const meta = { title: 'X', theme: 'aurora' };\nexport default [];\n`;
+    const out = removeMetaThemeFromSource(source, 'aurora');
+    expect(out).toBe(`export const meta = { title: 'X' };\nexport default [];\n`);
+  });
+
+  it('keeps the separating comma when theme is inline and in the middle', () => {
+    const source = `export const meta = { title: 'X', theme: 'aurora', createdAt: 'y' };\n`;
+    const out = removeMetaThemeFromSource(source, 'aurora');
+    expect(out).toBe(`export const meta = { title: 'X', createdAt: 'y' };\n`);
+  });
+
+  it('returns null when the theme names a different id', () => {
+    const source = `export const meta = {\n  theme: 'replit',\n};\n`;
+    expect(removeMetaThemeFromSource(source, 'aurora')).toBeNull();
+  });
+
+  it('leaves properties whose name merely ends in "theme" alone', () => {
+    const source = `export const meta = {\n  subtheme: 'aurora',\n  title: 'X',\n};\n`;
+    expect(removeMetaThemeFromSource(source, 'aurora')).toBeNull();
+  });
+
+  it('leaves string values that happen to contain a theme field alone', () => {
+    const source = `export const meta = {\n  title: "Our theme: 'aurora' rollout",\n};\n`;
+    expect(removeMetaThemeFromSource(source, 'aurora')).toBeNull();
+  });
+
+  it('returns null when there is no theme field', () => {
+    const source = `export const meta = {\n  title: 'X',\n};\n`;
+    expect(removeMetaThemeFromSource(source, 'aurora')).toBeNull();
+  });
+
+  it('returns null when there is no meta export', () => {
+    expect(removeMetaThemeFromSource('export default [];\n', 'aurora')).toBeNull();
+  });
+});
+
+describe('clearThemeFromSlides', () => {
+  it('strips meta.theme only from slides that use the given theme', async () => {
+    await withSlidesRoot(async (root) => {
+      const write = async (id: string, theme: string) => {
+        await fs.mkdir(path.join(root, id), { recursive: true });
+        await fs.writeFile(
+          path.join(root, id, 'index.tsx'),
+          `export const meta = {\n  title: '${id}',\n  theme: '${theme}',\n};\nexport default [];\n`,
+          'utf8',
+        );
+      };
+      await write('uses-aurora', 'aurora');
+      await write('uses-other', 'replit');
+
+      const cleared = await clearThemeFromSlides(root, 'aurora');
+      expect(cleared).toEqual(['uses-aurora']);
+
+      const a = await fs.readFile(path.join(root, 'uses-aurora', 'index.tsx'), 'utf8');
+      const b = await fs.readFile(path.join(root, 'uses-other', 'index.tsx'), 'utf8');
+      expect(a).not.toContain('theme:');
+      expect(a).toContain("title: 'uses-aurora'");
+      expect(b).toContain("theme: 'replit'");
+    });
+  });
+
+  it('returns an empty list when the slides root is missing', async () => {
+    expect(
+      await clearThemeFromSlides(path.join(os.tmpdir(), 'open-slide-nope-xyz'), 'aurora'),
+    ).toEqual([]);
   });
 });
 

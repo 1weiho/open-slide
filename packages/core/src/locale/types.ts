@@ -441,5 +441,31 @@ export type Locale = {
     usedByEmpty: string;
     expandPromptAria: string;
     collapsePromptAria: string;
+    importFromUrl: string;
+    importDialogTitle: string;
+    importDialogDescription: string;
+    importUrlPlaceholder: string;
+    importWarning: string;
+    importAction: string;
+    importing: string;
+    /** template: "Found {count} themes at this source. Choose which to import." */
+    importMultipleFound: string;
+    /** template: "Imported {ids}" */
+    importSuccess: string;
+    /** template: "Renamed: {renames}" */
+    importRenamed: string;
+    /** template: "Import failed: {msg}" */
+    importFailed: string;
+    copyUrl: string;
+    copyUrlSuccess: string;
+    copyUrlFailed: string;
+    themeActions: string;
+    deleteEyebrow: string;
+    deleteDialogTitle: string;
+    /** template: "This permanently removes {name} and its files from disk. This cannot be undone." */
+    deleteDialogDescription: string;
+    /** template: "Deleted {name}" */
+    deleteSuccess: string;
+    deleteFailed: string;
   };
 };

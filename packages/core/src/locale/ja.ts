@@ -420,5 +420,29 @@ export const ja: Locale = {
     usedByEmpty: 'このテーマを使うスライドはまだありません。',
     expandPromptAria: 'プロンプトを展開',
     collapsePromptAria: 'プロンプトを折りたたむ',
+    importFromUrl: 'URL から取り込む',
+    importDialogTitle: 'テーマを取り込む',
+    importDialogDescription:
+      'デプロイ済みの open-slide サイト URL、themes/index.json、またはテーマの .md ファイルを貼り付けてください。',
+    importUrlPlaceholder: 'https://example.com',
+    importWarning:
+      'テーマの demo ファイルは開発サーバーと build で実行されるコードです。信頼できるソースからのみ取り込んでください。',
+    importAction: '取り込む',
+    importing: '取り込み中…',
+    importMultipleFound:
+      'このソースには {count} 件のテーマがあります。取り込むテーマを選択してください。',
+    importSuccess: '{ids} を取り込みました',
+    importRenamed: '重複を避けるため名前を変更しました: {renames}',
+    importFailed: '取り込みに失敗しました: {msg}',
+    copyUrl: 'テーマ URL をコピー',
+    copyUrlSuccess: 'テーマ URL をコピーしました',
+    copyUrlFailed: 'URL のコピーに失敗しました',
+    themeActions: 'テーマの操作',
+    deleteEyebrow: '破壊的な操作',
+    deleteDialogTitle: 'テーマを削除しますか？',
+    deleteDialogDescription:
+      '{name} とそのファイルをディスクから完全に削除します。この操作は取り消せません。',
+    deleteSuccess: '{name} を削除しました',
+    deleteFailed: 'テーマの削除に失敗しました',
   },
 };
