@@ -193,39 +193,79 @@ function escapeSingleQuoted(s: string): string {
 
 const SLIDE_ENTRY_NAMES = ['index.tsx', 'index.jsx', 'index.ts', 'index.js'];
 
-function syntaxStateAt(body: string, index: number): { depth: number; inComment: boolean } {
-  let depth = 0;
+// Tracks string/comment state while walking source text, so structural
+// characters embedded in either (a `}` in a title, a `theme:` in a comment)
+// never count as code.
+function createSyntaxScanner() {
   let quote: string | null = null;
   let lineComment = false;
   let blockComment = false;
-  for (let i = 0; i < index; i++) {
-    const ch = body[i];
-    const next = body[i + 1];
-    if (lineComment) {
-      if (ch === '\n') lineComment = false;
-    } else if (blockComment) {
-      if (ch === '*' && next === '/') {
-        blockComment = false;
-        i++;
+  return {
+    get inCode(): boolean {
+      return quote === null && !lineComment && !blockComment;
+    },
+    get inComment(): boolean {
+      return lineComment || blockComment;
+    },
+    step(text: string, i: number): number {
+      const ch = text[i];
+      const next = text[i + 1];
+      if (lineComment) {
+        if (ch === '\n') lineComment = false;
+        return i + 1;
       }
-    } else if (quote) {
-      if (ch === '\\') i++;
-      else if (ch === quote) quote = null;
-    } else if (ch === '/' && next === '/') {
-      lineComment = true;
-      i++;
-    } else if (ch === '/' && next === '*') {
-      blockComment = true;
-      i++;
-    } else if (ch === "'" || ch === '"' || ch === '`') {
-      quote = ch;
-    } else if (ch === '{' || ch === '[' || ch === '(') {
-      depth++;
-    } else if (ch === '}' || ch === ']' || ch === ')') {
-      depth--;
+      if (blockComment) {
+        if (ch === '*' && next === '/') {
+          blockComment = false;
+          return i + 2;
+        }
+        return i + 1;
+      }
+      if (quote) {
+        if (ch === '\\') return i + 2;
+        if (ch === quote) quote = null;
+        return i + 1;
+      }
+      if (ch === '/' && next === '/') {
+        lineComment = true;
+        return i + 2;
+      }
+      if (ch === '/' && next === '*') {
+        blockComment = true;
+        return i + 2;
+      }
+      if (ch === "'" || ch === '"' || ch === '`') quote = ch;
+      return i + 1;
+    },
+  };
+}
+
+function syntaxStateAt(body: string, index: number): { depth: number; inComment: boolean } {
+  const scanner = createSyntaxScanner();
+  let depth = 0;
+  for (let i = 0; i < index; ) {
+    const ch = body[i];
+    if (scanner.inCode) {
+      if (ch === '{' || ch === '[' || ch === '(') depth++;
+      else if (ch === '}' || ch === ']' || ch === ')') depth--;
     }
+    i = scanner.step(body, i);
   }
-  return { depth, inComment: lineComment || blockComment };
+  return { depth, inComment: scanner.inComment };
+}
+
+function findMatchingBrace(source: string, openBrace: number): number {
+  const scanner = createSyntaxScanner();
+  let depth = 0;
+  for (let i = openBrace; i < source.length; ) {
+    const ch = source[i];
+    if (scanner.inCode) {
+      if (ch === '{') depth++;
+      else if (ch === '}' && --depth === 0) return i;
+    }
+    i = scanner.step(source, i);
+  }
+  return -1;
 }
 
 /**
@@ -243,19 +283,7 @@ export function removeMetaThemeFromSource(source: string, themeId: string): stri
   const openBrace = source.indexOf('{', eqIdx);
   if (openBrace === -1) return null;
 
-  let depth = 0;
-  let closeBrace = -1;
-  for (let i = openBrace; i < source.length; i++) {
-    const ch = source[i];
-    if (ch === '{') depth++;
-    else if (ch === '}') {
-      depth--;
-      if (depth === 0) {
-        closeBrace = i;
-        break;
-      }
-    }
-  }
+  const closeBrace = findMatchingBrace(source, openBrace);
   if (closeBrace === -1) return null;
 
   const body = source.slice(openBrace + 1, closeBrace);

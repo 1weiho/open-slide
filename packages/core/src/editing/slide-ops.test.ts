@@ -216,6 +216,18 @@ describe('removeMetaThemeFromSource', () => {
     expect(removeMetaThemeFromSource(source, 'aurora')).toBeNull();
   });
 
+  it('is not fooled by a closing brace inside a string value', () => {
+    const source = `export const meta = {\n  title: 'a } b',\n  theme: 'aurora',\n};\n`;
+    const out = removeMetaThemeFromSource(source, 'aurora');
+    expect(out).toBe(`export const meta = {\n  title: 'a } b',\n};\n`);
+  });
+
+  it('is not fooled by braces inside a comment', () => {
+    const source = `export const meta = {\n  // } {\n  theme: 'aurora',\n};\n`;
+    const out = removeMetaThemeFromSource(source, 'aurora');
+    expect(out).toBe(`export const meta = {\n  // } {\n};\n`);
+  });
+
   it('returns null when there is no theme field', () => {
     const source = `export const meta = {\n  title: 'X',\n};\n`;
     expect(removeMetaThemeFromSource(source, 'aurora')).toBeNull();
