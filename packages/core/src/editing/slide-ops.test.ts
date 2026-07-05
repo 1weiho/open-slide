@@ -194,6 +194,17 @@ describe('removeMetaThemeFromSource', () => {
     expect(removeMetaThemeFromSource(source, 'aurora')).toBeNull();
   });
 
+  it('leaves a theme field nested inside a sub-object alone', () => {
+    const source = `export const meta = {\n  nested: { theme: 'aurora' },\n};\n`;
+    expect(removeMetaThemeFromSource(source, 'aurora')).toBeNull();
+  });
+
+  it('removes only the top-level theme when a nested one appears first', () => {
+    const source = `export const meta = {\n  nested: { theme: 'aurora' },\n  theme: 'aurora',\n};\n`;
+    const out = removeMetaThemeFromSource(source, 'aurora');
+    expect(out).toBe(`export const meta = {\n  nested: { theme: 'aurora' },\n};\n`);
+  });
+
   it('returns null when there is no theme field', () => {
     const source = `export const meta = {\n  title: 'X',\n};\n`;
     expect(removeMetaThemeFromSource(source, 'aurora')).toBeNull();

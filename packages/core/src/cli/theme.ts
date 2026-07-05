@@ -34,7 +34,7 @@ async function confirm(question: string): Promise<boolean> {
 async function selectEntries(
   entries: RemoteThemeEntry[],
   opts: ThemeAddOptions,
-): Promise<RemoteThemeEntry[]> {
+): Promise<RemoteThemeEntry[] | null> {
   if (opts.id) {
     const match = entries.filter((e) => e.id === opts.id);
     if (match.length === 0) {
@@ -67,7 +67,7 @@ async function selectEntries(
     )
       .trim()
       .toLowerCase();
-    if (answer === '') throw new ThemeImportError('invalid', 'Cancelled.');
+    if (answer === '') return null;
     if (answer === 'a' || answer === 'all') return entries;
     const n = Number(answer);
     if (!Number.isInteger(n) || n < 1 || n > entries.length) {
@@ -92,6 +92,10 @@ export async function themeAdd(url: string, opts: ThemeAddOptions = {}): Promise
   }
 
   const selected = await selectEntries(entries, opts);
+  if (!selected) {
+    process.stdout.write(chalk.dim('Cancelled.\n'));
+    return;
+  }
 
   const restricted = Boolean(allowedHosts && allowedHosts.length > 0);
   if (!opts.yes && !restricted) {

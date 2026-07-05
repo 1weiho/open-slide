@@ -7,13 +7,6 @@ import { discoverThemes, fetchTheme, ThemeImportError, writeTheme } from '../../
 import { buildThemeManifest, DEMO_EXTS, findThemeFiles } from '../../themes/scan.ts';
 import { type ApiContext, json, readBody } from './context.ts';
 
-// POST   /__themes/import     { url, id?, ids?, force? }   fetch themes from a URL into themes/
-//                             — multi-theme sources answer { discovered } and import
-//                               nothing until the client re-posts with ids
-// DELETE /__themes/:id                               remove a theme's files + clear meta.theme from slides using it
-// GET    /themes/index.json                          theme manifest (mirrors the build output)
-// GET    /themes/:file                               raw theme .md / .demo.* source
-//
 // The GET routes exist so a running dev server serves the same theme URLs a
 // built site does — letting `/themes/<id>` page links be imported directly,
 // without first running `open-slide build`.
@@ -44,9 +37,9 @@ function registerThemeFileRoutes(server: ViteDevServer, ctx: ApiContext): void {
   server.middlewares.use(`${base}/themes`, async (req, res, next) => {
     if ((req.method ?? 'GET') !== 'GET') return next();
     const url = new URL(req.url ?? '/', 'http://local');
-    const rel = decodeURIComponent(url.pathname.replace(/^\/+/, ''));
 
     try {
+      const rel = decodeURIComponent(url.pathname.replace(/^\/+/, ''));
       if (rel === 'index.json') {
         const manifest = await buildThemeManifest(ctx.themesRoot);
         res.statusCode = 200;
@@ -75,6 +68,10 @@ function registerThemeFileRoutes(server: ViteDevServer, ctx: ApiContext): void {
       res.setHeader('cache-control', 'no-store');
       res.end(buf);
     } catch (err) {
+      if (err instanceof URIError) {
+        json(res, 400, { error: 'malformed path encoding' });
+        return;
+      }
       json(res, 500, { error: String((err as Error).message ?? err) });
     }
   });
@@ -111,6 +108,9 @@ export function registerThemeRoutes(server: ViteDevServer, ctx: ApiContext): voi
         const clearedSlides = await clearThemeFromSlides(ctx.slidesRoot, id);
         return json(res, 200, { ok: true, id, clearedSlides });
       } catch (err) {
+        if (err instanceof URIError) {
+          return json(res, 400, { error: 'malformed path encoding' });
+        }
         return json(res, 500, { error: String((err as Error).message ?? err) });
       }
     }

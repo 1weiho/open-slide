@@ -70,7 +70,8 @@ export async function readScannedTheme(mdAbs: string, themesRoot: string): Promi
   let demoAbs: string | null = null;
   for (const ext of DEMO_EXTS) {
     const p = path.join(themesRoot, `${id}.demo.${ext}`);
-    if (existsSync(p)) {
+    const stat = await fs.stat(p).catch(() => null);
+    if (stat?.isFile()) {
       demoAbs = p;
       break;
     }

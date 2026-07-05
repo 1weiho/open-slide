@@ -78,7 +78,7 @@ export function ThemeDetail({ themeId, onBack }: { themeId: string; onBack: () =
 
   const handleCopyUrl = async () => {
     const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-    const shareUrl = `${window.location.origin}${base}/themes/${theme.id}`;
+    const shareUrl = `${window.location.origin}${base}/themes/${encodeURIComponent(theme.id)}`;
     try {
       await navigator.clipboard.writeText(shareUrl);
       toast.success(t.themes.copyUrlSuccess);

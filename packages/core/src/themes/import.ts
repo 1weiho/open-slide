@@ -1,4 +1,3 @@
-import { existsSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { DEMO_EXTS, FM_RE, parseFrontmatter } from './scan.ts';
@@ -295,7 +294,7 @@ export type WriteResult = {
 };
 
 function formatFrontmatterValue(value: string): string {
-  return /^['"]/.test(value) || value.trim() !== value ? JSON.stringify(value) : value;
+  return JSON.stringify(value);
 }
 
 // Rewrites (or inserts) the `name:` field in a theme's frontmatter without
@@ -318,13 +317,39 @@ function setThemeDisplayName(md: string, name: string): string {
   return `---\n${lines.join('\n')}\n---\n${match[2] ? `\n${match[2]}` : ''}`;
 }
 
-function availableThemeId(themesRoot: string, id: string): string {
-  if (!existsSync(path.join(themesRoot, `${id}.md`))) return id;
-  for (let i = 1; i < 1000; i++) {
-    const candidate = `${id}-${i}`;
-    if (!existsSync(path.join(themesRoot, `${candidate}.md`))) return candidate;
+// On a name clash, copy in as <id>-1, <id>-2, … rather than overwriting —
+// unless force replaces the existing theme in place. The exclusive-create
+// flag makes the free-id probe and the write a single atomic step, so
+// concurrent imports of the same id get distinct suffixes instead of
+// silently clobbering each other.
+async function writeThemeMd(
+  themesRoot: string,
+  fetched: FetchedTheme,
+  force: boolean,
+): Promise<string> {
+  if (force) {
+    await fs.writeFile(path.join(themesRoot, `${fetched.id}.md`), fetched.md);
+    return fetched.id;
   }
-  throw new ThemeImportError('invalid', `Too many themes named "${id}"`);
+  for (let i = 0; i < 1000; i++) {
+    const targetId = i === 0 ? fetched.id : `${fetched.id}-${i}`;
+    // On a collision rename (replit → replit-1), suffix the display name to match
+    // so the gallery shows "Replit 1" instead of a second indistinguishable "Replit".
+    const md =
+      i === 0
+        ? fetched.md
+        : setThemeDisplayName(
+            fetched.md,
+            `${parseFrontmatter(fetched.md, fetched.id).fm.name} ${i}`,
+          );
+    try {
+      await fs.writeFile(path.join(themesRoot, `${targetId}.md`), md, { flag: 'wx' });
+      return targetId;
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
+    }
+  }
+  throw new ThemeImportError('invalid', `Too many themes named "${fetched.id}"`);
 }
 
 export async function writeTheme(
@@ -337,22 +362,8 @@ export async function writeTheme(
   }
 
   await fs.mkdir(themesRoot, { recursive: true });
-  // On a name clash, copy in as <id>-1, <id>-2, … rather than overwriting —
-  // unless --force was passed to replace the existing theme in place.
-  const targetId = opts.force ? fetched.id : availableThemeId(themesRoot, fetched.id);
-
-  const written: string[] = [];
-  // On a collision rename (replit → replit-1), suffix the display name to match
-  // so the gallery shows "Replit 1" instead of a second indistinguishable "Replit".
-  const md =
-    targetId === fetched.id
-      ? fetched.md
-      : setThemeDisplayName(
-          fetched.md,
-          `${parseFrontmatter(fetched.md, fetched.id).fm.name} ${targetId.slice(fetched.id.length + 1)}`,
-        );
-  await fs.writeFile(path.join(themesRoot, `${targetId}.md`), md);
-  written.push(`${targetId}.md`);
+  const targetId = await writeThemeMd(themesRoot, fetched, opts.force === true);
+  const written: string[] = [`${targetId}.md`];
 
   // Clear every demo variant first: a leftover demo with a higher-priority
   // extension (scan probes tsx before js) would shadow the one written below.

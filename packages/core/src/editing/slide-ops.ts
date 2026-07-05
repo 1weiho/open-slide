@@ -193,6 +193,25 @@ function escapeSingleQuoted(s: string): string {
 
 const SLIDE_ENTRY_NAMES = ['index.tsx', 'index.jsx', 'index.ts', 'index.js'];
 
+function nestingDepthAt(body: string, index: number): number {
+  let depth = 0;
+  let quote: string | null = null;
+  for (let i = 0; i < index; i++) {
+    const ch = body[i];
+    if (quote) {
+      if (ch === '\\') i++;
+      else if (ch === quote) quote = null;
+    } else if (ch === "'" || ch === '"' || ch === '`') {
+      quote = ch;
+    } else if (ch === '{' || ch === '[' || ch === '(') {
+      depth++;
+    } else if (ch === '}' || ch === ']' || ch === ')') {
+      depth--;
+    }
+  }
+  return depth;
+}
+
 /**
  * Remove the `theme: '<themeId>'` field from a slide module's `export const meta`,
  * but only when it names `themeId`. Returns the rewritten source, or `null` when
@@ -227,8 +246,16 @@ export function removeMetaThemeFromSource(source: string, themeId: string): stri
   // The leading boundary keeps this from matching inside a longer key (e.g.
   // `subtheme:`); the trailing lookahead keeps it from matching `theme: '…'`
   // embedded in a string value, where the quote isn't followed by a separator.
-  const propRe = /(^|[\s,{])theme\s*:\s*(['"`])((?:\\.|(?!\2).)*)\2(?=\s*(?:[,}\n]|$))/;
-  const match = propRe.exec(body);
+  // The depth check keeps it from matching a `theme:` nested in a sub-object,
+  // which is not the `meta.theme` the runtime reads.
+  const propRe = /(^|[\s,{])theme\s*:\s*(['"`])((?:\\.|(?!\2).)*)\2(?=\s*(?:[,}\n]|$))/g;
+  let match: RegExpExecArray | null = null;
+  for (let m = propRe.exec(body); m !== null; m = propRe.exec(body)) {
+    if (nestingDepthAt(body, m.index + m[1].length) === 0) {
+      match = m;
+      break;
+    }
+  }
   if (!match || match[3] !== themeId) return null;
 
   let start = match.index + match[1].length;

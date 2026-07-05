@@ -63,7 +63,7 @@ function ThemeCardMenu({ theme }: { theme: Theme }) {
           <button
             type="button"
             aria-label={t.themes.themeActions}
-            className="absolute right-2 top-2 grid size-7 place-items-center rounded-[6px] border border-hairline bg-card/90 text-muted-foreground opacity-0 shadow-edge backdrop-blur transition-opacity hover:text-foreground group-hover:opacity-100 aria-expanded:opacity-100"
+            className="absolute right-2 top-2 grid size-7 place-items-center rounded-[6px] border border-hairline bg-card/90 text-muted-foreground opacity-0 shadow-edge backdrop-blur transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100 aria-expanded:opacity-100"
           >
             <MoreHorizontal className="size-4" />
           </button>
