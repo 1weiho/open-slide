@@ -15,7 +15,7 @@ import { useFolders } from '@/lib/folders';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import { FolderIconChip } from '../components/sidebar/folder-item';
-import { ASSETS_ID, DRAFT_ID, Sidebar, THEMES_ID } from '../components/sidebar/sidebar';
+import { ALL_SLIDES_ID, ASSETS_ID, Sidebar, THEMES_ID } from '../components/sidebar/sidebar';
 import type { FoldersManifest } from '../lib/sdk';
 import { slideIds } from '../lib/slides';
 import { themes as themeRegistry } from '../lib/themes';
@@ -25,7 +25,7 @@ export type HomeOutletContext = {
   loading: boolean;
   draftSlides: string[];
   slidesByFolder: Record<string, string[]>;
-  /** Selected folder id when on `/`; equals DRAFT_ID, a folder id, or THEMES_ID. */
+  /** Selected view id: ALL_SLIDES_ID, DRAFT_ID, a folder id, THEMES_ID, or ASSETS_ID. */
   selectedId: string;
   selectFolder: (id: string) => void;
   reportTitle: (slideId: string, title: string) => void;
@@ -39,7 +39,7 @@ export type HomeOutletContext = {
 function pathToSelectedId(pathname: string, search: URLSearchParams): string {
   if (pathname === '/themes' || pathname.startsWith('/themes/')) return THEMES_ID;
   if (pathname === '/assets') return ASSETS_ID;
-  return search.get('f') ?? DRAFT_ID;
+  return search.get('f') ?? ALL_SLIDES_ID;
 }
 
 export function HomeShell() {
@@ -73,7 +73,7 @@ export function HomeShell() {
     (id: string) => {
       if (id === THEMES_ID) navigate('/themes', { replace: true });
       else if (id === ASSETS_ID) navigate('/assets', { replace: true });
-      else if (id === DRAFT_ID) navigate('/', { replace: true });
+      else if (id === ALL_SLIDES_ID) navigate('/', { replace: true });
       else navigate(`/?f=${encodeURIComponent(id)}`, { replace: true });
     },
     [navigate],
@@ -140,6 +140,7 @@ export function HomeShell() {
         <Sidebar
           folders={manifest.folders}
           countFor={countFor}
+          allCount={slideIds.length}
           themesCount={themeRegistry.length}
           assetsCount={globalAssets.length}
           selectedId={selectedId}
@@ -149,7 +150,7 @@ export function HomeShell() {
           onChangeIcon={(id, icon) => update(id, { icon })}
           onDelete={async (id) => {
             const name = manifest.folders.find((f) => f.id === id)?.name ?? id;
-            if (selectedId === id) selectFolder(DRAFT_ID);
+            if (selectedId === id) selectFolder(ALL_SLIDES_ID);
             try {
               await remove(id);
               toast.success(format(t.home.toastFolderDeleted, { name }));
@@ -187,14 +188,14 @@ export function HomeShell() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-[200px]">
                 <DropdownMenuItem
-                  onSelect={() => selectFolder(DRAFT_ID)}
+                  onSelect={() => selectFolder(ALL_SLIDES_ID)}
                   className={cn(
                     selectedId !== THEMES_ID &&
                       selectedId !== ASSETS_ID &&
                       'bg-muted text-foreground',
                   )}
                 >
-                  <FolderIconChip icon={{ type: 'emoji', value: '📝' }} />
+                  <FolderIconChip icon={{ type: 'emoji', value: '🎞️' }} />
                   <span className="flex-1 truncate">{t.home.slides}</span>
                   <span className="folio">{slideIds.length.toString().padStart(2, '0')}</span>
                 </DropdownMenuItem>
