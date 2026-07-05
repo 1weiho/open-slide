@@ -144,13 +144,6 @@ export function Sidebar({
           onDropSlide={() => {}}
         />
         <FolderItem
-          row={{ kind: 'draft' }}
-          count={countFor(null)}
-          selected={selectedId === DRAFT_ID}
-          onSelect={() => onSelect(DRAFT_ID)}
-          onDropSlide={onDropToDraft}
-        />
-        <FolderItem
           row={{ kind: 'themes' }}
           count={themesCount}
           selected={selectedId === THEMES_ID}
@@ -172,6 +165,13 @@ export function Sidebar({
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 pb-2">
+        <FolderItem
+          row={{ kind: 'draft' }}
+          count={countFor(null)}
+          selected={selectedId === DRAFT_ID}
+          onSelect={() => onSelect(DRAFT_ID)}
+          onDropSlide={onDropToDraft}
+        />
         {folders.map((folder) => {
           const isDropTarget = dropTarget?.id === folder.id;
           const before = isDropTarget && dropTarget.before;
