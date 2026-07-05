@@ -1,6 +1,6 @@
 ---
 title: SlideTransition
-description: Per-page enter/exit animations driven by Web Animations API keyframes.
+description: Per-page enter/exit animations and shared element transitions.
 ---
 
 The framework can run an enter/exit animation between every page change. There
@@ -61,6 +61,17 @@ type SlideTransition = {
   enter?: TransitionPhase;
   /** Plays on the outgoing page. */
   exit?: TransitionPhase;
+  /** Matches unstable_SharedElement pairs and fades unmatched shared elements. */
+  sharedElements?: boolean | SharedElementTransition;
+};
+
+type SharedElementTransition = {
+  /** Shared element duration in ms. Falls back to the top-level duration. */
+  duration?: number;
+  /** CSS easing string. Falls back to the top-level easing. */
+  easing?: string;
+  /** Delay in ms before shared elements start moving. */
+  delay?: number;
 };
 ```
 
@@ -113,6 +124,65 @@ Use `--osd-dir` inside `calc()` when you genuinely need to mirror motion:
 Most tasteful tools don't mirror on backward navigation — forward = backward
 reads as more refined. Reach for the direction hook only when the page's motion
 has a literal direction (a horizontal advance, a chapter sweep).
+
+## Shared elements
+
+<Callout type="warn">
+  This feature is currently unstable and subject to change. It is not
+  recommended for production. Try it out and share your feedback on
+  [GitHub](https://github.com/1weiho/open-slide/issues).
+</Callout>
+
+For Keynote-style "Magic Move" continuity, wrap the same visual object on two
+pages with `unstable_SharedElement` and give both instances the same `id`. The transition
+layer measures the outgoing and incoming DOM, hides the originals, animates a
+clone across the canvas, then restores the incoming element.
+
+```tsx
+import {
+  unstable_SharedElement as SharedElement,
+  type Page,
+  type SlideTransition,
+} from '@open-slide/core';
+
+const Logo = ({ x, y, size }: { x: number; y: number; size: number }) => (
+  <SharedElement id="logo">
+    <div
+      style={{
+        position: 'absolute',
+        left: x,
+        top: y,
+        width: size,
+        height: size,
+        borderRadius: size * 0.25,
+        background: 'var(--osd-accent)',
+      }}
+    />
+  </SharedElement>
+);
+
+const Start: Page = () => <Logo x={160} y={180} size={180} />;
+const End: Page = () => <Logo x={1420} y={720} size={96} />;
+
+export const transition: SlideTransition = {
+  duration: 900,
+  enter: { keyframes: [{ opacity: 0.35 }, { opacity: 1 }] },
+  exit: { keyframes: [{ opacity: 1 }, { opacity: 0.35 }] },
+  sharedElements: {
+    duration: 900,
+    easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+  },
+};
+
+export default [Start, End];
+```
+
+Use shared elements only for the same object in a new position or size. If the
+content changes, keep that changing copy outside `unstable_SharedElement` and let it fade
+as normal page content. When `sharedElements` is enabled, marked elements that
+only exist on the outgoing page fade out automatically, and marked elements that
+only exist on the incoming page fade in automatically. The runtime does not
+guess similar objects; the `id` is the contract.
 
 ## Design principles
 

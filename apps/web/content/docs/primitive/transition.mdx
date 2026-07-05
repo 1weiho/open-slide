@@ -1,0 +1,113 @@
+---
+title: Transition
+description: Enter, exit, and shared-element motion between pages.
+---
+
+`SlideTransition` describes what happens when the active `Page` changes. There
+is no default animation: pages snap unless the deck exports a transition or an
+incoming page defines its own override.
+
+```tsx title="slides/q2-launch/index.tsx"
+import type { Page, SlideTransition } from '@open-slide/core';
+
+const Cover: Page = () => <section>…</section>;
+const Agenda: Page = () => <section>…</section>;
+
+export const transition: SlideTransition = {
+  duration: 220,
+  exit: {
+    duration: 140,
+    easing: 'cubic-bezier(0.4, 0, 1, 1)',
+    keyframes: [
+      { opacity: 1, transform: 'translateY(0)' },
+      { opacity: 0, transform: 'translateY(-4px)' },
+    ],
+  },
+  enter: {
+    duration: 220,
+    delay: 80,
+    easing: 'cubic-bezier(0, 0, 0.2, 1)',
+    keyframes: [
+      { opacity: 0, transform: 'translateY(6px)' },
+      { opacity: 1, transform: 'translateY(0)' },
+    ],
+  },
+};
+
+export default [Cover, Agenda] satisfies Page[];
+```
+
+`prefers-reduced-motion: reduce` is honored automatically.
+
+## Where It Lives
+
+There are two declaration surfaces:
+
+- `export const transition` in the slide module sets the deck default.
+- `Page.transition = …` sets an override for one page.
+
+The incoming page wins. Navigating `Cover → Agenda` uses
+`Agenda.transition ?? module.transition`; the selected `exit` runs on
+`Cover`, and `enter` runs on `Agenda`. Navigating backward uses the page you
+are returning to.
+
+```tsx
+const Cover: Page = () => <section>…</section>;
+const Agenda: Page = () => <section>…</section>;
+
+export const transition: SlideTransition = {
+  duration: 220,
+  enter: {
+    keyframes: [{ opacity: 0 }, { opacity: 1 }],
+  },
+};
+
+Agenda.transition = {
+  duration: 320,
+  enter: {
+    keyframes: [
+      { opacity: 0, transform: 'scale(0.98)' },
+      { opacity: 1, transform: 'scale(1)' },
+    ],
+  },
+};
+```
+
+## Direction
+
+During a page transition, the wrapper exposes:
+
+| Surface | Forward | Backward |
+| --- | --- | --- |
+| `--osd-dir` | `1` | `-1` |
+| `data-osd-dir` | `forward` | `backward` |
+
+Use it when motion has a literal direction:
+
+```tsx
+{
+  transform: 'translateX(calc(var(--osd-dir, 1) * 8px))',
+}
+```
+
+Most decks should keep a single restrained motion family: short duration,
+subtle distance, opacity included, and no different transition vocabulary on
+every page.
+
+## Shared Elements
+
+`SlideTransition.sharedElements` enables [SharedElement](/docs/primitive/shared-element)
+matching for objects that should visually continue across two pages.
+
+```ts
+export const transition: SlideTransition = {
+  duration: 600,
+  sharedElements: {
+    duration: 600,
+    easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+  },
+};
+```
+
+For the full schema and a reusable family of examples, see
+[SlideTransition](/docs/reference/slide-transitions).

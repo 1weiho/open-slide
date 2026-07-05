@@ -12,6 +12,13 @@ export type SlideTransition = {
   easing?: string;
   enter?: TransitionPhase;
   exit?: TransitionPhase;
+  sharedElements?: boolean | SharedElementTransition;
+};
+
+export type SharedElementTransition = {
+  duration?: number;
+  easing?: string;
+  delay?: number;
 };
 
 export function resolveTransition(

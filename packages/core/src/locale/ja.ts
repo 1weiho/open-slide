@@ -42,6 +42,8 @@ export const ja: Locale = {
     themes: 'テーマ',
     assets: 'アセット',
     folders: 'フォルダ',
+    slides: 'スライド',
+    menu: 'メニュー',
     newFolder: '新規フォルダ',
     folderName: 'フォルダ名',
     updateAvailable:

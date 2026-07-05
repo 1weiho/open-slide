@@ -29,6 +29,7 @@ type Props = {
   windowed: boolean;
   onPrev: () => void;
   onNext: () => void;
+  onMobileInteraction: () => void;
   onOverview: () => void;
   onBlackout: (mode: 'black' | 'white') => void;
   onLaser: () => void;
@@ -55,6 +56,7 @@ export function PresentControlBar({
   windowed,
   onPrev,
   onNext,
+  onMobileInteraction,
   onOverview,
   onBlackout,
   onLaser,
@@ -65,11 +67,17 @@ export function PresentControlBar({
   tooltipContainer,
 }: Props) {
   const t = useLocale();
+  const fullscreenAria = windowed ? t.present.enterFullscreenAria : t.present.exitFullscreenAria;
+  const handleMobileAction = (action: () => void) => {
+    action();
+    onMobileInteraction();
+  };
+
   return (
     <div
       data-state={visible ? 'visible' : 'hidden'}
       className={cn(
-        'pointer-events-none absolute inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-4',
+        'pointer-events-none absolute inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:px-4 md:pb-4',
         'will-change-[translate,scale,opacity,filter]',
         'motion-safe:transition-[translate,scale,opacity,filter]',
         'motion-safe:duration-[420ms] motion-safe:[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]',
@@ -80,7 +88,12 @@ export function PresentControlBar({
     >
       <TooltipProvider delayDuration={300}>
         <TooltipContainerCtx.Provider value={tooltipContainer ?? null}>
-          <div className="pointer-events-auto flex h-11 items-center gap-1 rounded-full border border-white/10 bg-black/55 px-2 text-white/85 shadow-[0_8px_30px_-8px_oklch(0_0_0/0.6)] backdrop-blur-md">
+          <div
+            className={cn(
+              'hidden h-11 items-center gap-1 rounded-full border border-white/10 bg-black/55 px-2 text-white/85 shadow-[0_8px_30px_-8px_oklch(0_0_0/0.6)] backdrop-blur-md md:flex',
+              visible ? 'pointer-events-auto' : 'pointer-events-none',
+            )}
+          >
             <BarButton label={t.present.prevSlideAria} onClick={onPrev} disabled={index === 0}>
               <ChevronLeft className="size-4" />
             </BarButton>
@@ -129,10 +142,7 @@ export function PresentControlBar({
             <BarButton label={t.present.presenterAria} onClick={onPresenter}>
               <MonitorSpeaker className="size-4" />
             </BarButton>
-            <BarButton
-              label={windowed ? t.present.enterFullscreenAria : t.present.exitFullscreenAria}
-              onClick={onToggleFullscreen}
-            >
+            <BarButton label={fullscreenAria} onClick={onToggleFullscreen}>
               {windowed ? <Maximize className="size-4" /> : <Minimize className="size-4" />}
             </BarButton>
             <BarButton label={t.present.helpAria} onClick={onHelp}>
@@ -148,10 +158,89 @@ export function PresentControlBar({
               </>
             )}
           </div>
+
+          <div
+            className={cn(
+              'flex w-fit max-w-[calc(100vw-1.5rem)] md:hidden',
+              visible ? 'pointer-events-auto' : 'pointer-events-none',
+            )}
+          >
+            <div className="flex h-10 w-fit items-center gap-0.5 rounded-full border border-white/10 bg-black/60 px-1 text-white/85 shadow-[0_8px_30px_-8px_oklch(0_0_0/0.65)] backdrop-blur-md">
+              <MobileBarButton
+                label={t.present.prevSlideAria}
+                onClick={() => handleMobileAction(onPrev)}
+                disabled={index === 0}
+              >
+                <ChevronLeft className="size-4" />
+              </MobileBarButton>
+              <span className="min-w-[3.5rem] px-1 text-center font-mono text-[11.5px] tabular-nums text-white/80 select-none">
+                <span className="text-white">{index + 1}</span>
+                <span className="px-1 text-white/35">/</span>
+                <span>{total}</span>
+              </span>
+              <MobileBarButton
+                label={t.present.nextSlideAria}
+                onClick={() => handleMobileAction(onNext)}
+                disabled={index >= total - 1}
+              >
+                <ChevronRight className="size-4" />
+              </MobileBarButton>
+              <MobileDivider />
+              <MobileBarButton
+                label={t.present.overviewAria}
+                onClick={() => handleMobileAction(onOverview)}
+              >
+                <Grid2x2 className="size-4" />
+              </MobileBarButton>
+              {allowExit && (
+                <MobileBarButton
+                  label={t.present.exitAria}
+                  onClick={() => handleMobileAction(onExit)}
+                >
+                  <LogOut className="size-4" />
+                </MobileBarButton>
+              )}
+            </div>
+          </div>
         </TooltipContainerCtx.Provider>
       </TooltipProvider>
     </div>
   );
+}
+
+function MobileBarButton({
+  children,
+  label,
+  onClick,
+  disabled,
+}: {
+  children: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      disabled={disabled}
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
+      className={cn(
+        'inline-flex size-8 shrink-0 touch-manipulation items-center justify-center rounded-full transition-colors',
+        'text-white/85 hover:bg-white/12 focus-visible:bg-white/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35',
+        'disabled:pointer-events-none disabled:opacity-30',
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function MobileDivider() {
+  return <span aria-hidden className="mx-0.5 h-3.5 w-px shrink-0 bg-white/15" />;
 }
 
 function BarButton({
@@ -175,7 +264,10 @@ function BarButton({
           type="button"
           aria-label={label}
           disabled={disabled}
-          onClick={onClick}
+          onClick={(event) => {
+            event.stopPropagation();
+            onClick();
+          }}
           className={cn(
             'inline-flex size-8 items-center justify-center rounded-full transition-colors',
             'hover:bg-white/12 focus-visible:bg-white/12 focus-visible:outline-none',

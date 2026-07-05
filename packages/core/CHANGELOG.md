@@ -1,5 +1,33 @@
 # @open-slide/core
 
+## 1.13.2
+
+### Patch Changes
+
+- [#263](https://github.com/1weiho/open-slide/pull/263) [`bda2fd6`](https://github.com/1weiho/open-slide/commit/bda2fd6646814541d6a5623840c4c5396b9b0c5a) Thanks [@1weiho](https://github.com/1weiho)! - Virtualize the horizontal thumbnail rail in large decks.
+
+## 1.13.1
+
+### Patch Changes
+
+- [#260](https://github.com/1weiho/open-slide/pull/260) [`3adaa7c`](https://github.com/1weiho/open-slide/commit/3adaa7c332bac124a3a5fa6ad1c814d275b58858) Thanks [@1weiho](https://github.com/1weiho)! - Keep shared-element borders at their intended width while elements resize.
+
+- [#261](https://github.com/1weiho/open-slide/pull/261) [`5f167f7`](https://github.com/1weiho/open-slide/commit/5f167f7c6f3dcbbf48bf2388238d5d0b11bf1856) Thanks [@1weiho](https://github.com/1weiho)! - Virtualize the editor thumbnail rail for smoother navigation in large decks.
+
+## 1.13.0
+
+### Minor Changes
+
+- [#257](https://github.com/1weiho/open-slide/pull/257) [`e000a81`](https://github.com/1weiho/open-slide/commit/e000a8147ed4e6dd592c856e5530b042263563b4) Thanks [@1weiho](https://github.com/1weiho)! - Add unstable_SharedElement for shared-element transitions across slide pages.
+
+### Patch Changes
+
+- [#256](https://github.com/1weiho/open-slide/pull/256) [`0e61272`](https://github.com/1weiho/open-slide/commit/0e61272daaa40efbf05f489c97dacf28c2b5aeb8) Thanks [@1weiho](https://github.com/1weiho)! - Make present mode easier to use on phones with single-tap playback and compact auto-hiding controls.
+
+- [#247](https://github.com/1weiho/open-slide/pull/247) [`ac33d70`](https://github.com/1weiho/open-slide/commit/ac33d70acf8aa98c6203326b772b1a6b6131ff13) Thanks [@1weiho](https://github.com/1weiho)! - Let the inspector open while holding Command on macOS or Control elsewhere, and select elements by double-clicking them without selecting slide text.
+
+- [#239](https://github.com/1weiho/open-slide/pull/239) [`45f6882`](https://github.com/1weiho/open-slide/commit/45f6882cf5cdcc112aa71fc963f41e5a07cec64f) Thanks [@adawang1210](https://github.com/adawang1210)! - Keep speaker notes aligned with pages when deleting or duplicating a page.
+
 ## 1.12.1
 
 ### Patch Changes

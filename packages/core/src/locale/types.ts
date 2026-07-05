@@ -42,6 +42,8 @@ export type Locale = {
     themes: string;
     assets: string;
     folders: string;
+    slides: string;
+    menu: string;
     newFolder: string;
     folderName: string;
     updateAvailable: string;

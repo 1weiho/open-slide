@@ -47,6 +47,7 @@ export function SlideCanvas({
   const s = measured ?? 1;
   const scaledW = CANVAS_WIDTH * s;
   const scaledH = CANVAS_HEIGHT * s;
+  const designVars = design ? designToCssVars(design) : undefined;
 
   return (
     <div ref={containerRef} className={cn('relative h-full w-full overflow-hidden', className)}>
@@ -57,19 +58,27 @@ export function SlideCanvas({
           // can't be clipped by the parent's overflow-hidden.
           !flat && 'rounded-[6px] shadow-[inset_0_0_0_1px_oklch(0_0_0/0.08)]',
         )}
-        style={{
-          width: scaledW,
-          height: scaledH,
-          visibility: measured === null ? 'hidden' : undefined,
-          ...(center
-            ? {
-                position: 'absolute',
-                left: '50%',
-                top: '50%',
-                transform: `translate(-50%, -50%)`,
-              }
-            : {}),
-        }}
+        style={
+          {
+            width: scaledW,
+            height: scaledH,
+            visibility: measured === null ? 'hidden' : undefined,
+            ...(designVars
+              ? {
+                  ...designVars,
+                  background: 'var(--osd-bg)',
+                }
+              : {}),
+            ...(center
+              ? {
+                  position: 'absolute',
+                  left: '50%',
+                  top: '50%',
+                  transform: `translate(-50%, -50%)`,
+                }
+              : {}),
+          } as CSSProperties
+        }
       >
         <div
           data-osd-canvas
@@ -80,7 +89,7 @@ export function SlideCanvas({
               height: CANVAS_HEIGHT,
               transform: `scale(${s})`,
               transformOrigin: 'top left',
-              ...(design ? designToCssVars(design) : {}),
+              ...(designVars ?? {}),
             } as CSSProperties
           }
         >

@@ -33,11 +33,11 @@ import {
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import { FolderIconChip, SLIDE_DND_MIME } from '../components/sidebar/folder-item';
-import { DRAFT_ID } from '../components/sidebar/sidebar';
+import { ALL_SLIDES_ID, DRAFT_ID } from '../components/sidebar/sidebar';
 import { SlideCanvas } from '../components/slide-canvas';
 import { SlidePageProvider } from '../lib/page-context';
 import type { Folder, FolderIcon, SlideModule } from '../lib/sdk';
-import { loadSlide, slideCreatedAt } from '../lib/slides';
+import { loadSlide, slideCreatedAt, slideIds } from '../lib/slides';
 import type { HomeOutletContext } from './home-shell';
 
 type SortKey = 'created-desc' | 'created-asc' | 'title-asc' | 'title-desc';
@@ -76,6 +76,7 @@ export function Home() {
     draftSlides,
     slidesByFolder,
     selectedId,
+    selectFolder,
     reportTitle,
     titleMap,
     assign,
@@ -85,13 +86,21 @@ export function Home() {
   } = useOutletContext<HomeOutletContext>();
   const t = useLocale();
 
-  const selectedFolder =
-    selectedId === DRAFT_ID ? null : (manifest.folders.find((f) => f.id === selectedId) ?? null);
-  const visibleSlides = selectedId === DRAFT_ID ? draftSlides : (slidesByFolder[selectedId] ?? []);
-
-  const title = selectedFolder?.name ?? t.home.draft;
-  const headerIcon = selectedFolder?.icon ?? { type: 'emoji' as const, value: '📝' };
+  const isAll = selectedId === ALL_SLIDES_ID;
   const isDraft = selectedId === DRAFT_ID;
+  const selectedFolder =
+    isAll || isDraft ? null : (manifest.folders.find((f) => f.id === selectedId) ?? null);
+  const visibleSlides = isAll
+    ? slideIds
+    : isDraft
+      ? draftSlides
+      : (slidesByFolder[selectedId] ?? []);
+
+  const title = selectedFolder?.name ?? (isAll ? t.home.slides : t.home.draft);
+  const headerIcon = selectedFolder?.icon ?? {
+    type: 'emoji' as const,
+    value: isAll ? '🎞️' : '📝',
+  };
 
   const [query, setQuery] = useState('');
   const [sortKey, setSortKey] = useSortPref();
@@ -133,6 +142,48 @@ export function Home() {
           <h1 className="font-heading text-[32px] font-semibold leading-[1.05] tracking-[-0.025em] md:text-[44px]">
             {title}
           </h1>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label={t.home.folders}
+                className="flex size-7 items-center justify-center rounded-[6px] border border-border bg-card text-muted-foreground hover:text-foreground aria-expanded:border-foreground/40 aria-expanded:text-foreground md:hidden"
+              >
+                <ChevronDown className="size-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-[200px]">
+              <DropdownMenuItem
+                onSelect={() => selectFolder(ALL_SLIDES_ID)}
+                className={cn(isAll && 'bg-muted text-foreground')}
+              >
+                <FolderIconChip icon={{ type: 'emoji', value: '🎞️' }} />
+                <span className="flex-1 truncate">{t.home.slides}</span>
+                <span className="folio">{slideIds.length.toString().padStart(2, '0')}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => selectFolder(DRAFT_ID)}
+                className={cn(isDraft && 'bg-muted text-foreground')}
+              >
+                <FolderIconChip icon={{ type: 'emoji', value: '📝' }} />
+                <span className="flex-1 truncate">{t.home.draft}</span>
+                <span className="folio">{draftSlides.length.toString().padStart(2, '0')}</span>
+              </DropdownMenuItem>
+              {manifest.folders.map((f) => (
+                <DropdownMenuItem
+                  key={f.id}
+                  onSelect={() => selectFolder(f.id)}
+                  className={cn(selectedId === f.id && 'bg-muted text-foreground')}
+                >
+                  <FolderIconChip icon={f.icon} />
+                  <span className="flex-1 truncate">{f.name}</span>
+                  <span className="folio">
+                    {(slidesByFolder[f.id]?.length ?? 0).toString().padStart(2, '0')}
+                  </span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           {!loading && (
             <span className="folio ml-1 self-end pb-2">
               {(isSearching ? filteredSlides.length : visibleSlides.length)
@@ -155,7 +206,7 @@ export function Home() {
       {loading ? (
         <HomeLoading />
       ) : visibleSlides.length === 0 ? (
-        <EmptyState isDraft={isDraft} folderName={selectedFolder?.name} />
+        <EmptyState isDraft={isAll || isDraft} folderName={selectedFolder?.name} />
       ) : filteredSlides.length === 0 ? (
         <NoResultsState query={query} onClear={() => setQuery('')} />
       ) : (

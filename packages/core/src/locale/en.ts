@@ -42,6 +42,8 @@ export const en: Locale = {
     themes: 'Themes',
     assets: 'Assets',
     folders: 'Folders',
+    slides: 'Slides',
+    menu: 'Menu',
     newFolder: 'New folder',
     folderName: 'Folder name',
     updateAvailable: 'open-slide {version} is available — update the package to get the latest.',

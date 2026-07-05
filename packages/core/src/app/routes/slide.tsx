@@ -86,6 +86,7 @@ export function Slide() {
   const { renameSlide } = useFolders();
   const slideViewportRef = useRef<HTMLElement>(null);
   const t = useLocale();
+  const isMobile = useIsMobile();
   const prefersReducedMotion = usePrefersReducedMotion();
 
   const modulePages = useMemo(() => slide?.default ?? [], [slide]);
@@ -636,8 +637,8 @@ export function Slide() {
                   <Button
                     size="sm"
                     variant="brand"
-                    onClick={() => setPlayMode('fullscreen')}
-                    className="rounded-r-none px-2.5 md:px-3"
+                    onClick={() => setPlayMode(isMobile ? 'window' : 'fullscreen')}
+                    className="px-2.5 md:rounded-r-none md:px-3"
                   >
                     <Play className="size-3.5 fill-current" />
                     <span className="hidden md:inline">{t.slide.present}</span>
@@ -652,7 +653,7 @@ export function Slide() {
                       title={t.slide.presentMenuAria}
                       className={cn(
                         buttonVariants({ variant: 'brand', size: 'sm' }),
-                        'rounded-l-none px-1.5 shadow-[inset_1px_0_0_oklch(0_0_0/0.12),inset_0_1px_0_oklch(1_0_0/0.18),0_1px_0_oklch(0_0_0/0.16)]',
+                        'hidden rounded-l-none px-1.5 shadow-[inset_1px_0_0_oklch(0_0_0/0.12),inset_0_1px_0_oklch(1_0_0/0.18),0_1px_0_oklch(0_0_0/0.16)] md:inline-flex',
                       )}
                     >
                       <ChevronDown className="size-3.5" />

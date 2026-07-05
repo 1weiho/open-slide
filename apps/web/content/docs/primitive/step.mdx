@@ -1,0 +1,70 @@
+---
+title: Step
+description: Stage one page across multiple presenter beats.
+---
+
+`Steps` and `Step` let one `Page` reveal content one beat at a time. The page
+index does not change while stepping; the navigation controller consumes
+forward/backward input until the page has no more local steps.
+
+```tsx title="slides/product-story/index.tsx"
+import { Step, Steps, type Page } from '@open-slide/core';
+
+const Problem: Page = () => (
+  <section style={{ width: '100%', height: '100%', padding: 120 }}>
+    <h1>The audience reads faster than you speak.</h1>
+
+    <Steps>
+      <Step>
+        <p>Showing every bullet at once invites pre-reading.</p>
+      </Step>
+      <Step>
+        <p>Reveal the setup, then the consequence, then the turn.</p>
+      </Step>
+      <Step>
+        <p>The final page state still reads as one complete composition.</p>
+      </Step>
+    </Steps>
+  </section>
+);
+```
+
+## Reveal Rules
+
+- `Step` must be a direct child of `Steps`. A nested `Step`, or a `Step`
+  without a `Steps` parent, renders fully revealed.
+- Non-`Step` children inside `Steps` render immediately.
+- Multiple `Steps` groups on one page compose in document order. The first
+  group finishes before the second starts, and backward navigation unwinds in
+  reverse.
+- `Step` fades in over `duration` milliseconds. The default is `180`, and
+  reduced motion collapses it to an instant reveal.
+
+```tsx
+<Steps>
+  <h2>Always visible</h2>
+  <Step duration={240}>First reveal</Step>
+  <Step>Second reveal</Step>
+</Steps>
+```
+
+## Entry State
+
+The starting state depends on how the audience lands on the page:
+
+| Entry | Initial step state |
+| --- | --- |
+| Forward from the previous page | Empty, then builds one step at a time |
+| Backward from the next page | Fully revealed |
+| Overview / jump navigation | Fully revealed |
+
+Design the final composed state first, then choose which pieces deserve to be
+withheld. A thumbnail, overview jump, or backward navigation should not look
+like a broken blank page.
+
+## When to Use It
+
+Use `Step` when order changes comprehension: a payoff list, a before/after, a
+diagram build, or a narrative reveal. Avoid wrapping every page by habit. A
+hero title, quote, chart, or image-led page often reads better when shown
+whole.

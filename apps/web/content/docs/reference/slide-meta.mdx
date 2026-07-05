@@ -75,12 +75,15 @@ import {
   CANVAS_WIDTH,        // 1920
   CANVAS_HEIGHT,       // 1080
   ImagePlaceholder,    // sized empty placeholder — see /docs/reference/image-placeholder
+  unstable_SharedElement, // match an element across pages — see /docs/reference/slide-transitions
 } from '@open-slide/core';
 import type {
+  unstable_SharedElementProps,
   Page,
   SlideMeta,
   SlideModule,
   SlideTransition,     // per-page / module-level animations — see /docs/reference/slide-transitions
+  SharedElementTransition,
   TransitionPhase,
   ImagePlaceholderProps,
 } from '@open-slide/core';

@@ -11,6 +11,7 @@ import { FolderIconChip, FolderItem } from './folder-item';
 import { IconPicker, PRESET_COLORS } from './icon-picker';
 import { SidebarFooter } from './sidebar-footer';
 
+export const ALL_SLIDES_ID = '__all__';
 export const DRAFT_ID = 'draft';
 export const THEMES_ID = '__themes__';
 export const ASSETS_ID = '__assets__';
@@ -20,6 +21,7 @@ export const FOLDER_DND_MIME = 'application/x-folder-id';
 export function Sidebar({
   folders,
   countFor,
+  allCount,
   themesCount,
   assetsCount,
   selectedId,
@@ -34,6 +36,7 @@ export function Sidebar({
 }: {
   folders: Folder[];
   countFor: (folderId: string | null) => number;
+  allCount: number;
   themesCount: number;
   assetsCount: number;
   selectedId: string;
@@ -134,11 +137,11 @@ export function Sidebar({
 
       <div className="px-2">
         <FolderItem
-          row={{ kind: 'draft' }}
-          count={countFor(null)}
-          selected={selectedId === DRAFT_ID}
-          onSelect={() => onSelect(DRAFT_ID)}
-          onDropSlide={onDropToDraft}
+          row={{ kind: 'all' }}
+          count={allCount}
+          selected={selectedId === ALL_SLIDES_ID}
+          onSelect={() => onSelect(ALL_SLIDES_ID)}
+          onDropSlide={() => {}}
         />
         <FolderItem
           row={{ kind: 'themes' }}
@@ -162,6 +165,13 @@ export function Sidebar({
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 pb-2">
+        <FolderItem
+          row={{ kind: 'draft' }}
+          count={countFor(null)}
+          selected={selectedId === DRAFT_ID}
+          onSelect={() => onSelect(DRAFT_ID)}
+          onDropSlide={onDropToDraft}
+        />
         {folders.map((folder) => {
           const isDropTarget = dropTarget?.id === folder.id;
           const before = isDropTarget && dropTarget.before;

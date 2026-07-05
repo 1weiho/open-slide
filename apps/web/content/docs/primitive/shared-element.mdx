@@ -1,0 +1,87 @@
+---
+title: SharedElement
+description: Keynote-style continuity for the same object across pages.
+---
+
+<Callout type="warn">
+  The shared element API is currently exported as `unstable_SharedElement`.
+  Treat it as experimental and subject to change.
+</Callout>
+
+`SharedElement` is the conceptual primitive for making one visual object move
+between two pages. In code today, import `unstable_SharedElement` and alias it
+to the component name you want to use.
+
+```tsx title="slides/magic-move/index.tsx"
+import {
+  unstable_SharedElement as SharedElement,
+  type Page,
+  type SlideTransition,
+} from '@open-slide/core';
+
+const Token = ({ x, y, size }: { x: number; y: number; size: number }) => (
+  <SharedElement id="token">
+    <div
+      style={{
+        position: 'absolute',
+        left: x,
+        top: y,
+        width: size,
+        height: size,
+        borderRadius: size * 0.24,
+        background: 'var(--osd-accent)',
+      }}
+    />
+  </SharedElement>
+);
+
+const Start: Page = () => <Token x={160} y={180} size={180} />;
+const End: Page = () => <Token x={1420} y={720} size={96} />;
+
+export const transition: SlideTransition = {
+  duration: 700,
+  sharedElements: {
+    duration: 700,
+    easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+  },
+};
+
+export default [Start, End] satisfies Page[];
+```
+
+## Matching Contract
+
+The `id` is the contract. When the outgoing and incoming pages both contain a
+shared element with the same `id`, the runtime measures both DOM nodes, hides
+the originals, animates a clone across the 1920 × 1080 canvas, then restores
+the incoming element.
+
+If a marked element exists only on the outgoing page, it fades out. If it
+exists only on the incoming page, it fades in. The runtime does not guess
+similar objects; unmatched ids are separate objects.
+
+## What to Wrap
+
+Wrap the same visual object in a new position or size: a logo, diagram node,
+timeline marker, product card, badge, or highlight. Keep changing copy outside
+the shared element. If the content changes while moving, the audience reads it
+as one object turning into another, not continuity.
+
+`unstable_SharedElement` works best with a single DOM child. If there is
+exactly one DOM child, the runtime writes the `data-osd-shared-element`
+marker onto that child. Otherwise it wraps the content in a `div`.
+
+## Transition Required
+
+Shared elements only run when the selected transition enables
+`sharedElements`.
+
+```ts
+export const transition: SlideTransition = {
+  duration: 600,
+  sharedElements: true,
+};
+```
+
+Use the object form when you need separate timing from the page enter/exit
+animation.

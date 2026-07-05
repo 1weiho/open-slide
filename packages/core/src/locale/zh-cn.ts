@@ -42,6 +42,8 @@ export const zhCN: Locale = {
     themes: '主题',
     assets: '素材',
     folders: '文件夹',
+    slides: '幻灯片',
+    menu: '菜单',
     newFolder: '新建文件夹',
     folderName: '文件夹名称',
     updateAvailable: 'open-slide {version} 已发布，请更新软件包以获取最新版本。',

@@ -66,6 +66,9 @@ type Row =
       onDelete: () => void;
     }
   | {
+      kind: 'all';
+    }
+  | {
       kind: 'draft';
     }
   | {
@@ -95,7 +98,7 @@ export function FolderItem({
   const slideDragActive = useSlideDragActive();
   const t = useLocale();
 
-  const acceptsSlideDrop = row.kind !== 'themes' && row.kind !== 'assets';
+  const acceptsSlideDrop = row.kind === 'draft' || row.kind === 'folder';
   const isSlideDrag = (e: React.DragEvent) =>
     acceptsSlideDrop && e.dataTransfer.types.includes(SLIDE_DND_MIME);
   const handleDragEnter = (e: React.DragEvent) => {
@@ -124,21 +127,25 @@ export function FolderItem({
   };
 
   const icon: FolderIcon =
-    row.kind === 'draft'
-      ? { type: 'emoji', value: '📝' }
-      : row.kind === 'themes'
-        ? { type: 'emoji', value: '🎨' }
-        : row.kind === 'assets'
-          ? { type: 'emoji', value: '🗂️' }
-          : row.folder.icon;
+    row.kind === 'all'
+      ? { type: 'emoji', value: '🎞️' }
+      : row.kind === 'draft'
+        ? { type: 'emoji', value: '📝' }
+        : row.kind === 'themes'
+          ? { type: 'emoji', value: '🎨' }
+          : row.kind === 'assets'
+            ? { type: 'emoji', value: '🗂️' }
+            : row.folder.icon;
   const label =
-    row.kind === 'draft'
-      ? t.home.draft
-      : row.kind === 'themes'
-        ? t.home.themes
-        : row.kind === 'assets'
-          ? t.home.assets
-          : row.folder.name;
+    row.kind === 'all'
+      ? t.home.slides
+      : row.kind === 'draft'
+        ? t.home.draft
+        : row.kind === 'themes'
+          ? t.home.themes
+          : row.kind === 'assets'
+            ? t.home.assets
+            : row.folder.name;
 
   const commitRename = () => {
     if (row.kind !== 'folder') return;

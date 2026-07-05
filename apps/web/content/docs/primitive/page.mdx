@@ -1,0 +1,99 @@
+---
+title: Page
+description: The component contract for one 1920 × 1080 slide page.
+---
+
+`Page` is the base primitive in open-slide. A deck is just an ordered array of
+zero-prop React components, and each component is one page in the runtime,
+presenter view, overview grid, thumbnails, and exports.
+
+```tsx title="slides/q2-launch/index.tsx"
+import {
+  CANVAS_HEIGHT,
+  CANVAS_WIDTH,
+  type Page,
+  type SlideMeta,
+  useSlidePageNumber,
+} from '@open-slide/core';
+
+const Cover: Page = () => {
+  const { current, total } = useSlidePageNumber();
+
+  return (
+    <section
+      style={{
+        width: '100%',
+        height: '100%',
+        background: '#08090a',
+        color: '#f7f8f8',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      <p>{current} / {total}</p>
+      <h1>Q2 launch</h1>
+      <small>{CANVAS_WIDTH} × {CANVAS_HEIGHT}</small>
+    </section>
+  );
+};
+
+export const meta: SlideMeta = {
+  title: 'Q2 launch',
+};
+
+export default [Cover] satisfies Page[];
+```
+
+## Contract
+
+```ts
+type Page = ComponentType & {
+  transition?: SlideTransition;
+};
+```
+
+- A `Page` takes no props. Pull page context from hooks such as
+  `useSlidePageNumber()`.
+- The module default export is the display order: `export default [Cover,
+  Body] satisfies Page[]`.
+- The root element should fill the canvas with `width: '100%'` and
+  `height: '100%'`.
+- Every page renders into a fixed `1920 × 1080` canvas. The runtime scales the
+  whole canvas uniformly for preview, present mode, and export.
+
+## How to Think About It
+
+Write pages as fixed-format compositions, not responsive web pages. Pixel
+coordinates are stable because the canvas size never changes. Use absolute
+positioning when exact placement matters, and use flex/grid when a section
+needs internal rhythm.
+
+The runtime may mount a page in more than one surface at the same time:
+current canvas, thumbnail rail, overview grid, theme preview, or export. Keep
+render output deterministic, avoid depending on the browser viewport, and
+guard browser-only side effects when a page also needs to export cleanly.
+
+## Per-Page Overrides
+
+`Page` can carry a `transition` property. Use it only when one page needs a
+different animation than the module-level default.
+
+```tsx
+import type { Page, SlideTransition } from '@open-slide/core';
+
+const Cover: Page = () => <section>…</section>;
+
+const coverTransition: SlideTransition = {
+  duration: 240,
+  enter: {
+    keyframes: [
+      { opacity: 0, transform: 'translateY(8px)' },
+      { opacity: 1, transform: 'translateY(0)' },
+    ],
+  },
+};
+
+Cover.transition = coverTransition;
+```
+
+See [Transition](/docs/primitive/transition) for the animation model.
