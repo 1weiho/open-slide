@@ -193,14 +193,30 @@ function escapeSingleQuoted(s: string): string {
 
 const SLIDE_ENTRY_NAMES = ['index.tsx', 'index.jsx', 'index.ts', 'index.js'];
 
-function nestingDepthAt(body: string, index: number): number {
+function syntaxStateAt(body: string, index: number): { depth: number; inComment: boolean } {
   let depth = 0;
   let quote: string | null = null;
+  let lineComment = false;
+  let blockComment = false;
   for (let i = 0; i < index; i++) {
     const ch = body[i];
-    if (quote) {
+    const next = body[i + 1];
+    if (lineComment) {
+      if (ch === '\n') lineComment = false;
+    } else if (blockComment) {
+      if (ch === '*' && next === '/') {
+        blockComment = false;
+        i++;
+      }
+    } else if (quote) {
       if (ch === '\\') i++;
       else if (ch === quote) quote = null;
+    } else if (ch === '/' && next === '/') {
+      lineComment = true;
+      i++;
+    } else if (ch === '/' && next === '*') {
+      blockComment = true;
+      i++;
     } else if (ch === "'" || ch === '"' || ch === '`') {
       quote = ch;
     } else if (ch === '{' || ch === '[' || ch === '(') {
@@ -209,7 +225,7 @@ function nestingDepthAt(body: string, index: number): number {
       depth--;
     }
   }
-  return depth;
+  return { depth, inComment: lineComment || blockComment };
 }
 
 /**
@@ -246,12 +262,14 @@ export function removeMetaThemeFromSource(source: string, themeId: string): stri
   // The leading boundary keeps this from matching inside a longer key (e.g.
   // `subtheme:`); the trailing lookahead keeps it from matching `theme: '…'`
   // embedded in a string value, where the quote isn't followed by a separator.
-  // The depth check keeps it from matching a `theme:` nested in a sub-object,
-  // which is not the `meta.theme` the runtime reads.
+  // The syntax-state check keeps it from matching a `theme:` nested in a
+  // sub-object or sitting inside a comment — neither is the `meta.theme` the
+  // runtime reads.
   const propRe = /(^|[\s,{])theme\s*:\s*(['"`])((?:\\.|(?!\2).)*)\2(?=\s*(?:[,}\n]|$))/g;
   let match: RegExpExecArray | null = null;
   for (let m = propRe.exec(body); m !== null; m = propRe.exec(body)) {
-    if (nestingDepthAt(body, m.index + m[1].length) === 0) {
+    const state = syntaxStateAt(body, m.index + m[1].length);
+    if (state.depth === 0 && !state.inComment) {
       match = m;
       break;
     }

@@ -205,6 +205,17 @@ describe('removeMetaThemeFromSource', () => {
     expect(out).toBe(`export const meta = {\n  nested: { theme: 'aurora' },\n};\n`);
   });
 
+  it('skips a theme mention inside a comment and removes the real property', () => {
+    const source = `export const meta = {\n  // theme: 'aurora' used to be the default\n  theme: 'aurora',\n};\n`;
+    const out = removeMetaThemeFromSource(source, 'aurora');
+    expect(out).toBe(`export const meta = {\n  // theme: 'aurora' used to be the default\n};\n`);
+  });
+
+  it('leaves a theme field that only appears inside a comment alone', () => {
+    const source = `export const meta = {\n  /* theme: 'aurora' */\n  title: 'X',\n};\n`;
+    expect(removeMetaThemeFromSource(source, 'aurora')).toBeNull();
+  });
+
   it('returns null when there is no theme field', () => {
     const source = `export const meta = {\n  title: 'X',\n};\n`;
     expect(removeMetaThemeFromSource(source, 'aurora')).toBeNull();
