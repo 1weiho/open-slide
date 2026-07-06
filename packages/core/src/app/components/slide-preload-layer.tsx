@@ -36,6 +36,17 @@ function saveDataEnabled(): boolean {
   return connection?.saveData === true;
 }
 
+// Nearest upcoming pages first, wrapping around, skipping the live page.
+function computeWarmupOrder(pages: Page[], index: number): number[] {
+  if (saveDataEnabled()) return [];
+  const start = Math.max(0, Math.min(pages.length - 1, index));
+  const result: number[] = [];
+  for (let step = 1; step < pages.length; step++) {
+    result.push((start + step) % pages.length);
+  }
+  return result;
+}
+
 /**
  * Mounts every non-visible page of the deck in a hidden layer so the browser
  * fetches their images and font faces before the audience navigates to them —
@@ -48,21 +59,25 @@ function saveDataEnabled(): boolean {
  * fonts and images have settled — by then everything sits in the HTTP cache.
  */
 export function SlidePreloadLayer({ pages, index, design }: Props) {
-  // Snapshot the warm-up order once: nearest upcoming pages first, wrapping
-  // around, skipping the live page. Later index changes must not restart it.
-  const [order] = useState<number[]>(() => {
-    if (saveDataEnabled()) return [];
-    const start = Math.max(0, Math.min(pages.length - 1, index));
-    const result: number[] = [];
-    for (let step = 1; step < pages.length; step++) {
-      result.push((start + step) % pages.length);
-    }
-    return result;
-  });
+  // Warm-up order is captured on mount, not on every index change — later
+  // navigation must not restart the sequence. But the deck itself can change
+  // under a reused component instance (a client-side slide switch keeps this
+  // route mounted, and the editor mutates `pages` on reorder/add/delete), so
+  // recompute from scratch whenever the `pages` identity changes.
+  const [deck, setDeck] = useState(pages);
+  const [order, setOrder] = useState<number[]>(() => computeWarmupOrder(pages, index));
   const [mountedCount, setMountedCount] = useState(0);
   const [done, setDone] = useState(order.length === 0);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const controllerRef = useRef<StepController | null>(null);
+
+  if (deck !== pages) {
+    const nextOrder = computeWarmupOrder(pages, index);
+    setDeck(pages);
+    setOrder(nextOrder);
+    setMountedCount(0);
+    setDone(nextOrder.length === 0);
+  }
 
   useEffect(() => {
     if (done || mountedCount >= order.length) return;
