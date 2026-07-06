@@ -24,6 +24,7 @@ import {
 } from './present/use-presenter-channel';
 import { useTouchSwipe } from './present/use-touch-swipe';
 import { SlideCanvas } from './slide-canvas';
+import { SlidePreloadLayer } from './slide-preload-layer';
 import { SlideTransitionLayer } from './slide-transition-layer';
 
 const IDLE_HIDE_MS = 2000;
@@ -413,6 +414,8 @@ export function Player({
           onStepAggregateChange={handleAggregateChange}
         />
       </SlideCanvas>
+
+      <SlidePreloadLayer pages={pages} index={index} design={design} />
 
       {controls && (
         <div data-osd-chrome style={{ display: 'contents' }}>

@@ -9,6 +9,7 @@ import {
   usePresenterChannel,
 } from '../components/present/use-presenter-channel';
 import { SlideCanvas } from '../components/slide-canvas';
+import { SlidePreloadLayer } from '../components/slide-preload-layer';
 import { SlidePageProvider } from '../lib/page-context';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
 import { type StepController, StepHost } from '../lib/step-context';
@@ -131,7 +132,8 @@ export function Presenter() {
   const NextPage = hasNext ? pages[nextPageIndex] : null;
 
   return (
-    <div className="dark flex h-dvh w-screen flex-col overflow-hidden bg-background text-foreground">
+    <div className="dark relative flex h-dvh w-screen flex-col overflow-hidden bg-background text-foreground">
+      <SlidePreloadLayer pages={pages} index={index} design={slide.design} />
       <PresenterTopBar
         index={index}
         total={total}
