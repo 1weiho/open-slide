@@ -129,6 +129,7 @@ export const zhTW: Locale = {
     assetsTab: '素材',
     renameSlide: '重新命名投影片',
     loadingEyebrow: '載入中',
+    loadingAssetsEyebrow: '載入資源中',
     emptyEyebrow: '空白',
     nothingToShow: '沒有可顯示的內容。',
     emptyHintPrefix: '',
@@ -158,6 +159,7 @@ export const zhTW: Locale = {
     elapsed: '已耗時',
     jump: '跳至',
     loadingSlide: '正在載入 {slideId}…',
+    loadingAssets: '正在載入資源…',
   },
 
   present: {

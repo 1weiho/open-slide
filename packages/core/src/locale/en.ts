@@ -131,6 +131,7 @@ export const en: Locale = {
     assetsTab: 'Assets',
     renameSlide: 'Rename slide',
     loadingEyebrow: 'Loading',
+    loadingAssetsEyebrow: 'Loading assets',
     emptyEyebrow: 'Empty',
     nothingToShow: 'Nothing to show.',
     emptyHintPrefix: '',
@@ -160,6 +161,7 @@ export const en: Locale = {
     elapsed: 'Elapsed',
     jump: 'Jump',
     loadingSlide: 'Loading {slideId}…',
+    loadingAssets: 'Loading assets…',
   },
 
   present: {

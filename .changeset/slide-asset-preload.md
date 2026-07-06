@@ -2,4 +2,4 @@
 '@open-slide/core': patch
 ---
 
-Preload upcoming pages' images and fonts in a hidden layer during present and presenter modes, eliminating font flashes and image pop-in when navigating slides.
+Preload every page's images and fonts behind the deck loading screen — slides and presenter views first render with all assets cached, eliminating font flashes and image pop-in during playback.

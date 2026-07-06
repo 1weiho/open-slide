@@ -131,6 +131,7 @@ export type Locale = {
     assetsTab: string;
     renameSlide: string;
     loadingEyebrow: string;
+    loadingAssetsEyebrow: string;
     emptyEyebrow: string;
     nothingToShow: string;
     emptyHintPrefix: string;
@@ -161,6 +162,7 @@ export type Locale = {
     jump: string;
     /** template: "Loading {slideId}…" */
     loadingSlide: string;
+    loadingAssets: string;
   };
 
   present: {

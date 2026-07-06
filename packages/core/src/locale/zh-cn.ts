@@ -129,6 +129,7 @@ export const zhCN: Locale = {
     assetsTab: '素材',
     renameSlide: '重命名幻灯片',
     loadingEyebrow: '加载中',
+    loadingAssetsEyebrow: '加载资源中',
     emptyEyebrow: '空白',
     nothingToShow: '没有可显示的内容。',
     emptyHintPrefix: '',
@@ -158,6 +159,7 @@ export const zhCN: Locale = {
     elapsed: '已用时',
     jump: '跳至',
     loadingSlide: '正在加载 {slideId}…',
+    loadingAssets: '正在加载资源…',
   },
 
   present: {

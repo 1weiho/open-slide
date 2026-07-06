@@ -55,6 +55,7 @@ import { PdfProgressToast } from '../components/pdf-progress-toast';
 import { openPresenterWindow, Player } from '../components/player';
 import { PptxProgressToast } from '../components/pptx-progress-toast';
 import { SlideCanvas } from '../components/slide-canvas';
+import { isDeckWarmed, markDeckWarmed, SlidePreloadLayer } from '../components/slide-preload-layer';
 import { SlideTransitionLayer } from '../components/slide-transition-layer';
 import { type ThumbnailActions, ThumbnailRail } from '../components/thumbnail-rail';
 import { exportSlideAsHtml } from '../lib/export-html';
@@ -77,6 +78,11 @@ export function Slide() {
   const linkCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [designOpen, setDesignOpen] = useState(false);
   const [overviewOpen, setOverviewOpen] = useState(false);
+  const [, setWarmedTick] = useState(0);
+  const handleAssetsWarmed = useCallback(() => {
+    markDeckWarmed(slideId);
+    setWarmedTick((n) => n + 1);
+  }, [slideId]);
 
   useEffect(() => {
     return () => {
@@ -343,6 +349,34 @@ export function Slide() {
           </code>
           {t.slide.emptyHintSuffix}
         </p>
+      </div>
+    );
+  }
+
+  // Hold the loader while a hidden layer warms the whole deck's images and
+  // fonts, so the slide UI first paints with every asset already in cache.
+  if (view !== 'assets' && !isDeckWarmed(slideId)) {
+    return (
+      <div className="grid min-h-dvh place-items-center px-8 text-muted-foreground">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative h-px w-56 overflow-hidden bg-hairline">
+            <span
+              aria-hidden
+              className="line-loader-bar absolute inset-y-[-0.5px] left-0 w-1/4 bg-foreground"
+            />
+          </div>
+          <div className="flex flex-wrap items-baseline justify-center gap-x-2 text-[11.5px]">
+            <span className="eyebrow">{t.slide.loadingAssetsEyebrow}</span>
+            <span className="font-mono">{slideId}</span>
+          </div>
+        </div>
+        <SlidePreloadLayer
+          pages={pages}
+          index={index}
+          design={slide.design}
+          includeCurrent
+          onDone={handleAssetsWarmed}
+        />
       </div>
     );
   }

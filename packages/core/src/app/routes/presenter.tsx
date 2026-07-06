@@ -9,7 +9,7 @@ import {
   usePresenterChannel,
 } from '../components/present/use-presenter-channel';
 import { SlideCanvas } from '../components/slide-canvas';
-import { SlidePreloadLayer } from '../components/slide-preload-layer';
+import { isDeckWarmed, markDeckWarmed, SlidePreloadLayer } from '../components/slide-preload-layer';
 import { SlidePageProvider } from '../lib/page-context';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
 import { type StepController, StepHost } from '../lib/step-context';
@@ -29,6 +29,11 @@ export function Presenter() {
   const [hasProjection, setHasProjection] = useState(false);
   const requestedRef = useRef(false);
   const t = useLocale();
+  const [, setWarmedTick] = useState(0);
+  const handleAssetsWarmed = useCallback(() => {
+    markDeckWarmed(slideId);
+    setWarmedTick((n) => n + 1);
+  }, [slideId]);
 
   const channel = usePresenterChannel(slideId, (msg) => {
     if (msg.type === 'state') {
@@ -131,9 +136,33 @@ export function Presenter() {
   const CurrentPage = pages[index];
   const NextPage = hasNext ? pages[nextPageIndex] : null;
 
+  // Hold the loader while a hidden layer warms the whole deck's images and
+  // fonts, so the previews first paint with every asset already in cache.
+  if (!isDeckWarmed(slideId)) {
+    return (
+      <div className="dark grid h-dvh place-items-center bg-background text-muted-foreground">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative h-px w-56 overflow-hidden bg-border">
+            <span
+              aria-hidden
+              className="line-loader-bar absolute inset-y-[-0.5px] left-0 w-1/4 bg-foreground"
+            />
+          </div>
+          <div className="text-[11.5px]">{t.presenter.loadingAssets}</div>
+        </div>
+        <SlidePreloadLayer
+          pages={pages}
+          index={index}
+          design={slide.design}
+          includeCurrent
+          onDone={handleAssetsWarmed}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="dark relative flex h-dvh w-screen flex-col overflow-hidden bg-background text-foreground">
-      <SlidePreloadLayer pages={pages} index={index} design={slide.design} />
+    <div className="dark flex h-dvh w-screen flex-col overflow-hidden bg-background text-foreground">
       <PresenterTopBar
         index={index}
         total={total}

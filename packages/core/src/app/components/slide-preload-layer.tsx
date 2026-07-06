@@ -11,7 +11,22 @@ type Props = {
   pages: Page[];
   index: number;
   design?: DesignSystem;
+  /** Also warm the page at `index` — for use while no page is live yet. */
+  includeCurrent?: boolean;
+  onDone?: () => void;
 };
+
+// Per-document registry so a deck gates the UI on its first open only —
+// revisits within the same tab skip straight to the slides.
+const warmedDecks = new Set<string>();
+
+export function isDeckWarmed(slideId: string): boolean {
+  return warmedDecks.has(slideId);
+}
+
+export function markDeckWarmed(slideId: string): void {
+  warmedDecks.add(slideId);
+}
 
 function nextFrame(): Promise<void> {
   return new Promise((resolve) => requestAnimationFrame(() => resolve()));
@@ -36,12 +51,12 @@ function saveDataEnabled(): boolean {
   return connection?.saveData === true;
 }
 
-// Nearest upcoming pages first, wrapping around, skipping the live page.
-function computeWarmupOrder(pages: Page[], index: number): number[] {
+// Nearest upcoming pages first, wrapping around.
+function computeWarmupOrder(pages: Page[], index: number, includeCurrent: boolean): number[] {
   if (saveDataEnabled()) return [];
   const start = Math.max(0, Math.min(pages.length - 1, index));
   const result: number[] = [];
-  for (let step = 1; step < pages.length; step++) {
+  for (let step = includeCurrent ? 0 : 1; step < pages.length; step++) {
     result.push((start + step) % pages.length);
   }
   return result;
@@ -58,26 +73,34 @@ function computeWarmupOrder(pages: Page[], index: number): number[] {
  * boxes trigger background-image loads), and the whole layer unmounts once
  * fonts and images have settled — by then everything sits in the HTTP cache.
  */
-export function SlidePreloadLayer({ pages, index, design }: Props) {
+export function SlidePreloadLayer({ pages, index, design, includeCurrent = false, onDone }: Props) {
   // Warm-up order is captured on mount, not on every index change — later
   // navigation must not restart the sequence. But the deck itself can change
   // under a reused component instance (a client-side slide switch keeps this
   // route mounted, and the editor mutates `pages` on reorder/add/delete), so
   // recompute from scratch whenever the `pages` identity changes.
   const [deck, setDeck] = useState(pages);
-  const [order, setOrder] = useState<number[]>(() => computeWarmupOrder(pages, index));
+  const [order, setOrder] = useState<number[]>(() =>
+    computeWarmupOrder(pages, index, includeCurrent),
+  );
   const [mountedCount, setMountedCount] = useState(0);
   const [done, setDone] = useState(order.length === 0);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const controllerRef = useRef<StepController | null>(null);
 
   if (deck !== pages) {
-    const nextOrder = computeWarmupOrder(pages, index);
+    const nextOrder = computeWarmupOrder(pages, index, includeCurrent);
     setDeck(pages);
     setOrder(nextOrder);
     setMountedCount(0);
     setDone(nextOrder.length === 0);
   }
+
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
+  useEffect(() => {
+    if (done) onDoneRef.current?.();
+  }, [done]);
 
   useEffect(() => {
     if (done || mountedCount >= order.length) return;

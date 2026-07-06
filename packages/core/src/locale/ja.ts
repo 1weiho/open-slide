@@ -132,6 +132,7 @@ export const ja: Locale = {
     assetsTab: 'アセット',
     renameSlide: 'スライドの名前を変更',
     loadingEyebrow: '読み込み中',
+    loadingAssetsEyebrow: 'アセットを読み込み中',
     emptyEyebrow: '空',
     nothingToShow: '表示する内容がありません。',
     emptyHintPrefix: '',
@@ -161,6 +162,7 @@ export const ja: Locale = {
     elapsed: '経過時間',
     jump: 'ジャンプ',
     loadingSlide: '{slideId} を読み込み中…',
+    loadingAssets: 'アセットを読み込み中…',
   },
 
   present: {
