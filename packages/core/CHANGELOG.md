@@ -1,5 +1,11 @@
 # @open-slide/core
 
+## 1.13.5
+
+### Patch Changes
+
+- [#289](https://github.com/1weiho/open-slide/pull/289) [`983743f`](https://github.com/1weiho/open-slide/commit/983743fae3634a35d0aad22514f7efec71694dac) Thanks [@1weiho](https://github.com/1weiho)! - Fix slide content bleeding through the asset loading screen when pages contain revealed steps.
+
 ## 1.13.4
 
 ### Patch Changes
