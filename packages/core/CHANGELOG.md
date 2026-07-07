@@ -1,5 +1,11 @@
 # @open-slide/core
 
+## 1.13.4
+
+### Patch Changes
+
+- [#287](https://github.com/1weiho/open-slide/pull/287) [`c1b89d5`](https://github.com/1weiho/open-slide/commit/c1b89d5c08cf0d3199ec8e5ad810e5e94ca28ee5) Thanks [@1weiho](https://github.com/1weiho)! - Preload every page's images and fonts behind the deck loading screen — slides and presenter views first render with all assets cached, eliminating font flashes and image pop-in during playback.
+
 ## 1.13.3
 
 ### Patch Changes
