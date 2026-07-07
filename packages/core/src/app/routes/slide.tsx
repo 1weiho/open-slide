@@ -244,7 +244,10 @@ export function Slide() {
   );
 
   useEffect(() => {
-    if (playMode) return;
+    // When showSlideUi is false the read-only <Player> is rendered and owns
+    // keyboard navigation (including step-aware advance/retreat). Attaching this
+    // page-nav handler too would race it and skip <Steps> reveals, so bail out.
+    if (playMode || !showSlideUi) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLElement && e.target.matches('input, textarea')) return;
       // Letter shortcuts only fire bare so browser combos (Cmd/Ctrl-P, ⌘F…) stay intact.
