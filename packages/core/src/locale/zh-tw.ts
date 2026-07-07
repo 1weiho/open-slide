@@ -114,10 +114,9 @@ export const zhTW: Locale = {
     exportAsPdf: '匯出為 PDF',
     exportAsImagePptx: '匯出圖片 PPTX',
     exportAsPptx: '匯出 PPTX',
-    comingSoon: '即將推出',
-    pptxComingSoonTooltip: '可編輯的 PPTX 匯出尚未支援，在此之前可以先使用「匯出圖片 PPTX」。',
     pdfExportFailed: 'PDF 匯出失敗',
     imagePptxExportFailed: 'PPTX 匯出失敗',
+    pptxExportFailed: '可編輯 PPTX 匯出失敗',
     pdfExportSafariUnsupported:
       '匯出 PDF 目前不支援 Safari 裝置，請嘗試用 Chromium 基底瀏覽器替代。',
     present: '簡報',
