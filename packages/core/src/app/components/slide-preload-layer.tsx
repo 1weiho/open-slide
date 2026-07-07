@@ -145,6 +145,11 @@ export function SlidePreloadLayer({ pages, index, design, includeCurrent = false
         inset: 0,
         overflow: 'hidden',
         visibility: 'hidden',
+        // Descendants can override inherited visibility back to visible —
+        // <Step> does exactly that on revealed steps. Group opacity can't be
+        // overridden from inside, and an opacity<1 ancestor also becomes the
+        // containing block for position:fixed content, so nothing escapes.
+        opacity: 0,
         pointerEvents: 'none',
         ...(design ? designToCssVars(design) : {}),
       }}
