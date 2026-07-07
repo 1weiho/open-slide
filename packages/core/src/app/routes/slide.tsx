@@ -386,6 +386,7 @@ export function Slide() {
       <Player
         pages={pages}
         design={slide.design}
+        transition={slide.transition}
         index={index}
         onIndexChange={goTo}
         onExit={() => {}}
