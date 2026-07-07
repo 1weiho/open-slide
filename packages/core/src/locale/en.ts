@@ -257,6 +257,12 @@ export const en: Locale = {
     commentsApplyHintPrefix: 'Run ',
     commentsApplyHintSuffix: ' in your agent to apply these.',
     commentDeleteAria: 'Delete',
+    runWithAgent: 'Run with agent (Superconnected)',
+    agentRunning: 'Agent is running…',
+    agentDone: 'Done',
+    agentError: 'Agent error',
+    agentCanceled: 'Agent stopped',
+    stopAgent: 'Stop agent',
     saveFailed: "Couldn't save:",
   },
 

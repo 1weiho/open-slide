@@ -255,6 +255,12 @@ export const zhTW: Locale = {
     commentsApplyHintPrefix: '在你的代理中執行 ',
     commentsApplyHintSuffix: ' 以套用這些變更。',
     commentDeleteAria: '刪除',
+    runWithAgent: '用 Agent 執行 (Superconnected)',
+    agentRunning: 'Agent 執行中…',
+    agentDone: '完成',
+    agentError: 'Agent 發生錯誤',
+    agentCanceled: 'Agent 已停止',
+    stopAgent: '停止 Agent',
     saveFailed: '儲存失敗：',
   },
 

@@ -260,6 +260,12 @@ export const ja: Locale = {
     commentsApplyHintPrefix: 'エージェントで ',
     commentsApplyHintSuffix: ' を実行して適用してください。',
     commentDeleteAria: '削除',
+    runWithAgent: 'エージェントで実行 (Superconnected)',
+    agentRunning: 'エージェント実行中…',
+    agentDone: '完了',
+    agentError: 'エージェントエラー',
+    agentCanceled: 'エージェントを停止しました',
+    stopAgent: 'エージェントを停止',
     saveFailed: '保存に失敗しました:',
   },
 

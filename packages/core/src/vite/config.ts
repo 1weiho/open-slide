@@ -10,6 +10,7 @@ import { designPlugin } from './design-plugin.ts';
 import { locTagsPlugin } from './loc-tags-plugin.ts';
 import { notesPlugin } from './notes-plugin.ts';
 import { loadUserConfig, type OpenSlideConfig, openSlidePlugin } from './open-slide-plugin.ts';
+import { superconnectorPlugin } from './superconnector-plugin.ts';
 import { themesPlugin } from './themes-plugin.ts';
 
 function findPackageRoot(fromFile: string): string {
@@ -66,6 +67,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
       apiPlugin({ userCwd, slidesDir, assetsDir, coreVersion: CORE_VERSION }),
       notesPlugin({ userCwd, slidesDir }),
       currentPlugin({ userCwd, slidesDir }),
+      superconnectorPlugin({ userCwd, slidesDir }),
     ],
     resolve: {
       alias: {

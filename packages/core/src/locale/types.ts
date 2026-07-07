@@ -256,6 +256,12 @@ export type Locale = {
     commentsApplyHintPrefix: string;
     commentsApplyHintSuffix: string;
     commentDeleteAria: string;
+    runWithAgent: string;
+    agentRunning: string;
+    agentDone: string;
+    agentError: string;
+    agentCanceled: string;
+    stopAgent: string;
     /** Prefix for the toast shown when one or more buffered edits fail to write to disk. */
     saveFailed: string;
   };
