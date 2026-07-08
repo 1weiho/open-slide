@@ -234,6 +234,7 @@ export const ja: Locale = {
     cropDialogTitle: '画像をトリミング',
     cropDialogDescription: '枠をドラッグして表示する範囲を選択します。',
     cropFitCover: '塗りつぶす',
+    cropFitFreeform: '自由',
     cropFitContain: '全体表示',
     cropApply: '適用',
     cropResetAria: 'トリミングをリセット',

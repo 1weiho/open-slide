@@ -230,6 +230,7 @@ export const zhTW: Locale = {
     cropDialogTitle: '裁切圖片',
     cropDialogDescription: '拖曳框線決定要保留的可見範圍。',
     cropFitCover: '填滿',
+    cropFitFreeform: '自由裁剪',
     cropFitContain: '完整顯示',
     cropApply: '套用',
     cropResetAria: '重設裁切',

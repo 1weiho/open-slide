@@ -37,14 +37,37 @@ export function ImageCropDialog({
   onApply: (result: ImageCropResult) => void;
 }) {
   const t = useLocale();
-  const [fit, setFit] = useState<'cover' | 'contain'>(initialFit);
+  const [fit, setFit] = useState<'cover' | 'contain' | 'freeform'>(initialFit);
   const aspect = targetWidth > 0 && targetHeight > 0 ? targetWidth / targetHeight : 1;
   const [crop, setCrop] = useState<Crop | undefined>(undefined);
   const imgRef = useRef<HTMLImageElement>(null);
 
   const onImageLoad = (e: SyntheticEvent<HTMLImageElement>) => {
     const im = e.currentTarget;
-    setCrop(initialCrop(im.naturalWidth, im.naturalHeight, aspect, initialRect, initialPosition));
+    if (initialRect && fit === 'cover') {
+      if (!initialRect.height || !im.naturalHeight || !Number.isFinite(im.naturalWidth)) {
+        setFit('freeform');
+        setCrop({ unit: '%', ...initialRect });
+        return;
+      }
+      const rectAspect =
+        (initialRect.width * im.naturalWidth) / (initialRect.height * im.naturalHeight);
+      if (Math.abs(rectAspect - aspect) > 0.05) {
+        setFit('freeform');
+        setCrop({ unit: '%', ...initialRect });
+        return;
+      }
+    }
+    setCrop(
+      initialCrop(
+        im.naturalWidth,
+        im.naturalHeight,
+        aspect,
+        initialRect,
+        initialPosition,
+        fit === 'freeform',
+      ),
+    );
   };
 
   useEffect(() => {
@@ -52,11 +75,19 @@ export function ImageCropDialog({
     if (!im?.complete || !im.naturalWidth || !im.naturalHeight) return;
     setCrop((prev) => {
       if (prev && prev.unit === '%') {
+        if (fit === 'freeform') return prev;
         return clampToAspect(prev as PercentCrop, aspect, im.naturalWidth, im.naturalHeight);
       }
-      return initialCrop(im.naturalWidth, im.naturalHeight, aspect, initialRect, initialPosition);
+      return initialCrop(
+        im.naturalWidth,
+        im.naturalHeight,
+        aspect,
+        initialRect,
+        initialPosition,
+        fit === 'freeform',
+      );
     });
-  }, [aspect, initialPosition, initialRect]);
+  }, [aspect, initialPosition, initialRect, fit]);
 
   const onApplyClick = () => {
     if (fit === 'contain') {
@@ -67,7 +98,7 @@ export function ImageCropDialog({
       crop && crop.unit === '%'
         ? roundRect(crop as PercentCrop)
         : { x: 0, y: 0, width: 100, height: 100 };
-    onApply({ fit, rect });
+    onApply({ fit: fit === 'freeform' ? 'cover' : fit, rect });
   };
 
   return (
@@ -82,7 +113,7 @@ export function ImageCropDialog({
             type="single"
             value={fit}
             onValueChange={(v) => {
-              if (v === 'cover' || v === 'contain') setFit(v);
+              if (v === 'cover' || v === 'contain' || v === 'freeform') setFit(v);
             }}
             variant="outline"
             size="sm"
@@ -90,17 +121,20 @@ export function ImageCropDialog({
             <ToggleGroupItem value="cover" className="text-xs">
               {t.inspector.cropFitCover}
             </ToggleGroupItem>
+            <ToggleGroupItem value="freeform" className="text-xs">
+              {t.inspector.cropFitFreeform}
+            </ToggleGroupItem>
             <ToggleGroupItem value="contain" className="text-xs">
               {t.inspector.cropFitContain}
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
         <div className="flex h-[420px] w-full items-center justify-center overflow-hidden rounded-md border bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:12px_12px]">
-          {fit === 'cover' ? (
+          {fit === 'cover' || fit === 'freeform' ? (
             <ReactCrop
               crop={crop}
               onChange={(_, percentCrop) => setCrop(percentCrop)}
-              aspect={aspect}
+              aspect={fit === 'freeform' ? undefined : aspect}
               keepSelection
               className="max-h-full"
             >
@@ -133,11 +167,13 @@ function initialCrop(
   aspect: number,
   rect: ImageCropRect | null,
   position: { x: number; y: number },
+  isFreeform: boolean,
 ): PercentCrop {
   if (rect) {
+    if (isFreeform) return { unit: '%', ...rect };
     return clampToAspect({ unit: '%', ...rect }, aspect, naturalW, naturalH);
   }
-  return makeMaxSizeCrop(naturalW, naturalH, aspect, position);
+  return makeMaxSizeCrop(naturalW, naturalH, aspect, position, isFreeform);
 }
 
 function makeMaxSizeCrop(
@@ -145,8 +181,9 @@ function makeMaxSizeCrop(
   naturalH: number,
   aspect: number,
   position: { x: number; y: number },
+  isFreeform: boolean,
 ): PercentCrop {
-  if (naturalW <= 0 || naturalH <= 0) {
+  if (naturalW <= 0 || naturalH <= 0 || isFreeform) {
     return { unit: '%', x: 0, y: 0, width: 100, height: 100 };
   }
   const sourceAspect = naturalW / naturalH;
