@@ -77,11 +77,15 @@
     "clsx": "^2.1.1",
     "commander": "^15.0.0",
     "emoji-picker-react": "^4.19.1",
+    "esbuild": "^0.24.0",
     "fast-glob": "^3.3.2",
+    "fast-xml-parser": "^5.8.0",
     "fflate": "^0.8.2",
     "html-to-image": "^1.11.13",
+    "jszip": "^3.10.1",
     "lucide-react": "^1.8.0",
     "next-themes": "^0.4.6",
+    "pptxgenjs": "^3.12.0",
     "radix-ui": "^1.4.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -98,7 +102,16 @@
     "@types/node": "^22.19.17",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "playwright": "^1.60.0",
     "tsdown": "^0.9.9",
     "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "playwright": "^1.40.0"
+  },
+  "peerDependenciesMeta": {
+    "playwright": {
+      "optional": true
+    }
   }
 }

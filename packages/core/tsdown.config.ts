@@ -13,5 +13,18 @@ export default defineConfig({
   clean: true,
   dts: true,
   shims: false,
-  external: ['vite', 'react', 'react-dom', 'react-router-dom'],
+  external: [
+    'vite',
+    'react',
+    'react-dom',
+    'react-router-dom',
+    // PPTX export engine deps. Keep external so esbuild's native binary works
+    // and Playwright's optional dynamic import stays a bare specifier that can
+    // fail with ERR_MODULE_NOT_FOUND (caught to prompt the user to install it).
+    'esbuild',
+    'playwright',
+    'pptxgenjs',
+    'jszip',
+    'fast-xml-parser',
+  ],
 });

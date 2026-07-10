@@ -28,6 +28,7 @@ export const ja: Locale = {
     dark: 'ダーク',
     system: 'システム',
     selected: '選択中',
+    copyCommand: 'コマンドをコピー',
   },
 
   notFound: {
@@ -116,11 +117,10 @@ export const ja: Locale = {
     exportAsPdf: 'PDF として書き出し',
     exportAsImagePptx: '画像 PPTX として書き出し',
     exportAsPptx: 'PPTX として書き出し',
-    comingSoon: '近日公開',
-    pptxComingSoonTooltip:
-      '編集可能な PPTX の書き出しはまだ対応していません。それまでは「画像 PPTX として書き出し」をご利用ください。',
     pdfExportFailed: 'PDF の書き出しに失敗しました',
     imagePptxExportFailed: 'PPTX の書き出しに失敗しました',
+    pptxExportFailed: 'PPTX の書き出しに失敗しました',
+    pptxPlaywrightMissing: 'PPTX の書き出しには Playwright が必要です',
     pdfExportSafariUnsupported:
       'PDF の書き出しは現在 Safari では対応していません。Chromium ベースのブラウザでお試しください。',
     present: '発表',

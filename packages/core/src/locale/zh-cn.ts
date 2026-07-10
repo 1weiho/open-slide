@@ -28,6 +28,7 @@ export const zhCN: Locale = {
     dark: '深色',
     system: '系统',
     selected: '已选中',
+    copyCommand: '复制命令',
   },
 
   notFound: {
@@ -113,11 +114,11 @@ export const zhCN: Locale = {
     exportAsHtml: '导出为 HTML',
     exportAsPdf: '导出为 PDF',
     exportAsImagePptx: '导出图片 PPTX',
-    exportAsPptx: '导出 PPTX',
-    comingSoon: '即将推出',
-    pptxComingSoonTooltip: '可编辑的 PPTX 导出尚未支持，在此之前可以先使用“导出图片 PPTX”。',
+    exportAsPptx: '导出为 PPTX',
     pdfExportFailed: 'PDF 导出失败',
     imagePptxExportFailed: 'PPTX 导出失败',
+    pptxExportFailed: 'PPTX 导出失败',
+    pptxPlaywrightMissing: '导出 PPTX 需要 Playwright',
     pdfExportSafariUnsupported:
       '导出 PDF 目前不支持 Safari 设备，请尝试使用基于 Chromium 的浏览器替代。',
     present: '演示',

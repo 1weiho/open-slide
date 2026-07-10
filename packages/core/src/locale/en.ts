@@ -28,6 +28,7 @@ export const en: Locale = {
     dark: 'Dark',
     system: 'System',
     selected: 'Selected',
+    copyCommand: 'Copy command',
   },
 
   notFound: {
@@ -115,11 +116,10 @@ export const en: Locale = {
     exportAsPdf: 'Export as PDF',
     exportAsImagePptx: 'Export as image PPTX',
     exportAsPptx: 'Export as PPTX',
-    comingSoon: 'Coming soon',
-    pptxComingSoonTooltip:
-      'Editable PPTX export isn’t ready yet. For now, use “Export as image PPTX” instead.',
     pdfExportFailed: 'PDF export failed',
     imagePptxExportFailed: 'PPTX export failed',
+    pptxExportFailed: 'PPTX export failed',
+    pptxPlaywrightMissing: 'Playwright is required for PPTX export',
     pdfExportSafariUnsupported:
       'Export as PDF is not supported on Safari. Please try a Chromium-based browser instead.',
     present: 'Present',
