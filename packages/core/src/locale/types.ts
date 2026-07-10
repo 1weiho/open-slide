@@ -51,6 +51,9 @@ export type Locale = {
     updatingPackage: string;
     updatePackageDone: string;
     updatePackageFailed: string;
+    restartServer: string;
+    restartingServer: string;
+    restartServerFailed: string;
     changeIcon: string;
     iconEmojiTab: string;
     iconColorTab: string;
