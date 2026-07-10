@@ -35,8 +35,9 @@ export function registerRestartRoutes(server: ViteDevServer): void {
       return json(res, 409, { error: 'dev server was not started by the open-slide CLI' });
     }
 
+    // exit only once the response is flushed, so the client sees `restarting`
+    // and enters its poll loop instead of treating the dropped socket as failure
+    res.on('finish', () => process.exit(RESTART_EXIT_CODE));
     json(res, 200, { restarting: true });
-    // give the response a chance to flush before the process goes away
-    setTimeout(() => process.exit(RESTART_EXIT_CODE), 0);
   });
 }
