@@ -1,5 +1,13 @@
 # @open-slide/core
 
+## 1.13.6
+
+### Patch Changes
+
+- [#292](https://github.com/1weiho/open-slide/pull/292) [`87db8f4`](https://github.com/1weiho/open-slide/commit/87db8f453c5dda12066de786bd1132c7446f01ae) Thanks [@jeremyjordan](https://github.com/jeremyjordan)! - Play a deck's exported `transition` in the read-only build (`showSlideUi: false`) instead of swapping pages instantly.
+
+- [#291](https://github.com/1weiho/open-slide/pull/291) [`0f866d5`](https://github.com/1weiho/open-slide/commit/0f866d54ea58c0ab80a062dbc6922cc96a654b1e) Thanks [@jeremyjordan](https://github.com/jeremyjordan)! - Reveal `<Steps>` one at a time in the read-only build (`showSlideUi: false`) instead of skipping straight to the next slide on Space/Arrow.
+
 ## 1.13.5
 
 ### Patch Changes
