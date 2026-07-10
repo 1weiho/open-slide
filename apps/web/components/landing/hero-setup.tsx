@@ -147,6 +147,19 @@ export function HeroSetup() {
 }
 
 async function writeToClipboard(content: string): Promise<boolean> {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(content);
+      return true;
+    } catch {
+      return copyWithExecCommand(content);
+    }
+  }
+
+  return copyWithExecCommand(content);
+}
+
+function copyWithExecCommand(content: string): boolean {
   const textArea = document.createElement('textarea');
   textArea.value = content;
   textArea.setAttribute('readonly', '');
@@ -154,15 +167,10 @@ async function writeToClipboard(content: string): Promise<boolean> {
   textArea.style.opacity = '0';
   document.body.append(textArea);
   textArea.select();
-  const copied = document.execCommand('copy');
-  textArea.remove();
-  if (copied) return true;
-
   try {
-    await navigator.clipboard.writeText(content);
-    return true;
-  } catch {
-    return false;
+    return document.execCommand('copy');
+  } finally {
+    textArea.remove();
   }
 }
 
