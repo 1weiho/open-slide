@@ -1,5 +1,4 @@
-import { CopyCommand } from './copy-command';
-import { HeroDocsLink } from './hero-docs-link';
+import { HeroSetup } from './hero-setup';
 
 export function Hero() {
   return (
@@ -29,12 +28,8 @@ export function Hero() {
             layout to fight. Design anything you can imagine.
           </p>
 
-          <div
-            className="flex flex-wrap items-center gap-x-6 gap-y-4 rise"
-            style={{ animationDelay: '320ms' }}
-          >
-            <CopyCommand command="npx @open-slide/cli init" />
-            <HeroDocsLink />
+          <div className="w-full rise" style={{ animationDelay: '320ms' }}>
+            <HeroSetup />
           </div>
         </div>
       </div>
