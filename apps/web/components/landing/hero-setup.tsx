@@ -78,11 +78,20 @@ export function HeroSetup() {
                 key === 'you' ? 'pl-2 pr-3 sm:pr-4' : 'px-3 sm:px-4'
               } ${
                 mode === key
-                  ? 'font-medium text-[color:var(--color-text)]'
+                  ? 'text-[color:var(--color-text)]'
                   : 'text-[color:var(--color-muted)] hover:text-[color:var(--color-text-soft)]'
               }`}
             >
-              {setupOptions[key].label}
+              <span className="grid">
+                <span aria-hidden className="invisible col-start-1 row-start-1 font-medium">
+                  {setupOptions[key].label}
+                </span>
+                <span
+                  className={`col-start-1 row-start-1 ${mode === key ? 'font-medium' : 'font-normal'}`}
+                >
+                  {setupOptions[key].label}
+                </span>
+              </span>
             </button>
           </div>
         ))}
