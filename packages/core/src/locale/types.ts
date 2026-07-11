@@ -297,6 +297,11 @@ export type Locale = {
     typeColumn: string;
     sizeColumn: string;
     statusColumn: string;
+    sortAria: string;
+    /** template: "Sort by {column}" */
+    sortByColumn: string;
+    sortAscending: string;
+    sortDescending: string;
     assetSearchPlaceholder: string;
     clearAssetSearch: string;
     usageFilterAria: string;

@@ -1,5 +1,8 @@
 import {
+  ArrowDown,
   ArrowDownToLine,
+  ArrowUp,
+  ArrowUpDown,
   CloudOff,
   File as FileIcon,
   FileImage,
@@ -42,7 +45,15 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { type AssetTypeFilter, type AssetUsageFilter, filterAssets } from '@/lib/asset-filter';
+import {
+  type AssetSortDirection,
+  type AssetSortKey,
+  type AssetSortOptions,
+  type AssetTypeFilter,
+  type AssetUsageFilter,
+  filterAssets,
+  sortAssets,
+} from '@/lib/asset-filter';
 import {
   type AssetEntry,
   type AssetUsage,
@@ -64,6 +75,15 @@ type ViewMode = 'grid' | 'list';
 
 const GLOBAL_SLIDE_ID = '@global';
 const VIEW_MODE_STORAGE_KEY = 'open-slide:asset-view-mode';
+const SORT_STORAGE_KEY = 'open-slide:asset-sort-v1';
+const SORT_KEYS: readonly AssetSortKey[] = ['name', 'modified', 'size', 'type'];
+const DEFAULT_SORT: AssetSortOptions = { key: 'name', direction: 'asc' };
+const DEFAULT_SORT_DIRECTIONS: Record<AssetSortKey, AssetSortDirection> = {
+  name: 'asc',
+  modified: 'desc',
+  size: 'desc',
+  type: 'asc',
+};
 
 function readViewMode(): ViewMode {
   if (typeof window === 'undefined') return 'grid';
@@ -83,6 +103,28 @@ function useViewMode(): [ViewMode, (next: ViewMode) => void] {
     } catch {}
   };
   return [viewMode, update];
+}
+
+function readSortPreference(): AssetSortOptions {
+  if (typeof window === 'undefined') return DEFAULT_SORT;
+  try {
+    const [key, direction] = window.localStorage.getItem(SORT_STORAGE_KEY)?.split(':') ?? [];
+    if (SORT_KEYS.includes(key as AssetSortKey) && (direction === 'asc' || direction === 'desc')) {
+      return { key: key as AssetSortKey, direction };
+    }
+  } catch {}
+  return DEFAULT_SORT;
+}
+
+function useSortPreference(): [AssetSortOptions, (next: AssetSortOptions) => void] {
+  const [sort, setSort] = useState<AssetSortOptions>(readSortPreference);
+  const update = (next: AssetSortOptions) => {
+    setSort(next);
+    try {
+      window.localStorage.setItem(SORT_STORAGE_KEY, `${next.key}:${next.direction}`);
+    } catch {}
+  };
+  return [sort, update];
 }
 
 type ConflictState = {
@@ -106,6 +148,7 @@ export function AssetView({ slideId }: Props) {
   const [usageFilter, setUsageFilter] = useState<AssetUsageFilter>('all');
   const [typeFilter, setTypeFilter] = useState<AssetTypeFilter>('all');
   const [viewMode, setViewMode] = useViewMode();
+  const [sort, setSort] = useSortPreference();
   const dragDepth = useRef(0);
   const inputId = useId();
   const t = useLocale();
@@ -113,12 +156,15 @@ export function AssetView({ slideId }: Props) {
   const deferredQuery = useDeferredValue(query);
   const visibleAssets = useMemo(
     () =>
-      filterAssets(assets, {
-        usage: usageFilter,
-        type: typeFilter,
-        search: deferredQuery,
-      }),
-    [assets, deferredQuery, typeFilter, usageFilter],
+      sortAssets(
+        filterAssets(assets, {
+          usage: usageFilter,
+          type: typeFilter,
+          search: deferredQuery,
+        }),
+        { key: sort.key, direction: sort.direction },
+      ),
+    [assets, deferredQuery, sort.direction, sort.key, typeFilter, usageFilter],
   );
   const existingNames = useMemo(() => new Set(assets.map((asset) => asset.name)), [assets]);
 
@@ -126,6 +172,26 @@ export function AssetView({ slideId }: Props) {
     setQuery('');
     setUsageFilter('all');
     setTypeFilter('all');
+  };
+
+  const changeSortKey = (key: AssetSortKey) => {
+    setSort({ key, direction: DEFAULT_SORT_DIRECTIONS[key] });
+  };
+
+  const toggleSortDirection = () => {
+    setSort({ key: sort.key, direction: sort.direction === 'asc' ? 'desc' : 'asc' });
+  };
+
+  const sortByColumn = (key: AssetSortKey) => {
+    setSort({
+      key,
+      direction:
+        sort.key === key
+          ? sort.direction === 'asc'
+            ? 'desc'
+            : 'asc'
+          : DEFAULT_SORT_DIRECTIONS[key],
+    });
   };
 
   async function handleFile(file: File) {
@@ -343,6 +409,12 @@ export function AssetView({ slideId }: Props) {
           </SelectContent>
         </Select>
 
+        <AssetSortControl
+          sort={sort}
+          onKeyChange={changeSortKey}
+          onToggleDirection={toggleSortDirection}
+        />
+
         <ToggleGroup
           type="single"
           value={viewMode}
@@ -389,7 +461,7 @@ export function AssetView({ slideId }: Props) {
                 : 'flex flex-col gap-1',
             )}
           >
-            {viewMode === 'list' ? <AssetListHeader /> : null}
+            {viewMode === 'list' ? <AssetListHeader sort={sort} onSort={sortByColumn} /> : null}
             {visibleAssets.map((asset) =>
               renaming === asset.name ? (
                 <RenameAsset
@@ -551,20 +623,140 @@ function hasFiles(e: React.DragEvent): boolean {
   return false;
 }
 
-function AssetListHeader() {
+function AssetSortControl({
+  sort,
+  onKeyChange,
+  onToggleDirection,
+}: {
+  sort: AssetSortOptions;
+  onKeyChange: (key: AssetSortKey) => void;
+  onToggleDirection: () => void;
+}) {
+  const t = useLocale();
+  const labels: Record<AssetSortKey, string> = {
+    name: t.asset.nameColumn,
+    modified: t.asset.modifiedAt,
+    size: t.asset.sizeColumn,
+    type: t.asset.typeColumn,
+  };
+  const directionLabel = sort.direction === 'asc' ? t.asset.sortAscending : t.asset.sortDescending;
+  const DirectionIcon = sort.direction === 'asc' ? ArrowUp : ArrowDown;
+
+  return (
+    <div className="flex items-center gap-1">
+      <Select value={sort.key} onValueChange={(next) => onKeyChange(next as AssetSortKey)}>
+        <SelectTrigger aria-label={t.asset.sortAria} className="h-8 min-w-[116px]">
+          <ArrowUpDown className="size-3.5" aria-hidden />
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent align="start">
+          {SORT_KEYS.map((key) => (
+            <SelectItem key={key} value={key}>
+              {labels[key]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        onClick={onToggleDirection}
+        aria-label={directionLabel}
+        title={directionLabel}
+        className="size-8 bg-background"
+      >
+        <DirectionIcon className="size-3.5 text-muted-foreground" />
+      </Button>
+    </div>
+  );
+}
+
+function SortableColumnHeader({
+  label,
+  sortKey,
+  sort,
+  onSort,
+  className,
+}: {
+  label: string;
+  sortKey: AssetSortKey;
+  sort: AssetSortOptions;
+  onSort: (key: AssetSortKey) => void;
+  className?: string;
+}) {
+  const t = useLocale();
+  const active = sort.key === sortKey;
+  const directionLabel = sort.direction === 'asc' ? t.asset.sortAscending : t.asset.sortDescending;
+  const DirectionIcon = sort.direction === 'asc' ? ArrowUp : ArrowDown;
+  const sortLabel = format(t.asset.sortByColumn, { column: label });
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(sortKey)}
+      aria-label={active ? `${sortLabel}, ${directionLabel}` : sortLabel}
+      title={active ? `${sortLabel} · ${directionLabel}` : sortLabel}
+      className={cn(
+        'group flex h-5 items-center gap-1 rounded-[4px] text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30',
+        active && 'text-foreground',
+        className,
+      )}
+    >
+      <span className="truncate">{label}</span>
+      {active ? (
+        <DirectionIcon className="size-2.5 shrink-0" aria-hidden />
+      ) : (
+        <ArrowUpDown
+          className="size-2.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-60 group-focus-visible:opacity-60"
+          aria-hidden
+        />
+      )}
+    </button>
+  );
+}
+
+function AssetListHeader({
+  sort,
+  onSort,
+}: {
+  sort: AssetSortOptions;
+  onSort: (key: AssetSortKey) => void;
+}) {
   const t = useLocale();
   return (
-    <div
-      aria-hidden="true"
-      className="hidden items-center gap-3 px-2 pb-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 sm:flex"
-    >
-      <span className="size-11 shrink-0" />
-      <span className="min-w-0 flex-1">{t.asset.nameColumn}</span>
-      <span className="hidden w-40 shrink-0 md:block">{t.asset.typeColumn}</span>
-      <span className="hidden w-28 shrink-0 lg:block">{t.asset.modifiedAt}</span>
-      <span className="w-16 shrink-0">{t.asset.sizeColumn}</span>
+    <div className="hidden items-center gap-3 px-2 pb-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 sm:flex">
+      <span className="size-11 shrink-0" aria-hidden />
+      <SortableColumnHeader
+        label={t.asset.nameColumn}
+        sortKey="name"
+        sort={sort}
+        onSort={onSort}
+        className="min-w-0 flex-1"
+      />
+      <SortableColumnHeader
+        label={t.asset.typeColumn}
+        sortKey="type"
+        sort={sort}
+        onSort={onSort}
+        className="hidden w-40 shrink-0 md:flex"
+      />
+      <SortableColumnHeader
+        label={t.asset.modifiedAt}
+        sortKey="modified"
+        sort={sort}
+        onSort={onSort}
+        className="hidden w-28 shrink-0 lg:flex"
+      />
+      <SortableColumnHeader
+        label={t.asset.sizeColumn}
+        sortKey="size"
+        sort={sort}
+        onSort={onSort}
+        className="w-16 shrink-0"
+      />
       <span className="w-16 shrink-0 text-right">{t.asset.statusColumn}</span>
-      <span className="size-6 shrink-0" />
+      <span className="size-6 shrink-0" aria-hidden />
     </div>
   );
 }
