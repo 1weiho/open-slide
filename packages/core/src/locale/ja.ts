@@ -148,6 +148,8 @@ export const ja: Locale = {
     lastSlide: '最後のスライド',
     endOfDeck: 'デッキの終わり',
     speakerNotes: '発表者ノート',
+    notesTextSmaller: 'ノートの文字を小さく',
+    notesTextLarger: 'ノートの文字を大きく',
     noNotesPrefix: 'このスライドには発表者ノートがありません。スライドモジュールに ',
     noNotesSuffix: ' を追加するとここに表示されます。',
     blackScreen: '黒い画面',

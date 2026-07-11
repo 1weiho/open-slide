@@ -145,6 +145,8 @@ export const zhTW: Locale = {
     lastSlide: '最後一張',
     endOfDeck: '簡報結束',
     speakerNotes: '演講備忘',
+    notesTextSmaller: '縮小備忘文字',
+    notesTextLarger: '放大備忘文字',
     noNotesPrefix: '此投影片沒有演講備忘。在你的投影片模組中加入 ',
     noNotesSuffix: ' 即可在此查看備忘。',
     blackScreen: '黑屏',

@@ -147,6 +147,8 @@ export type Locale = {
     lastSlide: string;
     endOfDeck: string;
     speakerNotes: string;
+    notesTextSmaller: string;
+    notesTextLarger: string;
     noNotesPrefix: string;
     noNotesSuffix: string;
     blackScreen: string;

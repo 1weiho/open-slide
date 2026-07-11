@@ -147,6 +147,8 @@ export const en: Locale = {
     lastSlide: 'Last slide',
     endOfDeck: 'End of deck',
     speakerNotes: 'Speaker notes',
+    notesTextSmaller: 'Make notes text smaller',
+    notesTextLarger: 'Make notes text larger',
     noNotesPrefix: 'No speaker notes for this slide. Add ',
     noNotesSuffix: ' to your slide module to see notes here.',
     blackScreen: 'Black screen',

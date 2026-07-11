@@ -145,6 +145,8 @@ export const zhCN: Locale = {
     lastSlide: '最后一张',
     endOfDeck: '演示结束',
     speakerNotes: '演讲备注',
+    notesTextSmaller: '缩小备注文字',
+    notesTextLarger: '放大备注文字',
     noNotesPrefix: '该幻灯片没有演讲备注。在你的幻灯片模块中添加 ',
     noNotesSuffix: ' 即可在此查看备注。',
     blackScreen: '黑屏',
