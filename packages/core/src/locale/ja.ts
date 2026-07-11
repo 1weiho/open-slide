@@ -360,6 +360,8 @@ export const ja: Locale = {
     transitionIndicator: 'スライドトランジションあり',
     stepsIndicator: 'ステップ表示あり',
     overviewAria: 'スライド一覧 (O)',
+    scrollUpToCurrentPage: '上にスクロールして現在のページ {n} へ移動',
+    scrollDownToCurrentPage: '下にスクロールして現在のページ {n} へ移動',
   },
 
   pdfToast: {

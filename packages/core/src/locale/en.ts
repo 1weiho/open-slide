@@ -355,6 +355,8 @@ export const en: Locale = {
     transitionIndicator: 'Has slide transition',
     stepsIndicator: 'Has step-by-step reveals',
     overviewAria: 'Slide overview (O)',
+    scrollUpToCurrentPage: 'Scroll up to current page {n}',
+    scrollDownToCurrentPage: 'Scroll down to current page {n}',
   },
 
   pdfToast: {

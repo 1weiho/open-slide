@@ -353,6 +353,8 @@ export const zhTW: Locale = {
     transitionIndicator: '有換頁轉場',
     stepsIndicator: '有逐步揭示',
     overviewAria: '投影片總覽 (O)',
+    scrollUpToCurrentPage: '向上捲動至目前的第 {n} 頁',
+    scrollDownToCurrentPage: '向下捲動至目前的第 {n} 頁',
   },
 
   pdfToast: {

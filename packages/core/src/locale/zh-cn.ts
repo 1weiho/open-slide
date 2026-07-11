@@ -353,6 +353,8 @@ export const zhCN: Locale = {
     transitionIndicator: '有换页转场',
     stepsIndicator: '有逐步揭示',
     overviewAria: '幻灯片总览 (O)',
+    scrollUpToCurrentPage: '向上滚动至当前第 {n} 页',
+    scrollDownToCurrentPage: '向下滚动至当前第 {n} 页',
   },
 
   pdfToast: {

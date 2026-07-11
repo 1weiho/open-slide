@@ -376,6 +376,10 @@ export type Locale = {
     transitionIndicator: string;
     stepsIndicator: string;
     overviewAria: string;
+    /** template: "Scroll up to current page {n}" */
+    scrollUpToCurrentPage: string;
+    /** template: "Scroll down to current page {n}" */
+    scrollDownToCurrentPage: string;
   };
 
   pdfToast: {
