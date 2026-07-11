@@ -291,7 +291,23 @@ export type Locale = {
     scopeGlobal: string;
     /** templates: "{count} file" / "{count} files" */
     fileCount: Plural;
+    assetSearchPlaceholder: string;
+    clearAssetSearch: string;
+    usageFilterAria: string;
+    usageAll: string;
+    usageUsed: string;
     usageUnused: string;
+    typeFilterAria: string;
+    typeAll: string;
+    typeImage: string;
+    typeFont: string;
+    typeVideo: string;
+    typeOther: string;
+    gridViewAria: string;
+    listViewAria: string;
+    noMatchingAssets: string;
+    noMatchingAssetsHint: string;
+    clearFilters: string;
     searchLogos: string;
     upload: string;
     dropToUpload: string;

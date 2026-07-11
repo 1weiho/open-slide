@@ -4,6 +4,8 @@ import {
   File as FileIcon,
   FileImage,
   ImageIcon,
+  LayoutGrid,
+  List,
   Loader2,
   MoreVertical,
   Pencil,
@@ -12,8 +14,9 @@ import {
   SearchX,
   Trash2,
   Upload,
+  X,
 } from 'lucide-react';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
@@ -30,7 +33,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { type AssetTypeFilter, type AssetUsageFilter, filterAssets } from '@/lib/asset-filter';
 import {
   type AssetEntry,
   type AssetUsage,
@@ -48,8 +60,30 @@ import { cn } from '@/lib/utils';
 type Props = { slideId: string | null };
 
 type Scope = 'slide' | 'global';
+type ViewMode = 'grid' | 'list';
 
 const GLOBAL_SLIDE_ID = '@global';
+const VIEW_MODE_STORAGE_KEY = 'open-slide:asset-view-mode';
+
+function readViewMode(): ViewMode {
+  if (typeof window === 'undefined') return 'grid';
+  try {
+    return window.localStorage.getItem(VIEW_MODE_STORAGE_KEY) === 'list' ? 'list' : 'grid';
+  } catch {
+    return 'grid';
+  }
+}
+
+function useViewMode(): [ViewMode, (next: ViewMode) => void] {
+  const [viewMode, setViewMode] = useState<ViewMode>(readViewMode);
+  const update = (next: ViewMode) => {
+    setViewMode(next);
+    try {
+      window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, next);
+    } catch {}
+  };
+  return [viewMode, update];
+}
 
 type ConflictState = {
   file: File;
@@ -68,11 +102,31 @@ export function AssetView({ slideId }: Props) {
   const [confirmDeleteUsages, setConfirmDeleteUsages] = useState<AssetUsage[] | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [logoSearchOpen, setLogoSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [usageFilter, setUsageFilter] = useState<AssetUsageFilter>('all');
+  const [typeFilter, setTypeFilter] = useState<AssetTypeFilter>('all');
+  const [viewMode, setViewMode] = useViewMode();
   const dragDepth = useRef(0);
   const inputId = useId();
   const t = useLocale();
 
-  const existingNames = new Set(assets.map((a) => a.name));
+  const deferredQuery = useDeferredValue(query);
+  const visibleAssets = useMemo(
+    () =>
+      filterAssets(assets, {
+        usage: usageFilter,
+        type: typeFilter,
+        search: deferredQuery,
+      }),
+    [assets, deferredQuery, typeFilter, usageFilter],
+  );
+  const existingNames = useMemo(() => new Set(assets.map((asset) => asset.name)), [assets]);
+
+  const clearFilters = () => {
+    setQuery('');
+    setUsageFilter('all');
+    setTypeFilter('all');
+  };
 
   async function handleFile(file: File) {
     if (!available) return;
@@ -105,6 +159,32 @@ export function AssetView({ slideId }: Props) {
       // hammering the dev server's filesystem mutations in parallel.
       await handleFile(f);
     }
+  }
+
+  async function handleRename(asset: AssetEntry, next: string) {
+    if (next === asset.name) {
+      setRenaming(null);
+      return;
+    }
+    if (existingNames.has(next)) {
+      toast.error(t.asset.nameAlreadyExists);
+      return;
+    }
+    const res = await rename(asset.name, next);
+    if (!res.ok) {
+      toast.error(format(t.asset.toastRenameFailed, { status: res.status }));
+      return;
+    }
+    toast.success(format(t.asset.toastRenamed, { name: next }));
+    setRenaming(null);
+  }
+
+  function prepareDelete(asset: AssetEntry) {
+    setConfirmDelete(asset);
+    setConfirmDeleteUsages(null);
+    listAssetUsages(effectiveSlideId, asset.name)
+      .then((usages) => setConfirmDeleteUsages(usages))
+      .catch(() => setConfirmDeleteUsages([]));
   }
 
   if (!available) {
@@ -210,6 +290,87 @@ export function AssetView({ slideId }: Props) {
         </div>
       </div>
 
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-hairline bg-background px-4 py-2.5 sm:px-6">
+        <div className="relative min-w-[180px] flex-1 md:max-w-[280px]">
+          <Search
+            className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
+          <input
+            type="text"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            aria-label={t.asset.assetSearchPlaceholder}
+            placeholder={t.asset.assetSearchPlaceholder}
+            className="h-8 w-full rounded-[6px] border border-border bg-background pl-8 pr-7 text-[12.5px] outline-none placeholder:text-muted-foreground/70 focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30"
+          />
+          {query ? (
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              aria-label={t.asset.clearAssetSearch}
+              className="absolute right-1.5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-[4px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <X className="size-3" />
+            </button>
+          ) : null}
+        </div>
+
+        <Select
+          value={usageFilter}
+          onValueChange={(next) => setUsageFilter(next as AssetUsageFilter)}
+        >
+          <SelectTrigger aria-label={t.asset.usageFilterAria} className="h-8 min-w-[112px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent align="start">
+            <SelectItem value="all">{t.asset.usageAll}</SelectItem>
+            <SelectItem value="used">{t.asset.usageUsed}</SelectItem>
+            <SelectItem value="unused">{t.asset.usageUnused}</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={typeFilter} onValueChange={(next) => setTypeFilter(next as AssetTypeFilter)}>
+          <SelectTrigger aria-label={t.asset.typeFilterAria} className="h-8 min-w-[108px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent align="start">
+            <SelectItem value="all">{t.asset.typeAll}</SelectItem>
+            <SelectItem value="image">{t.asset.typeImage}</SelectItem>
+            <SelectItem value="font">{t.asset.typeFont}</SelectItem>
+            <SelectItem value="video">{t.asset.typeVideo}</SelectItem>
+            <SelectItem value="other">{t.asset.typeOther}</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <ToggleGroup
+          type="single"
+          value={viewMode}
+          onValueChange={(next) => {
+            if (next) setViewMode(next as ViewMode);
+          }}
+          variant="outline"
+          className="ml-auto"
+        >
+          <ToggleGroupItem
+            value="grid"
+            aria-label={t.asset.gridViewAria}
+            title={t.asset.gridViewAria}
+            className="size-8 px-0"
+          >
+            <LayoutGrid className="size-3.5" />
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="list"
+            aria-label={t.asset.listViewAria}
+            title={t.asset.listViewAria}
+            className="size-8 px-0"
+          >
+            <List className="size-3.5" />
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+
       <div className="min-h-0 flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
@@ -217,45 +378,41 @@ export function AssetView({ slideId }: Props) {
           </div>
         ) : assets.length === 0 ? (
           <EmptyState />
+        ) : visibleAssets.length === 0 ? (
+          <NoMatchingAssets onClear={clearFilters} />
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4 p-6">
-            {assets.map((asset) =>
+          <div
+            className={cn(
+              'p-4 sm:p-6',
+              viewMode === 'grid'
+                ? 'grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4'
+                : 'flex flex-col gap-1',
+            )}
+          >
+            {visibleAssets.map((asset) =>
               renaming === asset.name ? (
-                <RenameCard
+                <RenameAsset
                   key={asset.name}
                   asset={asset}
+                  viewMode={viewMode}
                   onCancel={() => setRenaming(null)}
-                  onSubmit={async (next) => {
-                    if (next === asset.name) {
-                      setRenaming(null);
-                      return;
-                    }
-                    if (existingNames.has(next)) {
-                      toast.error(t.asset.nameAlreadyExists);
-                      return;
-                    }
-                    const res = await rename(asset.name, next);
-                    if (!res.ok) {
-                      toast.error(format(t.asset.toastRenameFailed, { status: res.status }));
-                      return;
-                    }
-                    toast.success(format(t.asset.toastRenamed, { name: next }));
-                    setRenaming(null);
-                  }}
+                  onSubmit={(next) => handleRename(asset, next)}
                 />
-              ) : (
+              ) : viewMode === 'grid' ? (
                 <AssetCard
                   key={asset.name}
                   asset={asset}
                   onPreview={() => setPreview(asset)}
                   onRename={() => setRenaming(asset.name)}
-                  onDelete={() => {
-                    setConfirmDelete(asset);
-                    setConfirmDeleteUsages(null);
-                    listAssetUsages(effectiveSlideId, asset.name)
-                      .then((u) => setConfirmDeleteUsages(u))
-                      .catch(() => setConfirmDeleteUsages([]));
-                  }}
+                  onDelete={() => prepareDelete(asset)}
+                />
+              ) : (
+                <AssetListItem
+                  key={asset.name}
+                  asset={asset}
+                  onPreview={() => setPreview(asset)}
+                  onRename={() => setRenaming(asset.name)}
+                  onDelete={() => prepareDelete(asset)}
                 />
               ),
             )}
@@ -364,6 +521,26 @@ function EmptyState() {
   );
 }
 
+function NoMatchingAssets({ onClear }: { onClear: () => void }) {
+  const t = useLocale();
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-4 px-6 py-16 text-center">
+      <div className="flex size-12 items-center justify-center rounded-full border border-hairline bg-card text-muted-foreground">
+        <SearchX className="size-5" />
+      </div>
+      <div>
+        <p className="font-heading text-[14px] font-semibold tracking-tight">
+          {t.asset.noMatchingAssets}
+        </p>
+        <p className="mt-1 text-[12.5px] text-muted-foreground">{t.asset.noMatchingAssetsHint}</p>
+      </div>
+      <Button variant="outline" size="sm" onClick={onClear}>
+        {t.asset.clearFilters}
+      </Button>
+    </div>
+  );
+}
+
 function hasFiles(e: React.DragEvent): boolean {
   const types = e.dataTransfer?.types;
   if (!types) return false;
@@ -416,50 +593,140 @@ function AssetCard({
           </div>
           <div className="folio flex items-center gap-1.5">
             <span className="truncate">{formatSize(asset.size)}</span>
-            {asset.unused ? (
-              <span className="shrink-0 rounded-sm bg-muted px-1 py-px text-[10px] font-medium text-muted-foreground leading-none">
-                {t.asset.usageUnused}
-              </span>
-            ) : null}
+            <UsageBadge unused={asset.unused} />
           </div>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            type="button"
-            aria-label={format(t.asset.actionsAria, { name: asset.name })}
-            className={cn(
-              buttonVariants({ variant: 'ghost', size: 'icon-xs' }),
-              'opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 aria-expanded:opacity-100',
-            )}
-          >
-            <MoreVertical />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-[160px]">
-            <DropdownMenuItem onSelect={onPreview}>
-              <ImageIcon />
-              {t.asset.previewMenuItem}
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={onRename}>
-              <Pencil />
-              {t.asset.renameMenuItem}
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={onDelete}>
-              <Trash2 />
-              {t.asset.deleteMenuItem}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <AssetActions asset={asset} onPreview={onPreview} onRename={onRename} onDelete={onDelete} />
       </div>
     </div>
   );
 }
 
-function RenameCard({
+function AssetListItem({
   asset,
+  onPreview,
+  onRename,
+  onDelete,
+}: {
+  asset: AssetEntry;
+  onPreview: () => void;
+  onRename: () => void;
+  onDelete: () => void;
+}) {
+  const isImage = asset.mime.startsWith('image/');
+  const t = useLocale();
+  return (
+    <div className="group flex min-h-14 items-center gap-3 rounded-[6px] border border-border bg-card p-2 shadow-edge transition-shadow hover:shadow-floating focus-within:ring-2 focus-within:ring-ring/30">
+      <button
+        type="button"
+        onClick={onPreview}
+        aria-label={format(t.asset.previewAria, { name: asset.name })}
+        className="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-[4px] border border-hairline bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:10px_10px]"
+      >
+        {isImage ? (
+          <img
+            src={asset.url}
+            alt=""
+            className="size-full object-contain"
+            draggable={false}
+            onError={(event) => {
+              event.currentTarget.style.display = 'none';
+            }}
+          />
+        ) : (
+          <FileIcon className="size-5 text-muted-foreground" />
+        )}
+      </button>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[12.5px] font-medium" title={asset.name}>
+          {asset.name}
+        </div>
+        <div className="folio mt-0.5 flex items-center gap-1.5 sm:hidden">
+          <span>{formatSize(asset.size)}</span>
+          <span className="opacity-40">·</span>
+          <span className="truncate">{asset.mime}</span>
+          <UsageBadge unused={asset.unused} showUsed />
+        </div>
+      </div>
+      <span className="hidden w-40 shrink-0 truncate font-mono text-[11px] text-muted-foreground md:block">
+        {asset.mime}
+      </span>
+      <span className="folio hidden w-16 shrink-0 sm:block">{formatSize(asset.size)}</span>
+      <div className="hidden w-16 shrink-0 justify-end sm:flex">
+        <UsageBadge unused={asset.unused} showUsed />
+      </div>
+      <AssetActions asset={asset} onPreview={onPreview} onRename={onRename} onDelete={onDelete} />
+    </div>
+  );
+}
+
+function AssetActions({
+  asset,
+  onPreview,
+  onRename,
+  onDelete,
+}: {
+  asset: AssetEntry;
+  onPreview: () => void;
+  onRename: () => void;
+  onDelete: () => void;
+}) {
+  const t = useLocale();
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        type="button"
+        aria-label={format(t.asset.actionsAria, { name: asset.name })}
+        className={cn(
+          buttonVariants({ variant: 'ghost', size: 'icon-xs' }),
+          'opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 aria-expanded:opacity-100',
+        )}
+      >
+        <MoreVertical />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-[160px]">
+        <DropdownMenuItem onSelect={onPreview}>
+          <ImageIcon />
+          {t.asset.previewMenuItem}
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onRename}>
+          <Pencil />
+          {t.asset.renameMenuItem}
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onDelete}>
+          <Trash2 />
+          {t.asset.deleteMenuItem}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function UsageBadge({ unused, showUsed = false }: { unused: boolean; showUsed?: boolean }) {
+  const t = useLocale();
+  if (!unused && !showUsed) return null;
+  return (
+    <span
+      className={cn(
+        'shrink-0 rounded-sm px-1 py-px text-[10px] font-medium leading-none',
+        unused
+          ? 'bg-muted text-muted-foreground'
+          : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400',
+      )}
+    >
+      {unused ? t.asset.usageUnused : t.asset.usageUsed}
+    </span>
+  );
+}
+
+function RenameAsset({
+  asset,
+  viewMode,
   onCancel,
   onSubmit,
 }: {
   asset: AssetEntry;
+  viewMode: ViewMode;
   onCancel: () => void;
   onSubmit: (next: string) => Promise<void> | void;
 }) {
@@ -491,8 +758,48 @@ function RenameCard({
   };
 
   const isImage = asset.mime.startsWith('image/');
+  if (viewMode === 'list') {
+    return (
+      <div className="flex min-h-14 items-center gap-3 rounded-[6px] border border-primary bg-card p-2 shadow-edge ring-2 ring-primary/15">
+        <div className="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-[4px] border border-hairline bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:10px_10px]">
+          {isImage ? (
+            <img src={asset.url} alt="" className="size-full object-contain" draggable={false} />
+          ) : (
+            <FileIcon className="size-5 text-muted-foreground" />
+          )}
+        </div>
+        <input
+          ref={inputRef}
+          value={value}
+          disabled={saving}
+          onChange={(event) => setValue(event.target.value)}
+          onBlur={() => {
+            if (!saving) commit();
+          }}
+          onKeyDown={(event) => {
+            if (event.nativeEvent.isComposing) return;
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              commit();
+            } else if (event.key === 'Escape') {
+              event.preventDefault();
+              onCancel();
+            }
+          }}
+          maxLength={120}
+          className="h-8 min-w-0 flex-1 rounded-[5px] border bg-background px-2.5 text-[12.5px] outline-none ring-ring/40 focus:ring-2"
+        />
+        <span className="folio hidden w-16 shrink-0 sm:block">{formatSize(asset.size)}</span>
+        <div className="hidden w-16 shrink-0 justify-end sm:flex">
+          <UsageBadge unused={asset.unused} showUsed />
+        </div>
+        <div className="size-6 shrink-0" />
+      </div>
+    );
+  }
+
   return (
-    <div className="relative flex flex-col overflow-hidden rounded-xl border-2 border-primary bg-card shadow-sm">
+    <div className="relative flex flex-col overflow-hidden rounded-[6px] border border-primary bg-card shadow-edge ring-2 ring-primary/15">
       <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:16px_16px]">
         {isImage ? (
           <img src={asset.url} alt="" className="size-full object-contain" draggable={false} />
