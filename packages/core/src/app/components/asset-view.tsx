@@ -389,6 +389,7 @@ export function AssetView({ slideId }: Props) {
                 : 'flex flex-col gap-1',
             )}
           >
+            {viewMode === 'list' ? <AssetListHeader /> : null}
             {visibleAssets.map((asset) =>
               renaming === asset.name ? (
                 <RenameAsset
@@ -550,6 +551,24 @@ function hasFiles(e: React.DragEvent): boolean {
   return false;
 }
 
+function AssetListHeader() {
+  const t = useLocale();
+  return (
+    <div
+      aria-hidden="true"
+      className="hidden items-center gap-3 px-2 pb-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 sm:flex"
+    >
+      <span className="size-11 shrink-0" />
+      <span className="min-w-0 flex-1">{t.asset.nameColumn}</span>
+      <span className="hidden w-40 shrink-0 md:block">{t.asset.typeColumn}</span>
+      <span className="hidden w-28 shrink-0 lg:block">{t.asset.modifiedAt}</span>
+      <span className="w-16 shrink-0">{t.asset.sizeColumn}</span>
+      <span className="w-16 shrink-0 text-right">{t.asset.statusColumn}</span>
+      <span className="size-6 shrink-0" />
+    </div>
+  );
+}
+
 function AssetCard({
   asset,
   onPreview,
@@ -594,6 +613,16 @@ function AssetCard({
           <div className="folio flex items-center gap-1.5">
             <span className="truncate">{formatSize(asset.size)}</span>
             <UsageBadge unused={asset.unused} />
+          </div>
+          <div
+            className="mt-0.5 flex min-w-0 items-center gap-1 text-[10.5px] leading-tight text-muted-foreground"
+            title={`${t.asset.modifiedAt}: ${formatAssetDate(asset.mtime, t.id, true)}`}
+          >
+            <span className="shrink-0">{t.asset.modifiedAt}</span>
+            <span className="opacity-40">·</span>
+            <time dateTime={assetDateTime(asset.mtime)} className="truncate font-mono">
+              {formatAssetDate(asset.mtime, t.id)}
+            </time>
           </div>
         </div>
         <AssetActions asset={asset} onPreview={onPreview} onRename={onRename} onDelete={onDelete} />
@@ -641,16 +670,31 @@ function AssetListItem({
         <div className="truncate text-[12.5px] font-medium" title={asset.name}>
           {asset.name}
         </div>
-        <div className="folio mt-0.5 flex items-center gap-1.5 sm:hidden">
-          <span>{formatSize(asset.size)}</span>
-          <span className="opacity-40">·</span>
-          <span className="truncate">{asset.mime}</span>
-          <UsageBadge unused={asset.unused} showUsed />
+        <div className="folio mt-0.5 flex min-w-0 items-center gap-1.5 lg:hidden">
+          <span className="sm:hidden">{formatSize(asset.size)}</span>
+          <span className="opacity-40 sm:hidden">·</span>
+          <span className="truncate md:hidden">{asset.mime}</span>
+          <span className="opacity-40 md:hidden">·</span>
+          <span className="shrink-0">{t.asset.modifiedAt}</span>
+          <time dateTime={assetDateTime(asset.mtime)} className="truncate">
+            {formatAssetDate(asset.mtime, t.id)}
+          </time>
+          <span className="sm:hidden">
+            <UsageBadge unused={asset.unused} showUsed />
+          </span>
         </div>
       </div>
       <span className="hidden w-40 shrink-0 truncate font-mono text-[11px] text-muted-foreground md:block">
         {asset.mime}
       </span>
+      <time
+        dateTime={assetDateTime(asset.mtime)}
+        title={`${t.asset.modifiedAt}: ${formatAssetDate(asset.mtime, t.id, true)}`}
+        className="hidden w-28 shrink-0 text-[11.5px] text-muted-foreground lg:block"
+      >
+        <span className="sr-only">{t.asset.modifiedAt}: </span>
+        {formatAssetDate(asset.mtime, t.id)}
+      </time>
       <span className="folio hidden w-16 shrink-0 sm:block">{formatSize(asset.size)}</span>
       <div className="hidden w-16 shrink-0 justify-end sm:flex">
         <UsageBadge unused={asset.unused} showUsed />
@@ -719,6 +763,28 @@ function UsageBadge({ unused, showUsed = false }: { unused: boolean; showUsed?: 
   );
 }
 
+function AssetTimestamp({
+  label,
+  timestamp,
+  locale,
+}: {
+  label: string;
+  timestamp: number;
+  locale: string;
+}) {
+  return (
+    <div className="bg-card px-3 py-2.5">
+      <span className="eyebrow block text-[9px]">{label}</span>
+      <time
+        dateTime={assetDateTime(timestamp)}
+        className="mt-1 block text-[12px] font-medium tabular-nums"
+      >
+        {formatAssetDate(timestamp, locale, true)}
+      </time>
+    </div>
+  );
+}
+
 function RenameAsset({
   asset,
   viewMode,
@@ -733,6 +799,7 @@ function RenameAsset({
   const [value, setValue] = useState(asset.name);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const t = useLocale();
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -789,6 +856,16 @@ function RenameAsset({
           maxLength={120}
           className="h-8 min-w-0 flex-1 rounded-[5px] border bg-background px-2.5 text-[12.5px] outline-none ring-ring/40 focus:ring-2"
         />
+        <span className="hidden w-40 shrink-0 truncate font-mono text-[11px] text-muted-foreground md:block">
+          {asset.mime}
+        </span>
+        <time
+          dateTime={assetDateTime(asset.mtime)}
+          className="hidden w-28 shrink-0 text-[11.5px] text-muted-foreground lg:block"
+        >
+          <span className="sr-only">{t.asset.modifiedAt}: </span>
+          {formatAssetDate(asset.mtime, t.id)}
+        </time>
         <span className="folio hidden w-16 shrink-0 sm:block">{formatSize(asset.size)}</span>
         <div className="hidden w-16 shrink-0 justify-end sm:flex">
           <UsageBadge unused={asset.unused} showUsed />
@@ -977,6 +1054,10 @@ function PreviewDialog({
             <span className="text-sm">{t.asset.noPreview}</span>
           </div>
         )}
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[6px] border border-hairline bg-hairline">
+          <AssetTimestamp label={t.asset.createdAt} timestamp={asset.createdAt} locale={t.id} />
+          <AssetTimestamp label={t.asset.modifiedAt} timestamp={asset.mtime} locale={t.id} />
+        </div>
         <div className="rounded-[5px] border border-hairline bg-muted/50 px-3 py-2 font-mono text-[11.5px] leading-relaxed">
           <span className="text-muted-foreground">{t.asset.importHintComment}</span>
           <span className="text-brand">'{importPath}'</span>
@@ -1264,6 +1345,28 @@ function slugify(s: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
+}
+
+const ASSET_DATE_FORMATTERS = new Map<string, Intl.DateTimeFormat>();
+
+function formatAssetDate(timestamp: number, locale: string, includeTime = false): string {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return '—';
+  const key = `${locale}:${includeTime ? 'date-time' : 'date'}`;
+  let formatter = ASSET_DATE_FORMATTERS.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(
+      locale,
+      includeTime ? { dateStyle: 'medium', timeStyle: 'short' } : { dateStyle: 'medium' },
+    );
+    ASSET_DATE_FORMATTERS.set(key, formatter);
+  }
+  return formatter.format(date);
+}
+
+function assetDateTime(timestamp: number): string | undefined {
+  const date = new Date(timestamp);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
 }
 
 function formatSize(bytes: number): string {

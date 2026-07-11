@@ -6,6 +6,7 @@ const assets: AssetEntry[] = [
   {
     name: 'Brand Hero.PNG',
     size: 100,
+    createdAt: 1,
     mtime: 1,
     mime: 'image/png',
     url: '/brand-hero.png',
@@ -14,6 +15,7 @@ const assets: AssetEntry[] = [
   {
     name: 'draft-hero.svg',
     size: 200,
+    createdAt: 2,
     mtime: 2,
     mime: 'IMAGE/SVG+XML',
     url: '/draft-hero.svg',
@@ -22,6 +24,7 @@ const assets: AssetEntry[] = [
   {
     name: 'display.woff2',
     size: 300,
+    createdAt: 3,
     mtime: 3,
     mime: 'font/woff2',
     url: '/display.woff2',
@@ -30,6 +33,7 @@ const assets: AssetEntry[] = [
   {
     name: 'intro.webm',
     size: 400,
+    createdAt: 4,
     mtime: 4,
     mime: 'video/webm',
     url: '/intro.webm',
@@ -38,6 +42,7 @@ const assets: AssetEntry[] = [
   {
     name: 'metadata.json',
     size: 500,
+    createdAt: 5,
     mtime: 5,
     mime: 'application/json',
     url: '/metadata.json',

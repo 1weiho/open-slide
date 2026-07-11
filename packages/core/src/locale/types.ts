@@ -291,6 +291,12 @@ export type Locale = {
     scopeGlobal: string;
     /** templates: "{count} file" / "{count} files" */
     fileCount: Plural;
+    createdAt: string;
+    modifiedAt: string;
+    nameColumn: string;
+    typeColumn: string;
+    sizeColumn: string;
+    statusColumn: string;
     assetSearchPlaceholder: string;
     clearAssetSearch: string;
     usageFilterAria: string;

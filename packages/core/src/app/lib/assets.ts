@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 export type AssetEntry = {
   name: string;
   size: number;
+  createdAt: number;
   mtime: number;
   mime: string;
   url: string;
@@ -85,10 +86,12 @@ export async function uploadWithAutoRename(
   }
   if (!res.ok) return { ok: false, status: res.status, entry: null };
   const body = (await res.json().catch(() => null)) as Partial<AssetEntry> | null;
+  const now = Date.now();
   const entry: AssetEntry = {
     name: body?.name ?? uploaded.name,
     size: body?.size ?? uploaded.size,
-    mtime: body?.mtime ?? Date.now(),
+    createdAt: body?.createdAt ?? now,
+    mtime: body?.mtime ?? now,
     mime: body?.mime ?? uploaded.type ?? 'application/octet-stream',
     url: body?.url ?? `/__assets/${slideId}/${encodeURIComponent(uploaded.name)}`,
     unused: body?.unused ?? false,

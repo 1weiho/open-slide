@@ -35,6 +35,10 @@ export function mimeForFilename(name: string): string {
   return MIME_BY_EXT[ext] ?? 'application/octet-stream';
 }
 
+export function assetCreatedAt(birthtimeMs: number, mtimeMs: number): number {
+  return Number.isFinite(birthtimeMs) && birthtimeMs > 0 ? birthtimeMs : mtimeMs;
+}
+
 export function validateAssetName(v: unknown): string | null {
   if (typeof v !== 'string') return null;
   const trimmed = v.trim();

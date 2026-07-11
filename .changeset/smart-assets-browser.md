@@ -2,4 +2,4 @@
 '@open-slide/core': patch
 ---
 
-Add search, usage and file type filters, and grid and list views to the assets manager.
+Add search, usage and file type filters, grid and list views, and asset creation and modification dates to the assets manager.
