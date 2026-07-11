@@ -1,5 +1,17 @@
 # @open-slide/core
 
+## 1.14.0
+
+### Minor Changes
+
+- [#296](https://github.com/1weiho/open-slide/pull/296) [`82c8a7c`](https://github.com/1weiho/open-slide/commit/82c8a7ccea30d42f4c983c3cae9525601493ec90) Thanks [@1weiho](https://github.com/1weiho)! - Add a restart button to the sidebar update tooltip that restarts the dev server after an in-app update, keep the tooltip open while updating, and shorten the update-available copy.
+
+### Patch Changes
+
+- [#298](https://github.com/1weiho/open-slide/pull/298) [`97fe094`](https://github.com/1weiho/open-slide/commit/97fe094b7939112a29f4e86a7c22f04f05787fe0) Thanks [@1weiho](https://github.com/1weiho)! - Show an edge control to return to the current slide when its thumbnail is out of view.
+
+- [#299](https://github.com/1weiho/open-slide/pull/299) [`2aa085f`](https://github.com/1weiho/open-slide/commit/2aa085fa5d3fb198c793e6ed4c604c90e31df120) Thanks [@1weiho](https://github.com/1weiho)! - Add search, sorting, usage and file type filters, adjustable grid columns, list view, and asset creation and modification dates to the assets manager.
+
 ## 1.13.6
 
 ### Patch Changes
