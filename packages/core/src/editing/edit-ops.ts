@@ -362,6 +362,17 @@ type TextCandidate = {
   splice: (value: string) => Splice;
 };
 
+function dedupeTextCandidates(candidates: TextCandidate[]): TextCandidate[] {
+  const seen = new Set<string>();
+  return candidates.filter((candidate) => {
+    const splice = candidate.splice(candidate.current);
+    const key = `${candidate.current}:${splice.from}:${splice.to}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 type JsxParent = t.JSXElement | t.JSXFragment;
 type TextRangeLeaf = {
   node: t.JSXText | t.JSXExpressionContainer;
@@ -867,6 +878,40 @@ function collectCallSiteCandidates(ast: t.Node, componentName: string): TextCand
   return out;
 }
 
+function unwrapTextLiteral(node: t.Node): t.StringLiteral | t.NumericLiteral | null {
+  if (t.isStringLiteral(node) || t.isNumericLiteral(node)) return node;
+  if (t.isTSAsExpression(node) || t.isTSTypeAssertion(node))
+    return unwrapTextLiteral(node.expression);
+  return null;
+}
+
+function collectIdentifierTextCandidate(
+  ast: t.Node,
+  identifier: t.Identifier,
+): TextCandidate | null {
+  const name = identifier.name;
+  const useStart = identifier.start ?? 0;
+  const matches: Array<{ node: t.StringLiteral | t.NumericLiteral; start: number }> = [];
+  walkAll(ast, (node) => {
+    if (!t.isVariableDeclarator(node)) return;
+    if (!t.isIdentifier(node.id) || node.id.name !== name) return;
+    if (!node.init) return;
+    const start = node.start ?? 0;
+    if (start > useStart) return;
+    const literal = unwrapTextLiteral(node.init);
+    if (!literal) return;
+    matches.push({ node: literal, start });
+  });
+  matches.sort((a, b) => b.start - a.start);
+  const match = matches[0];
+  if (!match) return null;
+  const literal = match.node;
+  return {
+    current: String(literal.value),
+    splice: (s) => spliceRange(literal, jsString(s)),
+  };
+}
+
 function collectPropCallSiteCandidates(
   ast: t.Node,
   componentName: string,
@@ -892,10 +937,13 @@ function collectPropCallSiteCandidates(
           current: String(expr.value),
           splice: (s) => spliceRange(v, formatJsxAttrValue(s)),
         });
+      } else if (t.isIdentifier(expr)) {
+        const candidate = collectIdentifierTextCandidate(ast, expr);
+        if (candidate) out.push(candidate);
       }
     }
   });
-  return out;
+  return dedupeTextCandidates(out);
 }
 
 // Smallest enclosing `arr.map((p) => …)` callback (or `.flatMap`) that

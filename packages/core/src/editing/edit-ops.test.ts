@@ -828,6 +828,26 @@ describe('applyEdit / set-text', () => {
     expect(r.source).toContain(`<Card label={'with "quotes"'} />`);
   });
 
+  it('routes a reused const prop pass-through edit to the const definition', () => {
+    const src = [
+      "const SECTION = '优秀实践案例';",
+      'const Frame = ({ label }: { label: string }) => (',
+      '  <span>{label}</span>',
+      ');',
+      'export default [',
+      '  () => <Frame label={SECTION} />,',
+      '  () => <Frame label={SECTION} />,',
+      '];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 3, 8, [
+      { kind: 'set-text', value: '业务实践案例', prevText: '优秀实践案例' },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("const SECTION = '业务实践案例';");
+    expect(r.source).toContain('<Frame label={SECTION} />');
+  });
+
   it('bails on a prop pass-through when the prop is not destructured', () => {
     const src = [
       'const Card = (props) => (',
@@ -924,7 +944,7 @@ describe('applyEdit / set-text', () => {
 
   it('bails on a prop pass-through when the call site uses a non-literal value', () => {
     const src = [
-      'const heading = "Hello";',
+      'const heading = getHeading();',
       'const Card = ({ title }: { title: string }) => (',
       '  <h2>{title}</h2>',
       ');',

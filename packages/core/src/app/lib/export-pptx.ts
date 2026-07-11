@@ -1,6 +1,7 @@
 import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { designToCssVars } from './design';
+import { buildEditablePptx, collectEditableSlide } from './export-pptx-editable';
 import { SlidePageProvider } from './page-context';
 import { isFrameAnimationSettled, waitForDataWaitfor, waitForFonts } from './print-ready';
 import type { SlideModule } from './sdk';
@@ -30,6 +31,105 @@ export type PptxExportProgress = {
   /** 0–95 while capturing, 98 while assembling, 100 when done. */
   percent: number;
 };
+
+export async function exportSlideAsPptx(
+  slide: SlideModule,
+  slideId: string,
+  onProgress?: (progress: PptxExportProgress) => void,
+): Promise<void> {
+  const pages = slide.default ?? [];
+  if (pages.length === 0) return;
+
+  const total = pages.length;
+  onProgress?.({ phase: 'processing', current: 0, total, percent: 0 });
+
+  const container = document.createElement('div');
+  container.className = CAPTURE_CLASS;
+  container.setAttribute('aria-hidden', 'true');
+  Object.assign(container.style, {
+    position: 'fixed',
+    left: '-99999px',
+    top: '0',
+    pointerEvents: 'none',
+  });
+  document.body.appendChild(container);
+
+  const captureStyle = document.createElement('style');
+  captureStyle.id = CAPTURE_STYLE_ID;
+  captureStyle.textContent = `.${CAPTURE_CLASS} *, .${CAPTURE_CLASS} *::before, .${CAPTURE_CLASS} *::after {
+    animation-delay: -1s !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    animation-fill-mode: forwards !important;
+    transition: none !important;
+  }`;
+  document.head.appendChild(captureStyle);
+
+  const designVars = slide.design ? designToCssVars(slide.design) : null;
+
+  const reactRoots: Root[] = [];
+  const frames: HTMLElement[] = [];
+  for (let i = 0; i < pages.length; i++) {
+    const Page = pages[i];
+    if (!Page) continue;
+    const host = document.createElement('div');
+    host.setAttribute('data-osd-canvas', '');
+    host.style.width = `${SLIDE_W}px`;
+    host.style.height = `${SLIDE_H}px`;
+    host.style.overflow = 'hidden';
+    host.style.background = '#fff';
+    if (designVars) {
+      for (const [k, v] of Object.entries(designVars)) host.style.setProperty(k, v);
+    }
+    container.appendChild(host);
+    frames.push(host);
+    const r = createRoot(host);
+    r.render(
+      createElement(SlidePageProvider, { index: i, total: pages.length }, createElement(Page)),
+    );
+    reactRoots.push(r);
+  }
+
+  await nextPaint();
+
+  try {
+    await waitForFonts();
+
+    const deadline = performance.now() + ANIMATION_TIMEOUT_MS;
+    while (performance.now() < deadline) {
+      const settled = frames.every((frame) => isFrameAnimationSettled(frame));
+      if (settled) break;
+      await sleep(POLL_INTERVAL_MS);
+    }
+    await waitForDataWaitfor(container);
+
+    const editableSlides = [];
+    for (let i = 0; i < frames.length; i++) {
+      freezeForCapture(frames[i]);
+      editableSlides.push(await collectEditableSlide(frames[i]));
+      onProgress?.({
+        phase: 'processing',
+        current: i + 1,
+        total,
+        percent: Math.min(95, ((i + 1) / total) * 95),
+      });
+    }
+
+    onProgress?.({ phase: 'generating', current: total, total, percent: 98 });
+    const pptx = await buildEditablePptx(editableSlides);
+    downloadBlob(
+      new Blob([pptx as BlobPart], {
+        type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      }),
+      `${slideId}.pptx`,
+    );
+    onProgress?.({ phase: 'done', current: total, total, percent: 100 });
+  } finally {
+    for (const r of reactRoots) r.unmount();
+    container.remove();
+    captureStyle.remove();
+  }
+}
 
 export async function exportSlideAsImagePptx(
   slide: SlideModule,
