@@ -6,10 +6,12 @@ import { resolveSlideEntry, SLIDE_ID_RE } from '../../editing/slide-ops.ts';
 import {
   ASSET_MAX_BYTES,
   GLOBAL_SCOPE,
+  listAssetFilesRecursive,
   mimeForFilename,
   resolveScopedAssetFile,
   resolveScopedAssetsDir,
   validateAssetName,
+  validateAssetPath,
 } from '../../files/assets.ts';
 import { validateMutationRequest } from '../../http/request-guard.ts';
 import { type ApiContext, json, readBody } from './context.ts';
@@ -34,7 +36,7 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
       if (usagesMatch && method === 'GET') {
         const scope = usagesMatch[1];
         const filename = decodeURIComponent(usagesMatch[2]);
-        if (!validateAssetName(filename)) return json(res, 400, { error: 'invalid path' });
+        if (!validateAssetPath(filename)) return json(res, 400, { error: 'invalid path' });
 
         const isGlobal = scope === GLOBAL_SCOPE;
         const assetPath = isGlobal ? `@assets/${filename}` : `./assets/${filename}`;
@@ -79,15 +81,8 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
         const scopedDir = resolveScopedAssetsDir(ctx.slidesRoot, ctx.globalAssetsRoot, slideId);
         if (!scopedDir) return json(res, 400, { error: 'invalid slideId' });
 
-        let entries: string[];
-        try {
-          entries = await fs.readdir(scopedDir);
-        } catch (err) {
-          if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-            return json(res, 200, { assets: [] });
-          }
-          throw err;
-        }
+        const entries = await listAssetFilesRecursive(scopedDir);
+        if (entries === null) return json(res, 200, { assets: [] });
 
         const assets: Array<{
           name: string;
@@ -98,7 +93,7 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
           unused: boolean;
         }> = [];
         for (const name of entries) {
-          if (!validateAssetName(name)) continue;
+          if (!validateAssetPath(name)) continue;
           const stat = await fs.stat(path.join(scopedDir, name));
           if (!stat.isFile()) continue;
           assets.push({
@@ -198,7 +193,7 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
 
           const scopedDir = resolveScopedAssetsDir(ctx.slidesRoot, ctx.globalAssetsRoot, slideId);
           if (!scopedDir) return json(res, 400, { error: 'invalid slideId' });
-          await fs.mkdir(scopedDir, { recursive: true });
+          await fs.mkdir(path.dirname(file), { recursive: true });
 
           const chunks: Buffer[] = [];
           let total = 0;
@@ -236,13 +231,16 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
           const body = (await readBody(req)) as { name?: unknown };
           const target = validateAssetName(body.name);
           if (!target) return json(res, 400, { error: 'invalid name' });
-          if (target === filename) return json(res, 200, { ok: true, name: filename });
+          // Rename in place: a nested asset keeps its directory.
+          const slash = filename.lastIndexOf('/');
+          const targetPath = slash >= 0 ? `${filename.slice(0, slash + 1)}${target}` : target;
+          if (targetPath === filename) return json(res, 200, { ok: true, name: filename });
 
           const dest = resolveScopedAssetFile(
             ctx.slidesRoot,
             ctx.globalAssetsRoot,
             slideId,
-            target,
+            targetPath,
           );
           if (!dest) return json(res, 400, { error: 'invalid name' });
 
@@ -261,7 +259,7 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
             }
             throw err;
           }
-          return json(res, 200, { ok: true, name: target });
+          return json(res, 200, { ok: true, name: targetPath });
         }
 
         if (method === 'DELETE') {

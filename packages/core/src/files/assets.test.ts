@@ -1,5 +1,13 @@
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mimeForFilename, validateAssetName } from './assets.ts';
+import {
+  listAssetFilesRecursive,
+  mimeForFilename,
+  validateAssetName,
+  validateAssetPath,
+} from './assets.ts';
 
 describe('validateAssetName', () => {
   it('accepts simple filenames with extensions', () => {
@@ -38,6 +46,63 @@ describe('validateAssetName', () => {
     expect(validateAssetName(null)).toBeNull();
     expect(validateAssetName(42)).toBeNull();
     expect(validateAssetName(`${'x'.repeat(120)}.png`)).toBeNull();
+  });
+});
+
+describe('validateAssetPath', () => {
+  it('accepts simple filenames and nested paths', () => {
+    expect(validateAssetPath('logo.svg')).toBe('logo.svg');
+    expect(validateAssetPath('logos/brand.svg')).toBe('logos/brand.svg');
+    expect(validateAssetPath('a/b/c/photo.png')).toBe('a/b/c/photo.png');
+  });
+
+  it('only requires an extension on the final segment', () => {
+    expect(validateAssetPath('2024/q1/chart.png')).toBe('2024/q1/chart.png');
+    expect(validateAssetPath('dir/noext')).toBeNull();
+  });
+
+  it('rejects traversal, absolute, and backslash paths', () => {
+    expect(validateAssetPath('../foo.png')).toBeNull();
+    expect(validateAssetPath('a/../b.png')).toBeNull();
+    expect(validateAssetPath('/abs.png')).toBeNull();
+    expect(validateAssetPath('a/.png')).toBeNull();
+    expect(validateAssetPath('dir/')).toBeNull();
+    expect(validateAssetPath('a//b.png')).toBeNull();
+    expect(validateAssetPath('a\\b.png')).toBeNull();
+  });
+
+  it('rejects hidden segments and shell-unsafe characters', () => {
+    expect(validateAssetPath('.git/config.json')).toBeNull();
+    expect(validateAssetPath('dir/.hidden.png')).toBeNull();
+    expect(validateAssetPath('dir/foo\x00.png')).toBeNull();
+  });
+
+  it('rejects empty / non-string input', () => {
+    expect(validateAssetPath('')).toBeNull();
+    expect(validateAssetPath(null)).toBeNull();
+    expect(validateAssetPath(42)).toBeNull();
+  });
+});
+
+describe('listAssetFilesRecursive', () => {
+  it('returns forward-slash paths for files in nested folders', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'open-slide-assets-'));
+    try {
+      await fs.mkdir(path.join(dir, 'logos', 'brand'), { recursive: true });
+      await fs.writeFile(path.join(dir, 'top.png'), 'x');
+      await fs.writeFile(path.join(dir, 'logos', 'a.svg'), 'x');
+      await fs.writeFile(path.join(dir, 'logos', 'brand', 'b.svg'), 'x');
+
+      const out = await listAssetFilesRecursive(dir);
+      expect(out).not.toBeNull();
+      expect(new Set(out)).toEqual(new Set(['top.png', 'logos/a.svg', 'logos/brand/b.svg']));
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('returns null when the directory does not exist', async () => {
+    expect(await listAssetFilesRecursive('/no/such/dir/open-slide')).toBeNull();
   });
 });
 
