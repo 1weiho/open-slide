@@ -316,6 +316,9 @@ export type Locale = {
     typeOther: string;
     gridViewAria: string;
     listViewAria: string;
+    gridColumnsAria: string;
+    /** template: "{count} columns" */
+    gridColumnsValue: string;
     noMatchingAssets: string;
     noMatchingAssetsHint: string;
     clearFilters: string;

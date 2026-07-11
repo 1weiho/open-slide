@@ -314,6 +314,8 @@ export const en: Locale = {
     typeOther: 'Other',
     gridViewAria: 'Grid view',
     listViewAria: 'List view',
+    gridColumnsAria: 'Grid columns',
+    gridColumnsValue: '{count} columns',
     noMatchingAssets: 'No matching assets',
     noMatchingAssetsHint: 'Try adjusting your search or filters.',
     clearFilters: 'Clear filters',

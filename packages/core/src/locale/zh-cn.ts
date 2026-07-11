@@ -312,6 +312,8 @@ export const zhCN: Locale = {
     typeOther: '其他',
     gridViewAria: '网格视图',
     listViewAria: '列表视图',
+    gridColumnsAria: '网格列数',
+    gridColumnsValue: '{count} 列',
     noMatchingAssets: '找不到匹配的素材',
     noMatchingAssetsHint: '请调整搜索或筛选条件。',
     clearFilters: '清除筛选',

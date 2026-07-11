@@ -312,6 +312,8 @@ export const zhTW: Locale = {
     typeOther: '其他',
     gridViewAria: '格狀檢視',
     listViewAria: '列表檢視',
+    gridColumnsAria: '網格欄數',
+    gridColumnsValue: '{count} 欄',
     noMatchingAssets: '找不到相符的素材',
     noMatchingAssetsHint: '請調整搜尋或篩選條件。',
     clearFilters: '清除篩選',

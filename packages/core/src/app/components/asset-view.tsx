@@ -4,6 +4,7 @@ import {
   ArrowUp,
   ArrowUpDown,
   CloudOff,
+  Columns3,
   File as FileIcon,
   FileImage,
   ImageIcon,
@@ -43,6 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
@@ -76,6 +78,10 @@ type ViewMode = 'grid' | 'list';
 const GLOBAL_SLIDE_ID = '@global';
 const VIEW_MODE_STORAGE_KEY = 'open-slide:asset-view-mode';
 const SORT_STORAGE_KEY = 'open-slide:asset-sort-v1';
+const GRID_COLUMNS_STORAGE_KEY = 'open-slide:asset-grid-columns-v1';
+const MIN_GRID_COLUMNS = 2;
+const MAX_GRID_COLUMNS = 10;
+const DEFAULT_GRID_COLUMNS = 4;
 const SORT_KEYS: readonly AssetSortKey[] = ['name', 'modified', 'size', 'type'];
 const DEFAULT_SORT: AssetSortOptions = { key: 'name', direction: 'asc' };
 const DEFAULT_SORT_DIRECTIONS: Record<AssetSortKey, AssetSortDirection> = {
@@ -127,6 +133,29 @@ function useSortPreference(): [AssetSortOptions, (next: AssetSortOptions) => voi
   return [sort, update];
 }
 
+function readGridColumns(): number {
+  if (typeof window === 'undefined') return DEFAULT_GRID_COLUMNS;
+  try {
+    const value = Number(window.localStorage.getItem(GRID_COLUMNS_STORAGE_KEY));
+    if (Number.isInteger(value) && value >= MIN_GRID_COLUMNS && value <= MAX_GRID_COLUMNS) {
+      return value;
+    }
+  } catch {}
+  return DEFAULT_GRID_COLUMNS;
+}
+
+function useGridColumns(): [number, (next: number) => void] {
+  const [gridColumns, setGridColumns] = useState(readGridColumns);
+  const update = (next: number) => {
+    const value = Math.min(MAX_GRID_COLUMNS, Math.max(MIN_GRID_COLUMNS, Math.round(next)));
+    setGridColumns(value);
+    try {
+      window.localStorage.setItem(GRID_COLUMNS_STORAGE_KEY, String(value));
+    } catch {}
+  };
+  return [gridColumns, update];
+}
+
 type ConflictState = {
   file: File;
   resolve: (decision: 'replace' | 'rename' | 'cancel') => void;
@@ -149,6 +178,7 @@ export function AssetView({ slideId }: Props) {
   const [typeFilter, setTypeFilter] = useState<AssetTypeFilter>('all');
   const [viewMode, setViewMode] = useViewMode();
   const [sort, setSort] = useSortPreference();
+  const [gridColumns, setGridColumns] = useGridColumns();
   const dragDepth = useRef(0);
   const inputId = useId();
   const t = useLocale();
@@ -415,32 +445,36 @@ export function AssetView({ slideId }: Props) {
           onToggleDirection={toggleSortDirection}
         />
 
-        <ToggleGroup
-          type="single"
-          value={viewMode}
-          onValueChange={(next) => {
-            if (next) setViewMode(next as ViewMode);
-          }}
-          variant="outline"
-          className="ml-auto"
-        >
-          <ToggleGroupItem
-            value="grid"
-            aria-label={t.asset.gridViewAria}
-            title={t.asset.gridViewAria}
-            className="size-8 px-0"
+        <div className="ml-auto flex items-center gap-2">
+          {viewMode === 'grid' ? (
+            <GridColumnsControl value={gridColumns} onChange={setGridColumns} />
+          ) : null}
+          <ToggleGroup
+            type="single"
+            value={viewMode}
+            onValueChange={(next) => {
+              if (next) setViewMode(next as ViewMode);
+            }}
+            variant="outline"
           >
-            <LayoutGrid className="size-3.5" />
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            value="list"
-            aria-label={t.asset.listViewAria}
-            title={t.asset.listViewAria}
-            className="size-8 px-0"
-          >
-            <List className="size-3.5" />
-          </ToggleGroupItem>
-        </ToggleGroup>
+            <ToggleGroupItem
+              value="grid"
+              aria-label={t.asset.gridViewAria}
+              title={t.asset.gridViewAria}
+              className="size-8 px-0"
+            >
+              <LayoutGrid className="size-3.5" />
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="list"
+              aria-label={t.asset.listViewAria}
+              title={t.asset.listViewAria}
+              className="size-8 px-0"
+            >
+              <List className="size-3.5" />
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -457,9 +491,14 @@ export function AssetView({ slideId }: Props) {
             className={cn(
               'p-4 sm:p-6',
               viewMode === 'grid'
-                ? 'grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4'
+                ? 'grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4 lg:grid-cols-[repeat(var(--asset-grid-columns),minmax(0,1fr))]'
                 : 'flex flex-col gap-1',
             )}
+            style={
+              viewMode === 'grid'
+                ? ({ '--asset-grid-columns': gridColumns } as React.CSSProperties)
+                : undefined
+            }
           >
             {viewMode === 'list' ? <AssetListHeader sort={sort} onSort={sortByColumn} /> : null}
             {visibleAssets.map((asset) =>
@@ -611,6 +650,46 @@ function NoMatchingAssets({ onClear }: { onClear: () => void }) {
         {t.asset.clearFilters}
       </Button>
     </div>
+  );
+}
+
+function GridColumnsControl({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  const t = useLocale();
+  const valueLabel = format(t.asset.gridColumnsValue, { count: value });
+  const sliderContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const thumb = sliderContainerRef.current?.querySelector<HTMLElement>('[role="slider"]');
+    thumb?.setAttribute('aria-label', t.asset.gridColumnsAria);
+    thumb?.setAttribute('aria-valuetext', valueLabel);
+  }, [t.asset.gridColumnsAria, valueLabel]);
+
+  return (
+    <fieldset
+      aria-label={t.asset.gridColumnsAria}
+      title={valueLabel}
+      className="m-0 hidden h-8 w-[176px] min-w-0 items-center gap-2 rounded-[6px] border border-border bg-background px-2.5 py-0 lg:flex"
+    >
+      <Columns3 className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+      <div ref={sliderContainerRef} className="min-w-0 flex-1">
+        <Slider
+          min={MIN_GRID_COLUMNS}
+          max={MAX_GRID_COLUMNS}
+          step={1}
+          value={[value]}
+          onValueChange={([next]) => onChange(next ?? value)}
+        />
+      </div>
+      <output className="w-4 text-right font-mono text-[10.5px] tabular-nums text-muted-foreground">
+        {value}
+      </output>
+    </fieldset>
   );
 }
 

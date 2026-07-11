@@ -317,6 +317,8 @@ export const ja: Locale = {
     typeOther: 'その他',
     gridViewAria: 'グリッド表示',
     listViewAria: 'リスト表示',
+    gridColumnsAria: 'グリッドの列数',
+    gridColumnsValue: '{count} 列',
     noMatchingAssets: '一致するアセットがありません',
     noMatchingAssetsHint: '検索条件またはフィルターを調整してください。',
     clearFilters: 'フィルターをクリア',
