@@ -143,18 +143,20 @@ export function Home() {
             {title}
           </h1>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                aria-label={t.home.folders}
-                className="flex size-7 items-center justify-center rounded-[6px] border border-border bg-card text-muted-foreground hover:text-foreground aria-expanded:border-foreground/40 aria-expanded:text-foreground md:hidden"
-              >
-                <ChevronDown className="size-4" />
-              </button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+              render={
+                <button
+                  type="button"
+                  aria-label={t.home.folders}
+                  className="flex size-7 items-center justify-center rounded-[6px] border border-border bg-card text-muted-foreground hover:text-foreground aria-expanded:border-foreground/40 aria-expanded:text-foreground md:hidden"
+                >
+                  <ChevronDown className="size-4" />
+                </button>
+              }
+            />
             <DropdownMenuContent align="start" className="min-w-[200px]">
               <DropdownMenuItem
-                onSelect={() => selectFolder(ALL_SLIDES_ID)}
+                onClick={() => selectFolder(ALL_SLIDES_ID)}
                 className={cn(isAll && 'bg-muted text-foreground')}
               >
                 <FolderIconChip icon={{ type: 'emoji', value: '🎞️' }} />
@@ -162,7 +164,7 @@ export function Home() {
                 <span className="folio">{slideIds.length.toString().padStart(2, '0')}</span>
               </DropdownMenuItem>
               <DropdownMenuItem
-                onSelect={() => selectFolder(DRAFT_ID)}
+                onClick={() => selectFolder(DRAFT_ID)}
                 className={cn(isDraft && 'bg-muted text-foreground')}
               >
                 <FolderIconChip icon={{ type: 'emoji', value: '📝' }} />
@@ -172,7 +174,7 @@ export function Home() {
               {manifest.folders.map((f) => (
                 <DropdownMenuItem
                   key={f.id}
-                  onSelect={() => selectFolder(f.id)}
+                  onClick={() => selectFolder(f.id)}
                   className={cn(selectedId === f.id && 'bg-muted text-foreground')}
                 >
                   <FolderIconChip icon={f.icon} />
@@ -289,24 +291,26 @@ function SortControl({ value, onChange }: { value: SortKey; onChange: (next: Sor
     );
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          aria-label={`${t.home.sortLabel}: ${labels[value]}`}
-          className="flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[6px] border border-border bg-background pl-2 pr-1.5 text-[12.5px] font-medium text-foreground outline-none hover:bg-muted focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30"
-        >
-          <FieldIcon k={value} className="size-3.5 text-muted-foreground" />
-          <span>{labels[value]}</span>
-          <ChevronDown className="size-3 text-muted-foreground" aria-hidden />
-        </button>
-      </DropdownMenuTrigger>
+      <DropdownMenuTrigger
+        render={
+          <button
+            type="button"
+            aria-label={`${t.home.sortLabel}: ${labels[value]}`}
+            className="flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[6px] border border-border bg-background pl-2 pr-1.5 text-[12.5px] font-medium text-foreground outline-none hover:bg-muted focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30"
+          >
+            <FieldIcon k={value} className="size-3.5 text-muted-foreground" />
+            <span>{labels[value]}</span>
+            <ChevronDown className="size-3 text-muted-foreground" aria-hidden />
+          </button>
+        }
+      />
       <DropdownMenuContent align="end" className="min-w-[180px]">
         {SORT_KEYS.map((key) => {
           const active = value === key;
           return (
             <DropdownMenuItem
               key={key}
-              onSelect={() => onChange(key)}
+              onClick={() => onChange(key)}
               className={cn(active && 'bg-muted text-foreground')}
             >
               <FieldIcon k={key} className="size-3.5 text-muted-foreground" />
@@ -544,33 +548,35 @@ function SlideCard({
         {import.meta.env.DEV && (
           <div className="absolute right-2 top-2">
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                  }}
-                  className="flex size-7 items-center justify-center rounded-[5px] bg-card/90 text-foreground shadow-edge ring-1 ring-border opacity-0 backdrop-blur hover:bg-card group-hover:opacity-100 aria-expanded:opacity-100 motion-safe:transition-opacity"
-                  aria-label={tCard.home.slideActions}
-                >
-                  <MoreHorizontal className="size-3.5" />
-                </button>
-              </DropdownMenuTrigger>
+              <DropdownMenuTrigger
+                render={
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                    }}
+                    className="flex size-7 items-center justify-center rounded-[5px] bg-card/90 text-foreground shadow-edge ring-1 ring-border opacity-0 backdrop-blur hover:bg-card group-hover:opacity-100 aria-expanded:opacity-100 motion-safe:transition-opacity"
+                    aria-label={tCard.home.slideActions}
+                  >
+                    <MoreHorizontal className="size-3.5" />
+                  </button>
+                }
+              />
               <DropdownMenuContent align="end" className="min-w-[160px]">
-                <DropdownMenuItem onSelect={() => setDialog('rename')}>
+                <DropdownMenuItem onClick={() => setDialog('rename')}>
                   <Pencil />
                   {tCard.common.rename}
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => onDuplicate()}>
+                <DropdownMenuItem onClick={() => onDuplicate()}>
                   <Copy />
                   {tCard.home.duplicate}
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setDialog('move')}>
+                <DropdownMenuItem onClick={() => setDialog('move')}>
                   <FolderInput />
                   {tCard.home.moveToFolder}
                 </DropdownMenuItem>
-                <DropdownMenuItem variant="destructive" onSelect={() => setDialog('delete')}>
+                <DropdownMenuItem variant="destructive" onClick={() => setDialog('delete')}>
                   <Trash2 />
                   {tCard.common.delete}
                 </DropdownMenuItem>

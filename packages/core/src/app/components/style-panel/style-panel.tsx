@@ -273,9 +273,13 @@ function FontField({
   return (
     <Field label={label}>
       <Select
+        items={{
+          ...Object.fromEntries(FONT_PRESETS.map((p) => [p.value, p.label])),
+          __custom__: tFont.stylePanel.fontPresetCustom,
+        }}
         value={matched ? matched.value : '__custom__'}
         onValueChange={(v) => {
-          if (v !== '__custom__') onChange(v);
+          if (typeof v === 'string' && v !== '__custom__') onChange(v);
         }}
       >
         <SelectTrigger size="sm" className="h-8 flex-1 text-xs">
@@ -322,7 +326,7 @@ function SliderField({
         max={max}
         step={step}
         value={[value]}
-        onValueChange={([v]) => onChange(v ?? value)}
+        onValueChange={(next) => onChange((Array.isArray(next) ? next[0] : next) ?? value)}
         className="flex-1"
       />
       <NumberField

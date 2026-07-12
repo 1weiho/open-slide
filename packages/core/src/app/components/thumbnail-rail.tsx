@@ -272,20 +272,22 @@ export function ThumbnailRail({
             <span className="folio">{pages.length.toString().padStart(2, '0')}</span>
             {onOverview && (
               <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={onOverview}
-                    aria-label={t.thumbnailRail.overviewAria}
-                    className={cn(
-                      'flex size-5 items-center justify-center rounded-[3px] text-muted-foreground/70 outline-none',
-                      'motion-safe:transition-colors hover:bg-muted hover:text-foreground',
-                      'focus-visible:ring-1 focus-visible:ring-brand',
-                    )}
-                  >
-                    <Grid2x2 className="size-3.5" strokeWidth={1.75} />
-                  </button>
-                </TooltipTrigger>
+                <TooltipTrigger
+                  render={
+                    <button
+                      type="button"
+                      onClick={onOverview}
+                      aria-label={t.thumbnailRail.overviewAria}
+                      className={cn(
+                        'flex size-5 items-center justify-center rounded-[3px] text-muted-foreground/70 outline-none',
+                        'motion-safe:transition-colors hover:bg-muted hover:text-foreground',
+                        'focus-visible:ring-1 focus-visible:ring-brand',
+                      )}
+                    >
+                      <Grid2x2 className="size-3.5" strokeWidth={1.75} />
+                    </button>
+                  }
+                />
                 <TooltipContent side="bottom" sideOffset={6}>
                   {t.thumbnailRail.overviewAria}
                 </TooltipContent>
@@ -316,7 +318,7 @@ export function ThumbnailRail({
   );
 
   return (
-    <TooltipProvider delayDuration={200}>
+    <TooltipProvider delay={200}>
       <div className="relative h-full">
         <ScrollArea className="h-full border-r border-hairline bg-sidebar [&_[data-slot=scroll-area-scrollbar]]:z-20">
           {scrollAreaContents}
@@ -350,39 +352,41 @@ function CurrentThumbnailButton({
   const Icon = direction === 'above' ? ChevronUp : ChevronDown;
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon-sm"
-          aria-label={label}
-          onClick={(event) => onActivate(event.detail === 0)}
-          onKeyDown={(event) => {
-            if (event.key === ' ') {
+      <TooltipTrigger
+        render={
+          <Button
+            type="button"
+            variant="outline"
+            size="icon-sm"
+            aria-label={label}
+            onClick={(event) => onActivate(event.detail === 0)}
+            onKeyDown={(event) => {
+              if (event.key === ' ') {
+                event.preventDefault();
+                event.stopPropagation();
+                return;
+              }
+              if (event.key !== 'Enter') return;
               event.preventDefault();
               event.stopPropagation();
-              return;
-            }
-            if (event.key !== 'Enter') return;
-            event.preventDefault();
-            event.stopPropagation();
-            onActivate(true);
-          }}
-          onKeyUp={(event) => {
-            if (event.key !== ' ') return;
-            event.preventDefault();
-            event.stopPropagation();
-            onActivate(true);
-          }}
-          className={cn(
-            'pointer-events-auto absolute left-1/2 z-30 -translate-x-1/2 bg-card/95 shadow-floating backdrop-blur-sm',
-            'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95 motion-safe:duration-150',
-            direction === 'above' ? 'top-10' : 'bottom-3',
-          )}
-        >
-          <Icon className="size-3.5" strokeWidth={1.75} aria-hidden />
-        </Button>
-      </TooltipTrigger>
+              onActivate(true);
+            }}
+            onKeyUp={(event) => {
+              if (event.key !== ' ') return;
+              event.preventDefault();
+              event.stopPropagation();
+              onActivate(true);
+            }}
+            className={cn(
+              'pointer-events-auto absolute left-1/2 z-30 -translate-x-1/2 bg-card/95 shadow-floating backdrop-blur-sm',
+              'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95 motion-safe:duration-150',
+              direction === 'above' ? 'top-10' : 'bottom-3',
+            )}
+          >
+            <Icon className="size-3.5" strokeWidth={1.75} aria-hidden />
+          </Button>
+        }
+      />
       <TooltipContent side={direction === 'above' ? 'bottom' : 'top'} sideOffset={6}>
         {label}
       </TooltipContent>
@@ -808,18 +812,20 @@ function ThumbContents({
 function ThumbIndicator({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <span
-          role="img"
-          aria-label={label}
-          className={cn(
-            'flex size-3.5 items-center justify-center text-muted-foreground/55',
-            'motion-safe:transition-colors group-hover/thumb:text-muted-foreground/80',
-          )}
-        >
-          <Icon className="size-3" strokeWidth={2} />
-        </span>
-      </TooltipTrigger>
+      <TooltipTrigger
+        render={
+          <span
+            role="img"
+            aria-label={label}
+            className={cn(
+              'flex size-3.5 items-center justify-center text-muted-foreground/55',
+              'motion-safe:transition-colors group-hover/thumb:text-muted-foreground/80',
+            )}
+          >
+            <Icon className="size-3" strokeWidth={2} />
+          </span>
+        }
+      />
       <TooltipContent side="right" sideOffset={6}>
         {label}
       </TooltipContent>
@@ -844,11 +850,9 @@ function ThumbContextMenu({
   const canDelete = pageCount > 1;
   return (
     <ContextMenu>
-      <ContextMenuTrigger asChild aria-label={ariaLabel}>
-        {children}
-      </ContextMenuTrigger>
+      <ContextMenuTrigger aria-label={ariaLabel} render={children as React.ReactElement} />
       <ContextMenuContent className="min-w-[180px]">
-        <ContextMenuItem onSelect={() => actions.onDuplicate(index)}>
+        <ContextMenuItem onClick={() => actions.onDuplicate(index)}>
           <Copy />
           {t.thumbnailRail.duplicatePage}
         </ContextMenuItem>
@@ -856,7 +860,7 @@ function ThumbContextMenu({
         <ContextMenuItem
           variant="destructive"
           disabled={!canDelete}
-          onSelect={() => {
+          onClick={() => {
             if (canDelete) actions.onDelete(index);
           }}
         >

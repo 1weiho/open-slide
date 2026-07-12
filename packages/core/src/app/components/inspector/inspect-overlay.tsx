@@ -35,9 +35,7 @@ export function InspectOverlay() {
     };
 
     const onMove = (e: PointerEvent) => {
-      if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) {
-        return setHover(null);
-      }
+      if (!isInspectableEventTarget(e.target)) return setHover(null);
       const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
       if (!el) return setHover(null);
       const hit = findSlideSource(el, slideId, { hostOnly: true });
@@ -46,7 +44,7 @@ export function InspectOverlay() {
     };
 
     const onClick = (e: MouseEvent) => {
-      if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) return;
+      if (!isInspectableEventTarget(e.target)) return;
       const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
       if (!el) return;
       const hit = findSlideSource(el, slideId, { hostOnly: true });
@@ -58,7 +56,7 @@ export function InspectOverlay() {
     };
 
     const onDblClick = (e: MouseEvent) => {
-      if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) return;
+      if (!isInspectableEventTarget(e.target)) return;
       const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
       if (!el) return;
       const hit = findSlideSource(el, slideId, { hostOnly: true });
@@ -243,7 +241,7 @@ function ImageActionPanel({
   const { openCrop, openReplace } = useInspector();
   const t = useLocale();
   return (
-    <TooltipProvider delayDuration={200}>
+    <TooltipProvider delay={200}>
       <div
         className={cn(
           'absolute flex items-center gap-0.5 rounded-[8px] border border-border bg-popover p-1 text-popover-foreground shadow-floating',
@@ -258,37 +256,41 @@ function ImageActionPanel({
         }}
       >
         <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              aria-label={t.inspector.replace}
-              onClick={(e) => {
-                e.stopPropagation();
-                openReplace(anchor);
-              }}
-              className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-            >
-              <ImageIcon className="size-3.5" />
-            </button>
-          </TooltipTrigger>
+          <TooltipTrigger
+            render={
+              <button
+                type="button"
+                aria-label={t.inspector.replace}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openReplace(anchor);
+                }}
+                className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+              >
+                <ImageIcon className="size-3.5" />
+              </button>
+            }
+          />
           <TooltipContent side="bottom" data-inspector-ui>
             {t.inspector.replace}
           </TooltipContent>
         </Tooltip>
         <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              aria-label={t.inspector.crop}
-              onClick={(e) => {
-                e.stopPropagation();
-                openCrop(anchor as HTMLImageElement);
-              }}
-              className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-            >
-              <Crop className="size-3.5" />
-            </button>
-          </TooltipTrigger>
+          <TooltipTrigger
+            render={
+              <button
+                type="button"
+                aria-label={t.inspector.crop}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openCrop(anchor as HTMLImageElement);
+                }}
+                className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+              >
+                <Crop className="size-3.5" />
+              </button>
+            }
+          />
           <TooltipContent side="bottom" data-inspector-ui>
             {t.inspector.crop}
           </TooltipContent>
@@ -306,6 +308,16 @@ function sameRect(a: RelRect | null, b: RelRect): boolean {
     Math.abs(a.width - b.width) < 0.5 &&
     Math.abs(a.height - b.height) < 0.5
   );
+}
+
+// Only inspect events that originate inside the slide root. Portaled UI
+// (dialogs, tooltips, toasts) mounts on `document.body`, outside the root;
+// without this guard the capture-phase window listeners swallow clicks
+// meant for a dialog and select the slide element behind it instead.
+function isInspectableEventTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  if (target.closest('[data-inspector-ui]')) return false;
+  return !!target.closest('[data-inspector-root]');
 }
 
 function pickElement(x: number, y: number): HTMLElement | null {

@@ -81,7 +81,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
         'react-dom/client',
         'next-themes',
         'react-router-dom',
-        'radix-ui',
+        '@base-ui/react',
         'lucide-react',
         'clsx',
         'tailwind-merge',
