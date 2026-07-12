@@ -746,7 +746,7 @@ export function Slide() {
                     ref={slideViewportRef}
                     data-inspector-root
                     data-slide-id={slideId}
-                    className="paper relative min-h-0 min-w-0 flex-1 bg-canvas p-2 md:p-10"
+                    className="relative min-h-0 min-w-0 flex-1 bg-canvas p-2 md:p-10"
                   >
                     <SlideViewportNavigation
                       targetRef={slideViewportRef}

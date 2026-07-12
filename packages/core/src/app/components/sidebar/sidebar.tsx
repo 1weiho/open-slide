@@ -126,7 +126,7 @@ export function Sidebar({
   }, [creating]);
 
   return (
-    <aside className="paper relative flex h-full w-[16.5rem] shrink-0 flex-col border-r border-hairline bg-sidebar text-sidebar-foreground">
+    <aside className="relative flex h-full w-[16.5rem] shrink-0 flex-col border-r border-hairline bg-sidebar text-sidebar-foreground">
       <div className="flex items-center justify-between px-4 pt-5 pb-4">
         <h1 className="font-heading text-lg font-bold tracking-tight">{t.home.appTitle}</h1>
         <div className="-mr-1.5 flex items-center">

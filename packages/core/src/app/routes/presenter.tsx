@@ -187,7 +187,7 @@ export function Presenter() {
               <div
                 aria-hidden
                 className={cn(
-                  'pointer-events-none absolute inset-0 grid place-items-center text-[11px] tracking-[0.16em] uppercase',
+                  'pointer-events-none absolute inset-0 grid place-items-center text-[11px] tracking-[0.08em] uppercase',
                   blackout === 'black' ? 'bg-black text-white/35' : 'bg-white text-black/35',
                 )}
               >

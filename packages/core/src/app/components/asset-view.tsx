@@ -804,7 +804,7 @@ function AssetListHeader({
 }) {
   const t = useLocale();
   return (
-    <div className="hidden items-center gap-3 px-2 pb-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 sm:flex">
+    <div className="hidden items-center gap-3 px-2 pb-1 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70 sm:flex">
       <SortableColumnHeader
         label={t.asset.nameColumn}
         sortKey="name"

@@ -272,7 +272,7 @@ function BarButton({
             'inline-flex size-8 items-center justify-center rounded-full transition-colors',
             'hover:bg-white/12 focus-visible:bg-white/12 focus-visible:outline-none',
             'disabled:pointer-events-none disabled:opacity-30',
-            active && 'bg-[var(--brand,#ef4444)]/85 text-white hover:bg-[var(--brand,#ef4444)]',
+            active && 'bg-[var(--brand,#e5484d)]/85 text-white hover:bg-[var(--brand,#e5484d)]',
           )}
         >
           {children}
