@@ -1,5 +1,11 @@
 # @open-slide/core
 
+## 1.15.1
+
+### Patch Changes
+
+- [#306](https://github.com/1weiho/open-slide/pull/306) [`8d2f937`](https://github.com/1weiho/open-slide/commit/8d2f937d34dc6cbe82b542ac75cb34637dbe4413) Thanks [@1weiho](https://github.com/1weiho)! - Pre-bundle the Base UI `use-sync-external-store` shim so the dev server no longer throws a missing `useSyncExternalStore` export.
+
 ## 1.15.0
 
 ### Minor Changes
