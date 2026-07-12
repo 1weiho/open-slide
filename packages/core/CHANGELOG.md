@@ -1,5 +1,11 @@
 # @open-slide/core
 
+## 1.15.2
+
+### Patch Changes
+
+- [#308](https://github.com/1weiho/open-slide/pull/308) [`9782b86`](https://github.com/1weiho/open-slide/commit/9782b86e0b53e499a286a23a90a398d03f6d4026) Thanks [@1weiho](https://github.com/1weiho)! - Declare `use-sync-external-store` as a direct dependency so Vite can resolve and pre-bundle the Base UI shim under pnpm, fixing the missing `useSyncExternalStore` export at runtime.
+
 ## 1.15.1
 
 ### Patch Changes
