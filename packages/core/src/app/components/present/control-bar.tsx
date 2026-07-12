@@ -285,7 +285,7 @@ function BarButton({
         container={container ?? undefined}
         side="top"
         sideOffset={6}
-        className="bg-black/85 text-white"
+        className="bg-black text-white"
       >
         {label}
       </TooltipContent>
