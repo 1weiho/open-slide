@@ -35,9 +35,7 @@ export function InspectOverlay() {
     };
 
     const onMove = (e: PointerEvent) => {
-      if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) {
-        return setHover(null);
-      }
+      if (!isInspectableEventTarget(e.target)) return setHover(null);
       const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
       if (!el) return setHover(null);
       const hit = findSlideSource(el, slideId, { hostOnly: true });
@@ -46,7 +44,7 @@ export function InspectOverlay() {
     };
 
     const onClick = (e: MouseEvent) => {
-      if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) return;
+      if (!isInspectableEventTarget(e.target)) return;
       const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
       if (!el) return;
       const hit = findSlideSource(el, slideId, { hostOnly: true });
@@ -58,7 +56,7 @@ export function InspectOverlay() {
     };
 
     const onDblClick = (e: MouseEvent) => {
-      if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) return;
+      if (!isInspectableEventTarget(e.target)) return;
       const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
       if (!el) return;
       const hit = findSlideSource(el, slideId, { hostOnly: true });
@@ -310,6 +308,16 @@ function sameRect(a: RelRect | null, b: RelRect): boolean {
     Math.abs(a.width - b.width) < 0.5 &&
     Math.abs(a.height - b.height) < 0.5
   );
+}
+
+// Only inspect events that originate inside the slide root. Portaled UI
+// (dialogs, tooltips, toasts) mounts on `document.body`, outside the root;
+// without this guard the capture-phase window listeners swallow clicks
+// meant for a dialog and select the slide element behind it instead.
+function isInspectableEventTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  if (target.closest('[data-inspector-ui]')) return false;
+  return !!target.closest('[data-inspector-root]');
 }
 
 function pickElement(x: number, y: number): HTMLElement | null {
