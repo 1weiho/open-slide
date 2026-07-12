@@ -150,13 +150,15 @@ export function Sidebar({
           onSelect={() => onSelect(THEMES_ID)}
           onDropSlide={() => {}}
         />
-        <FolderItem
-          row={{ kind: 'assets' }}
-          count={assetsCount}
-          selected={selectedId === ASSETS_ID}
-          onSelect={() => onSelect(ASSETS_ID)}
-          onDropSlide={() => {}}
-        />
+        {import.meta.env.DEV && (
+          <FolderItem
+            row={{ kind: 'assets' }}
+            count={assetsCount}
+            selected={selectedId === ASSETS_ID}
+            onSelect={() => onSelect(ASSETS_ID)}
+            onDropSlide={() => {}}
+          />
+        )}
       </div>
 
       <div className="mt-5 flex items-center gap-2 px-4 pb-1.5">

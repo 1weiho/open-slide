@@ -207,14 +207,16 @@ export function HomeShell() {
                   <span className="flex-1 truncate">{t.home.themes}</span>
                   <span className="folio">{themeRegistry.length.toString().padStart(2, '0')}</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() => selectFolder(ASSETS_ID)}
-                  className={cn(selectedId === ASSETS_ID && 'bg-muted text-foreground')}
-                >
-                  <FolderIconChip icon={{ type: 'emoji', value: '🗂️' }} />
-                  <span className="flex-1 truncate">{t.home.assets}</span>
-                  <span className="folio">{globalAssets.length.toString().padStart(2, '0')}</span>
-                </DropdownMenuItem>
+                {import.meta.env.DEV && (
+                  <DropdownMenuItem
+                    onSelect={() => selectFolder(ASSETS_ID)}
+                    className={cn(selectedId === ASSETS_ID && 'bg-muted text-foreground')}
+                  >
+                    <FolderIconChip icon={{ type: 'emoji', value: '🗂️' }} />
+                    <span className="flex-1 truncate">{t.home.assets}</span>
+                    <span className="folio">{globalAssets.length.toString().padStart(2, '0')}</span>
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
