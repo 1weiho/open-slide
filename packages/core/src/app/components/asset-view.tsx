@@ -413,6 +413,11 @@ export function AssetView({ slideId }: Props) {
         </div>
 
         <Select
+          items={{
+            all: t.asset.usageAll,
+            used: t.asset.usageUsed,
+            unused: t.asset.usageUnused,
+          }}
           value={usageFilter}
           onValueChange={(next) => setUsageFilter(next as AssetUsageFilter)}
         >
@@ -426,7 +431,17 @@ export function AssetView({ slideId }: Props) {
           </SelectContent>
         </Select>
 
-        <Select value={typeFilter} onValueChange={(next) => setTypeFilter(next as AssetTypeFilter)}>
+        <Select
+          items={{
+            all: t.asset.typeAll,
+            image: t.asset.typeImage,
+            font: t.asset.typeFont,
+            video: t.asset.typeVideo,
+            other: t.asset.typeOther,
+          }}
+          value={typeFilter}
+          onValueChange={(next) => setTypeFilter(next as AssetTypeFilter)}
+        >
           <SelectTrigger aria-label={t.asset.typeFilterAria} className="h-8 min-w-[108px]">
             <SelectValue />
           </SelectTrigger>
@@ -450,9 +465,9 @@ export function AssetView({ slideId }: Props) {
             <GridColumnsControl value={gridColumns} onChange={setGridColumns} />
           ) : null}
           <ToggleGroup
-            type="single"
-            value={viewMode}
-            onValueChange={(next) => {
+            value={[viewMode]}
+            onValueChange={(value) => {
+              const next = value[0];
               if (next) setViewMode(next as ViewMode);
             }}
             variant="outline"
@@ -683,7 +698,7 @@ function GridColumnsControl({
           max={MAX_GRID_COLUMNS}
           step={1}
           value={[value]}
-          onValueChange={([next]) => onChange(next ?? value)}
+          onValueChange={(v) => onChange((Array.isArray(v) ? v[0] : v) ?? value)}
         />
       </div>
       <output className="w-4 text-right font-mono text-[10.5px] tabular-nums text-muted-foreground">
@@ -723,7 +738,11 @@ function AssetSortControl({
 
   return (
     <div className="flex items-center gap-1">
-      <Select value={sort.key} onValueChange={(next) => onKeyChange(next as AssetSortKey)}>
+      <Select
+        items={labels}
+        value={sort.key}
+        onValueChange={(next) => onKeyChange(next as AssetSortKey)}
+      >
         <SelectTrigger aria-label={t.asset.sortAria} className="h-8 min-w-[116px]">
           <ArrowUpDown className="size-3.5" aria-hidden />
           <SelectValue />
@@ -999,15 +1018,15 @@ function AssetActions({
         <MoreVertical />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[160px]">
-        <DropdownMenuItem onSelect={onPreview}>
+        <DropdownMenuItem onClick={onPreview}>
           <ImageIcon />
           {t.asset.previewMenuItem}
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={onRename}>
+        <DropdownMenuItem onClick={onRename}>
           <Pencil />
           {t.asset.renameMenuItem}
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={onDelete}>
+        <DropdownMenuItem onClick={onDelete}>
           <Trash2 />
           {t.asset.deleteMenuItem}
         </DropdownMenuItem>

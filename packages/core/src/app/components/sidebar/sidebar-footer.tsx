@@ -98,7 +98,7 @@ export function SidebarFooter() {
   return (
     <div className="px-4 py-3 text-[11px] text-muted-foreground/70 tabular-nums">
       {update?.latest ? (
-        <TooltipProvider delayDuration={200}>
+        <TooltipProvider delay={200}>
           <Tooltip
             open={open}
             onOpenChange={(next) => {
@@ -106,7 +106,7 @@ export function SidebarFooter() {
               setOpen(next);
             }}
           >
-            <TooltipTrigger asChild>{versionRow}</TooltipTrigger>
+            <TooltipTrigger render={versionRow} />
             <TooltipContent
               side="top"
               align="start"

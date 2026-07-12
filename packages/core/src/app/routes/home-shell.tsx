@@ -177,18 +177,20 @@ export function HomeShell() {
             <LanguageToggle />
             <ThemeToggle />
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  aria-label={t.home.menu}
-                  className="flex size-8 items-center justify-center rounded-[6px] text-muted-foreground hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground"
-                >
-                  <Menu className="size-4" />
-                </button>
-              </DropdownMenuTrigger>
+              <DropdownMenuTrigger
+                render={
+                  <button
+                    type="button"
+                    aria-label={t.home.menu}
+                    className="flex size-8 items-center justify-center rounded-[6px] text-muted-foreground hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground"
+                  >
+                    <Menu className="size-4" />
+                  </button>
+                }
+              />
               <DropdownMenuContent align="end" className="min-w-[200px]">
                 <DropdownMenuItem
-                  onSelect={() => selectFolder(ALL_SLIDES_ID)}
+                  onClick={() => selectFolder(ALL_SLIDES_ID)}
                   className={cn(
                     selectedId !== THEMES_ID &&
                       selectedId !== ASSETS_ID &&
@@ -200,7 +202,7 @@ export function HomeShell() {
                   <span className="folio">{slideIds.length.toString().padStart(2, '0')}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onSelect={() => selectFolder(THEMES_ID)}
+                  onClick={() => selectFolder(THEMES_ID)}
                   className={cn(selectedId === THEMES_ID && 'bg-muted text-foreground')}
                 >
                   <FolderIconChip icon={{ type: 'emoji', value: '🎨' }} />
@@ -208,7 +210,7 @@ export function HomeShell() {
                   <span className="folio">{themeRegistry.length.toString().padStart(2, '0')}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onSelect={() => selectFolder(ASSETS_ID)}
+                  onClick={() => selectFolder(ASSETS_ID)}
                   className={cn(selectedId === ASSETS_ID && 'bg-muted text-foreground')}
                 >
                   <FolderIconChip icon={{ type: 'emoji', value: '🗂️' }} />

@@ -243,7 +243,7 @@ function ImageActionPanel({
   const { openCrop, openReplace } = useInspector();
   const t = useLocale();
   return (
-    <TooltipProvider delayDuration={200}>
+    <TooltipProvider delay={200}>
       <div
         className={cn(
           'absolute flex items-center gap-0.5 rounded-[8px] border border-border bg-popover p-1 text-popover-foreground shadow-floating',
@@ -258,37 +258,41 @@ function ImageActionPanel({
         }}
       >
         <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              aria-label={t.inspector.replace}
-              onClick={(e) => {
-                e.stopPropagation();
-                openReplace(anchor);
-              }}
-              className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-            >
-              <ImageIcon className="size-3.5" />
-            </button>
-          </TooltipTrigger>
+          <TooltipTrigger
+            render={
+              <button
+                type="button"
+                aria-label={t.inspector.replace}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openReplace(anchor);
+                }}
+                className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+              >
+                <ImageIcon className="size-3.5" />
+              </button>
+            }
+          />
           <TooltipContent side="bottom" data-inspector-ui>
             {t.inspector.replace}
           </TooltipContent>
         </Tooltip>
         <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              aria-label={t.inspector.crop}
-              onClick={(e) => {
-                e.stopPropagation();
-                openCrop(anchor as HTMLImageElement);
-              }}
-              className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-            >
-              <Crop className="size-3.5" />
-            </button>
-          </TooltipTrigger>
+          <TooltipTrigger
+            render={
+              <button
+                type="button"
+                aria-label={t.inspector.crop}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openCrop(anchor as HTMLImageElement);
+                }}
+                className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+              >
+                <Crop className="size-3.5" />
+              </button>
+            }
+          />
           <TooltipContent side="bottom" data-inspector-ui>
             {t.inspector.crop}
           </TooltipContent>

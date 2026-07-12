@@ -130,7 +130,7 @@ export function OverviewGrid({
         </div>
       </div>
       <div ref={gridRef} className="min-h-0 flex-1 overflow-auto px-8 pb-8">
-        <TooltipProvider delayDuration={200}>
+        <TooltipProvider delay={200}>
           <div
             className="grid justify-center gap-5"
             style={{
@@ -296,15 +296,17 @@ function OverviewIndicator({
 }) {
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <span
-          role="img"
-          aria-label={label}
-          className={cn('flex size-4 items-center justify-center', className)}
-        >
-          <Icon className="size-3.5" strokeWidth={1.9} />
-        </span>
-      </TooltipTrigger>
+      <TooltipTrigger
+        render={
+          <span
+            role="img"
+            aria-label={label}
+            className={cn('flex size-4 items-center justify-center', className)}
+          >
+            <Icon className="size-3.5" strokeWidth={1.9} />
+          </span>
+        }
+      />
       <TooltipContent side="top" sideOffset={6} container={tooltipContainer ?? undefined}>
         {label}
       </TooltipContent>

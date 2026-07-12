@@ -449,7 +449,7 @@ function FontSizeField({
         max={200}
         step={1}
         value={[snapshot.fontSize]}
-        onValueChange={([v]) => set(v ?? snapshot.fontSize)}
+        onValueChange={(v) => set((Array.isArray(v) ? v[0] : v) ?? snapshot.fontSize)}
         className="flex-1"
       />
       <NumberField
@@ -486,6 +486,7 @@ function FontWeightField({
   return (
     <Field label={t.inspector.weightLabel}>
       <Select
+        items={Object.fromEntries(weightOptions.map((opt) => [opt.value, opt.label]))}
         value={String(snapshot.fontWeight)}
         onValueChange={(value) => {
           const n = Number(value);
@@ -568,7 +569,7 @@ function LineHeightField({
         max={3}
         step={0.05}
         value={[v]}
-        onValueChange={([n]) => set(n ?? v)}
+        onValueChange={(next) => set((Array.isArray(next) ? next[0] : next) ?? v)}
         className="flex-1"
       />
       <NumberField value={round2(v)} onChange={set} step={0.05} min={0.5} max={5} />
@@ -600,7 +601,9 @@ function LetterSpacingField({
         max={20}
         step={0.1}
         value={[snapshot.letterSpacing]}
-        onValueChange={([n]) => set(n ?? snapshot.letterSpacing)}
+        onValueChange={(next) =>
+          set((Array.isArray(next) ? next[0] : next) ?? snapshot.letterSpacing)
+        }
         className="flex-1"
       />
       <NumberField
@@ -633,17 +636,17 @@ function TextAlignField({
   return (
     <Field label={t.inspector.alignLabel}>
       <ToggleGroup
-        type="single"
         size="sm"
         variant="outline"
-        value={snapshot.textAlign}
+        value={[snapshot.textAlign]}
         onValueChange={(value) => {
-          if (!value) return;
+          const next = value[0];
+          if (!next) return;
           apply([
             {
               kind: 'set-style',
               key: 'textAlign',
-              value: value === 'left' ? null : value,
+              value: next === 'left' ? null : next,
             },
           ]);
         }}
@@ -842,26 +845,28 @@ function AgentWatchingBadge() {
   const t = useLocale();
   const connected = useAgentSocketConnected();
   return (
-    <TooltipProvider delayDuration={200}>
+    <TooltipProvider delay={200}>
       <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            className="flex shrink-0 cursor-help items-center gap-1.5 rounded-[3px] border border-hairline bg-card px-1.5 py-px text-[10.5px] text-foreground/85 outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-          >
-            <span aria-hidden className="relative flex size-1.5 items-center justify-center">
-              {connected ? (
-                <>
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-60" />
-                  <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
-                </>
-              ) : (
-                <span className="relative inline-flex size-1.5 rounded-full bg-rose-500" />
-              )}
-            </span>
-            {connected ? t.inspector.agentWatching : t.inspector.agentNotWatching}
-          </button>
-        </TooltipTrigger>
+        <TooltipTrigger
+          render={
+            <button
+              type="button"
+              className="flex shrink-0 cursor-help items-center gap-1.5 rounded-[3px] border border-hairline bg-card px-1.5 py-px text-[10.5px] text-foreground/85 outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+            >
+              <span aria-hidden className="relative flex size-1.5 items-center justify-center">
+                {connected ? (
+                  <>
+                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+                    <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
+                  </>
+                ) : (
+                  <span className="relative inline-flex size-1.5 rounded-full bg-rose-500" />
+                )}
+              </span>
+              {connected ? t.inspector.agentWatching : t.inspector.agentNotWatching}
+            </button>
+          }
+        />
         <TooltipContent
           side="bottom"
           align="end"

@@ -86,7 +86,7 @@ export function PresentControlBar({
           : 'translate-y-8 scale-90 opacity-0 blur-md',
       )}
     >
-      <TooltipProvider delayDuration={300}>
+      <TooltipProvider delay={300}>
         <TooltipContainerCtx.Provider value={tooltipContainer ?? null}>
           <div
             className={cn(
@@ -259,25 +259,28 @@ function BarButton({
   const container = useContext(TooltipContainerCtx);
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          aria-label={label}
-          disabled={disabled}
-          onClick={(event) => {
-            event.stopPropagation();
-            onClick();
-          }}
-          className={cn(
-            'inline-flex size-8 items-center justify-center rounded-full transition-colors',
-            'hover:bg-white/12 focus-visible:bg-white/12 focus-visible:outline-none',
-            'disabled:pointer-events-none disabled:opacity-30',
-            active && 'bg-[var(--brand,#e5484d)]/85 text-white hover:bg-[var(--brand,#e5484d)]',
-          )}
-        >
-          {children}
-        </button>
-      </TooltipTrigger>
+      <TooltipTrigger
+        render={
+          <button
+            type="button"
+            aria-label={label}
+            disabled={disabled}
+            onClick={(event) => {
+              event.stopPropagation();
+              onClick();
+            }}
+            className={cn(
+              'inline-flex size-8 items-center justify-center rounded-full transition-colors',
+              'hover:bg-white/12 focus-visible:bg-white/12 focus-visible:outline-none',
+              'disabled:pointer-events-none disabled:opacity-30',
+              active && 'bg-[var(--brand,#e5484d)]/85 text-white hover:bg-[var(--brand,#e5484d)]',
+            )}
+          >
+            {children}
+          </button>
+        }
+      />
+
       <TooltipContent
         container={container ?? undefined}
         side="top"

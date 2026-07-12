@@ -247,15 +247,17 @@ export function Sidebar({
               className="mt-1 flex items-center gap-2.5 rounded-[5px] border border-dashed border-foreground/30 bg-card px-2 py-[5px]"
             >
               <Popover open={iconOpen} onOpenChange={setIconOpen}>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="flex size-5 shrink-0 items-center justify-center rounded transition-transform hover:scale-110"
-                    aria-label={t.home.pickIcon}
-                  >
-                    <FolderIconChip icon={newIcon} />
-                  </button>
-                </PopoverTrigger>
+                <PopoverTrigger
+                  render={
+                    <button
+                      type="button"
+                      className="flex size-5 shrink-0 items-center justify-center rounded transition-transform hover:scale-110"
+                      aria-label={t.home.pickIcon}
+                    >
+                      <FolderIconChip icon={newIcon} />
+                    </button>
+                  }
+                />
                 <PopoverContent side="right" align="start" className="w-auto p-2">
                   <IconPicker value={newIcon} onChange={setNewIcon} />
                 </PopoverContent>
