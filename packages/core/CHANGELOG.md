@@ -1,5 +1,17 @@
 # @open-slide/core
 
+## 1.15.0
+
+### Minor Changes
+
+- [#303](https://github.com/1weiho/open-slide/pull/303) [`e8cc746`](https://github.com/1weiho/open-slide/commit/e8cc746b4da5f8c6aa9bad351415a25c3821f8de) Thanks [@1weiho](https://github.com/1weiho)! - Migrate the internal UI primitives from Radix UI to Base UI (`@base-ui/react`), dropping the `radix-ui` dependency.
+
+- [#301](https://github.com/1weiho/open-slide/pull/301) [`f4b4672`](https://github.com/1weiho/open-slide/commit/f4b4672d82e718c273d63a1011caa7753d07384b) Thanks [@1weiho](https://github.com/1weiho)! - Retone the app UI to a neutral SaaS palette: flat pure-gray surfaces, crisper labels, refreshed folder colors.
+
+### Patch Changes
+
+- [#304](https://github.com/1weiho/open-slide/pull/304) [`9dbce8d`](https://github.com/1weiho/open-slide/commit/9dbce8d947bca1058b06a2660528a1bef97b0664) Thanks [@1weiho](https://github.com/1weiho)! - Hide the Assets sidebar entry in production builds, where asset management is unavailable.
+
 ## 1.14.0
 
 ### Minor Changes
