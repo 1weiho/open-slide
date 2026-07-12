@@ -548,17 +548,14 @@ export function Slide() {
           <header className="relative flex h-12 shrink-0 items-center gap-2 border-b border-hairline bg-sidebar/85 px-2 backdrop-blur-md md:px-3">
             <div className="flex flex-1 items-center gap-1.5 md:flex-none md:gap-2">
               {showSlideBrowser && (
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
+                <Link
+                  to="/"
+                  aria-label={t.slide.backToHome}
                   title={t.slide.home}
-                  nativeButton={false}
-                  render={
-                    <Link to="/" aria-label={t.slide.backToHome}>
-                      <ChevronLeft className="size-4" />
-                    </Link>
-                  }
-                />
+                  className={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
+                >
+                  <ChevronLeft className="size-4" />
+                </Link>
               )}
               <span aria-hidden className="mx-0.5 hidden h-5 w-px bg-hairline md:block" />
               {import.meta.env.DEV && (

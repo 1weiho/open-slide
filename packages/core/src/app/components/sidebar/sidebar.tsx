@@ -118,7 +118,7 @@ export function Sidebar({
       const target = e.target as HTMLElement | null;
       if (!target) return;
       if (target.closest('[data-folder-create]')) return;
-      if (target.closest('[data-radix-popper-content-wrapper]')) return;
+      if (target.closest('[data-slot="popover-content"]')) return;
       commitCreate();
     };
     document.addEventListener('mousedown', onDown);
