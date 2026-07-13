@@ -86,7 +86,9 @@ export function Sidebar({
   }, [creating]);
 
   const stateRef = useRef({ name: newName, icon: newIcon, iconOpen });
-  stateRef.current = { name: newName, icon: newIcon, iconOpen };
+  useEffect(() => {
+    stateRef.current = { name: newName, icon: newIcon, iconOpen };
+  });
 
   const exitCreate = () => {
     setCreating(false);

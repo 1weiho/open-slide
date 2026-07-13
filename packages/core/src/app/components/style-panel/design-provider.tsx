@@ -48,7 +48,9 @@ export function DesignProvider({ slideId, children }: { slideId: string; childre
   const [committing, setCommitting] = useState(false);
   const history = useHistory();
   const draftRef = useRef<DesignSystem | null>(null);
-  draftRef.current = draft;
+  useEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
 
   useEffect(() => {
     if (design) setDraft(clone(design));

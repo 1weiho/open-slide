@@ -684,7 +684,11 @@ export function SlideTransitionLayer({
   const animsRef = useRef<Animation[]>([]);
   const cleanupRef = useRef<(() => void) | null>(null);
   const currentRef = useRef(current);
-  currentRef.current = current;
+  // Must stay declared before the index-change effect below: same-commit
+  // updates rely on this assignment running first.
+  useEffect(() => {
+    currentRef.current = current;
+  }, [current]);
 
   useEffect(() => {
     if (index === currentRef.current) return;

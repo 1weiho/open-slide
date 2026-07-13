@@ -27,7 +27,9 @@ const SUPPORTED = typeof window !== 'undefined' && typeof BroadcastChannel !== '
 // closed one behind that throws on the next send().
 export function usePresenterChannel(slideId: string, onMessage?: Handler) {
   const onMessageRef = useRef(onMessage);
-  onMessageRef.current = onMessage;
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
 
   const channelRef = useRef<BroadcastChannel | null>(null);
   const [available, setAvailable] = useState(false);

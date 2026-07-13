@@ -97,7 +97,9 @@ export function SlidePreloadLayer({ pages, index, design, includeCurrent = false
   }
 
   const onDoneRef = useRef(onDone);
-  onDoneRef.current = onDone;
+  useEffect(() => {
+    onDoneRef.current = onDone;
+  }, [onDone]);
   useEffect(() => {
     if (done) onDoneRef.current?.();
   }, [done]);

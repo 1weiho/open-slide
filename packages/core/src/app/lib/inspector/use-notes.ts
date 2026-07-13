@@ -44,7 +44,11 @@ export function useNotes(slideId: string, index: number, initial: string | undef
   const inflightRef = useRef<AbortController | null>(null);
   const targetRef = useRef<Target>({ slideId, index });
   const valueRef = useRef(value);
-  valueRef.current = value;
+  // Must stay declared before the target-change effect below so a commit
+  // that changes both value and target reads the fresh value.
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
 
   const cancelTimer = useCallback(() => {
     if (timerRef.current != null) {

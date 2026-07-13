@@ -820,7 +820,9 @@ export function InspectorProvider({
   // surfaced via toast inside `commitEdits`; the catch here only
   // swallows the rethrown rejection.
   const commitRef = useRef(commitEdits);
-  commitRef.current = commitEdits;
+  useEffect(() => {
+    commitRef.current = commitEdits;
+  }, [commitEdits]);
   useEffect(() => {
     if (!active) commitRef.current().catch(() => {});
   }, [active]);

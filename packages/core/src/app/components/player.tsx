@@ -85,7 +85,9 @@ export function Player({
   // latest value without re-binding — exits from window mode must not call
   // onExit, but exits initiated by the browser (Esc in fullscreen) must.
   const windowedRef = useRef(windowed);
-  windowedRef.current = windowed;
+  useEffect(() => {
+    windowedRef.current = windowed;
+  }, [windowed]);
 
   const canPrev = index > 0;
   const canNext = index < pages.length - 1;
@@ -238,7 +240,9 @@ export function Player({
     [index, pages.length, blackout, startedAt, stepAggregate],
   );
   const presenterStateRef = useRef(presenterState);
-  presenterStateRef.current = presenterState;
+  useEffect(() => {
+    presenterStateRef.current = presenterState;
+  }, [presenterState]);
 
   const handlePresenterCommand = useCallback(
     (msg: PresenterCommand, send: (m: PresenterCommand) => void) => {
