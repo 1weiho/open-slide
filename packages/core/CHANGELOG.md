@@ -1,5 +1,15 @@
 # @open-slide/core
 
+## 1.15.3
+
+### Patch Changes
+
+- [#297](https://github.com/1weiho/open-slide/pull/297) [`771902c`](https://github.com/1weiho/open-slide/commit/771902c3345223d0e54d32d1bbd7e869722f955f) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Add adjustable speaker notes text size in presenter view, persisted across sessions.
+
+- [#270](https://github.com/1weiho/open-slide/pull/270) [`9bea0a4`](https://github.com/1weiho/open-slide/commit/9bea0a4244185296692aea2201f922166ffa9e60) Thanks [@mvanhorn](https://github.com/mvanhorn)! - Stop remounting the slide canvas when speaker notes are saved in dev.
+
+- [#271](https://github.com/1weiho/open-slide/pull/271) [`4fece8d`](https://github.com/1weiho/open-slide/commit/4fece8d4507dcd4df88b39f04c7d0ca29b9958df) Thanks [@Yacolate0519-cmd](https://github.com/Yacolate0519-cmd)! - Skip slide folders whose id isn't ASCII-safe (e.g. CJK folder names) instead of listing slides that then fail to move into folders or be edited; warn once per ignored folder.
+
 ## 1.15.2
 
 ### Patch Changes
