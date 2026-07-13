@@ -1,6 +1,5 @@
 import { Monitor, Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { useEffect, useState } from 'react';
 import { buttonVariants } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -13,12 +12,7 @@ import { cn } from '@/lib/utils';
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
   const t = useLocale();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   return (
     <DropdownMenu>
@@ -32,24 +26,15 @@ export function ThemeToggle() {
         <Moon className="absolute size-3.5 scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[140px]">
-        <DropdownMenuItem
-          onClick={() => setTheme('light')}
-          data-active={mounted && theme === 'light'}
-        >
+        <DropdownMenuItem onClick={() => setTheme('light')} data-active={theme === 'light'}>
           <Sun />
           {t.themeToggle.light}
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => setTheme('dark')}
-          data-active={mounted && theme === 'dark'}
-        >
+        <DropdownMenuItem onClick={() => setTheme('dark')} data-active={theme === 'dark'}>
           <Moon />
           {t.themeToggle.dark}
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => setTheme('system')}
-          data-active={mounted && theme === 'system'}
-        >
+        <DropdownMenuItem onClick={() => setTheme('system')} data-active={theme === 'system'}>
           <Monitor />
           {t.themeToggle.system}
         </DropdownMenuItem>
