@@ -275,6 +275,14 @@ function SearchInput({ value, onChange }: { value: string; onChange: (value: str
   );
 }
 
+function FieldIcon({ k, className }: { k: SortKey; className?: string }) {
+  return k === 'title-asc' || k === 'title-desc' ? (
+    <ArrowDownAZ className={className} aria-hidden />
+  ) : (
+    <Clock className={className} aria-hidden />
+  );
+}
+
 function SortControl({ value, onChange }: { value: SortKey; onChange: (next: SortKey) => void }) {
   const t = useLocale();
   const labels: Record<SortKey, string> = {
@@ -283,12 +291,6 @@ function SortControl({ value, onChange }: { value: SortKey; onChange: (next: Sor
     'title-asc': t.home.sortByTitleAsc,
     'title-desc': t.home.sortByTitleDesc,
   };
-  const FieldIcon = ({ k, className }: { k: SortKey; className?: string }) =>
-    k === 'title-asc' || k === 'title-desc' ? (
-      <ArrowDownAZ className={className} aria-hidden />
-    ) : (
-      <Clock className={className} aria-hidden />
-    );
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
