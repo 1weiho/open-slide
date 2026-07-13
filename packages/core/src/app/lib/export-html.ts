@@ -26,16 +26,24 @@ export async function exportSlideAsHtml(slide: SlideModule, slideId: string): Pr
     ...findCssAssetUrls(bundledCss),
   ]);
 
-  for (const url of urls) {
-    const absolute = toAbsolute(url);
-    if (!absolute) continue;
-    try {
-      const res = await fetch(absolute);
-      if (!res.ok) continue;
-      const buf = new Uint8Array(await res.arrayBuffer());
-      const name = uniqueAssetName(absolute, usedNames);
-      assets.set(url, { name, bytes: buf });
-    } catch {}
+  const fetched = await Promise.all(
+    [...urls].map(async (url) => {
+      const absolute = toAbsolute(url);
+      if (!absolute) return null;
+      try {
+        const res = await fetch(absolute);
+        if (!res.ok) return null;
+        return { url, absolute, bytes: new Uint8Array(await res.arrayBuffer()) };
+      } catch {
+        return null;
+      }
+    }),
+  );
+  // Names are assigned in input order after all fetches settle so the
+  // generated asset names stay deterministic.
+  for (const entry of fetched) {
+    if (!entry) continue;
+    assets.set(entry.url, { name: uniqueAssetName(entry.absolute, usedNames), bytes: entry.bytes });
   }
 
   const rewrittenPages = pagesHtml.map((html) => rewriteUrls(html, assets, 'html'));
