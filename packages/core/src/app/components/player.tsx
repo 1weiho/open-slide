@@ -3,6 +3,7 @@ import { useClickPageNavigation } from '@/lib/use-click-page-navigation';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
 import type { DesignSystem } from '../lib/design';
+import { openPresenterWindow } from '../lib/presenter-window';
 import type { Page } from '../lib/sdk';
 import type { EntryDirection, StepAggregate, StepController } from '../lib/step-context';
 import type { SlideTransition } from '../lib/transition';
@@ -461,10 +462,4 @@ export function Player({
       )}
     </div>
   );
-}
-
-export function openPresenterWindow(slideId: string) {
-  if (typeof window === 'undefined') return;
-  const url = `${import.meta.env.BASE_URL}s/${encodeURIComponent(slideId)}/presenter`;
-  window.open(url, `open-slide-presenter-${slideId}`, 'popup,width=1280,height=800');
 }

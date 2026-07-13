@@ -9,7 +9,8 @@ import {
   usePresenterChannel,
 } from '../components/present/use-presenter-channel';
 import { SlideCanvas } from '../components/slide-canvas';
-import { isDeckWarmed, markDeckWarmed, SlidePreloadLayer } from '../components/slide-preload-layer';
+import { SlidePreloadLayer } from '../components/slide-preload-layer';
+import { isDeckWarmed, markDeckWarmed } from '../lib/deck-warmth';
 import { SlidePageProvider } from '../lib/page-context';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
 import { type StepController, StepHost } from '../lib/step-context';

@@ -8,7 +8,8 @@ import type { Folder, FolderIcon } from '@/lib/sdk';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import { FolderIconChip, FolderItem } from './folder-item';
-import { IconPicker, PRESET_COLORS } from './icon-picker';
+import { IconPicker } from './icon-picker';
+import { PRESET_COLORS } from './preset-colors';
 import { SidebarFooter } from './sidebar-footer';
 
 export const ALL_SLIDES_ID = '__all__';
