@@ -610,6 +610,11 @@ function VirtualThumbList({
     );
   }, [current, onCurrentPositionChange, pages.length, rowHeight]);
 
+  const onScrollInteractionRef = useRef(onScrollInteraction);
+  useEffect(() => {
+    onScrollInteractionRef.current = onScrollInteraction;
+  }, [onScrollInteraction]);
+
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
@@ -625,25 +630,26 @@ function VirtualThumbList({
       frame = requestAnimationFrame(updateRange);
     };
     const resizeObserver = new ResizeObserver(scheduleUpdate);
+    const handleScrollInteraction = () => onScrollInteractionRef.current();
 
     viewport.addEventListener('scroll', scheduleUpdate, { passive: true });
-    scrollArea?.addEventListener('wheel', onScrollInteraction, { passive: true });
-    scrollArea?.addEventListener('touchstart', onScrollInteraction, { passive: true });
-    scrollArea?.addEventListener('pointerdown', onScrollInteraction, { passive: true });
+    scrollArea?.addEventListener('wheel', handleScrollInteraction, { passive: true });
+    scrollArea?.addEventListener('touchstart', handleScrollInteraction, { passive: true });
+    scrollArea?.addEventListener('pointerdown', handleScrollInteraction, { passive: true });
     resizeObserver.observe(viewport);
     scheduleUpdate();
 
     return () => {
       cancelAnimationFrame(frame);
       viewport.removeEventListener('scroll', scheduleUpdate);
-      scrollArea?.removeEventListener('wheel', onScrollInteraction);
-      scrollArea?.removeEventListener('touchstart', onScrollInteraction);
-      scrollArea?.removeEventListener('pointerdown', onScrollInteraction);
+      scrollArea?.removeEventListener('wheel', handleScrollInteraction);
+      scrollArea?.removeEventListener('touchstart', handleScrollInteraction);
+      scrollArea?.removeEventListener('pointerdown', handleScrollInteraction);
       resizeObserver.disconnect();
       if (viewportRef.current === viewport) viewportRef.current = null;
       onScrollElementsChange(null, null);
     };
-  }, [onScrollElementsChange, onScrollInteraction, updateRange]);
+  }, [onScrollElementsChange, updateRange]);
 
   useEffect(() => {
     const viewport = viewportRef.current;

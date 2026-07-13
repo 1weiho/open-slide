@@ -75,9 +75,11 @@ export function StepHost({
   const registrationsRef = useRef<Tracked[]>([]);
 
   const onAggregateChangeRef = useRef(onAggregateChange);
-  onAggregateChangeRef.current = onAggregateChange;
   const controlledRevealedRef = useRef(controlledRevealed);
-  controlledRevealedRef.current = controlledRevealed;
+  useLayoutEffect(() => {
+    onAggregateChangeRef.current = onAggregateChange;
+    controlledRevealedRef.current = controlledRevealed;
+  }, [onAggregateChange, controlledRevealed]);
 
   const composite = useMemo<StepController>(
     () => ({

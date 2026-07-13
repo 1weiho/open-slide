@@ -22,7 +22,9 @@ export function useDesign(slideId: string): UseDesignReturn {
     loaded: false,
   });
   const slideIdRef = useRef(slideId);
-  slideIdRef.current = slideId;
+  useEffect(() => {
+    slideIdRef.current = slideId;
+  }, [slideId]);
 
   const refresh = useCallback(async () => {
     const id = slideIdRef.current;

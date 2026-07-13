@@ -44,7 +44,9 @@ export function useNotes(slideId: string, index: number, initial: string | undef
   const inflightRef = useRef<AbortController | null>(null);
   const targetRef = useRef<Target>({ slideId, index });
   const valueRef = useRef(value);
-  valueRef.current = value;
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
 
   const cancelTimer = useCallback(() => {
     if (timerRef.current != null) {

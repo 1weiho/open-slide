@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { LanguageToggle } from '@/components/language-toggle';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -86,15 +86,17 @@ export function Sidebar({
   }, [creating]);
 
   const stateRef = useRef({ name: newName, icon: newIcon, iconOpen });
-  stateRef.current = { name: newName, icon: newIcon, iconOpen };
+  useEffect(() => {
+    stateRef.current = { name: newName, icon: newIcon, iconOpen };
+  }, [newName, newIcon, iconOpen]);
 
-  const exitCreate = () => {
+  const exitCreate = useCallback(() => {
     setCreating(false);
     setNewName('');
     setIconOpen(false);
-  };
+  }, []);
 
-  const commitCreate = async () => {
+  const commitCreate = useCallback(async () => {
     const trimmed = stateRef.current.name.trim();
     const icon = stateRef.current.icon;
     if (!trimmed) {
@@ -108,9 +110,13 @@ export function Sidebar({
     } catch {
       toast.error(t.home.toastFolderCreateFailed);
     }
-  };
+  }, [exitCreate, onCreate, t]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: commitCreate reads latest state via stateRef
+  const commitCreateRef = useRef(commitCreate);
+  useEffect(() => {
+    commitCreateRef.current = commitCreate;
+  }, [commitCreate]);
+
   useEffect(() => {
     if (!creating) return;
     const onDown = (e: MouseEvent) => {
@@ -119,7 +125,7 @@ export function Sidebar({
       if (!target) return;
       if (target.closest('[data-folder-create]')) return;
       if (target.closest('[data-slot="popover-content"]')) return;
-      commitCreate();
+      commitCreateRef.current();
     };
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);

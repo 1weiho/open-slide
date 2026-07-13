@@ -684,7 +684,9 @@ export function SlideTransitionLayer({
   const animsRef = useRef<Animation[]>([]);
   const cleanupRef = useRef<(() => void) | null>(null);
   const currentRef = useRef(current);
-  currentRef.current = current;
+  useEffect(() => {
+    currentRef.current = current;
+  }, [current]);
 
   useEffect(() => {
     if (index === currentRef.current) return;

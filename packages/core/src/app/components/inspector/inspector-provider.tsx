@@ -820,7 +820,9 @@ export function InspectorProvider({
   // surfaced via toast inside `commitEdits`; the catch here only
   // swallows the rethrown rejection.
   const commitRef = useRef(commitEdits);
-  commitRef.current = commitEdits;
+  useEffect(() => {
+    commitRef.current = commitEdits;
+  }, [commitEdits]);
   useEffect(() => {
     if (!active) commitRef.current().catch(() => {});
   }, [active]);
@@ -905,7 +907,11 @@ export function InspectorProvider({
         `[data-slide-loc="${selected.line}:${selected.column}"]`,
       );
       if (next && next !== selected.anchor) {
-        setSelected({ ...selected, anchor: next });
+        setSelected((current) =>
+          current?.line === selected.line && current.column === selected.column
+            ? { ...current, anchor: next }
+            : current,
+        );
       }
     };
 
@@ -916,11 +922,10 @@ export function InspectorProvider({
   }, [selected]);
 
   const toggle = useCallback(() => {
-    setActive((a) => {
-      if (a) setSelected(null);
-      return !a;
-    });
-  }, []);
+    const next = !active;
+    if (!next) setSelected(null);
+    setActive(next);
+  }, [active]);
 
   const cancel = useCallback(() => {
     setActive(false);
