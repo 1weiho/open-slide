@@ -33,6 +33,7 @@ export function CommentWidget() {
             </span>
             <button
               type="button"
+              aria-label={t.common.close}
               className="text-muted-foreground hover:text-foreground"
               onClick={() => setOpen(false)}
             >
@@ -60,6 +61,7 @@ export function CommentWidget() {
                     </div>
                     <button
                       type="button"
+                      aria-label={t.inspector.commentDeleteAria}
                       onClick={() => remove(c.id)}
                       className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-red-600"
                       title={t.inspector.commentDeleteAria}

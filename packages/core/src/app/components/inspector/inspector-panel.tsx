@@ -453,6 +453,7 @@ function FontSizeField({
         className="flex-1"
       />
       <NumberField
+        ariaLabel={t.inspector.sizeLabel}
         value={Math.round(snapshot.fontSize)}
         onChange={set}
         min={1}
@@ -572,7 +573,14 @@ function LineHeightField({
         onValueChange={(next) => set((Array.isArray(next) ? next[0] : next) ?? v)}
         className="flex-1"
       />
-      <NumberField value={round2(v)} onChange={set} step={0.05} min={0.5} max={5} />
+      <NumberField
+        ariaLabel={t.inspector.lineHeightLabel}
+        value={round2(v)}
+        onChange={set}
+        step={0.05}
+        min={0.5}
+        max={5}
+      />
     </Field>
   );
 }
@@ -607,6 +615,7 @@ function LetterSpacingField({
         className="flex-1"
       />
       <NumberField
+        ariaLabel={t.inspector.trackingLabel}
         value={round2(snapshot.letterSpacing)}
         onChange={set}
         step={0.1}
@@ -689,7 +698,9 @@ function ColorField({
   return (
     <Field label={label}>
       <label className="relative inline-flex size-8 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border bg-background shadow-xs">
+        <span className="sr-only">{label}</span>
         <span
+          aria-hidden
           className="size-5 rounded-sm"
           style={{
             backgroundColor: dim ? 'transparent' : value,

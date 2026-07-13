@@ -1098,6 +1098,7 @@ function InlineTitleEditor({
           </span>
           <input
             ref={inputRef}
+            aria-label={t.slide.renameSlide}
             size={1}
             value={value}
             disabled={saving}

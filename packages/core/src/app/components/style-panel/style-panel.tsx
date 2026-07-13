@@ -233,7 +233,8 @@ function ColorField({
   return (
     <Field label={label}>
       <label className="relative inline-flex size-8 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border bg-background shadow-xs">
-        <span className="size-5 rounded-sm" style={{ backgroundColor: value }} />
+        <span className="sr-only">{label}</span>
+        <span aria-hidden className="size-5 rounded-sm" style={{ backgroundColor: value }} />
         <input
           type="color"
           value={normalizeHex(value)}
@@ -330,6 +331,7 @@ function SliderField({
         className="flex-1"
       />
       <NumberField
+        ariaLabel={label}
         value={value}
         onChange={onChange}
         min={min}

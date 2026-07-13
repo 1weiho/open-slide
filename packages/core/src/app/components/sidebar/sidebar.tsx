@@ -61,7 +61,7 @@ export function Sidebar({
     if (!ids.includes(fromId) || !ids.includes(toId)) return;
     const next = ids.filter((id) => id !== fromId);
     next.splice(next.indexOf(toId) + (before ? 0 : 1), 0, fromId);
-    if (next.every((id, i) => id === ids[i])) return;
+    if (next.length === ids.length && next.every((id, i) => id === ids[i])) return;
     onReorder(next);
   };
   const [creating, setCreating] = useState(false);

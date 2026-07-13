@@ -28,6 +28,7 @@ export function NumberField({
   max,
   step = 1,
   suffix,
+  ariaLabel,
 }: {
   value: number;
   onChange: (n: number) => void;
@@ -35,11 +36,13 @@ export function NumberField({
   max?: number;
   step?: number;
   suffix?: string;
+  ariaLabel: string;
 }) {
   return (
     <div className="flex h-7 shrink-0 items-center rounded-[5px] border border-border bg-background pr-1.5 transition-colors focus-within:border-foreground/40 focus-within:ring-2 focus-within:ring-ring/30">
       <input
         type="number"
+        aria-label={ariaLabel}
         value={value}
         onChange={(e) => {
           const n = Number(e.target.value);

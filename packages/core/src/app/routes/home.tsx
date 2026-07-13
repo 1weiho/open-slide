@@ -69,6 +69,14 @@ function useSortPref(): [SortKey, (next: SortKey) => void] {
 
 const TITLE_COLLATOR = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
 
+function SortFieldIcon({ sortKey, className }: { sortKey: SortKey; className?: string }) {
+  return sortKey === 'title-asc' || sortKey === 'title-desc' ? (
+    <ArrowDownAZ className={className} aria-hidden />
+  ) : (
+    <Clock className={className} aria-hidden />
+  );
+}
+
 export function Home() {
   const {
     manifest,
@@ -90,11 +98,10 @@ export function Home() {
   const isDraft = selectedId === DRAFT_ID;
   const selectedFolder =
     isAll || isDraft ? null : (manifest.folders.find((f) => f.id === selectedId) ?? null);
-  const visibleSlides = isAll
-    ? slideIds
-    : isDraft
-      ? draftSlides
-      : (slidesByFolder[selectedId] ?? []);
+  const visibleSlides = useMemo(
+    () => (isAll ? slideIds : isDraft ? draftSlides : (slidesByFolder[selectedId] ?? [])),
+    [isAll, isDraft, draftSlides, slidesByFolder, selectedId],
+  );
 
   const title = selectedFolder?.name ?? (isAll ? t.home.slides : t.home.draft);
   const headerIcon = selectedFolder?.icon ?? {
@@ -283,12 +290,6 @@ function SortControl({ value, onChange }: { value: SortKey; onChange: (next: Sor
     'title-asc': t.home.sortByTitleAsc,
     'title-desc': t.home.sortByTitleDesc,
   };
-  const FieldIcon = ({ k, className }: { k: SortKey; className?: string }) =>
-    k === 'title-asc' || k === 'title-desc' ? (
-      <ArrowDownAZ className={className} aria-hidden />
-    ) : (
-      <Clock className={className} aria-hidden />
-    );
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -298,7 +299,7 @@ function SortControl({ value, onChange }: { value: SortKey; onChange: (next: Sor
             aria-label={`${t.home.sortLabel}: ${labels[value]}`}
             className="flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[6px] border border-border bg-background pl-2 pr-1.5 text-[12.5px] font-medium text-foreground outline-none hover:bg-muted focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30"
           >
-            <FieldIcon k={value} className="size-3.5 text-muted-foreground" />
+            <SortFieldIcon sortKey={value} className="size-3.5 text-muted-foreground" />
             <span>{labels[value]}</span>
             <ChevronDown className="size-3 text-muted-foreground" aria-hidden />
           </button>
@@ -313,7 +314,7 @@ function SortControl({ value, onChange }: { value: SortKey; onChange: (next: Sor
               onClick={() => onChange(key)}
               className={cn(active && 'bg-muted text-foreground')}
             >
-              <FieldIcon k={key} className="size-3.5 text-muted-foreground" />
+              <SortFieldIcon sortKey={key} className="size-3.5 text-muted-foreground" />
               <span>{labels[key]}</span>
             </DropdownMenuItem>
           );
