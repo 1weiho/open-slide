@@ -18,7 +18,7 @@ export function PresentProgressBar({ index, total, visible }: Props) {
       )}
     >
       <div
-        className="h-full w-full origin-left bg-[var(--brand,#ef4444)] transition-transform duration-200 ease-out"
+        className="h-full w-full origin-left bg-[var(--brand,#e5484d)] transition-transform duration-200 ease-out"
         style={{ transform: `scaleX(${pct})` }}
       />
     </div>

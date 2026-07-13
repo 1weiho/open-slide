@@ -1,5 +1,69 @@
 # @open-slide/core
 
+## 1.15.2
+
+### Patch Changes
+
+- [#308](https://github.com/1weiho/open-slide/pull/308) [`9782b86`](https://github.com/1weiho/open-slide/commit/9782b86e0b53e499a286a23a90a398d03f6d4026) Thanks [@1weiho](https://github.com/1weiho)! - Declare `use-sync-external-store` as a direct dependency so Vite can resolve and pre-bundle the Base UI shim under pnpm, fixing the missing `useSyncExternalStore` export at runtime.
+
+## 1.15.1
+
+### Patch Changes
+
+- [#306](https://github.com/1weiho/open-slide/pull/306) [`8d2f937`](https://github.com/1weiho/open-slide/commit/8d2f937d34dc6cbe82b542ac75cb34637dbe4413) Thanks [@1weiho](https://github.com/1weiho)! - Pre-bundle the Base UI `use-sync-external-store` shim so the dev server no longer throws a missing `useSyncExternalStore` export.
+
+## 1.15.0
+
+### Minor Changes
+
+- [#303](https://github.com/1weiho/open-slide/pull/303) [`e8cc746`](https://github.com/1weiho/open-slide/commit/e8cc746b4da5f8c6aa9bad351415a25c3821f8de) Thanks [@1weiho](https://github.com/1weiho)! - Migrate the internal UI primitives from Radix UI to Base UI (`@base-ui/react`), dropping the `radix-ui` dependency.
+
+- [#301](https://github.com/1weiho/open-slide/pull/301) [`f4b4672`](https://github.com/1weiho/open-slide/commit/f4b4672d82e718c273d63a1011caa7753d07384b) Thanks [@1weiho](https://github.com/1weiho)! - Retone the app UI to a neutral SaaS palette: flat pure-gray surfaces, crisper labels, refreshed folder colors.
+
+### Patch Changes
+
+- [#304](https://github.com/1weiho/open-slide/pull/304) [`9dbce8d`](https://github.com/1weiho/open-slide/commit/9dbce8d947bca1058b06a2660528a1bef97b0664) Thanks [@1weiho](https://github.com/1weiho)! - Hide the Assets sidebar entry in production builds, where asset management is unavailable.
+
+## 1.14.0
+
+### Minor Changes
+
+- [#296](https://github.com/1weiho/open-slide/pull/296) [`82c8a7c`](https://github.com/1weiho/open-slide/commit/82c8a7ccea30d42f4c983c3cae9525601493ec90) Thanks [@1weiho](https://github.com/1weiho)! - Add a restart button to the sidebar update tooltip that restarts the dev server after an in-app update, keep the tooltip open while updating, and shorten the update-available copy.
+
+### Patch Changes
+
+- [#298](https://github.com/1weiho/open-slide/pull/298) [`97fe094`](https://github.com/1weiho/open-slide/commit/97fe094b7939112a29f4e86a7c22f04f05787fe0) Thanks [@1weiho](https://github.com/1weiho)! - Show an edge control to return to the current slide when its thumbnail is out of view.
+
+- [#299](https://github.com/1weiho/open-slide/pull/299) [`2aa085f`](https://github.com/1weiho/open-slide/commit/2aa085fa5d3fb198c793e6ed4c604c90e31df120) Thanks [@1weiho](https://github.com/1weiho)! - Add search, sorting, usage and file type filters, adjustable grid columns, list view, and asset creation and modification dates to the assets manager.
+
+## 1.13.6
+
+### Patch Changes
+
+- [#292](https://github.com/1weiho/open-slide/pull/292) [`87db8f4`](https://github.com/1weiho/open-slide/commit/87db8f453c5dda12066de786bd1132c7446f01ae) Thanks [@jeremyjordan](https://github.com/jeremyjordan)! - Play a deck's exported `transition` in the read-only build (`showSlideUi: false`) instead of swapping pages instantly.
+
+- [#291](https://github.com/1weiho/open-slide/pull/291) [`0f866d5`](https://github.com/1weiho/open-slide/commit/0f866d54ea58c0ab80a062dbc6922cc96a654b1e) Thanks [@jeremyjordan](https://github.com/jeremyjordan)! - Reveal `<Steps>` one at a time in the read-only build (`showSlideUi: false`) instead of skipping straight to the next slide on Space/Arrow.
+
+## 1.13.5
+
+### Patch Changes
+
+- [#289](https://github.com/1weiho/open-slide/pull/289) [`983743f`](https://github.com/1weiho/open-slide/commit/983743fae3634a35d0aad22514f7efec71694dac) Thanks [@1weiho](https://github.com/1weiho)! - Fix slide content bleeding through the asset loading screen when pages contain revealed steps.
+
+## 1.13.4
+
+### Patch Changes
+
+- [#287](https://github.com/1weiho/open-slide/pull/287) [`c1b89d5`](https://github.com/1weiho/open-slide/commit/c1b89d5c08cf0d3199ec8e5ad810e5e94ca28ee5) Thanks [@1weiho](https://github.com/1weiho)! - Preload every page's images and fonts behind the deck loading screen — slides and presenter views first render with all assets cached, eliminating font flashes and image pop-in during playback.
+
+## 1.13.3
+
+### Patch Changes
+
+- [#284](https://github.com/1weiho/open-slide/pull/284) [`0d4e669`](https://github.com/1weiho/open-slide/commit/0d4e6698aefe043f97c1cf437124dddc18cecabb) Thanks [@1weiho](https://github.com/1weiho)! - Add an all-slides "Slides" view as the default home page, move Draft into the sidebar folders list, and give the mobile home a hamburger menu, folder dropdown, and theme/language toggles.
+
+- [#282](https://github.com/1weiho/open-slide/pull/282) [`1ef7f84`](https://github.com/1weiho/open-slide/commit/1ef7f84f7d435cd61f7c8b4db0853b3ada3739a5) Thanks [@1weiho](https://github.com/1weiho)! - Revert inspector quick activation gestures (Command/Control hold and double-click selection).
+
 ## 1.13.2
 
 ### Patch Changes

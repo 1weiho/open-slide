@@ -130,7 +130,7 @@ export function OverviewGrid({
         </div>
       </div>
       <div ref={gridRef} className="min-h-0 flex-1 overflow-auto px-8 pb-8">
-        <TooltipProvider delayDuration={200}>
+        <TooltipProvider delay={200}>
           <div
             className="grid justify-center gap-5"
             style={{
@@ -225,7 +225,7 @@ function OverviewThumb({
         className={cn(
           'relative w-full overflow-hidden rounded-[4px] ring-1 transition-shadow',
           styles.thumbSurface,
-          isFocused ? 'ring-2 ring-[var(--brand,#ef4444)]' : styles.thumbRing,
+          isFocused ? 'ring-2 ring-[var(--brand,#e5484d)]' : styles.thumbRing,
         )}
         style={{ height: THUMB_H }}
       >
@@ -243,7 +243,7 @@ function OverviewThumb({
         {isCurrent && (
           <span
             aria-hidden
-            className="pointer-events-none absolute top-1.5 right-1.5 rounded-[3px] bg-[var(--brand,#ef4444)] px-1.5 py-0.5 font-mono text-[9.5px] tracking-[0.06em] uppercase text-white"
+            className="pointer-events-none absolute top-1.5 right-1.5 rounded-[3px] bg-[var(--brand,#e5484d)] px-1.5 py-0.5 font-mono text-[9.5px] tracking-[0.06em] uppercase text-white"
           >
             {t.present.nowBadge}
           </span>
@@ -296,15 +296,17 @@ function OverviewIndicator({
 }) {
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <span
-          role="img"
-          aria-label={label}
-          className={cn('flex size-4 items-center justify-center', className)}
-        >
-          <Icon className="size-3.5" strokeWidth={1.9} />
-        </span>
-      </TooltipTrigger>
+      <TooltipTrigger
+        render={
+          <span
+            role="img"
+            aria-label={label}
+            className={cn('flex size-4 items-center justify-center', className)}
+          >
+            <Icon className="size-3.5" strokeWidth={1.9} />
+          </span>
+        }
+      />
       <TooltipContent side="top" sideOffset={6} container={tooltipContainer ?? undefined}>
         {label}
       </TooltipContent>

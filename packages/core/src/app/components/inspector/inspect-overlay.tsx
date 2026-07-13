@@ -16,13 +16,17 @@ const FRAME_MORPH_MS = 180;
 const LAYOUT_TRACK_MS = PANEL_TRANSITION_MS + FRAME_MORPH_MS;
 
 export function InspectOverlay() {
-  const { active, activate, slideId, selected, setSelected, cancel, openCrop } = useInspector();
+  const { active, slideId, selected, setSelected, cancel, openCrop } = useInspector();
   const overlayRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<Highlight | null>(null);
 
   useEffect(() => {
+    if (!active) {
+      setHover(null);
+      return;
+    }
+
     const onKey = (e: KeyboardEvent) => {
-      if (!active) return;
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
@@ -31,66 +35,50 @@ export function InspectOverlay() {
     };
 
     const onMove = (e: PointerEvent) => {
-      if (!active) return;
-      if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) {
-        return setHover(null);
-      }
-      const hit = findInspectorHitAtPoint(e.clientX, e.clientY, slideId);
+      if (!isInspectableEventTarget(e.target)) return setHover(null);
+      const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
+      if (!el) return setHover(null);
+      const hit = findSlideSource(el, slideId, { hostOnly: true });
       if (!hit) return setHover(null);
       setHover({ hit });
     };
 
-    const onMouseDown = (e: MouseEvent) => {
-      if (!active && e.detail < 2) return;
-      if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) return;
-      const hit = findInspectorHitAtPoint(e.clientX, e.clientY, slideId);
-      if (!hit) return;
-      e.preventDefault();
-    };
-
     const onClick = (e: MouseEvent) => {
-      if (!active) return;
-      if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) return;
-      const hit = findInspectorHitAtPoint(e.clientX, e.clientY, slideId);
+      if (!isInspectableEventTarget(e.target)) return;
+      const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
+      if (!el) return;
+      const hit = findSlideSource(el, slideId, { hostOnly: true });
       if (!hit) return;
       e.preventDefault();
       e.stopPropagation();
-      clearTextSelection();
-      activate();
       setSelected({ line: hit.line, column: hit.column, anchor: hit.anchor });
       setHover({ hit });
     };
 
     const onDblClick = (e: MouseEvent) => {
-      if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) return;
-      const hit = findInspectorHitAtPoint(e.clientX, e.clientY, slideId);
+      if (!isInspectableEventTarget(e.target)) return;
+      const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
+      if (!el) return;
+      const hit = findSlideSource(el, slideId, { hostOnly: true });
       if (!hit) return;
+      if (!(hit.anchor instanceof HTMLImageElement)) return;
       e.preventDefault();
       e.stopPropagation();
-      clearTextSelection();
-      if (!active) activate();
       setSelected({ line: hit.line, column: hit.column, anchor: hit.anchor });
-      setHover({ hit });
-      if (active && hit.anchor instanceof HTMLImageElement) openCrop(hit.anchor);
+      openCrop(hit.anchor);
     };
 
     window.addEventListener('pointermove', onMove, true);
-    window.addEventListener('mousedown', onMouseDown, true);
     window.addEventListener('click', onClick, true);
     window.addEventListener('dblclick', onDblClick, true);
     window.addEventListener('keydown', onKey, true);
     return () => {
       window.removeEventListener('pointermove', onMove, true);
-      window.removeEventListener('mousedown', onMouseDown, true);
       window.removeEventListener('click', onClick, true);
       window.removeEventListener('dblclick', onDblClick, true);
       window.removeEventListener('keydown', onKey, true);
     };
-  }, [active, activate, slideId, setSelected, cancel, openCrop]);
-
-  useEffect(() => {
-    if (!active) setHover(null);
-  }, [active]);
+  }, [active, slideId, setSelected, cancel, openCrop]);
 
   const hoverAnchor = hover?.hit.anchor.isConnected ? hover.hit.anchor : null;
   const selectedAnchor = selected?.anchor.isConnected ? selected.anchor : null;
@@ -253,7 +241,7 @@ function ImageActionPanel({
   const { openCrop, openReplace } = useInspector();
   const t = useLocale();
   return (
-    <TooltipProvider delayDuration={200}>
+    <TooltipProvider delay={200}>
       <div
         className={cn(
           'absolute flex items-center gap-0.5 rounded-[8px] border border-border bg-popover p-1 text-popover-foreground shadow-floating',
@@ -268,37 +256,41 @@ function ImageActionPanel({
         }}
       >
         <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              aria-label={t.inspector.replace}
-              onClick={(e) => {
-                e.stopPropagation();
-                openReplace(anchor);
-              }}
-              className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-            >
-              <ImageIcon className="size-3.5" />
-            </button>
-          </TooltipTrigger>
+          <TooltipTrigger
+            render={
+              <button
+                type="button"
+                aria-label={t.inspector.replace}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openReplace(anchor);
+                }}
+                className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+              >
+                <ImageIcon className="size-3.5" />
+              </button>
+            }
+          />
           <TooltipContent side="bottom" data-inspector-ui>
             {t.inspector.replace}
           </TooltipContent>
         </Tooltip>
         <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              aria-label={t.inspector.crop}
-              onClick={(e) => {
-                e.stopPropagation();
-                openCrop(anchor as HTMLImageElement);
-              }}
-              className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-            >
-              <Crop className="size-3.5" />
-            </button>
-          </TooltipTrigger>
+          <TooltipTrigger
+            render={
+              <button
+                type="button"
+                aria-label={t.inspector.crop}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openCrop(anchor as HTMLImageElement);
+                }}
+                className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+              >
+                <Crop className="size-3.5" />
+              </button>
+            }
+          />
           <TooltipContent side="bottom" data-inspector-ui>
             {t.inspector.crop}
           </TooltipContent>
@@ -318,6 +310,16 @@ function sameRect(a: RelRect | null, b: RelRect): boolean {
   );
 }
 
+// Only inspect events that originate inside the slide root. Portaled UI
+// (dialogs, tooltips, toasts) mounts on `document.body`, outside the root;
+// without this guard the capture-phase window listeners swallow clicks
+// meant for a dialog and select the slide element behind it instead.
+function isInspectableEventTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  if (target.closest('[data-inspector-ui]')) return false;
+  return !!target.closest('[data-inspector-root]');
+}
+
 function pickElement(x: number, y: number): HTMLElement | null {
   const stack = document.elementsFromPoint(x, y);
   for (const el of stack) {
@@ -327,17 +329,6 @@ function pickElement(x: number, y: number): HTMLElement | null {
     return el;
   }
   return null;
-}
-
-function findInspectorHitAtPoint(x: number, y: number, slideId: string): SlideSourceHit | null {
-  const el = pickInspectorTarget(pickElement(x, y));
-  if (!el) return null;
-  return findSlideSource(el, slideId, { hostOnly: true });
-}
-
-function clearTextSelection() {
-  const selection = window.getSelection();
-  if (selection && !selection.isCollapsed) selection.removeAllRanges();
 }
 
 const INLINE_TEXT_TAGS = new Set([

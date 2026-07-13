@@ -33,21 +33,21 @@ export function ThemeToggle() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[140px]">
         <DropdownMenuItem
-          onSelect={() => setTheme('light')}
+          onClick={() => setTheme('light')}
           data-active={mounted && theme === 'light'}
         >
           <Sun />
           {t.themeToggle.light}
         </DropdownMenuItem>
         <DropdownMenuItem
-          onSelect={() => setTheme('dark')}
+          onClick={() => setTheme('dark')}
           data-active={mounted && theme === 'dark'}
         >
           <Moon />
           {t.themeToggle.dark}
         </DropdownMenuItem>
         <DropdownMenuItem
-          onSelect={() => setTheme('system')}
+          onClick={() => setTheme('system')}
           data-active={mounted && theme === 'system'}
         >
           <Monitor />

@@ -102,7 +102,7 @@ export function ThemeDetail({ themeId, onBack }: { themeId: string; onBack: () =
               {!theme.hasDemo ? (
                 <NoDemoLargeState />
               ) : !demo ? (
-                <div className="grid h-full w-full place-items-center text-[11px] tracking-[0.16em] uppercase text-muted-foreground/60">
+                <div className="grid h-full w-full place-items-center text-[11px] tracking-[0.08em] uppercase text-muted-foreground/60">
                   {t.common.loading}
                 </div>
               ) : Current ? (
@@ -236,7 +236,7 @@ function ThemeSlideCard({ id }: { id: string }) {
             </SlideCanvas>
           </div>
         ) : (
-          <div className="grid h-full w-full place-items-center text-[10px] tracking-[0.16em] uppercase text-muted-foreground/60">
+          <div className="grid h-full w-full place-items-center text-[10px] tracking-[0.08em] uppercase text-muted-foreground/60">
             {t.common.loading}
           </div>
         )}

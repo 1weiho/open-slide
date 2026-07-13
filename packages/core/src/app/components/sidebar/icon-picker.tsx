@@ -4,14 +4,14 @@ import type { FolderIcon } from '@/lib/sdk';
 import { useLocale } from '@/lib/use-locale';
 
 export const PRESET_COLORS = [
-  '#c0392b', // vermillion
-  '#b8743e', // ochre
-  '#6f7a3a', // olive
-  '#2f6a4f', // forest
-  '#3a5a7c', // ink blue
-  '#6b4675', // plum
-  '#a3543b', // terracotta
-  '#3a3a3a', // graphite
+  '#e5484d', // red
+  '#f76b15', // orange
+  '#ffb224', // amber
+  '#30a46c', // green
+  '#12a594', // teal
+  '#0091ff', // blue
+  '#6e56cf', // violet
+  '#60646c', // gray
 ];
 
 export function IconPicker({

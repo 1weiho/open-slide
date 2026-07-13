@@ -42,6 +42,8 @@ export type Locale = {
     themes: string;
     assets: string;
     folders: string;
+    slides: string;
+    menu: string;
     newFolder: string;
     folderName: string;
     updateAvailable: string;
@@ -49,6 +51,9 @@ export type Locale = {
     updatingPackage: string;
     updatePackageDone: string;
     updatePackageFailed: string;
+    restartServer: string;
+    restartingServer: string;
+    restartServerFailed: string;
     changeIcon: string;
     iconEmojiTab: string;
     iconColorTab: string;
@@ -129,6 +134,7 @@ export type Locale = {
     assetsTab: string;
     renameSlide: string;
     loadingEyebrow: string;
+    loadingAssetsEyebrow: string;
     emptyEyebrow: string;
     nothingToShow: string;
     emptyHintPrefix: string;
@@ -144,6 +150,8 @@ export type Locale = {
     lastSlide: string;
     endOfDeck: string;
     speakerNotes: string;
+    notesTextSmaller: string;
+    notesTextLarger: string;
     noNotesPrefix: string;
     noNotesSuffix: string;
     blackScreen: string;
@@ -159,6 +167,7 @@ export type Locale = {
     jump: string;
     /** template: "Loading {slideId}…" */
     loadingSlide: string;
+    loadingAssets: string;
   };
 
   present: {
@@ -287,7 +296,37 @@ export type Locale = {
     scopeGlobal: string;
     /** templates: "{count} file" / "{count} files" */
     fileCount: Plural;
+    createdAt: string;
+    modifiedAt: string;
+    nameColumn: string;
+    typeColumn: string;
+    sizeColumn: string;
+    statusColumn: string;
+    sortAria: string;
+    /** template: "Sort by {column}" */
+    sortByColumn: string;
+    sortAscending: string;
+    sortDescending: string;
+    assetSearchPlaceholder: string;
+    clearAssetSearch: string;
+    usageFilterAria: string;
+    usageAll: string;
+    usageUsed: string;
     usageUnused: string;
+    typeFilterAria: string;
+    typeAll: string;
+    typeImage: string;
+    typeFont: string;
+    typeVideo: string;
+    typeOther: string;
+    gridViewAria: string;
+    listViewAria: string;
+    gridColumnsAria: string;
+    /** template: "{count} columns" */
+    gridColumnsValue: string;
+    noMatchingAssets: string;
+    noMatchingAssetsHint: string;
+    clearFilters: string;
     searchLogos: string;
     upload: string;
     dropToUpload: string;
@@ -372,6 +411,10 @@ export type Locale = {
     transitionIndicator: string;
     stepsIndicator: string;
     overviewAria: string;
+    /** template: "Scroll up to current page {n}" */
+    scrollUpToCurrentPage: string;
+    /** template: "Scroll down to current page {n}" */
+    scrollDownToCurrentPage: string;
   };
 
   pdfToast: {
