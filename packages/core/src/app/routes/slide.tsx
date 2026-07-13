@@ -1099,6 +1099,7 @@ function InlineTitleEditor({
           <input
             ref={inputRef}
             size={1}
+            aria-label={t.slide.renameSlide}
             value={value}
             disabled={saving}
             onChange={(e) => setValue(e.target.value)}

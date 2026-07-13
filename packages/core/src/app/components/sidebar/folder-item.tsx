@@ -202,6 +202,7 @@ export function FolderItem({
 
       {renaming && row.kind === 'folder' ? (
         <input
+          aria-label={t.home.folderName}
           value={draftName}
           onChange={(e) => setDraftName(e.target.value)}
           onBlur={commitRename}

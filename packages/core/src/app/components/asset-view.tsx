@@ -1126,6 +1126,7 @@ function RenameAsset({
         </div>
         <input
           ref={inputRef}
+          aria-label={t.common.rename}
           value={value}
           disabled={saving}
           onChange={(event) => setValue(event.target.value)}
@@ -1176,6 +1177,7 @@ function RenameAsset({
       <div className="border-t bg-card px-2 py-2">
         <input
           ref={inputRef}
+          aria-label={t.common.rename}
           value={value}
           disabled={saving}
           onChange={(e) => setValue(e.target.value)}

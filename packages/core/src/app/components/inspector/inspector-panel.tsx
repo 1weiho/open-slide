@@ -458,6 +458,7 @@ function FontSizeField({
         min={1}
         max={400}
         suffix="px"
+        ariaLabel={t.inspector.sizeLabel}
       />
     </Field>
   );
@@ -572,7 +573,14 @@ function LineHeightField({
         onValueChange={(next) => set((Array.isArray(next) ? next[0] : next) ?? v)}
         className="flex-1"
       />
-      <NumberField value={round2(v)} onChange={set} step={0.05} min={0.5} max={5} />
+      <NumberField
+        value={round2(v)}
+        onChange={set}
+        step={0.05}
+        min={0.5}
+        max={5}
+        ariaLabel={t.inspector.lineHeightLabel}
+      />
     </Field>
   );
 }
@@ -613,6 +621,7 @@ function LetterSpacingField({
         min={-20}
         max={50}
         suffix="px"
+        ariaLabel={t.inspector.trackingLabel}
       />
     </Field>
   );
@@ -702,6 +711,7 @@ function ColorField({
         />
         <input
           type="color"
+          aria-label={label}
           value={value}
           onChange={(e) => {
             setDraft(e.target.value);
@@ -712,6 +722,7 @@ function ColorField({
       </label>
       <Input
         type="text"
+        aria-label={label}
         value={draft}
         onChange={(e) => {
           setDraft(e.target.value);

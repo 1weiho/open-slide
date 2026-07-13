@@ -236,6 +236,7 @@ function ColorField({
         <span className="size-5 rounded-sm" style={{ backgroundColor: value }} />
         <input
           type="color"
+          aria-label={label}
           value={normalizeHex(value)}
           onChange={(e) => onChange(e.target.value)}
           className="absolute inset-0 cursor-pointer opacity-0"
@@ -243,6 +244,7 @@ function ColorField({
       </label>
       <Input
         type="text"
+        aria-label={label}
         value={hexDraft}
         onChange={(e) => {
           const v = e.target.value;
@@ -336,6 +338,7 @@ function SliderField({
         max={max}
         step={step}
         suffix={suffix}
+        ariaLabel={label}
       />
     </Field>
   );
