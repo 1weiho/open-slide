@@ -39,7 +39,7 @@ export function useDesignPanelState(): DesignCtx {
 }
 
 function clone<T>(d: T): T {
-  return JSON.parse(JSON.stringify(d)) as T;
+  return structuredClone(d);
 }
 
 export function DesignProvider({ slideId, children }: { slideId: string; children: ReactNode }) {
