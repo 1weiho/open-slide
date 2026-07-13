@@ -918,10 +918,11 @@ export function InspectorProvider({
   }, [selected]);
 
   const toggle = useCallback(() => {
-    setActive((a) => {
-      if (a) setSelected(null);
-      return !a;
-    });
+    // Selection is already null whenever the inspector is inactive, so
+    // clearing on both toggle directions is equivalent to clearing only
+    // on deactivate — and keeps the updater pure.
+    setActive((a) => !a);
+    setSelected(null);
   }, []);
 
   const cancel = useCallback(() => {
