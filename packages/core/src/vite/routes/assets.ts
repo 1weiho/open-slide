@@ -206,20 +206,33 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
           const chunks: Buffer[] = [];
           let total = 0;
           let oversized = false;
+          let ended = false;
           await new Promise<void>((resolve, reject) => {
             req.on('data', (c: Buffer) => {
+              // Once over the limit, stop buffering (so memory stays bounded) but
+              // keep draining the body to its end instead of destroying the
+              // request — req.destroy() can tear down the socket before the 413
+              // response is written, turning it into a connection error.
+              if (oversized) return;
               total += c.length;
               if (total > ASSET_MAX_BYTES) {
                 oversized = true;
-                req.destroy();
+                chunks.length = 0;
                 return;
               }
               chunks.push(c);
             });
-            req.on('end', () => resolve());
+            req.on('end', () => {
+              ended = true;
+              resolve();
+            });
             req.on('error', reject);
+            // A client abort emits 'close' without 'end'/'error'; resolve here so
+            // the request doesn't hang forever.
+            req.on('close', () => resolve());
           });
           if (oversized) return json(res, 413, { error: 'file too large' });
+          if (!ended) return json(res, 400, { error: 'upload interrupted' });
 
           await fs.writeFile(file, Buffer.concat(chunks));
           const stat = await fs.stat(file);

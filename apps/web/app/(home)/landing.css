@@ -253,3 +253,15 @@ html.light .os-landing .vercel-oss-badge {
   outline-offset: 3px;
   border-radius: 6px;
 }
+
+/* Respect prefers-reduced-motion: stop the looping marquee/caret animations and
+   collapse the rest to their end state instead of running keyframes. */
+@media (prefers-reduced-motion: reduce) {
+  .os-landing *,
+  .os-landing *::before,
+  .os-landing *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

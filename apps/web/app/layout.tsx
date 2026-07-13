@@ -67,14 +67,9 @@ export const metadata: Metadata = {
     url: siteUrl,
     siteName: appName,
     locale: 'en_US',
-    images: [
-      {
-        url: '/opengraph-image.png',
-        width: 1200,
-        height: 630,
-        alt: `${appName} — React-first slide framework for AI agents`,
-      },
-    ],
+    // og:image (and its dimensions) are emitted automatically from the
+    // app/opengraph-image.png file convention; alt comes from the adjacent
+    // opengraph-image.alt.txt. Declaring images here too would duplicate the tag.
   },
   twitter: {
     card: 'summary_large_image',
@@ -94,10 +89,8 @@ export const metadata: Metadata = {
       'max-video-preview': -1,
     },
   },
-  icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
-  },
+  // favicon link is emitted automatically from the app/favicon.ico file
+  // convention; declaring icons here too would duplicate the <link rel="icon">.
 };
 
 export const viewport: Viewport = {

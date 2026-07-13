@@ -1,7 +1,7 @@
 'use client';
 
 import { useTheme } from 'next-themes';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type Option = {
   value: 'system' | 'light' | 'dark';
@@ -18,12 +18,42 @@ const OPTIONS: Option[] = [
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const btnRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const current = mounted ? (theme ?? 'system') : 'system';
+  const currentIndex = Math.max(
+    0,
+    OPTIONS.findIndex((o) => o.value === current),
+  );
+
+  // Roving tabindex: only the selected radio is in the tab order; arrow keys
+  // move selection (and focus) through the group with wraparound, per the ARIA
+  // radiogroup pattern.
+  const moveTo = (index: number) => {
+    const next = (index + OPTIONS.length) % OPTIONS.length;
+    setTheme(OPTIONS[next].value);
+    btnRefs.current[next]?.focus();
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      moveTo(index + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      moveTo(index - 1);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      moveTo(0);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      moveTo(OPTIONS.length - 1);
+    }
+  };
 
   return (
     <div
@@ -31,17 +61,22 @@ export function ThemeToggle() {
       aria-label="Theme"
       className="inline-flex items-center gap-0.5 h-8 p-0.5 rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]/60"
     >
-      {OPTIONS.map((opt) => {
+      {OPTIONS.map((opt, index) => {
         const active = current === opt.value;
         return (
           <button
             key={opt.value}
+            ref={(el) => {
+              btnRefs.current[index] = el;
+            }}
             type="button"
             role="radio"
             aria-checked={active}
             aria-label={opt.label}
             title={opt.label}
+            tabIndex={index === currentIndex ? 0 : -1}
             onClick={() => setTheme(opt.value)}
+            onKeyDown={(e) => onKeyDown(e, index)}
             className={
               'inline-flex items-center justify-center h-7 w-7 rounded-full transition-colors ' +
               (active

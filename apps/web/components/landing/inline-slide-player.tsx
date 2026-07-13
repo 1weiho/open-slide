@@ -59,6 +59,13 @@ export function InlineSlidePlayer({ index, onIndexChange }: Props) {
   return (
     <div
       ref={rootRef}
+      role="group"
+      // The slide player is a focusable, keyboard-navigable widget: without
+      // tabIndex the div can never receive focus and the onKeyDown handler
+      // (arrow/space/page navigation) is dead. role is also required for
+      // aria-roledescription to be valid.
+      // biome-ignore lint/a11y/noNoninteractiveTabindex: intentional — focusable keyboard navigation surface
+      tabIndex={0}
       onKeyDown={onKeyDown}
       aria-roledescription="slide player"
       aria-label={`Slide ${index + 1} of ${count}`}

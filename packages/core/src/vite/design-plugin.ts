@@ -126,6 +126,7 @@ export function mergeDesign(base: DesignSystem, patch: Partial<DesignSystem>): D
   const out = JSON.parse(JSON.stringify(base)) as DesignSystem;
   const apply = (target: Record<string, unknown>, src: Record<string, unknown>) => {
     for (const [k, v] of Object.entries(src)) {
+      if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
       if (isPlainObject(v) && isPlainObject(target[k])) {
         apply(target[k] as Record<string, unknown>, v);
       } else {

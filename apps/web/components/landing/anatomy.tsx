@@ -1,5 +1,6 @@
 'use client';
 
+import { useReducedMotion } from 'motion/react';
 import { useEffect, useState } from 'react';
 
 type Variant = {
@@ -57,10 +58,13 @@ const CHANGING_LINES = new Set([2, 3, 4]);
 
 export function Anatomy() {
   const [i, setI] = useState(0);
+  const reducedMotion = useReducedMotion();
   useEffect(() => {
+    // Don't auto-cycle when the user prefers reduced motion.
+    if (reducedMotion) return;
     const id = setInterval(() => setI((v) => (v + 1) % variants.length), CYCLE_MS);
     return () => clearInterval(id);
-  }, []);
+  }, [reducedMotion]);
 
   const v = variants[i];
   const lines = buildCode(v);

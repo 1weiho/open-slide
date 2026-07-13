@@ -1,5 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import { applyEdit, safeAssetIdentifier } from './edit-ops.ts';
+import { applyEdit, safeAssetIdentifier, splicesConflict } from './edit-ops.ts';
+
+describe('splicesConflict', () => {
+  const s = (from: number, to: number) => ({ from, to, text: '' });
+
+  it('flags ranges that share characters', () => {
+    expect(splicesConflict(s(0, 5), s(3, 8))).toBe(true);
+  });
+
+  it('allows disjoint and touching ranges', () => {
+    expect(splicesConflict(s(0, 5), s(5, 10))).toBe(false);
+    expect(splicesConflict(s(0, 5), s(10, 12))).toBe(false);
+  });
+
+  it('flags a zero-width insert nested inside a range', () => {
+    expect(splicesConflict(s(3, 3), s(0, 5))).toBe(true);
+    expect(splicesConflict(s(0, 5), s(3, 3))).toBe(true);
+  });
+
+  it('allows a zero-width insert at a range boundary or a shared point', () => {
+    expect(splicesConflict(s(5, 5), s(0, 5))).toBe(false);
+    expect(splicesConflict(s(0, 0), s(0, 5))).toBe(false);
+    expect(splicesConflict(s(4, 4), s(4, 4))).toBe(false);
+  });
+});
 
 describe('applyEdit / set-style', () => {
   // Every JSX opening tag in these synthetic sources sits at column 0;
@@ -1015,6 +1039,26 @@ describe('applyEdit / set-attr-asset', () => {
     // No duplicate import added.
     const occurrences = r.source.match(/from '\.\/assets\/photo\.png'/g) ?? [];
     expect(occurrences.length).toBe(1);
+  });
+
+  it('emits a single import for two ops on the same new asset path', () => {
+    const src = [
+      "import logo from './assets/logo.svg';",
+      'export default [() => (',
+      '<img src={logo} />',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 3, 0, [
+      { kind: 'set-attr-asset', attr: 'src', assetPath: './assets/photo.png' },
+      { kind: 'set-attr-asset', attr: 'poster', assetPath: './assets/photo.png' },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    // Both attributes point at the shared identifier, with only one import.
+    const importOccurrences = r.source.match(/import \w+ from '\.\/assets\/photo\.png'/g) ?? [];
+    expect(importOccurrences.length).toBe(1);
+    expect(r.source).toContain('src={photo}');
+    expect(r.source).toContain('poster={photo}');
   });
 
   it('inserts a fresh src attribute on an <img> that has none', () => {

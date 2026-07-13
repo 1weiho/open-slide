@@ -56,7 +56,12 @@ async function linkOrCopy(relSrc: string, dst: string): Promise<void> {
 
 async function materializeTemplateLinks(target: string): Promise<void> {
   const claudeMd = join(target, 'CLAUDE.md');
-  if (!existsSync(claudeMd) && existsSync(join(target, 'AGENTS.md'))) {
+  // Always re-materialize from AGENTS.md when present (don't gate on existence):
+  // cp() already copied the template's CLAUDE.md, which on a Windows checkout
+  // (core.symlinks=false) is the symlink's text placeholder "AGENTS.md" rather
+  // than a real file, so an existence check would skip the repair. linkOrCopy
+  // rm's the destination first, so this is safe and idempotent on every platform.
+  if (existsSync(join(target, 'AGENTS.md'))) {
     await linkOrCopy('AGENTS.md', claudeMd);
   }
 

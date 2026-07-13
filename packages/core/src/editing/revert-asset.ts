@@ -9,6 +9,7 @@ import {
   readJsxStringAttr,
   type Splice,
   spliceRange,
+  splicesConflict,
 } from './edit-ops.ts';
 
 type ImgSrcUse = { element: t.JSXElement; identNode: t.Identifier };
@@ -181,7 +182,11 @@ export function applyRevertAsset(source: string, assetPath: string): ApplyEditRe
   const importNode = target.node;
   const importFrom = importNode.start ?? 0;
   let importTo = importNode.end ?? 0;
-  if (source[importTo] === '\n') importTo += 1;
+  // Consume the trailing newline so the removed import doesn't leave a blank
+  // line — handle CRLF (\r\n) as well as LF so Windows-authored files don't
+  // keep a stray \r.
+  if (source[importTo] === '\r' && source[importTo + 1] === '\n') importTo += 2;
+  else if (source[importTo] === '\n') importTo += 1;
   splices.push({ from: importFrom, to: importTo, text: '' });
 
   const ensureSplice = planEnsureImagePlaceholderImport(ast);
@@ -190,6 +195,15 @@ export function applyRevertAsset(source: string, assetPath: string): ApplyEditRe
   if (splices.length === 0) return { ok: true, source };
 
   splices.sort((a, b) => b.from - a.from);
+  // Reject any conflicting splice pair (all pairs, so a nested zero-width insert
+  // can't hide a conflict) before applying by reverse-`from` slicing.
+  for (let i = 0; i < splices.length; i++) {
+    for (let j = i + 1; j < splices.length; j++) {
+      if (splicesConflict(splices[i], splices[j])) {
+        return { ok: false, status: 422, error: 'revert ops overlap' };
+      }
+    }
+  }
   let next = source;
   for (const sp of splices) {
     next = next.slice(0, sp.from) + sp.text + next.slice(sp.to);

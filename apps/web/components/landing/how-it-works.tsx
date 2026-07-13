@@ -48,7 +48,9 @@ const steps: Step[] = [
   },
 ];
 
-const SLASH_COMMAND = /\/[a-z][a-z-]*/g;
+// Only highlight a slash command at the start of the line or after whitespace,
+// so a path segment like the "/cli" in "@open-slide/cli" isn't mistaken for one.
+const SLASH_COMMAND = /(?<=^|\s)\/[a-z][a-z-]*/g;
 
 function renderLine(line: string) {
   const parts: ReactNode[] = [];

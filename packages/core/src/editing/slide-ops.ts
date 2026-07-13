@@ -207,45 +207,71 @@ function escapeSingleQuoted(s: string): string {
  */
 export function updateMetaTitleInSource(source: string, title: string): string | null {
   const newLiteral = `'${escapeSingleQuoted(title)}'`;
+  let ast: unknown;
+  try {
+    ast = babelParse(source, {
+      sourceType: 'module',
+      plugins: ['typescript', 'jsx'],
+      errorRecovery: true,
+    });
+  } catch {
+    return null;
+  }
 
-  const metaStart = source.search(/export\s+const\s+meta\b/);
-  if (metaStart !== -1) {
-    const eqIdx = source.indexOf('=', metaStart);
-    if (eqIdx === -1) return null;
-    const openBrace = source.indexOf('{', eqIdx);
-    if (openBrace === -1) return null;
+  const body = (ast as { program?: { body?: Array<Record<string, unknown>> } }).program?.body ?? [];
+  let metaExport: Record<string, unknown> | undefined;
+  let metaInit: Record<string, unknown> | undefined;
 
-    let depth = 0;
-    let closeBrace = -1;
-    for (let i = openBrace; i < source.length; i++) {
-      const ch = source[i];
-      if (ch === '{') depth++;
-      else if (ch === '}') {
-        depth--;
-        if (depth === 0) {
-          closeBrace = i;
-          break;
-        }
+  for (const stmt of body) {
+    if (stmt.type !== 'ExportNamedDeclaration') continue;
+    const decl = stmt.declaration as Record<string, unknown> | undefined;
+    if (!decl || decl.type !== 'VariableDeclaration') continue;
+    const declarations = (decl.declarations as Array<Record<string, unknown>> | undefined) ?? [];
+    for (const d of declarations) {
+      const id = d.id as Record<string, unknown> | undefined;
+      if (!id || id.type !== 'Identifier' || id.name !== 'meta') continue;
+      metaExport = stmt;
+      metaInit = unwrapExpression(d.init as Record<string, unknown> | undefined);
+      break;
+    }
+    if (metaExport) break;
+  }
+
+  if (metaExport && metaInit && metaInit.type === 'ObjectExpression') {
+    const properties = (metaInit.properties as Array<Record<string, unknown>> | undefined) ?? [];
+    let titleProp: Record<string, unknown> | undefined;
+    for (const property of properties) {
+      if (property.type !== 'ObjectProperty' || property.computed) continue;
+      const key = property.key as Record<string, unknown> | undefined;
+      const keyName =
+        key?.type === 'Identifier'
+          ? key.name
+          : key?.type === 'StringLiteral'
+            ? key.value
+            : undefined;
+      if (keyName === 'title') {
+        titleProp = property;
+        break;
       }
     }
-    if (closeBrace === -1) return null;
 
-    const body = source.slice(openBrace + 1, closeBrace);
-    const titleRe = /(^|[\s,{])(title\s*:\s*)(['"`])((?:\\.|(?!\3).)*)\3/;
-    const match = body.match(titleRe);
-    if (match) {
-      const newBody = body.replace(titleRe, `${match[1]}${match[2]}${newLiteral}`);
-      return source.slice(0, openBrace + 1) + newBody + source.slice(closeBrace);
+    if (titleProp) {
+      const value = titleProp.value as Record<string, unknown> | undefined;
+      if (value && typeof value.start === 'number' && typeof value.end === 'number') {
+        return source.slice(0, value.start) + newLiteral + source.slice(value.end);
+      }
     }
 
-    // No title yet — inject as the first property, copying the indentation of
-    // the first existing property (or a sensible default for an empty object).
-    const firstIndentMatch = body.match(/\n([ \t]+)\S/);
+    // No title property, inject it as the first property
+    const openBrace = metaInit.start as number;
+    const closeBrace = metaInit.end as number;
+    const objectBody = source.slice(openBrace + 1, closeBrace);
+    const firstIndentMatch = objectBody.match(/\n([ \t]+)\S/);
     const indent = firstIndentMatch ? firstIndentMatch[1] : '  ';
-    const trimmedBody = body.replace(/^\s*\n?/, '');
+    const trimmedBody = objectBody.replace(/^\s*\n?/, '');
     const needsSeparator = trimmedBody.trim().length > 0;
     const insertion = `\n${indent}title: ${newLiteral}${needsSeparator ? ',' : ''}`;
-    return source.slice(0, openBrace + 1) + insertion + body + source.slice(closeBrace);
+    return source.slice(0, openBrace + 1) + insertion + objectBody + source.slice(closeBrace);
   }
 
   const exportDefaultIdx = source.search(/export\s+default\b/);
@@ -407,6 +433,10 @@ function findNotesArray(source: string): NotesArrayInfo | null | 'invalid' {
  * is too surprising to touch safely.
  */
 export function reorderNotesArrayInSource(source: string, order: number[]): string | null {
+  // `order` maps new positions to old indices. This intentionally tolerates
+  // non-permutation orders (duplicate/dropped indices): out-of-range picks
+  // become `undefined` and trailing `undefined` is trimmed, so e.g. [1, 1] over
+  // empty notes collapses to []. Only reject clearly invalid indices.
   for (const idx of order) {
     if (!Number.isInteger(idx) || idx < 0) return null;
   }

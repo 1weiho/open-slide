@@ -14,7 +14,7 @@ import {
   updateMetaTitleInSource,
   validateSlideName,
 } from '../../editing/slide-ops.ts';
-import { readManifest, writeManifest } from '../../files/folders.ts';
+import { updateManifest } from '../../files/folders.ts';
 import { validateMutationRequest } from '../../http/request-guard.ts';
 import { type ApiContext, json, readBody } from './context.ts';
 
@@ -149,12 +149,12 @@ export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): voi
         const duplicated = await duplicateSlideDir(ctx.slidesRoot, slideId, body.newId);
         if (!duplicated.ok) return json(res, duplicated.status, { error: duplicated.error });
 
-        const manifest = await readManifest(ctx.manifestPath);
-        const folderId = manifest.assignments[slideId];
-        if (folderId) {
+        await updateManifest(ctx.manifestPath, (manifest) => {
+          const folderId = manifest.assignments[slideId];
+          if (!folderId) return { write: false, status: 200, body: null };
           manifest.assignments[duplicated.slideId] = folderId;
-          await writeManifest(ctx.manifestPath, manifest);
-        }
+          return { write: true, status: 200, body: null };
+        });
         return json(res, 200, { ok: true, slideId: duplicated.slideId });
       }
 
@@ -206,9 +206,10 @@ export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): voi
         const removed = await rmSlideDir(ctx.slidesRoot, slideId);
         if (!removed) return json(res, 404, { error: 'slide not found' });
 
-        const manifest = await readManifest(ctx.manifestPath);
-        delete manifest.assignments[slideId];
-        await writeManifest(ctx.manifestPath, manifest);
+        await updateManifest(ctx.manifestPath, (manifest) => {
+          delete manifest.assignments[slideId];
+          return { write: true, status: 200, body: null };
+        });
         return json(res, 200, { ok: true });
       }
 

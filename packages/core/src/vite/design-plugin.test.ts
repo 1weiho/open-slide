@@ -89,6 +89,20 @@ describe('mergeDesign', () => {
     });
     expect(JSON.stringify(defaultDesign)).toBe(before);
   });
+
+  it('does not pollute Object.prototype via __proto__ in the patch', () => {
+    const patch = JSON.parse('{"__proto__":{"polluted":"yes"}}') as Partial<DesignSystem>;
+    mergeDesign(defaultDesign, patch);
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+  });
+
+  it('ignores constructor/prototype keys without throwing', () => {
+    const patch = JSON.parse(
+      '{"constructor":{"prototype":{"polluted":"yes"}}}',
+    ) as Partial<DesignSystem>;
+    expect(() => mergeDesign(defaultDesign, patch)).not.toThrow();
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+  });
 });
 
 describe('applyDesignWrite — slide with existing design', () => {

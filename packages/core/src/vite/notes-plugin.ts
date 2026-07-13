@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import { parse as babelParse } from '@babel/parser';
 import * as t from '@babel/types';
-import type { Plugin, ViteDevServer } from 'vite';
+import { normalizePath, type Plugin, type ViteDevServer } from 'vite';
 import { validateMutationRequest } from '../http/request-guard.ts';
 import { json, readBody, resolveSlidePath } from './routes/context.ts';
 
@@ -90,8 +90,12 @@ function findInsertionOffset(ast: t.File, source: string): number {
   return source.length;
 }
 
+// A note index aligns with a slide page; cap it so a bogus huge index can't
+// drive the padding loops below into allocating a giant array (OOM).
+const MAX_NOTES_INDEX = 10_000;
+
 export function applyNotesEdit(source: string, index: number, text: string): ApplyNotesEditResult {
-  if (!Number.isInteger(index) || index < 0) {
+  if (!Number.isInteger(index) || index < 0 || index > MAX_NOTES_INDEX) {
     return { ok: false, status: 400, error: 'invalid index' };
   }
 
@@ -167,9 +171,10 @@ export function notesPlugin(opts: NotesPluginOptions): Plugin {
     name: 'open-slide:notes',
     apply: 'serve',
     handleHotUpdate(ctx) {
-      const ts = recentWrites.get(ctx.file);
+      const key = normalizePath(ctx.file);
+      const ts = recentWrites.get(key);
       if (ts != null && Date.now() - ts < RECENT_WRITE_WINDOW_MS) {
-        recentWrites.delete(ctx.file);
+        recentWrites.delete(key);
         return [];
       }
       return undefined;
@@ -201,7 +206,9 @@ export function notesPlugin(opts: NotesPluginOptions): Plugin {
           if (!result.ok) return json(res, result.status, { error: result.error });
           const changed = result.source !== source;
           if (changed) {
-            recentWrites.set(file, Date.now());
+            // Key by Vite-normalized (forward-slash) path so handleHotUpdate,
+            // which receives an already-normalized ctx.file, matches on Windows.
+            recentWrites.set(normalizePath(file), Date.now());
             await fs.writeFile(file, result.source, 'utf8');
           }
           return json(res, 200, { ok: true, changed });

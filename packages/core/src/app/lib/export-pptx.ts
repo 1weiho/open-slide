@@ -39,7 +39,13 @@ export async function exportSlideAsImagePptx(
   const pages = slide.default ?? [];
   if (pages.length === 0) return;
 
-  const total = pages.length;
+  // Drop falsy page holes up front and drive everything (progress total, render
+  // loop, and the per-page index/total handed to SlidePageProvider) off this
+  // compact list, so the metadata baked into each image matches the exported
+  // deck rather than the sparse source array.
+  const renderablePages = pages.filter(Boolean);
+  const total = renderablePages.length;
+  if (total === 0) return;
   onProgress?.({ phase: 'processing', current: 0, total, percent: 0 });
 
   const container = document.createElement('div');
@@ -73,9 +79,8 @@ export async function exportSlideAsImagePptx(
 
   const reactRoots: Root[] = [];
   const frames: HTMLElement[] = [];
-  for (let i = 0; i < pages.length; i++) {
-    const Page = pages[i];
-    if (!Page) continue;
+  for (let i = 0; i < renderablePages.length; i++) {
+    const Page = renderablePages[i];
     const host = document.createElement('div');
     host.setAttribute('data-osd-canvas', '');
     host.style.width = `${SLIDE_W}px`;
@@ -89,7 +94,7 @@ export async function exportSlideAsImagePptx(
     frames.push(host);
     const r = createRoot(host);
     r.render(
-      createElement(SlidePageProvider, { index: i, total: pages.length }, createElement(Page)),
+      createElement(SlidePageProvider, { index: i, total }, createElement(Page)),
     );
     reactRoots.push(r);
   }
@@ -243,7 +248,14 @@ function slideLayoutRelsXml(): string {
 }
 
 function slideXml(): string {
-  return `${XML_DECL}<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="${OD_REL}" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr><p:pic><p:nvPicPr><p:cNvPr id="2" name="Slide"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="rId2"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${EMU_W}" cy="${EMU_H}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic></p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
+  // Full-bleed image as a slide-filling picture shape sized to the exact slide
+  // EMU extents. The captured PNG is exactly 16:9 (1920×1080 ×2) and the frame is
+  // exactly 16:9, so stretch/fillRect maps it 1:1 with no distortion. A picture
+  // shape (rather than a <p:bg> background fill) is the most portable full-bleed
+  // construct across PowerPoint, Keynote, LibreOffice, and especially Google
+  // Slides, which imports per-slide backgrounds inconsistently. noChangeAspect="0"
+  // leaves the aspect unlocked so no importer letterboxes the frame.
+  return `${XML_DECL}<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="${OD_REL}" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr><p:pic><p:nvPicPr><p:cNvPr id="2" name="Slide"/><p:cNvPicPr><a:picLocks noChangeAspect="0"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="rId2"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${EMU_W}" cy="${EMU_H}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic></p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
 }
 
 function slideRelsXml(idx: number): string {
