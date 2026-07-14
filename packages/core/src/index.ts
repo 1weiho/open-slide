@@ -13,7 +13,7 @@ export { useSlidePageNumber } from './app/lib/page-context.tsx';
 export type { Page, SlideMeta, SlideModule } from './app/lib/sdk.ts';
 export { CANVAS_HEIGHT, CANVAS_WIDTH } from './app/lib/sdk.ts';
 export type { StepProps, StepsProps } from './app/lib/step-context.tsx';
-export { Step, Steps } from './app/lib/step-context.tsx';
+export { Step, Steps, unstable_useIsActivePage } from './app/lib/step-context.tsx';
 export type {
   SharedElementTransition,
   SlideTransition,

@@ -733,6 +733,13 @@ export function SlideTransitionLayer({
     const easing = transition.easing ?? DEFAULT_EASING;
     const duration = transition.duration;
 
+    // Shared elements must be measured before the enter/exit phases start:
+    // phase keyframes apply immediately (fill: both), so a transform in the
+    // enter's first keyframe would offset every measured target rect and land
+    // the clones off their true rest positions.
+    const sharedPhase = resolveSharedElementTransition(transition.sharedElements, duration, easing);
+    const shared = sharedPhase ? runSharedElementTransition(wrapper, out, inc, sharedPhase) : null;
+
     const anims: Animation[] = [];
     const exitAnim = runPhase(out, transition.exit, duration, easing);
     const enterAnim = runPhase(inc, transition.enter, duration, easing);
@@ -740,9 +747,7 @@ export function SlideTransitionLayer({
     if (enterAnim) anims.push(enterAnim);
 
     const cleanups: Array<() => void> = [];
-    const sharedPhase = resolveSharedElementTransition(transition.sharedElements, duration, easing);
-    if (sharedPhase) {
-      const shared = runSharedElementTransition(wrapper, out, inc, sharedPhase);
+    if (shared) {
       anims.push(...shared.animations);
       cleanups.push(shared.cleanup);
       if (!exitAnim && shared.animations.length > 0) cleanups.push(hideOriginal(out));
