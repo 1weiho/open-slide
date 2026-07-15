@@ -1,7 +1,7 @@
 import {
   type DesignSystem,
+  MorphElement,
   type Page,
-  unstable_SharedElement as SharedElement,
   type SlideMeta,
   type SlideTransition,
 } from '@open-slide/core';
@@ -18,7 +18,7 @@ export const design: DesignSystem = {
 };
 
 export const meta: SlideMeta = {
-  title: 'Magic Move Prototype',
+  title: 'Morph Transition Prototype',
   createdAt: '2026-06-22T17:00:36.438Z',
 };
 
@@ -27,7 +27,7 @@ const EASE = 'cubic-bezier(0.4, 0, 0.2, 1)';
 export const transition: SlideTransition = {
   duration: 1250,
   easing: EASE,
-  sharedElements: {
+  morph: {
     duration: 1250,
     easing: EASE,
   },
@@ -50,7 +50,7 @@ const root: CSSProperties = {
 };
 
 const Title = () => (
-  <SharedElement id="magic-title">
+  <MorphElement id="morph-title">
     <h1
       style={{
         position: 'absolute',
@@ -64,13 +64,13 @@ const Title = () => (
         letterSpacing: 0,
       }}
     >
-      Magic Move
+      Morph
     </h1>
-  </SharedElement>
+  </MorphElement>
 );
 
 const Caption = ({ id, text }: { id: string; text: string }) => (
-  <SharedElement id={`caption-${id}`}>
+  <MorphElement id={`caption-${id}`}>
     <div
       style={{
         position: 'absolute',
@@ -84,7 +84,7 @@ const Caption = ({ id, text }: { id: string; text: string }) => (
     >
       {text}
     </div>
-  </SharedElement>
+  </MorphElement>
 );
 
 const Stage = ({ children }: { children: ReactNode }) => (
@@ -107,7 +107,7 @@ const Dot = ({
   size: number;
   color: string;
 }) => (
-  <SharedElement id={`dot-${id}`}>
+  <MorphElement id={`dot-${id}`}>
     <div
       style={{
         position: 'absolute',
@@ -119,11 +119,11 @@ const Dot = ({
         background: color,
       }}
     />
-  </SharedElement>
+  </MorphElement>
 );
 
 const Ring = ({ left, top, size }: { left: number; top: number; size: number }) => (
-  <SharedElement id="focus-ring">
+  <MorphElement id="focus-ring">
     <div
       style={{
         position: 'absolute',
@@ -136,7 +136,7 @@ const Ring = ({ left, top, size }: { left: number; top: number; size: number }) 
         boxSizing: 'border-box',
       }}
     />
-  </SharedElement>
+  </MorphElement>
 );
 
 const Arrange: Page = () => (

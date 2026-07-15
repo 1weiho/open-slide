@@ -12,10 +12,10 @@ export type SlideTransition = {
   easing?: string;
   enter?: TransitionPhase;
   exit?: TransitionPhase;
-  sharedElements?: boolean | SharedElementTransition;
+  morph?: boolean | MorphTransition;
 };
 
-export type SharedElementTransition = {
+export type MorphTransition = {
   duration?: number;
   easing?: string;
   delay?: number;

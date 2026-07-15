@@ -1,6 +1,6 @@
 ---
 name: slide-authoring
-description: Technical reference for writing or editing open-slide pages — file contract, 1920×1080 canvas, type scale, layout, palette/visual direction, assets, page transitions, and shared-element magic move. Consult this whenever you are about to write or modify any file under `slides/<id>/`, including from inside the `create-slide` or `apply-comments` workflows, or for any ad-hoc slide edit. Triggers on phrases like "edit slide", "tweak this page", "fix the layout", "change the palette", "add a transition", "magic move", "investigate the slide framework", "how do slides work here".
+description: Technical reference for writing or editing open-slide pages — file contract, 1920×1080 canvas, type scale, layout, palette/visual direction, assets, page transitions, and morph transitions. Consult this whenever you are about to write or modify any file under `slides/<id>/`, including from inside the `create-slide` or `apply-comments` workflows, or for any ad-hoc slide edit. Triggers on phrases like "edit slide", "tweak this page", "fix the layout", "change the palette", "add a transition", "morph transition", "investigate the slide framework", "how do slides work here".
 ---
 
 # Authoring open-slide pages
@@ -523,72 +523,70 @@ Most tasteful tools don't mirror on backward navigation. When you genuinely need
 
 If you find yourself reaching for this on every transition, you're probably over-designing. Forward = backward is the more refined default.
 
-### Shared element transitions (magic move)
+### Morph transitions
 
-When the *same visual object* exists on two adjacent pages, the runtime can morph it across the cut — position, size, border-radius, and colors interpolate in one continuous move (Keynote's "Magic Move") — instead of fading out and back in. Two parts opt in:
+When the *same visual object* exists on two adjacent pages, the runtime can morph it across the cut — position, size, border-radius, and colors interpolate in one continuous move (Keynote calls this "Magic Move") — instead of fading out and back in. Two parts opt in:
 
-1. Wrap the object on **both** pages in `unstable_SharedElement` with the **same `id`**.
-2. Enable `sharedElements` on the incoming page's transition.
-
-The component is exported with an `unstable_` prefix — it works and real decks lean on it heavily, but the API surface may still change. Alias it on import.
+1. Wrap the object on **both** pages in `MorphElement` with the **same `id`**.
+2. Enable `morph` on the incoming page's transition.
 
 ```tsx
-import { unstable_SharedElement as SharedElement } from '@open-slide/core';
+import { MorphElement } from '@open-slide/core';
 
 // Morph transition — opacity-only enter/exit keeps all the motion on the clones (see rules).
-const morph: SlideTransition = {
+const morphTransition: SlideTransition = {
   duration: 280,
   exit:  { duration: 224, easing: 'cubic-bezier(0.4, 0, 1, 1)', keyframes: [{ opacity: 1 }, { opacity: 0 }] },
   enter: { duration: 308, delay: 112, easing: 'cubic-bezier(0, 0, 0.2, 1)', keyframes: [{ opacity: 0 }, { opacity: 1 }] },
-  sharedElements: { duration: 868, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  morph: { duration: 868, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' },
 };
 
 const stage: CSSProperties = { width: '100%', height: '100%', position: 'relative', background: '#000000', overflow: 'hidden' };
 
 const Narrow: Page = () => (
   <div style={stage}>
-    <SharedElement id="pill" style={{ position: 'absolute', left: 842, top: 479, width: 236, height: 122, borderRadius: 999, background: '#ffffff' }} />
+    <MorphElement id="pill" style={{ position: 'absolute', left: 842, top: 479, width: 236, height: 122, borderRadius: 999, background: '#ffffff' }} />
   </div>
 );
 const Wide: Page = () => (
   <div style={stage}>
-    <SharedElement id="pill" style={{ position: 'absolute', left: 721, top: 479, width: 478, height: 122, borderRadius: 999, background: '#0a0a0a' }} />
+    <MorphElement id="pill" style={{ position: 'absolute', left: 721, top: 479, width: 478, height: 122, borderRadius: 999, background: '#0a0a0a' }} />
   </div>
 );
 
-Wide.transition = morph;   // forward: Narrow → Wide morphs the pill
-Narrow.transition = morph; // backward: Wide → Narrow morphs it back
+Wide.transition = morphTransition;   // forward: Narrow → Wide morphs the pill
+Narrow.transition = morphTransition; // backward: Wide → Narrow morphs it back
 ```
 
 #### Contract
 
-- `sharedElements: true` inherits the transition's top-level `duration`/`easing`; pass `{ duration?, easing?, delay? }` to time the morph independently of the page cross-fade. Morphs usually read best 2–4× longer than the fade (e.g. 280 ms fade, 868 ms morph).
-- Elements pair by `id` across the cut. A matched pair FLIP-morphs: the runtime measures both rects, clones the outgoing element into an overlay above both pages, hides the originals, and animates transform + border-radius + colors (border widths ride a separate frame so they don't stretch with the box). Keep each `id` unique within a page; don't nest one `SharedElement` inside another.
+- `morph: true` inherits the transition's top-level `duration`/`easing`; pass `{ duration?, easing?, delay? }` to time the morph independently of the page cross-fade. Morphs usually read best 2–4× longer than the fade (e.g. 280 ms fade, 868 ms morph).
+- Elements pair by `id` across the cut. A matched pair FLIP-morphs: the runtime measures both rects, clones the outgoing element into an overlay above both pages, hides the originals, and animates transform + border-radius + colors (border widths ride a separate frame so they don't stretch with the box). Keep each `id` unique within a page; don't nest one `MorphElement` inside another.
 - An `id` present on only one side fades in/out **in place**. This is how "a third box joins the row" reads: carried boxes glide to their new slots, the new one materializes.
-- Colors on the shared node *and its descendants* interpolate too — a label that flips black → white mid-glide just works.
+- Colors on the morph node *and its descendants* interpolate too — a label that flips black → white mid-glide just works.
 - The transition lives on the **incoming** page. For a morph that also plays when stepping backward, assign the same transition object to both pages (as above).
 
 #### Rules — each one earned on a real deck
 
-1. **Prefer opacity-only enter/exit on morphing pages.** Any transition family composes correctly with the morph (shared rects are measured before the phases start), but while clones glide, a transform-bearing enter also slides the rest of the page — two competing motions. Giving the clones all the motion and fading everything else is what makes a magic move read as one confident gesture.
-2. **Shared geometry must be deterministic at mount.** Rects are snapshotted once at the cut. Position shared elements with pixel constants — never with a value measured in an effect after mount (the re-render shifts the target mid-morph and the move jumps). If text inside a shared box grows over time (typewriter etc.), render a hidden full-width spacer so the measured box never changes size.
-3. **No `transform` on the shared node itself.** A percentage translate (`translate(-50%, -50%)`) gets mis-scaled by the morph and lands the clone tens of px off. Put centering/positioning transforms on a plain wrapper `<div>` *around* the `SharedElement`.
-4. **`SharedElement` merges `className`/`style` onto its single host child** (it adds no wrapper when the child is a lone DOM element). A crop box (`overflow: hidden` + fixed width) therefore needs an explicit nested `<div>` — otherwise the box collapses onto the `<img>` inside and squishes it.
-5. **Gate entrance animations behind `unstable_useIsActivePage()`.** During the cut the runtime mounts a *fresh instance* of the outgoing page to snapshot its exit state (and the dev UI mounts every page for thumbnails/overview). If an intro replays there, the snapshot is mid-animation and the morph starts from garbage. The hook returns `true` only for the instance the audience is watching; every other instance (outgoing snapshot, thumbnails, overview, presenter preview, print) should render the final, settled state — no intro, full text.
+1. **Prefer opacity-only enter/exit on morphing pages.** Any transition family composes correctly with the morph (shared rects are measured before the phases start), but while clones glide, a transform-bearing enter also slides the rest of the page — two competing motions. Giving the clones all the motion and fading everything else is what makes a morph read as one confident gesture.
+2. **Morph geometry must be deterministic at mount.** Rects are snapshotted once at the cut. Position morph elements with pixel constants — never with a value measured in an effect after mount (the re-render shifts the target mid-morph and the move jumps). If text inside a morph box grows over time (typewriter etc.), render a hidden full-width spacer so the measured box never changes size.
+3. **No `transform` on the morph node itself.** A percentage translate (`translate(-50%, -50%)`) gets mis-scaled by the morph and lands the clone tens of px off. Put centering/positioning transforms on a plain wrapper `<div>` *around* the `MorphElement`.
+4. **`MorphElement` merges `className`/`style` onto its single host child** (it adds no wrapper when the child is a lone DOM element). A crop box (`overflow: hidden` + fixed width) therefore needs an explicit nested `<div>` — otherwise the box collapses onto the `<img>` inside and squishes it.
+5. **Gate entrance animations behind `useIsActivePage()`.** During the cut the runtime mounts a *fresh instance* of the outgoing page to snapshot its exit state (and the dev UI mounts every page for thumbnails/overview). If an intro replays there, the snapshot is mid-animation and the morph starts from garbage. The hook returns `true` only for the instance the audience is watching; every other instance (outgoing snapshot, thumbnails, overview, presenter preview, print) should render the final, settled state — no intro, full text.
 
    ```tsx
-   import { unstable_useIsActivePage as useIsActivePage } from '@open-slide/core';
+   import { useIsActivePage } from '@open-slide/core';
 
    // Inside the page component:
    const animate = useIsActivePage();
    ```
 
-6. **Clones travel above everything.** The morph overlay sits over both pages, so an incoming element that should appear only when a clone "lands" will otherwise pop early. Give such reveals a delay equal to the morph: `animation: 'osd-fade 0.63s ease-out 0.868s both'` where `0.868s` is `sharedElements.duration`. Keep that number in one shared const so the two can't drift.
+6. **Clones travel above everything.** The morph overlay sits over both pages, so an incoming element that should appear only when a clone "lands" will otherwise pop early. Give such reveals a delay equal to the morph: `animation: 'osd-fade 0.63s ease-out 0.868s both'` where `0.868s` is `morph.duration`. Keep that number in one shared const so the two can't drift.
 7. **A "hold" page is a separate component.** Transitions attach to the incoming page, so to follow a morph cut with a plain cut of the same content, mint a second page component without `.transition` (e.g. `const Flow4Hold: Page = () => <Flow count={4} />`).
 
 #### When to reach for it
 
-Magic move is for **state continuity**: a toggle whose thumb slides to the next option, a card that expands into a detail view, a logo that glides from center stage into the next page's diagram, a row that gains one more box. The object *is the story* across the cut. Don't morph decoration, and don't tag elements "just in case" — every shared id is a promise to the audience that it's the same object. One or two morphing sequences per chapter is plenty; the surrounding pages should cut or fade quietly.
+Morph is for **state continuity**: a toggle whose thumb slides to the next option, a card that expands into a detail view, a logo that glides from center stage into the next page's diagram, a row that gains one more box. The object *is the story* across the cut. Don't morph decoration, and don't tag elements "just in case" — every morph id is a promise to the audience that it's the same object. One or two morphing sequences per chapter is plenty; the surrounding pages should cut or fade quietly.
 
 ### Transition anti-patterns
 
@@ -669,7 +667,7 @@ This applies whenever the *visual element* repeats, not whenever the *data* does
 - [ ] Every `<ImagePlaceholder>` corresponds to a real image the user must supply — not decorative filler. If it could be replaced by typography or layout, it should be.
 - [ ] If a page uses `<Steps>`/`<Step>`, every `<Step>` is a direct child of a `<Steps>`, and the page still reads as complete when jumped to via the overview grid (entering forward builds up; jumping in shows it fully revealed).
 - [ ] If a `SlideTransition` is declared, every page sits in one family — same duration band (140–280 ms), same easing pair, same out-then-in stagger, magnitude under 12 px / 3%. No six-different-vocabularies decks. When in doubt, omit transitions entirely.
-- [ ] If a transition opts into `sharedElements`: every shared `id` is unique per page and stable across the pair, shared geometry is pixel-constant (never measured after mount), no `transform` sits on the shared node, and entrance animations are gated behind `unstable_useIsActivePage()`.
+- [ ] If a transition opts into `morph`: every morph `id` is unique per page and stable across the pair, morph geometry is pixel-constant (never measured after mount), no `transform` sits on the morph node, and entrance animations are gated behind `useIsActivePage()`.
 - [ ] Nothing outside `slides/<id>/` was edited.
 
 ## Anti-patterns

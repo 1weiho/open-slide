@@ -174,11 +174,9 @@ export function StepHost({
 
 // Hostless mounts (thumbnails, overview grid, print/export) are never the
 // audience-facing instance, so no provider means false.
-function useIsActivePage(): boolean {
+export function useIsActivePage(): boolean {
   return useContext(StepHostContext)?.isActivePage ?? false;
 }
-
-export const unstable_useIsActivePage = useIsActivePage;
 
 export type StepsProps = PropsWithChildren;
 

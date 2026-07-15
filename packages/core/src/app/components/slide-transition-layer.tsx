@@ -8,8 +8,8 @@ import {
   StepHost,
 } from '../lib/step-context';
 import {
+  type MorphTransition,
   resolveTransition,
-  type SharedElementTransition,
   type SlideTransition,
   type TransitionPhase,
 } from '../lib/transition';
@@ -28,9 +28,9 @@ type Props = {
 type Direction = 'forward' | 'backward';
 
 const DEFAULT_EASING = 'cubic-bezier(.4, 0, .2, 1)';
-const SHARED_ELEMENT_SELECTOR = '[data-osd-shared-element]';
+const MORPH_ELEMENT_SELECTOR = '[data-osd-morph]';
 const TEXT_FILL_COLOR_PROPERTY = '-webkit-text-fill-color';
-const SHARED_ELEMENT_VISUAL_PROPERTIES = [
+const MORPH_VISUAL_PROPERTIES = [
   'opacity',
   'color',
   'background-color',
@@ -109,21 +109,21 @@ function runPhase(
   });
 }
 
-type ResolvedSharedElementTransition = Required<SharedElementTransition>;
+type ResolvedMorphTransition = Required<MorphTransition>;
 
-function resolveSharedElementTransition(
-  sharedElements: SlideTransition['sharedElements'],
+function resolveMorphTransition(
+  morph: SlideTransition['morph'],
   fallbackDuration: number,
   fallbackEasing: string,
-): ResolvedSharedElementTransition | null {
-  if (!sharedElements) return null;
-  if (sharedElements === true) {
+): ResolvedMorphTransition | null {
+  if (!morph) return null;
+  if (morph === true) {
     return { duration: fallbackDuration, easing: fallbackEasing, delay: 0 };
   }
   return {
-    duration: sharedElements.duration ?? fallbackDuration,
-    easing: sharedElements.easing ?? fallbackEasing,
-    delay: sharedElements.delay ?? 0,
+    duration: morph.duration ?? fallbackDuration,
+    easing: morph.easing ?? fallbackEasing,
+    delay: morph.delay ?? 0,
   };
 }
 
@@ -165,10 +165,10 @@ function hasUsableRect(rect: LocalRect): boolean {
   return rect.width > 0 && rect.height > 0;
 }
 
-function collectSharedElements(root: HTMLElement): Map<string, HTMLElement> {
+function collectMorphElements(root: HTMLElement): Map<string, HTMLElement> {
   const elements = new Map<string, HTMLElement>();
-  for (const el of root.querySelectorAll<HTMLElement>(SHARED_ELEMENT_SELECTOR)) {
-    const id = el.dataset.osdSharedElement;
+  for (const el of root.querySelectorAll<HTMLElement>(MORPH_ELEMENT_SELECTOR)) {
+    const id = el.dataset.osdMorph;
     if (id && !elements.has(id)) elements.set(id, el);
   }
   return elements;
@@ -214,10 +214,10 @@ function copyComputedStyles(
   }
 }
 
-function cloneSharedElement(source: HTMLElement): HTMLElement {
+function cloneMorphElement(source: HTMLElement): HTMLElement {
   const clone = source.cloneNode(true) as HTMLElement;
   copyComputedStyles(source, clone);
-  clone.removeAttribute('data-osd-shared-element');
+  clone.removeAttribute('data-osd-morph');
   return clone;
 }
 
@@ -251,18 +251,13 @@ function localTransform(styles: CSSStyleDeclaration): string {
   return styles.transform && styles.transform !== 'none' ? styles.transform : '';
 }
 
-function sharedElementTransform(
-  rect: LocalRect,
-  scaleX: number,
-  scaleY: number,
-  local: string,
-): string {
+function morphTransform(rect: LocalRect, scaleX: number, scaleY: number, local: string): string {
   return [`translate(${rect.left}px, ${rect.top}px)`, `scale(${scaleX}, ${scaleY})`, local]
     .filter(Boolean)
     .join(' ');
 }
 
-function sharedElementTranslateTransform(rect: LocalRect, local: string): string {
+function morphTranslateTransform(rect: LocalRect, local: string): string {
   return [`translate(${rect.left}px, ${rect.top}px)`, local].filter(Boolean).join(' ');
 }
 
@@ -276,7 +271,7 @@ function visualStyleKeyframe(
   options: { includeBorderColors?: boolean } = {},
 ): Keyframe {
   const frame: Record<string, string> = {};
-  for (const prop of SHARED_ELEMENT_VISUAL_PROPERTIES) {
+  for (const prop of MORPH_VISUAL_PROPERTIES) {
     if (
       options.includeBorderColors === false &&
       (BORDER_COLOR_PROPERTIES as readonly string[]).includes(prop)
@@ -319,7 +314,7 @@ function borderFrameKeyframe(
     width: `${rect.width}px`,
     height: `${rect.height}px`,
     opacity,
-    transform: sharedElementTranslateTransform(rect, localTransform(styles)),
+    transform: morphTranslateTransform(rect, localTransform(styles)),
     ...radiusKeyframe(styles),
   };
 
@@ -366,7 +361,7 @@ function appendBorderFrame(
 }
 
 function hasVisualStyleChange(from: CSSStyleDeclaration, to: CSSStyleDeclaration): boolean {
-  for (const prop of SHARED_ELEMENT_VISUAL_PROPERTIES) {
+  for (const prop of MORPH_VISUAL_PROPERTIES) {
     if (getStyleProperty(from, prop) !== getStyleProperty(to, prop)) return true;
   }
   return false;
@@ -401,7 +396,7 @@ function appendPositionedClone(
 ): HTMLElement {
   if (!overlay.parentElement) wrapper.appendChild(overlay);
 
-  const clone = cloneSharedElement(source);
+  const clone = cloneMorphElement(source);
   Object.assign(clone.style, {
     position: 'absolute',
     left: '0',
@@ -417,9 +412,7 @@ function appendPositionedClone(
   return clone;
 }
 
-function sharedElementAnimationOptions(
-  phase: ResolvedSharedElementTransition,
-): KeyframeAnimationOptions {
+function morphAnimationOptions(phase: ResolvedMorphTransition): KeyframeAnimationOptions {
   return {
     duration: phase.duration,
     easing: phase.easing,
@@ -432,7 +425,7 @@ function runDescendantVisualStyleTransitions(
   clone: HTMLElement,
   source: HTMLElement,
   target: HTMLElement,
-  phase: ResolvedSharedElementTransition,
+  phase: ResolvedMorphTransition,
 ): Animation[] {
   const animations: Animation[] = [];
   const cloneChildren = clone.querySelectorAll<HTMLElement>('*');
@@ -451,7 +444,7 @@ function runDescendantVisualStyleTransitions(
     animations.push(
       cloneChild.animate(
         [visualStyleKeyframe(sourceStyles), visualStyleKeyframe(targetStyles)],
-        sharedElementAnimationOptions(phase),
+        morphAnimationOptions(phase),
       ),
     );
   }
@@ -459,15 +452,15 @@ function runDescendantVisualStyleTransitions(
   return animations;
 }
 
-function runStationarySharedElementAnimation(
+function runStationaryMorphAnimation(
   clone: HTMLElement,
   rect: LocalRect,
   styles: CSSStyleDeclaration,
   fromOpacity: string,
   toOpacity: string,
-  phase: ResolvedSharedElementTransition,
+  phase: ResolvedMorphTransition,
 ): Animation {
-  const transform = sharedElementTransform(rect, 1, 1, localTransform(styles));
+  const transform = morphTransform(rect, 1, 1, localTransform(styles));
   return clone.animate(
     [
       {
@@ -481,24 +474,24 @@ function runStationarySharedElementAnimation(
         transform,
       },
     ],
-    sharedElementAnimationOptions(phase),
+    morphAnimationOptions(phase),
   );
 }
 
-function runSharedElementTransition(
+function runMorphTransition(
   wrapper: HTMLElement,
   outgoingLayer: HTMLElement,
   incomingLayer: HTMLElement,
-  phase: ResolvedSharedElementTransition,
+  phase: ResolvedMorphTransition,
 ): { animations: Animation[]; cleanup: () => void } {
   const wrapperRect = wrapper.getBoundingClientRect();
   if (wrapperRect.width === 0 || wrapperRect.height === 0) {
     return { animations: [], cleanup: () => {} };
   }
 
-  const incoming = collectSharedElements(incomingLayer);
+  const incoming = collectMorphElements(incomingLayer);
   const overlay = document.createElement('div');
-  overlay.setAttribute('data-osd-shared-layer', '');
+  overlay.setAttribute('data-osd-morph-layer', '');
   Object.assign(overlay.style, {
     position: 'absolute',
     inset: '0',
@@ -508,7 +501,7 @@ function runSharedElementTransition(
 
   const animations: Animation[] = [];
   const restore: Array<() => void> = [];
-  const outgoing = collectSharedElements(outgoingLayer);
+  const outgoing = collectMorphElements(outgoingLayer);
   const handledIncoming = new Set<string>();
 
   for (const [id, source] of outgoing) {
@@ -524,7 +517,7 @@ function runSharedElementTransition(
 
           const targetStyles = getComputedStyle(target);
           animations.push(
-            runStationarySharedElementAnimation(
+            runStationaryMorphAnimation(
               clone,
               to,
               targetStyles,
@@ -544,7 +537,7 @@ function runSharedElementTransition(
 
       const sourceStyles = getComputedStyle(source);
       animations.push(
-        runStationarySharedElementAnimation(
+        runStationaryMorphAnimation(
           clone,
           from,
           sourceStyles,
@@ -563,7 +556,7 @@ function runSharedElementTransition(
 
       const sourceStyles = getComputedStyle(source);
       animations.push(
-        runStationarySharedElementAnimation(
+        runStationaryMorphAnimation(
           clone,
           from,
           sourceStyles,
@@ -587,8 +580,8 @@ function runSharedElementTransition(
     const needsBorderFrame = hasVisibleBorder(sourceStyles) || hasVisibleBorder(targetStyles);
     const scaleX = to.width / from.width;
     const scaleY = to.height / from.height;
-    const fromTransform = sharedElementTransform(from, 1, 1, localTransform(sourceStyles));
-    const toTransform = sharedElementTransform(to, scaleX, scaleY, localTransform(targetStyles));
+    const fromTransform = morphTransform(from, 1, 1, localTransform(sourceStyles));
+    const toTransform = morphTransform(to, scaleX, scaleY, localTransform(targetStyles));
 
     if (needsBorderFrame) {
       hideBorderColors(clone);
@@ -599,7 +592,7 @@ function runSharedElementTransition(
             borderFrameKeyframe(from, sourceStyles, fromOpacity),
             borderFrameKeyframe(to, targetStyles, toOpacity),
           ],
-          sharedElementAnimationOptions(phase),
+          morphAnimationOptions(phase),
         ),
       );
     }
@@ -622,7 +615,7 @@ function runSharedElementTransition(
             transform: toTransform,
           },
         ],
-        sharedElementAnimationOptions(phase),
+        morphAnimationOptions(phase),
       ),
       ...runDescendantVisualStyleTransitions(clone, source, target, phase),
     );
@@ -639,7 +632,7 @@ function runSharedElementTransition(
 
     const targetStyles = getComputedStyle(target);
     animations.push(
-      runStationarySharedElementAnimation(
+      runStationaryMorphAnimation(
         clone,
         to,
         targetStyles,
@@ -733,12 +726,12 @@ export function SlideTransitionLayer({
     const easing = transition.easing ?? DEFAULT_EASING;
     const duration = transition.duration;
 
-    // Shared elements must be measured before the enter/exit phases start:
+    // Morph elements must be measured before the enter/exit phases start:
     // phase keyframes apply immediately (fill: both), so a transform in the
     // enter's first keyframe would offset every measured target rect and land
     // the clones off their true rest positions.
-    const sharedPhase = resolveSharedElementTransition(transition.sharedElements, duration, easing);
-    const shared = sharedPhase ? runSharedElementTransition(wrapper, out, inc, sharedPhase) : null;
+    const morphPhase = resolveMorphTransition(transition.morph, duration, easing);
+    const morphRun = morphPhase ? runMorphTransition(wrapper, out, inc, morphPhase) : null;
 
     const anims: Animation[] = [];
     const exitAnim = runPhase(out, transition.exit, duration, easing);
@@ -747,10 +740,10 @@ export function SlideTransitionLayer({
     if (enterAnim) anims.push(enterAnim);
 
     const cleanups: Array<() => void> = [];
-    if (shared) {
-      anims.push(...shared.animations);
-      cleanups.push(shared.cleanup);
-      if (!exitAnim && shared.animations.length > 0) cleanups.push(hideOriginal(out));
+    if (morphRun) {
+      anims.push(...morphRun.animations);
+      cleanups.push(morphRun.cleanup);
+      if (!exitAnim && morphRun.animations.length > 0) cleanups.push(hideOriginal(out));
     }
     animsRef.current = anims;
 
