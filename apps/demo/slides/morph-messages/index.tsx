@@ -30,6 +30,8 @@ const EASE_STANDARD = 'cubic-bezier(0.4, 0, 0.2, 1)';
 const HERO_MORPH_MS = 1250;
 const THREAD_MORPH_MS = 750;
 const RISE_MS = 420;
+const SLIDE_MS = 920;
+const DIAMOND_X = 654;
 
 export const transition: SlideTransition = {
   duration: 360,
@@ -69,8 +71,11 @@ const grayBubble = '#e9e9eb';
 if (typeof document !== 'undefined' && !document.getElementById('morph-messages-styles')) {
   const style = document.createElement('style');
   style.id = 'morph-messages-styles';
-  style.textContent =
-    '@keyframes morph-messages-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }';
+  style.textContent = [
+    '@keyframes morph-messages-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }',
+    `@keyframes morph-messages-slide-left { from { transform: translateX(${960 - DIAMOND_X}px); } to { transform: none; } }`,
+    '@keyframes morph-messages-slide-right { from { opacity: 0; transform: translateX(-64px); } to { opacity: 1; transform: none; } }',
+  ].join('');
   document.head.appendChild(style);
 }
 
@@ -167,6 +172,47 @@ const DebutLine = (props: LineProps) => {
       }}
     >
       {children}
+    </div>
+  );
+};
+
+// A message about to depart into a shape-only morph: the exit-snapshot
+// instance splits the bubble into a shell and a label morph element, so the
+// shell can change aspect freely while the label rides its own pair —
+// shrinking uniformly and dissolving via color interpolation — instead of
+// squashing inside a single-element clone. The audience-facing instance stays
+// a plain Line so arriving morphs still land on a full bubble.
+const ShedLine = (props: LineProps) => {
+  const animate = useIsActivePage();
+  if (animate) return <Line {...props} />;
+  const {
+    id,
+    fontSize,
+    color,
+    background = 'transparent',
+    received = false,
+    style,
+    children,
+  } = props;
+  return (
+    <div style={{ position: 'relative', alignSelf: received ? 'flex-start' : undefined }}>
+      <MorphElement id={id}>
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: 'var(--osd-radius)',
+            background,
+          }}
+        />
+      </MorphElement>
+      <MorphElement id={`${id}-label`}>
+        <div
+          style={{ ...pill(fontSize, color, 'transparent', false), position: 'relative', ...style }}
+        >
+          {children}
+        </div>
+      </MorphElement>
     </div>
   );
 };
@@ -274,14 +320,14 @@ const Question: Page = () => (
 const Answer: Page = () => (
   <section style={stage}>
     <div style={thread}>
-      <Line
+      <ShedLine
         id="msg-introducing"
         fontSize="var(--osd-size-body)"
         color="#ffffff"
         background="var(--osd-accent)"
       >
         Introducing
-      </Line>
+      </ShedLine>
       <Line
         id="msg-morph"
         fontSize="var(--osd-size-body)"
@@ -311,7 +357,192 @@ const Answer: Page = () => (
   </section>
 );
 
+const FromThis: Page = () => {
+  const animate = useIsActivePage();
+  return (
+    <section style={stage}>
+      <MorphElement id="msg-introducing">
+        <div
+          style={{
+            // The exit snapshot pins the radius to exactly half the box so
+            // the departing 06→07 morph relaxes its corners across the whole
+            // glide — an oversized radius (999px) spends most of the
+            // interpolation above the paint-time clamp, compressing the
+            // visible change into the final frames. The audience-facing
+            // instance keeps the token so the 05→06 arrival morphs against
+            // the original value.
+            borderRadius: animate ? 'var(--osd-radius)' : 120,
+            position: 'absolute',
+            left: 840,
+            top: 420,
+            width: 240,
+            height: 240,
+            background: 'var(--osd-accent)',
+          }}
+        />
+      </MorphElement>
+      {/* Invisible pair target: the departing label glides here, shrinking
+          uniformly (em geometry, half the font size) while its color fades to
+          zero-alpha white — a visible dissolve instead of a squashed ride. */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 840,
+          top: 420,
+          width: 240,
+          height: 240,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <MorphElement id="msg-introducing-label">
+          <div
+            style={pill(
+              'calc(var(--osd-size-body) / 2)',
+              'rgba(255, 255, 255, 0)',
+              'transparent',
+              false,
+            )}
+          >
+            Introducing
+          </div>
+        </MorphElement>
+      </div>
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: 732,
+          textAlign: 'center',
+          fontSize: 64,
+          fontWeight: 700,
+          letterSpacing: '-0.02em',
+          color: muted,
+          animation: animate
+            ? `morph-messages-rise ${RISE_MS}ms ${EASE_OUT} ${HERO_MORPH_MS}ms both`
+            : 'none',
+        }}
+      >
+        from this
+      </div>
+    </section>
+  );
+};
+
+const ToThis: Page = () => {
+  const animate = useIsActivePage();
+  return (
+    <section style={stage}>
+      <MorphElement id="msg-introducing">
+        <div
+          style={{
+            position: 'absolute',
+            left: 582,
+            top: 162,
+            width: 756,
+            height: 756,
+            borderRadius: 120,
+            background: 'var(--osd-accent)',
+          }}
+        />
+      </MorphElement>
+      <div
+        style={{
+          position: 'absolute',
+          left: 582,
+          top: 162,
+          width: 756,
+          height: 756,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 96,
+          fontWeight: 700,
+          letterSpacing: '-0.02em',
+          color: '#ffffff',
+          animation: animate
+            ? `morph-messages-rise ${RISE_MS}ms ${EASE_OUT} ${HERO_MORPH_MS}ms both`
+            : 'none',
+        }}
+      >
+        to this
+      </div>
+    </section>
+  );
+};
+
+// The static layout is the settled end state (diamond at DIAMOND_X, command
+// visible). While the morph runs, the fill-both slide-left animation holds
+// the wrapper offset so the diamond sits at canvas center — the morph
+// measures and lands there — then slides it left as the command sweeps in.
+const Spin: Page = () => {
+  const animate = useIsActivePage();
+  return (
+    <section style={stage}>
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          animation: animate
+            ? `morph-messages-slide-left ${SLIDE_MS}ms ${EASE_OUT} ${HERO_MORPH_MS}ms both`
+            : 'none',
+        }}
+      >
+        <MorphElement id="msg-introducing">
+          <div
+            style={{
+              // The morph runtime composes the clone's transform about
+              // 'top left', so the element must rotate about the same origin;
+              // the layout position is offset by R(135°)·(12,12) so the
+              // rotated box still centers on (DIAMOND_X, 540). Keeping the
+              // rotation on the morph node is what makes the runtime
+              // interpolate it into the glide.
+              left: DIAMOND_X + 16.97,
+              top: 540,
+              position: 'absolute',
+              width: 24,
+              height: 24,
+              borderRadius: 4,
+              background: 'var(--osd-accent)',
+              transform: 'rotate(135deg)',
+              transformOrigin: '0 0',
+            }}
+          />
+        </MorphElement>
+      </div>
+      <div
+        style={{
+          position: 'absolute',
+          left: 707,
+          top: 520,
+          fontSize: 40,
+          lineHeight: 1,
+          fontWeight: 600,
+          fontFamily: 'ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace',
+          color: 'var(--osd-text)',
+          animation: animate
+            ? `morph-messages-slide-right ${SLIDE_MS}ms ${EASE_OUT} ${HERO_MORPH_MS + 140}ms both`
+            : 'none',
+        }}
+      >
+        npx @open-slide/cli init
+      </div>
+    </section>
+  );
+};
+
 Question.transition = threadTransition;
 Answer.transition = threadTransition;
 
-export default [Introducing, Reveal, Sent, Question, Answer] satisfies Page[];
+export default [
+  Introducing,
+  Reveal,
+  Sent,
+  Question,
+  Answer,
+  FromThis,
+  ToThis,
+  Spin,
+] satisfies Page[];
