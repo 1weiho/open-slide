@@ -6,7 +6,7 @@ import {
   type SlideTransition,
   useIsActivePage,
 } from '@open-slide/core';
-import type { CSSProperties, ReactNode } from 'react';
+import { type CSSProperties, type ReactNode, useState } from 'react';
 
 export const design: DesignSystem = {
   palette: { bg: '#fbfbfd', text: '#1d1d1f', accent: '#0a84ff' },
@@ -75,6 +75,7 @@ if (typeof document !== 'undefined' && !document.getElementById('morph-messages-
     '@keyframes morph-messages-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }',
     `@keyframes morph-messages-slide-left { from { transform: translateX(${960 - DIAMOND_X}px); } to { transform: none; } }`,
     '@keyframes morph-messages-slide-right { from { opacity: 0; transform: translateX(-64px); } to { opacity: 1; transform: none; } }',
+    '@keyframes morph-messages-hero-in { from { opacity: 0; transform: translateY(24px); filter: blur(12px); } to { opacity: 1; transform: none; filter: none; } }',
   ].join('');
   document.head.appendChild(style);
 }
@@ -217,15 +218,36 @@ const ShedLine = (props: LineProps) => {
   );
 };
 
-const Introducing: Page = () => (
-  <section style={stage}>
-    <div style={centered}>
-      <Line id="msg-introducing" fontSize="var(--osd-size-hero)" color="var(--osd-text)">
-        Introducing
-      </Line>
-    </div>
-  </section>
-);
+// The hero entrance plays exactly once — on the deck's first audience-facing
+// mount. Every later active mount can be the measured target of a backward
+// 2→1 morph, and a replaying rise/fade would poison the measured rect and
+// opacity endpoints. The flag is set from onAnimationStart (not an effect)
+// so StrictMode's mount/unmount/remount cycle can't burn it before the
+// animation ever shows.
+let heroEntranceShown = false;
+
+const Introducing: Page = () => {
+  const active = useIsActivePage();
+  const [entrance] = useState(() => active && !heroEntranceShown);
+  return (
+    <section style={stage}>
+      <div style={centered}>
+        <div
+          style={{
+            animation: entrance ? `morph-messages-hero-in 720ms ${EASE_OUT} 60ms both` : 'none',
+          }}
+          onAnimationStart={() => {
+            heroEntranceShown = true;
+          }}
+        >
+          <Line id="msg-introducing" fontSize="var(--osd-size-hero)" color="var(--osd-text)">
+            Introducing
+          </Line>
+        </div>
+      </div>
+    </section>
+  );
+};
 
 const Reveal: Page = () => (
   <section style={stage}>
