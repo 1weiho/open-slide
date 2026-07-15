@@ -23,31 +23,54 @@ export const meta: SlideMeta = {
   createdAt: '2026-07-15T13:59:59.809Z',
 };
 
-const MORPH_MS = 820;
+const EASE_IN = 'cubic-bezier(0.4, 0, 1, 1)';
+const EASE_OUT = 'cubic-bezier(0, 0, 0.2, 1)';
+const EASE_STANDARD = 'cubic-bezier(0.4, 0, 0.2, 1)';
+
+const HERO_MORPH_MS = 1250;
+const THREAD_MORPH_MS = 750;
+const RISE_MS = 420;
 
 export const transition: SlideTransition = {
+  duration: 360,
+  exit: {
+    duration: 288,
+    easing: EASE_IN,
+    keyframes: [{ opacity: 1 }, { opacity: 0 }],
+  },
+  enter: {
+    duration: 396,
+    delay: 144,
+    easing: EASE_OUT,
+    keyframes: [{ opacity: 0 }, { opacity: 1 }],
+  },
+  morph: { duration: HERO_MORPH_MS, easing: EASE_STANDARD },
+};
+
+const threadTransition: SlideTransition = {
   duration: 280,
   exit: {
     duration: 224,
-    easing: 'cubic-bezier(0.4, 0, 1, 1)',
+    easing: EASE_IN,
     keyframes: [{ opacity: 1 }, { opacity: 0 }],
   },
   enter: {
     duration: 308,
     delay: 112,
-    easing: 'cubic-bezier(0, 0, 0.2, 1)',
+    easing: EASE_OUT,
     keyframes: [{ opacity: 0 }, { opacity: 1 }],
   },
-  morph: { duration: MORPH_MS, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  morph: { duration: THREAD_MORPH_MS, easing: EASE_STANDARD },
 };
 
 const muted = '#86868b';
+const grayBubble = '#e9e9eb';
 
 if (typeof document !== 'undefined' && !document.getElementById('morph-messages-styles')) {
   const style = document.createElement('style');
   style.id = 'morph-messages-styles';
   style.textContent =
-    '@keyframes morph-messages-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }';
+    '@keyframes morph-messages-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }';
   document.head.appendChild(style);
 }
 
@@ -70,39 +93,83 @@ const centered: CSSProperties = {
   justifyContent: 'center',
 };
 
+const thread: CSSProperties = {
+  position: 'absolute',
+  top: 0,
+  bottom: 0,
+  left: 160,
+  right: 160,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-end',
+  justifyContent: 'center',
+  gap: 14,
+};
+
 // All box geometry rides in em so the pill keeps its aspect ratio at every
 // font size — the morph clone then scales uniformly instead of stretching.
+const pill = (
+  fontSize: number | string,
+  color: string,
+  background: string,
+  received: boolean,
+): CSSProperties => ({
+  fontSize,
+  lineHeight: 1.25,
+  fontWeight: 700,
+  letterSpacing: '-0.02em',
+  whiteSpace: 'nowrap',
+  padding: '0.3em 0.7em',
+  borderRadius: 'var(--osd-radius)',
+  background,
+  color,
+  alignSelf: received ? 'flex-start' : undefined,
+});
+
+type LineProps = {
+  id: string;
+  fontSize: number | string;
+  color: string;
+  background?: string;
+  received?: boolean;
+  style?: CSSProperties;
+  children: ReactNode;
+};
+
 const Line = ({
   id,
   fontSize,
   color,
   background = 'transparent',
+  received = false,
+  style,
   children,
-}: {
-  id: string;
-  fontSize: number | string;
-  color: string;
-  background?: string;
-  children: ReactNode;
-}) => (
+}: LineProps) => (
   <MorphElement id={id}>
+    <div style={{ ...pill(fontSize, color, background, received), ...style }}>{children}</div>
+  </MorphElement>
+);
+
+// A message on its debut page: the audience-facing instance renders without a
+// morph id so the runtime doesn't clone it and the fade-up owns the entrance;
+// every other instance (exit snapshot, thumbnails, print) renders the settled
+// MorphElement so the next cut can still pair it.
+const DebutLine = (props: LineProps) => {
+  const animate = useIsActivePage();
+  if (!animate) return <Line {...props} />;
+  const { fontSize, color, background = 'transparent', received = false, style, children } = props;
+  return (
     <div
       style={{
-        fontSize,
-        lineHeight: 1.25,
-        fontWeight: 700,
-        letterSpacing: '-0.02em',
-        whiteSpace: 'nowrap',
-        padding: '0.3em 0.7em',
-        borderRadius: 'var(--osd-radius)',
-        background,
-        color,
+        ...pill(fontSize, color, background, received),
+        ...style,
+        animation: `morph-messages-rise ${RISE_MS}ms ${EASE_OUT} ${THREAD_MORPH_MS}ms both`,
       }}
     >
       {children}
     </div>
-  </MorphElement>
-);
+  );
+};
 
 const Introducing: Page = () => (
   <section style={stage}>
@@ -116,34 +183,27 @@ const Introducing: Page = () => (
 
 const Reveal: Page = () => (
   <section style={stage}>
-    <div style={{ ...centered, gap: 8 }}>
+    <div style={centered}>
       <Line id="msg-introducing" fontSize={72} color={muted}>
         Introducing
       </Line>
-      <Line id="msg-morph" fontSize="var(--osd-size-hero)" color="var(--osd-text)">
+      <Line
+        id="msg-morph"
+        fontSize="var(--osd-size-hero)"
+        color="var(--osd-text)"
+        style={{ marginTop: -36 }}
+      >
         Morph Transition
       </Line>
     </div>
   </section>
 );
 
-const Thread: Page = () => {
+const Sent: Page = () => {
   const animate = useIsActivePage();
   return (
     <section style={stage}>
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          bottom: 0,
-          right: 160,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-end',
-          justifyContent: 'center',
-          gap: 14,
-        }}
-      >
+      <div style={thread}>
         <Line
           id="msg-introducing"
           fontSize="var(--osd-size-body)"
@@ -168,7 +228,7 @@ const Thread: Page = () => {
             color: muted,
             marginRight: 12,
             animation: animate
-              ? `morph-messages-rise 480ms cubic-bezier(0, 0, 0.2, 1) ${MORPH_MS}ms both`
+              ? `morph-messages-rise 480ms ${EASE_OUT} ${HERO_MORPH_MS}ms both`
               : 'none',
           }}
         >
@@ -179,4 +239,79 @@ const Thread: Page = () => {
   );
 };
 
-export default [Introducing, Reveal, Thread] satisfies Page[];
+const Question: Page = () => (
+  <section style={stage}>
+    <div style={thread}>
+      <Line
+        id="msg-introducing"
+        fontSize="var(--osd-size-body)"
+        color="#ffffff"
+        background="var(--osd-accent)"
+      >
+        Introducing
+      </Line>
+      <Line
+        id="msg-morph"
+        fontSize="var(--osd-size-body)"
+        color="#ffffff"
+        background="var(--osd-accent)"
+      >
+        Morph Transition
+      </Line>
+      <DebutLine
+        id="msg-question"
+        fontSize="var(--osd-size-body)"
+        color="var(--osd-text)"
+        background={grayBubble}
+        received
+      >
+        How do I use it? 👀
+      </DebutLine>
+    </div>
+  </section>
+);
+
+const Answer: Page = () => (
+  <section style={stage}>
+    <div style={thread}>
+      <Line
+        id="msg-introducing"
+        fontSize="var(--osd-size-body)"
+        color="#ffffff"
+        background="var(--osd-accent)"
+      >
+        Introducing
+      </Line>
+      <Line
+        id="msg-morph"
+        fontSize="var(--osd-size-body)"
+        color="#ffffff"
+        background="var(--osd-accent)"
+      >
+        Morph Transition
+      </Line>
+      <Line
+        id="msg-question"
+        fontSize="var(--osd-size-body)"
+        color="var(--osd-text)"
+        background={grayBubble}
+        received
+      >
+        How do I use it? 👀
+      </Line>
+      <DebutLine
+        id="msg-answer"
+        fontSize="var(--osd-size-body)"
+        color="#ffffff"
+        background="var(--osd-accent)"
+      >
+        Use the new Morph Transition primitive from open-slide
+      </DebutLine>
+    </div>
+  </section>
+);
+
+Question.transition = threadTransition;
+Answer.transition = threadTransition;
+
+export default [Introducing, Reveal, Sent, Question, Answer] satisfies Page[];
