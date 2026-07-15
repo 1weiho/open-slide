@@ -265,6 +265,12 @@ function getStyleProperty(styles: CSSStyleDeclaration, css: string): string {
   return styles.getPropertyValue(css);
 }
 
+// element.animate() silently drops kebab-case keys; keyframe properties must
+// use their IDL camelCase names.
+function keyframeProperty(css: string): string {
+  return css.replace(/^-/, '').replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
+}
+
 function visualStyleKeyframe(
   styles: CSSStyleDeclaration,
   opacity?: string,
@@ -280,7 +286,7 @@ function visualStyleKeyframe(
     }
     const value = getStyleProperty(styles, prop);
     if (prop === TEXT_FILL_COLOR_PROPERTY && value === styles.color) continue;
-    if (value) frame[prop] = value;
+    if (value) frame[keyframeProperty(prop)] = value;
   }
   if (opacity !== undefined) frame.opacity = opacity;
   return frame;
