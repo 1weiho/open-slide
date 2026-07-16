@@ -8,16 +8,12 @@ export function Hero() {
       <div className="relative mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 pt-20 sm:pt-32 lg:pt-44 pb-20 sm:pb-32">
         <div className="flex flex-col gap-10 sm:gap-14 max-w-[920px]">
           <h1
-            className="text-[44px] sm:text-[72px] lg:text-[100px] leading-[1.05] sm:leading-[0.98] tracking-[-0.035em] rise"
+            className="text-[42px] sm:text-[68px] lg:text-[92px] leading-[1.05] sm:leading-[1.0] tracking-[-0.045em] font-medium text-[color:var(--color-text)] rise"
             style={{ animationDelay: '80ms' }}
           >
-            <span className="font-[family-name:var(--font-sans)] font-medium text-[color:var(--color-text)]">
-              The slide framework
-            </span>
+            The slide framework
             <br />
-            <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-paper)]">
-              built for <span className="text-[color:var(--color-accent)]">agents</span>.
-            </span>
+            built for <span className="text-[color:var(--color-accent)]">agents</span>.
           </h1>
 
           <p

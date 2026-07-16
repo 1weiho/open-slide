@@ -1,7 +1,7 @@
 import { RootProvider } from 'fumadocs-ui/provider/next';
 import './global.css';
 import type { Metadata, Viewport } from 'next';
-import { Geist, Instrument_Serif, JetBrains_Mono } from 'next/font/google';
+import { Geist, JetBrains_Mono } from 'next/font/google';
 import { appName, gitConfig, siteUrl } from '@/lib/shared';
 
 const geist = Geist({
@@ -13,14 +13,6 @@ const geist = Geist({
 const jetbrains = JetBrains_Mono({
   variable: '--font-jetbrains-mono',
   subsets: ['latin'],
-  display: 'swap',
-});
-
-const instrument = Instrument_Serif({
-  variable: '--font-instrument-serif',
-  subsets: ['latin'],
-  weight: '400',
-  style: ['normal', 'italic'],
   display: 'swap',
 });
 
@@ -102,8 +94,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#F7F4EC' },
-    { media: '(prefers-color-scheme: dark)', color: '#1A1814' },
+    { media: '(prefers-color-scheme: light)', color: '#FCFCFC' },
+    { media: '(prefers-color-scheme: dark)', color: '#0A0A0A' },
   ],
 };
 
@@ -112,7 +104,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geist.className} ${geist.variable} ${jetbrains.variable} ${instrument.variable}`}
+      className={`${geist.className} ${geist.variable} ${jetbrains.variable}`}
     >
       <body className="flex flex-col min-h-screen">
         <RootProvider>{children}</RootProvider>

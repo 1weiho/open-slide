@@ -15,17 +15,13 @@ export function Inspector() {
     <section id="inspector" className="relative">
       <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-[color:var(--color-rule)]" />
       <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-20 sm:py-32 lg:py-40">
-        <h2 className="text-[32px] sm:text-[44px] lg:text-[64px] leading-[1.1] sm:leading-[1.05] tracking-[-0.03em] max-w-[860px] mb-14 sm:mb-20">
-          <span className="font-[family-name:var(--font-sans)] font-medium">
-            Talk to the agent.
-          </span>
+        <h2 className="text-[32px] sm:text-[44px] lg:text-[60px] leading-[1.1] sm:leading-[1.05] tracking-[-0.035em] font-medium max-w-[860px] mb-14 sm:mb-20">
+          Talk to the agent.
           <br />
-          <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-accent)]">
-            Or just tap the canvas.
-          </span>
+          <span className="text-[color:var(--color-muted)]">Or just tap the canvas.</span>
         </h2>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[6px] overflow-hidden">
+        <div className="floating grid grid-cols-1 lg:grid-cols-2 gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[8px] overflow-hidden">
           <FeatureCell
             num="01"
             kicker="agent applies"
@@ -72,8 +68,8 @@ function FeatureCell({
   visual: ReactNode;
 }) {
   return (
-    <div className="group relative bg-[color:var(--color-ink)] flex flex-col gap-10 p-8 sm:p-10 lg:p-12 transition-colors hover:bg-[color:var(--color-panel)]">
-      <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.18em] uppercase text-[color:var(--color-muted)]">
+    <div className="group relative bg-[color:var(--color-panel)] flex flex-col gap-10 p-8 sm:p-10 lg:p-12">
+      <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.08em] uppercase text-[color:var(--color-muted)]">
         {num} · {kicker}
       </span>
 
@@ -226,7 +222,7 @@ function AgentApplyVisual() {
 
           {/* "Agent applying..." status pill — appears after submit, fades before style change settles */}
           <motion.div
-            className="absolute right-[1.5cqw] bottom-[1.5cqw] inline-flex items-center gap-[0.55cqw] rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] font-[family-name:var(--font-sans)] text-[color:var(--color-text)] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.35)]"
+            className="absolute right-[1.5cqw] bottom-[1.5cqw] inline-flex items-center gap-[0.55cqw] rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] font-[family-name:var(--font-sans)] text-[color:var(--color-text)] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.18)]"
             style={{ padding: '0.55cqw 0.9cqw', fontSize: '1.05cqw' }}
             animate={
               active
@@ -476,7 +472,7 @@ function VisualEditorVisual() {
           {/* SaveBar — matches core/SaveCard layout */}
           <div className="absolute left-1/2 -translate-x-1/2" style={{ bottom: '3cqw' }}>
             <div
-              className="inline-flex items-center gap-[0.4cqw] whitespace-nowrap rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)]/95 backdrop-blur-md shadow-[0_8px_24px_-12px_rgba(0,0,0,0.35)]"
+              className="inline-flex items-center gap-[0.4cqw] whitespace-nowrap rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)]/95 backdrop-blur-md shadow-[0_8px_24px_-12px_rgba(0,0,0,0.18)]"
               style={{ padding: '0.35cqw 0.35cqw 0.35cqw 0.5cqw' }}
             >
               <SaveBarIconBtn glyph={<UndoGlyph />} />
@@ -604,7 +600,7 @@ function VisualEditorVisual() {
           <PanelSection label="Color">
             <PanelRow label="Text">
               <PanelSwatch color="var(--color-accent)" />
-              <PanelInput value="#D56B48" mono uppercase />
+              <PanelInput value="#DE3B3D" mono uppercase />
             </PanelRow>
           </PanelSection>
         </div>

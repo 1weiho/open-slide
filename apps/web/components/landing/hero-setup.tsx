@@ -101,7 +101,7 @@ export function HeroSetup() {
         type="button"
         aria-label={option.copyLabel}
         onClick={copySetup}
-        className="group flex h-[58px] w-[337px] max-w-full items-center gap-3 rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] px-5 text-left shadow-[0_18px_70px_-36px_color-mix(in_oklab,var(--color-accent)_55%,transparent)] transition-[border-color,background-color,box-shadow] duration-200 hover:border-[color:var(--color-accent)]/50 hover:bg-[color:var(--color-panel-hi)] hover:shadow-[0_22px_80px_-34px_color-mix(in_oklab,var(--color-accent)_65%,transparent)] sm:h-[68px] sm:px-7"
+        className="group floating flex h-[58px] w-[337px] max-w-full items-center gap-3 rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] px-5 text-left transition-[border-color,background-color] duration-200 hover:border-[color:var(--color-accent)]/50 sm:h-[68px] sm:px-7"
       >
         <span className="relative h-[20px] min-w-0 flex-1 overflow-hidden sm:h-[22px]">
           <AnimatePresence initial={false} custom={direction}>

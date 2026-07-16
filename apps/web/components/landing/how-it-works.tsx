@@ -82,7 +82,7 @@ function AgentRow() {
       {agents.map(([file, name]) => (
         <img key={file} src={`/assets/${file}`} alt={name} className={cls} />
       ))}
-      <span className="text-[10px] tracking-[0.1em] uppercase text-[color:var(--color-muted)]">
+      <span className="text-[10px] tracking-[0.08em] uppercase text-[color:var(--color-muted)]">
         ...
       </span>
     </span>
@@ -94,21 +94,19 @@ export function HowItWorks() {
     <section id="how-it-works" className="relative">
       <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-[color:var(--color-rule)]" />
       <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-20 sm:py-32 lg:py-40">
-        <h2 className="text-[32px] sm:text-[44px] lg:text-[64px] leading-[1.1] sm:leading-[1.05] tracking-[-0.03em] max-w-[820px] mb-14 sm:mb-20">
-          <span className="font-[family-name:var(--font-sans)] font-medium">Slides as code.</span>
+        <h2 className="text-[32px] sm:text-[44px] lg:text-[60px] leading-[1.1] sm:leading-[1.05] tracking-[-0.035em] font-medium max-w-[820px] mb-14 sm:mb-20">
+          Slides as code.
           <br />
-          <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-accent)]">
-            Crafted by agents.
-          </span>
+          <span className="text-[color:var(--color-muted)]">Crafted by agents.</span>
         </h2>
 
-        <ol className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[6px] overflow-hidden">
+        <ol className="floating grid grid-cols-1 md:grid-cols-3 gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[8px] overflow-hidden">
           {steps.map((s) => (
             <li
               key={s.num}
-              className="group relative p-8 sm:p-10 lg:p-12 bg-[color:var(--color-ink)] flex flex-col gap-7 transition-colors hover:bg-[color:var(--color-panel)]"
+              className="group relative p-8 sm:p-10 lg:p-12 bg-[color:var(--color-panel)] flex flex-col gap-7"
             >
-              <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.18em] uppercase text-[color:var(--color-muted)]">
+              <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.08em] uppercase text-[color:var(--color-muted)]">
                 {s.num} · {s.kicker}
               </span>
 
@@ -121,14 +119,14 @@ export function HowItWorks() {
                 </p>
               </div>
 
-              <div className="rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] p-4 font-[family-name:var(--font-mono)] text-[13px]">
+              <div className="rounded-[6px] border border-[color:var(--color-rule-soft)] bg-[color:var(--color-panel-hi)] p-4 font-[family-name:var(--font-mono)] text-[13px]">
                 <div className="flex items-center gap-2">
                   <span className="text-[color:var(--color-accent)]">{s.code.prompt}</span>
                   <span className="text-[color:var(--color-text)] truncate">
                     {renderLine(s.code.line)}
                   </span>
                 </div>
-                <div className="mt-3 text-[11px] tracking-[0.1em] uppercase text-[color:var(--color-muted)]">
+                <div className="mt-3 text-[11px] tracking-[0.08em] uppercase text-[color:var(--color-muted)]">
                   {s.code.tail}
                 </div>
               </div>

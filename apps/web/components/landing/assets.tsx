@@ -52,12 +52,10 @@ export function Assets() {
     <section id="assets" className="relative">
       <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-[color:var(--color-rule)]" />
       <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-20 sm:py-32 lg:py-40">
-        <h2 className="text-[32px] sm:text-[44px] lg:text-[64px] leading-[1.1] sm:leading-[1.05] tracking-[-0.03em] max-w-[820px] mb-14 sm:mb-20">
-          <span className="font-[family-name:var(--font-sans)] font-medium">Drop in images.</span>
+        <h2 className="text-[32px] sm:text-[44px] lg:text-[60px] leading-[1.1] sm:leading-[1.05] tracking-[-0.035em] font-medium max-w-[820px] mb-14 sm:mb-20">
+          Drop in images.
           <br />
-          <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-warm)]">
-            Pull in logos.
-          </span>
+          <span className="text-[color:var(--color-muted)]">Pull in logos.</span>
         </h2>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
@@ -67,11 +65,11 @@ export function Assets() {
           </div>
 
           {/* side callouts */}
-          <div className="lg:col-span-4 flex flex-col gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[6px] overflow-hidden">
+          <div className="floating lg:col-span-4 flex flex-col gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[8px] overflow-hidden">
             {callouts.map((c) => (
               <div
                 key={c.eyebrow}
-                className="bg-[color:var(--color-ink)] p-6 sm:p-7 lg:p-8 flex flex-col gap-3"
+                className="bg-[color:var(--color-panel)] p-6 sm:p-7 lg:p-8 flex flex-col gap-3"
               >
                 <span className="caption">{c.eyebrow}</span>
                 <h3 className="text-[22px] lg:text-[24px] font-medium tracking-[-0.025em] leading-[1.2]">
@@ -91,9 +89,9 @@ export function Assets() {
 
 function AssetManagerMock() {
   return (
-    <div className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden">
+    <div className="floating relative rounded-[8px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden">
       {/* window header */}
-      <div className="flex items-center px-4 sm:px-5 h-10 sm:h-11 border-b border-[color:var(--color-rule)] font-[family-name:var(--font-mono)] text-[12px] text-[color:var(--color-muted)]">
+      <div className="flex items-center px-4 sm:px-5 h-10 sm:h-11 border-b border-[color:var(--color-rule-soft)] font-[family-name:var(--font-mono)] text-[12px] text-[color:var(--color-muted)]">
         <div className="flex items-center gap-2">
           <span className="size-[10px] rounded-full bg-[#ff5f56]" />
           <span className="size-[10px] rounded-full bg-[#ffbd2e]" />
@@ -132,7 +130,7 @@ function AssetManagerMock() {
         </div>
 
         {/* svgl Logo Search dialog */}
-        <div className="absolute right-3 sm:right-5 bottom-3 sm:bottom-5 w-[80%] sm:w-[64%] max-w-[420px] rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] shadow-[0_10px_28px_-14px_rgba(0,0,0,0.35)] p-4">
+        <div className="floating absolute right-3 sm:right-5 bottom-3 sm:bottom-5 w-[80%] sm:w-[64%] max-w-[420px] rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-4">
           <div className="flex items-center justify-between mb-3 font-[family-name:var(--font-mono)] text-[11px] text-[color:var(--color-muted)]">
             <span>Search svgl</span>
             <span className="text-[color:var(--color-dim)]">✕</span>

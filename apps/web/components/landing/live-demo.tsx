@@ -36,13 +36,13 @@ export function LiveDemo() {
           Live demo
         </h2>
         <div
-          className="relative block w-full overflow-hidden rounded-[8px] border border-[color:var(--color-rule)] bg-black"
+          className="floating relative block w-full overflow-hidden rounded-[8px] border border-[color:var(--color-rule)] bg-black"
           style={{ aspectRatio: '16 / 9' }}
         >
           <InlineSlidePlayer index={index} onIndexChange={setIndex} />
         </div>
 
-        <div className="mt-6 flex items-center justify-between font-[family-name:var(--font-mono)] text-[11px] tracking-[0.12em] uppercase text-[color:var(--color-muted)]">
+        <div className="mt-6 flex items-center justify-between text-[13px] font-medium text-[color:var(--color-muted)]">
           <a
             href="https://demo.open-slide.dev/"
             target="_blank"
@@ -54,7 +54,7 @@ export function LiveDemo() {
             <span aria-hidden>↗</span>
           </a>
           <span className="flex items-center gap-3">
-            <span className="text-[color:var(--color-text-soft)]">
+            <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.08em] text-[color:var(--color-text-soft)]">
               {String(index + 1).padStart(2, '0')} / {String(count).padStart(2, '0')}
             </span>
             <button

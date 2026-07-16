@@ -34,14 +34,11 @@ export function FAQ() {
     <section id="faq" className="relative">
       <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-[color:var(--color-rule)]" />
       <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-20 sm:py-32 lg:py-40">
-        <h2 className="text-[32px] sm:text-[44px] lg:text-[64px] leading-[1.1] sm:leading-[1.05] tracking-[-0.03em] max-w-[820px] mb-14 sm:mb-20">
-          <span className="font-[family-name:var(--font-sans)] font-medium">Questions,</span>{' '}
-          <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-accent)]">
-            answered.
-          </span>
+        <h2 className="text-[32px] sm:text-[44px] lg:text-[60px] leading-[1.1] sm:leading-[1.05] tracking-[-0.035em] font-medium max-w-[820px] mb-14 sm:mb-20">
+          Questions, <span className="text-[color:var(--color-muted)]">answered.</span>
         </h2>
 
-        <dl className="max-w-[860px]">
+        <dl className="max-w-[860px] border-y border-[color:var(--color-rule-soft)] divide-y divide-[color:var(--color-rule-soft)]">
           {faqs.map((item, idx) => (
             <FaqItem key={item.q} item={item} index={idx} />
           ))}
