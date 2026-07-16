@@ -96,16 +96,15 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
       ],
       // The app source ships inside node_modules/@open-slide/core/src/app, so
       // Vite's dep scanner traverses it as if it were a third-party dep and
-      // tries to bundle our virtual imports with esbuild. Mark them external.
-      esbuildOptions: {
+      // tries to bundle our virtual imports. Mark them external for Rolldown.
+      rolldownOptions: {
         plugins: [
           {
             name: 'open-slide:virtual-externals',
-            setup(build) {
-              build.onResolve({ filter: /^virtual:open-slide\// }, (args) => ({
-                path: args.path,
-                external: true,
-              }));
+            resolveId(id: string) {
+              if (id.startsWith('virtual:open-slide/')) {
+                return { id, external: true };
+              }
             },
           },
         ],
