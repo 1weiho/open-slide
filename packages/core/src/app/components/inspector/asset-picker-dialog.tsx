@@ -188,6 +188,7 @@ export function AssetPickerDialog({
     </Dialog>
   );
 }
+/* oxlint-enable jsx-a11y/no-noninteractive-element-interactions */
 
 function hasFiles(e: React.DragEvent): boolean {
   const types = e.dataTransfer?.types;

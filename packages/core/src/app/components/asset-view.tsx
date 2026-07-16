@@ -627,6 +627,7 @@ export function AssetView({ slideId }: Props) {
     </section>
   );
 }
+/* oxlint-enable jsx-a11y/no-noninteractive-element-interactions */
 
 function EmptyState() {
   const t = useLocale();
