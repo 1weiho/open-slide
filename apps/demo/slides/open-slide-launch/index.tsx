@@ -99,7 +99,7 @@ const Letters = ({
   style?: CSSProperties;
 }) => (
   <span className={className} style={{ display: 'inline-flex', whiteSpace: 'pre', ...style }}>
-    {[...text].map((c, i) => (
+    {Array.from(text).map((c, i) => (
       <span
         key={i}
         style={{

@@ -4,8 +4,8 @@ import { SLIDE_ID_RE } from '../editing/slide-ops.ts';
 export const GLOBAL_SCOPE = '@global';
 export const ASSET_MAX_BYTES = 25 * 1024 * 1024;
 
-// biome-ignore lint/suspicious/noControlCharactersInRegex: explicit control-char block list for filename safety
-const ASSET_FORBIDDEN_RE = /[\x00-\x1F\x7F/\\:*?"<>|]/;
+// oxlint-disable-next-line no-control-regex -- explicit control-char block list for filename safety
+const ASSET_FORBIDDEN_RE = /[\u0000-\u001F\u007F/\\:*?"<>|]/;
 
 const MIME_BY_EXT: Record<string, string> = {
   png: 'image/png',

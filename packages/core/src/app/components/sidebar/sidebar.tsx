@@ -110,7 +110,7 @@ export function Sidebar({
     }
   };
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: commitCreate reads latest state via stateRef
+  // commitCreate reads latest state via stateRef
   useEffect(() => {
     if (!creating) return;
     const onDown = (e: MouseEvent) => {
@@ -119,11 +119,11 @@ export function Sidebar({
       if (!target) return;
       if (target.closest('[data-folder-create]')) return;
       if (target.closest('[data-slot="popover-content"]')) return;
-      commitCreate();
+      void commitCreate();
     };
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
-  }, [creating]);
+  }, [creating]); // oxlint-disable-line react-hooks/exhaustive-deps -- commitCreate via stateRef
 
   return (
     <aside className="relative flex h-full w-[16.5rem] shrink-0 flex-col border-r border-hairline bg-sidebar text-sidebar-foreground">
@@ -270,7 +270,7 @@ export function Sidebar({
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.nativeEvent.isComposing) return;
-                  if (e.key === 'Enter') commitCreate();
+                  if (e.key === 'Enter') void commitCreate();
                   if (e.key === 'Escape') exitCreate();
                 }}
                 placeholder={t.home.folderName}

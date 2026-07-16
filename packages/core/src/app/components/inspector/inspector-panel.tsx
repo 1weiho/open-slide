@@ -688,7 +688,10 @@ function ColorField({
 
   return (
     <Field label={label}>
-      <label className="relative inline-flex size-8 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border bg-background shadow-xs">
+      <label
+        aria-label={label}
+        className="relative inline-flex size-8 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border bg-background shadow-xs"
+      >
         <span
           className="size-5 rounded-sm"
           style={{
@@ -927,7 +930,7 @@ function CommentsSection({
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
-                submit();
+                void submit();
               }
             }}
             placeholder={t.inspector.commentPlaceholder}

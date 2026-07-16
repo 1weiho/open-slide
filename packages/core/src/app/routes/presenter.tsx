@@ -60,12 +60,17 @@ export function Presenter() {
     return () => clearTimeout(t);
   }, [channel]);
 
-  const send = channel.send;
-  const goPrev = useCallback(() => send({ type: 'prev' }), [send]);
-  const goNext = useCallback(() => send({ type: 'next' }), [send]);
-  const goTo = useCallback((i: number) => send({ type: 'goto', index: i }), [send]);
-  const toggleBlack = useCallback(() => send({ type: 'toggle-blackout', mode: 'black' }), [send]);
-  const toggleWhite = useCallback(() => send({ type: 'toggle-blackout', mode: 'white' }), [send]);
+  const goPrev = useCallback(() => channel.send({ type: 'prev' }), [channel]);
+  const goNext = useCallback(() => channel.send({ type: 'next' }), [channel]);
+  const goTo = useCallback((i: number) => channel.send({ type: 'goto', index: i }), [channel]);
+  const toggleBlack = useCallback(
+    () => channel.send({ type: 'toggle-blackout', mode: 'black' }),
+    [channel],
+  );
+  const toggleWhite = useCallback(
+    () => channel.send({ type: 'toggle-blackout', mode: 'white' }),
+    [channel],
+  );
 
   // Local-window key bindings mirror the projection's main shortcuts so the
   // presenter can drive without the mouse.

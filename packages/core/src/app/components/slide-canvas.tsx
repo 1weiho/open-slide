@@ -89,7 +89,7 @@ export function SlideCanvas({
               height: CANVAS_HEIGHT,
               transform: `scale(${s})`,
               transformOrigin: 'top left',
-              ...(designVars ?? {}),
+              ...designVars,
             } as CSSProperties
           }
         >

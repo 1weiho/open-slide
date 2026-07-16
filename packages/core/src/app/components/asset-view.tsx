@@ -291,6 +291,7 @@ export function AssetView({ slideId }: Props) {
     );
   }
 
+  /* oxlint-disable jsx-a11y/no-noninteractive-element-interactions -- file drop zone */
   return (
     <section
       aria-label={t.asset.sectionAria}
@@ -1130,13 +1131,13 @@ function RenameAsset({
           disabled={saving}
           onChange={(event) => setValue(event.target.value)}
           onBlur={() => {
-            if (!saving) commit();
+            if (!saving) void commit();
           }}
           onKeyDown={(event) => {
             if (event.nativeEvent.isComposing) return;
             if (event.key === 'Enter') {
               event.preventDefault();
-              commit();
+              void commit();
             } else if (event.key === 'Escape') {
               event.preventDefault();
               onCancel();
@@ -1180,13 +1181,13 @@ function RenameAsset({
           disabled={saving}
           onChange={(e) => setValue(e.target.value)}
           onBlur={() => {
-            if (!saving) commit();
+            if (!saving) void commit();
           }}
           onKeyDown={(e) => {
             if (e.nativeEvent.isComposing) return;
             if (e.key === 'Enter') {
               e.preventDefault();
-              commit();
+              void commit();
             } else if (e.key === 'Escape') {
               e.preventDefault();
               onCancel();
@@ -1379,7 +1380,7 @@ function LogoSearchDialog({
     queueMicrotask(() => inputRef.current?.focus());
   }, []);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: retryToken is a bump-to-refetch trigger
+  // retryToken is a bump-to-refetch trigger; toast copy is locale-stable
   useEffect(() => {
     const ctrl = new AbortController();
     const timer = setTimeout(() => {
@@ -1400,7 +1401,7 @@ function LogoSearchDialog({
       clearTimeout(timer);
       ctrl.abort();
     };
-  }, [query, retryToken]);
+  }, [query, retryToken]); // oxlint-disable-line react-hooks/exhaustive-deps -- toast string is locale-stable
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>

@@ -52,8 +52,7 @@ describe('parseSlideDesign', () => {
 
   it('reports exists:false for a slide with no design const', () => {
     const r = parseSlideDesign(SLIDE_WITHOUT_DESIGN);
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.exists).toBe(false);
+    expect(r).toEqual({ ok: false, exists: false });
   });
 
   it('fills missing fields with defaults', () => {

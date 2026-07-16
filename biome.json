@@ -28,30 +28,9 @@
   },
   "overrides": [
     {
-      "includes": ["**/slides/**", "apps/web/components/landing/**"],
+      "includes": ["**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}", "**/*.d.ts"],
       "linter": {
-        "rules": {
-          "a11y": {
-            "noSvgWithoutTitle": "off",
-            "noStaticElementInteractions": "off",
-            "useAriaPropsSupportedByRole": "off",
-            "useSemanticElements": "off"
-          },
-          "performance": {
-            "noImgElement": "off"
-          },
-          "complexity": {
-            "noUselessFragments": "off"
-          },
-          "security": {
-            "noDangerouslySetInnerHtml": "off"
-          },
-          "suspicious": {
-            "noArrayIndexKey": "off",
-            "noTemplateCurlyInString": "off",
-            "noShadowRestrictedNames": "off"
-          }
-        }
+        "enabled": false
       }
     }
   ],

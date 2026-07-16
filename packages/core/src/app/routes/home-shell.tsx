@@ -71,10 +71,10 @@ export function HomeShell() {
 
   const selectFolder = useCallback(
     (id: string) => {
-      if (id === THEMES_ID) navigate('/themes', { replace: true });
-      else if (id === ASSETS_ID) navigate('/assets', { replace: true });
-      else if (id === ALL_SLIDES_ID) navigate('/', { replace: true });
-      else navigate(`/?f=${encodeURIComponent(id)}`, { replace: true });
+      if (id === THEMES_ID) void navigate('/themes', { replace: true });
+      else if (id === ASSETS_ID) void navigate('/assets', { replace: true });
+      else if (id === ALL_SLIDES_ID) void navigate('/', { replace: true });
+      else void navigate(`/?f=${encodeURIComponent(id)}`, { replace: true });
     },
     [navigate],
   );

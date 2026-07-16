@@ -177,7 +177,7 @@ export function useAssets(slideId: string): UseAssetsResult {
     if (!available) return;
     const next = await listAssets(slideId);
     setAssets(next);
-  }, [slideId]);
+  }, [available, slideId]);
 
   useEffect(() => {
     if (!available) return;
@@ -196,7 +196,7 @@ export function useAssets(slideId: string): UseAssetsResult {
     return () => {
       cancelled = true;
     };
-  }, [slideId]);
+  }, [available, slideId]);
 
   useEffect(() => {
     if (!available || !import.meta.hot) return;
@@ -221,7 +221,7 @@ export function useAssets(slideId: string): UseAssetsResult {
       import.meta.hot?.off('open-slide:assets-changed', assetHandler);
       import.meta.hot?.off('open-slide:slide-changed', slideHandler);
     };
-  }, [slideId, refresh]);
+  }, [available, slideId, refresh]);
 
   const upload = useCallback(
     async (file: File, opts?: UploadOptions) => {
@@ -230,7 +230,7 @@ export function useAssets(slideId: string): UseAssetsResult {
       if (res.ok) await refresh();
       return { ok: res.ok, status: res.status };
     },
-    [slideId, refresh],
+    [available, slideId, refresh],
   );
 
   const rename = useCallback(
@@ -240,7 +240,7 @@ export function useAssets(slideId: string): UseAssetsResult {
       if (res.ok) await refresh();
       return { ok: res.ok, status: res.status };
     },
-    [slideId, refresh],
+    [available, slideId, refresh],
   );
 
   const remove = useCallback(
@@ -250,7 +250,7 @@ export function useAssets(slideId: string): UseAssetsResult {
       if (res.ok) await refresh();
       return { ok: res.ok, status: res.status };
     },
-    [slideId, refresh],
+    [available, slideId, refresh],
   );
 
   return { assets, loading, available, upload, rename, remove, refresh };

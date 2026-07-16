@@ -125,7 +125,7 @@ export function SlidePreloadLayer({ pages, index, design, includeCurrent = false
       ]);
     };
     const timeout = new Promise<void>((resolve) => setTimeout(resolve, SETTLE_TIMEOUT_MS));
-    Promise.race([settle(), timeout]).then(() => {
+    void Promise.race([settle(), timeout]).then(() => {
       if (!cancelled) setDone(true);
     });
     return () => {

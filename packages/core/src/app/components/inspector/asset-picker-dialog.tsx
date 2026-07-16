@@ -57,6 +57,7 @@ export function AssetPickerDialog({
     [effectiveSlideId, scope, refresh, onPick, t],
   );
 
+  /* oxlint-disable jsx-a11y/no-noninteractive-element-interactions -- file drop zone */
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-xl">
@@ -93,6 +94,7 @@ export function AssetPickerDialog({
           id={inputId}
           type="file"
           accept="image/*"
+          aria-label={t.asset.upload}
           className="sr-only"
           disabled={uploading}
           onChange={(e) => {
@@ -142,6 +144,7 @@ export function AssetPickerDialog({
                 <button
                   key={asset.name}
                   type="button"
+                  aria-label={asset.name}
                   onClick={() => onPick(asset, scope)}
                   className={cn(
                     'group flex flex-col overflow-hidden rounded-lg border bg-card text-left shadow-sm transition-all',

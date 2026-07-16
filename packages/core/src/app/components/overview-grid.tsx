@@ -43,10 +43,10 @@ export function OverviewGrid({
   const focusedRef = useRef<HTMLButtonElement | null>(null);
   const t = useLocale();
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: only re-sync on open transition
+  // only re-sync focused index on open transition
   useEffect(() => {
     if (open) setFocused(current);
-  }, [open]);
+  }, [open]); // oxlint-disable-line react-hooks/exhaustive-deps -- intentionally ignore `current` while open
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: `focused` swaps which button holds the ref; we must re-run to focus the new node
   useEffect(() => {

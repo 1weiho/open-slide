@@ -58,12 +58,12 @@ export function useComments(slideId: string) {
   );
 
   useEffect(() => {
-    refetch();
+    void refetch();
   }, [refetch]);
 
   useEffect(() => {
     if (!import.meta.hot) return;
-    const handler = () => refetch();
+    const handler = () => void refetch();
     import.meta.hot.on('vite:afterUpdate', handler);
     return () => {
       import.meta.hot?.off('vite:afterUpdate', handler);
