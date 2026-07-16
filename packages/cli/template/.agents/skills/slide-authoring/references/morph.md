@@ -8,7 +8,8 @@ When the *same visual object* exists on two adjacent pages, the runtime can morp
 2. Enable `morph` on the incoming page's transition.
 
 ```tsx
-import { MorphElement } from '@open-slide/core';
+import { MorphElement, type Page, type SlideTransition } from '@open-slide/core';
+import type { CSSProperties } from 'react';
 
 // Morph transition — opacity-only enter/exit keeps all the motion on the clones (see rules).
 const morphTransition: SlideTransition = {

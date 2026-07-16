@@ -37,6 +37,12 @@ type SlideTransition = {
   easing?: string;           // top-level fallback
   enter?: TransitionPhase;   // runs on incoming page
   exit?:  TransitionPhase;   // runs on outgoing page
+  morph?: boolean | MorphTransition;  // shared-element morph — see morph.md
+};
+type MorphTransition = {
+  duration?: number;
+  easing?: string;
+  delay?: number;
 };
 ```
 
