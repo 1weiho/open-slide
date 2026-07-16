@@ -35,7 +35,7 @@ export async function GET(_req: Request, { params }: RouteContext<'/og/docs/[...
   const [geistRegular, geistMedium, mono, logoBuffer] = await Promise.all([
     loadGoogleFont('Geist', 400),
     loadGoogleFont('Geist', 500),
-    loadGoogleFont('JetBrains Mono', 500),
+    loadGoogleFont('Geist Mono', 500),
     readFile(path.join(process.cwd(), 'public/open-slide.png')),
   ]);
   const logoSrc = `data:image/png;base64,${logoBuffer.toString('base64')}`;
@@ -52,7 +52,7 @@ export async function GET(_req: Request, { params }: RouteContext<'/og/docs/[...
       fonts: [
         { name: 'Geist', data: geistRegular, weight: 400, style: 'normal' },
         { name: 'Geist', data: geistMedium, weight: 500, style: 'normal' },
-        { name: 'JetBrains Mono', data: mono, weight: 500, style: 'normal' },
+        { name: 'Geist Mono', data: mono, weight: 500, style: 'normal' },
       ],
     },
   );
@@ -101,7 +101,7 @@ function Frame({
         <img src={logoSrc} width={48} height={48} alt="" style={{ borderRadius: 8 }} />
         <div
           style={{
-            fontFamily: 'JetBrains Mono',
+            fontFamily: 'Geist Mono',
             fontSize: 18,
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
@@ -179,7 +179,7 @@ function Frame({
           marginTop: 'auto',
           paddingTop: 24,
           borderTop: `1px solid ${RULE}`,
-          fontFamily: 'JetBrains Mono',
+          fontFamily: 'Geist Mono',
           fontSize: 18,
           color: MUTED,
         }}

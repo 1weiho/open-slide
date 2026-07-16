@@ -56,6 +56,12 @@
   --color-fd-muted-foreground: oklch(0.72 0 0);
 }
 
+/* Unlayered so it beats Tailwind's @layer theme — routes every monospace
+   surface (font-mono utilities, preflight code/pre) through Geist Mono. */
+:root {
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
 html {
   scrollbar-gutter: stable;
 }

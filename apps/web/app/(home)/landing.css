@@ -30,7 +30,7 @@
     0 16px 40px -12px oklch(0 0 0 / 0.06);
 
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-jetbrains-mono);
+  --font-mono: var(--font-geist-mono);
 
   background: var(--color-ink);
   color: var(--color-text);
