@@ -13,3 +13,6 @@ minimumReleaseAgeExclude:
   - fumadocs-core@16.11.5
   - fumadocs-ui@16.11.5
   - fumadocs-mdx@15.2.0
+  - '@posthog/core@1.42.1'
+  - '@posthog/types@1.395.0'
+  - posthog-js@1.402.3
