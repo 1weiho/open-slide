@@ -98,10 +98,10 @@
   },
   "devDependencies": {
     "@playwright/test": "~1.56.1",
-    "@types/node": "^22.19.17",
+    "@types/node": "^22.19.21",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "tsdown": "^0.9.9",
-    "typescript": "^5.9.3"
+    "tsdown": "^0.21.10",
+    "typescript": "^6.0.3"
   }
 }

@@ -13,11 +13,12 @@ export default defineConfig({
     cli: 'src/cli.ts',
   },
   format: 'esm',
-  target: 'node18',
+  target: 'node22',
   platform: 'node',
   clean: true,
   dts: false,
   shims: false,
+  fixedExtension: false,
   define: {
     __CORE_VERSION_AT_BUILD__: JSON.stringify(corePkg.version),
   },
