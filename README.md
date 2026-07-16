@@ -83,7 +83,10 @@ This repo is a pnpm + Turbo monorepo.
 
 ## Development
 
+Requires **Node.js 24** (see `.nvmrc`) and **pnpm** via Corepack. Published packages support Node.js `>=22.13.0`.
+
 ```bash
+corepack enable
 pnpm install
 pnpm dev      # runs the demo against the local @open-slide/core
 pnpm build    # builds all packages

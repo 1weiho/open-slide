@@ -1,3 +1,10 @@
 packages:
   - "apps/*"
   - "packages/*"
+allowBuilds:
+  core-js: true
+  esbuild: true
+  msw: true
+  protobufjs: true
+  rolldown: true
+  sharp: true
