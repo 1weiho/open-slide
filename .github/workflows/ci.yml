@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -27,11 +26,20 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Enable Corepack
-        run: corepack enable
+        run: |
+          npm install -g corepack@latest
+          corepack enable
+          corepack prepare --activate
 
       - name: Get pnpm store directory
         shell: bash
-        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+        run: |
+          STORE_PATH="$(pnpm store path --silent)"
+          if [ -z "$STORE_PATH" ]; then
+            echo "pnpm store path was empty" >&2
+            exit 1
+          fi
+          echo "STORE_PATH=$STORE_PATH" >> "$GITHUB_ENV"
 
       - name: Cache pnpm store
         uses: actions/cache@v4
@@ -66,11 +74,20 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Enable Corepack
-        run: corepack enable
+        run: |
+          npm install -g corepack@latest
+          corepack enable
+          corepack prepare --activate
 
       - name: Get pnpm store directory
         shell: bash
-        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+        run: |
+          STORE_PATH="$(pnpm store path --silent)"
+          if [ -z "$STORE_PATH" ]; then
+            echo "pnpm store path was empty" >&2
+            exit 1
+          fi
+          echo "STORE_PATH=$STORE_PATH" >> "$GITHUB_ENV"
 
       - name: Cache pnpm store
         uses: actions/cache@v4
@@ -102,11 +119,20 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Enable Corepack
-        run: corepack enable
+        run: |
+          npm install -g corepack@latest
+          corepack enable
+          corepack prepare --activate
 
       - name: Get pnpm store directory
         shell: bash
-        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+        run: |
+          STORE_PATH="$(pnpm store path --silent)"
+          if [ -z "$STORE_PATH" ]; then
+            echo "pnpm store path was empty" >&2
+            exit 1
+          fi
+          echo "STORE_PATH=$STORE_PATH" >> "$GITHUB_ENV"
 
       - name: Cache pnpm store
         uses: actions/cache@v4
@@ -138,11 +164,20 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Enable Corepack
-        run: corepack enable
+        run: |
+          npm install -g corepack@latest
+          corepack enable
+          corepack prepare --activate
 
       - name: Get pnpm store directory
         shell: bash
-        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+        run: |
+          STORE_PATH="$(pnpm store path --silent)"
+          if [ -z "$STORE_PATH" ]; then
+            echo "pnpm store path was empty" >&2
+            exit 1
+          fi
+          echo "STORE_PATH=$STORE_PATH" >> "$GITHUB_ENV"
 
       - name: Cache pnpm store
         uses: actions/cache@v4
