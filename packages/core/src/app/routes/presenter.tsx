@@ -1,4 +1,12 @@
-import { ChevronLeft, ChevronRight, RotateCcw, Square, Sun } from 'lucide-react';
+import {
+  AArrowDown,
+  AArrowUp,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
+  Square,
+  Sun,
+} from 'lucide-react';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,6 +17,7 @@ import {
   usePresenterChannel,
 } from '../components/present/use-presenter-channel';
 import { SlideCanvas } from '../components/slide-canvas';
+import { isDeckWarmed, markDeckWarmed, SlidePreloadLayer } from '../components/slide-preload-layer';
 import { SlidePageProvider } from '../lib/page-context';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
 import { type StepController, StepHost } from '../lib/step-context';
@@ -28,6 +37,11 @@ export function Presenter() {
   const [hasProjection, setHasProjection] = useState(false);
   const requestedRef = useRef(false);
   const t = useLocale();
+  const [, setWarmedTick] = useState(0);
+  const handleAssetsWarmed = useCallback(() => {
+    markDeckWarmed(slideId);
+    setWarmedTick((n) => n + 1);
+  }, [slideId]);
 
   const channel = usePresenterChannel(slideId, (msg) => {
     if (msg.type === 'state') {
@@ -130,6 +144,31 @@ export function Presenter() {
   const CurrentPage = pages[index];
   const NextPage = hasNext ? pages[nextPageIndex] : null;
 
+  // Hold the loader while a hidden layer warms the whole deck's images and
+  // fonts, so the previews first paint with every asset already in cache.
+  if (!isDeckWarmed(slideId)) {
+    return (
+      <div className="dark grid h-dvh place-items-center bg-background text-muted-foreground">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative h-px w-56 overflow-hidden bg-border">
+            <span
+              aria-hidden
+              className="line-loader-bar absolute inset-y-[-0.5px] left-0 w-1/4 bg-foreground"
+            />
+          </div>
+          <div className="text-[11.5px]">{t.presenter.loadingAssets}</div>
+        </div>
+        <SlidePreloadLayer
+          pages={pages}
+          index={index}
+          design={slide.design}
+          includeCurrent
+          onDone={handleAssetsWarmed}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="dark flex h-dvh w-screen flex-col overflow-hidden bg-background text-foreground">
       <PresenterTopBar
@@ -156,7 +195,7 @@ export function Presenter() {
               <div
                 aria-hidden
                 className={cn(
-                  'pointer-events-none absolute inset-0 grid place-items-center text-[11px] tracking-[0.16em] uppercase',
+                  'pointer-events-none absolute inset-0 grid place-items-center text-[11px] tracking-[0.08em] uppercase',
                   blackout === 'black' ? 'bg-black text-white/35' : 'bg-white text-black/35',
                 )}
               >
@@ -190,22 +229,7 @@ export function Presenter() {
             </div>
           </div>
 
-          <div className="flex min-h-0 flex-1 flex-col gap-2">
-            <SectionLabel>{t.presenter.speakerNotes}</SectionLabel>
-            <div className="min-h-0 flex-1 overflow-y-auto rounded-[6px] border border-border bg-card p-3 text-[13.5px] leading-relaxed whitespace-pre-wrap text-card-foreground">
-              {note?.trim() ? (
-                note
-              ) : (
-                <span className="text-muted-foreground">
-                  {t.presenter.noNotesPrefix}
-                  <code className="rounded-[3px] bg-muted px-1 py-0.5 font-mono text-[12px]">
-                    export const notes = […]
-                  </code>
-                  {t.presenter.noNotesSuffix}
-                </span>
-              )}
-            </div>
-          </div>
+          <SpeakerNotes note={note} />
 
           <PresenterJumpControl total={total} current={index} onJump={goTo} />
         </aside>
@@ -316,6 +340,71 @@ function PresenterBottomBar({
         </Button>
       </div>
     </footer>
+  );
+}
+
+const NOTES_FONT_SIZES = [11, 12, 13.5, 15, 17, 20, 24, 28];
+const NOTES_FONT_SIZE_DEFAULT_INDEX = 2;
+const NOTES_FONT_SIZE_STORAGE_KEY = 'open-slide:presenter-notes-font-size';
+
+function SpeakerNotes({ note }: { note: string | undefined }) {
+  const t = useLocale();
+  const [sizeIndex, setSizeIndex] = useState(() => {
+    if (typeof window === 'undefined') return NOTES_FONT_SIZE_DEFAULT_INDEX;
+    const stored = Number(window.localStorage.getItem(NOTES_FONT_SIZE_STORAGE_KEY));
+    return NOTES_FONT_SIZES.includes(stored)
+      ? NOTES_FONT_SIZES.indexOf(stored)
+      : NOTES_FONT_SIZE_DEFAULT_INDEX;
+  });
+
+  useEffect(() => {
+    window.localStorage.setItem(NOTES_FONT_SIZE_STORAGE_KEY, String(NOTES_FONT_SIZES[sizeIndex]));
+  }, [sizeIndex]);
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
+      <div className="flex items-center justify-between">
+        <SectionLabel>{t.presenter.speakerNotes}</SectionLabel>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={() => setSizeIndex((i) => Math.max(0, i - 1))}
+            disabled={sizeIndex === 0}
+            title={t.presenter.notesTextSmaller}
+            aria-label={t.presenter.notesTextSmaller}
+          >
+            <AArrowDown className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={() => setSizeIndex((i) => Math.min(NOTES_FONT_SIZES.length - 1, i + 1))}
+            disabled={sizeIndex === NOTES_FONT_SIZES.length - 1}
+            title={t.presenter.notesTextLarger}
+            aria-label={t.presenter.notesTextLarger}
+          >
+            <AArrowUp className="size-4" />
+          </Button>
+        </div>
+      </div>
+      <div
+        className="min-h-0 flex-1 overflow-y-auto rounded-[6px] border border-border bg-card p-3 leading-relaxed whitespace-pre-wrap text-card-foreground"
+        style={{ fontSize: NOTES_FONT_SIZES[sizeIndex] }}
+      >
+        {note?.trim() ? (
+          note
+        ) : (
+          <span className="text-muted-foreground">
+            {t.presenter.noNotesPrefix}
+            <code className="rounded-[3px] bg-muted px-1 py-0.5 font-mono text-[0.9em]">
+              export const notes = […]
+            </code>
+            {t.presenter.noNotesSuffix}
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
 

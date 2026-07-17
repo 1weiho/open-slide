@@ -78,7 +78,7 @@ export const meta = { title: 'Hello' };
 import {
   CANVAS_WIDTH,   // 1920
   CANVAS_HEIGHT,  // 1080
-  unstable_SharedElement, // match or fade objects across pages for shared element transitions
+  MorphElement,   // match or fade objects across pages for morph transitions
   type Page,
   type SlideMeta,
   type SlideModule,

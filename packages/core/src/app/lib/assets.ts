@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 export type AssetEntry = {
   name: string;
   size: number;
+  createdAt: number;
   mtime: number;
   mime: string;
   url: string;
@@ -85,10 +86,12 @@ export async function uploadWithAutoRename(
   }
   if (!res.ok) return { ok: false, status: res.status, entry: null };
   const body = (await res.json().catch(() => null)) as Partial<AssetEntry> | null;
+  const now = Date.now();
   const entry: AssetEntry = {
     name: body?.name ?? uploaded.name,
     size: body?.size ?? uploaded.size,
-    mtime: body?.mtime ?? Date.now(),
+    createdAt: body?.createdAt ?? now,
+    mtime: body?.mtime ?? now,
     mime: body?.mime ?? uploaded.type ?? 'application/octet-stream',
     url: body?.url ?? `/__assets/${slideId}/${encodeURIComponent(uploaded.name)}`,
     unused: body?.unused ?? false,
@@ -197,14 +200,26 @@ export function useAssets(slideId: string): UseAssetsResult {
 
   useEffect(() => {
     if (!available || !import.meta.hot) return;
-    const handler = (data: { slideId?: string } | undefined) => {
+    const assetHandler = (data: { slideId?: string } | undefined) => {
       if (!data || data.slideId === slideId) {
         refresh().catch(() => {});
       }
     };
-    import.meta.hot.on('open-slide:assets-changed', handler);
+    const slideHandler = (data: { slideId?: unknown; slideIds?: unknown } | undefined) => {
+      const changedIds = Array.isArray(data?.slideIds)
+        ? data.slideIds
+        : typeof data?.slideId === 'string'
+          ? [data.slideId]
+          : [];
+      if (slideId === '@global' ? changedIds.length > 0 : changedIds.includes(slideId)) {
+        refresh().catch(() => {});
+      }
+    };
+    import.meta.hot.on('open-slide:assets-changed', assetHandler);
+    import.meta.hot.on('open-slide:slide-changed', slideHandler);
     return () => {
-      import.meta.hot?.off('open-slide:assets-changed', handler);
+      import.meta.hot?.off('open-slide:assets-changed', assetHandler);
+      import.meta.hot?.off('open-slide:slide-changed', slideHandler);
     };
   }, [slideId, refresh]);
 

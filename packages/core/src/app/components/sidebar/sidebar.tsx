@@ -118,7 +118,7 @@ export function Sidebar({
       const target = e.target as HTMLElement | null;
       if (!target) return;
       if (target.closest('[data-folder-create]')) return;
-      if (target.closest('[data-radix-popper-content-wrapper]')) return;
+      if (target.closest('[data-slot="popover-content"]')) return;
       commitCreate();
     };
     document.addEventListener('mousedown', onDown);
@@ -126,7 +126,7 @@ export function Sidebar({
   }, [creating]);
 
   return (
-    <aside className="paper relative flex h-full w-[16.5rem] shrink-0 flex-col border-r border-hairline bg-sidebar text-sidebar-foreground">
+    <aside className="relative flex h-full w-[16.5rem] shrink-0 flex-col border-r border-hairline bg-sidebar text-sidebar-foreground">
       <div className="flex items-center justify-between px-4 pt-5 pb-4">
         <h1 className="font-heading text-lg font-bold tracking-tight">{t.home.appTitle}</h1>
         <div className="-mr-1.5 flex items-center">
@@ -150,13 +150,15 @@ export function Sidebar({
           onSelect={() => onSelect(THEMES_ID)}
           onDropSlide={() => {}}
         />
-        <FolderItem
-          row={{ kind: 'assets' }}
-          count={assetsCount}
-          selected={selectedId === ASSETS_ID}
-          onSelect={() => onSelect(ASSETS_ID)}
-          onDropSlide={() => {}}
-        />
+        {import.meta.env.DEV && (
+          <FolderItem
+            row={{ kind: 'assets' }}
+            count={assetsCount}
+            selected={selectedId === ASSETS_ID}
+            onSelect={() => onSelect(ASSETS_ID)}
+            onDropSlide={() => {}}
+          />
+        )}
       </div>
 
       <div className="mt-5 flex items-center gap-2 px-4 pb-1.5">
@@ -247,15 +249,17 @@ export function Sidebar({
               className="mt-1 flex items-center gap-2.5 rounded-[5px] border border-dashed border-foreground/30 bg-card px-2 py-[5px]"
             >
               <Popover open={iconOpen} onOpenChange={setIconOpen}>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="flex size-5 shrink-0 items-center justify-center rounded transition-transform hover:scale-110"
-                    aria-label={t.home.pickIcon}
-                  >
-                    <FolderIconChip icon={newIcon} />
-                  </button>
-                </PopoverTrigger>
+                <PopoverTrigger
+                  render={
+                    <button
+                      type="button"
+                      className="flex size-5 shrink-0 items-center justify-center rounded transition-transform hover:scale-110"
+                      aria-label={t.home.pickIcon}
+                    >
+                      <FolderIconChip icon={newIcon} />
+                    </button>
+                  }
+                />
                 <PopoverContent side="right" align="start" className="w-auto p-2">
                   <IconPicker value={newIcon} onChange={setNewIcon} />
                 </PopoverContent>

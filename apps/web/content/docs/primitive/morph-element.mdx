@@ -1,26 +1,18 @@
 ---
-title: SharedElement
+title: MorphElement
 description: Keynote-style continuity for the same object across pages.
 ---
 
-<Callout type="warn">
-  The shared element API is currently exported as `unstable_SharedElement`.
-  Treat it as experimental and subject to change.
-</Callout>
+`MorphElement` is the primitive for making one visual object move between two
+pages — a Morph Transition (Keynote calls the effect "Magic Move"). Wrap the
+same object on both pages and the runtime morphs it across the cut instead of
+fading it out and back in.
 
-`SharedElement` is the conceptual primitive for making one visual object move
-between two pages. In code today, import `unstable_SharedElement` and alias it
-to the component name you want to use.
-
-```tsx title="slides/magic-move/index.tsx"
-import {
-  unstable_SharedElement as SharedElement,
-  type Page,
-  type SlideTransition,
-} from '@open-slide/core';
+```tsx title="slides/morph/index.tsx"
+import { MorphElement, type Page, type SlideTransition } from '@open-slide/core';
 
 const Token = ({ x, y, size }: { x: number; y: number; size: number }) => (
-  <SharedElement id="token">
+  <MorphElement id="token">
     <div
       style={{
         position: 'absolute',
@@ -32,7 +24,7 @@ const Token = ({ x, y, size }: { x: number; y: number; size: number }) => (
         background: 'var(--osd-accent)',
       }}
     />
-  </SharedElement>
+  </MorphElement>
 );
 
 const Start: Page = () => <Token x={160} y={180} size={180} />;
@@ -40,7 +32,7 @@ const End: Page = () => <Token x={1420} y={720} size={96} />;
 
 export const transition: SlideTransition = {
   duration: 700,
-  sharedElements: {
+  morph: {
     duration: 700,
     easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
   },
@@ -52,7 +44,7 @@ export default [Start, End] satisfies Page[];
 ## Matching Contract
 
 The `id` is the contract. When the outgoing and incoming pages both contain a
-shared element with the same `id`, the runtime measures both DOM nodes, hides
+`MorphElement` with the same `id`, the runtime measures both DOM nodes, hides
 the originals, animates a clone across the 1920 × 1080 canvas, then restores
 the incoming element.
 
@@ -64,22 +56,21 @@ similar objects; unmatched ids are separate objects.
 
 Wrap the same visual object in a new position or size: a logo, diagram node,
 timeline marker, product card, badge, or highlight. Keep changing copy outside
-the shared element. If the content changes while moving, the audience reads it
+the `MorphElement`. If the content changes while moving, the audience reads it
 as one object turning into another, not continuity.
 
-`unstable_SharedElement` works best with a single DOM child. If there is
-exactly one DOM child, the runtime writes the `data-osd-shared-element`
-marker onto that child. Otherwise it wraps the content in a `div`.
+`MorphElement` works best with a single DOM child. If there is exactly one DOM
+child, the runtime writes the `data-osd-morph` marker onto that child.
+Otherwise it wraps the content in a `div`.
 
 ## Transition Required
 
-Shared elements only run when the selected transition enables
-`sharedElements`.
+A Morph Transition only runs when the selected transition enables `morph`.
 
 ```ts
 export const transition: SlideTransition = {
   duration: 600,
-  sharedElements: true,
+  morph: true,
 };
 ```
 

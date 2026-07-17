@@ -81,7 +81,13 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
         'react-dom/client',
         'next-themes',
         'react-router-dom',
-        'radix-ui',
+        '@base-ui/react',
+        // @base-ui/utils reaches for the CommonJS use-sync-external-store shim
+        // (React 17 fallback). Left un-optimized, its named `useSyncExternalStore`
+        // export fails ESM interop in the browser — pre-bundle it to fix that.
+        // (@base-ui/utils itself has no "." export, so we can't list it here.)
+        'use-sync-external-store/shim',
+        'use-sync-external-store/shim/with-selector',
         'lucide-react',
         'clsx',
         'tailwind-merge',

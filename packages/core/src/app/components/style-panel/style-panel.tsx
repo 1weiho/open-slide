@@ -85,8 +85,8 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
       }
       banner={
         warning && (
-          <div className="flex gap-2 border-b border-hairline bg-[oklch(0.97_0.04_85)] px-3 py-2 text-[11px] leading-relaxed text-[oklch(0.35_0.08_45)] dark:bg-[oklch(0.25_0.04_60)] dark:text-[oklch(0.85_0.08_85)]">
-            <span aria-hidden className="mt-0.5 size-1.5 shrink-0 rounded-full bg-brand" />
+          <div className="flex gap-2 border-b border-hairline bg-amber-500/10 px-3 py-2 text-[11px] leading-relaxed text-amber-800 dark:bg-amber-400/10 dark:text-amber-200">
+            <span aria-hidden className="mt-0.5 size-1.5 shrink-0 rounded-full bg-amber-500" />
             <span>{warning}</span>
           </div>
         )
@@ -273,9 +273,13 @@ function FontField({
   return (
     <Field label={label}>
       <Select
+        items={{
+          ...Object.fromEntries(FONT_PRESETS.map((p) => [p.value, p.label])),
+          __custom__: tFont.stylePanel.fontPresetCustom,
+        }}
         value={matched ? matched.value : '__custom__'}
         onValueChange={(v) => {
-          if (v !== '__custom__') onChange(v);
+          if (typeof v === 'string' && v !== '__custom__') onChange(v);
         }}
       >
         <SelectTrigger size="sm" className="h-8 flex-1 text-xs">
@@ -322,7 +326,7 @@ function SliderField({
         max={max}
         step={step}
         value={[value]}
-        onValueChange={([v]) => onChange(v ?? value)}
+        onValueChange={(next) => onChange((Array.isArray(next) ? next[0] : next) ?? value)}
         className="flex-1"
       />
       <NumberField

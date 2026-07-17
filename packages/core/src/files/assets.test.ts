@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mimeForFilename, validateAssetName } from './assets.ts';
+import { assetCreatedAt, mimeForFilename, validateAssetName } from './assets.ts';
 
 describe('validateAssetName', () => {
   it('accepts simple filenames with extensions', () => {
@@ -53,5 +53,18 @@ describe('mimeForFilename', () => {
   it('falls back to octet-stream for unknown / missing extensions', () => {
     expect(mimeForFilename('a.xyz')).toBe('application/octet-stream');
     expect(mimeForFilename('noext')).toBe('application/octet-stream');
+  });
+});
+
+describe('assetCreatedAt', () => {
+  it('uses the filesystem birth time when available', () => {
+    expect(assetCreatedAt(100, 200)).toBe(100);
+  });
+
+  it('falls back to the modification time when birth time is unavailable', () => {
+    expect(assetCreatedAt(0, 200)).toBe(200);
+    expect(assetCreatedAt(-1, 200)).toBe(200);
+    expect(assetCreatedAt(Number.NaN, 200)).toBe(200);
+    expect(assetCreatedAt(Number.POSITIVE_INFINITY, 200)).toBe(200);
   });
 });

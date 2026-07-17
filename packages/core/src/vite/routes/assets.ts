@@ -5,6 +5,7 @@ import { findAssetUsages, findReferencedAssets } from '../../editing/revert-asse
 import { resolveSlideEntry, SLIDE_ID_RE } from '../../editing/slide-ops.ts';
 import {
   ASSET_MAX_BYTES,
+  assetCreatedAt,
   GLOBAL_SCOPE,
   mimeForFilename,
   resolveScopedAssetFile,
@@ -92,6 +93,7 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
         const assets: Array<{
           name: string;
           size: number;
+          createdAt: number;
           mtime: number;
           mime: string;
           url: string;
@@ -104,6 +106,7 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
           assets.push({
             name,
             size: stat.size,
+            createdAt: assetCreatedAt(stat.birthtimeMs, stat.mtimeMs),
             mtime: stat.mtimeMs,
             mime: mimeForFilename(name),
             url: `/__assets/${slideId}/${encodeURIComponent(name)}`,
@@ -219,10 +222,13 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
           if (oversized) return json(res, 413, { error: 'file too large' });
 
           await fs.writeFile(file, Buffer.concat(chunks));
+          const stat = await fs.stat(file);
           return json(res, 200, {
             ok: true,
             name: filename,
-            size: total,
+            size: stat.size,
+            createdAt: assetCreatedAt(stat.birthtimeMs, stat.mtimeMs),
+            mtime: stat.mtimeMs,
             mime: mimeForFilename(filename),
             url: `/__assets/${slideId}/${encodeURIComponent(filename)}`,
           });

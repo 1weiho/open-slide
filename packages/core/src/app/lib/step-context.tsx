@@ -41,6 +41,7 @@ type StepHostContextValue = {
   reportRevealed: (id: object, revealed: number) => void;
   entryDirection: EntryDirection;
   controlled: boolean;
+  isActivePage: boolean;
 };
 
 const GLOBAL_KEY = '__open_slide_step_host_context__';
@@ -163,11 +164,18 @@ export function StepHost({
       },
       entryDirection,
       controlled: controlledRevealed != null,
+      isActivePage,
     }),
-    [entryDirection, controlledRevealed, distributeControlled, notifyAggregate],
+    [entryDirection, controlledRevealed, distributeControlled, notifyAggregate, isActivePage],
   );
 
   return <StepHostContext.Provider value={value}>{children}</StepHostContext.Provider>;
+}
+
+// Hostless mounts (thumbnails, overview grid, print/export) are never the
+// audience-facing instance, so no provider means false.
+export function useIsActivePage(): boolean {
+  return useContext(StepHostContext)?.isActivePage ?? false;
 }
 
 export type StepsProps = PropsWithChildren;

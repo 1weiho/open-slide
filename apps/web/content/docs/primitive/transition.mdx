@@ -1,6 +1,6 @@
 ---
 title: Transition
-description: Enter, exit, and shared-element motion between pages.
+description: Enter, exit, and morph motion between pages.
 ---
 
 `SlideTransition` describes what happens when the active `Page` changes. There
@@ -94,15 +94,15 @@ Most decks should keep a single restrained motion family: short duration,
 subtle distance, opacity included, and no different transition vocabulary on
 every page.
 
-## Shared Elements
+## Morph
 
-`SlideTransition.sharedElements` enables [SharedElement](/docs/primitive/shared-element)
+`SlideTransition.morph` enables [MorphElement](/docs/primitive/morph-element)
 matching for objects that should visually continue across two pages.
 
 ```ts
 export const transition: SlideTransition = {
   duration: 600,
-  sharedElements: {
+  morph: {
     duration: 600,
     easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
   },

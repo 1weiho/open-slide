@@ -68,7 +68,7 @@ function ThemePreview({ theme }: { theme: Theme }) {
   }
   if (!demo) {
     return (
-      <div className="grid h-full w-full place-items-center text-[10px] tracking-[0.16em] uppercase text-muted-foreground/60">
+      <div className="grid h-full w-full place-items-center text-[10px] tracking-[0.08em] uppercase text-muted-foreground/60">
         {t.common.loading}
       </div>
     );
