@@ -43,6 +43,6 @@ The dev UI has a **Design** button in the slide header (next to Inspect). Edits 
 
 ## Format constraints (for the panel's AST writer)
 
-- Must be `[export] const design: DesignSystem = { … }` (or `as DesignSystem` / `satisfies DesignSystem`) at module top level.
+- Must be `[export] const design: DesignSystem = { … }` (or `as DesignSystem` / `satisfies DesignSystem`) at module top level. The optional `[export]` only describes what the panel's *parser* tolerates — the runtime reads `design` off the module's exports to inject the `--osd-*` vars, so a non-exported const leaves every `var(--osd-X)` unresolved. Always export it.
 - Object initializer must be a literal — no spreads, no helper calls. Plain values only.
 - `DesignSystem` must be imported from `@open-slide/core` (the panel adds the import automatically when creating a fresh block).
