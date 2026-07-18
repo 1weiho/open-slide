@@ -22,7 +22,7 @@ The shape is intentionally minimal — it only covers what the Design panel can 
 
 ## Two consumption surfaces
 
-There are **two consumption surfaces**, and you should mix them inside the same slide:
+There are **two consumption surfaces**; both may appear in the same slide:
 
 - **`var(--osd-X)` for visual properties (color, font, font-size, radius)** — these get instant updates while the user drags a slider in the Design panel, before any file write.
   ```tsx
@@ -39,10 +39,10 @@ There are **two consumption surfaces**, and you should mix them inside the same 
 
 The dev UI has a **Design** button in the slide header (next to Inspect). Edits update an in-memory draft and the live-preview overlay; a floating Save / Discard bar at the bottom of the canvas commits or reverts. The const stays the single source of truth — production builds bake the saved values.
 
-**Default to using it.** Every new slide should declare a `design` const so it stays tweakable from the panel after generation — this is the expected baseline. Only fall back to the local `palette` constants pattern (see the starter template in `SKILL.md`) for a one-off slide whose palette is intentionally locked and not meant to be re-themed. Both styles can coexist across slides — the panel only operates on the *currently viewed* slide.
+**Default to using it.** Every new slide should declare a `design` const so it stays tweakable from the panel after generation — this is the expected baseline. Only fall back to plain top-of-file constants (`const palette = { bg: …, text: …, accent: … }`, referenced directly in styles) for a one-off slide whose palette is intentionally locked and not meant to be re-themed. Both styles can coexist across slides — the panel only operates on the *currently viewed* slide.
 
 ## Format constraints (for the panel's AST writer)
 
-- Must be `[export] const design: DesignSystem = { … }` (or `as DesignSystem` / `satisfies DesignSystem`) at module top level. The optional `[export]` only describes what the panel's *parser* tolerates — the runtime reads `design` off the module's exports to inject the `--osd-*` vars, so a non-exported const leaves every `var(--osd-X)` unresolved. Always export it.
+- Must be `export const design: DesignSystem = { … }` (or `as DesignSystem` / `satisfies DesignSystem`) at module top level. (The panel's parser also tolerates a non-exported const, but the runtime reads `design` off the module's exports — without `export`, every `var(--osd-X)` is unresolved.)
 - Object initializer must be a literal — no spreads, no helper calls. Plain values only.
 - `DesignSystem` must be imported from `@open-slide/core` (the panel adds the import automatically when creating a fresh block).

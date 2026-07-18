@@ -23,12 +23,12 @@ const stage: CSSProperties = { width: '100%', height: '100%', position: 'relativ
 
 const Narrow: Page = () => (
   <div style={stage}>
-    <MorphElement id="pill" style={{ position: 'absolute', left: 842, top: 479, width: 236, height: 122, borderRadius: 999, background: '#ffffff' }} />
+    <MorphElement id="pill"><div style={{ position: 'absolute', left: 842, top: 479, width: 236, height: 122, borderRadius: 999, background: '#ffffff' }} /></MorphElement>
   </div>
 );
 const Wide: Page = () => (
   <div style={stage}>
-    <MorphElement id="pill" style={{ position: 'absolute', left: 721, top: 479, width: 478, height: 122, borderRadius: 999, background: '#0a0a0a' }} />
+    <MorphElement id="pill"><div style={{ position: 'absolute', left: 721, top: 479, width: 478, height: 122, borderRadius: 999, background: '#0a0a0a' }} /></MorphElement>
   </div>
 );
 
@@ -38,7 +38,7 @@ Narrow.transition = morphTransition; // backward: Wide → Narrow morphs it back
 
 ## Contract
 
-- `morph: true` inherits the transition's top-level `duration`/`easing`; pass `{ duration?, easing?, delay? }` to time the morph independently of the page cross-fade. Morphs usually read best 2–4× longer than the fade (e.g. 280 ms fade, 868 ms morph).
+- `morph: true` inherits the transition's top-level `duration`/`easing`; pass `{ duration?, easing?, delay? }` to time the morph independently of the page cross-fade. Morphs usually read best 2–4× longer than the fade (e.g. 280 ms fade, 868 ms morph). Fade phases on morphing pages may run past the 140–280 ms band in `transitions.md` — they're timed against the longer morph, not the standard cut; the band still binds non-morph pages.
 - Elements pair by `id` across the cut. A matched pair FLIP-morphs: the runtime measures both rects, clones the outgoing element into an overlay above both pages, hides the originals, and animates transform + border-radius + colors (border widths ride a separate frame so they don't stretch with the box). Keep each `id` unique within a page; don't nest one `MorphElement` inside another.
 - An `id` present on only one side fades in/out **in place**. This is how "a third box joins the row" reads: carried boxes glide to their new slots, the new one materializes.
 - Colors on the morph node *and its descendants* interpolate too — a label that flips black → white mid-glide just works.
@@ -59,7 +59,7 @@ Narrow.transition = morphTransition; // backward: Wide → Narrow morphs it back
    const animate = useIsActivePage();
    ```
 
-6. **Clones travel above everything.** The morph overlay sits over both pages, so an incoming element that should appear only when a clone "lands" will otherwise pop early. Give such reveals a delay equal to the morph: `animation: 'osd-fade 0.63s ease-out 0.868s both'` where `0.868s` is `morph.duration`. Keep that number in one shared const so the two can't drift.
+6. **Clones travel above everything.** The morph overlay sits over both pages, so an incoming element that should appear only when a clone "lands" will otherwise pop early. Give such reveals a delay equal to the morph: `animation: 'osd-fade 0.63s ease-out 0.868s both'` where `0.868s` is `morph.duration` (`osd-fade` is not framework-provided — define `@keyframes osd-fade { from { opacity: 0 } to { opacity: 1 } }` in the slide yourself). Keep that number in one shared const so the two can't drift.
 7. **A "hold" page is a separate component.** Transitions attach to the incoming page, so to follow a morph cut with a plain cut of the same content, mint a second page component without `.transition` (e.g. `const Flow4Hold: Page = () => <Flow count={4} />`).
 
 ## When to reach for it

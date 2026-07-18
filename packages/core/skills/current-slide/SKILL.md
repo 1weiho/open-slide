@@ -76,7 +76,7 @@ Path is relative to the project root (the user's `cwd`, the directory that conta
 `updatedAt` is the last time the user navigated. Treat it like a cache:
 
 - **Fresh (under ~5 minutes old)**: trust it. Open `pagePath`, do the work.
-- **Older than ~5 minutes, or older than your last interaction with the user**: confirm with the user before editing. The dev server may not be running; the user may have switched contexts.
+- **Older than ~5 minutes**: confirm with the user before editing. The dev server may not be running; the user may have switched contexts.
 - **Hours/days old**: ignore it. Ask the user which slide they mean.
 
 A *newer* `updatedAt` than the one you saw last turn is the normal signal that the user has moved — switch to the new `slideId` / `pageIndex` / `selection` without asking.

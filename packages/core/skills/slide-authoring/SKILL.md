@@ -1,6 +1,6 @@
 ---
 name: slide-authoring
-description: Technical reference for writing or editing open-slide pages — file contract, 1920×1080 canvas, type scale, layout, palette/visual direction, assets, page transitions, and morph transitions. Consult this whenever you are about to write or modify any file under `slides/<id>/`, including from inside the `create-slide` or `apply-comments` workflows, or for any ad-hoc slide edit. Triggers on phrases like "edit slide", "tweak this page", "fix the layout", "change the palette", "add a transition", "morph transition", "investigate the slide framework", "how do slides work here".
+description: Technical reference for writing or editing open-slide pages — file contract, 1920×1080 canvas, type scale, layout, palette/visual direction, assets, stepped reveals, page transitions, and morph transitions. Consult this whenever you are about to write or modify any file under `slides/<id>/`, including from inside the `create-slide` or `apply-comments` workflows, or for any ad-hoc slide edit. Triggers on phrases like "edit slide", "tweak this page", "fix the layout", "change the palette", "reveal one by one", "add a transition", "morph transition", "investigate the slide framework", "how do slides work here".
 ---
 
 # Authoring open-slide pages
@@ -33,7 +33,7 @@ Each framework primitive has a full reference file under `references/` in this s
 - Put the slide under `slides/<kebab-case-id>/`.
 - Entry is `slides/<id>/index.tsx`. Images/videos/fonts go under `slides/<id>/assets/`.
 - Do **not** touch `package.json`, `open-slide.config.ts`, or other slides.
-- Do not add dependencies. Only `react` and standard web APIs are available.
+- Do not add dependencies. Only `react`, `@open-slide/core`, and standard web APIs are available.
 - A slide is **one `index.tsx` plus `assets/`** — nothing else. Do not create sibling `.tsx`/`.ts` files (`Card.tsx`, `components/`, `helpers.ts`, etc.); helper components and constants go inside `index.tsx`. Do not create `README.md` or other prose files either.
 
 ## File contract
@@ -94,7 +94,7 @@ Every page renders into a fixed **1920 × 1080** canvas. The framework scales it
 
 ### Vertical budget — content MUST fit 1080px
 
-The canvas does **not** scroll. Anything below 1080px is silently cropped. Before writing JSX, do the math on paper and confirm the page fits. This is the #1 cause of broken slides — assume you will overflow unless you've checked.
+The canvas does **not** scroll. Anything past the 1080px bottom edge is silently cropped. Before writing JSX, do the math on paper and confirm the page fits. This is the #1 cause of broken slides — assume you will overflow unless you've checked.
 
 **Usable height** = `1080 − top_padding − bottom_padding`. With 120px padding on each side that's **840px**. With 160px each side, **760px**. Pick the padding first, then design within that budget.
 
@@ -120,7 +120,7 @@ Swap the heading to 120px or add a 6th bullet and you're over. **Verify every pa
 - A bullet should fit on one line at the chosen font size. If it wraps, either shorten the copy or move it to its own page.
 - Hero title pages (140–200px) carry a title + 1 subtitle + maybe an eyebrow — nothing else.
 - Section headings (80–120px) need almost nothing else on the page.
-- If you find yourself raising padding, shrinking type below the scale's lower bound, or tightening line-height under 1.4 to make things fit — **split into two pages instead**. Splitting is always the right answer when the budget is tight.
+- If you find yourself raising padding, shrinking type below the scale's lower bound, or tightening body line-height under 1.4 to make things fit — **split into two pages instead**. Splitting is always the right answer when the budget is tight.
 
 **Never** use `overflow: auto/scroll`, negative margins, or transforms to hide overflow. The canvas is fixed; cropped content is gone.
 
@@ -128,12 +128,12 @@ Swap the heading to 120px or add a 6th bullet and you're over. **Verify every pa
 
 Pick a coherent look and hold it across every page:
 
-- **Palette** — 1 background, 1 primary text, 1 accent, 1 muted. Define as constants at the top of the file.
+- **Palette** — 1 background, 1 primary text, 1 accent, 1 muted. Put bg/text/accent in the `design` const (see Design system below); extra colors like muted stay as plain consts.
 - **Typography** — one display font + one body font. System stack unless the user specifies. Heavy weight for headlines (800–900), normal for body (400–500).
 - **Layout grid** — pick a single content padding (e.g. 120px) and stick to it. Left-aligned content feels editorial; centered feels ceremonial.
 - **Aesthetic commitment** — choose ONE: minimal, maximalist, editorial, retro, brutalist, soft/pastel, neon, paper/print. Don't mix.
 
-Consult the `frontend-design` skill for deeper aesthetic guidance if the user wants something bold.
+If the `frontend-design` skill is available, consult it for deeper aesthetic guidance when the user wants something bold.
 
 ## Webfonts
 
@@ -149,7 +149,7 @@ Themes are produced by the `create-theme` skill and are pure documentation: copy
 
 A slide can declare typed design tokens at the top of `index.tsx` — `export const design: DesignSystem = { palette, fonts, typeScale, radius }` — and consume them via `var(--osd-X)` in inline styles. The framework injects the CSS variables at the canvas root, and the dev UI's Design panel can live-tweak them.
 
-**Default to using it.** Every new slide should declare a `design` const so it stays tweakable from the panel after generation. Only fall back to the local `palette` constants pattern (see starter template) for a one-off slide whose palette is intentionally locked.
+**Default to using it.** Every new slide should declare a `design` const so it stays tweakable from the panel after generation. Only fall back to plain palette constants for a one-off slide whose palette is intentionally locked (`references/design-system.md` covers the fallback).
 
 `references/design-system.md` has the full token shape, the two consumption surfaces (`var(--osd-X)` vs direct `design.X` reads), Design panel behavior, and the format constraints the panel's AST writer requires. Read it before writing the const.
 
@@ -231,7 +231,7 @@ export default [Cover, Content] satisfies Page[];
 
 ## Assets
 
-Slide-local assets live under `slides/<id>/assets/` and are imported as ES modules (`import hero from './assets/hero.jpg'`). Global assets shared across decks (logos, avatars, recurring icons) live in the project root `assets/` and are imported via the `@assets` alias. Skip the `assets/` folder entirely for pure-text slides.
+Slide-local assets live under `slides/<id>/assets/` and are imported as ES modules (`import hero from './assets/hero.jpg'`). Global assets shared across decks (logos, avatars, recurring icons) live in the project root `assets/` and are imported via the `@assets` alias. For a pure-text slide, don't create `slides/<id>/assets/` at all.
 
 `references/assets.md` covers import forms (module vs `new URL(...)`), the `@assets` alias, and how themes name asset paths.
 
@@ -249,7 +249,7 @@ If a footer shows the current page (`03 / 12`), read it from `useSlidePageNumber
 
 Reveal a page one beat at a time: wrap deferred parts in `<Step>`, the group in `<Steps>`; each `→` reveals the next step. Use it when the *order* of ideas is the point — not reflexively on every page. Two rules are load-bearing: `<Step>` must be a **direct child** of `<Steps>` (otherwise it silently renders fully revealed), and a page must still read as complete when jumped to via the overview grid (jumping in shows all steps revealed).
 
-Read `references/steps.md` before authoring a stepped page — it covers composition order across multiple `<Steps>` blocks, the "headline always, body in turn" pattern, and entry-direction behavior. `slides/build-on-reveal/` is the canonical worked example.
+Read `references/steps.md` before authoring a stepped page — it covers composition order across multiple `<Steps>` blocks, the "headline always, body in turn" pattern, and entry-direction behavior. If `slides/build-on-reveal/` exists in this project, it is the canonical worked example.
 
 ## Page transitions
 
@@ -329,7 +329,7 @@ This applies whenever the *visual element* repeats, not whenever the *data* does
 - [ ] All imported assets exist on disk — slide-local under `slides/<id>/assets/`, or global under `assets/` (imported via `@assets/...`).
 - [ ] Every `<ImagePlaceholder>` corresponds to a real image the user must supply — not decorative filler. If it could be replaced by typography or layout, it should be.
 - [ ] If a page uses `<Steps>`/`<Step>`, every `<Step>` is a direct child of a `<Steps>`, and the page still reads as complete when jumped to via the overview grid (entering forward builds up; jumping in shows it fully revealed).
-- [ ] If a `SlideTransition` is declared, every page sits in one family — same duration band (140–280 ms), same easing pair, same out-then-in stagger, magnitude under 12 px / 3%. No six-different-vocabularies decks. When in doubt, omit transitions entirely.
+- [ ] If a `SlideTransition` is declared, every page sits in one family — same duration band (140–280 ms), same easing pair, same out-then-in stagger, magnitude under 12 px / 3%. No six-different-vocabularies decks. When in doubt, omit transitions entirely. (Pages that opt into `morph` may exceed the band to match the morph — see `references/morph.md`.)
 - [ ] If a transition opts into `morph`: every morph `id` is unique per page and stable across the pair, morph geometry is pixel-constant (never measured after mount), no `transform` sits on the morph node, and entrance animations are gated behind `useIsActivePage()`.
 - [ ] Nothing outside `slides/<id>/` was edited.
 
@@ -343,7 +343,7 @@ This applies whenever the *visual element* repeats, not whenever the *data* does
 - ❌ Bullets that wrap to a second line — either shorten or move to its own page.
 - ❌ Body type under 28px — unreadable on a projector.
 - ❌ Inconsistent palette across pages.
-- ❌ Installing packages. Only `react` and standard web APIs are available.
+- ❌ Installing packages. Only `react`, `@open-slide/core`, and standard web APIs are available.
 - ❌ Writing CSS to a shared file. Inline styles or scoped classnames only.
 - ❌ Creating `README.md` or other prose files inside the slide folder.
 - ❌ Editing `package.json`, `open-slide.config.ts`, or other slides.

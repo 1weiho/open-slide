@@ -46,7 +46,7 @@ type MorphTransition = {
 };
 ```
 
-The framework also exposes `--osd-dir` (`1` forward, `-1` backward) and `data-osd-dir` on the wrapper, so a single keyframe can mirror direction without a JS callback.
+The framework also exposes `--osd-dir` (`1` forward, `-1` backward) and `data-osd-dir` (`"forward"` / `"backward"`) on the wrapper, so a single keyframe can mirror direction without a JS callback.
 
 ## Design principles (hold the line)
 

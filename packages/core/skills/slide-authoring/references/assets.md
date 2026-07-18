@@ -26,7 +26,7 @@ import logo from '@assets/logos/acme.svg';
 
 A `themes/*.md` file may name an asset path in its prose (e.g. "use `@assets/logos/acme.svg` in the title slot"); the slide imports it explicitly.
 
-Skip the `assets/` folder entirely for pure-text slides.
+For a pure-text slide, don't create `slides/<id>/assets/` at all.
 
 ## Image placeholders (`<ImagePlaceholder>`)
 

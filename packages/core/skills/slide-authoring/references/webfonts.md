@@ -2,7 +2,7 @@
 
 The default is a system font stack — prefer it. When a deck genuinely needs a webfont (a brand font, or CJK / Thai / Arabic where system coverage is poor):
 
-- **Load the stylesheet once, in `<head>` — never inside a per-page component.** Every page is mounted live at the same time (thumbnail rail, overview grid, and the PDF print root), so a `<style>@import</style>` / `<link>` rendered inside a `Page` registers the whole `@font-face` set once *per page*. Inject it once, idempotently. **Key the element id to the slide** (e.g. `osd-webfont-<slide-id>`) — the home page mounts pages from *every* slide at once, so a generic shared id like `osd-webfont` would let the first slide's fonts suppress every other slide's:
+- **Load the stylesheet once, in `<head>` — never inside a per-page component.** Every page is mounted live at the same time (thumbnail rail, overview grid, and the PDF print root), so a `<style>@import</style>` / `<link>` rendered inside a `Page` registers the whole `@font-face` set once *per page*. Inject it once, idempotently, from module top level of `index.tsx` (top-level statements as in the snippet below — not inside a component or effect). **Key the element id to the slide** (e.g. `osd-webfont-<slide-id>`) — the home page mounts pages from *every* slide at once, so a generic shared id like `osd-webfont` would let the first slide's fonts suppress every other slide's:
 
   ```tsx
   const FONT_HREF = 'https://fonts.googleapis.com/css2?family=...&display=swap';
