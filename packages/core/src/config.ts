@@ -12,6 +12,7 @@ export type OpenSlideConfig = {
   themesDir?: string;
   assetsDir?: string;
   port?: number;
+  allowedHosts?: string[] | true;
   /**
    * @deprecated Pick the UI language from the language switcher in the slide UI
    * instead. When set, this only seeds the initial language until the user

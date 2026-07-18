@@ -49,3 +49,8 @@ const config: OpenSlideConfig = {
 
 export default config;
 ```
+
+Accessing the dev server through a proxied domain (Coder, Codespaces, a
+reverse proxy) and hitting `Blocked request. This host is not allowed.`?
+Set [`allowedHosts`](/docs/reference/config#remote-ide--proxied-dev-server)
+in the config.

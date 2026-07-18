@@ -113,6 +113,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
     },
     server: {
       port: config.port ?? 5173,
+      ...(config.allowedHosts !== undefined ? { allowedHosts: config.allowedHosts } : {}),
       fs: { allow: [APP_ROOT, userCwd, slidesAbs, themesAbs, assetsAbs] },
     },
     build: {
