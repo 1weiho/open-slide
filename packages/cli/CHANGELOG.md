@@ -1,5 +1,15 @@
 # @open-slide/cli
 
+## 1.3.3
+
+### Patch Changes
+
+- [#313](https://github.com/1weiho/open-slide/pull/313) [`afa9d8c`](https://github.com/1weiho/open-slide/commit/afa9d8c56fcf458403d746900b62fb27a4aec801) Thanks [@1weiho](https://github.com/1weiho)! - Document morph transitions in the slide-authoring skill.
+
+- [#328](https://github.com/1weiho/open-slide/pull/328) [`e850d8e`](https://github.com/1weiho/open-slide/commit/e850d8e2785a171c5d4fed6c43028699931f5f30) Thanks [@1weiho](https://github.com/1weiho)! - Split the slide-authoring skill into per-primitive reference files under `references/`.
+
+- [#335](https://github.com/1weiho/open-slide/pull/335) [`3b01fb3`](https://github.com/1weiho/open-slide/commit/3b01fb3e0213b42ecfc03bdde322b23d284e757e) Thanks [@1weiho](https://github.com/1weiho)! - Generate template skills from `@open-slide/core` at build time instead of committing a mirrored copy.
+
 ## 1.3.2
 
 ### Patch Changes

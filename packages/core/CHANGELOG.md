@@ -1,5 +1,25 @@
 # @open-slide/core
 
+## 1.16.0
+
+### Minor Changes
+
+- [#315](https://github.com/1weiho/open-slide/pull/315) [`61839b7`](https://github.com/1weiho/open-slide/commit/61839b78969edc1173657b7f53d53f6bff939f39) Thanks [@1weiho](https://github.com/1weiho)! - Stabilize the morph transition API: rename `unstable_SharedElement` to `MorphElement` and the `sharedElements` transition option to `morph`.
+
+- [#313](https://github.com/1weiho/open-slide/pull/313) [`afa9d8c`](https://github.com/1weiho/open-slide/commit/afa9d8c56fcf458403d746900b62fb27a4aec801) Thanks [@1weiho](https://github.com/1weiho)! - Add useIsActivePage() so pages can gate entrance animations to the live audience-facing instance.
+
+### Patch Changes
+
+- [#316](https://github.com/1weiho/open-slide/pull/316) [`118965e`](https://github.com/1weiho/open-slide/commit/118965e6aae6f6a2a96a6b1a9f8dd3d7213ddbad) Thanks [@1weiho](https://github.com/1weiho)! - Fix morph transitions snapping background, border, and outline colors at the end of the glide instead of interpolating them.
+
+- [#313](https://github.com/1weiho/open-slide/pull/313) [`afa9d8c`](https://github.com/1weiho/open-slide/commit/afa9d8c56fcf458403d746900b62fb27a4aec801) Thanks [@1weiho](https://github.com/1weiho)! - Measure morph-element rects before the enter/exit phases start so transform keyframes no longer offset morph targets.
+
+- [#313](https://github.com/1weiho/open-slide/pull/313) [`afa9d8c`](https://github.com/1weiho/open-slide/commit/afa9d8c56fcf458403d746900b62fb27a4aec801) Thanks [@1weiho](https://github.com/1weiho)! - Document morph transitions in the slide-authoring skill.
+
+- [#328](https://github.com/1weiho/open-slide/pull/328) [`e850d8e`](https://github.com/1weiho/open-slide/commit/e850d8e2785a171c5d4fed6c43028699931f5f30) Thanks [@1weiho](https://github.com/1weiho)! - Split the slide-authoring skill into per-primitive reference files under `references/`.
+
+- [#337](https://github.com/1weiho/open-slide/pull/337) [`5e5bcdf`](https://github.com/1weiho/open-slide/commit/5e5bcdf58f02bd50ac2c95d4e8c16c9d9252b684) Thanks [@1weiho](https://github.com/1weiho)! - Fix bundled skill prompts so agent instructions, commands, and file references work correctly in scaffolded projects.
+
 ## 1.15.3
 
 ### Patch Changes
