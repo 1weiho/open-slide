@@ -2,6 +2,7 @@
 
 import {
   animate,
+  type Easing,
   motion,
   useInView,
   useMotionValue,
@@ -101,6 +102,7 @@ function FeatureCell({
 
 const AGENT_LOOP_DURATION = 10;
 const COMMENT_TEXT = 'use the accent color on this title';
+const EASE_OUT: Easing = [0.23, 1, 0.32, 1];
 
 function AgentApplyVisual() {
   const ref = useRef<HTMLDivElement>(null);
@@ -128,12 +130,12 @@ function AgentApplyVisual() {
     return () => controls.stop();
   }, [active, typingProgress]);
 
-  const loopTransition = (times: number[]) =>
+  const loopTransition = (times: number[], ease: Easing | Easing[] = 'easeInOut') =>
     active
       ? {
           duration: AGENT_LOOP_DURATION,
           times,
-          ease: 'easeInOut' as const,
+          ease,
           repeat: Infinity,
         }
       : undefined;
@@ -141,14 +143,14 @@ function AgentApplyVisual() {
   return (
     <div
       ref={ref}
-      className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden"
+      className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden select-none [box-shadow:var(--shadow-edge)] transition-shadow duration-300 hover:[box-shadow:var(--shadow-floating)]"
     >
       <div
         className="relative aspect-[16/9] grid grid-cols-[1fr_42%]"
         style={{ containerType: 'inline-size' }}
       >
         {/* canvas */}
-        <div className="relative overflow-hidden">
+        <div className="relative overflow-hidden cursor-crosshair">
           <div className="absolute inset-0 px-[5cqw] py-[5cqw] flex flex-col justify-center gap-[1.4cqw]">
             <span className="font-[family-name:var(--font-mono)] text-[1.3cqw] tracking-[0.18em] uppercase text-[color:var(--color-muted)]">
               cover
@@ -161,11 +163,14 @@ function AgentApplyVisual() {
                   active
                     ? {
                         opacity: [0, 0, 1, 1, 0, 0],
-                        scale: [0.92, 0.92, 1, 1, 0.96, 0.96],
+                        scale: [0.92, 0.92, 1, 1, 0.97, 0.97],
                       }
                     : { opacity: 1, scale: 1 }
                 }
-                transition={loopTransition([0, 0.11, 0.14, 0.86, 0.92, 1])}
+                transition={loopTransition(
+                  [0, 0.115, 0.135, 0.9, 0.935, 1],
+                  ['linear', EASE_OUT, 'linear', EASE_OUT, 'linear'],
+                )}
               />
               <motion.span
                 className="relative font-[family-name:var(--font-sans)] font-semibold tracking-[-0.035em] leading-[1.0]"
@@ -181,10 +186,35 @@ function AgentApplyVisual() {
                           'var(--color-text)',
                           'var(--color-text)',
                         ],
+                        backgroundColor: [
+                          'transparent',
+                          'transparent',
+                          'color-mix(in oklab, var(--color-accent) 14%, transparent)',
+                          'transparent',
+                          'transparent',
+                          'transparent',
+                        ],
                       }
-                    : { color: 'var(--color-text)' }
+                    : { color: 'var(--color-text)', backgroundColor: 'transparent' }
                 }
-                transition={loopTransition([0, 0.7, 0.74, 0.86, 0.92, 1])}
+                transition={
+                  active
+                    ? {
+                        color: {
+                          duration: AGENT_LOOP_DURATION,
+                          times: [0, 0.7, 0.735, 0.92, 0.955, 1],
+                          ease: 'easeInOut',
+                          repeat: Infinity,
+                        },
+                        backgroundColor: {
+                          duration: AGENT_LOOP_DURATION,
+                          times: [0, 0.7, 0.725, 0.85, 0.92, 1],
+                          ease: 'easeOut',
+                          repeat: Infinity,
+                        },
+                      }
+                    : undefined
+                }
               >
                 Q2 Launch
               </motion.span>
@@ -222,7 +252,10 @@ function AgentApplyVisual() {
                   }
                 : { opacity: 0 }
             }
-            transition={loopTransition([0, 0.02, 0.1, 0.115, 0.13, 0.16, 1])}
+            transition={loopTransition(
+              [0, 0.02, 0.1, 0.115, 0.13, 0.16, 1],
+              [EASE_OUT, EASE_OUT, 'easeOut', 'easeOut', 'easeOut', 'linear'],
+            )}
           >
             <title>cursor</title>
             <line x1="12" y1="2" x2="12" y2="9" />
@@ -231,6 +264,27 @@ function AgentApplyVisual() {
             <line x1="15" y1="12" x2="22" y2="12" />
             <circle cx="12" cy="12" r="2.5" fill="#3b82f6" fillOpacity={0.25} />
           </motion.svg>
+
+          {/* click ripple — confirms the press before the panel answers */}
+          <motion.span
+            aria-hidden
+            className="absolute pointer-events-none rounded-full border-2 border-[#3b82f6]"
+            style={{
+              left: '5.5cqw',
+              top: 'calc(50% - 3cqw)',
+              width: '6cqw',
+              height: '6cqw',
+            }}
+            animate={
+              active
+                ? { opacity: [0, 0, 0.55, 0, 0], scale: [0.3, 0.3, 0.55, 1, 1] }
+                : { opacity: 0 }
+            }
+            transition={loopTransition(
+              [0, 0.113, 0.125, 0.165, 1],
+              ['linear', 'easeOut', 'easeOut', 'linear'],
+            )}
+          />
 
           {/* "Agent applying..." status pill — appears after submit, fades before style change settles */}
           <motion.div
@@ -244,7 +298,10 @@ function AgentApplyVisual() {
                   }
                 : { opacity: 0, y: '40%' }
             }
-            transition={loopTransition([0, 0.55, 0.6, 0.78, 0.82, 1])}
+            transition={loopTransition(
+              [0, 0.56, 0.585, 0.78, 0.8, 1],
+              ['linear', EASE_OUT, 'linear', EASE_OUT, 'linear'],
+            )}
           >
             <SpinnerGlyph active={active} />
             <span style={{ color: 'var(--color-muted)' }}>Agent applying</span>
@@ -256,34 +313,12 @@ function AgentApplyVisual() {
         <motion.div
           className="border-l border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] flex flex-col overflow-hidden"
           animate={active ? { x: ['100%', '100%', '0%', '0%', '100%', '100%'] } : { x: '0%' }}
-          transition={loopTransition([0, 0.15, 0.24, 0.86, 0.93, 1])}
+          transition={loopTransition(
+            [0, 0.13, 0.157, 0.9, 0.927, 1],
+            ['linear', EASE_OUT, 'linear', EASE_OUT, 'linear'],
+          )}
         >
-          {/* header */}
-          <div
-            className="border-b border-[color:var(--color-rule)] flex items-center justify-between"
-            style={{ padding: '1.4cqw 1.6cqw' }}
-          >
-            <div className="flex items-center gap-[0.6cqw]">
-              <span
-                className="font-[family-name:var(--font-sans)] font-semibold tracking-tight text-[color:var(--color-text)]"
-                style={{ fontSize: '1.25cqw' }}
-              >
-                Inspect
-              </span>
-              <span
-                aria-hidden
-                className="bg-[color:var(--color-rule)]"
-                style={{ width: '1px', height: '1.4cqw' }}
-              />
-              <span
-                className="rounded-[3px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] font-[family-name:var(--font-mono)] text-[color:var(--color-text)]"
-                style={{ padding: '0.1cqw 0.5cqw', fontSize: '1cqw' }}
-              >
-                &lt;h1&gt;
-              </span>
-            </div>
-            <span className="text-[color:var(--color-dim)]">✕</span>
-          </div>
+          <PanelHeader />
 
           <PanelSection label="Content">
             <PanelTextarea value="Q2 Launch" />
@@ -325,7 +360,7 @@ function AgentApplyVisual() {
                       boxShadow: '0 0 0 0 transparent',
                     }
               }
-              transition={loopTransition([0, 0.25, 0.3, 0.78, 0.82, 1])}
+              transition={loopTransition([0, 0.25, 0.275, 0.78, 0.805, 1], 'easeOut')}
             >
               <motion.span
                 aria-hidden
@@ -357,10 +392,10 @@ function AgentApplyVisual() {
                 Cmd + Enter to submit
               </span>
               <motion.span
-                className="inline-flex items-center font-[family-name:var(--font-sans)] font-medium text-[color:var(--color-brand-foreground,white)] rounded-[4px] bg-[color:var(--color-accent)]"
+                className="inline-flex items-center font-[family-name:var(--font-sans)] font-medium text-[color:var(--color-brand-foreground,white)] rounded-[4px] bg-[color:var(--color-accent)] transition-opacity hover:opacity-90"
                 style={{ fontSize: '1.1cqw', padding: '0.45cqw 0.9cqw' }}
                 animate={active ? { scale: [1, 1, 0.94, 1, 1] } : { scale: 1 }}
-                transition={loopTransition([0, 0.52, 0.54, 0.57, 1])}
+                transition={loopTransition([0, 0.53, 0.545, 0.57, 1], 'easeOut')}
               >
                 Add comment
               </motion.span>
@@ -449,14 +484,14 @@ function VisualEditorVisual() {
   return (
     <div
       ref={ref}
-      className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden"
+      className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden select-none [box-shadow:var(--shadow-edge)] transition-shadow duration-300 hover:[box-shadow:var(--shadow-floating)]"
     >
       <div
         className="relative aspect-[16/9] grid grid-cols-[1fr_42%]"
         style={{ containerType: 'inline-size' }}
       >
         {/* canvas */}
-        <div className="relative overflow-hidden">
+        <div className="relative overflow-hidden cursor-crosshair">
           <div className="absolute inset-0 px-[5cqw] py-[5cqw] flex flex-col justify-center gap-[1.4cqw]">
             <span className="font-[family-name:var(--font-mono)] text-[1.3cqw] tracking-[0.18em] uppercase text-[color:var(--color-muted)]">
               cover
@@ -484,7 +519,7 @@ function VisualEditorVisual() {
           {/* SaveBar — matches core/SaveCard layout */}
           <div className="absolute left-1/2 -translate-x-1/2" style={{ bottom: '3cqw' }}>
             <div
-              className="inline-flex items-center gap-[0.4cqw] whitespace-nowrap rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)]/95 backdrop-blur-md shadow-[0_8px_24px_-12px_rgba(0,0,0,0.18)]"
+              className="inline-flex items-center gap-[0.4cqw] whitespace-nowrap rounded-[8px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)]/95 backdrop-blur-md shadow-[0_8px_24px_-12px_rgba(0,0,0,0.18)]"
               style={{ padding: '0.35cqw 0.35cqw 0.35cqw 0.5cqw' }}
             >
               <SaveBarIconBtn glyph={<UndoGlyph />} />
@@ -522,13 +557,13 @@ function VisualEditorVisual() {
                 <span>1 unsaved change</span>
               </span>
               <span
-                className="font-[family-name:var(--font-sans)] text-[color:var(--color-muted)]"
+                className="rounded-[4px] font-[family-name:var(--font-sans)] text-[color:var(--color-muted)] transition-colors hover:text-[color:var(--color-text)]"
                 style={{ fontSize: '1.2cqw', padding: '0.4cqw 0.8cqw' }}
               >
                 Discard
               </span>
               <span
-                className="inline-flex items-center gap-[0.4cqw] font-[family-name:var(--font-sans)] font-medium text-[color:var(--color-brand-foreground,white)] rounded-[4px] bg-[color:var(--color-accent)]"
+                className="inline-flex items-center gap-[0.4cqw] font-[family-name:var(--font-sans)] font-medium text-[color:var(--color-brand-foreground,white)] rounded-[4px] bg-[color:var(--color-accent)] transition-opacity hover:opacity-90"
                 style={{ fontSize: '1.2cqw', padding: '0.45cqw 0.9cqw' }}
               >
                 <SaveGlyph />
@@ -540,32 +575,7 @@ function VisualEditorVisual() {
 
         {/* InspectorPanel */}
         <div className="border-l border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] flex flex-col overflow-hidden">
-          {/* header */}
-          <div
-            className="border-b border-[color:var(--color-rule)] flex items-center justify-between"
-            style={{ padding: '1.4cqw 1.6cqw' }}
-          >
-            <div className="flex items-center gap-[0.6cqw]">
-              <span
-                className="font-[family-name:var(--font-sans)] font-semibold tracking-tight text-[color:var(--color-text)]"
-                style={{ fontSize: '1.25cqw' }}
-              >
-                Inspect
-              </span>
-              <span
-                aria-hidden
-                className="bg-[color:var(--color-rule)]"
-                style={{ width: '1px', height: '1.4cqw' }}
-              />
-              <span
-                className="rounded-[3px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] font-[family-name:var(--font-mono)] text-[color:var(--color-text)]"
-                style={{ padding: '0.1cqw 0.5cqw', fontSize: '1cqw' }}
-              >
-                &lt;h1&gt;
-              </span>
-            </div>
-            <span className="text-[color:var(--color-dim)]">✕</span>
-          </div>
+          <PanelHeader />
 
           <PanelSection label="Content">
             <PanelTextarea value="Q2 Launch" />
@@ -581,16 +591,28 @@ function VisualEditorVisual() {
                   style={{ width: barWidth }}
                 />
                 <motion.div
-                  className="absolute top-1/2 -translate-y-1/2 rounded-full bg-[color:var(--color-text)] border border-[color:var(--color-accent)]"
+                  className="absolute top-1/2 rounded-full bg-[color:var(--color-text)] border border-[color:var(--color-accent)]"
                   style={{
                     width: '1.1cqw',
                     height: '1.1cqw',
                     left: thumbLeft,
+                    y: '-50%',
                   }}
+                  animate={active ? { scale: [1, 1.3, 1.3, 1, 1, 1.3, 1.3, 1, 1] } : { scale: 1 }}
+                  transition={
+                    active
+                      ? {
+                          duration: 6,
+                          times: [0, 0.03, 0.17, 0.23, 0.47, 0.53, 0.67, 0.73, 1],
+                          ease: 'easeOut',
+                          repeat: Infinity,
+                        }
+                      : undefined
+                  }
                 />
               </div>
               <motion.span
-                className="flex-1 rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] text-[color:var(--color-text)] font-[family-name:var(--font-mono)]"
+                className="flex-1 rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] text-[color:var(--color-text)] font-[family-name:var(--font-mono)] transition-colors hover:border-[color:var(--color-dim)]"
                 style={{ fontSize: '1.05cqw', padding: '0.4cqw 0.6cqw' }}
               >
                 {sizeLabel}
@@ -621,15 +643,69 @@ function VisualEditorVisual() {
   );
 }
 
+function PanelHeader() {
+  return (
+    <div
+      className="border-b border-[color:var(--color-rule)] flex items-center justify-between"
+      style={{ padding: '1.2cqw 1.6cqw' }}
+    >
+      <div className="flex items-center gap-[0.6cqw]">
+        <svg
+          aria-hidden
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          className="text-[color:var(--color-muted)]"
+          style={{ width: '1.2cqw', height: '1.2cqw' }}
+        >
+          <circle cx="12" cy="12" r="8" />
+          <line x1="22" y1="12" x2="18" y2="12" />
+          <line x1="6" y1="12" x2="2" y2="12" />
+          <line x1="12" y1="6" x2="12" y2="2" />
+          <line x1="12" y1="22" x2="12" y2="18" />
+        </svg>
+        <span
+          className="font-[family-name:var(--font-sans)] font-semibold tracking-tight text-[color:var(--color-text)]"
+          style={{ fontSize: '1.25cqw' }}
+        >
+          Inspect
+        </span>
+        <span
+          aria-hidden
+          className="bg-[color:var(--color-rule)]"
+          style={{ width: '1px', height: '1.4cqw' }}
+        />
+        <span
+          className="rounded-[3px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] font-[family-name:var(--font-mono)] text-[color:var(--color-text)]"
+          style={{ padding: '0.1cqw 0.5cqw', fontSize: '1cqw' }}
+        >
+          &lt;h1&gt;
+        </span>
+      </div>
+      <span
+        className="inline-flex items-center justify-center rounded-[4px] text-[color:var(--color-dim)] transition-colors hover:bg-[color:var(--color-panel)] hover:text-[color:var(--color-text)]"
+        style={{ width: '2cqw', height: '2cqw' }}
+      >
+        ✕
+      </span>
+    </div>
+  );
+}
+
 function PanelSection({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-[0.9cqw]" style={{ padding: '1.2cqw 1.6cqw' }}>
-      <span
-        className="font-[family-name:var(--font-sans)] font-medium text-[color:var(--color-text-soft)]"
-        style={{ fontSize: '1cqw' }}
-      >
-        {label}
-      </span>
+      <div className="flex items-center gap-[0.8cqw]">
+        <span
+          className="font-[family-name:var(--font-sans)] font-medium uppercase text-[color:var(--color-muted)]"
+          style={{ fontSize: '0.9cqw', letterSpacing: '0.08em' }}
+        >
+          {label}
+        </span>
+        <span aria-hidden className="h-px flex-1 bg-[color:var(--color-rule-soft)]" />
+      </div>
       {children}
     </div>
   );
@@ -664,7 +740,7 @@ function PanelInput({
 }) {
   return (
     <span
-      className={`flex-1 rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] text-[color:var(--color-text)] ${
+      className={`flex-1 rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] text-[color:var(--color-text)] transition-colors hover:border-[color:var(--color-dim)] ${
         mono ? 'font-[family-name:var(--font-mono)]' : 'font-[family-name:var(--font-sans)]'
       } ${uppercase ? 'uppercase' : ''}`}
       style={{ fontSize: '1.05cqw', padding: '0.4cqw 0.6cqw' }}
@@ -677,7 +753,7 @@ function PanelInput({
 function PanelSelect({ value }: { value: string }) {
   return (
     <span
-      className="flex-1 inline-flex items-center justify-between rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] font-[family-name:var(--font-sans)] text-[color:var(--color-text)]"
+      className="flex-1 inline-flex items-center justify-between rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] font-[family-name:var(--font-sans)] text-[color:var(--color-text)] transition-colors hover:border-[color:var(--color-dim)]"
       style={{ fontSize: '1.05cqw', padding: '0.4cqw 0.6cqw' }}
     >
       <span>{value}</span>
@@ -691,10 +767,10 @@ function PanelSelect({ value }: { value: string }) {
 function PanelToggle({ glyph, pressed = false }: { glyph: ReactNode; pressed?: boolean }) {
   return (
     <span
-      className={`inline-flex items-center justify-center rounded-[4px] border ${
+      className={`inline-flex items-center justify-center rounded-[4px] border transition-colors ${
         pressed
           ? 'border-[color:var(--color-rule)] bg-[color:var(--color-panel)] text-[color:var(--color-text)]'
-          : 'border-[color:var(--color-rule)] bg-transparent text-[color:var(--color-muted)]'
+          : 'border-[color:var(--color-rule)] bg-transparent text-[color:var(--color-muted)] hover:bg-[color:var(--color-panel)] hover:text-[color:var(--color-text)]'
       }`}
       style={{ width: '2.4cqw', height: '2.4cqw' }}
     >
@@ -706,7 +782,7 @@ function PanelToggle({ glyph, pressed = false }: { glyph: ReactNode; pressed?: b
 function PanelSwatch({ color }: { color: string }) {
   return (
     <span
-      className="inline-flex items-center justify-center rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]"
+      className="inline-flex items-center justify-center rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] transition-colors hover:border-[color:var(--color-dim)]"
       style={{ width: '2.4cqw', height: '2.4cqw' }}
     >
       <span
@@ -724,7 +800,7 @@ function PanelSwatch({ color }: { color: string }) {
 function PanelTextarea({ value }: { value: string }) {
   return (
     <span
-      className="block rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] font-[family-name:var(--font-sans)] text-[color:var(--color-text)]"
+      className="block rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] font-[family-name:var(--font-sans)] text-[color:var(--color-text)] transition-colors hover:border-[color:var(--color-dim)]"
       style={{
         fontSize: '1.1cqw',
         padding: '0.7cqw 0.7cqw',
@@ -740,8 +816,10 @@ function PanelTextarea({ value }: { value: string }) {
 function SaveBarIconBtn({ glyph, dim = false }: { glyph: ReactNode; dim?: boolean }) {
   return (
     <span
-      className={`inline-flex items-center justify-center rounded-[4px] ${
-        dim ? 'text-[color:var(--color-dim)]' : 'text-[color:var(--color-muted)]'
+      className={`inline-flex items-center justify-center rounded-[4px] transition-colors ${
+        dim
+          ? 'text-[color:var(--color-dim)]'
+          : 'text-[color:var(--color-muted)] hover:bg-[color:var(--color-panel)] hover:text-[color:var(--color-text)]'
       }`}
       style={{ width: '2cqw', height: '2cqw' }}
     >
