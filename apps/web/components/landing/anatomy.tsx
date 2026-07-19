@@ -76,7 +76,9 @@ export function Anatomy() {
         >
           A slide is a file.
           <br />
-          <span className="text-[color:var(--color-muted)]">Just React, nothing else.</span>
+          <span className="font-[family-name:var(--font-pixel)] text-[color:var(--color-muted)]">
+            Just React, nothing else.
+          </span>
         </h2>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">

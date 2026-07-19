@@ -14,7 +14,7 @@ export function GetStarted() {
           >
             Author a deck
             <br />
-            <span className="accent-fill text-[color:var(--color-accent)]">
+            <span className="font-[family-name:var(--font-pixel)] accent-fill text-[color:var(--color-accent)]">
               in the next minute.
             </span>
           </h2>

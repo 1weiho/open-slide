@@ -2,6 +2,7 @@ import { RootProvider } from 'fumadocs-ui/provider/next';
 import './global.css';
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
 import { appName, gitConfig, siteUrl } from '@/lib/shared';
 
 const geist = Geist({
@@ -13,6 +14,13 @@ const geist = Geist({
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
+  display: 'swap',
+});
+
+const geistPixel = localFont({
+  src: './fonts/GeistPixel-Square.woff2',
+  variable: '--font-geist-pixel',
+  weight: '500',
   display: 'swap',
 });
 
@@ -104,7 +112,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geist.className} ${geist.variable} ${geistMono.variable}`}
+      className={`${geist.className} ${geist.variable} ${geistMono.variable} ${geistPixel.variable}`}
     >
       <body className="flex flex-col min-h-screen">
         <RootProvider>{children}</RootProvider>

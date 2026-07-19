@@ -99,7 +99,9 @@ export function HowItWorks() {
         >
           Slides as code.
           <br />
-          <span className="text-[color:var(--color-muted)]">Crafted by agents.</span>
+          <span className="font-[family-name:var(--font-pixel)] text-[color:var(--color-muted)]">
+            Crafted by agents.
+          </span>
         </h2>
 
         <ol

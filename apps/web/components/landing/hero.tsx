@@ -34,8 +34,10 @@ export function Hero() {
             >
               The slide framework
               <br />
-              built for <span className="accent-fill text-[color:var(--color-accent)]">agents</span>
-              .
+              <span className="font-[family-name:var(--font-pixel)]">
+                built for{' '}
+                <span className="accent-fill text-[color:var(--color-accent)]">agents</span>.
+              </span>
             </h1>
           </div>
 

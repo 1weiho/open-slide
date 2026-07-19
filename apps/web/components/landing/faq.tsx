@@ -39,7 +39,10 @@ export function FAQ() {
           data-reveal="blur"
           className="text-[32px] sm:text-[44px] lg:text-[60px] leading-[1.1] sm:leading-[1.05] tracking-[-0.035em] font-medium max-w-[820px] mb-14 sm:mb-20"
         >
-          Questions, <span className="text-[color:var(--color-muted)]">answered.</span>
+          Questions,{' '}
+          <span className="font-[family-name:var(--font-pixel)] text-[color:var(--color-muted)]">
+            answered.
+          </span>
         </h2>
 
         <dl

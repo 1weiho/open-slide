@@ -22,7 +22,9 @@ export function Inspector() {
         >
           Talk to the agent.
           <br />
-          <span className="text-[color:var(--color-muted)]">Or just tap the canvas.</span>
+          <span className="font-[family-name:var(--font-pixel)] text-[color:var(--color-muted)]">
+            Or just tap the canvas.
+          </span>
         </h2>
 
         <div
