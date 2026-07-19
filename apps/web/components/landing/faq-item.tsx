@@ -32,10 +32,10 @@ export function FaqItem({ item, index }: { item: QA; index: number }) {
           </span>
           <span
             aria-hidden
-            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-[transform,color,border-color] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+            className={`flex h-6 w-6 shrink-0 items-center justify-center transition-[transform,color] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] ${
               open
-                ? 'rotate-45 border-[color:var(--color-accent)]/40 text-[color:var(--color-accent)]'
-                : 'border-[color:var(--color-rule)] text-[color:var(--color-muted)] group-hover:border-[color:var(--color-dim)] group-hover:text-[color:var(--color-text)]'
+                ? 'rotate-45 text-[color:var(--color-accent)]'
+                : 'text-[color:var(--color-muted)] group-hover:text-[color:var(--color-text)]'
             }`}
           >
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden>
