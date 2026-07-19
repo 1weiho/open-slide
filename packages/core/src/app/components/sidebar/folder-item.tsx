@@ -173,16 +173,18 @@ export function FolderItem({
     >
       {row.kind === 'folder' && import.meta.env.DEV ? (
         <Popover>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              className="flex size-5 shrink-0 items-center justify-center rounded transition-transform hover:scale-110"
-              aria-label={t.home.changeIcon}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <FolderIconChip icon={icon} />
-            </button>
-          </PopoverTrigger>
+          <PopoverTrigger
+            render={
+              <button
+                type="button"
+                className="flex size-5 shrink-0 items-center justify-center rounded transition-transform hover:scale-110"
+                aria-label={t.home.changeIcon}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <FolderIconChip icon={icon} />
+              </button>
+            }
+          />
           <PopoverContent side="right" align="start" className="w-auto p-2">
             <IconPicker value={row.folder.icon} onChange={(next) => row.onChangeIcon(next)} />
           </PopoverContent>
@@ -233,19 +235,21 @@ export function FolderItem({
 
       {row.kind === 'folder' && import.meta.env.DEV && (
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              onClick={(e) => e.stopPropagation()}
-              className="absolute right-2 top-1/2 size-5 -translate-y-1/2 rounded opacity-0 transition-opacity hover:bg-foreground/10 group-hover:opacity-100 aria-expanded:opacity-100"
-              aria-label={t.home.folderActions}
-            >
-              <MoreHorizontal className="mx-auto size-3.5" />
-            </button>
-          </DropdownMenuTrigger>
+          <DropdownMenuTrigger
+            render={
+              <button
+                type="button"
+                onClick={(e) => e.stopPropagation()}
+                className="absolute right-2 top-1/2 size-5 -translate-y-1/2 rounded opacity-0 transition-opacity hover:bg-foreground/10 group-hover:opacity-100 aria-expanded:opacity-100"
+                aria-label={t.home.folderActions}
+              >
+                <MoreHorizontal className="mx-auto size-3.5" />
+              </button>
+            }
+          />
           <DropdownMenuContent align="end" className="min-w-[140px]">
             <DropdownMenuItem
-              onSelect={() => {
+              onClick={() => {
                 setDraftName(row.folder.name);
                 setRenaming(true);
               }}
@@ -253,7 +257,7 @@ export function FolderItem({
               <Pencil />
               {t.common.rename}
             </DropdownMenuItem>
-            <DropdownMenuItem variant="destructive" onSelect={() => row.onDelete()}>
+            <DropdownMenuItem variant="destructive" onClick={() => row.onDelete()}>
               <Trash2 />
               {t.common.delete}
             </DropdownMenuItem>

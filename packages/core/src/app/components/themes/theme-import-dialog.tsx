@@ -95,12 +95,14 @@ export function ThemeImportDialog() {
         if (!next) resetDiscovery();
       }}
     >
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Download className="size-4" />
-          {t.themes.importFromUrl}
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger
+        render={
+          <Button variant="outline" size="sm">
+            <Download className="size-4" />
+            {t.themes.importFromUrl}
+          </Button>
+        }
+      />
       <DialogContent>
         <form onSubmit={handleSubmit}>
           <DialogHeader>

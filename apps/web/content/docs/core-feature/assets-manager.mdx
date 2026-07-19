@@ -16,8 +16,8 @@ Assets come in two scopes:
 ```text
 project-root/
 ├── assets/                  # global — shared across decks
-│   ├── logos/acme.svg
-│   └── avatars/jane.png
+│   ├── acme.svg
+│   └── avatar.png
 └── slides/
     └── q2-launch/
         ├── index.tsx
@@ -30,7 +30,7 @@ project-root/
 ```tsx
 import cover from './assets/cover.png';      // slide-local
 import chart from './assets/chart.svg';      // slide-local
-import logo from '@assets/logos/acme.svg';   // global
+import logo from '@assets/acme.svg';         // global
 
 const Cover = () => (
   <>
@@ -61,17 +61,8 @@ under Themes to open the locked-global view at `/assets`.
 
 ## svgl logo search
 
+![Open-slide svgl logo search in the Assets panel, showing brand logo results for a search query](/assets/screenshots/svgl.webp)
+
 Need a brand logo? The Assets panel has an **svgl** search powered by
 [svgl.app](https://svgl.app/). Search, pick, drop — the SVG lands in whichever
 scope is active (slide-local or global) and you can `import` it immediately.
-
-## Cross-bundler URL handling
-
-Vite (the dev server) returns asset imports as URL **strings**. Other bundlers
-return an object like `{ src, width, height }`. If you want a slide to render
-under both, normalise once:
-
-```ts
-type AssetImport = string | { src: string };
-const url = (a: AssetImport): string => (typeof a === 'string' ? a : a.src);
-```

@@ -14,8 +14,13 @@ into the workspace under `.agents/skills/`, and refreshes the
 `.claude/skills/` symlinks so Claude Code picks them up too.
 
 Run this after upgrading `@open-slide/core` — that's how you pull in skill
-fixes and new skills (`/create-slide`, `/slide-authoring`,
-`/apply-comments`, `/create-theme`, …) without re-scaffolding.
+fixes and new skills without re-scaffolding.
+
+## Flags
+
+| Flag         | Default | Description                                                |
+| ------------ | ------- | ---------------------------------------------------------- |
+| `--dry-run`  | off     | Print the add / update / unchanged plan without writing.   |
 
 ## What it touches
 
@@ -33,15 +38,7 @@ the symlink is the only thing refreshed. On platforms where symlinks fail
 (e.g. some Windows configurations), the command falls back to a recursive
 copy.
 
-## Flags
-
-| Flag         | Default | Description                                                |
-| ------------ | ------- | ---------------------------------------------------------- |
-| `--dry-run`  | off     | Print the add / update / unchanged plan without writing.   |
-
 ## Drift detection on `dev`
 
-`open-slide dev` runs the same drift check at startup. If any skill is out
-of date it offers to sync interactively, or prints a one-line warning if
-stdin isn't a TTY. Skip the check with `--no-skills-check` (or
-`OPEN_SLIDE_SKIP_SKILLS_CHECK=1`) — see [open-slide dev](/docs/cli/dev).
+`open-slide dev` runs the same drift check at startup and offers to sync
+interactively — see [open-slide dev](/docs/cli/dev) for how to skip it.

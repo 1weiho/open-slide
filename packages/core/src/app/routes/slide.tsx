@@ -55,6 +55,7 @@ import { PdfProgressToast } from '../components/pdf-progress-toast';
 import { openPresenterWindow, Player } from '../components/player';
 import { PptxProgressToast } from '../components/pptx-progress-toast';
 import { SlideCanvas } from '../components/slide-canvas';
+import { isDeckWarmed, markDeckWarmed, SlidePreloadLayer } from '../components/slide-preload-layer';
 import { SlideTransitionLayer } from '../components/slide-transition-layer';
 import { type ThumbnailActions, ThumbnailRail } from '../components/thumbnail-rail';
 import { exportSlideAsHtml } from '../lib/export-html';
@@ -77,6 +78,11 @@ export function Slide() {
   const linkCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [designOpen, setDesignOpen] = useState(false);
   const [overviewOpen, setOverviewOpen] = useState(false);
+  const [, setWarmedTick] = useState(0);
+  const handleAssetsWarmed = useCallback(() => {
+    markDeckWarmed(slideId);
+    setWarmedTick((n) => n + 1);
+  }, [slideId]);
 
   useEffect(() => {
     return () => {
@@ -238,7 +244,10 @@ export function Slide() {
   );
 
   useEffect(() => {
-    if (playMode) return;
+    // When showSlideUi is false the read-only <Player> is rendered and owns
+    // keyboard navigation (including step-aware advance/retreat). Attaching this
+    // page-nav handler too would race it and skip <Steps> reveals, so bail out.
+    if (playMode || !showSlideUi) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLElement && e.target.matches('input, textarea')) return;
       // Letter shortcuts only fire bare so browser combos (Cmd/Ctrl-P, ⌘F…) stay intact.
@@ -347,11 +356,40 @@ export function Slide() {
     );
   }
 
+  // Hold the loader while a hidden layer warms the whole deck's images and
+  // fonts, so the slide UI first paints with every asset already in cache.
+  if (view !== 'assets' && !isDeckWarmed(slideId)) {
+    return (
+      <div className="grid min-h-dvh place-items-center px-8 text-muted-foreground">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative h-px w-56 overflow-hidden bg-hairline">
+            <span
+              aria-hidden
+              className="line-loader-bar absolute inset-y-[-0.5px] left-0 w-1/4 bg-foreground"
+            />
+          </div>
+          <div className="flex flex-wrap items-baseline justify-center gap-x-2 text-[11.5px]">
+            <span className="eyebrow">{t.slide.loadingAssetsEyebrow}</span>
+            <span className="font-mono">{slideId}</span>
+          </div>
+        </div>
+        <SlidePreloadLayer
+          pages={pages}
+          index={index}
+          design={slide.design}
+          includeCurrent
+          onDone={handleAssetsWarmed}
+        />
+      </div>
+    );
+  }
+
   if (!showSlideUi) {
     return (
       <Player
         pages={pages}
         design={slide.design}
+        transition={slide.transition}
         index={index}
         onIndexChange={goTo}
         onExit={() => {}}
@@ -459,35 +497,37 @@ export function Slide() {
 
   const exportMenuItems = (
     <>
-      <DropdownMenuItem disabled={exporting} onSelect={exportHtml}>
+      <DropdownMenuItem disabled={exporting} onClick={exportHtml}>
         <FileCode2 />
         {t.slide.exportAsHtml}
       </DropdownMenuItem>
-      <DropdownMenuItem disabled={exporting} onSelect={exportPdf}>
+      <DropdownMenuItem disabled={exporting} onClick={exportPdf}>
         <FileText />
         {t.slide.exportAsPdf}
       </DropdownMenuItem>
       <DropdownMenuSeparator />
-      <DropdownMenuItem disabled={exporting} onSelect={exportImagePptx}>
+      <DropdownMenuItem disabled={exporting} onClick={exportImagePptx}>
         <FileImage />
         {t.slide.exportAsImagePptx}
       </DropdownMenuItem>
-      <TooltipProvider delayDuration={200}>
+      <TooltipProvider delay={200}>
         <Tooltip>
-          <TooltipTrigger asChild>
-            <div
-              aria-disabled
-              className="relative flex cursor-help items-center justify-between gap-2 rounded-[5px] px-2 py-1.5 text-[12.5px] opacity-45 select-none [&_svg]:size-3.5 [&_svg]:shrink-0 [&_svg]:opacity-80"
-            >
-              <span className="flex items-center gap-2">
-                <Presentation />
-                {t.slide.exportAsPptx}
-              </span>
-              <span className="rounded-[3px] bg-muted px-1.5 py-0.5 font-mono text-[9.5px] tracking-[0.04em] text-muted-foreground">
-                {t.slide.comingSoon}
-              </span>
-            </div>
-          </TooltipTrigger>
+          <TooltipTrigger
+            render={
+              <div
+                aria-disabled
+                className="relative flex cursor-help items-center justify-between gap-2 rounded-[5px] px-2 py-1.5 text-[12.5px] opacity-45 select-none [&_svg]:size-3.5 [&_svg]:shrink-0 [&_svg]:opacity-80"
+              >
+                <span className="flex items-center gap-2">
+                  <Presentation />
+                  {t.slide.exportAsPptx}
+                </span>
+                <span className="rounded-[3px] bg-muted px-1.5 py-0.5 font-mono text-[9.5px] tracking-[0.04em] text-muted-foreground">
+                  {t.slide.comingSoon}
+                </span>
+              </div>
+            }
+          />
           <TooltipContent
             side="left"
             className="w-max max-w-[min(520px,calc(100vw-2rem))] text-center leading-relaxed"
@@ -508,11 +548,14 @@ export function Slide() {
           <header className="relative flex h-12 shrink-0 items-center gap-2 border-b border-hairline bg-sidebar/85 px-2 backdrop-blur-md md:px-3">
             <div className="flex flex-1 items-center gap-1.5 md:flex-none md:gap-2">
               {showSlideBrowser && (
-                <Button asChild variant="ghost" size="icon-sm" title={t.slide.home}>
-                  <Link to="/" aria-label={t.slide.backToHome}>
-                    <ChevronLeft className="size-4" />
-                  </Link>
-                </Button>
+                <Link
+                  to="/"
+                  aria-label={t.slide.backToHome}
+                  title={t.slide.home}
+                  className={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
+                >
+                  <ChevronLeft className="size-4" />
+                </Link>
               )}
               <span aria-hidden className="mx-0.5 hidden h-5 w-px bg-hairline md:block" />
               {import.meta.env.DEV && (
@@ -618,7 +661,7 @@ export function Slide() {
                     )}
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="min-w-[200px]">
-                    <DropdownMenuItem onSelect={copyLink}>
+                    <DropdownMenuItem onClick={copyLink}>
                       <Link2 />
                       {t.slide.copyLink}
                     </DropdownMenuItem>
@@ -659,18 +702,18 @@ export function Slide() {
                       <ChevronDown className="size-3.5" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="min-w-[200px]">
-                      <DropdownMenuItem onSelect={() => setPlayMode('window')}>
+                      <DropdownMenuItem onClick={() => setPlayMode('window')}>
                         <Play />
                         {t.slide.presentInWindow}
                         <DropdownMenuShortcut>↵</DropdownMenuShortcut>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => setPlayMode('fullscreen')}>
+                      <DropdownMenuItem onClick={() => setPlayMode('fullscreen')}>
                         <Maximize />
                         {t.slide.presentFullscreen}
                         <DropdownMenuShortcut>F</DropdownMenuShortcut>
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onSelect={() => {
+                        onClick={() => {
                           if (slideId) openPresenterWindow(slideId);
                           setPlayMode('window');
                         }}
@@ -708,7 +751,7 @@ export function Slide() {
                     ref={slideViewportRef}
                     data-inspector-root
                     data-slide-id={slideId}
-                    className="paper relative min-h-0 min-w-0 flex-1 bg-canvas p-2 md:p-10"
+                    className="relative min-h-0 min-w-0 flex-1 bg-canvas p-2 md:p-10"
                   >
                     <SlideViewportNavigation
                       targetRef={slideViewportRef}
@@ -904,26 +947,28 @@ function AgentConnectedBadge() {
   const t = useLocale();
   const connected = useAgentSocketConnected();
   return (
-    <TooltipProvider delayDuration={200}>
+    <TooltipProvider delay={200}>
       <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            className="ml-1 flex shrink-0 cursor-help items-center gap-1.5 rounded-[3px] border border-hairline bg-card px-1.5 py-0.5 text-[10.5px] text-foreground/85 outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-          >
-            <span aria-hidden className="relative flex size-1.5 items-center justify-center">
-              {connected ? (
-                <>
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-60" />
-                  <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
-                </>
-              ) : (
-                <span className="relative inline-flex size-1.5 rounded-full bg-rose-500" />
-              )}
-            </span>
-            {connected ? t.slide.agentConnected : t.slide.agentDisconnected}
-          </button>
-        </TooltipTrigger>
+        <TooltipTrigger
+          render={
+            <button
+              type="button"
+              className="ml-1 flex shrink-0 cursor-help items-center gap-1.5 rounded-[3px] border border-hairline bg-card px-1.5 py-0.5 text-[10.5px] text-foreground/85 outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+            >
+              <span aria-hidden className="relative flex size-1.5 items-center justify-center">
+                {connected ? (
+                  <>
+                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+                    <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
+                  </>
+                ) : (
+                  <span className="relative inline-flex size-1.5 rounded-full bg-rose-500" />
+                )}
+              </span>
+              {connected ? t.slide.agentConnected : t.slide.agentDisconnected}
+            </button>
+          }
+        />
         <TooltipContent
           side="bottom"
           align="start"

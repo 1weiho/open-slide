@@ -1,6 +1,6 @@
 {
   "name": "@open-slide/cli",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "Scaffold an open-slide workspace with Claude Code skills preconfigured.",
   "type": "module",
   "bin": {
@@ -12,10 +12,10 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsdown",
+    "build": "node scripts/sync-template-skills.mjs && tsdown",
     "typecheck": "tsc --noEmit",
     "sync:template-skills": "node scripts/sync-template-skills.mjs",
-    "prepack": "pnpm sync:template-skills && pnpm build"
+    "prepack": "pnpm build"
   },
   "engines": {
     "node": ">=18"

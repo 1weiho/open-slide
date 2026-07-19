@@ -28,34 +28,12 @@ dist/
 └── ...
 ```
 
-## Trimming the public surface
+## Configuration
 
-If the build is for a public share rather than internal review, you can hide
-the slide browser and on-canvas UI in `open-slide.config.ts`:
+Two `open-slide.config.ts` fields matter at build time:
 
-```ts
-const config: OpenSlideConfig = {
-  build: {
-    showSlideBrowser: false,
-    showSlideUi: false,
-    allowHtmlDownload: false,
-  },
-};
-```
-
-See [Export](/docs/core-feature/export) for the full set of build knobs.
-
-## Deploying under a subpath
-
-If the build won't sit at the domain root (GitHub Pages project sites,
-a reverse-proxy folder, an intranet path), set `base` in
-`open-slide.config.ts` so asset URLs and client-side navigation resolve
-against the deployed path:
-
-```ts
-const config: OpenSlideConfig = {
-  base: '/my-slides/',
-};
-```
-
-See [Config](/docs/reference/config) for details.
+- For a public share, hide the slide browser and on-canvas UI with the
+  `build` toggles — see [Export](/docs/core-feature/export).
+- If the build won't sit at the domain root (GitHub Pages project sites, a
+  reverse-proxy folder), set `base` so asset URLs and navigation resolve
+  against the deployed path — see [Config](/docs/reference/config).

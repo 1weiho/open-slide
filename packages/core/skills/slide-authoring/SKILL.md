@@ -1,6 +1,6 @@
 ---
 name: slide-authoring
-description: Technical reference for writing or editing open-slide pages — file contract, 1920×1080 canvas, type scale, layout, palette/visual direction, and assets. Consult this whenever you are about to write or modify any file under `slides/<id>/`, including from inside the `create-slide` or `apply-comments` workflows, or for any ad-hoc slide edit. Triggers on phrases like "edit slide", "tweak this page", "fix the layout", "change the palette", "investigate the slide framework", "how do slides work here".
+description: Technical reference for writing or editing open-slide pages — file contract, 1920×1080 canvas, type scale, layout, palette/visual direction, assets, stepped reveals, page transitions, and morph transitions. Consult this whenever you are about to write or modify any file under `slides/<id>/`, including from inside the `create-slide` or `apply-comments` workflows, or for any ad-hoc slide edit. Triggers on phrases like "edit slide", "tweak this page", "fix the layout", "change the palette", "reveal one by one", "add a transition", "morph transition", "investigate the slide framework", "how do slides work here".
 ---
 
 # Authoring open-slide pages
@@ -14,12 +14,26 @@ This skill is the **technical reference** for everything that happens inside `sl
 
 When any of those paths reach the point of *writing React code for a page*, this is the source of truth. Do not duplicate the knowledge below into other skills — link here instead.
 
+## Primitive references
+
+Each framework primitive has a full reference file under `references/` in this skill — contract, worked examples, and its own anti-patterns. This file keeps only the always-on rules and a short summary per primitive. **Read the relevant reference file before using a primitive on a page**:
+
+| Primitive | Read before | File |
+| --- | --- | --- |
+| `design` const + `var(--osd-X)` tokens | writing any new slide (default baseline) | `references/design-system.md` |
+| Assets + `<ImagePlaceholder>` | importing images/videos or leaving a placeholder | `references/assets.md` |
+| Webfonts | loading any non-system font | `references/webfonts.md` |
+| `useSlidePageNumber()` | rendering a page-number footer | `references/page-numbers.md` |
+| `<Steps>` / `<Step>` | staging a page's reveal | `references/steps.md` |
+| `SlideTransition` | declaring any enter/exit animation | `references/transitions.md` |
+| `MorphElement` + `morph` | morphing a shared element across pages | `references/morph.md` |
+
 ## Hard rules
 
 - Put the slide under `slides/<kebab-case-id>/`.
 - Entry is `slides/<id>/index.tsx`. Images/videos/fonts go under `slides/<id>/assets/`.
 - Do **not** touch `package.json`, `open-slide.config.ts`, or other slides.
-- Do not add dependencies. Only `react` and standard web APIs are available.
+- Do not add dependencies. Only `react`, `@open-slide/core`, and standard web APIs are available.
 - A slide is **one `index.tsx` plus `assets/`** — nothing else. Do not create sibling `.tsx`/`.ts` files (`Card.tsx`, `components/`, `helpers.ts`, etc.); helper components and constants go inside `index.tsx`. Do not create `README.md` or other prose files either.
 
 ## File contract
@@ -80,7 +94,7 @@ Every page renders into a fixed **1920 × 1080** canvas. The framework scales it
 
 ### Vertical budget — content MUST fit 1080px
 
-The canvas does **not** scroll. Anything below 1080px is silently cropped. Before writing JSX, do the math on paper and confirm the page fits. This is the #1 cause of broken slides — assume you will overflow unless you've checked.
+The canvas does **not** scroll. Anything past the 1080px bottom edge is silently cropped. Before writing JSX, do the math on paper and confirm the page fits. This is the #1 cause of broken slides — assume you will overflow unless you've checked.
 
 **Usable height** = `1080 − top_padding − bottom_padding`. With 120px padding on each side that's **840px**. With 160px each side, **760px**. Pick the padding first, then design within that budget.
 
@@ -106,7 +120,7 @@ Swap the heading to 120px or add a 6th bullet and you're over. **Verify every pa
 - A bullet should fit on one line at the chosen font size. If it wraps, either shorten the copy or move it to its own page.
 - Hero title pages (140–200px) carry a title + 1 subtitle + maybe an eyebrow — nothing else.
 - Section headings (80–120px) need almost nothing else on the page.
-- If you find yourself raising padding, shrinking type below the scale's lower bound, or tightening line-height under 1.4 to make things fit — **split into two pages instead**. Splitting is always the right answer when the budget is tight.
+- If you find yourself raising padding, shrinking type below the scale's lower bound, or tightening body line-height under 1.4 to make things fit — **split into two pages instead**. Splitting is always the right answer when the budget is tight.
 
 **Never** use `overflow: auto/scroll`, negative margins, or transforms to hide overflow. The canvas is fixed; cropped content is gone.
 
@@ -114,32 +128,16 @@ Swap the heading to 120px or add a 6th bullet and you're over. **Verify every pa
 
 Pick a coherent look and hold it across every page:
 
-- **Palette** — 1 background, 1 primary text, 1 accent, 1 muted. Define as constants at the top of the file.
+- **Palette** — 1 background, 1 primary text, 1 accent, 1 muted. Put bg/text/accent in the `design` const (see Design system below); extra colors like muted stay as plain consts.
 - **Typography** — one display font + one body font. System stack unless the user specifies. Heavy weight for headlines (800–900), normal for body (400–500).
 - **Layout grid** — pick a single content padding (e.g. 120px) and stick to it. Left-aligned content feels editorial; centered feels ceremonial.
 - **Aesthetic commitment** — choose ONE: minimal, maximalist, editorial, retro, brutalist, soft/pastel, neon, paper/print. Don't mix.
 
-Consult the `frontend-design` skill for deeper aesthetic guidance if the user wants something bold.
+If the `frontend-design` skill is available, consult it for deeper aesthetic guidance when the user wants something bold.
 
 ## Webfonts
 
-The default is a system font stack — prefer it. When a deck genuinely needs a webfont (a brand font, or CJK / Thai / Arabic where system coverage is poor):
-
-- **Load the stylesheet once, in `<head>` — never inside a per-page component.** Every page is mounted live at the same time (thumbnail rail, overview grid, and the PDF print root), so a `<style>@import>` / `<link>` rendered inside a `Page` registers the whole `@font-face` set once *per page*. Inject it once, idempotently:
-
-  ```tsx
-  const FONT_HREF = 'https://fonts.googleapis.com/css2?family=...&display=swap';
-  if (typeof document !== 'undefined' && !document.getElementById('osd-webfont')) {
-    const link = document.createElement('link');
-    link.id = 'osd-webfont';
-    link.rel = 'stylesheet';
-    link.href = FONT_HREF;
-    document.head.appendChild(link);
-  }
-  ```
-
-- **List only the weights you actually use.** Each extra weight multiplies the number of `@font-face` rules.
-- **CJK fonts are large.** A Google Fonts CJK family registers hundreds of `unicode-range` subset faces (Noto Sans TC ≈ 105 subsets × each weight), and PDF export waits on fonts before printing. If the deck's text is fixed, add `&text=<unique chars>` to the URL to request a tiny single-face subset instead of the full set.
+The default is a system font stack — prefer it. When a deck genuinely needs a webfont (a brand font, or CJK / Thai / Arabic where system coverage is poor), read `references/webfonts.md` first — loading the stylesheet inside a page component registers the whole `@font-face` set once per mounted page, and CJK families need subsetting.
 
 ## Themes
 
@@ -149,47 +147,11 @@ Themes are produced by the `create-theme` skill and are pure documentation: copy
 
 ## Design system (opt-in, per-slide)
 
-A slide can declare its own typed design tokens at the top of `index.tsx`:
+A slide can declare typed design tokens at the top of `index.tsx` — `export const design: DesignSystem = { palette, fonts, typeScale, radius }` — and consume them via `var(--osd-X)` in inline styles. The framework injects the CSS variables at the canvas root, and the dev UI's Design panel can live-tweak them.
 
-```tsx
-import type { DesignSystem, Page } from '@open-slide/core';
+**Default to using it.** Every new slide should declare a `design` const so it stays tweakable from the panel after generation. Only fall back to plain palette constants for a one-off slide whose palette is intentionally locked (`references/design-system.md` covers the fallback).
 
-export const design: DesignSystem = {
-  palette: { bg: '#f7f5f0', text: '#1a1814', accent: '#6d4cff' },
-  fonts: {
-    display: 'Georgia, "Times New Roman", serif',
-    body: '-apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif',
-  },
-  typeScale: { hero: 168, body: 36 },
-  radius:    12,
-};
-```
-
-`export` it (rather than plain `const`) so the framework can read the object and inject CSS variables at the canvas root automatically.
-
-The shape is intentionally minimal — it only covers what the Design panel can currently tweak. Anything outside this set (heading sizes, spacing, motion, extra palette colors) belongs as plain hard-coded constants in the slide file.
-
-There are **two consumption surfaces**, and you should mix them inside the same slide:
-
-- **`var(--osd-X)` for visual properties (color, font, font-size, radius)** — these get instant updates while the user drags a slider in the Design panel, before any file write.
-  ```tsx
-  <div style={{ background: 'var(--osd-bg)', color: 'var(--osd-text)', borderRadius: 'var(--osd-radius)', fontFamily: 'var(--osd-font-body)', fontSize: 'var(--osd-size-body)' }}>
-  ```
-  Available vars: `--osd-bg`, `--osd-text`, `--osd-accent`, `--osd-font-display`, `--osd-font-body`, `--osd-size-hero`, `--osd-size-body`, `--osd-radius`.
-
-- **Direct `design.X` reads** — when you need a JS number for arithmetic or to label something in the UI. These update via HMR after the panel commits the file, not while dragging.
-  ```tsx
-  <p>{design.typeScale.hero}px</p>
-  ```
-
-The dev UI has a **Design** button in the slide header (next to Inspect). Edits update an in-memory draft and the live-preview overlay; a floating Save / Discard bar at the bottom of the canvas commits or reverts. The const stays the single source of truth — production builds bake the saved values.
-
-**Default to using it.** Every new slide should declare a `design` const so it stays tweakable from the panel after generation — this is the expected baseline. Only fall back to the local `palette` constants pattern (see starter template) for a one-off slide whose palette is intentionally locked and not meant to be re-themed. Both styles can coexist across slides — the panel only operates on the *currently viewed* slide.
-
-Format constraints (for the panel's AST writer):
-- Must be `[export] const design: DesignSystem = { … }` (or `as DesignSystem` / `satisfies DesignSystem`) at module top level.
-- Object initializer must be a literal — no spreads, no helper calls. Plain values only.
-- `DesignSystem` must be imported from `@open-slide/core` (the panel adds the import automatically when creating a fresh block).
+`references/design-system.md` has the full token shape, the two consumption surfaces (`var(--osd-X)` vs direct `design.X` reads), Design panel behavior, and the format constraints the panel's AST writer requires. Read it before writing the const.
 
 ## Starter template
 
@@ -269,271 +231,37 @@ export default [Cover, Content] satisfies Page[];
 
 ## Assets
 
-**Slide-local assets** live under `slides/<id>/assets/` — anything one-off to a single slide. Import them as ES modules:
+Slide-local assets live under `slides/<id>/assets/` and are imported as ES modules (`import hero from './assets/hero.jpg'`). Global assets shared across decks (logos, avatars, recurring icons) live in the project root `assets/` and are imported via the `@assets` alias. For a pure-text slide, don't create `slides/<id>/assets/` at all.
 
-```tsx
-import hero from './assets/hero.jpg';
-// …
-<img src={hero} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-```
-
-For URL-only access:
-
-```tsx
-const videoUrl = new URL('./assets/intro.mp4', import.meta.url).href;
-```
-
-**Global assets** — anything reused across decks or themes (company logos, presenter avatars, recurring icons) — live in the project root `assets/` folder. Import them via the `@assets` alias:
-
-```tsx
-import logo from '@assets/logos/acme.svg';
-```
-
-A `themes/*.md` file may name an asset path in its prose (e.g. "use `@assets/logos/acme.svg` in the title slot"); the slide imports it explicitly.
-
-Skip the `assets/` folder entirely for pure-text slides.
+`references/assets.md` covers import forms (module vs `new URL(...)`), the `@assets` alias, and how themes name asset paths.
 
 ## Image placeholders
 
-When a page genuinely needs a real image **the user has to provide** — a product screenshot, a team photo, a chart from their data — leave a typed placeholder instead of inventing a stand-in:
+When a page genuinely needs a real image **the user has to provide** (product screenshot, team photo, chart from their data), leave a typed `<ImagePlaceholder hint="…" />` from `@open-slide/core` instead of inventing a stand-in — the user replaces it via the Assets panel + inspector. **Do not** use placeholders for decoration or generic stock-photo filler; if type, layout, and color can carry the page, do that.
 
-```tsx
-import { ImagePlaceholder } from '@open-slide/core';
-
-<ImagePlaceholder hint="Product hero screenshot" width={1280} height={720} />
-```
-
-The user uploads the real file via the Assets panel, then clicks the placeholder in the inspector and picks "Replace…" — the JSX is rewritten to a real `<img>` with the import added.
-
-**Use a placeholder only when** a specific concrete image is required by the deck's topic. Examples that warrant one: a product-intro deck (product screenshot per feature), an offsite recap (team photo), a case study (customer logo, dashboard screenshot).
-
-**Do not use a placeholder** for decoration, generic "stock photo" filler, hero imagery on a text-heavy slide, or anywhere a typographic / iconographic / illustrative solution would do. If you can carry the page with type, layout, and color — do that. Empty placeholders the user has to fill are friction; only spend that friction when the alternative is worse.
-
-Size the placeholder to the slot it occupies. Pass `width`/`height` when the layout has a fixed image box; omit them when the placeholder fills a flex/grid cell. The `hint` should describe the *content* the user needs ("Q3 revenue chart") not the *role* ("hero image").
+`references/assets.md` has the full usage rules, sizing guidance, and examples of when a placeholder is (and isn't) warranted.
 
 ## Page numbers
 
-If a footer shows the current page (`03 / 12`, `Page 3`, etc.), read it from `useSlidePageNumber()` — **never hardcode** `n` / `TOTAL`. Inserting, reordering, or deleting a page would otherwise force you to retouch every footer.
-
-```tsx
-import { useSlidePageNumber } from '@open-slide/core';
-
-const Footer = () => {
-  const { current, total } = useSlidePageNumber();
-  return (
-    <span>{String(current).padStart(2, '0')} / {String(total).padStart(2, '0')}</span>
-  );
-};
-```
-
-`current` is 1-indexed (matches what readers see) and `total` is the slide's page count. The hook works in every render context (main viewer, thumbnails, overview grid, present mode, presenter window, HTML/PDF export) — the same `<Footer />` JSX is correct everywhere. Call the hook inside a component that's used **per page**; don't try to call it at module top level.
+If a footer shows the current page (`03 / 12`), read it from `useSlidePageNumber()` — **never hardcode** `n` / `TOTAL`. See `references/page-numbers.md` for the hook's contract and where it can be called.
 
 ## Stepped reveals (`<Steps>` / `<Step>`)
 
-Reveal a page one beat at a time instead of showing everything at once. Wrap the deferred parts in `<Step>`, wrap the group in `<Steps>`. Each `→` reveals the next `<Step>`; `→` after the last one advances to the next page. `←` peels the last reveal back. Use it to stage attention — show framing first, then the consequence, then the turn — so the audience reads at the speaker's pace, not ahead.
+Reveal a page one beat at a time: wrap deferred parts in `<Step>`, the group in `<Steps>`; each `→` reveals the next step. Use it when the *order* of ideas is the point — not reflexively on every page. Two rules are load-bearing: `<Step>` must be a **direct child** of `<Steps>` (otherwise it silently renders fully revealed), and a page must still read as complete when jumped to via the overview grid (jumping in shows all steps revealed).
 
-`slides/build-on-reveal/` is the canonical worked example; study it before authoring a stepped page.
-
-```tsx
-import { Step, Steps } from '@open-slide/core';
-
-<Steps>
-  <Step><div style={BULLET_ROW}>An audience reads faster than a presenter speaks.</div></Step>
-  <Step><div style={BULLET_ROW}>Showing every bullet at once invites pre-reading.</div></Step>
-  <Step><div style={BULLET_ROW}>Revealing in time stages attention.</div></Step>
-</Steps>
-```
-
-### Rules
-
-- **`<Step>` must be a *direct* child of `<Steps>`.** A `<Step>` nested deeper (or used without a `<Steps>` parent) renders fully revealed and defers nothing.
-- **Non-`Step` children render immediately.** Put a headline or intro paragraph *inside* `<Steps>` as a plain element and it shows from the start; only the `<Step>` blocks wait. This is the "headline always, body in turn" pattern:
-  ```tsx
-  <Steps>
-    <h2>Not everything has to wait.</h2>{/* visible immediately */}
-    <Step><p>First, set the stage…</p></Step>
-    <Step><p>Then, layer the consequence…</p></Step>
-  </Steps>
-  ```
-- **Multiple `<Steps>` blocks on one page compose in document order.** The first block reveals all its steps before the second begins; `←` unwinds in reverse. Use this for two columns that build left-then-right, each column owning its own `<Steps>`:
-  ```tsx
-  <div style={COL}><Steps><Step>…</Step><Step>…</Step></Steps></div>{/* finishes first */}
-  <div style={COL}><Steps><Step>…</Step><Step>…</Step></Steps></div>{/* then this */}
-  ```
-- **Entry direction decides the starting state — same content, two rhythms.** Entering forward (`→` from the previous page) starts empty and builds up. Jumping in via the overview grid, or arriving backward from a later page, shows the page **fully composed** with every step already revealed. Design the page to read well both ways: a thumbnail or overview jump should look complete, not blank.
-- **`<Step>` fades in over `duration` ms (default 180).** Pass `<Step duration={...}>` to adjust. `prefers-reduced-motion: reduce` collapses it to an instant cut automatically — don't write a fallback.
-
-### When to reach for it
-
-Use stepped reveals when the *order* of ideas is the point — a list whose payoff is the last item, a build-up to a conclusion, a before/after. Don't wrap every page's content in `<Step>` reflexively: a page the audience should take in at a glance (a hero title, a single quote, a diagram) is stronger shown whole. Reveals are timing, not decoration — same restraint as transitions.
+Read `references/steps.md` before authoring a stepped page — it covers composition order across multiple `<Steps>` blocks, the "headline always, body in turn" pattern, and entry-direction behavior. If `slides/build-on-reveal/` exists in this project, it is the canonical worked example.
 
 ## Page transitions
 
-The framework can run an enter/exit animation between every slide change. There's **no default** — pages snap unless you declare a `SlideTransition`. Snap-swap is a perfectly tasteful default; only opt in when motion adds something.
+The framework can run an enter/exit animation between slide changes, declared as a `SlideTransition` (module-level default, per-page override; the **incoming page wins**). There's **no default** — pages snap unless you opt in, and snap-swap is a perfectly tasteful default. If you do opt in: one motion DNA per deck, 140–280 ms, magnitude under 12 px / 3% scale, opacity always part of it.
 
-`prefers-reduced-motion: reduce` is honored automatically. You don't write a fallback.
+Read `references/transitions.md` before declaring one — it has the full type contract, design principles, a six-member "tasteful family" of ready-to-use transitions sharing one DNA, direction-aware keyframes, and the anti-pattern list.
 
-### Contract
+## Morph transitions
 
-Module-level for the whole deck; per-page to override. The **incoming page wins**: navigating A → B uses `pages[B].transition ?? module.transition`. Its `exit` plays on A, its `enter` plays on B. Going back B → A uses A's transition.
+When the *same visual object* exists on two adjacent pages, wrap it on both pages in `MorphElement` with the same `id` and enable `morph` on the incoming page's transition — position, size, radius, and colors interpolate in one continuous move (Keynote's "Magic Move"). Morph is for **state continuity** (a toggle sliding, a card expanding, a box joining a row); don't morph decoration.
 
-```tsx
-import type { Page, SlideTransition } from '@open-slide/core';
-
-const Cover: Page = () => <section>…</section>;
-const Body:  Page = () => <section>…</section>;
-
-// Module-level default — every page inherits unless it overrides.
-export const transition: SlideTransition = { /* … */ };
-
-// Per-page override.
-Cover.transition = { /* … */ };
-
-export default [Cover, Body];
-```
-
-```ts
-type TransitionPhase = {
-  keyframes: Keyframe[] | PropertyIndexedKeyframes;  // WAAPI keyframes
-  duration?: number;  // ms (falls back to top-level duration)
-  easing?: string;    // CSS easing
-  delay?: number;     // ms — use to overlap exit + enter
-};
-type SlideTransition = {
-  duration: number;          // top-level fallback
-  easing?: string;           // top-level fallback
-  enter?: TransitionPhase;   // runs on incoming page
-  exit?:  TransitionPhase;   // runs on outgoing page
-};
-```
-
-The framework also exposes `--osd-dir` (`1` forward, `-1` backward) and `data-osd-dir` on the wrapper, so a single keyframe can mirror direction without a JS callback.
-
-### Design principles (hold the line)
-
-The single loudest signal of "made in PowerPoint" is six different transitions in one deck. Restraint is the rhythm.
-
-- **Pick one DNA, hold it across the deck.** Same duration band, same easing pair, same out-then-in stagger. Variation lives only in *which property* gets the small nudge — Y, X, opacity, scale, blur.
-- **Duration: 140–280 ms.** Exit 140–180 ms, enter 200–280 ms, enter delayed ~80 ms so they overlap but don't fight. Past 350 ms is video-editor territory; reserve for genuine state changes.
-- **Magnitude ceiling: 12 px or 3% scale.** A 6 px Y-rise reads as "next thought." A 1920 px translateX reads as "different document." Premium tools move barely enough to register.
-- **Opacity is always part of it.** Pure-transform transitions look stiff; pure-opacity transitions are the safest possible default.
-- **Easing: ease-in for exit, ease-out for enter.** `cubic-bezier(0.4, 0, 1, 1)` going out, `cubic-bezier(0, 0, 0.2, 1)` coming in. Never `linear` (feels like a slideshow). Reserve symmetric `ease-in-out` for state-anchored morphs only.
-
-### Tasteful family — six members, one DNA
-
-Use this set as a starting point. Pick one as the deck's house transition; optionally reserve a second for hero/cover slides and a third for genuine section breaks. The CSS-`calc` + `--osd-dir` trick lets a single definition mirror itself on backward navigation when needed.
-
-```tsx
-const EASE_OUT = 'cubic-bezier(0, 0, 0.2, 1)';
-const EASE_IN  = 'cubic-bezier(0.4, 0, 1, 1)';
-
-// RISE — house quiet. 6 px Y. Use as module default.
-export const transition: SlideTransition = {
-  duration: 200,
-  exit:  { duration: 140, easing: EASE_IN,
-           keyframes: [
-             { opacity: 1, transform: 'translateY(0)' },
-             { opacity: 0, transform: 'translateY(-4px)' },
-           ] },
-  enter: { duration: 200, delay: 80, easing: EASE_OUT,
-           keyframes: [
-             { opacity: 0, transform: 'translateY(6px)' },
-             { opacity: 1, transform: 'translateY(0)' },
-           ] },
-};
-
-// DISSOLVE — pure opacity. The quietest possible.
-const dissolve: SlideTransition = {
-  duration: 240,
-  exit:  { duration: 200, easing: EASE_IN,
-           keyframes: [{ opacity: 1 }, { opacity: 0 }] },
-  enter: { duration: 240, delay: 40, easing: EASE_OUT,
-           keyframes: [{ opacity: 0 }, { opacity: 1 }] },
-};
-
-// SETTLE — cover-grade. Rise + a hair of blur on enter only.
-Cover.transition = {
-  duration: 280,
-  exit:  { duration: 160, easing: EASE_IN,
-           keyframes: [
-             { opacity: 1, transform: 'translateY(0)' },
-             { opacity: 0, transform: 'translateY(-6px)' },
-           ] },
-  enter: { duration: 280, delay: 100, easing: EASE_OUT,
-           keyframes: [
-             { opacity: 0, transform: 'translateY(12px)', filter: 'blur(4px)' },
-             { opacity: 1, transform: 'translateY(0)',    filter: 'blur(0)'   },
-           ] },
-};
-
-// BLOOM — scale 0.97 → 1, no translate. Materializes in place.
-const bloom: SlideTransition = {
-  duration: 240,
-  exit:  { duration: 160, easing: EASE_IN,
-           keyframes: [
-             { opacity: 1, transform: 'scale(1)' },
-             { opacity: 0, transform: 'scale(1.01)' },
-           ] },
-  enter: { duration: 240, delay: 80, easing: EASE_OUT,
-           keyframes: [
-             { opacity: 0, transform: 'scale(0.97)' },
-             { opacity: 1, transform: 'scale(1)' },
-           ] },
-};
-
-// FALL — mirrored Rise. Incoming page comes down from above.
-const fall: SlideTransition = {
-  duration: 200,
-  exit:  { duration: 140, easing: EASE_IN,
-           keyframes: [
-             { opacity: 1, transform: 'translateY(0)' },
-             { opacity: 0, transform: 'translateY(4px)' },
-           ] },
-  enter: { duration: 200, delay: 80, easing: EASE_OUT,
-           keyframes: [
-             { opacity: 0, transform: 'translateY(-6px)' },
-             { opacity: 1, transform: 'translateY(0)' },
-           ] },
-};
-
-// BREATH — section break. Exit fully, hold 120 ms, then enter.
-// Reserve for genuine chapter dividers; use at most 1–2× per deck.
-const breath: SlideTransition = {
-  duration: 460,
-  exit:  { duration: 180, easing: EASE_IN,
-           keyframes: [{ opacity: 1 }, { opacity: 0 }] },
-  enter: { duration: 240, delay: 300, easing: EASE_OUT,
-           keyframes: [
-             { opacity: 0, transform: 'translateY(8px)' },
-             { opacity: 1, transform: 'translateY(0)' },
-           ] },
-};
-```
-
-All six share the same DNA — they only differ in which property carries the small nudge. The reader perceives variety; the eye still reads one consistent hand.
-
-### Direction-aware keyframes (use sparingly)
-
-Most tasteful tools don't mirror on backward navigation. When you genuinely need to — e.g. a horizontal slide that should reverse — use `--osd-dir` inside `calc()`:
-
-```tsx
-{ transform: 'translateX(calc(var(--osd-dir, 1) * 8px))' },
-{ transform: 'translateX(0)' },
-```
-
-If you find yourself reaching for this on every transition, you're probably over-designing. Forward = backward is the more refined default.
-
-### Transition anti-patterns
-
-- ❌ Six different transitions across six pages — the single loudest "made in PowerPoint" tell.
-- ❌ `translateX(100%)` slide-from-side — iOS modal / PowerPoint Push; not a slide change.
-- ❌ Aggressive scale-pop (e.g. `0.85 → 1`) + blur — lightbox / photo-viewer vocabulary; implies zooming *into* something.
-- ❌ `clip-path: inset(…)` reveals — After Effects vocabulary; theatrical.
-- ❌ Parallel blur on both layers at once — visual mush; the eye can't fixate.
-- ❌ Duration > 350 ms for a standard slide change — drags.
-- ❌ Translate > 12 px or scale > 3% — reads as rupture, not continuity.
-- ❌ `linear` easing — feels like a slideshow, not a product.
-- ❌ Declaring a transition on every deck. **If you don't have a clear reason, omit it.** Snap-swap is fine.
+Read `references/morph.md` before writing one — the seven rules there (opacity-only enter/exit, deterministic geometry, no `transform` on the morph node, `useIsActivePage()` gating, …) were each earned on a real deck, and violating any of them produces a visibly broken morph.
 
 ## Repeated elements: component, not `map`
 
@@ -601,7 +329,8 @@ This applies whenever the *visual element* repeats, not whenever the *data* does
 - [ ] All imported assets exist on disk — slide-local under `slides/<id>/assets/`, or global under `assets/` (imported via `@assets/...`).
 - [ ] Every `<ImagePlaceholder>` corresponds to a real image the user must supply — not decorative filler. If it could be replaced by typography or layout, it should be.
 - [ ] If a page uses `<Steps>`/`<Step>`, every `<Step>` is a direct child of a `<Steps>`, and the page still reads as complete when jumped to via the overview grid (entering forward builds up; jumping in shows it fully revealed).
-- [ ] If a `SlideTransition` is declared, every page sits in one family — same duration band (140–280 ms), same easing pair, same out-then-in stagger, magnitude under 12 px / 3%. No six-different-vocabularies decks. When in doubt, omit transitions entirely.
+- [ ] If a `SlideTransition` is declared, every page sits in one family — same duration band (140–280 ms), same easing pair, same out-then-in stagger, magnitude under 12 px / 3%. No six-different-vocabularies decks. When in doubt, omit transitions entirely. (Pages that opt into `morph` may exceed the band to match the morph — see `references/morph.md`.)
+- [ ] If a transition opts into `morph`: every morph `id` is unique per page and stable across the pair, morph geometry is pixel-constant (never measured after mount), no `transform` sits on the morph node, and entrance animations are gated behind `useIsActivePage()`.
 - [ ] Nothing outside `slides/<id>/` was edited.
 
 ## Anti-patterns
@@ -614,12 +343,8 @@ This applies whenever the *visual element* repeats, not whenever the *data* does
 - ❌ Bullets that wrap to a second line — either shorten or move to its own page.
 - ❌ Body type under 28px — unreadable on a projector.
 - ❌ Inconsistent palette across pages.
-- ❌ Installing packages. Only `react` and standard web APIs are available.
+- ❌ Installing packages. Only `react`, `@open-slide/core`, and standard web APIs are available.
 - ❌ Writing CSS to a shared file. Inline styles or scoped classnames only.
 - ❌ Creating `README.md` or other prose files inside the slide folder.
 - ❌ Editing `package.json`, `open-slide.config.ts`, or other slides.
-- ❌ Sprinkling `<ImagePlaceholder>` across pages "for visual interest". Placeholders are for content the user owns; they're not stock-photo slots.
-- ❌ Using a placeholder for an icon or decorative shape — those are typography/SVG problems, not asset problems.
-- ❌ Rendering visually repeated elements with `array.map(...)` over a data array. Define a component and instantiate it explicitly per item (`<Card />`, `<Card />`, `<Card />`) so the inspector can edit each independently — a shared `map` body mutates every instance at once.
-- ❌ Wrapping every page's content in `<Step>` reflexively. Stepped reveals are for content whose *order* is the point; a glance-and-get-it page (hero title, single quote, diagram) is stronger shown whole.
-- ❌ A `<Step>` that isn't a direct child of `<Steps>` (nested deeper, or with no `<Steps>` parent). It renders fully revealed and defers nothing — the reveal silently does nothing.
+- ❌ Using a primitive without reading its reference file — each `references/*.md` carries the primitive's own anti-pattern list (placeholder misuse, transition vocabulary, `<Step>` nesting, morph geometry).

@@ -8,13 +8,7 @@ zero-prop React components, and each component is one page in the runtime,
 presenter view, overview grid, thumbnails, and exports.
 
 ```tsx title="slides/q2-launch/index.tsx"
-import {
-  CANVAS_HEIGHT,
-  CANVAS_WIDTH,
-  type Page,
-  type SlideMeta,
-  useSlidePageNumber,
-} from '@open-slide/core';
+import { type Page, type SlideMeta, useSlidePageNumber } from '@open-slide/core';
 
 const Cover: Page = () => {
   const { current, total } = useSlidePageNumber();
@@ -32,7 +26,6 @@ const Cover: Page = () => {
     >
       <p>{current} / {total}</p>
       <h1>Q2 launch</h1>
-      <small>{CANVAS_WIDTH} × {CANVAS_HEIGHT}</small>
     </section>
   );
 };
@@ -46,12 +39,6 @@ export default [Cover] satisfies Page[];
 
 ## Contract
 
-```ts
-type Page = ComponentType & {
-  transition?: SlideTransition;
-};
-```
-
 - A `Page` takes no props. Pull page context from hooks such as
   `useSlidePageNumber()`.
 - The module default export is the display order: `export default [Cover,
@@ -61,7 +48,7 @@ type Page = ComponentType & {
 - Every page renders into a fixed `1920 × 1080` canvas. The runtime scales the
   whole canvas uniformly for preview, present mode, and export.
 
-## How to Think About It
+## Layout model
 
 Write pages as fixed-format compositions, not responsive web pages. Pixel
 coordinates are stable because the canvas size never changes. Use absolute
@@ -73,7 +60,7 @@ current canvas, thumbnail rail, overview grid, theme preview, or export. Keep
 render output deterministic, avoid depending on the browser viewport, and
 guard browser-only side effects when a page also needs to export cleanly.
 
-## Per-Page Overrides
+## Per-page overrides
 
 `Page` can carry a `transition` property. Use it only when one page needs a
 different animation than the module-level default.

@@ -27,7 +27,7 @@ export function LanguageToggle() {
         {LOCALE_OPTIONS.map((option) => (
           <DropdownMenuItem
             key={option.id}
-            onSelect={() => setLocale(option.id)}
+            onClick={() => setLocale(option.id)}
             data-active={t.id === option.id}
           >
             {option.label}

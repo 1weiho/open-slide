@@ -7,7 +7,8 @@ description: Scaffold a new workspace.
 npx @open-slide/cli init [directory]
 ```
 
-If `directory` is omitted, the scaffolder uses the current folder. If it's
+If `directory` is omitted, an interactive run prompts for one (defaulting to
+the current folder); non-interactive runs use the current folder. If it's
 provided and doesn't exist, it's created.
 
 ## Flags
@@ -22,30 +23,28 @@ provided and doesn't exist, it's created.
 | `--use-bun`               | auto-detected | Install with bun.                                                        |
 | `--no-install`            | off           | Skip dependency installation. You'll have to run `install` yourself.     |
 | `--no-git`                | off           | Skip `git init` and the initial commit.                                  |
-| `--locale <code>`         | prompted      | Slide UI language. One of `en`, `zh-TW`, `zh-CN`, `ja`.                  |
 
-When no `--use-*` flag is passed, the scaffolder reads
-`npm_config_user_agent` (set by your launcher) to pick `pnpm`, `yarn`, or
-`bun`, and falls back to `npm` otherwise. Pass an explicit flag to force a
-specific manager — handy in CI or when `npx` was run under a different
-agent than the one you actually want to use.
+When no `--use-*` flag is passed, the scaffolder detects the package manager
+that launched it (via `npm_config_user_agent`) and falls back to `npm`. Pass
+an explicit flag to force one.
 
-When `--locale` is omitted, an interactive run asks you to pick a language
-and writes the matching preset into `open-slide.config.ts` (see the
-[Locale reference](/docs/reference/locale)). Non-interactive runs default
-to `en`.
+The runtime UI language is picked in-app, not at init.
 
 ## What it generates
 
 ```text
 my-deck/
 ├── slides/
-│   └── getting-started/
-│       └── index.tsx       # starter slide
-├── themes/                 # empty
+│   └── getting-started/    # starter slide + its assets
+├── themes/                 # empty — shared design systems
+├── assets/                 # global assets (@assets/* alias)
+├── .agents/
+│   └── skills/             # bundled agent skills
+├── .claude/
+│   └── skills/             # symlinks into .agents/skills/
 ├── open-slide.config.ts    # framework config
-├── CLAUDE.md               # mirrors AGENTS.md
 ├── AGENTS.md               # agent rules
+├── CLAUDE.md               # symlink to AGENTS.md
 ├── package.json
 ├── tsconfig.json
 └── netlify.toml / vercel.json   # one-click deploy configs

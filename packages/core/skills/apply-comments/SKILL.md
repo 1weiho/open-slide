@@ -28,13 +28,13 @@ Your job: read those markers, perform the described edits, and delete the marker
 ## Procedure
 
 1. **Identify the target slide(s).**
-   - If the user names one (`example-slide`, `youbike-3-survey`, etc.), work on that single `slides/<slideId>/index.tsx`.
+   - If the user names one (`getting-started`, `q2-roadmap`, etc.), work on that single `slides/<slideId>/index.tsx`.
    - If they say "all" or don't specify, scan every `slides/*/index.tsx`. Process each slide one at a time.
 
 2. **Read the file and find all markers.**
    - Run the regex above against the whole file.
    - For each match, base64url-decode `text` and `JSON.parse` it to get `{ note, hint? }`.
-   - Record each hit as `{ id, lineIndex (0-based), indent, note, hint }`.
+   - Record each hit as `{ id, lineIndex (0-based), note, hint }`.
    - If there are no markers, tell the user and stop.
 
 3. **Understand each comment in context.**
@@ -48,14 +48,14 @@ Your job: read those markers, perform the described edits, and delete the marker
 
 5. **Remove each marker after applying its edit.**
    - Delete the entire marker line including its trailing `\n`.
-   - Never leave a marker behind. An un-removed marker signals a failure.
+   - Never leave a marker behind for an edit you applied — that signals a failure. Markers deliberately skipped per the edge cases below stay in place.
 
 6. **Verify.**
-   - After all edits, re-read the file and confirm zero remaining markers.
-   - Run `pnpm tsc --noEmit` and `pnpm biome check` (or `pnpm lint`). Fix any introduced errors.
+   - After all edits, re-read the file and confirm the only remaining markers are ones you reported as skipped.
+   - Confirm the edited JSX is well-formed (balanced tags, no dangling attributes). If the project's `package.json` has typecheck/lint scripts, run them with the project's package manager; scaffolded projects ship neither TypeScript nor a linter — there, rely on the running dev server (or the `build` script) to surface compile errors. Fix any errors you introduced.
 
 7. **Report.**
-   - Summarise: `N applied, 0 remaining` plus a one-line description of each change (including the slide id).
+   - Summarise: `N applied, M skipped` plus a one-line description of each change (including the slide id).
 
 ## base64url decoding helper
 
@@ -71,8 +71,7 @@ You can run this inline via `node -e '...'` if you need to inspect a payload; ot
 ## Edge cases
 
 - **Marker with no enclosing JSX element** (shouldn't happen — the inspector won't write one — but if you find one): delete it and note as orphan.
-- **Multiple markers stacked on consecutive lines inside the same element**: they all refer to that enclosing element. Apply them in source order but still delete each line individually.
-- **`_debugSource` used SWC instead of Babel**: not your problem — the marker line is authoritative.
+- **Multiple markers stacked on consecutive lines inside the same element**: they all refer to that enclosing element. Read their notes in source order to understand the combined intent, then apply and delete them bottom-up per step 4.
 - **Comment asks for something outside the target element's scope** (e.g. "add a new page"): do the closest-reasonable edit and mention the scope expansion in your summary.
 - **Can't resolve the comment** (e.g. truly ambiguous, or the file changed shape such that the target element doesn't exist): leave the marker in place and report it as skipped. Don't guess.
 

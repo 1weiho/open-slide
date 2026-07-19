@@ -1,9 +1,15 @@
 import {
+  ArrowDown,
   ArrowDownToLine,
+  ArrowUp,
+  ArrowUpDown,
   CloudOff,
+  Columns3,
   File as FileIcon,
   FileImage,
   ImageIcon,
+  LayoutGrid,
+  List,
   Loader2,
   MoreVertical,
   Pencil,
@@ -12,8 +18,9 @@ import {
   SearchX,
   Trash2,
   Upload,
+  X,
 } from 'lucide-react';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
@@ -30,7 +37,25 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import {
+  type AssetSortDirection,
+  type AssetSortKey,
+  type AssetSortOptions,
+  type AssetTypeFilter,
+  type AssetUsageFilter,
+  filterAssets,
+  sortAssets,
+} from '@/lib/asset-filter';
 import {
   type AssetEntry,
   type AssetUsage,
@@ -48,8 +73,88 @@ import { cn } from '@/lib/utils';
 type Props = { slideId: string | null };
 
 type Scope = 'slide' | 'global';
+type ViewMode = 'grid' | 'list';
 
 const GLOBAL_SLIDE_ID = '@global';
+const VIEW_MODE_STORAGE_KEY = 'open-slide:asset-view-mode';
+const SORT_STORAGE_KEY = 'open-slide:asset-sort-v1';
+const GRID_COLUMNS_STORAGE_KEY = 'open-slide:asset-grid-columns-v1';
+const MIN_GRID_COLUMNS = 2;
+const MAX_GRID_COLUMNS = 10;
+const DEFAULT_GRID_COLUMNS = 4;
+const SORT_KEYS: readonly AssetSortKey[] = ['name', 'modified', 'size', 'type'];
+const DEFAULT_SORT: AssetSortOptions = { key: 'name', direction: 'asc' };
+const DEFAULT_SORT_DIRECTIONS: Record<AssetSortKey, AssetSortDirection> = {
+  name: 'asc',
+  modified: 'desc',
+  size: 'desc',
+  type: 'asc',
+};
+
+function readViewMode(): ViewMode {
+  if (typeof window === 'undefined') return 'grid';
+  try {
+    return window.localStorage.getItem(VIEW_MODE_STORAGE_KEY) === 'list' ? 'list' : 'grid';
+  } catch {
+    return 'grid';
+  }
+}
+
+function useViewMode(): [ViewMode, (next: ViewMode) => void] {
+  const [viewMode, setViewMode] = useState<ViewMode>(readViewMode);
+  const update = (next: ViewMode) => {
+    setViewMode(next);
+    try {
+      window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, next);
+    } catch {}
+  };
+  return [viewMode, update];
+}
+
+function readSortPreference(): AssetSortOptions {
+  if (typeof window === 'undefined') return DEFAULT_SORT;
+  try {
+    const [key, direction] = window.localStorage.getItem(SORT_STORAGE_KEY)?.split(':') ?? [];
+    if (SORT_KEYS.includes(key as AssetSortKey) && (direction === 'asc' || direction === 'desc')) {
+      return { key: key as AssetSortKey, direction };
+    }
+  } catch {}
+  return DEFAULT_SORT;
+}
+
+function useSortPreference(): [AssetSortOptions, (next: AssetSortOptions) => void] {
+  const [sort, setSort] = useState<AssetSortOptions>(readSortPreference);
+  const update = (next: AssetSortOptions) => {
+    setSort(next);
+    try {
+      window.localStorage.setItem(SORT_STORAGE_KEY, `${next.key}:${next.direction}`);
+    } catch {}
+  };
+  return [sort, update];
+}
+
+function readGridColumns(): number {
+  if (typeof window === 'undefined') return DEFAULT_GRID_COLUMNS;
+  try {
+    const value = Number(window.localStorage.getItem(GRID_COLUMNS_STORAGE_KEY));
+    if (Number.isInteger(value) && value >= MIN_GRID_COLUMNS && value <= MAX_GRID_COLUMNS) {
+      return value;
+    }
+  } catch {}
+  return DEFAULT_GRID_COLUMNS;
+}
+
+function useGridColumns(): [number, (next: number) => void] {
+  const [gridColumns, setGridColumns] = useState(readGridColumns);
+  const update = (next: number) => {
+    const value = Math.min(MAX_GRID_COLUMNS, Math.max(MIN_GRID_COLUMNS, Math.round(next)));
+    setGridColumns(value);
+    try {
+      window.localStorage.setItem(GRID_COLUMNS_STORAGE_KEY, String(value));
+    } catch {}
+  };
+  return [gridColumns, update];
+}
 
 type ConflictState = {
   file: File;
@@ -68,11 +173,56 @@ export function AssetView({ slideId }: Props) {
   const [confirmDeleteUsages, setConfirmDeleteUsages] = useState<AssetUsage[] | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [logoSearchOpen, setLogoSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [usageFilter, setUsageFilter] = useState<AssetUsageFilter>('all');
+  const [typeFilter, setTypeFilter] = useState<AssetTypeFilter>('all');
+  const [viewMode, setViewMode] = useViewMode();
+  const [sort, setSort] = useSortPreference();
+  const [gridColumns, setGridColumns] = useGridColumns();
   const dragDepth = useRef(0);
   const inputId = useId();
   const t = useLocale();
 
-  const existingNames = new Set(assets.map((a) => a.name));
+  const deferredQuery = useDeferredValue(query);
+  const visibleAssets = useMemo(
+    () =>
+      sortAssets(
+        filterAssets(assets, {
+          usage: usageFilter,
+          type: typeFilter,
+          search: deferredQuery,
+        }),
+        { key: sort.key, direction: sort.direction },
+      ),
+    [assets, deferredQuery, sort.direction, sort.key, typeFilter, usageFilter],
+  );
+  const existingNames = useMemo(() => new Set(assets.map((asset) => asset.name)), [assets]);
+
+  const clearFilters = () => {
+    setQuery('');
+    setUsageFilter('all');
+    setTypeFilter('all');
+  };
+
+  const changeSortKey = (key: AssetSortKey) => {
+    setSort({ key, direction: DEFAULT_SORT_DIRECTIONS[key] });
+  };
+
+  const toggleSortDirection = () => {
+    setSort({ key: sort.key, direction: sort.direction === 'asc' ? 'desc' : 'asc' });
+  };
+
+  const sortByColumn = (key: AssetSortKey) => {
+    setSort({
+      key,
+      direction:
+        sort.key === key
+          ? sort.direction === 'asc'
+            ? 'desc'
+            : 'asc'
+          : DEFAULT_SORT_DIRECTIONS[key],
+    });
+  };
 
   async function handleFile(file: File) {
     if (!available) return;
@@ -105,6 +255,32 @@ export function AssetView({ slideId }: Props) {
       // hammering the dev server's filesystem mutations in parallel.
       await handleFile(f);
     }
+  }
+
+  async function handleRename(asset: AssetEntry, next: string) {
+    if (next === asset.name) {
+      setRenaming(null);
+      return;
+    }
+    if (existingNames.has(next)) {
+      toast.error(t.asset.nameAlreadyExists);
+      return;
+    }
+    const res = await rename(asset.name, next);
+    if (!res.ok) {
+      toast.error(format(t.asset.toastRenameFailed, { status: res.status }));
+      return;
+    }
+    toast.success(format(t.asset.toastRenamed, { name: next }));
+    setRenaming(null);
+  }
+
+  function prepareDelete(asset: AssetEntry) {
+    setConfirmDelete(asset);
+    setConfirmDeleteUsages(null);
+    listAssetUsages(effectiveSlideId, asset.name)
+      .then((usages) => setConfirmDeleteUsages(usages))
+      .catch(() => setConfirmDeleteUsages([]));
   }
 
   if (!available) {
@@ -210,6 +386,112 @@ export function AssetView({ slideId }: Props) {
         </div>
       </div>
 
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-hairline bg-background px-4 py-2.5 sm:px-6">
+        <div className="relative min-w-[180px] flex-1 md:max-w-[280px]">
+          <Search
+            className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
+          <input
+            type="text"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            aria-label={t.asset.assetSearchPlaceholder}
+            placeholder={t.asset.assetSearchPlaceholder}
+            className="h-8 w-full rounded-[6px] border border-border bg-background pl-8 pr-7 text-[12.5px] outline-none placeholder:text-muted-foreground/70 focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30"
+          />
+          {query ? (
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              aria-label={t.asset.clearAssetSearch}
+              className="absolute right-1.5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-[4px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <X className="size-3" />
+            </button>
+          ) : null}
+        </div>
+
+        <Select
+          items={{
+            all: t.asset.usageAll,
+            used: t.asset.usageUsed,
+            unused: t.asset.usageUnused,
+          }}
+          value={usageFilter}
+          onValueChange={(next) => setUsageFilter(next as AssetUsageFilter)}
+        >
+          <SelectTrigger aria-label={t.asset.usageFilterAria} className="h-8 min-w-[112px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent align="start">
+            <SelectItem value="all">{t.asset.usageAll}</SelectItem>
+            <SelectItem value="used">{t.asset.usageUsed}</SelectItem>
+            <SelectItem value="unused">{t.asset.usageUnused}</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select
+          items={{
+            all: t.asset.typeAll,
+            image: t.asset.typeImage,
+            font: t.asset.typeFont,
+            video: t.asset.typeVideo,
+            other: t.asset.typeOther,
+          }}
+          value={typeFilter}
+          onValueChange={(next) => setTypeFilter(next as AssetTypeFilter)}
+        >
+          <SelectTrigger aria-label={t.asset.typeFilterAria} className="h-8 min-w-[108px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent align="start">
+            <SelectItem value="all">{t.asset.typeAll}</SelectItem>
+            <SelectItem value="image">{t.asset.typeImage}</SelectItem>
+            <SelectItem value="font">{t.asset.typeFont}</SelectItem>
+            <SelectItem value="video">{t.asset.typeVideo}</SelectItem>
+            <SelectItem value="other">{t.asset.typeOther}</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <AssetSortControl
+          sort={sort}
+          onKeyChange={changeSortKey}
+          onToggleDirection={toggleSortDirection}
+        />
+
+        <div className="ml-auto flex items-center gap-2">
+          {viewMode === 'grid' ? (
+            <GridColumnsControl value={gridColumns} onChange={setGridColumns} />
+          ) : null}
+          <ToggleGroup
+            value={[viewMode]}
+            onValueChange={(value) => {
+              const next = value[0];
+              if (next) setViewMode(next as ViewMode);
+            }}
+            variant="outline"
+          >
+            <ToggleGroupItem
+              value="grid"
+              aria-label={t.asset.gridViewAria}
+              title={t.asset.gridViewAria}
+              className="size-8 px-0"
+            >
+              <LayoutGrid className="size-3.5" />
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="list"
+              aria-label={t.asset.listViewAria}
+              title={t.asset.listViewAria}
+              className="size-8 px-0"
+            >
+              <List className="size-3.5" />
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+      </div>
+
       <div className="min-h-0 flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
@@ -217,45 +499,47 @@ export function AssetView({ slideId }: Props) {
           </div>
         ) : assets.length === 0 ? (
           <EmptyState />
+        ) : visibleAssets.length === 0 ? (
+          <NoMatchingAssets onClear={clearFilters} />
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4 p-6">
-            {assets.map((asset) =>
+          <div
+            className={cn(
+              'p-4 sm:p-6',
+              viewMode === 'grid'
+                ? 'grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4 lg:grid-cols-[repeat(var(--asset-grid-columns),minmax(0,1fr))]'
+                : 'flex flex-col gap-1',
+            )}
+            style={
+              viewMode === 'grid'
+                ? ({ '--asset-grid-columns': gridColumns } as React.CSSProperties)
+                : undefined
+            }
+          >
+            {viewMode === 'list' ? <AssetListHeader sort={sort} onSort={sortByColumn} /> : null}
+            {visibleAssets.map((asset) =>
               renaming === asset.name ? (
-                <RenameCard
+                <RenameAsset
                   key={asset.name}
                   asset={asset}
+                  viewMode={viewMode}
                   onCancel={() => setRenaming(null)}
-                  onSubmit={async (next) => {
-                    if (next === asset.name) {
-                      setRenaming(null);
-                      return;
-                    }
-                    if (existingNames.has(next)) {
-                      toast.error(t.asset.nameAlreadyExists);
-                      return;
-                    }
-                    const res = await rename(asset.name, next);
-                    if (!res.ok) {
-                      toast.error(format(t.asset.toastRenameFailed, { status: res.status }));
-                      return;
-                    }
-                    toast.success(format(t.asset.toastRenamed, { name: next }));
-                    setRenaming(null);
-                  }}
+                  onSubmit={(next) => handleRename(asset, next)}
                 />
-              ) : (
+              ) : viewMode === 'grid' ? (
                 <AssetCard
                   key={asset.name}
                   asset={asset}
                   onPreview={() => setPreview(asset)}
                   onRename={() => setRenaming(asset.name)}
-                  onDelete={() => {
-                    setConfirmDelete(asset);
-                    setConfirmDeleteUsages(null);
-                    listAssetUsages(effectiveSlideId, asset.name)
-                      .then((u) => setConfirmDeleteUsages(u))
-                      .catch(() => setConfirmDeleteUsages([]));
-                  }}
+                  onDelete={() => prepareDelete(asset)}
+                />
+              ) : (
+                <AssetListItem
+                  key={asset.name}
+                  asset={asset}
+                  onPreview={() => setPreview(asset)}
+                  onRename={() => setRenaming(asset.name)}
+                  onDelete={() => prepareDelete(asset)}
                 />
               ),
             )}
@@ -364,6 +648,66 @@ function EmptyState() {
   );
 }
 
+function NoMatchingAssets({ onClear }: { onClear: () => void }) {
+  const t = useLocale();
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-4 px-6 py-16 text-center">
+      <div className="flex size-12 items-center justify-center rounded-full border border-hairline bg-card text-muted-foreground">
+        <SearchX className="size-5" />
+      </div>
+      <div>
+        <p className="font-heading text-[14px] font-semibold tracking-tight">
+          {t.asset.noMatchingAssets}
+        </p>
+        <p className="mt-1 text-[12.5px] text-muted-foreground">{t.asset.noMatchingAssetsHint}</p>
+      </div>
+      <Button variant="outline" size="sm" onClick={onClear}>
+        {t.asset.clearFilters}
+      </Button>
+    </div>
+  );
+}
+
+function GridColumnsControl({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  const t = useLocale();
+  const valueLabel = format(t.asset.gridColumnsValue, { count: value });
+  const sliderContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const thumb = sliderContainerRef.current?.querySelector<HTMLElement>('[role="slider"]');
+    thumb?.setAttribute('aria-label', t.asset.gridColumnsAria);
+    thumb?.setAttribute('aria-valuetext', valueLabel);
+  }, [t.asset.gridColumnsAria, valueLabel]);
+
+  return (
+    <fieldset
+      aria-label={t.asset.gridColumnsAria}
+      title={valueLabel}
+      className="m-0 hidden h-8 w-[176px] min-w-0 items-center gap-2 rounded-[6px] border border-border bg-background px-2.5 py-0 lg:flex"
+    >
+      <Columns3 className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+      <div ref={sliderContainerRef} className="min-w-0 flex-1">
+        <Slider
+          min={MIN_GRID_COLUMNS}
+          max={MAX_GRID_COLUMNS}
+          step={1}
+          value={[value]}
+          onValueChange={(v) => onChange((Array.isArray(v) ? v[0] : v) ?? value)}
+        />
+      </div>
+      <output className="w-4 text-right font-mono text-[10.5px] tabular-nums text-muted-foreground">
+        {value}
+      </output>
+    </fieldset>
+  );
+}
+
 function hasFiles(e: React.DragEvent): boolean {
   const types = e.dataTransfer?.types;
   if (!types) return false;
@@ -371,6 +715,147 @@ function hasFiles(e: React.DragEvent): boolean {
     if (types[i] === 'Files') return true;
   }
   return false;
+}
+
+function AssetSortControl({
+  sort,
+  onKeyChange,
+  onToggleDirection,
+}: {
+  sort: AssetSortOptions;
+  onKeyChange: (key: AssetSortKey) => void;
+  onToggleDirection: () => void;
+}) {
+  const t = useLocale();
+  const labels: Record<AssetSortKey, string> = {
+    name: t.asset.nameColumn,
+    modified: t.asset.modifiedAt,
+    size: t.asset.sizeColumn,
+    type: t.asset.typeColumn,
+  };
+  const directionLabel = sort.direction === 'asc' ? t.asset.sortAscending : t.asset.sortDescending;
+  const DirectionIcon = sort.direction === 'asc' ? ArrowUp : ArrowDown;
+
+  return (
+    <div className="flex items-center gap-1">
+      <Select
+        items={labels}
+        value={sort.key}
+        onValueChange={(next) => onKeyChange(next as AssetSortKey)}
+      >
+        <SelectTrigger aria-label={t.asset.sortAria} className="h-8 min-w-[116px]">
+          <ArrowUpDown className="size-3.5" aria-hidden />
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent align="start">
+          {SORT_KEYS.map((key) => (
+            <SelectItem key={key} value={key}>
+              {labels[key]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        onClick={onToggleDirection}
+        aria-label={directionLabel}
+        title={directionLabel}
+        className="size-8 bg-background"
+      >
+        <DirectionIcon className="size-3.5 text-muted-foreground" />
+      </Button>
+    </div>
+  );
+}
+
+function SortableColumnHeader({
+  label,
+  sortKey,
+  sort,
+  onSort,
+  className,
+}: {
+  label: string;
+  sortKey: AssetSortKey;
+  sort: AssetSortOptions;
+  onSort: (key: AssetSortKey) => void;
+  className?: string;
+}) {
+  const t = useLocale();
+  const active = sort.key === sortKey;
+  const directionLabel = sort.direction === 'asc' ? t.asset.sortAscending : t.asset.sortDescending;
+  const DirectionIcon = sort.direction === 'asc' ? ArrowUp : ArrowDown;
+  const sortLabel = format(t.asset.sortByColumn, { column: label });
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(sortKey)}
+      aria-label={active ? `${sortLabel}, ${directionLabel}` : sortLabel}
+      title={active ? `${sortLabel} · ${directionLabel}` : sortLabel}
+      className={cn(
+        'group flex h-5 items-center gap-1 rounded-[4px] text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30',
+        active && 'text-foreground',
+        className,
+      )}
+    >
+      <span className="truncate">{label}</span>
+      {active ? (
+        <DirectionIcon className="size-2.5 shrink-0" aria-hidden />
+      ) : (
+        <ArrowUpDown
+          className="size-2.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-60 group-focus-visible:opacity-60"
+          aria-hidden
+        />
+      )}
+    </button>
+  );
+}
+
+function AssetListHeader({
+  sort,
+  onSort,
+}: {
+  sort: AssetSortOptions;
+  onSort: (key: AssetSortKey) => void;
+}) {
+  const t = useLocale();
+  return (
+    <div className="hidden items-center gap-3 px-2 pb-1 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70 sm:flex">
+      <SortableColumnHeader
+        label={t.asset.nameColumn}
+        sortKey="name"
+        sort={sort}
+        onSort={onSort}
+        className="min-w-0 flex-1"
+      />
+      <SortableColumnHeader
+        label={t.asset.typeColumn}
+        sortKey="type"
+        sort={sort}
+        onSort={onSort}
+        className="hidden w-40 shrink-0 md:flex"
+      />
+      <SortableColumnHeader
+        label={t.asset.modifiedAt}
+        sortKey="modified"
+        sort={sort}
+        onSort={onSort}
+        className="hidden w-28 shrink-0 lg:flex"
+      />
+      <SortableColumnHeader
+        label={t.asset.sizeColumn}
+        sortKey="size"
+        sort={sort}
+        onSort={onSort}
+        className="w-16 shrink-0"
+      />
+      <span className="w-16 shrink-0 text-right">{t.asset.statusColumn}</span>
+      <span className="size-6 shrink-0" aria-hidden />
+    </div>
+  );
 }
 
 function AssetCard({
@@ -416,56 +901,194 @@ function AssetCard({
           </div>
           <div className="folio flex items-center gap-1.5">
             <span className="truncate">{formatSize(asset.size)}</span>
-            {asset.unused ? (
-              <span className="shrink-0 rounded-sm bg-muted px-1 py-px text-[10px] font-medium text-muted-foreground leading-none">
-                {t.asset.usageUnused}
-              </span>
-            ) : null}
+            <UsageBadge unused={asset.unused} />
+          </div>
+          <div
+            className="mt-0.5 flex min-w-0 items-center gap-1 text-[10.5px] leading-tight text-muted-foreground"
+            title={`${t.asset.modifiedAt}: ${formatAssetDate(asset.mtime, t.id, true)}`}
+          >
+            <span className="shrink-0">{t.asset.modifiedAt}</span>
+            <span className="opacity-40">·</span>
+            <time dateTime={assetDateTime(asset.mtime)} className="truncate font-mono">
+              {formatAssetDate(asset.mtime, t.id)}
+            </time>
           </div>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            type="button"
-            aria-label={format(t.asset.actionsAria, { name: asset.name })}
-            className={cn(
-              buttonVariants({ variant: 'ghost', size: 'icon-xs' }),
-              'opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 aria-expanded:opacity-100',
-            )}
-          >
-            <MoreVertical />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-[160px]">
-            <DropdownMenuItem onSelect={onPreview}>
-              <ImageIcon />
-              {t.asset.previewMenuItem}
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={onRename}>
-              <Pencil />
-              {t.asset.renameMenuItem}
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={onDelete}>
-              <Trash2 />
-              {t.asset.deleteMenuItem}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <AssetActions asset={asset} onPreview={onPreview} onRename={onRename} onDelete={onDelete} />
       </div>
     </div>
   );
 }
 
-function RenameCard({
+function AssetListItem({
   asset,
+  onPreview,
+  onRename,
+  onDelete,
+}: {
+  asset: AssetEntry;
+  onPreview: () => void;
+  onRename: () => void;
+  onDelete: () => void;
+}) {
+  const isImage = asset.mime.startsWith('image/');
+  const t = useLocale();
+  return (
+    <div className="group flex min-h-14 items-center gap-3 rounded-[6px] border border-border bg-card p-2 shadow-edge transition-shadow hover:shadow-floating focus-within:ring-2 focus-within:ring-ring/30">
+      <button
+        type="button"
+        onClick={onPreview}
+        aria-label={format(t.asset.previewAria, { name: asset.name })}
+        className="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-[4px] border border-hairline bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:10px_10px]"
+      >
+        {isImage ? (
+          <img
+            src={asset.url}
+            alt=""
+            className="size-full object-contain"
+            draggable={false}
+            onError={(event) => {
+              event.currentTarget.style.display = 'none';
+            }}
+          />
+        ) : (
+          <FileIcon className="size-5 text-muted-foreground" />
+        )}
+      </button>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[12.5px] font-medium" title={asset.name}>
+          {asset.name}
+        </div>
+        <div className="folio mt-0.5 flex min-w-0 items-center gap-1.5 lg:hidden">
+          <span className="sm:hidden">{formatSize(asset.size)}</span>
+          <span className="opacity-40 sm:hidden">·</span>
+          <span className="truncate md:hidden">{asset.mime}</span>
+          <span className="opacity-40 md:hidden">·</span>
+          <span className="shrink-0">{t.asset.modifiedAt}</span>
+          <time dateTime={assetDateTime(asset.mtime)} className="truncate">
+            {formatAssetDate(asset.mtime, t.id)}
+          </time>
+          <span className="sm:hidden">
+            <UsageBadge unused={asset.unused} showUsed />
+          </span>
+        </div>
+      </div>
+      <span className="hidden w-40 shrink-0 truncate font-mono text-[11px] text-muted-foreground md:block">
+        {asset.mime}
+      </span>
+      <time
+        dateTime={assetDateTime(asset.mtime)}
+        title={`${t.asset.modifiedAt}: ${formatAssetDate(asset.mtime, t.id, true)}`}
+        className="hidden w-28 shrink-0 text-[11.5px] text-muted-foreground lg:block"
+      >
+        <span className="sr-only">{t.asset.modifiedAt}: </span>
+        {formatAssetDate(asset.mtime, t.id)}
+      </time>
+      <span className="folio hidden w-16 shrink-0 sm:block">{formatSize(asset.size)}</span>
+      <div className="hidden w-16 shrink-0 justify-end sm:flex">
+        <UsageBadge unused={asset.unused} showUsed />
+      </div>
+      <AssetActions asset={asset} onPreview={onPreview} onRename={onRename} onDelete={onDelete} />
+    </div>
+  );
+}
+
+function AssetActions({
+  asset,
+  onPreview,
+  onRename,
+  onDelete,
+}: {
+  asset: AssetEntry;
+  onPreview: () => void;
+  onRename: () => void;
+  onDelete: () => void;
+}) {
+  const t = useLocale();
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        type="button"
+        aria-label={format(t.asset.actionsAria, { name: asset.name })}
+        className={cn(
+          buttonVariants({ variant: 'ghost', size: 'icon-xs' }),
+          'opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 aria-expanded:opacity-100',
+        )}
+      >
+        <MoreVertical />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-[160px]">
+        <DropdownMenuItem onClick={onPreview}>
+          <ImageIcon />
+          {t.asset.previewMenuItem}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onRename}>
+          <Pencil />
+          {t.asset.renameMenuItem}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onDelete}>
+          <Trash2 />
+          {t.asset.deleteMenuItem}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function UsageBadge({ unused, showUsed = false }: { unused: boolean; showUsed?: boolean }) {
+  const t = useLocale();
+  if (!unused && !showUsed) return null;
+  return (
+    <span
+      className={cn(
+        'shrink-0 rounded-sm px-1 py-px text-[10px] font-medium leading-none',
+        unused
+          ? 'bg-muted text-muted-foreground'
+          : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400',
+      )}
+    >
+      {unused ? t.asset.usageUnused : t.asset.usageUsed}
+    </span>
+  );
+}
+
+function AssetTimestamp({
+  label,
+  timestamp,
+  locale,
+}: {
+  label: string;
+  timestamp: number;
+  locale: string;
+}) {
+  return (
+    <div className="bg-card px-3 py-2.5">
+      <span className="eyebrow block text-[9px]">{label}</span>
+      <time
+        dateTime={assetDateTime(timestamp)}
+        className="mt-1 block text-[12px] font-medium tabular-nums"
+      >
+        {formatAssetDate(timestamp, locale, true)}
+      </time>
+    </div>
+  );
+}
+
+function RenameAsset({
+  asset,
+  viewMode,
   onCancel,
   onSubmit,
 }: {
   asset: AssetEntry;
+  viewMode: ViewMode;
   onCancel: () => void;
   onSubmit: (next: string) => Promise<void> | void;
 }) {
   const [value, setValue] = useState(asset.name);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const t = useLocale();
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -491,8 +1114,58 @@ function RenameCard({
   };
 
   const isImage = asset.mime.startsWith('image/');
+  if (viewMode === 'list') {
+    return (
+      <div className="flex min-h-14 items-center gap-3 rounded-[6px] border border-primary bg-card p-2 shadow-edge ring-2 ring-primary/15">
+        <div className="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-[4px] border border-hairline bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:10px_10px]">
+          {isImage ? (
+            <img src={asset.url} alt="" className="size-full object-contain" draggable={false} />
+          ) : (
+            <FileIcon className="size-5 text-muted-foreground" />
+          )}
+        </div>
+        <input
+          ref={inputRef}
+          value={value}
+          disabled={saving}
+          onChange={(event) => setValue(event.target.value)}
+          onBlur={() => {
+            if (!saving) commit();
+          }}
+          onKeyDown={(event) => {
+            if (event.nativeEvent.isComposing) return;
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              commit();
+            } else if (event.key === 'Escape') {
+              event.preventDefault();
+              onCancel();
+            }
+          }}
+          maxLength={120}
+          className="h-8 min-w-0 flex-1 rounded-[5px] border bg-background px-2.5 text-[12.5px] outline-none ring-ring/40 focus:ring-2"
+        />
+        <span className="hidden w-40 shrink-0 truncate font-mono text-[11px] text-muted-foreground md:block">
+          {asset.mime}
+        </span>
+        <time
+          dateTime={assetDateTime(asset.mtime)}
+          className="hidden w-28 shrink-0 text-[11.5px] text-muted-foreground lg:block"
+        >
+          <span className="sr-only">{t.asset.modifiedAt}: </span>
+          {formatAssetDate(asset.mtime, t.id)}
+        </time>
+        <span className="folio hidden w-16 shrink-0 sm:block">{formatSize(asset.size)}</span>
+        <div className="hidden w-16 shrink-0 justify-end sm:flex">
+          <UsageBadge unused={asset.unused} showUsed />
+        </div>
+        <div className="size-6 shrink-0" />
+      </div>
+    );
+  }
+
   return (
-    <div className="relative flex flex-col overflow-hidden rounded-xl border-2 border-primary bg-card shadow-sm">
+    <div className="relative flex flex-col overflow-hidden rounded-[6px] border border-primary bg-card shadow-edge ring-2 ring-primary/15">
       <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:16px_16px]">
         {isImage ? (
           <img src={asset.url} alt="" className="size-full object-contain" draggable={false} />
@@ -670,6 +1343,10 @@ function PreviewDialog({
             <span className="text-sm">{t.asset.noPreview}</span>
           </div>
         )}
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[6px] border border-hairline bg-hairline">
+          <AssetTimestamp label={t.asset.createdAt} timestamp={asset.createdAt} locale={t.id} />
+          <AssetTimestamp label={t.asset.modifiedAt} timestamp={asset.mtime} locale={t.id} />
+        </div>
         <div className="rounded-[5px] border border-hairline bg-muted/50 px-3 py-2 font-mono text-[11.5px] leading-relaxed">
           <span className="text-muted-foreground">{t.asset.importHintComment}</span>
           <span className="text-brand">'{importPath}'</span>
@@ -957,6 +1634,28 @@ function slugify(s: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
+}
+
+const ASSET_DATE_FORMATTERS = new Map<string, Intl.DateTimeFormat>();
+
+function formatAssetDate(timestamp: number, locale: string, includeTime = false): string {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return '—';
+  const key = `${locale}:${includeTime ? 'date-time' : 'date'}`;
+  let formatter = ASSET_DATE_FORMATTERS.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(
+      locale,
+      includeTime ? { dateStyle: 'medium', timeStyle: 'short' } : { dateStyle: 'medium' },
+    );
+    ASSET_DATE_FORMATTERS.set(key, formatter);
+  }
+  return formatter.format(date);
+}
+
+function assetDateTime(timestamp: number): string | undefined {
+  const date = new Date(timestamp);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
 }
 
 function formatSize(bytes: number): string {

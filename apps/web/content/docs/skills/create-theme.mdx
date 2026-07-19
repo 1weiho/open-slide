@@ -3,24 +3,22 @@ title: /create-theme
 description: Extracts a theme from an existing deck (or a brief).
 ---
 
-`/create-theme` codifies a visual recipe into a reusable theme file.
-Run it once your decks start sharing a visual language — turn the implicit
-recipe into a file the agent can read.
+`/create-theme` codifies a visual recipe into a reusable theme file. Run it
+once your decks start sharing a visual language.
 
 ## What it does
 
 Writes a **theme bundle** under `themes/` — two paired files that share a
-stem:
+stem, always produced together:
 
 - `themes/<id>.md` — palette, type stack, layout vocabulary, fixed
-  Title/Footer/Eyebrow components, motion, and voice notes that
-  `/create-slide` reads on its next run.
-- `themes/<id>.demo.tsx` — a runnable 2–3 page mini-slide that inlines
-  the same components from the markdown. The dev UI's **Themes** panel
-  imports it and renders it as the theme's live preview.
+  components, motion, and voice notes that `/create-slide` reads on its
+  next run.
+- `themes/<id>.demo.tsx` — a runnable 2–3 page mini-slide that the dev UI's
+  **Themes** panel renders as the theme's live preview.
 
-Both files are always produced together — a theme without its demo can't
-preview, a demo without its markdown can't be picked by `/create-slide`.
+See [Themes](/docs/core-feature/themes) for the file format and how a theme
+is consumed.
 
 The input can be:
 
@@ -32,46 +30,5 @@ The input can be:
 - **Image references.** Pass screenshots or mood-board images and the
   skill extracts palette, type, and layout cues from them.
 
-## Output
-
-A markdown recipe:
-
-```md title="themes/corporate.md"
-# Corporate
-
-## Palette
-- ink: #0a0a0c
-- accent: #4a52b5
-- mint: #1f8458
-
-## Typography
-- display: 'Söhne', system-ui
-- mono: 'JetBrains Mono'
-
-## Voice
-- Tight, declarative, never coy.
-- One concept per slide.
-```
-
-…paired with a preview module:
-
-```tsx title="themes/corporate.demo.tsx"
-import type { Page } from '@open-slide/core';
-
-const Cover: Page = () => (/* …inline Title / Footer using theme tokens… */);
-const Content: Page = () => (/* … */);
-
-export default [Cover, Content];
-```
-
-See [Themes](/docs/core-feature/themes) for how a theme is consumed.
-
-## Using the theme
-
-Once the file exists, mention it by name on the next `/create-slide`:
-
-```text
-/create-slide for "Q3 board update — use the corporate theme"
-```
-
-The agent loads `themes/corporate.md` before writing the deck.
+Once the bundle exists, `/create-slide` offers the theme on its next run —
+see [Themes](/docs/core-feature/themes#using-a-theme).

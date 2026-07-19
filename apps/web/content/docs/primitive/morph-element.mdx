@@ -1,0 +1,78 @@
+---
+title: MorphElement
+description: Keynote-style continuity for the same object across pages.
+---
+
+`MorphElement` is the primitive for making one visual object move between two
+pages — a Morph Transition (Keynote calls the effect "Magic Move"). Wrap the
+same object on both pages and the runtime morphs it across the cut instead of
+fading it out and back in.
+
+```tsx title="slides/morph/index.tsx"
+import { MorphElement, type Page, type SlideTransition } from '@open-slide/core';
+
+const Token = ({ x, y, size }: { x: number; y: number; size: number }) => (
+  <MorphElement id="token">
+    <div
+      style={{
+        position: 'absolute',
+        left: x,
+        top: y,
+        width: size,
+        height: size,
+        borderRadius: size * 0.24,
+        background: 'var(--osd-accent)',
+      }}
+    />
+  </MorphElement>
+);
+
+const Start: Page = () => <Token x={160} y={180} size={180} />;
+const End: Page = () => <Token x={1420} y={720} size={96} />;
+
+export const transition: SlideTransition = {
+  duration: 700,
+  morph: {
+    duration: 700,
+    easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+  },
+};
+
+export default [Start, End] satisfies Page[];
+```
+
+## Matching contract
+
+The `id` is the contract. When the outgoing and incoming pages both contain a
+`MorphElement` with the same `id`, the runtime measures both DOM nodes, hides
+the originals, animates a clone across the 1920 × 1080 canvas, then restores
+the incoming element.
+
+If a marked element exists only on the outgoing page, it fades out. If it
+exists only on the incoming page, it fades in. The runtime does not guess
+similar objects; unmatched ids are separate objects.
+
+## What to wrap
+
+Wrap the same visual object in a new position or size: a logo, diagram node,
+timeline marker, product card, badge, or highlight. Keep changing copy outside
+the `MorphElement`. If the content changes while moving, the audience reads it
+as one object turning into another, not continuity.
+
+`MorphElement` works best with a single DOM child. If there is exactly one DOM
+child, the runtime writes the `data-osd-morph` marker onto that child.
+Otherwise it wraps the content in a `div`.
+
+## Transition required
+
+A Morph Transition only runs when the selected transition enables `morph`.
+
+```ts
+export const transition: SlideTransition = {
+  duration: 600,
+  morph: true,
+};
+```
+
+Use the object form when you need separate timing from the page enter/exit
+animation.

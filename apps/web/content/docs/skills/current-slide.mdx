@@ -14,10 +14,10 @@ The dev server writes the user's current view to
 `node_modules/.open-slide/current.json` on every navigation and selection
 change:
 
-- `slideId` — the deck folder name.
-- `pageIndex` — which page of the array.
-- `element` (optional) — source `file:line:col`, tag name, and a text
-  snippet of the JSX node you picked in the inspector.
+- `slideId` / `pageIndex` — the deck folder name and the active page.
+- `pagePath` — the source file of that page.
+- `selection` — line/column, tag name, and a text snippet of the JSX node
+  picked in the inspector (`null` when nothing is picked).
 
 The skill reads that file before asking *which slide?*
 
@@ -25,8 +25,6 @@ The skill reads that file before asking *which slide?*
 
 You don't usually invoke it directly. `/slide-authoring` cross-references
 it, so any "fix this" prompt routes through it automatically.
-
-## Why it matters
 
 It collapses the most common round-trip in agent-driven editing:
 
@@ -36,6 +34,6 @@ Agent: which title?
 You: the one on slide 3
 ```
 
-With `/current-slide`, the agent already knows. The
-[Iterate](/docs/flow/iterate) page covers how this folds into the broader
-inspector / `/apply-comments` loop.
+With `/current-slide`, the agent already knows. See
+[`/apply-comments`](/docs/skills/apply-comments) for how this folds into the
+broader inspector loop.

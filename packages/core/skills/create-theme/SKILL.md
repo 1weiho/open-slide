@@ -31,8 +31,8 @@ If the user's original message already specifies the inputs unambiguously, skip 
 - **Images**: read each path with the `Read` tool (it accepts images). Note dominant colors as hex, type weight/style, layout rhythm, decorative motifs, and any recurring chrome (header bar, footer line, page numbers).
 - **Text**: extract explicit tokens (hex codes, font names, motion verbs) and implicit tone words ("editorial", "playful", "brutalist"). Resolve vague language into concrete decisions before writing.
 - **Existing slide**: read `slides/<id>/index.tsx` and pull:
-  - The `palette` object → Palette section.
-  - Font constants and any `font-size` patterns → Typography section.
+  - The `design.palette` object (or a legacy top-of-file `palette` const) → Palette section.
+  - `design.fonts` / font constants and any `font-size` patterns → Typography section.
   - Padding / alignment patterns → Layout section.
   - Recurring components (TrafficLights, Eyebrow, Footer-style helpers, WindowShell, …) → Fixed components section.
   - `@keyframes` blocks and the shared `styles` string → Motion section.
@@ -52,6 +52,7 @@ Produce a file with this exact section order. Section bodies adapt to the theme;
 ---
 name: <Human title, e.g. "Editorial Noir">
 description: <one-line elevator pitch>
+mode: <dark | light — whichever matches the palette's bg>
 ---
 
 # <Theme name>
@@ -70,6 +71,7 @@ description: <one-line elevator pitch>
 
 - Display font: `<stack>` — weight 800–900 for headlines.
 - Body font: `<stack>` — weight 400–500.
+- Webfont import (omit for system stacks): `<stylesheet URL>` — see `references/webfonts.md` in `slide-authoring` for loading rules.
 - Type-scale overrides (only list what differs from `slide-authoring` defaults):
   - Hero title: 180 px (default 140–200 ✓)
   - Body text: 36 px
@@ -183,8 +185,8 @@ Contract:
 - `import { type Page, useSlidePageNumber } from '@open-slide/core';`
 - Inline the **same** `Title`, `Footer`, `Eyebrow` components defined in the theme markdown — verbatim, no abstractions, no imports from elsewhere. The demo and the markdown must stay in lockstep so what the user sees in the panel matches what `create-slide` will paste into a real slide.
 - Export 2–3 `Page` components and a default array. Aim for: a Cover (Eyebrow + Title + subtitle), one Content page exercising body type + accent, and a Closer or "End" card. The "Example usage" block at the bottom of the markdown is a good starting point — extend it.
-- If the theme has runtime-tweakable tokens worth surfacing in the Design panel later, also `export const design: DesignSystem = {...}`.
-- No external assets, no `import` from `@/`, no slides-only helpers (e.g. `WindowShell` from a real slide). Demo files must be self-contained.
+- If the theme has runtime-tweakable tokens worth surfacing in the Design panel later, also `export const design: DesignSystem = {...}` (add `import type { DesignSystem } from '@open-slide/core';` alongside the base import).
+- No asset file imports, no `import` from `@/`, no slides-only helpers (e.g. `WindowShell` from a real slide). Webfont stylesheet `@import`s inside an inline `<style>` are fine here — a deliberate exception to `webfonts.md`'s loader rules, since the demo only mounts in the Themes panel. Demo files must be self-contained.
 
 Skeleton:
 
@@ -220,13 +222,14 @@ export default [Cover, Content, Closer];
 Run this checklist before finishing:
 
 - [ ] Palette covers `bg` / `text` / `accent` / `muted` at minimum, all as hex.
+- [ ] Frontmatter includes `mode` matching the palette's background.
 - [ ] Type scale specifies hero, heading, body, caption sizes (or explicitly defers to `slide-authoring` defaults).
 - [ ] At least Title and Footer are defined as paste-ready React with concrete inline styles.
 - [ ] Motion section commits to one of static / subtle / rich.
 - [ ] Aesthetic paragraph names a single coherent direction.
 - [ ] Both files written: `themes/<id>.md` and `themes/<id>.demo.tsx`. No slide changes, no config changes.
 - [ ] Demo `.tsx` exports 2–3 pages and inlines the same Title/Footer/Eyebrow components defined in the markdown.
-- [ ] Demo opens cleanly in the **Themes** panel of the dev UI — re-checked by you only by reading the file (do not start a server).
+- [ ] Demo `.tsx` will load cleanly in the **Themes** panel: verify it against the Step 4b contract by reading the file — do not start a server.
 
 ## Step 6 — Hand off
 

@@ -15,8 +15,18 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Copy, Grid2x2, ListOrdered, type LucideIcon, Sparkles, Trash2 } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  Grid2x2,
+  ListOrdered,
+  type LucideIcon,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -34,6 +44,11 @@ import type { Page } from '../lib/sdk';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
 import type { SlideTransition } from '../lib/transition';
 import { SlideCanvas } from './slide-canvas';
+import {
+  getCenteredThumbnailScrollTop,
+  getThumbnailOffscreenDirection,
+  type ThumbnailOffscreenDirection,
+} from './thumbnail-rail-scroll';
 
 type Orientation = 'vertical' | 'horizontal';
 
@@ -84,18 +99,23 @@ export function ThumbnailRail({
   onOverview,
 }: Props) {
   const activeRef = useRef<HTMLButtonElement | null>(null);
+  const virtualListRef = useRef<HTMLDivElement | null>(null);
+  const verticalViewportRef = useRef<HTMLElement | null>(null);
+  const focusCurrentAfterScrollRef = useRef(false);
+  const [currentPosition, setCurrentPosition] = useState<ThumbnailOffscreenDirection>(null);
   const t = useLocale();
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `current` triggers re-scroll on selection change
-  useEffect(() => {
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const setVerticalScrollElements = useCallback(
+    (viewport: HTMLElement | null, root: HTMLDivElement | null) => {
+      verticalViewportRef.current = viewport;
+      virtualListRef.current = root;
+    },
+    [],
+  );
 
-    activeRef.current?.scrollIntoView({
-      block: 'nearest',
-      inline: 'nearest',
-      behavior: reduceMotion ? 'auto' : 'smooth',
-    });
-  }, [current]);
+  const cancelPendingFocus = useCallback(() => {
+    focusCurrentAfterScrollRef.current = false;
+  }, []);
 
   const thumbWidth =
     width != null
@@ -104,6 +124,52 @@ export function ThumbnailRail({
   const scale = thumbWidth / CANVAS_WIDTH;
   const height = CANVAS_HEIGHT * scale;
   const rowHeight = height + VERTICAL_THUMB_PADDING_Y + VERTICAL_THUMB_GAP;
+
+  const scrollToCurrent = useCallback(
+    (focusCurrent: boolean) => {
+      const viewport = verticalViewportRef.current;
+      const root = virtualListRef.current;
+      if (!viewport || !root || pages.length <= 0) return;
+
+      focusCurrentAfterScrollRef.current = focusCurrent;
+      const clampedCurrent = Math.min(Math.max(current, 0), pages.length - 1);
+      const topInset = root.offsetTop;
+      const itemTop = topInset + clampedCurrent * rowHeight;
+      viewport.scrollTo({
+        top: getCenteredThumbnailScrollTop({
+          itemTop,
+          itemHeight: rowHeight,
+          viewportHeight: viewport.clientHeight,
+          topInset,
+        }),
+        behavior: scrollBehavior(),
+      });
+    },
+    [current, pages.length, rowHeight],
+  );
+
+  useEffect(() => {
+    if (currentPosition !== null || !focusCurrentAfterScrollRef.current) return;
+    let frame = 0;
+    let attempts = 0;
+    const focusCurrent = () => {
+      if (!focusCurrentAfterScrollRef.current) return;
+      const active = activeRef.current;
+      if (active) {
+        active.focus({ preventScroll: true });
+        focusCurrentAfterScrollRef.current = false;
+        return;
+      }
+      attempts += 1;
+      if (attempts < 4) {
+        frame = requestAnimationFrame(focusCurrent);
+      } else {
+        focusCurrentAfterScrollRef.current = false;
+      }
+    };
+    frame = requestAnimationFrame(focusCurrent);
+    return () => cancelAnimationFrame(frame);
+  }, [currentPosition]);
 
   const renderThumb = useCallback(
     (PageComp: Page, i: number) => {
@@ -138,7 +204,7 @@ export function ThumbnailRail({
           ref={active ? activeRef : undefined}
           onClick={() => onSelect(i)}
           aria-label={format(t.thumbnailRail.goToPageAria, { n: i + 1 })}
-          aria-current={active ? 'true' : undefined}
+          aria-current={active ? 'page' : undefined}
           className={thumbButtonClass(active)}
         >
           {inner}
@@ -206,20 +272,22 @@ export function ThumbnailRail({
             <span className="folio">{pages.length.toString().padStart(2, '0')}</span>
             {onOverview && (
               <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={onOverview}
-                    aria-label={t.thumbnailRail.overviewAria}
-                    className={cn(
-                      'flex size-5 items-center justify-center rounded-[3px] text-muted-foreground/70 outline-none',
-                      'motion-safe:transition-colors hover:bg-muted hover:text-foreground',
-                      'focus-visible:ring-1 focus-visible:ring-brand',
-                    )}
-                  >
-                    <Grid2x2 className="size-3.5" strokeWidth={1.75} />
-                  </button>
-                </TooltipTrigger>
+                <TooltipTrigger
+                  render={
+                    <button
+                      type="button"
+                      onClick={onOverview}
+                      aria-label={t.thumbnailRail.overviewAria}
+                      className={cn(
+                        'flex size-5 items-center justify-center rounded-[3px] text-muted-foreground/70 outline-none',
+                        'motion-safe:transition-colors hover:bg-muted hover:text-foreground',
+                        'focus-visible:ring-1 focus-visible:ring-brand',
+                      )}
+                    >
+                      <Grid2x2 className="size-3.5" strokeWidth={1.75} />
+                    </button>
+                  }
+                />
                 <TooltipContent side="bottom" sideOffset={6}>
                   {t.thumbnailRail.overviewAria}
                 </TooltipContent>
@@ -233,36 +301,104 @@ export function ThumbnailRail({
         current={current}
         rowHeight={rowHeight}
         activeRef={activeRef}
+        onScrollElementsChange={setVerticalScrollElements}
+        onScrollInteraction={cancelPendingFocus}
+        onCurrentPositionChange={setCurrentPosition}
         renderThumb={renderThumb}
       />
     </aside>
   );
 
-  if (!onReorder) {
-    return (
-      <TooltipProvider delayDuration={200}>
-        <ScrollArea className="h-full border-r border-hairline bg-sidebar [&_[data-slot=scroll-area-scrollbar]]:z-20">
-          {list}
-        </ScrollArea>
-      </TooltipProvider>
-    );
-  }
+  const scrollAreaContents = onReorder ? (
+    <SortableRail pages={pages} onReorder={onReorder} onSelect={onSelect}>
+      {list}
+    </SortableRail>
+  ) : (
+    list
+  );
 
   return (
-    <TooltipProvider delayDuration={200}>
-      <ScrollArea className="h-full border-r border-hairline bg-sidebar [&_[data-slot=scroll-area-scrollbar]]:z-20">
-        <SortableRail pages={pages} onReorder={onReorder} onSelect={onSelect}>
-          {list}
-        </SortableRail>
-      </ScrollArea>
+    <TooltipProvider delay={200}>
+      <div className="relative h-full">
+        <ScrollArea className="h-full border-r border-hairline bg-sidebar [&_[data-slot=scroll-area-scrollbar]]:z-20">
+          {scrollAreaContents}
+        </ScrollArea>
+        {currentPosition && (
+          <CurrentThumbnailButton
+            direction={currentPosition}
+            label={format(
+              currentPosition === 'above'
+                ? t.thumbnailRail.scrollUpToCurrentPage
+                : t.thumbnailRail.scrollDownToCurrentPage,
+              { n: current + 1 },
+            )}
+            onActivate={scrollToCurrent}
+          />
+        )}
+      </div>
     </TooltipProvider>
+  );
+}
+
+function CurrentThumbnailButton({
+  direction,
+  label,
+  onActivate,
+}: {
+  direction: Exclude<ThumbnailOffscreenDirection, null>;
+  label: string;
+  onActivate: (focusCurrent: boolean) => void;
+}) {
+  const Icon = direction === 'above' ? ChevronUp : ChevronDown;
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Button
+            type="button"
+            variant="outline"
+            size="icon-sm"
+            aria-label={label}
+            onClick={(event) => onActivate(event.detail === 0)}
+            onKeyDown={(event) => {
+              if (event.key === ' ') {
+                event.preventDefault();
+                event.stopPropagation();
+                return;
+              }
+              if (event.key !== 'Enter') return;
+              event.preventDefault();
+              event.stopPropagation();
+              onActivate(true);
+            }}
+            onKeyUp={(event) => {
+              if (event.key !== ' ') return;
+              event.preventDefault();
+              event.stopPropagation();
+              onActivate(true);
+            }}
+            className={cn(
+              'pointer-events-auto absolute left-1/2 z-30 -translate-x-1/2 bg-card/95 shadow-floating backdrop-blur-sm',
+              'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95 motion-safe:duration-150',
+              direction === 'above' ? 'top-10' : 'bottom-3',
+            )}
+          >
+            <Icon className="size-3.5" strokeWidth={1.75} aria-hidden />
+          </Button>
+        }
+      />
+      <TooltipContent side={direction === 'above' ? 'bottom' : 'top'} sideOffset={6}>
+        {label}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
 function thumbButtonClass(active: boolean): string {
   return cn(
-    'group/thumb flex w-full items-start gap-2.5 rounded-[6px] p-1.5 text-left motion-safe:transition-colors',
+    'group/thumb flex w-full items-start gap-2.5 rounded-[6px] p-1.5 text-left outline-none motion-safe:transition-colors',
     'hover:bg-muted/60',
+    'focus-visible:ring-1 focus-visible:ring-brand focus-visible:ring-offset-1 focus-visible:ring-offset-sidebar',
     active && 'bg-muted',
   );
 }
@@ -362,7 +498,7 @@ function HorizontalVirtualThumbList({
         ref={active ? activeRef : undefined}
         onClick={() => onSelect(i)}
         aria-label={format(t.thumbnailRail.goToPageAria, { n: i + 1 })}
-        aria-current={active ? 'true' : undefined}
+        aria-current={active ? 'page' : undefined}
         className={cn('group/thumb relative flex shrink-0 flex-col items-center gap-1.5')}
       >
         <span
@@ -432,12 +568,18 @@ function VirtualThumbList({
   current,
   rowHeight,
   activeRef,
+  onScrollElementsChange,
+  onScrollInteraction,
+  onCurrentPositionChange,
   renderThumb,
 }: {
   pages: Page[];
   current: number;
   rowHeight: number;
   activeRef: React.MutableRefObject<HTMLButtonElement | null>;
+  onScrollElementsChange: (viewport: HTMLElement | null, root: HTMLDivElement | null) => void;
+  onScrollInteraction: () => void;
+  onCurrentPositionChange: (position: ThumbnailOffscreenDirection) => void;
   renderThumb: (page: Page, index: number) => React.ReactNode;
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -450,14 +592,32 @@ function VirtualThumbList({
     if (!viewport || !root) return;
     const scrollTop = Math.max(0, viewport.scrollTop - root.offsetTop);
     setRange(getVisibleRange(scrollTop, pages.length, viewport.clientHeight, rowHeight));
-  }, [pages.length, rowHeight]);
+
+    if (pages.length <= 0) {
+      onCurrentPositionChange(null);
+      return;
+    }
+
+    const clampedCurrent = Math.min(Math.max(current, 0), pages.length - 1);
+    const itemTop = root.offsetTop + clampedCurrent * rowHeight;
+    onCurrentPositionChange(
+      getThumbnailOffscreenDirection({
+        itemTop,
+        itemBottom: itemTop + rowHeight,
+        visibleTop: viewport.scrollTop + root.offsetTop,
+        visibleBottom: viewport.scrollTop + viewport.clientHeight,
+      }),
+    );
+  }, [current, onCurrentPositionChange, pages.length, rowHeight]);
 
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
     const viewport = root.closest('[data-slot="scroll-area-viewport"]') as HTMLElement | null;
     if (!viewport) return;
+    const scrollArea = viewport.parentElement;
     viewportRef.current = viewport;
+    onScrollElementsChange(viewport, root);
 
     let frame = 0;
     const scheduleUpdate = () => {
@@ -467,29 +627,38 @@ function VirtualThumbList({
     const resizeObserver = new ResizeObserver(scheduleUpdate);
 
     viewport.addEventListener('scroll', scheduleUpdate, { passive: true });
+    scrollArea?.addEventListener('wheel', onScrollInteraction, { passive: true });
+    scrollArea?.addEventListener('touchstart', onScrollInteraction, { passive: true });
+    scrollArea?.addEventListener('pointerdown', onScrollInteraction, { passive: true });
     resizeObserver.observe(viewport);
     scheduleUpdate();
 
     return () => {
       cancelAnimationFrame(frame);
       viewport.removeEventListener('scroll', scheduleUpdate);
+      scrollArea?.removeEventListener('wheel', onScrollInteraction);
+      scrollArea?.removeEventListener('touchstart', onScrollInteraction);
+      scrollArea?.removeEventListener('pointerdown', onScrollInteraction);
       resizeObserver.disconnect();
       if (viewportRef.current === viewport) viewportRef.current = null;
+      onScrollElementsChange(null, null);
     };
-  }, [updateRange]);
+  }, [onScrollElementsChange, onScrollInteraction, updateRange]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
     const root = rootRef.current;
     if (!viewport || !root) return;
 
-    const top = root.offsetTop + current * rowHeight;
+    if (pages.length <= 0) return;
+    const clampedCurrent = Math.min(Math.max(current, 0), pages.length - 1);
+    const top = root.offsetTop + clampedCurrent * rowHeight;
     const bottom = top + rowHeight;
-    const viewportTop = viewport.scrollTop;
-    const viewportBottom = viewportTop + viewport.clientHeight;
+    const viewportTop = viewport.scrollTop + root.offsetTop;
+    const viewportBottom = viewport.scrollTop + viewport.clientHeight;
 
     if (top < viewportTop) {
-      viewport.scrollTo({ top, behavior: scrollBehavior() });
+      viewport.scrollTo({ top: top - root.offsetTop, behavior: scrollBehavior() });
     } else if (bottom > viewportBottom) {
       viewport.scrollTo({ top: bottom - viewport.clientHeight, behavior: scrollBehavior() });
     } else {
@@ -499,7 +668,7 @@ function VirtualThumbList({
         behavior: scrollBehavior(),
       });
     }
-  }, [activeRef, current, rowHeight]);
+  }, [activeRef, current, pages.length, rowHeight]);
 
   const visibleRange = clampVisibleRange(range, current, pages.length);
   const visible = [];
@@ -643,18 +812,20 @@ function ThumbContents({
 function ThumbIndicator({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <span
-          role="img"
-          aria-label={label}
-          className={cn(
-            'flex size-3.5 items-center justify-center text-muted-foreground/55',
-            'motion-safe:transition-colors group-hover/thumb:text-muted-foreground/80',
-          )}
-        >
-          <Icon className="size-3" strokeWidth={2} />
-        </span>
-      </TooltipTrigger>
+      <TooltipTrigger
+        render={
+          <span
+            role="img"
+            aria-label={label}
+            className={cn(
+              'flex size-3.5 items-center justify-center text-muted-foreground/55',
+              'motion-safe:transition-colors group-hover/thumb:text-muted-foreground/80',
+            )}
+          >
+            <Icon className="size-3" strokeWidth={2} />
+          </span>
+        }
+      />
       <TooltipContent side="right" sideOffset={6}>
         {label}
       </TooltipContent>
@@ -679,11 +850,9 @@ function ThumbContextMenu({
   const canDelete = pageCount > 1;
   return (
     <ContextMenu>
-      <ContextMenuTrigger asChild aria-label={ariaLabel}>
-        {children}
-      </ContextMenuTrigger>
+      <ContextMenuTrigger aria-label={ariaLabel} render={children as React.ReactElement} />
       <ContextMenuContent className="min-w-[180px]">
-        <ContextMenuItem onSelect={() => actions.onDuplicate(index)}>
+        <ContextMenuItem onClick={() => actions.onDuplicate(index)}>
           <Copy />
           {t.thumbnailRail.duplicatePage}
         </ContextMenuItem>
@@ -691,7 +860,7 @@ function ThumbContextMenu({
         <ContextMenuItem
           variant="destructive"
           disabled={!canDelete}
-          onSelect={() => {
+          onClick={() => {
             if (canDelete) actions.onDelete(index);
           }}
         >
@@ -786,7 +955,7 @@ function SortableThumb({
       type="button"
       onClick={onSelect}
       aria-label={ariaLabel}
-      aria-current={active ? 'true' : undefined}
+      aria-current={active ? 'page' : undefined}
       style={{
         transform: CSS.Transform.toString(yOnlyTransform),
         transition,

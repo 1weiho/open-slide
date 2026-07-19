@@ -26,20 +26,33 @@ and `height` so the image lands in exactly the same slot.
 
 ## Props
 
-```ts
-type ImagePlaceholderProps = {
-  /** Description of the content that belongs here. Becomes the alt text
-   *  on the replaced <img>. Required. */
-  hint: string;
-  /** Box width in px. Omit to fill the parent. */
-  width?: number;
-  /** Box height in px. Omit to fill the parent. */
-  height?: number;
-  /** Extra inline styles, merged after the placeholder's own. */
-  style?: CSSProperties;
-  className?: string;
-} & Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'style' | 'className'>;
-```
+<TypeTable
+  type={{
+    hint: {
+      type: 'string',
+      required: true,
+      description: 'Description of the content that belongs here. Becomes the alt text on the replaced <img>.',
+    },
+    width: {
+      type: 'number',
+      description: 'Box width in px. Omit to fill the parent.',
+    },
+    height: {
+      type: 'number',
+      description: 'Box height in px. Omit to fill the parent.',
+    },
+    style: {
+      type: 'CSSProperties',
+      description: "Extra inline styles, merged after the placeholder's own.",
+    },
+    className: {
+      type: 'string',
+    },
+  }}
+/>
+
+Any other `<div>` attribute is passed through too (except `children`, `style`,
+and `className`, which the component owns).
 
 When both `width` and `height` are set, the placeholder renders the dimensions
 under the hint so you can eyeball aspect ratios while drafting.
@@ -86,9 +99,9 @@ The inspector's **Replace…** action is wired to a Vite-plugin op called
    />
    ```
 
-The asset path must live under `./assets/` relative to the slide. If you skip
-the inspector and want to swap the placeholder by hand, the snippet above is
-exactly what to write.
+The asset path must start with `./assets/` (slide-local) or `@assets/`
+(global). If you skip the inspector and want to swap the placeholder by
+hand, the snippet above is exactly what to write.
 
 ## Cropping
 
@@ -99,19 +112,14 @@ reframe the visible region:
 - **Double-click** the image while the inspector is active, or
 - Click it once and choose **Crop** in the property panel.
 
-The crop dialog updates `objectPosition` (and, if you constrain the visible
-region, `objectFit`) on the same inline `style` block — no asset is mutated,
-so you can reopen the dialog later and adjust.
+The crop dialog writes `objectFit` (Fill = `cover`, Fit = `contain`) and
+stores the crop rectangle as an `objectViewBox: inset(…)` value on the same
+inline `style` block — no asset is mutated, so you can reopen the dialog
+later and adjust.
 
 ## When to use it
 
 Use a placeholder only when a *specific concrete* image is required by the
-deck's topic — a product-intro deck (one screenshot per feature), an offsite
-recap (team photo), a case study (customer logo).
-
-Do **not** use it for decoration, generic stock-photo filler, or anywhere a
-typographic or iconographic solution would do. Empty placeholders are friction
-the user has to clear; only spend that friction when the alternative is worse.
-
-See the **Image placeholders** section of the `slide-authoring` skill for the
-full editorial checklist.
+deck's topic — a product screenshot, a team photo, a customer logo. Don't use
+it for decoration or generic stock-photo filler; if a typographic or
+iconographic solution would do, prefer that.

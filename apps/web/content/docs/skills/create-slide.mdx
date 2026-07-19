@@ -3,16 +3,15 @@ title: /create-slide
 description: Drafts a deck end-to-end from a one-line prompt.
 ---
 
-`/create-slide` is the entry-point skill for any new deck. From a one-line
-prompt to a polished outline in a single skill call.
+`/create-slide` is the entry-point skill for any new deck.
 
 ## What it does
 
-1. **Scoping** — asks four questions: topic & aesthetic, page count, text
-   density, motion vs. static.
-2. **Theme lookup** — if a theme is referenced, reads `themes/<id>.md`
-   first so the deck inherits the design system. See
+1. **Theme** — if `themes/` contains any themes, asks you to pick one (or
+   none). A picked theme settles the visual direction. See
    [Themes](/docs/core-feature/themes).
+2. **Scoping** — asks four questions: aesthetic direction (skipped when a
+   theme is picked), page count, text density, motion vs. static.
 3. **ID & structure** — picks a kebab-case id, plans the page list.
 4. **Authoring** — writes `slides/<id>/index.tsx` page by page, deferring
    to [`/slide-authoring`](/docs/skills/slide-authoring) for the *how*.
@@ -30,4 +29,4 @@ For any new deck. Even if you plan to hand-author, kick off with
 
 A working `slides/<id>/index.tsx` with one component per page, a `meta`
 export, and assets imported from `slides/<id>/assets/`. Drop into the dev
-server and iterate from there — see [Iterate](/docs/flow/iterate).
+server and iterate from there.

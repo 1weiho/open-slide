@@ -59,17 +59,19 @@ function ThemeCardMenu({ theme }: { theme: Theme }) {
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            aria-label={t.themes.themeActions}
-            className="absolute right-2 top-2 grid size-7 place-items-center rounded-[6px] border border-hairline bg-card/90 text-muted-foreground opacity-0 shadow-edge backdrop-blur transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100 aria-expanded:opacity-100"
-          >
-            <MoreHorizontal className="size-4" />
-          </button>
-        </DropdownMenuTrigger>
+        <DropdownMenuTrigger
+          render={
+            <button
+              type="button"
+              aria-label={t.themes.themeActions}
+              className="absolute right-2 top-2 grid size-7 place-items-center rounded-[6px] border border-hairline bg-card/90 text-muted-foreground opacity-0 shadow-edge backdrop-blur transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100 aria-expanded:opacity-100"
+            >
+              <MoreHorizontal className="size-4" />
+            </button>
+          }
+        />
         <DropdownMenuContent align="end" className="min-w-[140px]">
-          <DropdownMenuItem variant="destructive" onSelect={() => setConfirmOpen(true)}>
+          <DropdownMenuItem variant="destructive" onClick={() => setConfirmOpen(true)}>
             <Trash2 />
             {t.common.delete}
           </DropdownMenuItem>
@@ -173,7 +175,7 @@ function ThemePreview({ theme }: { theme: Theme }) {
   }
   if (!demo) {
     return (
-      <div className="grid h-full w-full place-items-center text-[10px] tracking-[0.16em] uppercase text-muted-foreground/60">
+      <div className="grid h-full w-full place-items-center text-[10px] tracking-[0.08em] uppercase text-muted-foreground/60">
         {t.common.loading}
       </div>
     );
