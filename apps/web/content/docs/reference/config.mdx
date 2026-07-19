@@ -16,26 +16,70 @@ export default config;
 
 ## Schema
 
-| Field       | Type                   | Default                          | Description                                              |
-| ----------- | ---------------------- | -------------------------------- | -------------------------------------------------------- |
-| `base`      | `string`               | `'/'`                            | Base public path for subpath hosting (leading + trailing slash). |
-| `slidesDir` | `string`               | `'slides'`                       | Folder that contains your decks.                         |
-| `themesDir` | `string`               | `'themes'`                       | Folder that holds theme markdown + demo files.           |
-| `assetsDir` | `string`               | `'assets'`                       | Folder for global assets shared across decks.            |
-| `port`      | `number`               | first free port from 5173 upward | Dev server port.                                         |
-| `build`     | `OpenSlideBuildConfig` | all toggles on                   | Build-time UI toggles (see below).                       |
-| `locale`    | `Locale`               | —                                | Deprecated — seeds the runtime UI language until one is picked in-app. |
+<TypeTable
+  type={{
+    base: {
+      type: 'string',
+      default: "'/'",
+      description: 'Base public path for subpath hosting (leading + trailing slash).',
+    },
+    slidesDir: {
+      type: 'string',
+      default: "'slides'",
+      description: 'Folder that contains your decks.',
+    },
+    themesDir: {
+      type: 'string',
+      default: "'themes'",
+      description: 'Folder that holds theme markdown + demo files.',
+    },
+    assetsDir: {
+      type: 'string',
+      default: "'assets'",
+      description: 'Folder for global assets shared across decks.',
+    },
+    port: {
+      type: 'number',
+      default: 'first free port from 5173 upward',
+      description: 'Dev server port.',
+    },
+    build: {
+      type: 'OpenSlideBuildConfig',
+      default: 'all toggles on',
+      description: 'Build-time UI toggles (see below).',
+    },
+    locale: {
+      type: 'Locale',
+      deprecated: true,
+      description: 'Seeds the runtime UI language until one is picked in-app.',
+    },
+  }}
+/>
 
 ### `build`
 
 Every toggle is on by default and only takes effect in the static build; the
 dev server always shows the full UI.
 
-| Field               | Type      | Default | Description                                              |
-| ------------------- | --------- | ------- | -------------------------------------------------------- |
-| `showSlideBrowser`  | `boolean` | `true`  | Show the deck index (the slide browser) in the static build. |
-| `showSlideUi`       | `boolean` | `true`  | Show on-canvas UI (toolbar, hints) in the static build.  |
-| `allowHtmlDownload` | `boolean` | `true`  | Show the export menu (HTML, PDF, image PPTX) in the static build. |
+<TypeTable
+  type={{
+    showSlideBrowser: {
+      type: 'boolean',
+      default: 'true',
+      description: 'Show the deck index (the slide browser) in the static build.',
+    },
+    showSlideUi: {
+      type: 'boolean',
+      default: 'true',
+      description: 'Show on-canvas UI (toolbar, hints) in the static build.',
+    },
+    allowHtmlDownload: {
+      type: 'boolean',
+      default: 'true',
+      description: 'Show the export menu (HTML, PDF, image PPTX) in the static build.',
+    },
+  }}
+/>
 
 ## Common recipes
 

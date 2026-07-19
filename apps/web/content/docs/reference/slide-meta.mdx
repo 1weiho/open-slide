@@ -31,16 +31,22 @@ type Page = ComponentType & {
 
 ## `meta` (optional)
 
-```ts
-type SlideMeta = {
-  /** Display title for the deck — used in the slide browser. */
-  title?: string;
-  /** Name of a theme under `themes/<id>.md`. The agent reads it before authoring. */
-  theme?: string;
-  /** ISO 8601 timestamp set at scaffold time. Sorts the slide list. */
-  createdAt?: string;
-};
-```
+<TypeTable
+  type={{
+    title: {
+      type: 'string',
+      description: 'Display title for the deck — used in the slide browser.',
+    },
+    theme: {
+      type: 'string',
+      description: 'Name of a theme under themes/<id>.md. The agent reads it before authoring.',
+    },
+    createdAt: {
+      type: 'string',
+      description: 'ISO 8601 timestamp set at scaffold time. Sorts the slide list.',
+    },
+  }}
+/>
 
 ## `notes` (optional)
 

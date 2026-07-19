@@ -14,42 +14,76 @@ fallback.
 
 ## Schema
 
-```ts
-type TransitionPhase = {
-  /** WAAPI keyframes — either an array of Keyframe objects
-   *  or a PropertyIndexedKeyframes object. */
-  keyframes: Keyframe[] | PropertyIndexedKeyframes;
-  /** Phase duration in ms. Falls back to the top-level duration. */
-  duration?: number;
-  /** CSS easing string. Falls back to the top-level easing. */
-  easing?: string;
-  /** Delay in ms before the phase starts.
-   *  Use on enter to overlap with the outgoing exit. */
-  delay?: number;
-};
+### `SlideTransition`
 
-type SlideTransition = {
-  /** Top-level duration fallback (ms). Required. */
-  duration: number;
-  /** Top-level easing fallback. */
-  easing?: string;
-  /** Plays on the incoming page. */
-  enter?: TransitionPhase;
-  /** Plays on the outgoing page. */
-  exit?: TransitionPhase;
-  /** Matches MorphElement pairs and fades unmatched morph elements. */
-  morph?: boolean | MorphTransition;
-};
+<TypeTable
+  type={{
+    duration: {
+      type: 'number',
+      required: true,
+      description: 'Top-level duration fallback (ms).',
+    },
+    easing: {
+      type: 'string',
+      description: 'Top-level easing fallback.',
+    },
+    enter: {
+      type: 'TransitionPhase',
+      description: 'Plays on the incoming page.',
+    },
+    exit: {
+      type: 'TransitionPhase',
+      description: 'Plays on the outgoing page.',
+    },
+    morph: {
+      type: 'boolean | MorphTransition',
+      description: 'Matches MorphElement pairs and fades unmatched morph elements.',
+    },
+  }}
+/>
 
-type MorphTransition = {
-  /** Morph duration in ms. Falls back to the top-level duration. */
-  duration?: number;
-  /** CSS easing string. Falls back to the top-level easing. */
-  easing?: string;
-  /** Delay in ms before the morph starts. */
-  delay?: number;
-};
-```
+### `TransitionPhase`
+
+<TypeTable
+  type={{
+    keyframes: {
+      type: 'Keyframe[] | PropertyIndexedKeyframes',
+      required: true,
+      description: 'WAAPI keyframes — an array of Keyframe objects or a PropertyIndexedKeyframes object.',
+    },
+    duration: {
+      type: 'number',
+      description: 'Phase duration in ms. Falls back to the top-level duration.',
+    },
+    easing: {
+      type: 'string',
+      description: 'CSS easing string. Falls back to the top-level easing.',
+    },
+    delay: {
+      type: 'number',
+      description: 'Delay in ms before the phase starts. Use on enter to overlap with the outgoing exit.',
+    },
+  }}
+/>
+
+### `MorphTransition`
+
+<TypeTable
+  type={{
+    duration: {
+      type: 'number',
+      description: 'Morph duration in ms. Falls back to the top-level duration.',
+    },
+    easing: {
+      type: 'string',
+      description: 'CSS easing string. Falls back to the top-level easing.',
+    },
+    delay: {
+      type: 'number',
+      description: 'Delay in ms before the morph starts.',
+    },
+  }}
+/>
 
 ## Direction hook
 

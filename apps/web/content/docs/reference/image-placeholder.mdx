@@ -26,20 +26,33 @@ and `height` so the image lands in exactly the same slot.
 
 ## Props
 
-```ts
-type ImagePlaceholderProps = {
-  /** Description of the content that belongs here. Becomes the alt text
-   *  on the replaced <img>. Required. */
-  hint: string;
-  /** Box width in px. Omit to fill the parent. */
-  width?: number;
-  /** Box height in px. Omit to fill the parent. */
-  height?: number;
-  /** Extra inline styles, merged after the placeholder's own. */
-  style?: CSSProperties;
-  className?: string;
-} & Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'style' | 'className'>;
-```
+<TypeTable
+  type={{
+    hint: {
+      type: 'string',
+      required: true,
+      description: 'Description of the content that belongs here. Becomes the alt text on the replaced <img>.',
+    },
+    width: {
+      type: 'number',
+      description: 'Box width in px. Omit to fill the parent.',
+    },
+    height: {
+      type: 'number',
+      description: 'Box height in px. Omit to fill the parent.',
+    },
+    style: {
+      type: 'CSSProperties',
+      description: "Extra inline styles, merged after the placeholder's own.",
+    },
+    className: {
+      type: 'string',
+    },
+  }}
+/>
+
+Any other `<div>` attribute is passed through too (except `children`, `style`,
+and `className`, which the component owns).
 
 When both `width` and `height` are set, the placeholder renders the dimensions
 under the hint so you can eyeball aspect ratios while drafting.
