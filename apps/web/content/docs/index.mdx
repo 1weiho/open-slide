@@ -19,12 +19,10 @@ npx @open-slide/cli init
 
 ## Why open-slide
 
-- **Agent-native authoring.** Ships with skills (`/create-slide`,
-  `/slide-authoring`, `/apply-comments`, `/create-theme`,
-  `/current-slide`) that any Claude Code, Codex, or Cursor session can
-  call.
-- **In-browser inspector.** Click any element in the dev server, drop a
-  `@slide-comment`, and your agent applies it on the next `/apply-comments`.
+- **Agent-native authoring.** Ships with skills that any Claude Code, Codex,
+  or Cursor session can call.
+- **In-browser inspector.** Click any element in the dev server to tweak it
+  directly in the visual editor, or leave a comment for your agent to apply.
 - **Assets manager + svgl.** Drop in images, search 1500+ brand logos through
   the integrated [svgl](https://svgl.app/) catalogue.
 - **Professional present mode.** Fullscreen playback, presenter view, speaker
@@ -60,16 +58,7 @@ each component fills its container (`width: '100%'` / `height: '100%'`).
 The runtime scales the canvas uniformly to fit the viewport, so the same
 slide looks identical on a phone, a 4K monitor, and a beamer — every pixel
 coordinate you write is the coordinate that ships, in preview, present mode,
-and export. The constants are exported if you need them:
-
-```ts
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@open-slide/core';
-// 1920 × 1080
-```
-
-Inside a page, two layout patterns work well: **absolute coordinates**
-(`position: absolute` + pixel values) and **flex/grid** for content that
-flows. Avoid responsive breakpoints — the canvas never changes size.
+and export.
 
 ## What's next
 
