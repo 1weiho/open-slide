@@ -24,16 +24,13 @@ provided and doesn't exist, it's created.
 | `--no-git`                | off           | Skip `git init` and the initial commit.                                  |
 | `--locale <code>`         | prompted      | Slide UI language. One of `en`, `zh-TW`, `zh-CN`, `ja`.                  |
 
-When no `--use-*` flag is passed, the scaffolder reads
-`npm_config_user_agent` (set by your launcher) to pick `pnpm`, `yarn`, or
-`bun`, and falls back to `npm` otherwise. Pass an explicit flag to force a
-specific manager — handy in CI or when `npx` was run under a different
-agent than the one you actually want to use.
+When no `--use-*` flag is passed, the scaffolder detects the package manager
+that launched it (via `npm_config_user_agent`) and falls back to `npm`. Pass
+an explicit flag to force one.
 
 When `--locale` is omitted, an interactive run asks you to pick a language
-and writes the matching preset into `open-slide.config.ts` (see the
-[Locale reference](/docs/reference/locale)). Non-interactive runs default
-to `en`.
+and writes the matching preset into `open-slide.config.ts` (see
+[Locale](/docs/reference/locale)). Non-interactive runs default to `en`.
 
 ## What it generates
 

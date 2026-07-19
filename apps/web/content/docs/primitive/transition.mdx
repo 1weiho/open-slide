@@ -39,7 +39,7 @@ export default [Cover, Agenda] satisfies Page[];
 
 `prefers-reduced-motion: reduce` is honored automatically.
 
-## Where It Lives
+## Where it lives
 
 There are two declaration surfaces:
 
@@ -75,24 +75,10 @@ Agenda.transition = {
 
 ## Direction
 
-During a page transition, the wrapper exposes:
-
-| Surface | Forward | Backward |
-| --- | --- | --- |
-| `--osd-dir` | `1` | `-1` |
-| `data-osd-dir` | `forward` | `backward` |
-
-Use it when motion has a literal direction:
-
-```tsx
-{
-  transform: 'translateX(calc(var(--osd-dir, 1) * 8px))',
-}
-```
-
-Most decks should keep a single restrained motion family: short duration,
-subtle distance, opacity included, and no different transition vocabulary on
-every page.
+During a page transition, the wrapper exposes `--osd-dir` (`1` / `-1`) and
+`data-osd-dir` (`forward` / `backward`) so a keyframe can mirror itself on
+backward navigation. See
+[SlideTransition](/docs/reference/slide-transitions) for the details.
 
 ## Morph
 

@@ -37,7 +37,7 @@ type OpenSlideConfig = {
   assetsDir?: string;
   /** Dev server port. Default: first free port from 5173 upward. */
   port?: number;
-  /** UI language for the runtime (home, inspector, presenter, etc.). */
+  /** Deprecated — seeds the runtime UI language until one is picked in-app. */
   locale?: Locale;
   /** Build-time UI toggles. */
   build?: OpenSlideBuildConfig;
@@ -78,7 +78,10 @@ The value is passed straight to Vite's `base` and to React Router's
 `slidesDir` is a single path today. If you want multiple roots, group them
 under one folder and use subfolder ids.
 
-### Switch the UI language
+### Seed the UI language
+
+The runtime UI language is normally picked in-app; `config.locale` only sets
+the initial value (and is the place to plug in a custom dictionary).
 
 ```ts
 import { zhTW } from '@open-slide/core/locale';
@@ -88,5 +91,4 @@ const config: OpenSlideConfig = {
 };
 ```
 
-See [Locale](/docs/reference/locale) for the full list of presets and how to
-ship your own dictionary.
+See [Locale](/docs/reference/locale) for the presets and custom dictionaries.

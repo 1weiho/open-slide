@@ -3,20 +3,14 @@ title: Locale
 description: Translate the runtime UI — home, inspector, presenter, toasts.
 ---
 
-The runtime ships with four built-in dictionaries. Switch between them from
-the language picker in the slide UI (next to the theme toggle) — your choice
-is remembered in the browser.
+The runtime ships with four built-in dictionaries. Pick one from the language
+picker in the top-right of the home sidebar (next to the theme toggle) — the
+choice is saved in the browser and applies across the runtime UI.
 
 The locale only affects the **runtime UI** that open-slide renders around
 your slides (the home screen, slide browser, inspector, asset panel,
 presenter mode, toasts, etc.). It does **not** translate slide content —
 that lives in your own React code.
-
-## Picking a language
-
-Open the language picker in the top-right of the home sidebar and choose one
-of the four built-in languages. The selection is saved locally and applies
-across the runtime UI.
 
 ## Presets
 
@@ -78,7 +72,7 @@ const config: OpenSlideConfig = { locale: fr };
 export default config;
 ```
 
-The `id` field today only has to be one of the built-in ids
+The `id` field has to be one of the built-in ids
 (`'en' | 'zh-TW' | 'zh-CN' | 'ja'`); it is reserved for future locale-aware
 formatting. The dictionary keys are what actually drive the UI.
 
@@ -101,10 +95,3 @@ unsavedChanges: Plural;
 
 The runtime expands these for you — your job is just to keep the same
 `{placeholder}` tokens (and both `one` and `other` forms) when translating.
-
-## Notes
-
-- Locale is read at module init. Changing it requires a dev-server reload
-  or a fresh build.
-- There is no in-app language switcher today; pick a single locale per
-  deployment.

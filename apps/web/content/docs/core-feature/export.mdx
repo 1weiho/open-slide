@@ -16,12 +16,15 @@ npm run preview     # serves dist/ for sanity-checking
 `dist/` is portable. Drop it on Vercel, Cloudflare Pages, Netlify, Zeabur,
 GitHub Pages — anything that hosts files.
 
-## PDF
+## From the toolbar
 
-The dev server can print the active deck to PDF via the browser's native
-print pipeline. From the toolbar pick **Export → PDF**, or open the deck at
-`?print=1` and use Cmd/Ctrl-P. The runtime sets paper size to 1920×1080
-landscape so each slide is exactly one page.
+The **Export** menu in the slide toolbar exports the active deck directly:
+
+- **HTML** — a single self-contained HTML file of the deck.
+- **PDF** — one 1920 × 1080 landscape page per slide. Not supported in
+  Safari.
+- **PPTX (images)** — each page rendered as an image on a PowerPoint slide.
+  Native editable PPTX export is not available yet.
 
 ## What gets shipped
 

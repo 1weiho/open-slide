@@ -3,37 +3,31 @@ title: Present mode
 description: Fullscreen playback with presenter view, notes, and timer.
 ---
 
-open-slide ships a present mode designed for a real stage, not just a
-browser tab.
-
 ## Fullscreen playback
 
 From the dev server, hit **Present** (or press `f`). The current deck goes
-fullscreen with:
+fullscreen, scaled uniformly to fit the screen:
 
 - Arrow / space / `PgDn` to advance.
 - `←` / `↑` / `PgUp` to go back.
 - `Home` / `End` to jump to first / last.
 - `Esc` to exit.
 
-The canvas scales uniformly to fit the screen — no letterboxing maths on
-your part.
+## Presenter view
 
-## Presenter mode
-
-A second display mirror surfaces:
+Press `p` (or the presenter button in the present control bar) to open the
+presenter view in a second window:
 
 - **Current slide** at the size you'll show it.
 - **Next slide** preview.
-- **Speaker notes** for the current page (read from a `notes` field on the
-  slide module, if present).
+- **Speaker notes** for the current page.
 - **Timer** — elapsed time since you entered present mode.
 
-Use it on a laptop screen while the deck mirrors to the projector.
+Keep it on the laptop screen while the deck mirrors to the projector.
 
 ## Speaker notes
 
-Add notes alongside the page array:
+Add notes alongside the page array, keyed by page index:
 
 ```tsx
 export const notes = {

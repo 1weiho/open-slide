@@ -61,7 +61,7 @@ type Page = ComponentType & {
 - Every page renders into a fixed `1920 × 1080` canvas. The runtime scales the
   whole canvas uniformly for preview, present mode, and export.
 
-## How to Think About It
+## Layout model
 
 Write pages as fixed-format compositions, not responsive web pages. Pixel
 coordinates are stable because the canvas size never changes. Use absolute
@@ -73,7 +73,7 @@ current canvas, thumbnail rail, overview grid, theme preview, or export. Keep
 render output deterministic, avoid depending on the browser viewport, and
 guard browser-only side effects when a page also needs to export cleanly.
 
-## Per-Page Overrides
+## Per-page overrides
 
 `Page` can carry a `transition` property. Use it only when one page needs a
 different animation than the module-level default.

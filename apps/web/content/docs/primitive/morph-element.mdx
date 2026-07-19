@@ -41,7 +41,7 @@ export const transition: SlideTransition = {
 export default [Start, End] satisfies Page[];
 ```
 
-## Matching Contract
+## Matching contract
 
 The `id` is the contract. When the outgoing and incoming pages both contain a
 `MorphElement` with the same `id`, the runtime measures both DOM nodes, hides
@@ -52,7 +52,7 @@ If a marked element exists only on the outgoing page, it fades out. If it
 exists only on the incoming page, it fades in. The runtime does not guess
 similar objects; unmatched ids are separate objects.
 
-## What to Wrap
+## What to wrap
 
 Wrap the same visual object in a new position or size: a logo, diagram node,
 timeline marker, product card, badge, or highlight. Keep changing copy outside
@@ -63,7 +63,7 @@ as one object turning into another, not continuity.
 child, the runtime writes the `data-osd-morph` marker onto that child.
 Otherwise it wraps the content in a `div`.
 
-## Transition Required
+## Transition required
 
 A Morph Transition only runs when the selected transition enables `morph`.
 
