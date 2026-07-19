@@ -357,13 +357,6 @@ html.dark .os-landing .agent-mono {
   opacity: 1;
 }
 
-.os-landing .vercel-oss-badge {
-  filter: none;
-}
-html.dark .os-landing .vercel-oss-badge {
-  filter: invert(1) brightness(1.08);
-}
-
 .os-landing :where(a, button, [role="button"]):focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 3px;

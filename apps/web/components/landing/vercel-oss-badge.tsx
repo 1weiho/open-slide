@@ -1,24 +1,25 @@
 import { cn } from '@/lib/cn';
 
-export function VercelOssBadge({
-  className,
-  imageClassName,
-}: {
-  className?: string;
-  imageClassName?: string;
-}) {
+export function VercelOssBadge({ className }: { className?: string }) {
   return (
     <a
       href="https://vercel.com/open-source-program"
       target="_blank"
       rel="noopener noreferrer"
-      className={cn('block w-fit opacity-75 transition-opacity hover:opacity-100', className)}
+      aria-label="Vercel OSS Program"
+      className={cn(
+        'flex w-fit items-center gap-2.5 opacity-75 transition-opacity hover:opacity-100',
+        className,
+      )}
     >
-      <img
-        alt="Vercel OSS Program"
-        src="https://vercel.com/oss/program-badge-2026.svg"
-        className={cn('vercel-oss-badge w-auto', imageClassName)}
-      />
+      <img src="/assets/vercel-light.svg" alt="" className="logo-light h-3.5 w-auto" />
+      <img src="/assets/vercel-dark.svg" alt="" className="logo-dark h-3.5 w-auto" />
+      <span className="font-[family-name:var(--font-mono)] text-[10px] leading-[1.45] uppercase tracking-[0.06em] text-[color:var(--color-text)]">
+        <span className="block">
+          Vercel Inc. <span className="text-[color:var(--color-muted)]">{'//'}</span> 2026
+        </span>
+        <span className="block">Open Source Software Program</span>
+      </span>
     </a>
   );
 }

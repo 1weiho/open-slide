@@ -50,7 +50,7 @@ export function Footer() {
 
       <div className="border-t border-[color:var(--color-rule)]">
         <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 text-[13px] text-[color:var(--color-muted)]">
-          <VercelOssBadge imageClassName="h-4 sm:h-5" />
+          <VercelOssBadge />
           <span>
             Crafted with 🤍 by{' '}
             <a
