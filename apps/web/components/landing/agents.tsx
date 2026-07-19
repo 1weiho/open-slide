@@ -69,7 +69,7 @@ export function Agents() {
 
 function AgentLogo({ agent }: { agent: Agent }) {
   const alt = agent.name;
-  const cls = 'h-[22px] sm:h-[28px] lg:h-[36px] w-auto object-contain shrink-0';
+  const cls = 'h-[18px] sm:h-[22px] lg:h-[28px] w-auto object-contain shrink-0';
 
   if (!agent.variants) {
     return <img src={`/assets/${agent.file}.svg`} alt={alt} className={cls} />;
