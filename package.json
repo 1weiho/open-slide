@@ -27,7 +27,7 @@
     "@biomejs/biome": "2.4.12",
     "@changesets/changelog-github": "^0.7.0",
     "@changesets/cli": "^2.31.0",
-    "turbo": "^2.9.18",
+    "turbo": "^2.10.5",
     "vitest": "^2.1.9"
   }
 }
