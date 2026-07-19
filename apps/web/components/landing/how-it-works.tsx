@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 type Step = {
   num: string;
@@ -93,16 +93,24 @@ export function HowItWorks() {
   return (
     <section id="how-it-works" className="relative">
       <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-20 sm:py-32 lg:py-40">
-        <h2 className="text-[32px] sm:text-[44px] lg:text-[60px] leading-[1.1] sm:leading-[1.05] tracking-[-0.035em] font-medium max-w-[820px] mb-14 sm:mb-20">
+        <h2
+          data-reveal="blur"
+          className="text-[32px] sm:text-[44px] lg:text-[60px] leading-[1.1] sm:leading-[1.05] tracking-[-0.035em] font-medium max-w-[820px] mb-14 sm:mb-20"
+        >
           Slides as code.
           <br />
           <span className="text-[color:var(--color-muted)]">Crafted by agents.</span>
         </h2>
 
-        <ol className="floating grid grid-cols-1 md:grid-cols-3 gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[8px] overflow-hidden">
-          {steps.map((s) => (
+        <ol
+          data-reveal
+          className="floating grid grid-cols-1 md:grid-cols-3 gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[8px] overflow-hidden"
+        >
+          {steps.map((s, i) => (
             <li
               key={s.num}
+              data-reveal="fade"
+              style={{ '--reveal-delay': `${i * 90}ms` } as CSSProperties}
               className="group relative p-8 sm:p-10 lg:p-12 bg-[color:var(--color-panel)] flex flex-col gap-7"
             >
               <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.08em] uppercase text-[color:var(--color-muted)]">

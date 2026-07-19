@@ -25,7 +25,7 @@ export function CopyCommand({ command, size = 'lg' }: { command: string; size?: 
     <button
       type="button"
       onClick={onCopy}
-      className={`group floating relative inline-flex items-center gap-3 ${height} ${pad} rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] text-[color:var(--color-text)] font-[family-name:var(--font-mono)] ${text} hover:border-[color:var(--color-accent)]/50 transition`}
+      className={`group pressable floating relative inline-flex items-center gap-3 ${height} ${pad} rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] text-[color:var(--color-text)] font-[family-name:var(--font-mono)] ${text} hover:border-[color:var(--color-accent)]/50`}
     >
       <span aria-hidden className="text-[color:var(--color-accent)]">
         $

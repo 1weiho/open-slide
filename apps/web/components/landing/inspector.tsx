@@ -8,7 +8,7 @@ import {
   useReducedMotion,
   useTransform,
 } from 'motion/react';
-import { type ReactNode, useEffect, useRef } from 'react';
+import { type CSSProperties, type ReactNode, useEffect, useRef } from 'react';
 import { SectionRule } from './frame';
 
 export function Inspector() {
@@ -16,13 +16,19 @@ export function Inspector() {
     <section id="inspector" className="relative">
       <SectionRule />
       <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-20 sm:py-32 lg:py-40">
-        <h2 className="text-[32px] sm:text-[44px] lg:text-[60px] leading-[1.1] sm:leading-[1.05] tracking-[-0.035em] font-medium max-w-[860px] mb-14 sm:mb-20">
+        <h2
+          data-reveal="blur"
+          className="text-[32px] sm:text-[44px] lg:text-[60px] leading-[1.1] sm:leading-[1.05] tracking-[-0.035em] font-medium max-w-[860px] mb-14 sm:mb-20"
+        >
           Talk to the agent.
           <br />
           <span className="text-[color:var(--color-muted)]">Or just tap the canvas.</span>
         </h2>
 
-        <div className="floating grid grid-cols-1 lg:grid-cols-2 gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[8px] overflow-hidden">
+        <div
+          data-reveal
+          className="floating grid grid-cols-1 lg:grid-cols-2 gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[8px] overflow-hidden"
+        >
           <FeatureCell
             num="01"
             kicker="agent applies"
@@ -68,8 +74,13 @@ function FeatureCell({
   body: ReactNode;
   visual: ReactNode;
 }) {
+  const delay = num === '01' ? '0ms' : '90ms';
   return (
-    <div className="group relative bg-[color:var(--color-panel)] flex flex-col gap-10 p-8 sm:p-10 lg:p-12">
+    <div
+      data-reveal="fade"
+      style={{ '--reveal-delay': delay } as CSSProperties}
+      className="group relative bg-[color:var(--color-panel)] flex flex-col gap-10 p-8 sm:p-10 lg:p-12"
+    >
       <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.08em] uppercase text-[color:var(--color-muted)]">
         {num} · {kicker}
       </span>

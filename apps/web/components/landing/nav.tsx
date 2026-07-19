@@ -3,11 +3,24 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import posthog from 'posthog-js';
+import { useEffect, useState } from 'react';
 import { ThemeToggle } from './theme-toggle';
 
 export function Nav({ githubStars }: { githubStars?: string | null }) {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-40 bg-[color:var(--color-ink)]/85 backdrop-blur-md border-b border-[color:var(--color-rule-soft)]">
+    <header
+      data-scrolled={scrolled ? '' : undefined}
+      className="site-nav sticky top-0 z-40 bg-[color:var(--color-ink)]/85 backdrop-blur-md border-b border-[color:var(--color-rule-soft)]"
+    >
       <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 h-14 flex items-center justify-between">
         <Link
           href="/"
@@ -61,7 +74,7 @@ export function Nav({ githubStars }: { githubStars?: string | null }) {
           <ThemeToggle />
           <Link
             href="/docs"
-            className="hidden sm:inline-flex h-8 items-center rounded-full bg-[color:var(--color-text)] px-3.5 text-[13px] font-medium text-[color:var(--color-ink)] transition-opacity hover:opacity-80"
+            className="pressable hidden sm:inline-flex h-8 items-center rounded-full bg-[color:var(--color-text)] px-3.5 text-[13px] font-medium text-[color:var(--color-ink)] hover:opacity-80"
           >
             Get started
           </Link>

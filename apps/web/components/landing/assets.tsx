@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { SectionRule } from './frame';
 
 type AssetMock = { name: string; size: string; logo: string; themed?: boolean };
@@ -53,7 +53,10 @@ export function Assets() {
     <section id="assets" className="relative">
       <SectionRule />
       <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-20 sm:py-32 lg:py-40">
-        <h2 className="text-[32px] sm:text-[44px] lg:text-[60px] leading-[1.1] sm:leading-[1.05] tracking-[-0.035em] font-medium max-w-[820px] mb-14 sm:mb-20">
+        <h2
+          data-reveal="blur"
+          className="text-[32px] sm:text-[44px] lg:text-[60px] leading-[1.1] sm:leading-[1.05] tracking-[-0.035em] font-medium max-w-[820px] mb-14 sm:mb-20"
+        >
           Drop in images.
           <br />
           <span className="text-[color:var(--color-muted)]">Pull in logos.</span>
@@ -61,15 +64,21 @@ export function Assets() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* asset manager mock */}
-          <div className="lg:col-span-8">
+          <div data-reveal className="lg:col-span-8">
             <AssetManagerMock />
           </div>
 
           {/* side callouts */}
-          <div className="floating lg:col-span-4 flex flex-col gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[8px] overflow-hidden">
-            {callouts.map((c) => (
+          <div
+            data-reveal
+            style={{ '--reveal-delay': '120ms' } as CSSProperties}
+            className="floating lg:col-span-4 flex flex-col gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[8px] overflow-hidden"
+          >
+            {callouts.map((c, i) => (
               <div
                 key={c.eyebrow}
+                data-reveal="fade"
+                style={{ '--reveal-delay': `${120 + i * 90}ms` } as CSSProperties}
                 className="bg-[color:var(--color-panel)] p-6 sm:p-7 lg:p-8 flex flex-col gap-3"
               >
                 <span className="caption">{c.eyebrow}</span>

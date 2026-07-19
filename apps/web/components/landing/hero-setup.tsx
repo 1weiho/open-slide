@@ -74,7 +74,7 @@ export function HeroSetup() {
               type="button"
               aria-pressed={mode === key}
               onClick={() => selectMode(key)}
-              className={`rounded-md py-1.5 transition-colors duration-200 ${
+              className={`pressable rounded-md py-1.5 ${
                 key === 'you' ? 'pl-2 pr-3 sm:pr-4' : 'px-3 sm:px-4'
               } ${
                 mode === key
@@ -101,7 +101,7 @@ export function HeroSetup() {
         type="button"
         aria-label={option.copyLabel}
         onClick={copySetup}
-        className="group floating flex h-[58px] w-[337px] max-w-full items-center gap-3 rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] px-5 text-left transition-[border-color,background-color] duration-200 hover:border-[color:var(--color-accent)]/50 sm:h-[68px] sm:px-7"
+        className="group pressable floating flex h-[58px] w-[337px] max-w-full items-center gap-3 rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] px-5 text-left hover:border-[color:var(--color-accent)]/50 sm:h-[68px] sm:px-7"
       >
         <span className="relative h-[20px] min-w-0 flex-1 overflow-hidden sm:h-[22px]">
           <AnimatePresence initial={false} custom={direction}>

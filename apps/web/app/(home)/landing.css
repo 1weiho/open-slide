@@ -32,6 +32,8 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+
   background: var(--color-ink);
   color: var(--color-text);
   font-family: var(--font-sans);
@@ -188,8 +190,93 @@ html.dark .os-landing .bloom {
     transform: translateY(0);
   }
 }
+/* backwards (not both): the last keyframe matches natural styles, and a
+   forwards fill would pin transform/filter and block hover/press feedback. */
 .os-landing .rise {
-  animation: os-rise 900ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation: os-rise 900ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+@keyframes os-riseBlur {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+.os-landing .rise-blur {
+  animation: os-riseBlur 1s var(--ease-out-strong) backwards;
+}
+
+/* Scroll reveals — ScrollReveal only marks elements still below the fold
+   as .reveal-hidden, so content never flashes and non-JS visitors see
+   everything. Removing the class transitions back to natural styles. */
+.os-landing [data-reveal].reveal-hidden {
+  opacity: 0;
+  transform: translateY(18px);
+}
+.os-landing [data-reveal="blur"].reveal-hidden {
+  filter: blur(7px);
+}
+/* Cells inside seamed grids (gap-px over the rule color) fade in place —
+   translating them would smear the hairline seams. */
+.os-landing [data-reveal="fade"].reveal-hidden {
+  transform: none;
+}
+.os-landing [data-reveal].reveal-shown {
+  transition:
+    opacity 800ms var(--ease-out-strong),
+    transform 800ms var(--ease-out-strong),
+    filter 700ms var(--ease-out-strong);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+/* Press feedback for anything clickable. Transition list covers the hover
+   color moves those elements already rely on, since this shorthand wins
+   over the tailwind utility. */
+.os-landing .pressable {
+  transition:
+    transform 160ms var(--ease-out-strong),
+    color 200ms ease,
+    background-color 200ms ease,
+    border-color 200ms ease,
+    opacity 200ms ease;
+}
+.os-landing .pressable:active {
+  transform: scale(0.97);
+}
+
+.os-landing .site-nav {
+  transition: box-shadow 500ms ease;
+}
+.os-landing .site-nav[data-scrolled] {
+  box-shadow: 0 12px 32px -24px oklch(0 0 0 / 0.25);
+}
+html.dark .os-landing .site-nav[data-scrolled] {
+  box-shadow: 0 16px 40px -24px oklch(0 0 0 / 0.55);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .os-landing .marquee-track:hover {
+    animation-play-state: paused;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .os-landing .rise,
+  .os-landing .rise-blur {
+    animation: none;
+  }
+  .os-landing .marquee-track {
+    animation-play-state: paused;
+  }
+  .os-landing .pressable:active {
+    transform: none;
+  }
 }
 
 @keyframes os-caret {

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { CSSProperties } from 'react';
 import { CopyCommand } from './copy-command';
 
 export function GetStarted() {
@@ -7,7 +8,10 @@ export function GetStarted() {
       <div aria-hidden className="bloom absolute inset-0" />
       <div className="relative mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-24 sm:py-36 lg:py-48">
         <div className="flex flex-col gap-10 sm:gap-14 max-w-[820px]">
-          <h2 className="text-sheen text-[36px] sm:text-[52px] lg:text-[76px] leading-[1.05] sm:leading-[1.0] tracking-[-0.04em] font-medium">
+          <h2
+            data-reveal="blur"
+            className="text-sheen text-[36px] sm:text-[52px] lg:text-[76px] leading-[1.05] sm:leading-[1.0] tracking-[-0.04em] font-medium"
+          >
             Author a deck
             <br />
             <span className="accent-fill text-[color:var(--color-accent)]">
@@ -15,11 +19,19 @@ export function GetStarted() {
             </span>
           </h2>
 
-          <p className="max-w-[560px] text-[18px] leading-[1.65] text-[color:var(--color-text-soft)]">
+          <p
+            data-reveal
+            style={{ '--reveal-delay': '100ms' } as CSSProperties}
+            className="max-w-[560px] text-[18px] leading-[1.65] text-[color:var(--color-text-soft)]"
+          >
             One command, zero config. Your agent takes it from here.
           </p>
 
-          <div className="flex flex-wrap items-center gap-4">
+          <div
+            data-reveal
+            style={{ '--reveal-delay': '180ms' } as CSSProperties}
+            className="flex flex-wrap items-center gap-4"
+          >
             <CopyCommand command="npx @open-slide/cli init" />
             <Link
               href="/docs"
