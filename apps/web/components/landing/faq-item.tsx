@@ -30,18 +30,20 @@ export function FaqItem({ item, index }: { item: QA; index: number }) {
           >
             {item.q}
           </span>
-          <span
+          <motion.span
             aria-hidden
-            className={`flex h-6 w-6 shrink-0 items-center justify-center transition-[transform,color] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+            animate={{ rotate: open ? 135 : 0 }}
+            transition={reduceMotion ? { duration: 0 } : { duration: 0.4, ease: EASE_OUT_STRONG }}
+            className={`flex h-6 w-6 shrink-0 items-center justify-center transition-colors duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] ${
               open
-                ? 'rotate-[135deg] text-[color:var(--color-accent)]'
+                ? 'text-[color:var(--color-accent)]'
                 : 'text-[color:var(--color-muted)] group-hover:text-[color:var(--color-text)]'
             }`}
           >
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden>
               <path d="M5 0v10M0 5h10" stroke="currentColor" strokeWidth="1.4" />
             </svg>
-          </span>
+          </motion.span>
         </button>
       </dt>
       <AnimatePresence initial={false}>
