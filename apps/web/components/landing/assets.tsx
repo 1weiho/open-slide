@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { SectionRule } from './frame';
 
 type AssetMock = { name: string; size: string; logo: string; themed?: boolean };
 
@@ -50,7 +51,7 @@ const callouts: { eyebrow: string; title: string; body: ReactNode }[] = [
 export function Assets() {
   return (
     <section id="assets" className="relative">
-      <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-[color:var(--color-rule)]" />
+      <SectionRule />
       <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-20 sm:py-32 lg:py-40">
         <h2 className="text-[32px] sm:text-[44px] lg:text-[60px] leading-[1.1] sm:leading-[1.05] tracking-[-0.035em] font-medium max-w-[820px] mb-14 sm:mb-20">
           Drop in images.

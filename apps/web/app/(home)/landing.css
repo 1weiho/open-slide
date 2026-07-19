@@ -85,6 +85,64 @@ html.dark .os-landing {
   background: var(--color-rule);
 }
 
+/* Shared frame width — the page-long vertical rails and every crosshair
+   marker align to this box, so all the "engineering grid" lines meet. */
+.os-landing .frame-w {
+  width: min(100% - 40px, 1360px);
+  margin-inline: auto;
+}
+
+.os-landing .stripes {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-rule-soft) 0,
+    var(--color-rule-soft) 1px,
+    transparent 1px,
+    transparent 9px
+  );
+}
+
+.os-landing .dot-grid {
+  background-image: radial-gradient(
+    color-mix(in oklab, var(--color-text) 16%, transparent) 1px,
+    transparent 1.5px
+  );
+  background-size: 24px 24px;
+  -webkit-mask-image: radial-gradient(110% 84% at 50% 0%, #000 0%, transparent 70%);
+  mask-image: radial-gradient(110% 84% at 50% 0%, #000 0%, transparent 70%);
+}
+
+.os-landing .bloom {
+  background: radial-gradient(
+    56% 44% at 66% -12%,
+    color-mix(in oklab, var(--color-accent) 7%, transparent),
+    transparent 70%
+  );
+}
+html.dark .os-landing .bloom {
+  background: radial-gradient(
+    56% 44% at 66% -12%,
+    color-mix(in oklab, var(--color-accent) 11%, transparent),
+    transparent 70%
+  );
+}
+
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  .os-landing .text-sheen {
+    background-image: linear-gradient(
+      180deg,
+      var(--color-text) 45%,
+      color-mix(in oklab, var(--color-text) 62%, transparent)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .os-landing .text-sheen .accent-fill {
+    -webkit-text-fill-color: var(--color-accent);
+  }
+}
+
 .os-landing .edge {
   box-shadow: var(--shadow-edge);
 }

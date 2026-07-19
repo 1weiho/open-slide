@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { SectionRule } from './frame';
 
 type Variant = {
   word: string;
@@ -67,6 +68,7 @@ export function Anatomy() {
 
   return (
     <section id="anatomy" className="relative">
+      <SectionRule />
       <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-20 sm:py-32 lg:py-40">
         <h2 className="text-[32px] sm:text-[44px] lg:text-[60px] leading-[1.1] sm:leading-[1.05] tracking-[-0.035em] font-medium max-w-[820px] mb-14 sm:mb-20">
           A slide is a file.

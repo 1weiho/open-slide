@@ -3,6 +3,7 @@ import { Anatomy } from '@/components/landing/anatomy';
 import { Assets } from '@/components/landing/assets';
 import { FAQ, faqs } from '@/components/landing/faq';
 import { Footer } from '@/components/landing/footer';
+import { StripeBand } from '@/components/landing/frame';
 import { GetStarted } from '@/components/landing/get-started';
 import { Hero } from '@/components/landing/hero';
 import { HowItWorks } from '@/components/landing/how-it-works';
@@ -120,12 +121,14 @@ export default async function HomePage() {
       <main className="relative flex-1">
         <Hero />
         <LiveDemo />
+        <StripeBand />
         <HowItWorks />
         <Anatomy />
         <Inspector />
         <Assets />
         <Agents />
         <FAQ />
+        <StripeBand />
         <GetStarted />
       </main>
       <Footer />

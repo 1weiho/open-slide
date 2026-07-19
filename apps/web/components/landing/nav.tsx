@@ -59,6 +59,12 @@ export function Nav({ githubStars }: { githubStars?: string | null }) {
             ) : null}
           </a>
           <ThemeToggle />
+          <Link
+            href="/docs"
+            className="hidden sm:inline-flex h-8 items-center rounded-full bg-[color:var(--color-text)] px-3.5 text-[13px] font-medium text-[color:var(--color-ink)] transition-opacity hover:opacity-80"
+          >
+            Get started
+          </Link>
         </nav>
       </div>
     </header>
