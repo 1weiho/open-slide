@@ -16,33 +16,26 @@ export default config;
 
 ## Schema
 
-```ts
-type OpenSlideBuildConfig = {
-  /** Show the deck index (the slide browser) in the static build. */
-  showSlideBrowser?: boolean;
-  /** Show on-canvas UI (toolbar, hints) in the static build. */
-  showSlideUi?: boolean;
-  /** Show the export menu (HTML, PDF, image PPTX) in the static build. */
-  allowHtmlDownload?: boolean;
-};
+| Field       | Type                   | Default                          | Description                                              |
+| ----------- | ---------------------- | -------------------------------- | -------------------------------------------------------- |
+| `base`      | `string`               | `'/'`                            | Base public path for subpath hosting (leading + trailing slash). |
+| `slidesDir` | `string`               | `'slides'`                       | Folder that contains your decks.                         |
+| `themesDir` | `string`               | `'themes'`                       | Folder that holds theme markdown + demo files.           |
+| `assetsDir` | `string`               | `'assets'`                       | Folder for global assets shared across decks.            |
+| `port`      | `number`               | first free port from 5173 upward | Dev server port.                                         |
+| `build`     | `OpenSlideBuildConfig` | all toggles on                   | Build-time UI toggles (see below).                       |
+| `locale`    | `Locale`               | —                                | Deprecated — seeds the runtime UI language until one is picked in-app. |
 
-type OpenSlideConfig = {
-  /** Base public path for subpath hosting (leading + trailing slash). Default: '/'. */
-  base?: string;
-  /** Folder that contains your decks. Default: 'slides'. */
-  slidesDir?: string;
-  /** Folder that holds theme markdown + demo files. Default: 'themes'. */
-  themesDir?: string;
-  /** Folder for global assets shared across decks. Default: 'assets'. */
-  assetsDir?: string;
-  /** Dev server port. Default: first free port from 5173 upward. */
-  port?: number;
-  /** Deprecated — seeds the runtime UI language until one is picked in-app. */
-  locale?: Locale;
-  /** Build-time UI toggles. */
-  build?: OpenSlideBuildConfig;
-};
-```
+### `build`
+
+Every toggle is on by default and only takes effect in the static build; the
+dev server always shows the full UI.
+
+| Field               | Type      | Default | Description                                              |
+| ------------------- | --------- | ------- | -------------------------------------------------------- |
+| `showSlideBrowser`  | `boolean` | `true`  | Show the deck index (the slide browser) in the static build. |
+| `showSlideUi`       | `boolean` | `true`  | Show on-canvas UI (toolbar, hints) in the static build.  |
+| `allowHtmlDownload` | `boolean` | `true`  | Show the export menu (HTML, PDF, image PPTX) in the static build. |
 
 ## Common recipes
 
