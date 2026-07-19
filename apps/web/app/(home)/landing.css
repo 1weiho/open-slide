@@ -31,7 +31,7 @@
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-pixel: var(--font-geist-pixel);
+  --font-pixel: var(--font-geist-pixel-square);
 
   --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
 
