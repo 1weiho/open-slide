@@ -13,9 +13,7 @@ export const meta: SlideMeta = {
   theme: 'corporate',
 };
 
-export const notes = {
-  0: 'Open with the analyst quote.',
-};
+export const notes = ['Open with the analyst quote.'];
 
 export default [Cover] satisfies Page[];
 ```
@@ -26,7 +24,9 @@ export default [Cover] satisfies Page[];
 its container; the runtime renders one at a time onto the 1920×1080 canvas.
 
 ```ts
-type Page = ComponentType;
+type Page = ComponentType & {
+  transition?: SlideTransition;
+};
 ```
 
 ## `meta` (optional)
@@ -37,18 +37,23 @@ type SlideMeta = {
   title?: string;
   /** Name of a theme under `themes/<id>.md`. The agent reads it before authoring. */
   theme?: string;
+  /** ISO 8601 timestamp set at scaffold time. Sorts the slide list. */
+  createdAt?: string;
 };
 ```
 
 ## `notes` (optional)
 
-A map of page index → markdown string. Surfaced in [presenter mode](/docs/core-feature/present-mode).
+Plain-text strings (line breaks preserved), index-aligned with the page
+array. Surfaced in the presenter view — see
+[Present mode](/docs/core-feature/present-mode).
 
 ```ts
-export const notes: Record<number, string> = {
-  0: 'Open with a smile.',
-  3: 'Pause for questions.',
-};
+export const notes: (string | undefined)[] = [
+  'Open with a smile.',
+  undefined,
+  'Pause for questions.',
+];
 ```
 
 ## `transition` (optional)

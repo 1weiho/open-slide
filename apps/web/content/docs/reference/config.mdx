@@ -22,7 +22,7 @@ type OpenSlideBuildConfig = {
   showSlideBrowser?: boolean;
   /** Show on-canvas UI (toolbar, hints) in the static build. */
   showSlideUi?: boolean;
-  /** Show the "download as HTML" button in the static build. */
+  /** Show the export menu (HTML, PDF, image PPTX) in the static build. */
   allowHtmlDownload?: boolean;
 };
 
@@ -48,15 +48,9 @@ type OpenSlideConfig = {
 
 ### Public share
 
-```ts
-const config: OpenSlideConfig = {
-  build: {
-    showSlideBrowser: false,
-    showSlideUi: false,
-    allowHtmlDownload: false,
-  },
-};
-```
+Hide the slide browser, on-canvas UI, and export menu with the `build`
+toggles — see [Export](/docs/core-feature/export) for the annotated
+example.
 
 ### Host under a subpath
 
@@ -73,22 +67,14 @@ const config: OpenSlideConfig = {
 The value is passed straight to Vite's `base` and to React Router's
 `basename`, so client-side navigation matches the deployed path.
 
-### Multiple deck folders
+### Organizing many decks
 
-`slidesDir` is a single path today. If you want multiple roots, group them
-under one folder and use subfolder ids.
+`slidesDir` is a single path and decks must sit directly inside it
+(`slides/<id>/index.tsx` — nested folders are not discovered). To group
+decks, use the in-app sidebar folders (stored in `slides/.folders.json`).
 
 ### Seed the UI language
 
-The runtime UI language is normally picked in-app; `config.locale` only sets
-the initial value (and is the place to plug in a custom dictionary).
-
-```ts
-import { zhTW } from '@open-slide/core/locale';
-
-const config: OpenSlideConfig = {
-  locale: zhTW,
-};
-```
-
-See [Locale](/docs/reference/locale) for the presets and custom dictionaries.
+The runtime UI language is picked in-app; `config.locale` only sets the
+initial value and is the place to plug in a custom dictionary — see
+[Locale](/docs/reference/locale).

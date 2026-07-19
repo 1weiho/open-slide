@@ -67,9 +67,9 @@ scope is active (slide-local or global) and you can `import` it immediately.
 
 ## Cross-bundler URL handling
 
-Vite (the dev server) returns asset imports as URL **strings**. Other bundlers
-return an object like `{ src, width, height }`. If you want a slide to render
-under both, normalise once:
+Vite (which powers both `dev` and `build`) returns asset imports as URL
+**strings**. If you reuse slide code under another bundler that returns an
+object like `{ src, width, height }`, normalise once:
 
 ```ts
 type AssetImport = string | { src: string };

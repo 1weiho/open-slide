@@ -11,17 +11,17 @@ cd my-deck
 npm run dev
 ```
 
-The scaffolder generates a minimal workspace:
+The scaffolder generates a workspace (abridged — see
+[open-slide init](/docs/cli/init) for the full tree):
 
 ```text
 my-deck/
 ├── slides/
-│   └── getting-started/
-│       └── index.tsx       # your first slide
-├── themes/                 # optional, shared design systems
+│   └── getting-started/    # your first slide
+├── themes/                 # shared design systems
+├── .agents/skills/         # bundled agent skills
 ├── open-slide.config.ts    # framework config
-├── CLAUDE.md               # mirrors AGENTS.md
-├── AGENTS.md               # agent rules
+├── AGENTS.md               # agent rules (CLAUDE.md symlinks to it)
 └── package.json
 ```
 
@@ -37,9 +37,9 @@ Windsurf, Zed, etc. From the agent prompt:
 /create-slide for "Q2 launch — 3 chapters, mixed text density, subtle motion, dark aesthetic"
 ```
 
-The skill walks the agent through scoping (topic & aesthetic, page count,
-density, motion), picks an id, plans the structure, and writes the pages
-under `slides/<id>/index.tsx`.
+The skill scopes the deck (theme, aesthetic, page count, density, motion),
+picks an id, plans the structure, and writes the pages under
+`slides/<id>/index.tsx`.
 
 ## Iterate visually
 

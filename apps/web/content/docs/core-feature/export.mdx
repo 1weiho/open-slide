@@ -3,8 +3,8 @@ title: Export
 description: One command to a self-contained static HTML site or PDF.
 ---
 
-`open-slide build` produces a plain static site under `dist/`. The output is
-zero-runtime — everything renders on the client, but no server is needed.
+`open-slide build` produces a plain static site under `dist/` — everything
+renders on the client, so no server is needed.
 
 ## Static HTML
 
@@ -20,9 +20,10 @@ GitHub Pages — anything that hosts files.
 
 The **Export** menu in the slide toolbar exports the active deck directly:
 
-- **HTML** — a single self-contained HTML file of the deck.
-- **PDF** — one 1920 × 1080 landscape page per slide. Not supported in
-  Safari.
+- **HTML** — a static HTML snapshot of the deck. Decks that reference
+  assets download as a zip (HTML file + assets folder).
+- **PDF** — one 1920 × 1080 landscape PDF page per deck page. Not supported
+  in Safari.
 - **PPTX (images)** — each page rendered as an image on a PowerPoint slide.
   Native editable PPTX export is not available yet.
 
@@ -44,7 +45,7 @@ const config: OpenSlideConfig = {
   build: {
     showSlideBrowser: false,    // hide the deck index
     showSlideUi: false,         // hide on-canvas UI (toolbar etc.)
-    allowHtmlDownload: false,   // hide the "download HTML" button
+    allowHtmlDownload: false,   // hide the export menu (HTML / PDF / PPTX)
   },
 };
 

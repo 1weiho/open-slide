@@ -9,8 +9,8 @@ ships with agent rules and a set of skills the agent invokes by name.
 ## What ships in the workspace
 
 `npx @open-slide/cli init` generates an `AGENTS.md` (and `CLAUDE.md`) at the
-root with the framework's hard rules, plus a `skills/` folder with five
-skills:
+root with the framework's hard rules, plus five skills under
+`.agents/skills/` (with `.claude/skills/` symlinks for Claude Code):
 
 - [`/create-slide`](/docs/skills/create-slide)
 - [`/slide-authoring`](/docs/skills/slide-authoring)
@@ -24,8 +24,6 @@ the package if you upgrade.
 
 ## The hard rules (`AGENTS.md`)
 
-Short, intentional, machine-readable:
-
 - Slides go under `slides/<kebab-case-id>/`.
 - Entry is `slides/<id>/index.tsx`.
 - Assets sit in `slides/<id>/assets/`.
@@ -38,14 +36,13 @@ rewriting global config, or stomping on another deck.
 ## Bring your own agent
 
 The framework is agent-agnostic. Any tool that can edit React files in a
-workspace can author slides — the community confirms with Claude Code,
-Codex, Cursor, Gemini CLI, OpenCode, Windsurf, and Zed. To author cleanly,
-the agent needs to:
+workspace can author slides — Claude Code, Codex, Cursor, Gemini CLI,
+OpenCode, Windsurf, and Zed all work. To author cleanly, the agent needs to:
 
 1. **Read the rules.** `AGENTS.md` (and `CLAUDE.md`) at the workspace root
    define the file contract and constraints.
-2. **Find the skills.** The five skills above live under `skills/` (or
-   wherever that agent looks for skills).
+2. **Find the skills.** The five skills above live under `.agents/skills/`
+   (or wherever that agent looks for skills).
 3. **Edit files.** That's it. There is no per-agent SDK.
 
 If your agent of choice doesn't have a skills system, paste the

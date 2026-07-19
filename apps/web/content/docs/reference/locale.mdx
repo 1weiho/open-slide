@@ -73,8 +73,9 @@ export default config;
 ```
 
 The `id` field has to be one of the built-in ids
-(`'en' | 'zh-TW' | 'zh-CN' | 'ja'`); it is reserved for future locale-aware
-formatting. The dictionary keys are what actually drive the UI.
+(`'en' | 'zh-TW' | 'zh-CN' | 'ja'`); it drives locale-aware date formatting
+and marks the active entry in the language picker, so pick the closest one.
+The dictionary keys drive the rest of the UI.
 
 The full shape lives in `packages/core/src/locale/types.ts` — start from a
 preset and override the keys you need rather than building one from scratch.

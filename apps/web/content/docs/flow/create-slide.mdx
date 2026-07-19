@@ -15,8 +15,8 @@ The recommended path — open your editor, ask:
 /create-slide for "intro to vector databases — 6 pages, dense text, dark aesthetic, subtle motion"
 ```
 
-`/create-slide` asks four scoping questions, picks a deck id, plans the
-structure, and writes pages under `slides/<id>/index.tsx`. See
+`/create-slide` offers a theme, asks a few scoping questions, picks a deck
+id, plans the structure, and writes pages under `slides/<id>/index.tsx`. See
 [`/create-slide`](/docs/skills/create-slide) for the full skill walk-through.
 
 ## By hand
@@ -43,7 +43,6 @@ The dev server picks it up and adds it to the slide browser automatically.
 
 ## Conventions
 
-- IDs are kebab-case: `q2-launch`, `intro-to-rag`, `2026-roadmap`.
-- One folder per deck. Co-locate everything that deck needs.
-- Don't touch `package.json`, `open-slide.config.ts`, or other slides
-  from inside a deck folder.
+IDs are kebab-case (`q2-launch`, `intro-to-rag`), one folder per deck, and a
+deck never touches files outside its own folder — the full workspace rules
+live in [`AGENTS.md`](/docs/skills/overview).

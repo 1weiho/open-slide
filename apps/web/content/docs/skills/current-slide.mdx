@@ -14,10 +14,10 @@ The dev server writes the user's current view to
 `node_modules/.open-slide/current.json` on every navigation and selection
 change:
 
-- `slideId` — the deck folder name.
-- `pageIndex` — which page of the array.
-- `element` (optional) — source `file:line:col`, tag name, and a text
-  snippet of the JSX node you picked in the inspector.
+- `slideId` / `pageIndex` — the deck folder name and the active page.
+- `pagePath` — the source file of that page.
+- `selection` — line/column, tag name, and a text snippet of the JSX node
+  picked in the inspector (`null` when nothing is picked).
 
 The skill reads that file before asking *which slide?*
 

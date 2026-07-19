@@ -27,11 +27,13 @@ Keep it on the laptop screen while the deck mirrors to the projector.
 
 ## Speaker notes
 
-Add notes alongside the page array, keyed by page index:
+Add notes alongside the page array — an array of strings, index-aligned with
+the pages (use `undefined` to skip a page):
 
 ```tsx
-export const notes = {
-  0: 'Open with a smile. Mention the analyst quote from yesterday.',
-  3: 'Pause here for questions. The chart is a hand-off.',
-};
+export const notes = [
+  'Open with a smile. Mention the analyst quote from yesterday.',
+  undefined,
+  'Pause here for questions. The chart is a hand-off.',
+];
 ```

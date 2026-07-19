@@ -4,10 +4,9 @@ description: The technical reference the agent reads before writing a slide.
 ---
 
 `/slide-authoring` is the canonical spec for everything inside
-`slides/<id>/`. The agent reads it before writing — file contract, the
-1920×1080 canvas, type scale, palette, layout vocabulary, the self-review
-checklist, and the anti-pattern list. `/create-slide` defers to it for the
-*how*.
+`slides/<id>/` — the file contract, the 1920×1080 canvas, type scale,
+spacing, palette rules, and per-primitive references. `/create-slide` and
+`/apply-comments` defer to it for the *how*.
 
 You don't usually invoke `slide-authoring` directly. Other skills do.
 
@@ -19,43 +18,32 @@ in a [theme](/docs/core-feature/themes).
 
 ### Type scale
 
-A 1920×1080 stage pairs well with bigger type than the web is used to. The
-scale below is a reasonable default — adjust per deck.
+A 1920×1080 stage pairs well with bigger type than the web is used to:
 
-| Role          | Size (px) |
-| ------------- | --------- |
-| Display       | 188       |
-| H1            | 128       |
-| H2            | 84        |
-| Body          | 28 – 36   |
-| Caption / mono| 14 – 18   |
+| Role            | Size (px) |
+| --------------- | --------- |
+| Hero title      | 140 – 200 |
+| Section heading | 80 – 120  |
+| Page heading    | 56 – 80   |
+| Body            | 32 – 44   |
+| Caption / label | 22 – 28   |
 
-Letter-spacing should tighten as size grows (`-0.04em` on display, around
-`-0.011em` on body).
+### Spacing
 
-### Palette
+- Content padding: 100–160 px from the canvas edges.
+- Line-height: 1.2 for headings, 1.5–1.7 for body.
+- The canvas doesn't scroll — the skill makes the agent budget every page's
+  vertical space against the 1080 px height before writing JSX, and split
+  into two pages rather than shrink type to fit.
 
-A two-tone neutral plus an accent goes a long way. The default dark tokens:
+### Visual direction
 
-```ts
-const palette = {
-  ink: '#0a0a0c',
-  panel: '#111114',
-  text: '#f6f5f0',
-  textSoft: '#c9c7bd',
-  muted: '#7f7e78',
-  accent: '#7170ff',
-};
-```
+- **Palette** — 1 background, 1 primary text, 1 accent, 1 muted.
+- **Typography** — one display font + one body font; system stack unless
+  the user specifies.
+- **One grid per deck** — a single content padding held across every page.
+- **One aesthetic** — minimal, editorial, retro, brutalist, … — chosen up
+  front and never mixed.
 
 For a recipe-driven design system, write a theme — see
 [Themes](/docs/core-feature/themes).
-
-### Layout patterns
-
-- **Hero.** One eyebrow, one headline, one supporting line, optional CTA.
-- **Two-column.** 60/40 split. Left for prose, right for visual artefact.
-- **Index.** A list of entries with monospace numbering.
-- **Quote.** Big italic display, attribution in mono.
-
-The agent applies these unless you tell it otherwise.
