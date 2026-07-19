@@ -34,7 +34,7 @@ export function FaqItem({ item, index }: { item: QA; index: number }) {
             aria-hidden
             className={`flex h-6 w-6 shrink-0 items-center justify-center transition-[transform,color] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] ${
               open
-                ? 'rotate-45 text-[color:var(--color-accent)]'
+                ? 'rotate-[135deg] text-[color:var(--color-accent)]'
                 : 'text-[color:var(--color-muted)] group-hover:text-[color:var(--color-text)]'
             }`}
           >
