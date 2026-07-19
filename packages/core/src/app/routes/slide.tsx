@@ -1005,7 +1005,7 @@ function SlideViewportNavigation({
   canPrev,
   canNext,
 }: {
-  targetRef: RefObject<HTMLElement>;
+  targetRef: RefObject<HTMLElement | null>;
   onPrev: () => void;
   onNext: () => void;
   canPrev: boolean;
