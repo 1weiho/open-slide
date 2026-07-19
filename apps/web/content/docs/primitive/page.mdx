@@ -8,13 +8,7 @@ zero-prop React components, and each component is one page in the runtime,
 presenter view, overview grid, thumbnails, and exports.
 
 ```tsx title="slides/q2-launch/index.tsx"
-import {
-  CANVAS_HEIGHT,
-  CANVAS_WIDTH,
-  type Page,
-  type SlideMeta,
-  useSlidePageNumber,
-} from '@open-slide/core';
+import { type Page, type SlideMeta, useSlidePageNumber } from '@open-slide/core';
 
 const Cover: Page = () => {
   const { current, total } = useSlidePageNumber();
@@ -32,7 +26,6 @@ const Cover: Page = () => {
     >
       <p>{current} / {total}</p>
       <h1>Q2 launch</h1>
-      <small>{CANVAS_WIDTH} × {CANVAS_HEIGHT}</small>
     </section>
   );
 };
@@ -45,12 +38,6 @@ export default [Cover] satisfies Page[];
 ```
 
 ## Contract
-
-```ts
-type Page = ComponentType & {
-  transition?: SlideTransition;
-};
-```
 
 - A `Page` takes no props. Pull page context from hooks such as
   `useSlidePageNumber()`.
