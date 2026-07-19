@@ -70,3 +70,8 @@ html > body[data-scroll-locked] {
   background: oklch(0.555 0.185 28 / 0.18);
   color: var(--color-fd-foreground);
 }
+
+.prose img {
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.5rem;
+}
