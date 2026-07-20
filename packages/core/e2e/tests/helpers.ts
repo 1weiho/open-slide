@@ -51,8 +51,7 @@ export async function enterPlayMode(page: Page): Promise<void> {
 
 // The dev server's file watcher does not pick up newly created slide
 // directories on Linux, so the slides virtual module stays stale after a deck
-// is created on disk. Touch an existing (watched) slide source to force the
-// module to invalidate, then poll the served module until the deck appears.
+// is created on disk.
 export async function refreshSlidesModule(expectedSlideId: string): Promise<void> {
   const watchedFile = slideSourcePath('edit-target');
   await fs.writeFile(watchedFile, await fs.readFile(watchedFile, 'utf8'));
