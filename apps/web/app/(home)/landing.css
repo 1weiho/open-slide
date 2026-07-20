@@ -107,7 +107,7 @@ html.dark .os-landing {
 
 .os-landing .dot-grid {
   color: color-mix(in oklab, var(--color-text) 16%, transparent);
-  background-image: radial-gradient(currentColor 1px, transparent 1.5px);
+  background-image: radial-gradient(currentcolor 1px, transparent 1.5px);
   background-size: 24px 24px;
   -webkit-mask-image: radial-gradient(110% 84% at 50% 0%, #000 0%, transparent 70%);
   mask-image: radial-gradient(110% 84% at 50% 0%, #000 0%, transparent 70%);
