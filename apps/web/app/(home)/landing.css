@@ -278,7 +278,7 @@ html.dark .os-landing .site-nav[data-scrolled] {
   .os-landing .pressable:active {
     transform: none;
   }
-  .os-landing .setup-breathe::after {
+  .os-landing .setup-beam::after {
     animation: none;
   }
 }
@@ -329,47 +329,80 @@ html.dark .os-landing .site-nav[data-scrolled] {
     os-codeSwap 450ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-/* One slow breath of accent light around the setup pill when the visitor
-   switches to agent mode — a quiet ceremony that confirms the switch
-   without moving anything. Lives on ::after so only opacity animates and
-   the pill's own border, hover, and floating shadow stay untouched. */
-@keyframes os-setupBreathe {
+/* A beam of light traces the setup pill's edge once when the visitor
+   switches to agent mode — a quiet ceremony that confirms the switch.
+   The conic gradient IS the beam: a vermillion head trailing off through
+   warm amber into transparency, masked down to a hairline ring on
+   ::after so the pill's own border, hover, and floating shadow stay
+   untouched. It dissolves over the last stretch of the lap, so the
+   light burns out just as it comes home. */
+@property --os-beam-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes os-beamSweep {
+  from {
+    --os-beam-angle: 0deg;
+  }
+  to {
+    --os-beam-angle: 360deg;
+  }
+}
+@keyframes os-beamFade {
   0% {
     opacity: 0;
   }
-  26% {
+  10% {
     opacity: 1;
   }
-  44% {
-    opacity: 0.92;
+  72% {
+    opacity: 1;
   }
   100% {
     opacity: 0;
   }
 }
-.os-landing .setup-breathe {
+.os-landing .setup-beam {
   position: relative;
 }
-.os-landing .setup-breathe::after {
+.os-landing .setup-beam::after {
   content: "";
   position: absolute;
-  inset: -1px;
+  inset: -1.5px;
   border-radius: 9999px;
+  padding: 2px;
   pointer-events: none;
-  border: 1px solid color-mix(in oklab, var(--color-accent) 55%, transparent);
-  box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--color-accent) 16%, transparent),
-    0 0 20px color-mix(in oklab, var(--color-accent) 24%, transparent),
-    inset 0 0 14px color-mix(in oklab, var(--color-accent) 10%, transparent);
+  background: conic-gradient(
+    from var(--os-beam-angle),
+    transparent 0% 58%,
+    color-mix(in oklab, var(--color-warm) 45%, transparent) 80%,
+    color-mix(in oklab, var(--color-accent) 88%, transparent) 96%,
+    var(--color-accent) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  filter: drop-shadow(0 0 5px color-mix(in oklab, var(--color-accent) 40%, transparent));
   opacity: 0;
-  animation: os-setupBreathe 2.4s ease-in-out 150ms;
+  animation:
+    os-beamSweep 2s cubic-bezier(0.45, 0.05, 0.35, 0.95) 120ms,
+    os-beamFade 2s linear 120ms;
 }
-html.dark .os-landing .setup-breathe::after {
-  border-color: color-mix(in oklab, var(--color-accent) 75%, transparent);
-  box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--color-accent) 24%, transparent),
-    0 0 26px color-mix(in oklab, var(--color-accent) 34%, transparent),
-    inset 0 0 14px color-mix(in oklab, var(--color-accent) 14%, transparent);
+html.dark .os-landing .setup-beam::after {
+  background: conic-gradient(
+    from var(--os-beam-angle),
+    transparent 0% 58%,
+    color-mix(in oklab, var(--color-warm) 60%, transparent) 80%,
+    color-mix(in oklab, var(--color-accent) 92%, transparent) 96%,
+    var(--color-accent) 100%
+  );
+  filter: drop-shadow(0 0 7px color-mix(in oklab, var(--color-accent) 55%, transparent));
 }
 
 @keyframes textReveal {
