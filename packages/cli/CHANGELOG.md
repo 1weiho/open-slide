@@ -1,5 +1,11 @@
 # @open-slide/cli
 
+## 1.4.1
+
+### Patch Changes
+
+- [#356](https://github.com/1weiho/open-slide/pull/356) [`f182fbd`](https://github.com/1weiho/open-slide/commit/f182fbdf13b367c6245a8a14049b82dc830545cf) Thanks [@1weiho](https://github.com/1weiho)! - Restore React 18 and Vite 5 compatibility for existing and newly generated projects.
+
 ## 1.4.0
 
 ### Minor Changes
