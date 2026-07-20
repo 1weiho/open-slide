@@ -78,13 +78,7 @@ export function PromptComposer() {
         >
           <div className="rounded-[13px] border border-[color:var(--color-rule-soft)] bg-[color:var(--color-panel)] sm:rounded-[16px]">
             <div className="flex min-h-[108px] items-center px-5 py-6 sm:min-h-[128px] sm:px-8">
-              <div
-                role="textbox"
-                aria-label={`/create-slide ${prompt}`}
-                aria-readonly="true"
-                tabIndex={0}
-                className="flex h-[58px] w-full flex-wrap content-center items-center gap-x-2 gap-y-1 font-[family-name:var(--font-mono)] text-[16px] leading-[1.55] tracking-[-0.025em] sm:h-[38px] sm:flex-nowrap sm:text-[19px]"
-              >
+              <div className="flex h-[58px] w-full flex-wrap content-center items-center gap-x-2 gap-y-1 font-[family-name:var(--font-mono)] text-[16px] leading-[1.55] tracking-[-0.025em] sm:h-[38px] sm:flex-nowrap sm:text-[19px]">
                 <span className="shrink-0 font-medium text-[color:var(--color-accent)]">
                   /create-slide
                 </span>
