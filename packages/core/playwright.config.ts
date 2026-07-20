@@ -22,5 +22,7 @@ export default defineConfig({
     url: `http://127.0.0.1:${DEV_SERVER_PORT}/`,
     reuseExistingServer: false,
     timeout: 180_000,
+    stdout: 'pipe',
+    stderr: 'pipe',
   },
 });

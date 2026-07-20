@@ -32,9 +32,19 @@ symlinkSync(
   'junction',
 );
 
+// Bind to 127.0.0.1 explicitly. Vite's default host resolves to `localhost`,
+// which on CI runners can bind to IPv6 `::1` only, leaving Playwright's IPv4
+// `http://127.0.0.1` readiness probe hanging until the webServer timeout.
 const child = spawn(
   process.execPath,
-  [path.join(coreRoot, 'bin.js'), 'dev', '--no-skills-check', ...process.argv.slice(2)],
+  [
+    path.join(coreRoot, 'bin.js'),
+    'dev',
+    '--no-skills-check',
+    '--host',
+    '127.0.0.1',
+    ...process.argv.slice(2),
+  ],
   {
     cwd: scratchDir,
     stdio: 'inherit',

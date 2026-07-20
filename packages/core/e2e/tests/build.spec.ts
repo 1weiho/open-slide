@@ -30,7 +30,7 @@ test.describe('static build and preview', () => {
     projectDir = prepareScratchProject('build');
     const res = await runCli(['build'], projectDir);
     expect(res.code, res.stderr).toBe(0);
-    preview = startCliServer(['preview', '--port', String(port)], projectDir);
+    preview = startCliServer(['preview', '--host', '127.0.0.1', '--port', String(port)], projectDir);
     await waitForHttpOk(`${baseUrl}/`);
   });
 
@@ -87,7 +87,7 @@ test.describe('build flags', () => {
     await fs.writeFile(path.join(projectDir, 'open-slide.config.ts'), FLAGS_CONFIG);
     const res = await runCli(['build'], projectDir);
     expect(res.code, res.stderr).toBe(0);
-    preview = startCliServer(['preview', '--port', String(port)], projectDir);
+    preview = startCliServer(['preview', '--host', '127.0.0.1', '--port', String(port)], projectDir);
     await waitForHttpOk(`${baseUrl}/`);
   });
 
