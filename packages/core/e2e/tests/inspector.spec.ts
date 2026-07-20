@@ -21,8 +21,8 @@ test.describe('inspector editing', () => {
     request: import('@playwright/test').APIRequestContext,
     slideId: string,
   ) {
-    await duplicateSlide(request, 'edit-target', slideId);
     createdSlides.push(slideId);
+    await duplicateSlide(request, 'edit-target', slideId);
     await openSlide(page, slideId);
   }
 

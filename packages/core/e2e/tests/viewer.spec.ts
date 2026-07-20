@@ -96,8 +96,8 @@ test.describe('slide viewer', () => {
   });
 
   test('notes drawer autosaves speaker notes to the slide source', async ({ page, request }) => {
-    await duplicateSlide(request, 'edit-target', 'notes-ui');
     try {
+      await duplicateSlide(request, 'edit-target', 'notes-ui');
       await openSlide(page, 'notes-ui');
       const toggle = page.getByRole('button', { name: /Notes/ });
       await expect(toggle).toHaveAttribute('aria-expanded', 'false');

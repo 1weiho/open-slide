@@ -17,6 +17,12 @@ test.describe('dev server http api', () => {
     for (const id of ['api-dup', 'api-notes', 'api-design', 'api-comments', 'api-assets']) {
       await deleteSlide(request, id);
     }
+    const folders = (await (await request.get('/__folders')).json()) as {
+      folders: { id: string }[];
+    };
+    for (const folder of folders.folders) {
+      await request.delete(`/__folders/${folder.id}`);
+    }
   });
 
   test('server status reports a stable execution id', async ({ request }) => {
@@ -229,6 +235,7 @@ test.describe('dev server http api', () => {
   });
 
   test('global assets live in the project assets directory', async ({ request }) => {
+    await request.delete('/__assets/@global/logo.png');
     const uploaded = await request.post('/__assets/@global/logo.png', {
       headers: { 'content-type': 'application/octet-stream' },
       data: TINY_PNG,

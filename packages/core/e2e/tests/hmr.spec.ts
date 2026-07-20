@@ -27,16 +27,20 @@ export default [Only] satisfies Page[];
 
 test.describe('dev server file watching', () => {
   test('editing a slide source hot-swaps the open slide', async ({ page }) => {
-    await openSlide(page, 'hot-swap');
-    await expect(editorCanvas(page).getByText('Hot swap headline')).toBeVisible();
-
     const file = slideSourcePath('hot-swap');
     const source = await fs.readFile(file, 'utf8');
-    await fs.writeFile(file, source.replace('Hot swap headline', 'Hot swapped headline'));
+    try {
+      await openSlide(page, 'hot-swap');
+      await expect(editorCanvas(page).getByText('Hot swap headline')).toBeVisible();
 
-    await expect(editorCanvas(page).getByText('Hot swapped headline')).toBeVisible({
-      timeout: 15_000,
-    });
+      await fs.writeFile(file, source.replace('Hot swap headline', 'Hot swapped headline'));
+
+      await expect(editorCanvas(page).getByText('Hot swapped headline')).toBeVisible({
+        timeout: 15_000,
+      });
+    } finally {
+      await fs.writeFile(file, source);
+    }
   });
 
   test('a deck created on disk appears after a refresh and hot-disappears when removed', async ({

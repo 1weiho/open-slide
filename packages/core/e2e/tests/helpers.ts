@@ -79,18 +79,22 @@ export async function refreshSlidesModule(expectedSlideId: string): Promise<void
     .toContain(`"${expectedSlideId}"`);
 }
 
+// Deleting first makes the call retry-safe: a CI retry that runs after a
+// half-completed attempt would otherwise hit 409 "slide already exists".
 export async function duplicateSlide(
   request: APIRequestContext,
   sourceId: string,
   newId: string,
 ): Promise<void> {
+  await deleteSlide(request, newId);
   const res = await request.post(`/__slides/${sourceId}/duplicate`, { data: { newId } });
   expect(res.ok()).toBe(true);
   await refreshSlidesModule(newId);
 }
 
 export async function deleteSlide(request: APIRequestContext, slideId: string): Promise<void> {
-  await request.delete(`/__slides/${slideId}`);
+  const res = await request.delete(`/__slides/${slideId}`);
+  expect(res.ok() || res.status() === 404, `delete ${slideId} -> ${res.status()}`).toBe(true);
 }
 
 export const TINY_PNG = Buffer.from(

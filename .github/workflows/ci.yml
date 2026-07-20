@@ -105,9 +105,9 @@ jobs:
         run: pnpm test:e2e
 
       - name: Upload Playwright report
-        if: failure()
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ github.run_attempt }}
           path: packages/core/playwright-report
           retention-days: 7
