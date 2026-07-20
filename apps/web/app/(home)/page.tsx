@@ -10,6 +10,7 @@ import { HowItWorks } from '@/components/landing/how-it-works';
 import { Inspector } from '@/components/landing/inspector';
 import { LiveDemo } from '@/components/landing/live-demo';
 import { Nav } from '@/components/landing/nav';
+import { PromptComposer } from '@/components/landing/prompt-composer';
 import { ScrollReveal } from '@/components/landing/scroll-reveal';
 import { fetchGitHubStars, formatStarCount } from '@/lib/github';
 import { appName, gitConfig, siteUrl } from '@/lib/shared';
@@ -123,6 +124,7 @@ export default async function HomePage() {
       <main className="relative flex-1">
         <Hero />
         <LiveDemo />
+        <PromptComposer />
         <StripeBand />
         <HowItWorks />
         <Anatomy />

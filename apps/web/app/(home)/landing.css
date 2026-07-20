@@ -152,6 +152,40 @@ html.dark .os-landing .bloom {
   box-shadow: var(--shadow-floating);
 }
 
+.os-landing .prompt-stage-grid {
+  color: color-mix(in oklab, var(--color-text) 10%, transparent);
+  background-image: radial-gradient(currentcolor 0.7px, transparent 0.9px);
+  background-size: 20px 20px;
+  -webkit-mask-image: radial-gradient(58% 70% at 50% 50%, #000 0%, transparent 74%);
+  mask-image: radial-gradient(58% 70% at 50% 50%, #000 0%, transparent 74%);
+}
+
+.os-landing .prompt-stage-glow {
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in oklab, var(--color-accent) 10%, transparent) 0%,
+    color-mix(in oklab, var(--color-accent) 5%, transparent) 42%,
+    transparent 72%
+  );
+}
+
+.os-landing .prompt-composer {
+  background: color-mix(in oklab, var(--color-panel) 94%, transparent);
+}
+
+html.dark .os-landing .prompt-stage-glow {
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in oklab, var(--color-accent) 15%, transparent) 0%,
+    color-mix(in oklab, var(--color-accent) 7%, transparent) 42%,
+    transparent 72%
+  );
+}
+
+html.dark .os-landing .prompt-composer {
+  background: color-mix(in oklab, var(--color-panel) 90%, transparent);
+}
+
 @keyframes os-marquee {
   from {
     transform: translateX(0);
@@ -275,6 +309,18 @@ html.dark .os-landing .site-nav[data-scrolled] {
   }
   .os-landing .pressable:active {
     transform: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .os-landing .prompt-composer {
+    background: var(--color-panel);
+  }
+}
+
+@media (prefers-contrast: more) {
+  .os-landing .prompt-composer {
+    border-color: var(--color-text-soft);
   }
 }
 
