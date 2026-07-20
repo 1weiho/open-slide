@@ -62,7 +62,7 @@ export function InlineSlidePlayer({ index, onIndexChange }: Props) {
       onKeyDown={onKeyDown}
       aria-roledescription="slide player"
       aria-label={`Slide ${index + 1} of ${count}`}
-      className="group relative h-full w-full outline-none"
+      className="relative h-full w-full outline-none"
     >
       <div ref={stageRef} className="relative h-full w-full overflow-hidden">
         <div
@@ -87,13 +87,6 @@ export function InlineSlidePlayer({ index, onIndexChange }: Props) {
             {Page ? <Page /> : null}
           </div>
         </div>
-      </div>
-
-      <div
-        aria-hidden
-        className="pointer-events-none absolute bottom-3 right-3 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.08em] text-[color:var(--color-muted)] bg-[color:var(--color-panel)]/75 backdrop-blur-sm px-2 py-1 rounded-[4px]"
-      >
-        {String(index + 1).padStart(2, '0')} / {String(count).padStart(2, '0')}
       </div>
     </div>
   );

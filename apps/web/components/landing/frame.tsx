@@ -19,7 +19,7 @@ export function StripeBand() {
   );
 }
 
-function CrossMark({ className }: { className?: string }) {
+export function CrossMark({ className }: { className?: string }) {
   return (
     <svg aria-hidden width="11" height="11" viewBox="0 0 11 11" fill="none" className={className}>
       <path d="M5.5 0v11M0 5.5h11" stroke="var(--color-dim)" strokeWidth="1" />

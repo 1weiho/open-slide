@@ -154,6 +154,61 @@ html.dark .os-landing .bloom {
   box-shadow: var(--shadow-floating);
 }
 
+/* Demo stage — the live player presented like a lit artifact: an accent
+   spotlight wash behind the canvas and a deeper, longer-throw shadow than
+   .floating so the slab reads as elevated above the page. */
+.os-landing .stage-glow {
+  background:
+    radial-gradient(
+      52% 42% at 50% 16%,
+      color-mix(in oklab, var(--color-accent) 15%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      82% 74% at 50% 55%,
+      color-mix(in oklab, var(--color-accent) 6%, transparent),
+      transparent 78%
+    );
+}
+html.dark .os-landing .stage-glow {
+  background:
+    radial-gradient(
+      52% 42% at 50% 16%,
+      color-mix(in oklab, var(--color-accent) 26%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      82% 74% at 50% 55%,
+      color-mix(in oklab, var(--color-accent) 11%, transparent),
+      transparent 78%
+    );
+}
+
+.os-landing .stage-shadow {
+  box-shadow:
+    0 1px 1px oklch(0 0 0 / 0.04),
+    0 12px 32px -12px oklch(0 0 0 / 0.12),
+    0 40px 88px -28px oklch(0 0 0 / 0.2);
+}
+html.dark .os-landing .stage-shadow {
+  box-shadow:
+    0 1px 1px oklch(0 0 0 / 0.3),
+    0 32px 72px -28px oklch(0 0 0 / 0.65);
+}
+
+@keyframes os-livePulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-accent) 45%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+}
+.os-landing .live-dot {
+  animation: os-livePulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 @keyframes os-marquee {
   from {
     transform: translateX(0);
@@ -223,6 +278,12 @@ html.dark .os-landing .bloom {
 .os-landing [data-reveal="blur"].reveal-hidden {
   filter: blur(7px);
 }
+/* The demo stage lands like a projection warming up: a touch of scale on
+   top of the shared rise + blur. */
+.os-landing [data-reveal="stage"].reveal-hidden {
+  transform: translateY(26px) scale(0.982);
+  filter: blur(9px);
+}
 /* Cells inside seamed grids (gap-px over the rule color) fade in place —
    translating them would smear the hairline seams. */
 .os-landing [data-reveal="fade"].reveal-hidden {
@@ -277,6 +338,9 @@ html.dark .os-landing .site-nav[data-scrolled] {
   }
   .os-landing .pressable:active {
     transform: none;
+  }
+  .os-landing .live-dot {
+    animation: none;
   }
 }
 
