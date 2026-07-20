@@ -17,6 +17,7 @@
     "check:fix": "biome check --write .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "pnpm --filter @open-slide/core test:e2e",
     "core": "pnpm --filter @open-slide/core",
     "cli": "pnpm --filter @open-slide/cli",
     "changeset": "changeset",

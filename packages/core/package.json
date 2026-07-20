@@ -35,6 +35,7 @@
   "scripts": {
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test",
     "prepack": "pnpm build"
   },
   "engines": {
@@ -96,6 +97,7 @@
     "vite": "^8.1.5"
   },
   "devDependencies": {
+    "@playwright/test": "~1.56.1",
     "@types/node": "^22.19.17",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",

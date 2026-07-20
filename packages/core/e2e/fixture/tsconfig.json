@@ -5,21 +5,13 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
-    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "moduleDetection": "force",
     "noEmit": true,
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/app/*"]
-    },
-    "types": ["node", "vite/client"]
+    "types": ["@open-slide/core/env"]
   },
-  "include": ["src", "tsdown.config.ts", "e2e/tests", "playwright.config.ts"]
+  "include": ["slides/**/*", "open-slide.config.ts"]
 }
