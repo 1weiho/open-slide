@@ -104,10 +104,11 @@ export function HeroSetup() {
         aria-label={option.copyLabel}
         onClick={copySetup}
         onAnimationEnd={(event) => {
-          if (event.animationName === 'os-beamSweep') setBeaming(false);
+          if (event.animationName === 'os-beamTravel') setBeaming(false);
         }}
-        className={`group pressable floating flex h-[58px] w-[337px] max-w-full items-center gap-3 rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] px-5 text-left hover:border-[color:var(--color-accent)]/50 sm:h-[68px] sm:px-7 ${beaming ? 'setup-beam' : ''}`}
+        className="group pressable floating relative flex h-[58px] w-[337px] max-w-full items-center gap-3 rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] px-5 text-left hover:border-[color:var(--color-accent)]/50 sm:h-[68px] sm:px-7"
       >
+        {beaming ? <span aria-hidden className="setup-beam" /> : null}
         <span className="relative h-[20px] min-w-0 flex-1 overflow-hidden sm:h-[22px]">
           <AnimatePresence initial={false} custom={direction}>
             <motion.span
