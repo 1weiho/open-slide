@@ -1,15 +1,13 @@
 // Boots `open-slide dev` for the e2e suite against a throwaway copy of the
-// fixture project, so tests that write to disk (inspector saves, notes, dev
-// API mutations) never touch the committed fixture sources.
+// fixture project (see scratch.mjs).
 import { spawn } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, rmSync, symlinkSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { fixtureDir, prepareScratchProject } from './scratch.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const coreRoot = path.resolve(here, '..');
-const fixtureDir = path.join(here, 'fixture');
-const scratchDir = path.join(here, '.scratch', 'dev');
 
 if (!existsSync(path.join(coreRoot, 'dist', 'cli', 'bin.js'))) {
   console.error('packages/core/dist is missing. Run `pnpm --filter @open-slide/core build` first.');
@@ -20,17 +18,7 @@ if (!existsSync(path.join(fixtureDir, 'node_modules'))) {
   process.exit(1);
 }
 
-rmSync(scratchDir, { recursive: true, force: true });
-mkdirSync(scratchDir, { recursive: true });
-cpSync(fixtureDir, scratchDir, {
-  recursive: true,
-  filter: (src) => path.basename(src) !== 'node_modules',
-});
-symlinkSync(
-  path.join(fixtureDir, 'node_modules'),
-  path.join(scratchDir, 'node_modules'),
-  'junction',
-);
+const scratchDir = prepareScratchProject('dev');
 
 // Bind to 127.0.0.1 explicitly. Vite's default host resolves to `localhost`,
 // which on CI runners can bind to IPv6 `::1` only, leaving Playwright's IPv4

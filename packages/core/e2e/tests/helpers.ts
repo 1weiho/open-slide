@@ -1,10 +1,11 @@
 import { type ChildProcess, spawn } from 'node:child_process';
-import { cpSync, mkdirSync, rmSync, symlinkSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type APIRequestContext, expect, type Locator, type Page } from '@playwright/test';
 import { DEV_SERVER_PORT } from '../../playwright.config.ts';
+
+export { fixtureDir, prepareScratchProject } from '../scratch.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -12,7 +13,6 @@ export const devServerUrl = `http://127.0.0.1:${DEV_SERVER_PORT}`;
 
 export const coreRoot = path.resolve(here, '..', '..');
 export const coreBin = path.join(coreRoot, 'bin.js');
-export const fixtureDir = path.join(coreRoot, 'e2e', 'fixture');
 export const devScratchDir = path.join(coreRoot, 'e2e', '.scratch', 'dev');
 
 export function slideSourcePath(slideId: string, projectDir = devScratchDir): string {
@@ -21,18 +21,6 @@ export function slideSourcePath(slideId: string, projectDir = devScratchDir): st
 
 export function readSlideSource(slideId: string, projectDir = devScratchDir): Promise<string> {
   return fs.readFile(slideSourcePath(slideId, projectDir), 'utf8');
-}
-
-export function prepareScratchProject(name: string): string {
-  const dir = path.join(coreRoot, 'e2e', '.scratch', name);
-  rmSync(dir, { recursive: true, force: true });
-  mkdirSync(dir, { recursive: true });
-  cpSync(fixtureDir, dir, {
-    recursive: true,
-    filter: (src) => path.basename(src) !== 'node_modules',
-  });
-  symlinkSync(path.join(fixtureDir, 'node_modules'), path.join(dir, 'node_modules'), 'junction');
-  return dir;
 }
 
 export function editorCanvas(page: Page): Locator {
