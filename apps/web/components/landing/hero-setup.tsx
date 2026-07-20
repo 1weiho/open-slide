@@ -33,6 +33,7 @@ export function HeroSetup() {
   const [mode, setMode] = useState<SetupMode>('you');
   const [direction, setDirection] = useState<SetupDirection>(1);
   const [copied, setCopied] = useState(false);
+  const [breathing, setBreathing] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const reduceMotion = useReducedMotion();
   const option = setupOptions[mode];
@@ -43,6 +44,7 @@ export function HeroSetup() {
     if (nextMode === mode) return;
     clearTimeout(copiedTimer.current);
     setCopied(false);
+    setBreathing(nextMode === 'agent' && !reduceMotion);
     setDirection(nextMode === 'agent' ? 1 : -1);
     setMode(nextMode);
     posthog.capture('hero_setup_mode_selected', { mode: nextMode });
@@ -101,7 +103,10 @@ export function HeroSetup() {
         type="button"
         aria-label={option.copyLabel}
         onClick={copySetup}
-        className="group pressable floating flex h-[58px] w-[337px] max-w-full items-center gap-3 rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] px-5 text-left hover:border-[color:var(--color-accent)]/50 sm:h-[68px] sm:px-7"
+        onAnimationEnd={(event) => {
+          if (event.animationName === 'os-setupBreathe') setBreathing(false);
+        }}
+        className={`group pressable floating flex h-[58px] w-[337px] max-w-full items-center gap-3 rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] px-5 text-left hover:border-[color:var(--color-accent)]/50 sm:h-[68px] sm:px-7 ${breathing ? 'setup-breathe' : ''}`}
       >
         <span className="relative h-[20px] min-w-0 flex-1 overflow-hidden sm:h-[22px]">
           <AnimatePresence initial={false} custom={direction}>
