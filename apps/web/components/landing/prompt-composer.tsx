@@ -58,7 +58,7 @@ export function PromptComposer() {
     <section
       id="prompt"
       ref={sectionRef}
-      className="prompt-stage relative flex min-h-[420px] items-center overflow-hidden sm:min-h-[520px]"
+      className="prompt-stage relative flex min-h-[420px] items-center overflow-x-clip overflow-y-visible sm:min-h-[520px]"
       aria-labelledby="prompt-composer-heading"
     >
       <SectionRule />
