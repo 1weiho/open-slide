@@ -18,17 +18,14 @@ const promptVariants = {
   enter: {
     opacity: 0,
     transform: 'translateY(20px) rotateX(-72deg)',
-    filter: 'blur(3px)',
   },
   center: {
     opacity: 1,
     transform: 'translateY(0px) rotateX(0deg)',
-    filter: 'blur(0px)',
   },
   exit: {
     opacity: 0,
     transform: 'translateY(-20px) rotateX(72deg)',
-    filter: 'blur(3px)',
   },
 };
 
