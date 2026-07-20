@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { AgentIconList } from './agent-icon-list';
 
 type Step = {
   num: string;
@@ -32,7 +33,7 @@ const steps: Step[] = [
     code: {
       prompt: '›',
       line: '/create-slide for Q2 roadmap',
-      tail: <AgentRow />,
+      tail: <AgentIconList />,
     },
   },
   {
@@ -67,26 +68,6 @@ function renderLine(line: string) {
   }
   if (last < line.length) parts.push(line.slice(last));
   return <>{parts}</>;
-}
-
-function AgentRow() {
-  const agents: [string, string][] = [
-    ['claude.svg', 'Claude'],
-    ['codex-dark.svg', 'Codex'],
-    ['cursor-dark.svg', 'Cursor'],
-    ['gemini.svg', 'Gemini CLI'],
-  ];
-  const cls = 'agent-mono h-[14px] w-auto object-contain shrink-0';
-  return (
-    <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-2 normal-case tracking-normal">
-      {agents.map(([file, name]) => (
-        <img key={file} src={`/assets/${file}`} alt={name} className={cls} />
-      ))}
-      <span className="text-[10px] tracking-[0.08em] uppercase text-[color:var(--color-muted)]">
-        ...
-      </span>
-    </span>
-  );
 }
 
 export function HowItWorks() {

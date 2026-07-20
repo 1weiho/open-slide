@@ -3,6 +3,7 @@
 import { AnimatePresence, motion, useInView, useReducedMotion } from 'motion/react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import { AgentIconList } from './agent-icon-list';
 import { SectionRule } from './frame';
 
 const prompts = [
@@ -85,36 +86,40 @@ export function PromptComposer() {
         >
           <div className="rounded-[13px] border border-[color:var(--color-rule-soft)] bg-[color:var(--color-panel)] sm:rounded-[16px]">
             <div className="flex min-h-[108px] items-center px-5 py-6 sm:min-h-[128px] sm:px-8">
-              <div className="relative h-[58px] w-full overflow-hidden [perspective:700px] sm:h-[38px]">
-                <AnimatePresence initial={false} mode="popLayout">
-                  <motion.div
-                    key={prompt}
-                    variants={variants}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
-                    transition={{
-                      duration: reduceMotion ? 0.2 : 0.52,
-                      ease: [0.23, 1, 0.32, 1],
-                    }}
-                    role="textbox"
-                    aria-label={`/create-slide ${prompt}`}
-                    aria-readonly="true"
-                    className="absolute inset-0 flex origin-center flex-wrap content-center items-baseline gap-x-2 gap-y-1 font-[family-name:var(--font-mono)] text-[16px] leading-[1.55] tracking-[-0.025em] will-change-[transform,opacity] sm:flex-nowrap sm:text-[19px]"
-                  >
-                    <span className="shrink-0 font-medium text-[color:var(--color-accent)]">
-                      /create-slide
-                    </span>
-                    <span className="text-[color:var(--color-text)]">{prompt}</span>
-                  </motion.div>
-                </AnimatePresence>
+              <div
+                role="textbox"
+                aria-label={`/create-slide ${prompt}`}
+                aria-readonly="true"
+                tabIndex={0}
+                className="flex h-[58px] w-full flex-wrap content-center items-center gap-x-2 gap-y-1 font-[family-name:var(--font-mono)] text-[16px] leading-[1.55] tracking-[-0.025em] sm:h-[38px] sm:flex-nowrap sm:text-[19px]"
+              >
+                <span className="shrink-0 font-medium text-[color:var(--color-accent)]">
+                  /create-slide
+                </span>
+                <span className="relative h-[1.55em] min-w-0 flex-[1_1_220px] overflow-hidden [perspective:700px]">
+                  <AnimatePresence initial={false} mode="popLayout">
+                    <motion.span
+                      key={prompt}
+                      variants={variants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                      transition={{
+                        duration: reduceMotion ? 0.2 : 0.52,
+                        ease: [0.23, 1, 0.32, 1],
+                      }}
+                      className="absolute inset-0 flex origin-center items-center text-[color:var(--color-text)] will-change-[transform,opacity]"
+                    >
+                      {prompt}
+                    </motion.span>
+                  </AnimatePresence>
+                </span>
               </div>
             </div>
 
             <div className="flex items-center justify-between border-t border-[color:var(--color-rule-soft)] px-3 py-3 sm:px-4">
-              <span className="inline-flex items-center gap-2 rounded-full px-2.5 py-1.5 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.02em] text-[color:var(--color-muted)]">
-                <SparkGlyph />
-                open-slide skill
+              <span className="min-w-0 px-2.5 py-1.5">
+                <AgentIconList />
               </span>
 
               <Link
@@ -129,20 +134,6 @@ export function PromptComposer() {
         </div>
       </div>
     </section>
-  );
-}
-
-function SparkGlyph() {
-  return (
-    <svg aria-hidden width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path
-        d="M7 1.25c.35 2.65 2.1 4.4 4.75 4.75C9.1 6.35 7.35 8.1 7 10.75 6.65 8.1 4.9 6.35 2.25 6 4.9 5.65 6.65 3.9 7 1.25Z"
-        stroke="currentColor"
-        strokeWidth="1.1"
-        strokeLinejoin="round"
-      />
-      <path d="M11.25 9.25v3M9.75 10.75h3" stroke="currentColor" strokeWidth="1.1" />
-    </svg>
   );
 }
 
