@@ -1,10 +1,11 @@
 import Link from 'next/link';
+import { DotGrid } from './dot-grid';
 import { HeroSetup } from './hero-setup';
 
 export function Hero() {
   return (
     <section className="relative overflow-hidden">
-      <div aria-hidden className="dot-grid absolute inset-0" />
+      <DotGrid />
       <div aria-hidden className="bloom absolute inset-0" />
 
       <div className="relative mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 pt-16 sm:pt-24 lg:pt-32 pb-20 sm:pb-32">
