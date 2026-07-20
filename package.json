@@ -28,6 +28,6 @@
     "@changesets/changelog-github": "^0.7.0",
     "@changesets/cli": "^2.31.0",
     "turbo": "^2.10.5",
-    "vitest": "^4.1.10"
+    "vitest": "^2.1.9"
   }
 }
