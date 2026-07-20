@@ -79,6 +79,11 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      # Image version must match @playwright/test in packages/core/package.json.
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --user 1001
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -97,9 +102,6 @@ jobs:
 
       - name: Build core
         run: pnpm --filter @open-slide/core build
-
-      - name: Install Playwright browsers
-        run: pnpm --filter @open-slide/core exec playwright install --with-deps chromium
 
       - name: Run e2e tests
         run: pnpm test:e2e
