@@ -1,5 +1,11 @@
 # @open-slide/cli
 
+## 1.4.0
+
+### Minor Changes
+
+- [#344](https://github.com/1weiho/open-slide/pull/344) [`4a4fa17`](https://github.com/1weiho/open-slide/commit/4a4fa17484a3caabf28cdd6885db3a1feaef356d) Thanks [@1weiho](https://github.com/1weiho)! - Upgrade to React 19 and Vite 8.
+
 ## 1.3.3
 
 ### Patch Changes
