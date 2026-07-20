@@ -43,17 +43,16 @@ export function PromptComposer() {
   const isInView = useInView(sectionRef, { margin: '-20% 0px -20% 0px' });
   const reduceMotion = useReducedMotion();
   const [promptIndex, setPromptIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
-    if (!isInView || isPaused) return;
+    if (!isInView) return;
 
     const interval = window.setInterval(() => {
       setPromptIndex((current) => (current + 1) % prompts.length);
     }, 3200);
 
     return () => window.clearInterval(interval);
-  }, [isInView, isPaused]);
+  }, [isInView]);
 
   const prompt = prompts[promptIndex];
   const variants = reduceMotion ? reducedPromptVariants : promptVariants;
@@ -78,10 +77,6 @@ export function PromptComposer() {
       <div className="relative mx-auto w-full max-w-[860px] px-5 py-24 sm:px-8 lg:px-12">
         <div
           data-reveal="blur"
-          onPointerEnter={() => setIsPaused(true)}
-          onPointerLeave={() => setIsPaused(false)}
-          onFocusCapture={() => setIsPaused(true)}
-          onBlurCapture={() => setIsPaused(false)}
           className="prompt-composer floating rounded-[18px] border border-[color:var(--color-rule)] p-2 sm:rounded-[22px] sm:p-2.5"
         >
           <div className="rounded-[13px] border border-[color:var(--color-rule-soft)] bg-[color:var(--color-panel)] sm:rounded-[16px]">
