@@ -48,7 +48,7 @@ test.describe('static build and preview', () => {
     expect(html).toContain('<title>open-slide</title>');
 
     const assets = await fs.readdir(path.join(dist, 'assets'));
-    for (const slideId of ['alpha', 'steps', 'edit-target']) {
+    for (const slideId of ['alpha', 'steps', 'edit-target', 'hot-swap']) {
       expect(
         assets.some((name) => name.startsWith(`${slideId}-`) && name.endsWith('.js')),
         `expected a chunk for ${slideId}`,
@@ -64,7 +64,9 @@ test.describe('static build and preview', () => {
 
   test('deep links resolve through the spa fallback', async ({ page }) => {
     await page.goto(`${baseUrl}/s/steps`);
-    await expect(page.getByText('Steps page one')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('main[data-inspector-root]').getByText('Steps page one')).toBeVisible(
+      { timeout: 30_000 },
+    );
   });
 
   test('dev-only endpoints do not exist in preview', async ({ request }) => {

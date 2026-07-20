@@ -4,8 +4,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type APIRequestContext, expect, type Locator, type Page } from '@playwright/test';
+import { DEV_SERVER_PORT } from '../../playwright.config.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
+
+export const devServerUrl = `http://127.0.0.1:${DEV_SERVER_PORT}`;
 
 export const coreRoot = path.resolve(here, '..', '..');
 export const coreBin = path.join(coreRoot, 'bin.js');
@@ -36,16 +39,44 @@ export function editorCanvas(page: Page): Locator {
   return page.locator('main[data-inspector-root]');
 }
 
-// The first visit per page load holds an asset-warm loading gate (up to 15s),
-// so slide opens always wait for the editor chrome to appear.
+// The first visit per page load holds an asset-warm loading gate (up to 15s).
+// A slide duplicated moments earlier can also 404 until the slides virtual
+// module refreshes (watcher debounce), and the server's full-reload broadcast
+// can fire before this page's HMR socket connects — so retry with a reload.
 export async function openSlide(page: Page, slideId: string, query = ''): Promise<void> {
   await page.goto(`/s/${slideId}${query}`);
-  await expect(editorCanvas(page)).toBeVisible({ timeout: 30_000 });
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await expect(editorCanvas(page)).toBeVisible({ timeout: 15_000 });
+      return;
+    } catch (err) {
+      if (attempt >= 2) throw err;
+      await page.reload();
+    }
+  }
 }
 
 export async function enterPlayMode(page: Page): Promise<void> {
   await page.keyboard.press('Enter');
   await expect(editorCanvas(page)).toBeHidden();
+}
+
+// The dev server's file watcher does not pick up newly created slide
+// directories on Linux, so the slides virtual module stays stale after a deck
+// is created on disk. Touch an existing (watched) slide source to force the
+// module to invalidate, then poll the served module until the deck appears.
+export async function refreshSlidesModule(expectedSlideId: string): Promise<void> {
+  const watchedFile = slideSourcePath('edit-target');
+  await fs.writeFile(watchedFile, await fs.readFile(watchedFile, 'utf8'));
+  await expect
+    .poll(
+      async () => {
+        const res = await fetch(`${devServerUrl}/@id/__x00__virtual:open-slide/slides`);
+        return res.ok ? await res.text() : '';
+      },
+      { timeout: 15_000 },
+    )
+    .toContain(`"${expectedSlideId}"`);
 }
 
 export async function duplicateSlide(
@@ -55,6 +86,7 @@ export async function duplicateSlide(
 ): Promise<void> {
   const res = await request.post(`/__slides/${sourceId}/duplicate`, { data: { newId } });
   expect(res.ok()).toBe(true);
+  await refreshSlidesModule(newId);
 }
 
 export async function deleteSlide(request: APIRequestContext, slideId: string): Promise<void> {

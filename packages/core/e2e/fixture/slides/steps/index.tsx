@@ -17,6 +17,12 @@ const fill = {
 const One: Page = () => (
   <div style={fill}>
     <h1 style={{ fontSize: 96, margin: 0 }}>Steps page one</h1>
+  </div>
+);
+
+const Two: Page = () => (
+  <div style={fill}>
+    <h1 style={{ fontSize: 96, margin: 0 }}>Steps page two</h1>
     <Steps>
       <Step>
         <p style={{ fontSize: 40 }}>Step item first</p>
@@ -28,10 +34,10 @@ const One: Page = () => (
   </div>
 );
 
-const Two: Page = () => (
+const Three: Page = () => (
   <div style={fill}>
-    <h1 style={{ fontSize: 96, margin: 0 }}>Steps page two</h1>
+    <h1 style={{ fontSize: 96, margin: 0 }}>Steps page three</h1>
   </div>
 );
 
-export default [One, Two] satisfies Page[];
+export default [One, Two, Three] satisfies Page[];

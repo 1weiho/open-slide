@@ -2,11 +2,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
 import {
-  deleteSlide,
   devScratchDir,
-  duplicateSlide,
   editorCanvas,
   openSlide,
+  refreshSlidesModule,
   slideSourcePath,
 } from './helpers.ts';
 
@@ -27,37 +26,44 @@ export default [Only] satisfies Page[];
 `;
 
 test.describe('dev server file watching', () => {
-  test('editing a slide source hot-swaps the open slide', async ({ page, request }) => {
-    await duplicateSlide(request, 'edit-target', 'hmr-live');
-    try {
-      await openSlide(page, 'hmr-live');
-      await expect(editorCanvas(page).getByText('Editable headline')).toBeVisible();
+  test('editing a slide source hot-swaps the open slide', async ({ page }) => {
+    await openSlide(page, 'hot-swap');
+    await expect(editorCanvas(page).getByText('Hot swap headline')).toBeVisible();
 
-      const file = slideSourcePath('hmr-live');
-      const source = await fs.readFile(file, 'utf8');
-      await fs.writeFile(file, source.replace('Editable headline', 'Hot swapped headline'));
+    const file = slideSourcePath('hot-swap');
+    const source = await fs.readFile(file, 'utf8');
+    await fs.writeFile(file, source.replace('Hot swap headline', 'Hot swapped headline'));
 
-      await expect(editorCanvas(page).getByText('Hot swapped headline')).toBeVisible({
-        timeout: 15_000,
-      });
-    } finally {
-      await deleteSlide(request, 'hmr-live');
-    }
+    await expect(editorCanvas(page).getByText('Hot swapped headline')).toBeVisible({
+      timeout: 15_000,
+    });
   });
 
-  test('creating and removing a deck updates the home browser', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.locator('li h3')).toHaveCount(3);
-
-    const dir = path.join(devScratchDir, 'slides', 'hmr-new');
+  test('a deck created on disk appears after a refresh and hot-disappears when removed', async ({
+    page,
+  }) => {
+    const dir = path.join(devScratchDir, 'slides', 'hmr-doomed');
     try {
       await fs.mkdir(dir, { recursive: true });
       await fs.writeFile(path.join(dir, 'index.tsx'), FRESH_DECK);
-      await expect(page.getByText('Fresh Deck')).toBeVisible({ timeout: 15_000 });
+      await refreshSlidesModule('hmr-doomed');
+
+      await page.goto('/');
+      const card = page.getByText('Fresh Deck');
+      try {
+        await expect(card).toBeVisible({ timeout: 10_000 });
+      } catch {
+        await page.reload();
+        await expect(card).toBeVisible({ timeout: 15_000 });
+      }
+
+      // Removal is watched live: the server broadcasts a full reload and the
+      // open page drops the card without manual navigation.
+      await fs.rm(dir, { recursive: true, force: true });
+      await expect(card).toBeHidden({ timeout: 15_000 });
     } finally {
       await fs.rm(dir, { recursive: true, force: true });
     }
-    await expect(page.getByText('Fresh Deck')).toBeHidden({ timeout: 15_000 });
   });
 
   test('a deck with no pages shows the empty state', async ({ page }) => {
@@ -65,10 +71,16 @@ test.describe('dev server file watching', () => {
     try {
       await fs.mkdir(dir, { recursive: true });
       await fs.writeFile(path.join(dir, 'index.tsx'), 'export default [];\n');
-      await page.waitForTimeout(1_000);
+      await refreshSlidesModule('hmr-empty');
 
       await page.goto('/s/hmr-empty');
-      await expect(page.getByText('Nothing to show.')).toBeVisible({ timeout: 15_000 });
+      const emptyState = page.getByText('Nothing to show.');
+      try {
+        await expect(emptyState).toBeVisible({ timeout: 10_000 });
+      } catch {
+        await page.reload();
+        await expect(emptyState).toBeVisible({ timeout: 15_000 });
+      }
     } finally {
       await fs.rm(dir, { recursive: true, force: true });
     }

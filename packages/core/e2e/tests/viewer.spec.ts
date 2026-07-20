@@ -86,11 +86,11 @@ test.describe('slide viewer', () => {
   test('back link returns to the home browser', async ({ page }) => {
     await openSlide(page, 'alpha');
     await page.getByRole('link', { name: 'Back to home' }).click();
-    await expect(page.locator('li h3')).toHaveCount(3);
+    await expect(page.locator('li h3')).toHaveCount(4);
   });
 
   test('steps render fully revealed in the editor', async ({ page }) => {
-    await openSlide(page, 'steps');
+    await openSlide(page, 'steps', '?p=2');
     await expect(editorCanvas(page).locator('[data-osd-step="revealed"]')).toHaveCount(2);
     await expect(editorCanvas(page).locator('[data-osd-step="pending"]')).toHaveCount(0);
   });

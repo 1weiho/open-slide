@@ -3,10 +3,11 @@ import { expect, test } from '@playwright/test';
 test.describe('home slide browser', () => {
   test('lists every fixture deck with its display title', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('li h3')).toHaveCount(3);
+    await expect(page.locator('li h3')).toHaveCount(4);
     await expect(page.getByText('Alpha Deck')).toBeVisible();
     await expect(page.getByText('Steps Deck')).toBeVisible();
     await expect(page.getByText('Edit Target')).toBeVisible();
+    await expect(page.getByText('Hot Deck')).toBeVisible();
   });
 
   test('slide card links to the viewer', async ({ page }) => {
@@ -28,7 +29,7 @@ test.describe('home slide browser', () => {
     await search.fill('zzz-no-match');
     await expect(page.getByText('No matches')).toBeVisible();
     await page.getByRole('button', { name: 'Clear search' }).first().click();
-    await expect(page.locator('li h3')).toHaveCount(3);
+    await expect(page.locator('li h3')).toHaveCount(4);
   });
 
   test('sort control reorders decks by created date', async ({ page }) => {
@@ -36,7 +37,7 @@ test.describe('home slide browser', () => {
     await expect(page.locator('li h3').first()).toHaveText('Alpha Deck');
     await page.getByRole('button', { name: /^Sort:/ }).click();
     await page.getByRole('menuitem', { name: 'Oldest' }).click();
-    await expect(page.locator('li h3').first()).toHaveText('Edit Target');
+    await expect(page.locator('li h3').first()).toHaveText('Hot Deck');
   });
 
   test('deck theme badge links to the theme page', async ({ page }) => {

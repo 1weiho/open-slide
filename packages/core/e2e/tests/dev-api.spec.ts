@@ -176,10 +176,10 @@ test.describe('dev server http api', () => {
     expect(await readSlideSource('api-comments')).toContain('@slide-comment');
 
     const list = (await (await request.get('/__comments/?slideId=api-comments')).json()) as {
-      comments: { id: string; text: string }[];
+      comments: { id: string; note: string }[];
     };
     expect(list.comments).toHaveLength(1);
-    expect(list.comments[0]?.text).toBe('Make this pop');
+    expect(list.comments[0]?.note).toBe('Make this pop');
 
     const removed = await request.delete(`/__comments/${comment.id}?slideId=api-comments`);
     expect(removed.ok()).toBe(true);

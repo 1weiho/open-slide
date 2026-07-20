@@ -28,6 +28,9 @@ test.describe('present mode', () => {
   test('steps reveal one by one before the page advances', async ({ page }) => {
     await openSlide(page, 'steps');
     await enterPlayMode(page);
+
+    await page.keyboard.press('ArrowRight');
+    await expect(page).toHaveURL(/[?&]p=2/);
     await expect(page.locator('[data-osd-step="pending"]')).toHaveCount(2);
 
     await page.keyboard.press('ArrowRight');
@@ -36,11 +39,11 @@ test.describe('present mode', () => {
     await expect(page.locator('[data-osd-step="revealed"]')).toHaveCount(2);
 
     await page.keyboard.press('ArrowRight');
-    await expect(page).toHaveURL(/[?&]p=2/);
-    await expect(page.getByText('Steps page two')).toBeVisible();
+    await expect(page).toHaveURL(/[?&]p=3/);
+    await expect(page.getByText('Steps page three')).toBeVisible();
 
     await page.keyboard.press('ArrowLeft');
-    await expect(page).toHaveURL(/[?&]p=1/);
+    await expect(page).toHaveURL(/[?&]p=2/);
     await expect(page.locator('[data-osd-step="revealed"]')).toHaveCount(2);
   });
 
