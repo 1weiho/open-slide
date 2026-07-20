@@ -104,8 +104,11 @@ test.describe('slide viewer', () => {
       await toggle.click();
       await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 
+      const saved = page.waitForResponse(
+        (res) => res.url().includes('/__notes') && res.request().method() === 'PUT',
+      );
       await page.getByPlaceholder('Write speaker notes for this slide…').fill('Drawer note text');
-      await expect(page.getByText('Saved', { exact: true })).toBeVisible();
+      expect((await saved).status()).toBe(200);
       await expect.poll(() => readSlideSource('notes-ui')).toContain('Drawer note text');
     } finally {
       await deleteSlide(request, 'notes-ui');
