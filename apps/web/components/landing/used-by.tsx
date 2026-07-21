@@ -114,7 +114,7 @@ function VideoPlayer() {
     return (
       <div className="relative aspect-video bg-black">
         <iframe
-          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&color=white&iv_load_policy=3&playsinline=1`}
+          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&start=733&rel=0&color=white&iv_load_policy=3&playsinline=1`}
           title="Sam Lambert at Cursor Compile 2026"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           referrerPolicy="strict-origin-when-cross-origin"
