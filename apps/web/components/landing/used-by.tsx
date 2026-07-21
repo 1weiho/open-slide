@@ -1,4 +1,6 @@
-import type { CSSProperties } from 'react';
+'use client';
+
+import { type CSSProperties, useState } from 'react';
 import { SectionRule } from './frame';
 
 const tweetUrl = 'https://x.com/samlambert/status/2066020380092051484?s=20';
@@ -89,17 +91,7 @@ export function UsedBy() {
             style={{ '--reveal-delay': '120ms' } as CSSProperties}
             className="floating m-0 overflow-hidden rounded-[10px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]"
           >
-            <div className="relative aspect-video bg-black">
-              <iframe
-                src={`https://www.youtube-nocookie.com/embed/${videoId}`}
-                title="Sam Lambert at Cursor Compile 2026"
-                loading="lazy"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                allowFullScreen
-                className="absolute inset-0 size-full"
-              />
-            </div>
+            <VideoPlayer />
             <figcaption className="border-t border-[color:var(--color-rule-soft)] px-6 py-5">
               <div className="text-[16px] font-medium tracking-[-0.01em] text-[color:var(--color-text)]">
                 Cursor Compile 26
@@ -112,6 +104,52 @@ export function UsedBy() {
         </div>
       </div>
     </section>
+  );
+}
+
+function VideoPlayer() {
+  const [playing, setPlaying] = useState(false);
+
+  if (playing) {
+    return (
+      <div className="relative aspect-video bg-black">
+        <iframe
+          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&color=white&iv_load_policy=3&playsinline=1`}
+          title="Sam Lambert at Cursor Compile 2026"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          referrerPolicy="strict-origin-when-cross-origin"
+          allowFullScreen
+          className="absolute inset-0 size-full"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setPlaying(true)}
+      aria-label="Play — Sam Lambert at Cursor Compile 2026"
+      className="group/play relative block aspect-video w-full overflow-hidden bg-black"
+    >
+      <img
+        src={`https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`}
+        alt=""
+        className="absolute inset-0 size-full object-cover transition-transform duration-[900ms] ease-[cubic-bezier(0.23,1,0.32,1)] group-hover/play:scale-[1.04]"
+      />
+      <span
+        aria-hidden
+        className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent transition-opacity duration-300 group-hover/play:opacity-70"
+      />
+      <span
+        aria-hidden
+        className="absolute left-1/2 top-1/2 flex size-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-black shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4)] backdrop-blur transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] group-active/play:scale-95"
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor" className="size-6 translate-x-[1px]">
+          <path d="M6 4.5 20 12 6 19.5 Z" />
+        </svg>
+      </span>
+    </button>
   );
 }
 
