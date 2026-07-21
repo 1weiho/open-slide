@@ -76,6 +76,23 @@ test.describe('present mode', () => {
     await expect(editorCanvas(page)).toBeHidden();
   });
 
+  test('laser pointer toggles on with l and follows the cursor', async ({ page }) => {
+    await openSlide(page, 'alpha');
+    await enterPlayMode(page);
+
+    const viewport = page.viewportSize();
+    if (!viewport) throw new Error('viewport is not set');
+    const dot = page.locator('[class*="z-[60]"]');
+    await expect(dot).toHaveCount(0);
+
+    await page.keyboard.press('l');
+    await page.mouse.move(viewport.width / 2, viewport.height / 2);
+    await expect(dot).toBeVisible();
+
+    await page.keyboard.press('l');
+    await expect(dot).toHaveCount(0);
+  });
+
   test('help overlay lists the keyboard shortcuts', async ({ page }) => {
     await openSlide(page, 'alpha');
     await enterPlayMode(page);

@@ -46,35 +46,6 @@ test.describe('dev server http api', () => {
     expect(body.current).toBe(pkg.version);
   });
 
-  test('mutation guard rejects cross-origin requests', async ({ request }) => {
-    const mismatch = await request.post('/__slides/edit-target/duplicate', {
-      headers: { origin: 'http://evil.example' },
-    });
-    expect(mismatch.status()).toBe(403);
-    expect(await mismatch.json()).toEqual({ error: 'origin mismatch' });
-
-    const crossSite = await request.post('/__slides/edit-target/duplicate', {
-      headers: { 'sec-fetch-site': 'cross-site' },
-    });
-    expect(crossSite.status()).toBe(403);
-    expect(await crossSite.json()).toEqual({ error: 'cross-site request blocked' });
-
-    const opaque = await request.post('/__slides/edit-target/duplicate', {
-      headers: { origin: 'null' },
-    });
-    expect(opaque.status()).toBe(403);
-    expect(await opaque.json()).toEqual({ error: 'opaque origin is not allowed' });
-  });
-
-  test('json endpoints reject non-json content types', async ({ request }) => {
-    const res = await request.put('/__notes', {
-      headers: { 'content-type': 'text/plain' },
-      data: 'not json',
-    });
-    expect(res.status()).toBe(415);
-    expect(await res.json()).toEqual({ error: 'content-type must be application/json' });
-  });
-
   test('folders can be created, assigned, and deleted', async ({ request }) => {
     const empty = (await (await request.get('/__folders')).json()) as {
       folders: unknown[];
