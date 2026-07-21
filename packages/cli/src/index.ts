@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import prompts from 'prompts';
-import { type InitOptions, init, isDirNonEmpty, LOCALE_CHOICES, type LocaleCode } from './init.ts';
+import { type InitOptions, init, isDirNonEmpty, sanitizeDirName } from './init.ts';
 import { detectPackageManager, PACKAGE_MANAGERS, type PackageManager } from './package-manager.ts';
 
 async function readVersion(): Promise<string> {
@@ -24,17 +24,6 @@ interface InitCliFlags {
   useBun?: boolean;
   install?: boolean;
   git?: boolean;
-  locale?: string;
-}
-
-function parseLocale(value: string | undefined): LocaleCode | undefined {
-  if (!value) return undefined;
-  const match = LOCALE_CHOICES.find((c) => c.value.toLowerCase() === value.toLowerCase());
-  if (!match) {
-    const allowed = LOCALE_CHOICES.map((c) => c.value).join(', ');
-    throw new Error(`Unknown --locale "${value}". Allowed: ${allowed}.`);
-  }
-  return match.value;
 }
 
 function onCancel(): never {
@@ -63,7 +52,6 @@ async function runInit(dirArg: string | undefined, flags: InitCliFlags): Promise
   let dir = dirArg;
   const name = flags.name;
   let force = flags.force ?? false;
-  let locale: LocaleCode | undefined = parseLocale(flags.locale);
   let packageManager = packageManagerFromFlags(flags);
 
   if (isTTY && dir === undefined) {
@@ -79,18 +67,29 @@ async function runInit(dirArg: string | undefined, flags: InitCliFlags): Promise
     dir = answers.dir;
   }
 
-  if (isTTY && locale === undefined) {
-    const answers = await prompts(
-      {
-        type: 'select',
-        name: 'locale',
-        message: 'Slide UI language',
-        choices: LOCALE_CHOICES.map((c) => ({ title: c.title, value: c.value })),
-        initial: 0,
-      },
-      { onCancel },
-    );
-    locale = answers.locale as LocaleCode | undefined;
+  if (dir !== undefined) {
+    const safe = sanitizeDirName(dir);
+    if (safe !== dir) {
+      if (!isTTY) {
+        throw new Error(
+          `Target directory "${dir}" contains characters that break shell commands (spaces, quotes, etc.). Try "${safe}" instead.`,
+        );
+      }
+      process.stdout.write(
+        `${chalk.yellow('!')} ${chalk.bold(`"${dir}"`)} has characters that confuse shells.\n` +
+          `  Suggested: ${chalk.cyan(`"${safe}"`)}\n`,
+      );
+      const answers = await prompts(
+        {
+          type: 'text',
+          name: 'dir',
+          message: 'Directory name',
+          initial: safe,
+        },
+        { onCancel },
+      );
+      dir = sanitizeDirName(answers.dir ?? safe);
+    }
   }
 
   if (isTTY && packageManager === undefined && flags.install !== false) {
@@ -138,7 +137,6 @@ async function runInit(dirArg: string | undefined, flags: InitCliFlags): Promise
     packageManager: packageManager ?? detectPackageManager(),
     install: flags.install !== false,
     git: flags.git !== false,
-    locale: locale ?? 'en',
   };
   await init(opts);
 }
@@ -166,10 +164,6 @@ export async function run(argv: string[]): Promise<void> {
     .option('--use-bun', 'use bun to install dependencies')
     .option('--no-install', 'skip dependency installation')
     .option('--no-git', 'skip git init and initial commit')
-    .option(
-      '--locale <code>',
-      `slide UI language (${LOCALE_CHOICES.map((c) => c.value).join(', ')})`,
-    )
     .action(async (dir: string | undefined, flags: InitCliFlags) => {
       await runInit(dir, flags);
     });

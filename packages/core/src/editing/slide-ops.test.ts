@@ -3,8 +3,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  duplicateNotesElementInSource,
   duplicatePageInDefaultExportInSource,
   duplicateSlideDir,
+  removeNotesElementInSource,
   removePageFromDefaultExportInSource,
   reorderDefaultExportPagesInSource,
   reorderNotesArrayInSource,
@@ -410,5 +412,105 @@ export default [
 
   it('returns null when the default export is not an array', () => {
     expect(duplicatePageInDefaultExportInSource(`export default A;\n`, 0)).toBeNull();
+  });
+});
+
+describe('removeNotesElementInSource', () => {
+  it('returns the source unchanged when there is no notes export', () => {
+    const source = `export default [A, B];\n`;
+    expect(removeNotesElementInSource(source, 0)).toBe(source);
+  });
+
+  it('removes the note aligned with the deleted page', () => {
+    const source = [
+      'export const notes = [',
+      '  "first",',
+      '  "second",',
+      '  "third",',
+      '];',
+      'export default [A, B, C];',
+      '',
+    ].join('\n');
+    const out = removeNotesElementInSource(source, 1);
+    expect(out).not.toBeNull();
+    expect(out).toContain('export const notes = [\n  "first",\n  "third",\n];');
+  });
+
+  it('leaves notes untouched when the deleted page is past the recorded notes', () => {
+    const source = ['export const notes = ["only"];', 'export default [A, B, C];', ''].join('\n');
+    expect(removeNotesElementInSource(source, 2)).toBe(source);
+  });
+
+  it('collapses to [] when the last remaining note is removed', () => {
+    const source = ['export const notes = ["x"];', 'export default [A, B];', ''].join('\n');
+    const out = removeNotesElementInSource(source, 0);
+    expect(out).not.toBeNull();
+    expect(out).toContain('export const notes = [];');
+  });
+
+  it('returns null on a negative index', () => {
+    const source = `export const notes = ["a", "b"];\nexport default [A, B];\n`;
+    expect(removeNotesElementInSource(source, -1)).toBeNull();
+  });
+
+  it('returns null when notes is not an array literal', () => {
+    const source = `export const notes = "oops";\nexport default [A];\n`;
+    expect(removeNotesElementInSource(source, 0)).toBeNull();
+  });
+});
+
+describe('duplicateNotesElementInSource', () => {
+  it('returns the source unchanged when there is no notes export', () => {
+    const source = `export default [A, B];\n`;
+    expect(duplicateNotesElementInSource(source, 0)).toBe(source);
+  });
+
+  it('inserts a copy of the duplicated page note right after it', () => {
+    const source = [
+      'export const notes = [',
+      '  "first",',
+      '  "second",',
+      '  "third",',
+      '];',
+      'export default [A, B, C];',
+      '',
+    ].join('\n');
+    const out = duplicateNotesElementInSource(source, 1);
+    expect(out).not.toBeNull();
+    expect(out).toContain(
+      'export const notes = [\n  "first",\n  "second",\n  "second",\n  "third",\n];',
+    );
+  });
+
+  it('preserves template-literal notes verbatim when duplicating', () => {
+    const source = [
+      'export const notes = [',
+      '  `multi',
+      'line`,',
+      '  "second",',
+      '];',
+      'export default [A, B];',
+      '',
+    ].join('\n');
+    const out = duplicateNotesElementInSource(source, 0);
+    expect(out).not.toBeNull();
+    expect(out).toContain(
+      'export const notes = [\n  `multi\nline`,\n  `multi\nline`,\n  "second",\n];',
+    );
+  });
+
+  it('leaves notes untouched when the duplicated page is past the recorded notes', () => {
+    const source = ['export const notes = ["only"];', 'export default [A, B, C];', ''].join('\n');
+    expect(duplicateNotesElementInSource(source, 2)).toBe(source);
+  });
+
+  it('returns null on a negative index', () => {
+    const source = `export const notes = ["a", "b"];\nexport default [A, B];\n`;
+    expect(duplicateNotesElementInSource(source, -1)).toBeNull();
+  });
+
+  it('returns null when notes is not an array literal', () => {
+    const source = `export const notes = "oops";\nexport default [A];\n`;
+    expect(duplicateNotesElementInSource(source, 0)).toBeNull();
   });
 });

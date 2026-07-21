@@ -9,12 +9,14 @@ export type ApiContext = {
   slidesRoot: string;
   globalAssetsRoot: string;
   manifestPath: string;
+  coreVersion: string;
 };
 
 export type ApiPluginOptions = {
   userCwd: string;
   slidesDir?: string;
   assetsDir?: string;
+  coreVersion: string;
 };
 
 export function makeContext(opts: ApiPluginOptions): ApiContext {
@@ -24,7 +26,14 @@ export function makeContext(opts: ApiPluginOptions): ApiContext {
   const slidesRoot = path.resolve(userCwd, slidesDir);
   const globalAssetsRoot = path.resolve(userCwd, assetsDir);
   const manifestPath = path.join(slidesRoot, '.folders.json');
-  return { userCwd, slidesDir, slidesRoot, globalAssetsRoot, manifestPath };
+  return {
+    userCwd,
+    slidesDir,
+    slidesRoot,
+    globalAssetsRoot,
+    manifestPath,
+    coreVersion: opts.coreVersion,
+  };
 }
 
 export async function readBody(req: Connect.IncomingMessage): Promise<unknown> {
@@ -50,9 +59,18 @@ export function json(res: ServerResponse, status: number, body: unknown) {
   res.end(JSON.stringify(body));
 }
 
-export function resolveSlideEntryPath(ctx: ApiContext, slideId: string): string | null {
+export function resolveSlidePath(
+  userCwd: string,
+  slidesDir: string,
+  slideId: string,
+): string | null {
   if (!SLIDE_ID_RE.test(slideId)) return null;
-  const full = path.resolve(ctx.slidesRoot, slideId, 'index.tsx');
-  if (!full.startsWith(ctx.slidesRoot + path.sep)) return null;
+  const slidesRoot = path.resolve(userCwd, slidesDir);
+  const full = path.resolve(slidesRoot, slideId, 'index.tsx');
+  if (!full.startsWith(slidesRoot + path.sep)) return null;
   return full;
+}
+
+export function resolveSlideEntryPath(ctx: ApiContext, slideId: string): string | null {
+  return resolveSlidePath(ctx.userCwd, ctx.slidesDir, slideId);
 }

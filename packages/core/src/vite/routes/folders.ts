@@ -7,6 +7,7 @@ import {
   readManifest,
   validateIcon,
   validateName,
+  validateReorder,
   writeManifest,
 } from '../../files/folders.ts';
 import { validateMutationRequest } from '../../http/request-guard.ts';
@@ -15,12 +16,14 @@ import { type ApiContext, json, readBody } from './context.ts';
 // GET    /__folders            list manifest
 // POST   /__folders            create folder { name, icon }
 // PUT    /__folders/assign     assign slide to folder { slideId, folderId | null }
+// PUT    /__folders/reorder    reorder folders { ids: string[] } (permutation)
 // PATCH  /__folders/:id        rename / re-icon folder { name?, icon? }
 // DELETE /__folders/:id        delete folder + drop its assignments
 
 type CreateFolderBody = { name?: unknown; icon?: unknown };
 type PatchFolderBody = { name?: unknown; icon?: unknown };
 type AssignFolderBody = { slideId?: unknown; folderId?: unknown };
+type ReorderFoldersBody = { ids?: unknown };
 
 export function registerFolderRoutes(server: ViteDevServer, ctx: ApiContext): void {
   server.middlewares.use('/__folders', async (req, res, next) => {
@@ -79,6 +82,21 @@ export function registerFolderRoutes(server: ViteDevServer, ctx: ApiContext): vo
         } else {
           manifest.assignments[slideId] = folderId;
         }
+        await writeManifest(ctx.manifestPath, manifest);
+        return json(res, 200, { ok: true });
+      }
+
+      if (method === 'PUT' && url.pathname === '/reorder') {
+        const requestCheck = validateMutationRequest(req, { requireJsonBody: true });
+        if (!requestCheck.ok) {
+          return json(res, requestCheck.status, { error: requestCheck.error });
+        }
+        const body = (await readBody(req)) as ReorderFoldersBody;
+        const manifest = await readManifest(ctx.manifestPath);
+        const ids = validateReorder(body.ids, manifest.folders);
+        if (!ids) return json(res, 400, { error: 'invalid ids' });
+        const byId = new Map(manifest.folders.map((f) => [f.id, f]));
+        manifest.folders = ids.map((id) => byId.get(id) as Folder);
         await writeManifest(ctx.manifestPath, manifest);
         return json(res, 200, { ok: true });
       }

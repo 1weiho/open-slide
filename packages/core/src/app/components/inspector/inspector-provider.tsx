@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { type SlideComment, useComments } from '@/lib/inspector/use-comments';
 import { type Edit, type EditOp, type EditResult, useEditor } from '@/lib/inspector/use-editor';
 import { useLocale } from '@/lib/use-locale';
+import { AssetPickerDialog } from './asset-picker-dialog';
 import { ImageCropDialog, type ImageCropRect } from './image-crop-dialog';
 
 export type SelectedTarget = {
@@ -263,6 +264,7 @@ type InspectorCtx = {
   cancelEdits: () => void;
   committing: boolean;
   openCrop: (anchor: HTMLImageElement) => void;
+  openReplace: (anchor: HTMLElement) => void;
 };
 
 const Ctx = createContext<InspectorCtx | null>(null);
@@ -273,7 +275,15 @@ export function useInspector(): InspectorCtx {
   return v;
 }
 
-export function InspectorProvider({ slideId, children }: { slideId: string; children: ReactNode }) {
+export function InspectorProvider({
+  slideId,
+  pageIndex,
+  children,
+}: {
+  slideId: string;
+  pageIndex: number;
+  children: ReactNode;
+}) {
   const [active, setActive] = useState(false);
   const [selected, setSelected] = useState<SelectedTarget | null>(null);
   const { comments, error, refetch, add, remove } = useComments(slideId);
@@ -295,6 +305,11 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
     initialFit: 'cover' | 'contain';
     initialPosition: { x: number; y: number };
     initialRect: ImageCropRect | null;
+  } | null>(null);
+  const [replaceTarget, setReplaceTarget] = useState<{
+    line: number;
+    column: number;
+    anchor: HTMLElement;
   } | null>(null);
   const t = useLocale();
 
@@ -871,6 +886,35 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
     return () => observer?.disconnect();
   }, []);
 
+  useEffect(() => {
+    void pageIndex;
+    setSelected(null);
+  }, [pageIndex]);
+
+  // Never clear `selected` on a miss: the observer can fire between an
+  // "old removed" and "new added" mutation batch, and clearing then would
+  // drop a selection that's about to reattach on the next fire.
+  useEffect(() => {
+    if (!selected) return;
+    const root = document.querySelector<HTMLElement>('[data-inspector-root]');
+    if (!root) return;
+
+    const revalidate = () => {
+      if (selected.anchor.isConnected) return;
+      const next = root.querySelector<HTMLElement>(
+        `[data-slide-loc="${selected.line}:${selected.column}"]`,
+      );
+      if (next && next !== selected.anchor) {
+        setSelected({ ...selected, anchor: next });
+      }
+    };
+
+    revalidate();
+    const observer = new MutationObserver(revalidate);
+    observer.observe(root, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [selected]);
+
   const toggle = useCallback(() => {
     setActive((a) => {
       if (a) setSelected(null);
@@ -882,6 +926,27 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
     setActive(false);
     setSelected(null);
   }, []);
+
+  const openReplace = useCallback((anchor: HTMLElement) => {
+    const loc = anchor.dataset.slideLoc;
+    if (!loc) return;
+    const [lineStr, columnStr] = loc.split(':');
+    const line = Number(lineStr);
+    const column = Number(columnStr);
+    if (!Number.isFinite(line) || !Number.isFinite(column)) return;
+    setReplaceTarget({ line, column, anchor });
+  }, []);
+
+  useEffect(() => {
+    if (import.meta.env.PROD) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLElement && e.target.matches('input, textarea')) return;
+      if (e.key !== 'i' && e.key !== 'I') return;
+      toggle();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [toggle]);
 
   const openCrop = useCallback((anchor: HTMLImageElement) => {
     const loc = anchor.dataset.slideLoc;
@@ -925,6 +990,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       cancelEdits,
       committing,
       openCrop,
+      openReplace,
     }),
     [
       slideId,
@@ -945,12 +1011,44 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       cancelEdits,
       committing,
       openCrop,
+      openReplace,
     ],
   );
 
   return (
     <Ctx.Provider value={value}>
       {children}
+      {replaceTarget && (
+        <AssetPickerDialog
+          slideId={slideId}
+          onClose={() => setReplaceTarget(null)}
+          onPick={(asset, scope) => {
+            const { line, column, anchor } = replaceTarget;
+            const assetPath =
+              scope === 'global' ? `@assets/${asset.name}` : `./assets/${asset.name}`;
+            const ops: EditOp[] = [
+              {
+                kind: 'set-attr-asset',
+                attr: 'src',
+                assetPath,
+                previewUrl: asset.url,
+              },
+            ];
+            if (anchor.tagName === 'IMG' && anchor.isConnected) {
+              const cs = window.getComputedStyle(anchor);
+              if (cs.objectFit !== 'cover' && cs.objectFit !== 'contain') {
+                ops.push({ kind: 'set-style', key: 'objectFit', value: 'cover' });
+              }
+              const op = cs.objectPosition.trim();
+              if (!op || op === '0% 0%' || op === 'auto') {
+                ops.push({ kind: 'set-style', key: 'objectPosition', value: '50% 50%' });
+              }
+            }
+            bufferOps(line, column, anchor, ops);
+            setReplaceTarget(null);
+          }}
+        />
+      )}
       {cropTarget && (
         <ImageCropDialog
           src={cropTarget.src}
@@ -1064,6 +1162,9 @@ export function InspectToggleButton() {
     >
       <Crosshair className="size-3.5" />
       <span className="hidden md:inline">{t.inspector.inspect}</span>
+      <kbd className="ml-1 hidden rounded-[3px] bg-foreground/10 px-1 font-mono text-[9.5px] tracking-[0.04em] md:inline">
+        I
+      </kbd>
     </Button>
   );
 }

@@ -88,12 +88,22 @@ async function putAssign(slideId: string, folderId: string | null): Promise<void
   if (!res.ok) throw new Error(`PUT /__folders/assign ${res.status}`);
 }
 
+async function putReorder(ids: string[]): Promise<void> {
+  const res = await fetch('/__folders/reorder', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  });
+  if (!res.ok) throw new Error(`PUT /__folders/reorder ${res.status}`);
+}
+
 export type UseFoldersResult = {
   manifest: FoldersManifest;
   loading: boolean;
   create: (name: string, icon: FolderIcon) => Promise<Folder>;
   update: (id: string, patch: { name?: string; icon?: FolderIcon }) => Promise<void>;
   remove: (id: string) => Promise<void>;
+  reorder: (ids: string[]) => Promise<void>;
   assign: (slideId: string, folderId: string | null) => Promise<void>;
   renameSlide: (slideId: string, name: string) => Promise<void>;
   duplicateSlide: (slideId: string, newId?: string) => Promise<string>;
@@ -163,6 +173,23 @@ export function useFolders(): UseFoldersResult {
     [refresh],
   );
 
+  const reorder = useCallback(
+    async (ids: string[]) => {
+      const prev = manifest;
+      const byId = new Map(prev.folders.map((f) => [f.id, f]));
+      const next = ids.map((id) => byId.get(id)).filter((f): f is Folder => Boolean(f));
+      if (next.length !== prev.folders.length) return;
+      setManifest({ ...prev, folders: next });
+      try {
+        await putReorder(ids);
+      } catch (err) {
+        setManifest(prev);
+        throw err;
+      }
+    },
+    [manifest],
+  );
+
   const assign = useCallback(
     async (slideId: string, folderId: string | null) => {
       await putAssign(slideId, folderId);
@@ -202,6 +229,7 @@ export function useFolders(): UseFoldersResult {
     create,
     update,
     remove,
+    reorder,
     assign,
     renameSlide,
     duplicateSlide,

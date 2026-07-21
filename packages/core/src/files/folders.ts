@@ -55,6 +55,20 @@ export function validateName(v: unknown): string | null {
   return trimmed;
 }
 
+export function validateReorder(v: unknown, current: Folder[]): string[] | null {
+  if (!Array.isArray(v) || v.length !== current.length) return null;
+  const known = new Set(current.map((f) => f.id));
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const id of v) {
+    if (typeof id !== 'string' || !FOLDER_ID_RE.test(id)) return null;
+    if (!known.has(id) || seen.has(id)) return null;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
+}
+
 export function validateIcon(v: unknown): FolderIcon | null {
   if (!v || typeof v !== 'object') return null;
   const icon = v as { type?: unknown; value?: unknown };

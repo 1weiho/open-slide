@@ -1,5 +1,53 @@
 # @open-slide/cli
 
+## 1.3.3
+
+### Patch Changes
+
+- [#313](https://github.com/1weiho/open-slide/pull/313) [`afa9d8c`](https://github.com/1weiho/open-slide/commit/afa9d8c56fcf458403d746900b62fb27a4aec801) Thanks [@1weiho](https://github.com/1weiho)! - Document morph transitions in the slide-authoring skill.
+
+- [#328](https://github.com/1weiho/open-slide/pull/328) [`e850d8e`](https://github.com/1weiho/open-slide/commit/e850d8e2785a171c5d4fed6c43028699931f5f30) Thanks [@1weiho](https://github.com/1weiho)! - Split the slide-authoring skill into per-primitive reference files under `references/`.
+
+- [#335](https://github.com/1weiho/open-slide/pull/335) [`3b01fb3`](https://github.com/1weiho/open-slide/commit/3b01fb3e0213b42ecfc03bdde322b23d284e757e) Thanks [@1weiho](https://github.com/1weiho)! - Generate template skills from `@open-slide/core` at build time instead of committing a mirrored copy.
+
+## 1.3.2
+
+### Patch Changes
+
+- [#216](https://github.com/1weiho/open-slide/pull/216) [`80dda4e`](https://github.com/1weiho/open-slide/commit/80dda4e687242bafd6bf56bfd64a5641e64034d2) Thanks [@poterpan](https://github.com/poterpan)! - Add webfont guidance to the slide-authoring skill: load the stylesheet once in `<head>`, list only the weights used, and subset CJK with `&text=`.
+
+## 1.3.1
+
+### Patch Changes
+
+- [#201](https://github.com/1weiho/open-slide/pull/201) [`9ff819f`](https://github.com/1weiho/open-slide/commit/9ff819fe84218ffe4b22d7df1600dc6601836e1e) Thanks [@1weiho](https://github.com/1weiho)! - Update bundled skills with the `<Steps>` / `<Step>` stepped-reveal authoring guidance.
+
+## 1.3.0
+
+### Minor Changes
+
+- [#189](https://github.com/1weiho/open-slide/pull/189) [`6ae2dd9`](https://github.com/1weiho/open-slide/commit/6ae2dd9b188032d0b21bf43a7e3ab549b98db282) Thanks [@1weiho](https://github.com/1weiho)! - Add an in-UI language switcher (next to the theme toggle) that remembers the choice locally; deprecate `config.locale` and drop the `init` language prompt and `--locale` flag.
+
+### Patch Changes
+
+- [#180](https://github.com/1weiho/open-slide/pull/180) [`9b8202e`](https://github.com/1weiho/open-slide/commit/9b8202e8b17abc85caf5cd5a62c59e277a4f91ef) Thanks [@1weiho](https://github.com/1weiho)! - Remove duplicated internal helpers (HTTP `readBody`/`json`, slide-path resolution, the `SLIDE_ID_RE` pattern, and locale `format`/`plural`) by routing them through a single source.
+
+## 1.2.6
+
+### Patch Changes
+
+- [#181](https://github.com/1weiho/open-slide/pull/181) [`fb1db62`](https://github.com/1weiho/open-slide/commit/fb1db6207c07e84933589f02bf0eb1fa9bc8c3d1) Thanks [@1weiho](https://github.com/1weiho)! - Re-sync scaffolded skills with core so a fresh project no longer reports skills out of date on first dev run.
+
+## 1.2.5
+
+### Patch Changes
+
+- [#152](https://github.com/1weiho/open-slide/pull/152) [`30cec7f`](https://github.com/1weiho/open-slide/commit/30cec7f94b76fea9e0f92357328dcbaccdc25e44) Thanks [@itskylechung](https://github.com/itskylechung)! - Sanitize `init` target directory names and suggest a safe equivalent for shell-unfriendly input.
+
+- [#151](https://github.com/1weiho/open-slide/pull/151) [`75667fa`](https://github.com/1weiho/open-slide/commit/75667fa9968a8956a7a703f4ab8a977c87ee1db4) Thanks [@1weiho](https://github.com/1weiho)! - Add `.DS_Store` to the scaffolded `.gitignore`.
+
+- [#149](https://github.com/1weiho/open-slide/pull/149) [`26f6cb1`](https://github.com/1weiho/open-slide/commit/26f6cb13cdc1c738d41bd5bab90940b38562e828) Thanks [@1weiho](https://github.com/1weiho)! - Add SlideTransition API for declaring per-page page-transition animations, plus a transitions section in the bundled slide-authoring skill with tasteful few-shot examples.
+
 ## 1.2.4
 
 ### Patch Changes

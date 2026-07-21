@@ -41,6 +41,18 @@ const openSlideConfig: OpenSlideConfig = {
 export default openSlideConfig;
 ```
 
+### Hosting under a subpath
+
+Set `base` to deploy the built site under a sub-directory (intranet folders, GitHub Pages project sites, reverse proxies). Use a leading and trailing slash:
+
+```ts
+const openSlideConfig: OpenSlideConfig = {
+  base: '/my-slides/',
+};
+```
+
+The value is passed straight to Vite's `base` and to React Router's `basename`, so client-side navigation matches the deployed path.
+
 ## Authoring slides
 
 Slides live under `slides/<kebab-case-id>/index.tsx` and default-export an array of `Page` components:
@@ -66,9 +78,11 @@ export const meta = { title: 'Hello' };
 import {
   CANVAS_WIDTH,   // 1920
   CANVAS_HEIGHT,  // 1080
+  MorphElement,   // match or fade objects across pages for morph transitions
   type Page,
   type SlideMeta,
   type SlideModule,
+  type SlideTransition,
   type OpenSlideConfig,
 } from '@open-slide/core';
 ```

@@ -3,6 +3,8 @@ title: Themes
 description: Reusable design systems shared across decks.
 ---
 
+![Open-slide theme editor showing a theme's palette and typography beside its live demo slide](/assets/screenshots/theme.webp)
+
 A theme is a **bundle of two paired files** under `themes/`:
 
 - `themes/<id>.md` — agent-facing recipe: palette, typography, layout,
@@ -12,14 +14,9 @@ A theme is a **bundle of two paired files** under `themes/`:
   theme's live preview card.
 
 Both files share the same stem so the runtime can pair them automatically.
-
-## Why themes
-
-If you author more than two decks you'll want them to look related. A theme
-captures the *recipe* — palette, type stack, layout vocabulary, motion
-language — in one place that any deck can reference. The demo TSX makes
-that recipe visible: you can flip through theme previews in the dev UI
-before picking one.
+If you author more than two decks you'll want them to look related — a theme
+captures the recipe in one place any deck can reference, and the demo makes
+it browsable in the dev UI before you pick one.
 
 ## File layout
 
@@ -36,6 +33,12 @@ themes/
 The markdown is free-form. A useful template:
 
 ```md title="themes/corporate.md"
+---
+name: Corporate
+description: Calm corporate look with a single accent.
+mode: dark
+---
+
 # Corporate
 
 ## Palette

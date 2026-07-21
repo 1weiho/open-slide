@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useClickPageNavigation } from '@/lib/use-click-page-navigation';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
 import type { DesignSystem } from '../lib/design';
-import { SlidePageProvider } from '../lib/page-context';
 import type { Page } from '../lib/sdk';
+import type { EntryDirection, StepAggregate, StepController } from '../lib/step-context';
+import type { SlideTransition } from '../lib/transition';
+import { useIsMobile } from '../lib/use-is-mobile';
+import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
+import { OverviewGrid } from './overview-grid';
 import { PresentBlackoutOverlay } from './present/blackout-overlay';
 import { PresentControlBar } from './present/control-bar';
 import { PresentHelpOverlay } from './present/help-overlay';
 import { PresentJumpInput } from './present/jump-input';
 import { PresentLaserPointer } from './present/laser-pointer';
-import { PresentOverviewGrid } from './present/overview-grid';
 import { PresentProgressBar } from './present/progress-bar';
 import { useIdle } from './present/use-idle';
 import { usePointerNearBottom } from './present/use-pointer-near-bottom';
@@ -20,13 +24,16 @@ import {
 } from './present/use-presenter-channel';
 import { useTouchSwipe } from './present/use-touch-swipe';
 import { SlideCanvas } from './slide-canvas';
+import { SlideTransitionLayer } from './slide-transition-layer';
 
 const IDLE_HIDE_MS = 2000;
 const BAR_HOTZONE_PX = 160;
+const MOBILE_CHROME_HIDE_MS = 2200;
 
 type Props = {
   pages: Page[];
   design?: DesignSystem;
+  transition?: SlideTransition;
   index: number;
   onIndexChange: (index: number) => void;
   onExit: () => void;
@@ -44,6 +51,7 @@ type Props = {
 export function Player({
   pages,
   design,
+  transition,
   index,
   onIndexChange,
   onExit,
@@ -52,6 +60,8 @@ export function Player({
   slideId,
   fullscreen = true,
 }: Props) {
+  const isMobile = useIsMobile();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const rootRef = useRef<HTMLDivElement | null>(null);
   // Mirrored as state so descendants portaling *into* the player subtree
   // (tooltips, popovers — the body is outside the fullscreen tree) re-render
@@ -67,6 +77,8 @@ export function Player({
   const [blackout, setBlackout] = useState<'black' | 'white' | null>(null);
   const [laser, setLaser] = useState(false);
   const [keyboardDriven, setKeyboardDriven] = useState(false);
+  const [mobileChromeVisible, setMobileChromeVisible] = useState(false);
+  const [mobileChromeDeadline, setMobileChromeDeadline] = useState(0);
   const [startedAt] = useState(() => Date.now());
   const [windowed, setWindowed] = useState(!fullscreen);
   // Mirror windowed into a ref so the fullscreenchange listener can read the
@@ -78,14 +90,97 @@ export function Player({
   const canPrev = index > 0;
   const canNext = index < pages.length - 1;
 
+  const stepControllerRef = useRef<StepController | null>(null);
+  const [entryDirection, setEntryDirection] = useState<EntryDirection>('jump');
+  const [stepAggregate, setStepAggregate] = useState<StepAggregate>({
+    revealed: 0,
+    stepCount: 0,
+  });
+  const handleAggregateChange = useCallback((a: StepAggregate) => {
+    setStepAggregate((cur) =>
+      cur.revealed === a.revealed && cur.stepCount === a.stepCount ? cur : a,
+    );
+  }, []);
+
+  // Every navigation funnels through here so entryDirection is settled
+  // synchronously, before the incoming page's <Steps> reads it on mount.
+  const handleIndexChange = useCallback(
+    (next: number) => {
+      const delta = next - index;
+      setEntryDirection(delta === 1 ? 'forward' : delta === -1 ? 'backward' : 'jump');
+      onIndexChange(next);
+    },
+    [index, onIndexChange],
+  );
+
   const goPrev = useCallback(() => {
-    if (index > 0) onIndexChange(index - 1);
-  }, [index, onIndexChange]);
+    if (stepControllerRef.current?.retreat()) return;
+    if (index > 0) handleIndexChange(index - 1);
+  }, [index, handleIndexChange]);
   const goNext = useCallback(() => {
-    if (index < pages.length - 1) onIndexChange(index + 1);
-  }, [index, pages.length, onIndexChange]);
+    if (stepControllerRef.current?.advance()) return;
+    if (index < pages.length - 1) handleIndexChange(index + 1);
+  }, [index, pages.length, handleIndexChange]);
 
   const overlayActive = controls && (overviewOpen || helpOpen);
+  const overlayActiveRef = useRef(overlayActive);
+  const showMobileChrome = useCallback(() => {
+    if (!controls || !isMobile) return;
+    setMobileChromeVisible(true);
+    setMobileChromeDeadline(Date.now() + MOBILE_CHROME_HIDE_MS);
+  }, [controls, isMobile]);
+  const handleMobileViewportClick = useCallback(
+    ({ y }: { x: number; y: number }) => {
+      if (!controls || !isMobile || y < 0.5) return;
+      showMobileChrome();
+    },
+    [controls, isMobile, showMobileChrome],
+  );
+
+  useEffect(() => {
+    if (!controls || !isMobile) {
+      setMobileChromeVisible(false);
+      setMobileChromeDeadline(0);
+      return;
+    }
+    setMobileChromeVisible(true);
+    setMobileChromeDeadline(Date.now() + MOBILE_CHROME_HIDE_MS);
+  }, [controls, isMobile]);
+
+  useEffect(() => {
+    const wasOverlayActive = overlayActiveRef.current;
+    overlayActiveRef.current = overlayActive;
+    if (wasOverlayActive && !overlayActive) showMobileChrome();
+  }, [overlayActive, showMobileChrome]);
+
+  useEffect(() => {
+    if (
+      !controls ||
+      !isMobile ||
+      overlayActive ||
+      !mobileChromeVisible ||
+      mobileChromeDeadline === 0
+    ) {
+      return;
+    }
+    const id = window.setTimeout(
+      () => {
+        setMobileChromeVisible(false);
+      },
+      Math.max(0, mobileChromeDeadline - Date.now()),
+    );
+    return () => window.clearTimeout(id);
+  }, [controls, isMobile, mobileChromeDeadline, mobileChromeVisible, overlayActive]);
+
+  useClickPageNavigation({
+    ref: rootRef,
+    enabled: !overlayActive,
+    canPrev,
+    canNext,
+    onPrev: goPrev,
+    onNext: goNext,
+    onViewportClick: controls && isMobile ? handleMobileViewportClick : undefined,
+  });
 
   useWheelPageNavigation({
     ref: rootRef,
@@ -132,8 +227,15 @@ export function Player({
   // and answers `request-state` pings so newly opened presenter windows
   // hydrate immediately.
   const presenterState = useMemo<PresenterState>(
-    () => ({ index, pageCount: pages.length, blackout, startedAt }),
-    [index, pages.length, blackout, startedAt],
+    () => ({
+      index,
+      pageCount: pages.length,
+      blackout,
+      startedAt,
+      stepIndex: stepAggregate.revealed,
+      stepCount: stepAggregate.stepCount,
+    }),
+    [index, pages.length, blackout, startedAt, stepAggregate],
   );
   const presenterStateRef = useRef(presenterState);
   presenterStateRef.current = presenterState;
@@ -143,14 +245,14 @@ export function Player({
       if (msg.type === 'next') goNext();
       else if (msg.type === 'prev') goPrev();
       else if (msg.type === 'goto') {
-        onIndexChange(Math.max(0, Math.min(pages.length - 1, msg.index)));
+        handleIndexChange(Math.max(0, Math.min(pages.length - 1, msg.index)));
       } else if (msg.type === 'toggle-blackout') {
         setBlackout((cur) => (cur === msg.mode ? null : msg.mode));
       } else if (msg.type === 'request-state') {
         send({ type: 'state', state: presenterStateRef.current });
       }
     },
-    [goNext, goPrev, onIndexChange, pages.length],
+    [goNext, goPrev, handleIndexChange, pages.length],
   );
 
   const channel = usePresenterChannel(slideId ?? '__none__', (msg) => {
@@ -216,12 +318,12 @@ export function Player({
       }
       if (e.key === 'Home') {
         setKeyboardDriven(true);
-        onIndexChange(0);
+        handleIndexChange(0);
         return;
       }
       if (e.key === 'End') {
         setKeyboardDriven(true);
-        onIndexChange(pages.length - 1);
+        handleIndexChange(pages.length - 1);
         return;
       }
 
@@ -262,7 +364,7 @@ export function Player({
     onExit,
     goNext,
     goPrev,
-    onIndexChange,
+    handleIndexChange,
     pages.length,
     slideId,
   ]);
@@ -270,8 +372,11 @@ export function Player({
   // The control bar + progress strip only surface when the pointer is in
   // the bottom hot zone. Keyboard nav (arrows / space / PgDn) never reveals
   // them — intentional so the deck stays clean during a talk.
-  const pointerNearBottom = usePointerNearBottom(BAR_HOTZONE_PX, controls && !overlayActive);
-  const chromeVisible = pointerNearBottom || overlayActive;
+  const pointerNearBottom = usePointerNearBottom(
+    BAR_HOTZONE_PX,
+    controls && !overlayActive && !isMobile,
+  );
+  const chromeVisible = overlayActive || (isMobile ? mobileChromeVisible : pointerNearBottom);
   const idle = useIdle(IDLE_HIDE_MS, controls && !overlayActive);
 
   useEffect(() => {
@@ -282,9 +387,9 @@ export function Player({
   }, [keyboardDriven]);
 
   const hideCursor =
-    controls && (laser || keyboardDriven || (idle && !overlayActive && !pointerNearBottom));
-
-  const PageComp = pages[index];
+    controls &&
+    !isMobile &&
+    (laser || keyboardDriven || (idle && !overlayActive && !pointerNearBottom));
 
   return (
     <div
@@ -294,35 +399,26 @@ export function Player({
         controls && 'select-none',
         controls && (hideCursor ? 'cursor-none' : 'cursor-default'),
       )}
+      style={design ? { background: design.palette.bg } : undefined}
     >
       <SlideCanvas flat design={design}>
-        {PageComp ? (
-          <SlidePageProvider index={index} total={pages.length}>
-            <PageComp />
-          </SlidePageProvider>
-        ) : null}
+        <SlideTransitionLayer
+          pages={pages}
+          index={index}
+          total={pages.length}
+          moduleTransition={transition}
+          disabled={prefersReducedMotion}
+          stepControllerRef={stepControllerRef}
+          entryDirection={entryDirection}
+          onStepAggregateChange={handleAggregateChange}
+        />
       </SlideCanvas>
 
-      <button
-        type="button"
-        aria-label="Previous page"
-        onClick={goPrev}
-        disabled={!canPrev}
-        className={cn('absolute inset-y-0 left-0 z-10 w-[30%]', hideCursor && 'cursor-none')}
-      />
-      <button
-        type="button"
-        aria-label="Next page"
-        onClick={goNext}
-        disabled={!canNext}
-        className={cn('absolute inset-y-0 right-0 z-10 w-[30%]', hideCursor && 'cursor-none')}
-      />
-
       {controls && (
-        <>
+        <div data-osd-chrome style={{ display: 'contents' }}>
           <PresentProgressBar index={index} total={pages.length} visible={chromeVisible} />
           <PresentBlackoutOverlay mode={blackout} />
-          <PresentJumpInput pageCount={pages.length} onJump={onIndexChange} />
+          <PresentJumpInput pageCount={pages.length} onJump={handleIndexChange} />
           <PresentLaserPointer enabled={laser} />
           <PresentControlBar
             tooltipContainer={rootEl}
@@ -336,6 +432,7 @@ export function Player({
             windowed={windowed}
             onPrev={goPrev}
             onNext={goNext}
+            onMobileInteraction={showMobileChrome}
             onOverview={() => setOverviewOpen(true)}
             onBlackout={(mode) => setBlackout((c) => (c === mode ? null : mode))}
             onLaser={() => setLaser((v) => !v)}
@@ -344,16 +441,19 @@ export function Player({
             onHelp={() => setHelpOpen(true)}
             onExit={onExit}
           />
-          <PresentOverviewGrid
+          <OverviewGrid
             pages={pages}
             design={design}
             open={overviewOpen}
             current={index}
             onClose={() => setOverviewOpen(false)}
-            onSelect={onIndexChange}
+            onSelect={handleIndexChange}
+            variant="present"
+            moduleTransition={transition}
+            tooltipContainer={rootEl}
           />
           <PresentHelpOverlay open={helpOpen} onOpenChange={setHelpOpen} container={rootEl} />
-        </>
+        </div>
       )}
     </div>
   );
@@ -361,6 +461,6 @@ export function Player({
 
 export function openPresenterWindow(slideId: string) {
   if (typeof window === 'undefined') return;
-  const url = `/s/${encodeURIComponent(slideId)}/presenter`;
+  const url = `${import.meta.env.BASE_URL}s/${encodeURIComponent(slideId)}/presenter`;
   window.open(url, `open-slide-presenter-${slideId}`, 'popup,width=1280,height=800');
 }

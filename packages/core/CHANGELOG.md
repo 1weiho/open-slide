@@ -1,5 +1,237 @@
 # @open-slide/core
 
+## 1.16.0
+
+### Minor Changes
+
+- [#315](https://github.com/1weiho/open-slide/pull/315) [`61839b7`](https://github.com/1weiho/open-slide/commit/61839b78969edc1173657b7f53d53f6bff939f39) Thanks [@1weiho](https://github.com/1weiho)! - Stabilize the morph transition API: rename `unstable_SharedElement` to `MorphElement` and the `sharedElements` transition option to `morph`.
+
+- [#313](https://github.com/1weiho/open-slide/pull/313) [`afa9d8c`](https://github.com/1weiho/open-slide/commit/afa9d8c56fcf458403d746900b62fb27a4aec801) Thanks [@1weiho](https://github.com/1weiho)! - Add useIsActivePage() so pages can gate entrance animations to the live audience-facing instance.
+
+### Patch Changes
+
+- [#316](https://github.com/1weiho/open-slide/pull/316) [`118965e`](https://github.com/1weiho/open-slide/commit/118965e6aae6f6a2a96a6b1a9f8dd3d7213ddbad) Thanks [@1weiho](https://github.com/1weiho)! - Fix morph transitions snapping background, border, and outline colors at the end of the glide instead of interpolating them.
+
+- [#313](https://github.com/1weiho/open-slide/pull/313) [`afa9d8c`](https://github.com/1weiho/open-slide/commit/afa9d8c56fcf458403d746900b62fb27a4aec801) Thanks [@1weiho](https://github.com/1weiho)! - Measure morph-element rects before the enter/exit phases start so transform keyframes no longer offset morph targets.
+
+- [#313](https://github.com/1weiho/open-slide/pull/313) [`afa9d8c`](https://github.com/1weiho/open-slide/commit/afa9d8c56fcf458403d746900b62fb27a4aec801) Thanks [@1weiho](https://github.com/1weiho)! - Document morph transitions in the slide-authoring skill.
+
+- [#328](https://github.com/1weiho/open-slide/pull/328) [`e850d8e`](https://github.com/1weiho/open-slide/commit/e850d8e2785a171c5d4fed6c43028699931f5f30) Thanks [@1weiho](https://github.com/1weiho)! - Split the slide-authoring skill into per-primitive reference files under `references/`.
+
+- [#337](https://github.com/1weiho/open-slide/pull/337) [`5e5bcdf`](https://github.com/1weiho/open-slide/commit/5e5bcdf58f02bd50ac2c95d4e8c16c9d9252b684) Thanks [@1weiho](https://github.com/1weiho)! - Fix bundled skill prompts so agent instructions, commands, and file references work correctly in scaffolded projects.
+
+## 1.15.3
+
+### Patch Changes
+
+- [#297](https://github.com/1weiho/open-slide/pull/297) [`771902c`](https://github.com/1weiho/open-slide/commit/771902c3345223d0e54d32d1bbd7e869722f955f) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Add adjustable speaker notes text size in presenter view, persisted across sessions.
+
+- [#270](https://github.com/1weiho/open-slide/pull/270) [`9bea0a4`](https://github.com/1weiho/open-slide/commit/9bea0a4244185296692aea2201f922166ffa9e60) Thanks [@mvanhorn](https://github.com/mvanhorn)! - Stop remounting the slide canvas when speaker notes are saved in dev.
+
+- [#271](https://github.com/1weiho/open-slide/pull/271) [`4fece8d`](https://github.com/1weiho/open-slide/commit/4fece8d4507dcd4df88b39f04c7d0ca29b9958df) Thanks [@Yacolate0519-cmd](https://github.com/Yacolate0519-cmd)! - Skip slide folders whose id isn't ASCII-safe (e.g. CJK folder names) instead of listing slides that then fail to move into folders or be edited; warn once per ignored folder.
+
+## 1.15.2
+
+### Patch Changes
+
+- [#308](https://github.com/1weiho/open-slide/pull/308) [`9782b86`](https://github.com/1weiho/open-slide/commit/9782b86e0b53e499a286a23a90a398d03f6d4026) Thanks [@1weiho](https://github.com/1weiho)! - Declare `use-sync-external-store` as a direct dependency so Vite can resolve and pre-bundle the Base UI shim under pnpm, fixing the missing `useSyncExternalStore` export at runtime.
+
+## 1.15.1
+
+### Patch Changes
+
+- [#306](https://github.com/1weiho/open-slide/pull/306) [`8d2f937`](https://github.com/1weiho/open-slide/commit/8d2f937d34dc6cbe82b542ac75cb34637dbe4413) Thanks [@1weiho](https://github.com/1weiho)! - Pre-bundle the Base UI `use-sync-external-store` shim so the dev server no longer throws a missing `useSyncExternalStore` export.
+
+## 1.15.0
+
+### Minor Changes
+
+- [#303](https://github.com/1weiho/open-slide/pull/303) [`e8cc746`](https://github.com/1weiho/open-slide/commit/e8cc746b4da5f8c6aa9bad351415a25c3821f8de) Thanks [@1weiho](https://github.com/1weiho)! - Migrate the internal UI primitives from Radix UI to Base UI (`@base-ui/react`), dropping the `radix-ui` dependency.
+
+- [#301](https://github.com/1weiho/open-slide/pull/301) [`f4b4672`](https://github.com/1weiho/open-slide/commit/f4b4672d82e718c273d63a1011caa7753d07384b) Thanks [@1weiho](https://github.com/1weiho)! - Retone the app UI to a neutral SaaS palette: flat pure-gray surfaces, crisper labels, refreshed folder colors.
+
+### Patch Changes
+
+- [#304](https://github.com/1weiho/open-slide/pull/304) [`9dbce8d`](https://github.com/1weiho/open-slide/commit/9dbce8d947bca1058b06a2660528a1bef97b0664) Thanks [@1weiho](https://github.com/1weiho)! - Hide the Assets sidebar entry in production builds, where asset management is unavailable.
+
+## 1.14.0
+
+### Minor Changes
+
+- [#296](https://github.com/1weiho/open-slide/pull/296) [`82c8a7c`](https://github.com/1weiho/open-slide/commit/82c8a7ccea30d42f4c983c3cae9525601493ec90) Thanks [@1weiho](https://github.com/1weiho)! - Add a restart button to the sidebar update tooltip that restarts the dev server after an in-app update, keep the tooltip open while updating, and shorten the update-available copy.
+
+### Patch Changes
+
+- [#298](https://github.com/1weiho/open-slide/pull/298) [`97fe094`](https://github.com/1weiho/open-slide/commit/97fe094b7939112a29f4e86a7c22f04f05787fe0) Thanks [@1weiho](https://github.com/1weiho)! - Show an edge control to return to the current slide when its thumbnail is out of view.
+
+- [#299](https://github.com/1weiho/open-slide/pull/299) [`2aa085f`](https://github.com/1weiho/open-slide/commit/2aa085fa5d3fb198c793e6ed4c604c90e31df120) Thanks [@1weiho](https://github.com/1weiho)! - Add search, sorting, usage and file type filters, adjustable grid columns, list view, and asset creation and modification dates to the assets manager.
+
+## 1.13.6
+
+### Patch Changes
+
+- [#292](https://github.com/1weiho/open-slide/pull/292) [`87db8f4`](https://github.com/1weiho/open-slide/commit/87db8f453c5dda12066de786bd1132c7446f01ae) Thanks [@jeremyjordan](https://github.com/jeremyjordan)! - Play a deck's exported `transition` in the read-only build (`showSlideUi: false`) instead of swapping pages instantly.
+
+- [#291](https://github.com/1weiho/open-slide/pull/291) [`0f866d5`](https://github.com/1weiho/open-slide/commit/0f866d54ea58c0ab80a062dbc6922cc96a654b1e) Thanks [@jeremyjordan](https://github.com/jeremyjordan)! - Reveal `<Steps>` one at a time in the read-only build (`showSlideUi: false`) instead of skipping straight to the next slide on Space/Arrow.
+
+## 1.13.5
+
+### Patch Changes
+
+- [#289](https://github.com/1weiho/open-slide/pull/289) [`983743f`](https://github.com/1weiho/open-slide/commit/983743fae3634a35d0aad22514f7efec71694dac) Thanks [@1weiho](https://github.com/1weiho)! - Fix slide content bleeding through the asset loading screen when pages contain revealed steps.
+
+## 1.13.4
+
+### Patch Changes
+
+- [#287](https://github.com/1weiho/open-slide/pull/287) [`c1b89d5`](https://github.com/1weiho/open-slide/commit/c1b89d5c08cf0d3199ec8e5ad810e5e94ca28ee5) Thanks [@1weiho](https://github.com/1weiho)! - Preload every page's images and fonts behind the deck loading screen — slides and presenter views first render with all assets cached, eliminating font flashes and image pop-in during playback.
+
+## 1.13.3
+
+### Patch Changes
+
+- [#284](https://github.com/1weiho/open-slide/pull/284) [`0d4e669`](https://github.com/1weiho/open-slide/commit/0d4e6698aefe043f97c1cf437124dddc18cecabb) Thanks [@1weiho](https://github.com/1weiho)! - Add an all-slides "Slides" view as the default home page, move Draft into the sidebar folders list, and give the mobile home a hamburger menu, folder dropdown, and theme/language toggles.
+
+- [#282](https://github.com/1weiho/open-slide/pull/282) [`1ef7f84`](https://github.com/1weiho/open-slide/commit/1ef7f84f7d435cd61f7c8b4db0853b3ada3739a5) Thanks [@1weiho](https://github.com/1weiho)! - Revert inspector quick activation gestures (Command/Control hold and double-click selection).
+
+## 1.13.2
+
+### Patch Changes
+
+- [#263](https://github.com/1weiho/open-slide/pull/263) [`bda2fd6`](https://github.com/1weiho/open-slide/commit/bda2fd6646814541d6a5623840c4c5396b9b0c5a) Thanks [@1weiho](https://github.com/1weiho)! - Virtualize the horizontal thumbnail rail in large decks.
+
+## 1.13.1
+
+### Patch Changes
+
+- [#260](https://github.com/1weiho/open-slide/pull/260) [`3adaa7c`](https://github.com/1weiho/open-slide/commit/3adaa7c332bac124a3a5fa6ad1c814d275b58858) Thanks [@1weiho](https://github.com/1weiho)! - Keep shared-element borders at their intended width while elements resize.
+
+- [#261](https://github.com/1weiho/open-slide/pull/261) [`5f167f7`](https://github.com/1weiho/open-slide/commit/5f167f7c6f3dcbbf48bf2388238d5d0b11bf1856) Thanks [@1weiho](https://github.com/1weiho)! - Virtualize the editor thumbnail rail for smoother navigation in large decks.
+
+## 1.13.0
+
+### Minor Changes
+
+- [#257](https://github.com/1weiho/open-slide/pull/257) [`e000a81`](https://github.com/1weiho/open-slide/commit/e000a8147ed4e6dd592c856e5530b042263563b4) Thanks [@1weiho](https://github.com/1weiho)! - Add unstable_SharedElement for shared-element transitions across slide pages.
+
+### Patch Changes
+
+- [#256](https://github.com/1weiho/open-slide/pull/256) [`0e61272`](https://github.com/1weiho/open-slide/commit/0e61272daaa40efbf05f489c97dacf28c2b5aeb8) Thanks [@1weiho](https://github.com/1weiho)! - Make present mode easier to use on phones with single-tap playback and compact auto-hiding controls.
+
+- [#247](https://github.com/1weiho/open-slide/pull/247) [`ac33d70`](https://github.com/1weiho/open-slide/commit/ac33d70acf8aa98c6203326b772b1a6b6131ff13) Thanks [@1weiho](https://github.com/1weiho)! - Let the inspector open while holding Command on macOS or Control elsewhere, and select elements by double-clicking them without selecting slide text.
+
+- [#239](https://github.com/1weiho/open-slide/pull/239) [`45f6882`](https://github.com/1weiho/open-slide/commit/45f6882cf5cdcc112aa71fc963f41e5a07cec64f) Thanks [@adawang1210](https://github.com/adawang1210)! - Keep speaker notes aligned with pages when deleting or duplicating a page.
+
+## 1.12.1
+
+### Patch Changes
+
+- [#233](https://github.com/1weiho/open-slide/pull/233) [`0128ba4`](https://github.com/1weiho/open-slide/commit/0128ba43b75a6e9a4760708c20064a8c570db962) Thanks [@1weiho](https://github.com/1weiho)! - Center longer slide UI tooltip messages.
+
+- [#242](https://github.com/1weiho/open-slide/pull/242) [`949bdbf`](https://github.com/1weiho/open-slide/commit/949bdbfd4580eceec0f0710d67561ad6d56754ed) Thanks [@poterpan](https://github.com/poterpan)! - Fix HTML export distorting the slide aspect ratio on narrow viewports.
+
+- [#241](https://github.com/1weiho/open-slide/pull/241) [`3c57091`](https://github.com/1weiho/open-slide/commit/3c5709153e80244545957f8d9ee8039429068eb9) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Fix the slide toolbar on narrow screens: keep the title from overlapping the icons, and collapse the copy-link and download actions into a single overflow menu.
+
+- [#244](https://github.com/1weiho/open-slide/pull/244) [`57e2845`](https://github.com/1weiho/open-slide/commit/57e2845b80b4a1f52bd947524fb4eeb5dea06ef8) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Block pointer input on frozen slide previews so interactive content no longer hijacks thumbnail and overview clicks.
+
+- [#235](https://github.com/1weiho/open-slide/pull/235) [`ef265e8`](https://github.com/1weiho/open-slide/commit/ef265e8bad56355e52bda6d12d1b6e2676f68f4b) Thanks [@1weiho](https://github.com/1weiho)! - Show transition and step indicators in the slide overview grid.
+
+## 1.12.0
+
+### Minor Changes
+
+- [#211](https://github.com/1weiho/open-slide/pull/211) [`12ee858`](https://github.com/1weiho/open-slide/commit/12ee8587458843c8389344336d93fe07bd99a674) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Open the slide overview grid from the pages editor — press O or click the grid button next to the page count. The overlay adopts the editor theme instead of the present-mode black.
+
+### Patch Changes
+
+- [#230](https://github.com/1weiho/open-slide/pull/230) [`75653e1`](https://github.com/1weiho/open-slide/commit/75653e1abed5aed93ec9835fe5eee299ddde24e5) Thanks [@1weiho](https://github.com/1weiho)! - Add a one-click update action that upgrades open-slide and syncs bundled skills from the home sidebar.
+
+- [#219](https://github.com/1weiho/open-slide/pull/219) [`f5a60ad`](https://github.com/1weiho/open-slide/commit/f5a60ade563dd9e80f0ecb02fe696cb8bb70968c) Thanks [@adawang1210](https://github.com/adawang1210)! - Stop force-loading every registered font face before PDF export, which hung or crashed the tab on subsetted CJK webfonts.
+
+- [#216](https://github.com/1weiho/open-slide/pull/216) [`80dda4e`](https://github.com/1weiho/open-slide/commit/80dda4e687242bafd6bf56bfd64a5641e64034d2) Thanks [@poterpan](https://github.com/poterpan)! - Add webfont guidance to the slide-authoring skill: load the stylesheet once in `<head>`, list only the weights used, and subset CJK with `&text=`.
+
+## 1.11.1
+
+### Patch Changes
+
+- [#218](https://github.com/1weiho/open-slide/pull/218) [`ba26721`](https://github.com/1weiho/open-slide/commit/ba267217e4c66e5040123fc27847bc8a82ef82e1) Thanks [@adawang1210](https://github.com/adawang1210)! - Keep the notes textarea focused when Escape is pressed during IME composition.
+
+- [#220](https://github.com/1weiho/open-slide/pull/220) [`336bade`](https://github.com/1weiho/open-slide/commit/336badec7d2384457830c0db0a6c7242a2ea349f) Thanks [@adawang1210](https://github.com/adawang1210)! - Ignore Enter/Escape during IME composition in slide title, slide rename, asset rename, and folder name inputs.
+
+- [#217](https://github.com/1weiho/open-slide/pull/217) [`b8916e3`](https://github.com/1weiho/open-slide/commit/b8916e37a0071ed53bc6d5ef8c5c826f76da6c4c) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Fix PPTX export producing a theme that triggers PowerPoint's repair prompt by ensuring the fill style list has the schema-required three entries.
+
+- [#221](https://github.com/1weiho/open-slide/pull/221) [`9052f44`](https://github.com/1weiho/open-slide/commit/9052f4416f9835b0831dfe7aed546b3a74647d7a) Thanks [@adawang1210](https://github.com/adawang1210)! - Remove the touchcancel listener on cleanup in the present-mode swipe handler so listeners no longer accumulate while navigating.
+
+## 1.11.0
+
+### Minor Changes
+
+- [#207](https://github.com/1weiho/open-slide/pull/207) [`cb5ebf4`](https://github.com/1weiho/open-slide/commit/cb5ebf4208149417f072a29764431f091f123efa) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Add `base` to `OpenSlideConfig` for hosting under a subpath (e.g. GitHub Pages, Nginx subdirectory). Wires through to Vite's `base` and React Router's `basename`.
+
+- [#203](https://github.com/1weiho/open-slide/pull/203) [`5561b41`](https://github.com/1weiho/open-slide/commit/5561b410f732291c4fedeed63b76eff5ca24d6ef) Thanks [@1weiho](https://github.com/1weiho)! - Add slide-view shortcuts: Space advances, Enter plays in window, P opens presenter mode (F stays fullscreen).
+
+### Patch Changes
+
+- [#209](https://github.com/1weiho/open-slide/pull/209) [`b45389c`](https://github.com/1weiho/open-slide/commit/b45389c62e112adc3a4b5d31a796da1858058e58) Thanks [@1weiho](https://github.com/1weiho)! - Fix homepage thumbnails flashing at full size before scaling down by measuring the fit scale before first paint.
+
+- [#208](https://github.com/1weiho/open-slide/pull/208) [`2cbc7b4`](https://github.com/1weiho/open-slide/commit/2cbc7b408bfa918aa01f1db57162740a5cc91a69) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Presenter window now reflects in-slide `<Steps>` state: Now Showing mirrors the projection's revealed count, and Up Next previews the next step until the current slide's steps are exhausted before rolling over to the next slide.
+
+- [#197](https://github.com/1weiho/open-slide/pull/197) [`27230b3`](https://github.com/1weiho/open-slide/commit/27230b3213d53a6606d9c7d4d83d2c531f9aba44) Thanks [@mvanhorn](https://github.com/mvanhorn)! - Preserve raster backgrounds in PDF exports while stripping gradient layers.
+
+## 1.10.0
+
+### Minor Changes
+
+- [#164](https://github.com/1weiho/open-slide/pull/164) [`411a8c7`](https://github.com/1weiho/open-slide/commit/411a8c743e94e6703ab4d535529c853822179b3e) Thanks [@1weiho](https://github.com/1weiho)! - Add `Steps` / `Step` primitive for revealing page elements one-by-one via next/previous inputs.
+
+## 1.9.0
+
+### Minor Changes
+
+- [#188](https://github.com/1weiho/open-slide/pull/188) [`0d78b73`](https://github.com/1weiho/open-slide/commit/0d78b73549d6804d39263617bdcb8cd9ad3483f2) Thanks [@1weiho](https://github.com/1weiho)! - Add an "Export as image PPTX" download option that renders each slide to an image via html-to-image and stitches them into a one-page-per-slide PPTX, plus a coming-soon "Export as PPTX" entry for the editable format.
+
+- [#196](https://github.com/1weiho/open-slide/pull/196) [`0c99cf6`](https://github.com/1weiho/open-slide/commit/0c99cf60aa094c3bc3cd6d242ceba110742c9856) Thanks [@1weiho](https://github.com/1weiho)! - Show the open-slide version at the bottom of the home sidebar, with a hover hint to update when a newer release is available.
+
+- [#189](https://github.com/1weiho/open-slide/pull/189) [`6ae2dd9`](https://github.com/1weiho/open-slide/commit/6ae2dd9b188032d0b21bf43a7e3ab549b98db282) Thanks [@1weiho](https://github.com/1weiho)! - Add an in-UI language switcher (next to the theme toggle) that remembers the choice locally; deprecate `config.locale` and drop the `init` language prompt and `--locale` flag.
+
+### Patch Changes
+
+- [#180](https://github.com/1weiho/open-slide/pull/180) [`9b8202e`](https://github.com/1weiho/open-slide/commit/9b8202e8b17abc85caf5cd5a62c59e277a4f91ef) Thanks [@1weiho](https://github.com/1weiho)! - Remove duplicated internal helpers (HTTP `readBody`/`json`, slide-path resolution, the `SLIDE_ID_RE` pattern, and locale `format`/`plural`) by routing them through a single source.
+
+## 1.8.0
+
+### Minor Changes
+
+- [#165](https://github.com/1weiho/open-slide/pull/165) [`b6dfc99`](https://github.com/1weiho/open-slide/commit/b6dfc9954a5aa320aeb0475b49de0734a8755197) Thanks [@1weiho](https://github.com/1weiho)! - Drag folders in the sidebar to reorder them.
+
+### Patch Changes
+
+- [#174](https://github.com/1weiho/open-slide/pull/174) [`2b70cb4`](https://github.com/1weiho/open-slide/commit/2b70cb4f6e913365ca63caed5a5d6749cdf96a77) Thanks [@1weiho](https://github.com/1weiho)! - Stop marking imported assets as unused when they are passed as props to wrapper components (e.g. `<DiagramImage src={img} />`) instead of consumed directly by `<img src={img}>`.
+
+- [#160](https://github.com/1weiho/open-slide/pull/160) [`608ce61`](https://github.com/1weiho/open-slide/commit/608ce6134e8019a9c5e28c68b8f7458f41c0bb50) Thanks [@1weiho](https://github.com/1weiho)! - Fix invalid YAML in the create-theme skill frontmatter so it loads correctly.
+
+- [#179](https://github.com/1weiho/open-slide/pull/179) [`ea67658`](https://github.com/1weiho/open-slide/commit/ea67658061889f5e257af87b6f9e39953d92c153) Thanks [@1weiho](https://github.com/1weiho)! - Click-to-navigate no longer covers the slide in present mode or the mobile viewer — embedded videos, links, and other interactive content near the left/right edges stay clickable, and a stray outline no longer flashes on click.
+
+- [#172](https://github.com/1weiho/open-slide/pull/172) [`155049f`](https://github.com/1weiho/open-slide/commit/155049f30b6de64bc704eb9eee4eebea0bb76f44) Thanks [@why39](https://github.com/why39)! - Fix Inspect overlay on Windows: normalize path separators and strip HMR query/hash when matching slide source files.
+
+- [#175](https://github.com/1weiho/open-slide/pull/175) [`5e65d64`](https://github.com/1weiho/open-slide/commit/5e65d6438b10f8c9ff7ea23445eac05dd4ac692d) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Fix sidebar Draft/Themes/Assets rows not switching when clicking the icon — the whole icon area is now part of the select target. Also close the inspector comment panel when clicking outside it.
+
+- [#176](https://github.com/1weiho/open-slide/pull/176) [`c6cb866`](https://github.com/1weiho/open-slide/commit/c6cb8667fa0a0ffe1e661bdc34a4cd9c0bef7157) Thanks [@1weiho](https://github.com/1weiho)! - Edit a slide title by clicking it directly — hovering shows an outline, the title becomes an input on click, and the title is centered to the viewport. Replaces the pencil icon.
+
+## 1.7.0
+
+### Minor Changes
+
+- [#153](https://github.com/1weiho/open-slide/pull/153) [`7952a06`](https://github.com/1weiho/open-slide/commit/7952a06a518a5b444e7df34307aef13324e36518) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Add I and D shortcuts for the inspector and design panel, show a dashed hover frame alongside the inspector selection, and polish the inspector header and save bar.
+
+- [#148](https://github.com/1weiho/open-slide/pull/148) [`78333bc`](https://github.com/1weiho/open-slide/commit/78333bcd7156e511ad2c84a0800f084705c44536) Thanks [@1weiho](https://github.com/1weiho)! - Show a floating action panel below the inspector selection box when an image is selected, with quick-access Replace and Crop icons.
+
+- [#149](https://github.com/1weiho/open-slide/pull/149) [`26f6cb1`](https://github.com/1weiho/open-slide/commit/26f6cb13cdc1c738d41bd5bab90940b38562e828) Thanks [@1weiho](https://github.com/1weiho)! - Add SlideTransition API for declaring per-page page-transition animations, plus a transitions section in the bundled slide-authoring skill with tasteful few-shot examples.
+
+### Patch Changes
+
+- [#154](https://github.com/1weiho/open-slide/pull/154) [`51108f1`](https://github.com/1weiho/open-slide/commit/51108f1547942c2fb1cf6d18c62e8c449b5be587) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Truncate long slide titles in the editor header instead of letting them overlap the right-side controls.
+
 ## 1.6.0
 
 ### Minor Changes

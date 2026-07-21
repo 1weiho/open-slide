@@ -5,3 +5,4 @@ dist
 .vite
 *.tsbuildinfo
 .turbo
+packages/cli/template/.agents/skills

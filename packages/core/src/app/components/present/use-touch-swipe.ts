@@ -50,14 +50,17 @@ export function useTouchSwipe<T extends HTMLElement>({
       else onPrev();
     };
 
+    const onCancel = () => {
+      start.current = null;
+    };
+
     el.addEventListener('touchstart', onStart, { passive: true });
     el.addEventListener('touchend', onEnd);
-    el.addEventListener('touchcancel', () => {
-      start.current = null;
-    });
+    el.addEventListener('touchcancel', onCancel);
     return () => {
       el.removeEventListener('touchstart', onStart);
       el.removeEventListener('touchend', onEnd);
+      el.removeEventListener('touchcancel', onCancel);
     };
   }, [ref, enabled, onPrev, onNext]);
 }

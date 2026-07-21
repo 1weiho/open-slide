@@ -16,60 +16,96 @@ export default config;
 
 ## Schema
 
-```ts
-type OpenSlideBuildConfig = {
-  /** Show the deck index (the slide browser) in the static build. */
-  showSlideBrowser?: boolean;
-  /** Show on-canvas UI (toolbar, hints) in the static build. */
-  showSlideUi?: boolean;
-  /** Show the "download as HTML" button in the static build. */
-  allowHtmlDownload?: boolean;
-};
+<TypeTable
+  type={{
+    base: {
+      type: 'string',
+      default: "'/'",
+      description: 'Base public path for subpath hosting (leading + trailing slash).',
+    },
+    slidesDir: {
+      type: 'string',
+      default: "'slides'",
+      description: 'Folder that contains your decks.',
+    },
+    themesDir: {
+      type: 'string',
+      default: "'themes'",
+      description: 'Folder that holds theme markdown + demo files.',
+    },
+    assetsDir: {
+      type: 'string',
+      default: "'assets'",
+      description: 'Folder for global assets shared across decks.',
+    },
+    port: {
+      type: 'number',
+      default: 'first free port from 5173 upward',
+      description: 'Dev server port.',
+    },
+    build: {
+      type: 'OpenSlideBuildConfig',
+      default: 'all toggles on',
+      description: 'Build-time UI toggles (see below).',
+    },
+    locale: {
+      type: 'Locale',
+      deprecated: true,
+      description: 'Seeds the runtime UI language until one is picked in-app.',
+    },
+  }}
+/>
 
-type OpenSlideConfig = {
-  /** Folder that contains your decks. Default: 'slides'. */
-  slidesDir?: string;
-  /** Folder that holds theme markdown + demo files. Default: 'themes'. */
-  themesDir?: string;
-  /** Folder for global assets shared across decks. Default: 'assets'. */
-  assetsDir?: string;
-  /** Dev server port. Default: first free port from 5173 upward. */
-  port?: number;
-  /** UI language for the runtime (home, inspector, presenter, etc.). */
-  locale?: Locale;
-  /** Build-time UI toggles. */
-  build?: OpenSlideBuildConfig;
-};
-```
+### `build`
+
+Every toggle is on by default and only takes effect in the static build; the
+dev server always shows the full UI.
+
+<TypeTable
+  type={{
+    showSlideBrowser: {
+      type: 'boolean',
+      default: 'true',
+      description: 'Show the deck index (the slide browser) in the static build.',
+    },
+    showSlideUi: {
+      type: 'boolean',
+      default: 'true',
+      description: 'Show on-canvas UI (toolbar, hints) in the static build.',
+    },
+    allowHtmlDownload: {
+      type: 'boolean',
+      default: 'true',
+      description: 'Show the export menu (HTML, PDF, image PPTX) in the static build.',
+    },
+  }}
+/>
 
 ## Common recipes
 
 ### Public share
 
+Hide the slide browser, on-canvas UI, and export menu with the `build`
+toggles — see [Export](/docs/core-feature/export) for the annotated
+example.
+
+### Host under a subpath
+
+Set `base` to deploy the build under a sub-directory instead of the domain
+root — GitHub Pages project sites, a reverse-proxy folder, an intranet path.
+Use a leading and trailing slash:
+
 ```ts
 const config: OpenSlideConfig = {
-  build: {
-    showSlideBrowser: false,
-    showSlideUi: false,
-    allowHtmlDownload: false,
-  },
+  base: '/my-slides/',
 };
 ```
 
-### Multiple deck folders
+The value is passed straight to Vite's `base` and to React Router's
+`basename`, so client-side navigation matches the deployed path.
 
-`slidesDir` is a single path today. If you want multiple roots, group them
-under one folder and use subfolder ids.
+### Organizing many decks
 
-### Switch the UI language
-
-```ts
-import { zhTW } from '@open-slide/core/locale';
-
-const config: OpenSlideConfig = {
-  locale: zhTW,
-};
-```
-
-See [Locale](/docs/reference/locale) for the full list of presets and how to
-ship your own dictionary.
+`slidesDir` is a single path and decks must sit directly inside it
+(`slides/<id>/index.tsx` — nested folders are not discovered). To group
+decks, use the in-app sidebar folders (stored in `slides/.folders.json`).

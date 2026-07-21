@@ -43,7 +43,7 @@ export function ThemeToggle() {
             title={opt.label}
             onClick={() => setTheme(opt.value)}
             className={
-              'inline-flex items-center justify-center h-7 w-7 rounded-full transition-colors ' +
+              'pressable inline-flex items-center justify-center h-7 w-7 rounded-full ' +
               (active
                 ? 'bg-[color:var(--color-panel-hi)] text-[color:var(--color-text)] shadow-[inset_0_0_0_1px_var(--color-rule)]'
                 : 'text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]')

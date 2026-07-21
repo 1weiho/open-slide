@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateIcon, validateName } from './folders.ts';
+import { type Folder, validateIcon, validateName, validateReorder } from './folders.ts';
 
 describe('validateName', () => {
   it('trims whitespace and accepts non-empty strings', () => {
@@ -52,5 +52,32 @@ describe('validateIcon', () => {
     expect(validateIcon({ type: 'image', value: 'foo' })).toBeNull();
     expect(validateIcon(null)).toBeNull();
     expect(validateIcon('emoji')).toBeNull();
+  });
+});
+
+describe('validateReorder', () => {
+  const folders: Folder[] = [
+    { id: 'f-00000001', name: 'a', icon: { type: 'color', value: '#aabbcc' } },
+    { id: 'f-00000002', name: 'b', icon: { type: 'color', value: '#aabbcc' } },
+    { id: 'f-00000003', name: 'c', icon: { type: 'color', value: '#aabbcc' } },
+  ];
+
+  it('accepts a permutation of the current ids', () => {
+    expect(validateReorder(['f-00000003', 'f-00000001', 'f-00000002'], folders)).toEqual([
+      'f-00000003',
+      'f-00000001',
+      'f-00000002',
+    ]);
+  });
+
+  it('rejects non-arrays and wrong-length arrays', () => {
+    expect(validateReorder(null, folders)).toBeNull();
+    expect(validateReorder(['f-00000001'], folders)).toBeNull();
+  });
+
+  it('rejects duplicate ids, unknown ids, and malformed ids', () => {
+    expect(validateReorder(['f-00000001', 'f-00000001', 'f-00000002'], folders)).toBeNull();
+    expect(validateReorder(['f-00000001', 'f-00000002', 'f-99999999'], folders)).toBeNull();
+    expect(validateReorder(['f-00000001', 'f-00000002', 'nope'], folders)).toBeNull();
   });
 });

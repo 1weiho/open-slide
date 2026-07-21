@@ -5,6 +5,8 @@ export type PresenterState = {
   pageCount: number;
   blackout: 'black' | 'white' | null;
   startedAt: number; // epoch ms when present mode began
+  stepIndex: number;
+  stepCount: number;
 };
 
 export type PresenterCommand =

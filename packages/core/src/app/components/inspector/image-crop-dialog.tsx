@@ -79,9 +79,9 @@ export function ImageCropDialog({
         </DialogHeader>
         <div className="flex justify-center">
           <ToggleGroup
-            type="single"
-            value={fit}
-            onValueChange={(v) => {
+            value={[fit]}
+            onValueChange={(value) => {
+              const v = value[0];
               if (v === 'cover' || v === 'contain') setFit(v);
             }}
             variant="outline"

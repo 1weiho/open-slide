@@ -19,15 +19,10 @@ npx @open-slide/cli init
 
 ## Why open-slide
 
-Slides are visual code. Agents are great at writing code. open-slide is the
-missing runtime that turns *"make slides about X"* into a polished, presentable
-deck — without you ever leaving the chat.
-
-- **Agent-native authoring.** Ships with skills (`/create-slide`,
-  `/slide-authoring`, `/apply-comments`, `/create-theme`) that any
-  Claude Code, Codex, or Cursor session can call.
-- **In-browser inspector.** Click any element in the dev server, drop a
-  `@slide-comment`, and your agent applies it on the next `/apply-comments`.
+- **Agent-native authoring.** Ships with skills that any Claude Code, Codex,
+  or Cursor session can call.
+- **In-browser inspector.** Click any element in the dev server to tweak it
+  directly in the visual editor, or leave a comment for your agent to apply.
 - **Assets manager + svgl.** Drop in images, search 1500+ brand logos through
   the integrated [svgl](https://svgl.app/) catalogue.
 - **Professional present mode.** Fullscreen playback, presenter view, speaker
@@ -36,10 +31,6 @@ deck — without you ever leaving the chat.
   server.
 
 ## A slide is a file
-
-A slide is a React component. The runtime renders one component at a time
-onto a fixed 1920×1080 canvas, scales it to fit the viewport, and hands you
-the navigation, hot reload, and present mode.
 
 Each deck lives under `slides/<kebab-case-id>/`. The entry is
 `slides/<id>/index.tsx`. Assets sit alongside in `slides/<id>/assets/`.
@@ -60,35 +51,19 @@ export default [Cover] satisfies Page[];
 ```
 
 Two rules: the default export is an array of components (one per page), and
-each component fills its container (`width: '100%'` / `height: '100%'`). No
-DSL, no markdown chain — if you can build it in React, it's a slide.
+each component fills its container (`width: '100%'` / `height: '100%'`).
 
 ## The 1920 × 1080 canvas
 
-Every page renders into a fixed 1920×1080 box. The runtime scales that box
-uniformly to fit the viewport, so the same slide looks identical on a phone,
-a 4K monitor, and a beamer.
-
-Fixed canvas + uniform scaling means every pixel coordinate you write is the
-coordinate that ships — preview, stage, and exported PDF stay in lockstep.
-The constants are exported if you need them:
-
-```ts
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@open-slide/core';
-// 1920 × 1080
-```
-
-Inside a page, two layout patterns work well: **absolute coordinates**
-(`position: absolute` + pixel values — predictable, easy for an agent to
-write) and **flex/grid centring** for content that flows. Avoid responsive
-breakpoints; the canvas is fixed. Container queries (`containerType:
-'inline-size'` + `cqw` units) are a useful middle ground for reusable
-widgets.
+The runtime scales the canvas uniformly to fit the viewport, so the same
+slide looks identical on a phone, a 4K monitor, and a beamer — every pixel
+coordinate you write is the coordinate that ships, in preview, present mode,
+and export.
 
 ## What's next
 
 <Cards>
   <Card title="Get started" href="/docs/getting-started" />
-  <Card title="Create a slide" href="/docs/flow/create-slide" />
+  <Card title="Create a slide" href="/docs/skills/create-slide" />
   <Card title="Inspector & comments" href="/docs/core-feature/inspector" />
 </Cards>

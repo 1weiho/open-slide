@@ -1,6 +1,6 @@
 ---
 name: slide-authoring
-description: Technical reference for writing or editing open-slide pages — file contract, 1920×1080 canvas, type scale, layout, palette/visual direction, and assets. Consult this whenever you are about to write or modify any file under `slides/<id>/`, including from inside the `create-slide` or `apply-comments` workflows, or for any ad-hoc slide edit. Triggers on phrases like "edit slide", "tweak this page", "fix the layout", "change the palette", "investigate the slide framework", "how do slides work here".
+description: Technical reference for writing or editing open-slide pages — file contract, 1920×1080 canvas, type scale, layout, palette/visual direction, assets, stepped reveals, page transitions, and morph transitions. Consult this whenever you are about to write or modify any file under `slides/<id>/`, including from inside the `create-slide` or `apply-comments` workflows, or for any ad-hoc slide edit. Triggers on phrases like "edit slide", "tweak this page", "fix the layout", "change the palette", "reveal one by one", "add a transition", "morph transition", "investigate the slide framework", "how do slides work here".
 ---
 
 # Authoring open-slide pages
@@ -14,12 +14,26 @@ This skill is the **technical reference** for everything that happens inside `sl
 
 When any of those paths reach the point of *writing React code for a page*, this is the source of truth. Do not duplicate the knowledge below into other skills — link here instead.
 
+## Primitive references
+
+Each framework primitive has a full reference file under `references/` in this skill — contract, worked examples, and its own anti-patterns. This file keeps only the always-on rules and a short summary per primitive. **Read the relevant reference file before using a primitive on a page**:
+
+| Primitive | Read before | File |
+| --- | --- | --- |
+| `design` const + `var(--osd-X)` tokens | writing any new slide (default baseline) | `references/design-system.md` |
+| Assets + `<ImagePlaceholder>` | importing images/videos or leaving a placeholder | `references/assets.md` |
+| Webfonts | loading any non-system font | `references/webfonts.md` |
+| `useSlidePageNumber()` | rendering a page-number footer | `references/page-numbers.md` |
+| `<Steps>` / `<Step>` | staging a page's reveal | `references/steps.md` |
+| `SlideTransition` | declaring any enter/exit animation | `references/transitions.md` |
+| `MorphElement` + `morph` | morphing a shared element across pages | `references/morph.md` |
+
 ## Hard rules
 
 - Put the slide under `slides/<kebab-case-id>/`.
 - Entry is `slides/<id>/index.tsx`. Images/videos/fonts go under `slides/<id>/assets/`.
 - Do **not** touch `package.json`, `open-slide.config.ts`, or other slides.
-- Do not add dependencies. Only `react` and standard web APIs are available.
+- Do not add dependencies. Only `react`, `@open-slide/core`, and standard web APIs are available.
 - A slide is **one `index.tsx` plus `assets/`** — nothing else. Do not create sibling `.tsx`/`.ts` files (`Card.tsx`, `components/`, `helpers.ts`, etc.); helper components and constants go inside `index.tsx`. Do not create `README.md` or other prose files either.
 
 ## File contract
@@ -80,7 +94,7 @@ Every page renders into a fixed **1920 × 1080** canvas. The framework scales it
 
 ### Vertical budget — content MUST fit 1080px
 
-The canvas does **not** scroll. Anything below 1080px is silently cropped. Before writing JSX, do the math on paper and confirm the page fits. This is the #1 cause of broken slides — assume you will overflow unless you've checked.
+The canvas does **not** scroll. Anything past the 1080px bottom edge is silently cropped. Before writing JSX, do the math on paper and confirm the page fits. This is the #1 cause of broken slides — assume you will overflow unless you've checked.
 
 **Usable height** = `1080 − top_padding − bottom_padding`. With 120px padding on each side that's **840px**. With 160px each side, **760px**. Pick the padding first, then design within that budget.
 
@@ -106,7 +120,7 @@ Swap the heading to 120px or add a 6th bullet and you're over. **Verify every pa
 - A bullet should fit on one line at the chosen font size. If it wraps, either shorten the copy or move it to its own page.
 - Hero title pages (140–200px) carry a title + 1 subtitle + maybe an eyebrow — nothing else.
 - Section headings (80–120px) need almost nothing else on the page.
-- If you find yourself raising padding, shrinking type below the scale's lower bound, or tightening line-height under 1.4 to make things fit — **split into two pages instead**. Splitting is always the right answer when the budget is tight.
+- If you find yourself raising padding, shrinking type below the scale's lower bound, or tightening body line-height under 1.4 to make things fit — **split into two pages instead**. Splitting is always the right answer when the budget is tight.
 
 **Never** use `overflow: auto/scroll`, negative margins, or transforms to hide overflow. The canvas is fixed; cropped content is gone.
 
@@ -114,12 +128,16 @@ Swap the heading to 120px or add a 6th bullet and you're over. **Verify every pa
 
 Pick a coherent look and hold it across every page:
 
-- **Palette** — 1 background, 1 primary text, 1 accent, 1 muted. Define as constants at the top of the file.
+- **Palette** — 1 background, 1 primary text, 1 accent, 1 muted. Put bg/text/accent in the `design` const (see Design system below); extra colors like muted stay as plain consts.
 - **Typography** — one display font + one body font. System stack unless the user specifies. Heavy weight for headlines (800–900), normal for body (400–500).
 - **Layout grid** — pick a single content padding (e.g. 120px) and stick to it. Left-aligned content feels editorial; centered feels ceremonial.
 - **Aesthetic commitment** — choose ONE: minimal, maximalist, editorial, retro, brutalist, soft/pastel, neon, paper/print. Don't mix.
 
-Consult the `frontend-design` skill for deeper aesthetic guidance if the user wants something bold. For data visualisation — bar / line / pie / area / funnel / waterfall / scatter / KPI / sparkline / progress — see [`charts.md`](./charts.md) in this directory for the inline-SVG chart patterns.
+If the `frontend-design` skill is available, consult it for deeper aesthetic guidance when the user wants something bold. For data visualisation — bar / line / pie / area / funnel / waterfall / scatter / KPI / sparkline / progress — see [`charts.md`](./charts.md) in this directory for the inline-SVG chart patterns.
+
+## Webfonts
+
+The default is a system font stack — prefer it. When a deck genuinely needs a webfont (a brand font, or CJK / Thai / Arabic where system coverage is poor), read `references/webfonts.md` first — loading the stylesheet inside a page component registers the whole `@font-face` set once per mounted page, and CJK families need subsetting.
 
 ## Themes
 
@@ -129,47 +147,11 @@ Themes are produced by the `create-theme` skill and are pure documentation: copy
 
 ## Design system (opt-in, per-slide)
 
-A slide can declare its own typed design tokens at the top of `index.tsx`:
+A slide can declare typed design tokens at the top of `index.tsx` — `export const design: DesignSystem = { palette, fonts, typeScale, radius }` — and consume them via `var(--osd-X)` in inline styles. The framework injects the CSS variables at the canvas root, and the dev UI's Design panel can live-tweak them.
 
-```tsx
-import type { DesignSystem, Page } from '@open-slide/core';
+**Default to using it.** Every new slide should declare a `design` const so it stays tweakable from the panel after generation. Only fall back to plain palette constants for a one-off slide whose palette is intentionally locked (`references/design-system.md` covers the fallback).
 
-export const design: DesignSystem = {
-  palette: { bg: '#f7f5f0', text: '#1a1814', accent: '#6d4cff' },
-  fonts: {
-    display: 'Georgia, "Times New Roman", serif',
-    body: '-apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif',
-  },
-  typeScale: { hero: 168, body: 36 },
-  radius:    12,
-};
-```
-
-`export` it (rather than plain `const`) so the framework can read the object and inject CSS variables at the canvas root automatically.
-
-The shape is intentionally minimal — it only covers what the Design panel can currently tweak. Anything outside this set (heading sizes, spacing, motion, extra palette colors) belongs as plain hard-coded constants in the slide file.
-
-There are **two consumption surfaces**, and you should mix them inside the same slide:
-
-- **`var(--osd-X)` for visual properties (color, font, font-size, radius)** — these get instant updates while the user drags a slider in the Design panel, before any file write.
-  ```tsx
-  <div style={{ background: 'var(--osd-bg)', color: 'var(--osd-text)', borderRadius: 'var(--osd-radius)', fontFamily: 'var(--osd-font-body)', fontSize: 'var(--osd-size-body)' }}>
-  ```
-  Available vars: `--osd-bg`, `--osd-text`, `--osd-accent`, `--osd-font-display`, `--osd-font-body`, `--osd-size-hero`, `--osd-size-body`, `--osd-radius`.
-
-- **Direct `design.X` reads** — when you need a JS number for arithmetic or to label something in the UI. These update via HMR after the panel commits the file, not while dragging.
-  ```tsx
-  <p>{design.typeScale.hero}px</p>
-  ```
-
-The dev UI has a **Design** button in the slide header (next to Inspect). Edits update an in-memory draft and the live-preview overlay; a floating Save / Discard bar at the bottom of the canvas commits or reverts. The const stays the single source of truth — production builds bake the saved values.
-
-**Default to using it.** Every new slide should declare a `design` const so it stays tweakable from the panel after generation — this is the expected baseline. Only fall back to the local `palette` constants pattern (see starter template) for a one-off slide whose palette is intentionally locked and not meant to be re-themed. Both styles can coexist across slides — the panel only operates on the *currently viewed* slide.
-
-Format constraints (for the panel's AST writer):
-- Must be `[export] const design: DesignSystem = { … }` (or `as DesignSystem` / `satisfies DesignSystem`) at module top level.
-- Object initializer must be a literal — no spreads, no helper calls. Plain values only.
-- `DesignSystem` must be imported from `@open-slide/core` (the panel adds the import automatically when creating a fresh block).
+`references/design-system.md` has the full token shape, the two consumption surfaces (`var(--osd-X)` vs direct `design.X` reads), Design panel behavior, and the format constraints the panel's AST writer requires. Read it before writing the const.
 
 ## Starter template
 
@@ -249,64 +231,37 @@ export default [Cover, Content] satisfies Page[];
 
 ## Assets
 
-**Slide-local assets** live under `slides/<id>/assets/` — anything one-off to a single slide. Import them as ES modules:
+Slide-local assets live under `slides/<id>/assets/` and are imported as ES modules (`import hero from './assets/hero.jpg'`). Global assets shared across decks (logos, avatars, recurring icons) live in the project root `assets/` and are imported via the `@assets` alias. For a pure-text slide, don't create `slides/<id>/assets/` at all.
 
-```tsx
-import hero from './assets/hero.jpg';
-// …
-<img src={hero} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-```
-
-For URL-only access:
-
-```tsx
-const videoUrl = new URL('./assets/intro.mp4', import.meta.url).href;
-```
-
-**Global assets** — anything reused across decks or themes (company logos, presenter avatars, recurring icons) — live in the project root `assets/` folder. Import them via the `@assets` alias:
-
-```tsx
-import logo from '@assets/logos/acme.svg';
-```
-
-A `themes/*.md` file may name an asset path in its prose (e.g. "use `@assets/logos/acme.svg` in the title slot"); the slide imports it explicitly.
-
-Skip the `assets/` folder entirely for pure-text slides.
+`references/assets.md` covers import forms (module vs `new URL(...)`), the `@assets` alias, and how themes name asset paths.
 
 ## Image placeholders
 
-When a page genuinely needs a real image **the user has to provide** — a product screenshot, a team photo, a chart from their data — leave a typed placeholder instead of inventing a stand-in:
+When a page genuinely needs a real image **the user has to provide** (product screenshot, team photo, chart from their data), leave a typed `<ImagePlaceholder hint="…" />` from `@open-slide/core` instead of inventing a stand-in — the user replaces it via the Assets panel + inspector. **Do not** use placeholders for decoration or generic stock-photo filler; if type, layout, and color can carry the page, do that.
 
-```tsx
-import { ImagePlaceholder } from '@open-slide/core';
-
-<ImagePlaceholder hint="Product hero screenshot" width={1280} height={720} />
-```
-
-The user uploads the real file via the Assets panel, then clicks the placeholder in the inspector and picks "Replace…" — the JSX is rewritten to a real `<img>` with the import added.
-
-**Use a placeholder only when** a specific concrete image is required by the deck's topic. Examples that warrant one: a product-intro deck (product screenshot per feature), an offsite recap (team photo), a case study (customer logo, dashboard screenshot).
-
-**Do not use a placeholder** for decoration, generic "stock photo" filler, hero imagery on a text-heavy slide, or anywhere a typographic / iconographic / illustrative solution would do. If you can carry the page with type, layout, and color — do that. Empty placeholders the user has to fill are friction; only spend that friction when the alternative is worse.
-
-Size the placeholder to the slot it occupies. Pass `width`/`height` when the layout has a fixed image box; omit them when the placeholder fills a flex/grid cell. The `hint` should describe the *content* the user needs ("Q3 revenue chart") not the *role* ("hero image").
+`references/assets.md` has the full usage rules, sizing guidance, and examples of when a placeholder is (and isn't) warranted.
 
 ## Page numbers
 
-If a footer shows the current page (`03 / 12`, `Page 3`, etc.), read it from `useSlidePageNumber()` — **never hardcode** `n` / `TOTAL`. Inserting, reordering, or deleting a page would otherwise force you to retouch every footer.
+If a footer shows the current page (`03 / 12`), read it from `useSlidePageNumber()` — **never hardcode** `n` / `TOTAL`. See `references/page-numbers.md` for the hook's contract and where it can be called.
 
-```tsx
-import { useSlidePageNumber } from '@open-slide/core';
+## Stepped reveals (`<Steps>` / `<Step>`)
 
-const Footer = () => {
-  const { current, total } = useSlidePageNumber();
-  return (
-    <span>{String(current).padStart(2, '0')} / {String(total).padStart(2, '0')}</span>
-  );
-};
-```
+Reveal a page one beat at a time: wrap deferred parts in `<Step>`, the group in `<Steps>`; each `→` reveals the next step. Use it when the *order* of ideas is the point — not reflexively on every page. Two rules are load-bearing: `<Step>` must be a **direct child** of `<Steps>` (otherwise it silently renders fully revealed), and a page must still read as complete when jumped to via the overview grid (jumping in shows all steps revealed).
 
-`current` is 1-indexed (matches what readers see) and `total` is the slide's page count. The hook works in every render context (main viewer, thumbnails, overview grid, present mode, presenter window, HTML/PDF export) — the same `<Footer />` JSX is correct everywhere. Call the hook inside a component that's used **per page**; don't try to call it at module top level.
+Read `references/steps.md` before authoring a stepped page — it covers composition order across multiple `<Steps>` blocks, the "headline always, body in turn" pattern, and entry-direction behavior. If `slides/build-on-reveal/` exists in this project, it is the canonical worked example.
+
+## Page transitions
+
+The framework can run an enter/exit animation between slide changes, declared as a `SlideTransition` (module-level default, per-page override; the **incoming page wins**). There's **no default** — pages snap unless you opt in, and snap-swap is a perfectly tasteful default. If you do opt in: one motion DNA per deck, 140–280 ms, magnitude under 12 px / 3% scale, opacity always part of it.
+
+Read `references/transitions.md` before declaring one — it has the full type contract, design principles, a six-member "tasteful family" of ready-to-use transitions sharing one DNA, direction-aware keyframes, and the anti-pattern list.
+
+## Morph transitions
+
+When the *same visual object* exists on two adjacent pages, wrap it on both pages in `MorphElement` with the same `id` and enable `morph` on the incoming page's transition — position, size, radius, and colors interpolate in one continuous move (Keynote's "Magic Move"). Morph is for **state continuity** (a toggle sliding, a card expanding, a box joining a row); don't morph decoration.
+
+Read `references/morph.md` before writing one — the seven rules there (opacity-only enter/exit, deterministic geometry, no `transform` on the morph node, `useIsActivePage()` gating, …) were each earned on a real deck, and violating any of them produces a visibly broken morph.
 
 ## Repeated elements: component, not `map`
 
@@ -373,6 +328,9 @@ This applies whenever the *visual element* repeats, not whenever the *data* does
 - [ ] Visually repeated elements (cards, tiles, logo rows) are rendered as explicit `<Component />` instances, not via `array.map` over a data list.
 - [ ] All imported assets exist on disk — slide-local under `slides/<id>/assets/`, or global under `assets/` (imported via `@assets/...`).
 - [ ] Every `<ImagePlaceholder>` corresponds to a real image the user must supply — not decorative filler. If it could be replaced by typography or layout, it should be.
+- [ ] If a page uses `<Steps>`/`<Step>`, every `<Step>` is a direct child of a `<Steps>`, and the page still reads as complete when jumped to via the overview grid (entering forward builds up; jumping in shows it fully revealed).
+- [ ] If a `SlideTransition` is declared, every page sits in one family — same duration band (140–280 ms), same easing pair, same out-then-in stagger, magnitude under 12 px / 3%. No six-different-vocabularies decks. When in doubt, omit transitions entirely. (Pages that opt into `morph` may exceed the band to match the morph — see `references/morph.md`.)
+- [ ] If a transition opts into `morph`: every morph `id` is unique per page and stable across the pair, morph geometry is pixel-constant (never measured after mount), no `transform` sits on the morph node, and entrance animations are gated behind `useIsActivePage()`.
 - [ ] Nothing outside `slides/<id>/` was edited.
 
 ## Anti-patterns
@@ -385,10 +343,8 @@ This applies whenever the *visual element* repeats, not whenever the *data* does
 - ❌ Bullets that wrap to a second line — either shorten or move to its own page.
 - ❌ Body type under 28px — unreadable on a projector.
 - ❌ Inconsistent palette across pages.
-- ❌ Installing packages. Only `react` and standard web APIs are available.
+- ❌ Installing packages. Only `react`, `@open-slide/core`, and standard web APIs are available.
 - ❌ Writing CSS to a shared file. Inline styles or scoped classnames only.
 - ❌ Creating `README.md` or other prose files inside the slide folder.
 - ❌ Editing `package.json`, `open-slide.config.ts`, or other slides.
-- ❌ Sprinkling `<ImagePlaceholder>` across pages "for visual interest". Placeholders are for content the user owns; they're not stock-photo slots.
-- ❌ Using a placeholder for an icon or decorative shape — those are typography/SVG problems, not asset problems.
-- ❌ Rendering visually repeated elements with `array.map(...)` over a data array. Define a component and instantiate it explicitly per item (`<Card />`, `<Card />`, `<Card />`) so the inspector can edit each independently — a shared `map` body mutates every instance at once.
+- ❌ Using a primitive without reading its reference file — each `references/*.md` carries the primitive's own anti-pattern list (placeholder misuse, transition vocabulary, `<Step>` nesting, morph geometry).

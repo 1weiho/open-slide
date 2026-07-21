@@ -6,8 +6,6 @@ description: Turns inspector comments into real edits.
 `/apply-comments` closes the visual feedback loop. You drop comments through
 the inspector; the skill resolves them into code edits.
 
-For the full iteration loop see [Iterate](/docs/flow/iterate).
-
 ## What it does
 
 1. Scans the workspace for `@slide-comment` markers.
@@ -37,5 +35,7 @@ After a batch of inspector comments — typically right before saving the
 deck for the day or right before a rehearsal. Refreshing the dev server
 after `/apply-comments` shows the new state with the markers cleared.
 
-If a comment is ambiguous, the agent will leave the marker in place and
-explain why. Refine the comment text and re-run.
+If a comment is ambiguous, the agent applies the smallest reasonable
+interpretation and notes the assumption in its summary. Comments it can't
+resolve at all are left in place and reported as skipped — refine the
+wording and re-run.

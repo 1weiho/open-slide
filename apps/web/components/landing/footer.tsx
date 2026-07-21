@@ -1,10 +1,20 @@
+import Image from 'next/image';
+import { VercelOssBadge } from './vercel-oss-badge';
+
 export function Footer() {
   return (
-    <footer className="border-t border-[color:var(--color-rule)] bg-[color:var(--color-panel)]/60">
+    <footer className="border-t border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)]/50">
       <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-10 sm:py-14 grid grid-cols-12 gap-x-6 gap-y-10">
         <div className="col-span-12 lg:col-span-4 flex flex-col gap-4">
-          <div className="flex items-center gap-3 font-[family-name:var(--font-mono)] text-[13px]">
-            <img src="/open-slide.png" alt="" aria-hidden className="h-6 w-6 rounded-[4px]" />
+          <div className="flex items-center gap-2.5 text-[14px] font-medium">
+            <Image
+              src="/open-slide.png"
+              alt=""
+              aria-hidden
+              width={24}
+              height={24}
+              className="h-6 w-6 rounded-[4px]"
+            />
             <span className="tracking-[-0.01em]">open-slide</span>
           </div>
           <p className="text-[14px] leading-[1.6] text-[color:var(--color-muted)] max-w-[38ch]">
@@ -17,9 +27,8 @@ export function Footer() {
           title="Product"
           links={[
             ['Live demo', '#demo'],
-            ['How it works', '#how-it-works'],
-            ['Anatomy', '#anatomy'],
-            ['Principles', '#principles'],
+            ['Docs', '/docs'],
+            ['FAQ', '#faq'],
           ]}
         />
         <FooterCol
@@ -40,8 +49,8 @@ export function Footer() {
       </div>
 
       <div className="border-t border-[color:var(--color-rule)]">
-        <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.18em] uppercase text-[color:var(--color-muted)]">
-          <span>© open-slide · MIT</span>
+        <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 text-[13px] text-[color:var(--color-muted)]">
+          <VercelOssBadge imageClassName="h-4 sm:h-5" />
           <span>
             Crafted with 🤍 by{' '}
             <a

@@ -3,10 +3,10 @@
   "pages": [
     "index",
     "getting-started",
-    "---Flow---",
-    "...flow",
     "---Core feature---",
     "...core-feature",
+    "---Primitive---",
+    "...primitive",
     "---Skills---",
     "...skills",
     "---CLI---",

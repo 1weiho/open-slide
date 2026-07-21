@@ -42,8 +42,18 @@ export type Locale = {
     themes: string;
     assets: string;
     folders: string;
+    slides: string;
+    menu: string;
     newFolder: string;
     folderName: string;
+    updateAvailable: string;
+    updatePackage: string;
+    updatingPackage: string;
+    updatePackageDone: string;
+    updatePackageFailed: string;
+    restartServer: string;
+    restartingServer: string;
+    restartServerFailed: string;
     changeIcon: string;
     iconEmojiTab: string;
     iconColorTab: string;
@@ -90,6 +100,7 @@ export type Locale = {
     /** template: "Deleted folder “{name}”" */
     toastFolderDeleted: string;
     toastFolderDeleteFailed: string;
+    toastFolderReorderFailed: string;
     pickIcon: string;
   };
 
@@ -102,11 +113,17 @@ export type Locale = {
     agentDisconnectedTooltip: string;
     download: string;
     copyLink: string;
+    moreActions: string;
     toastCopyLinkSuccess: string;
     toastCopyLinkFailed: string;
     exportAsHtml: string;
     exportAsPdf: string;
+    exportAsImagePptx: string;
+    exportAsPptx: string;
+    comingSoon: string;
+    pptxComingSoonTooltip: string;
     pdfExportFailed: string;
+    imagePptxExportFailed: string;
     pdfExportSafariUnsupported: string;
     present: string;
     presentMenuAria: string;
@@ -117,6 +134,7 @@ export type Locale = {
     assetsTab: string;
     renameSlide: string;
     loadingEyebrow: string;
+    loadingAssetsEyebrow: string;
     emptyEyebrow: string;
     nothingToShow: string;
     emptyHintPrefix: string;
@@ -132,6 +150,8 @@ export type Locale = {
     lastSlide: string;
     endOfDeck: string;
     speakerNotes: string;
+    notesTextSmaller: string;
+    notesTextLarger: string;
     noNotesPrefix: string;
     noNotesSuffix: string;
     blackScreen: string;
@@ -147,6 +167,7 @@ export type Locale = {
     jump: string;
     /** template: "Loading {slideId}…" */
     loadingSlide: string;
+    loadingAssets: string;
   };
 
   present: {
@@ -275,7 +296,37 @@ export type Locale = {
     scopeGlobal: string;
     /** templates: "{count} file" / "{count} files" */
     fileCount: Plural;
+    createdAt: string;
+    modifiedAt: string;
+    nameColumn: string;
+    typeColumn: string;
+    sizeColumn: string;
+    statusColumn: string;
+    sortAria: string;
+    /** template: "Sort by {column}" */
+    sortByColumn: string;
+    sortAscending: string;
+    sortDescending: string;
+    assetSearchPlaceholder: string;
+    clearAssetSearch: string;
+    usageFilterAria: string;
+    usageAll: string;
+    usageUsed: string;
     usageUnused: string;
+    typeFilterAria: string;
+    typeAll: string;
+    typeImage: string;
+    typeFont: string;
+    typeVideo: string;
+    typeOther: string;
+    gridViewAria: string;
+    listViewAria: string;
+    gridColumnsAria: string;
+    /** template: "{count} columns" */
+    gridColumnsValue: string;
+    noMatchingAssets: string;
+    noMatchingAssetsHint: string;
+    clearFilters: string;
     searchLogos: string;
     upload: string;
     dropToUpload: string;
@@ -357,6 +408,13 @@ export type Locale = {
     toastDuplicateFailed: string;
     toastDeleteFailed: string;
     resizeRail: string;
+    transitionIndicator: string;
+    stepsIndicator: string;
+    overviewAria: string;
+    /** template: "Scroll up to current page {n}" */
+    scrollUpToCurrentPage: string;
+    /** template: "Scroll down to current page {n}" */
+    scrollDownToCurrentPage: string;
   };
 
   pdfToast: {
@@ -364,6 +422,14 @@ export type Locale = {
     /** template: "Processing page {current} of {total}" */
     processing: string;
     printing: string;
+    done: string;
+  };
+
+  pptxToast: {
+    title: string;
+    /** template: "Rendering page {current} of {total}" */
+    processing: string;
+    generating: string;
     done: string;
   };
 
@@ -375,9 +441,9 @@ export type Locale = {
     system: string;
   };
 
-  clickNav: {
-    prevAria: string;
-    nextAria: string;
+  languageToggle: {
+    toggleAria: string;
+    title: string;
   };
 
   imagePlaceholder: {

@@ -3,27 +3,17 @@ import {
   AlignJustify,
   AlignLeft,
   AlignRight,
-  ArrowDownToLine,
   Bold,
   Crop,
+  Crosshair,
   ImageIcon,
   Italic,
-  Loader2,
-  Upload,
   X,
 } from 'lucide-react';
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { toast } from 'sonner';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Field, NumberField, Section } from '@/components/panel/panel-fields';
 import { PANEL_TRANSITION_MS, PanelShell, useAnimatedOpen } from '@/components/panel/panel-shell';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -34,18 +24,16 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Slider } from '@/components/ui/slider';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { type AssetEntry, uploadWithAutoRename, useAssets } from '@/lib/assets';
 import { findSlideSource } from '@/lib/inspector/fiber';
 import type { EditOp } from '@/lib/inspector/use-editor';
 import { useAgentSocketConnected } from '@/lib/use-agent-socket';
-import { format, useLocale } from '@/lib/use-locale';
-import { cn } from '@/lib/utils';
+import { useLocale } from '@/lib/use-locale';
 import type { Locale } from '../../../locale/types';
+import { AssetPickerDialog } from './asset-picker-dialog';
 import { type SelectedTarget, useInspector } from './inspector-provider';
 
 type ElementSnapshot = {
@@ -249,6 +237,7 @@ export function InspectorPanel() {
       header={
         <>
           <div className="flex min-w-0 items-center gap-2">
+            <Crosshair className="size-3.5 text-muted-foreground" />
             <span className="font-heading text-[12px] font-semibold tracking-tight">
               {t.inspector.inspect}
             </span>
@@ -274,16 +263,17 @@ export function InspectorPanel() {
       footer={<CommentsSection selected={pinSelected} onAdd={add} />}
     >
       {pinSnapshot.text !== null && (
-        <Section title={t.inspector.contentSection}>
-          <ContentField
-            snapshot={pinSnapshot}
-            apply={apply}
-            onSelectionChange={setContentSelection}
-          />
-        </Section>
+        <>
+          <Section title={t.inspector.contentSection}>
+            <ContentField
+              snapshot={pinSnapshot}
+              apply={apply}
+              onSelectionChange={setContentSelection}
+            />
+          </Section>
+          <Separator />
+        </>
       )}
-
-      <Separator />
 
       <Section title={t.inspector.typographySection}>
         <FontSizeField snapshot={typographySnapshot} apply={applyTextStyle} />
@@ -317,12 +307,7 @@ export function InspectorPanel() {
         <>
           <Separator />
           <Section title={t.inspector.imageSection}>
-            <ImageField
-              slideId={slideId}
-              src={pinSnapshot.imageSrc}
-              anchor={pinSelected.anchor}
-              apply={apply}
-            />
+            <ImageField src={pinSnapshot.imageSrc} anchor={pinSelected.anchor} />
           </Section>
         </>
       )}
@@ -464,7 +449,7 @@ function FontSizeField({
         max={200}
         step={1}
         value={[snapshot.fontSize]}
-        onValueChange={([v]) => set(v ?? snapshot.fontSize)}
+        onValueChange={(v) => set((Array.isArray(v) ? v[0] : v) ?? snapshot.fontSize)}
         className="flex-1"
       />
       <NumberField
@@ -501,6 +486,7 @@ function FontWeightField({
   return (
     <Field label={t.inspector.weightLabel}>
       <Select
+        items={Object.fromEntries(weightOptions.map((opt) => [opt.value, opt.label]))}
         value={String(snapshot.fontWeight)}
         onValueChange={(value) => {
           const n = Number(value);
@@ -583,7 +569,7 @@ function LineHeightField({
         max={3}
         step={0.05}
         value={[v]}
-        onValueChange={([n]) => set(n ?? v)}
+        onValueChange={(next) => set((Array.isArray(next) ? next[0] : next) ?? v)}
         className="flex-1"
       />
       <NumberField value={round2(v)} onChange={set} step={0.05} min={0.5} max={5} />
@@ -615,7 +601,9 @@ function LetterSpacingField({
         max={20}
         step={0.1}
         value={[snapshot.letterSpacing]}
-        onValueChange={([n]) => set(n ?? snapshot.letterSpacing)}
+        onValueChange={(next) =>
+          set((Array.isArray(next) ? next[0] : next) ?? snapshot.letterSpacing)
+        }
         className="flex-1"
       />
       <NumberField
@@ -648,17 +636,17 @@ function TextAlignField({
   return (
     <Field label={t.inspector.alignLabel}>
       <ToggleGroup
-        type="single"
         size="sm"
         variant="outline"
-        value={snapshot.textAlign}
+        value={[snapshot.textAlign]}
         onValueChange={(value) => {
-          if (!value) return;
+          const next = value[0];
+          if (!next) return;
           apply([
             {
               kind: 'set-style',
               key: 'textAlign',
-              value: value === 'left' ? null : value,
+              value: next === 'left' ? null : next,
             },
           ]);
         }}
@@ -747,20 +735,9 @@ function ColorField({
   );
 }
 
-function ImageField({
-  slideId,
-  src,
-  anchor,
-  apply,
-}: {
-  slideId: string;
-  src: string;
-  anchor: HTMLElement;
-  apply: (ops: EditOp[]) => void;
-}) {
-  const [open, setOpen] = useState(false);
+function ImageField({ src, anchor }: { src: string; anchor: HTMLElement }) {
   const t = useLocale();
-  const { openCrop } = useInspector();
+  const { openCrop, openReplace } = useInspector();
   const isImage = anchor.tagName === 'IMG';
   return (
     <div className="space-y-2">
@@ -782,7 +759,7 @@ function ImageField({
             variant="outline"
             size="sm"
             className="flex-1"
-            onClick={() => setOpen(true)}
+            onClick={() => openReplace(anchor)}
           >
             <ImageIcon className="size-3.5" />
             {t.inspector.replace}
@@ -801,36 +778,6 @@ function ImageField({
           )}
         </div>
       </div>
-      {open && (
-        <AssetPickerDialog
-          slideId={slideId}
-          onClose={() => setOpen(false)}
-          onPick={(asset, scope) => {
-            setOpen(false);
-            const assetPath =
-              scope === 'global' ? `@assets/${asset.name}` : `./assets/${asset.name}`;
-            const ops: EditOp[] = [
-              {
-                kind: 'set-attr-asset',
-                attr: 'src',
-                assetPath,
-                previewUrl: asset.url,
-              },
-            ];
-            if (isImage) {
-              const cs = window.getComputedStyle(anchor);
-              if (cs.objectFit !== 'cover' && cs.objectFit !== 'contain') {
-                ops.push({ kind: 'set-style', key: 'objectFit', value: 'cover' });
-              }
-              const op = cs.objectPosition.trim();
-              if (!op || op === '0% 0%' || op === 'auto') {
-                ops.push({ kind: 'set-style', key: 'objectPosition', value: '50% 50%' });
-              }
-            }
-            apply(ops);
-          }}
-        />
-      )}
     </div>
   );
 }
@@ -894,212 +841,37 @@ function PlaceholderField({
   );
 }
 
-type PickerScope = 'slide' | 'global';
-const GLOBAL_PICKER_SLIDE_ID = '@global';
-
-function AssetPickerDialog({
-  slideId,
-  onClose,
-  onPick,
-}: {
-  slideId: string;
-  onClose: () => void;
-  onPick: (asset: AssetEntry, scope: PickerScope) => void;
-}) {
-  const [scope, setScope] = useState<PickerScope>('slide');
-  const effectiveSlideId = scope === 'global' ? GLOBAL_PICKER_SLIDE_ID : slideId;
-  const { assets, loading, refresh } = useAssets(effectiveSlideId);
-  const images = assets.filter((a) => a.mime.startsWith('image/'));
-  const t = useLocale();
-  const path = scope === 'global' ? 'assets/' : `slides/${slideId}/assets/`;
-  const [descPrefix, descSuffix] = t.inspector.replaceImageDescription.split('{path}');
-  const [uploading, setUploading] = useState(false);
-  const [dragActive, setDragActive] = useState(false);
-  const dragDepth = useRef(0);
-  const inputId = useId();
-
-  const handleFile = useCallback(
-    async (file: File) => {
-      if (!file.type.startsWith('image/')) return;
-      setUploading(true);
-      try {
-        const { ok, status, entry } = await uploadWithAutoRename(effectiveSlideId, file);
-        if (!ok || !entry) {
-          toast.error(format(t.asset.toastUploadFailed, { status }));
-          return;
-        }
-        await refresh().catch(() => {});
-        onPick(entry, scope);
-      } finally {
-        setUploading(false);
-      }
-    },
-    [effectiveSlideId, scope, refresh, onPick, t],
-  );
-
-  return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>{t.inspector.replaceImageDialogTitle}</DialogTitle>
-          <DialogDescription>
-            {descPrefix}
-            <span className="font-mono">{path}</span>
-            {descSuffix}
-          </DialogDescription>
-        </DialogHeader>
-        <Tabs value={scope} onValueChange={(next) => setScope(next as PickerScope)}>
-          <TabsList>
-            <TabsTrigger value="slide">{t.asset.scopeSlide}</TabsTrigger>
-            <TabsTrigger value="global">{t.asset.scopeGlobal}</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <label
-          htmlFor={inputId}
-          className={cn(
-            'absolute right-12 top-3.5 inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-[5px] border border-border bg-card px-2 text-[12px] font-medium transition-colors',
-            'hover:bg-muted/60 hover:border-foreground/20 active:translate-y-px',
-            uploading && 'pointer-events-none opacity-60',
-          )}
-        >
-          {uploading ? (
-            <Loader2 className="size-3.5 animate-spin" />
-          ) : (
-            <Upload className="size-3.5" />
-          )}
-          <span>{t.asset.upload}</span>
-        </label>
-        <input
-          id={inputId}
-          type="file"
-          accept="image/*"
-          className="sr-only"
-          disabled={uploading}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            e.target.value = '';
-            if (file) handleFile(file).catch(() => {});
-          }}
-        />
-        <section
-          aria-label={t.inspector.replaceImageDialogTitle}
-          className="relative max-h-[60vh] overflow-y-auto"
-          onDragEnter={(e) => {
-            if (uploading || !hasFiles(e)) return;
-            e.preventDefault();
-            dragDepth.current += 1;
-            setDragActive(true);
-          }}
-          onDragOver={(e) => {
-            if (uploading || !hasFiles(e)) return;
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'copy';
-          }}
-          onDragLeave={() => {
-            dragDepth.current = Math.max(0, dragDepth.current - 1);
-            if (dragDepth.current === 0) setDragActive(false);
-          }}
-          onDrop={(e) => {
-            if (uploading || !hasFiles(e)) return;
-            e.preventDefault();
-            dragDepth.current = 0;
-            setDragActive(false);
-            const file = e.dataTransfer.files?.[0];
-            if (file) handleFile(file).catch(() => {});
-          }}
-        >
-          {loading ? (
-            <p className="px-1 py-6 text-center text-xs text-muted-foreground">
-              {t.inspector.pickerLoading}
-            </p>
-          ) : images.length === 0 ? (
-            <p className="px-1 py-6 text-center text-xs text-muted-foreground">
-              {t.inspector.pickerEmpty}
-            </p>
-          ) : (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-3">
-              {images.map((asset) => (
-                <button
-                  key={asset.name}
-                  type="button"
-                  onClick={() => onPick(asset, scope)}
-                  className={cn(
-                    'group flex flex-col overflow-hidden rounded-lg border bg-card text-left shadow-sm transition-all',
-                    'hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none',
-                  )}
-                >
-                  <div className="flex aspect-square w-full items-center justify-center overflow-hidden bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:12px_12px]">
-                    <img
-                      src={asset.url}
-                      alt=""
-                      className="size-full object-contain"
-                      draggable={false}
-                    />
-                  </div>
-                  <div className="border-t px-2 py-1.5">
-                    <div className="truncate text-[11px] font-medium" title={asset.name}>
-                      {asset.name}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-          {dragActive && (
-            <div
-              className="pointer-events-none absolute inset-0 z-10 animate-in fade-in-0 duration-200"
-              aria-hidden
-            >
-              <div className="absolute inset-0 bg-brand/5" />
-              <div className="absolute inset-1 rounded-[8px] border border-dashed border-brand/40" />
-              <div className="absolute inset-x-0 bottom-4 flex justify-center">
-                <div className="flex items-center gap-2 rounded-[6px] border border-border bg-card px-3 py-1.5 text-[12px] font-medium shadow-floating">
-                  <ArrowDownToLine className="size-3.5 text-brand" />
-                  <span>{t.asset.dropToUpload}</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </section>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function hasFiles(e: React.DragEvent): boolean {
-  const types = e.dataTransfer?.types;
-  if (!types) return false;
-  for (let i = 0; i < types.length; i++) {
-    if (types[i] === 'Files') return true;
-  }
-  return false;
-}
-
 function AgentWatchingBadge() {
   const t = useLocale();
   const connected = useAgentSocketConnected();
   return (
-    <TooltipProvider delayDuration={200}>
+    <TooltipProvider delay={200}>
       <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            className="flex shrink-0 cursor-help items-center gap-1.5 rounded-[3px] border border-hairline bg-card px-1.5 py-px text-[10.5px] text-foreground/85 outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-          >
-            <span aria-hidden className="relative flex size-1.5 items-center justify-center">
-              {connected ? (
-                <>
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-60" />
-                  <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
-                </>
-              ) : (
-                <span className="relative inline-flex size-1.5 rounded-full bg-rose-500" />
-              )}
-            </span>
-            {connected ? t.inspector.agentWatching : t.inspector.agentNotWatching}
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom" align="end" className="max-w-[260px] leading-relaxed">
+        <TooltipTrigger
+          render={
+            <button
+              type="button"
+              className="flex shrink-0 cursor-help items-center gap-1.5 rounded-[3px] border border-hairline bg-card px-1.5 py-px text-[10.5px] text-foreground/85 outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+            >
+              <span aria-hidden className="relative flex size-1.5 items-center justify-center">
+                {connected ? (
+                  <>
+                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+                    <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
+                  </>
+                ) : (
+                  <span className="relative inline-flex size-1.5 rounded-full bg-rose-500" />
+                )}
+              </span>
+              {connected ? t.inspector.agentWatching : t.inspector.agentNotWatching}
+            </button>
+          }
+        />
+        <TooltipContent
+          side="bottom"
+          align="end"
+          className="w-max max-w-[min(520px,calc(100vw-2rem))] text-center leading-relaxed"
+        >
           {connected ? t.inspector.agentWatchingTooltip : t.inspector.agentNotWatchingTooltip}
         </TooltipContent>
       </Tooltip>

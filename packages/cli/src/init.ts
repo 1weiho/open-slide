@@ -11,22 +11,6 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const TEMPLATE_DIR = resolve(HERE, '..', 'template');
 const IS_WINDOWS = process.platform === 'win32';
 
-export type LocaleCode = 'en' | 'zh-TW' | 'zh-CN' | 'ja';
-
-export const LOCALE_CHOICES: ReadonlyArray<{ title: string; value: LocaleCode }> = [
-  { title: 'English', value: 'en' },
-  { title: '繁體中文', value: 'zh-TW' },
-  { title: '简体中文', value: 'zh-CN' },
-  { title: '日本語', value: 'ja' },
-];
-
-const LOCALE_IMPORTS: Record<LocaleCode, string | null> = {
-  en: null,
-  'zh-TW': 'zhTW',
-  'zh-CN': 'zhCN',
-  ja: 'ja',
-};
-
 export interface InitOptions {
   dir: string;
   force: boolean;
@@ -34,7 +18,19 @@ export interface InitOptions {
   packageManager: PackageManager;
   install: boolean;
   git: boolean;
-  locale: LocaleCode;
+}
+
+export function sanitizeDirName(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed === '.' || trimmed === '..') return trimmed;
+  const cleaned = trimmed
+    .replace(/\s+/g, '-')
+    .replace(/[^\\\p{L}\p{N}_./-]/gu, '-')
+    .replace(/-+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .replace(/-*([/\\])-*/g, '$1');
+  if (cleaned === '' || /^[/\\]+$/.test(cleaned)) return 'my-slides';
+  return cleaned;
 }
 
 export async function isDirNonEmpty(target: string): Promise<boolean> {
@@ -80,31 +76,6 @@ async function materializeTemplateLinks(target: string): Promise<void> {
   }
 }
 
-function renderConfigFile(locale: LocaleCode): string {
-  const localeImport = LOCALE_IMPORTS[locale];
-  if (!localeImport) {
-    return [
-      "import type { OpenSlideConfig } from '@open-slide/core';",
-      '',
-      'const openSlideConfig: OpenSlideConfig = {};',
-      '',
-      'export default openSlideConfig;',
-      '',
-    ].join('\n');
-  }
-  return [
-    "import type { OpenSlideConfig } from '@open-slide/core';",
-    `import { ${localeImport} } from '@open-slide/core/locale';`,
-    '',
-    'const openSlideConfig: OpenSlideConfig = {',
-    `  locale: ${localeImport},`,
-    '};',
-    '',
-    'export default openSlideConfig;',
-    '',
-  ].join('\n');
-}
-
 async function runInstall(pm: PackageManager, cwd: string): Promise<void> {
   await new Promise<void>((res, rej) => {
     const child = spawn(pm, ['install'], { cwd, stdio: 'inherit', shell: IS_WINDOWS });
@@ -116,7 +87,7 @@ async function runInstall(pm: PackageManager, cwd: string): Promise<void> {
 }
 
 export async function init(opts: InitOptions): Promise<void> {
-  const { dir, force, name, packageManager, install, git, locale } = opts;
+  const { dir, force, name, packageManager, install, git } = opts;
 
   if (!existsSync(TEMPLATE_DIR)) {
     throw new Error(
@@ -148,12 +119,7 @@ export async function init(opts: InitOptions): Promise<void> {
     await writeFile(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
   }
 
-  const configPath = join(target, 'open-slide.config.ts');
-  if (existsSync(configPath)) {
-    await writeFile(configPath, renderConfigFile(locale));
-  }
-
-  await writeFile(join(target, '.gitignore'), 'node_modules\ndist\n');
+  await writeFile(join(target, '.gitignore'), 'node_modules\ndist\n.DS_Store\n');
 
   const cdTarget = dir === '.' ? basename(target) : dir;
   process.stdout.write(
