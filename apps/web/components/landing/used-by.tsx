@@ -50,13 +50,11 @@ export function UsedBy() {
             href={tweetUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="floating group block rounded-[10px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-6 sm:p-7 transition-[border-color,box-shadow] duration-300 hover:border-[color:var(--color-dim)]"
+            className="floating group relative block rounded-[10px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-6 sm:p-7 transition-[border-color,box-shadow] duration-300 hover:border-[color:var(--color-dim)]"
           >
-            <div className="flex items-center justify-end">
-              <XGlyph className="size-4 text-[color:var(--color-dim)] transition-colors group-hover:text-[color:var(--color-text)]" />
-            </div>
+            <XGlyph className="absolute right-6 top-6 sm:right-7 sm:top-7 size-4 text-[color:var(--color-dim)] transition-colors group-hover:text-[color:var(--color-text)]" />
 
-            <div className="relative mt-5 flex flex-col">
+            <div className="relative flex flex-col">
               <span
                 aria-hidden
                 className="absolute left-5 top-5 bottom-5 w-px -translate-x-1/2 bg-[color:var(--color-rule)]"
@@ -77,7 +75,7 @@ export function UsedBy() {
                         {t.handle}
                       </span>
                     </div>
-                    <p className="mt-1 text-[16px] leading-[1.5] text-[color:var(--color-text-soft)]">
+                    <p className="text-[16px] leading-[1.5] text-[color:var(--color-text-soft)]">
                       {t.body}
                     </p>
                   </div>
