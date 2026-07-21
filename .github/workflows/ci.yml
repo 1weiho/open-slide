@@ -100,9 +100,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build core
-        run: pnpm --filter @open-slide/core build
-
       - name: Run e2e tests
         run: pnpm test:e2e
 

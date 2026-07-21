@@ -73,7 +73,7 @@ test.describe('static build and preview', () => {
     );
   });
 
-  test('dev-only endpoints do not exist in preview', async ({ request }) => {
+  test('dev-only endpoints fall through to the spa fallback in preview', async ({ request }) => {
     const res = await request.get(`${baseUrl}/__server-status`);
     expect(res.status()).toBe(200);
     expect(res.headers()['content-type']).toContain('text/html');

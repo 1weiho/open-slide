@@ -37,8 +37,9 @@ const child = spawn(
     cwd: scratchDir,
     stdio: 'inherit',
     // OPEN_SLIDE_DEV_SUPERVISED=1 skips the CLI's supervisor fork so Playwright
-    // manages a single server process.
-    env: { ...process.env, OPEN_SLIDE_DEV_SUPERVISED: '1', OPEN_SLIDE_SKIP_SKILLS_CHECK: '1' },
+    // manages a single server process. The skills drift check is already
+    // disabled by the --no-skills-check flag above.
+    env: { ...process.env, OPEN_SLIDE_DEV_SUPERVISED: '1' },
   },
 );
 child.on('exit', (code, signal) => process.exit(code ?? (signal ? 1 : 0)));
