@@ -62,5 +62,14 @@ test.describe('presenter view', () => {
     await blackButton.click();
     await expect(blackButton).toHaveAttribute('aria-pressed', 'false');
     await expect(page.locator('div.absolute.inset-0.bg-black')).toBeHidden();
+
+    const whiteButton = popup.getByRole('button', { name: 'White', exact: true });
+    await whiteButton.click();
+    await expect(whiteButton).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('div.absolute.inset-0.bg-white')).toBeVisible();
+
+    await whiteButton.click();
+    await expect(whiteButton).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.locator('div.absolute.inset-0.bg-white')).toBeHidden();
   });
 });

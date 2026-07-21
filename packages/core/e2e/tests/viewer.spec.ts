@@ -95,6 +95,23 @@ test.describe('slide viewer', () => {
     await expect(editorCanvas(page).locator('[data-osd-step="pending"]')).toHaveCount(0);
   });
 
+  test('toolbar title editor renames the deck and saves to disk', async ({ page, request }) => {
+    try {
+      await duplicateSlide(request, 'edit-target', 'rename-ui');
+      await openSlide(page, 'rename-ui');
+
+      const titleButton = page.getByRole('button', { name: 'Rename slide' });
+      await titleButton.click();
+      await page.keyboard.type('Renamed Deck');
+      await page.keyboard.press('Enter');
+
+      await expect(titleButton).toContainText('Renamed Deck');
+      await expect.poll(() => readSlideSource('rename-ui')).toContain('Renamed Deck');
+    } finally {
+      await deleteSlide(request, 'rename-ui');
+    }
+  });
+
   test('notes drawer autosaves speaker notes to the slide source', async ({ page, request }) => {
     try {
       await duplicateSlide(request, 'edit-target', 'notes-ui');

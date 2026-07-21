@@ -117,6 +117,20 @@ test.describe('inspector editing', () => {
       .toMatch(/fontWeight[\s\S]*fontStyle|fontStyle[\s\S]*fontWeight/);
   });
 
+  test('undo and redo step through an inspector edit', async ({ page, request }) => {
+    await openEditable(page, request, 'insp-undo');
+    await page.getByTitle('Inspect').click();
+    await editorCanvas(page).getByText('Editable headline').click();
+    await page.locator('aside[data-inspector-ui]').getByPlaceholder('Element text').fill('Undo me');
+    await expect(editorCanvas(page).getByText('Undo me')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Undo' }).click();
+    await expect(editorCanvas(page).getByText('Editable headline')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Redo' }).click();
+    await expect(editorCanvas(page).getByText('Undo me')).toBeVisible();
+  });
+
   test('the i shortcut toggles inspect mode', async ({ page, request }) => {
     await openEditable(page, request, 'insp-key');
     await page.keyboard.press('i');
