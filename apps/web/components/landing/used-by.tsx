@@ -92,12 +92,25 @@ export function UsedBy() {
             className="floating m-0 overflow-hidden rounded-[10px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]"
           >
             <VideoPlayer />
-            <figcaption className="border-t border-[color:var(--color-rule-soft)] px-6 py-5">
-              <div className="text-[16px] font-medium tracking-[-0.01em] text-[color:var(--color-text)]">
-                Cursor Compile 26
-              </div>
-              <div className="mt-1 text-[14px] text-[color:var(--color-text-soft)]">
-                CEO of PlanetScale Sam Lambert
+            <figcaption className="flex items-center gap-3.5 border-t border-[color:var(--color-rule-soft)] px-6 py-5">
+              <img
+                src="/assets/planetscale-light.svg"
+                alt="PlanetScale"
+                className="logo-light size-8 shrink-0"
+              />
+              <img
+                src="/assets/planetscale-dark.svg"
+                alt="PlanetScale"
+                aria-hidden
+                className="logo-dark size-8 shrink-0"
+              />
+              <div>
+                <div className="text-[16px] font-medium tracking-[-0.01em] text-[color:var(--color-text)]">
+                  Cursor Compile 26
+                </div>
+                <div className="mt-0.5 text-[14px] text-[color:var(--color-text-soft)]">
+                  CEO of PlanetScale Sam Lambert
+                </div>
               </div>
             </figcaption>
           </figure>
