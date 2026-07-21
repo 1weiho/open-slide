@@ -74,4 +74,33 @@ test.describe('home slide browser', () => {
     await page.goto('/definitely-not-a-route');
     await expect(page.getByText('Page not found')).toBeVisible();
   });
+
+  test('folders can be created and deleted from the sidebar', async ({ page, request }) => {
+    try {
+      await page.goto('/');
+      await page.getByRole('button', { name: 'New folder' }).click();
+      const input = page.getByPlaceholder('Folder name');
+      await input.fill('Sidebar Folder');
+      await expect(input).toHaveValue('Sidebar Folder');
+      const created = page.waitForResponse(
+        (res) => res.url().includes('/__folders') && res.request().method() === 'POST',
+      );
+      await input.press('Enter');
+      expect((await created).status()).toBe(200);
+
+      // "Folder actions" only exists on real folder rows, so its presence proves
+      // the new folder rendered in the sidebar (the name alone also matches the
+      // success toast).
+      const actions = page.getByRole('button', { name: 'Folder actions' });
+      await expect(actions).toBeVisible();
+      await actions.click();
+      await page.getByRole('menuitem', { name: 'Delete' }).click();
+      await expect(actions).toHaveCount(0);
+    } finally {
+      const { folders } = (await (await request.get('/__folders')).json()) as {
+        folders: { id: string }[];
+      };
+      for (const folder of folders) await request.delete(`/__folders/${folder.id}`);
+    }
+  });
 });

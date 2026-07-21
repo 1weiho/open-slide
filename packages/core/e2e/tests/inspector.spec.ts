@@ -91,6 +91,32 @@ test.describe('inspector editing', () => {
     await expect.poll(() => readSlideSource('insp-commit')).toContain('Committed body copy');
   });
 
+  test('style toggles restyle the element live and save to disk', async ({ page, request }) => {
+    await openEditable(page, request, 'insp-style');
+    await page.getByTitle('Inspect').click();
+    const headline = editorCanvas(page).getByText('Editable headline');
+    await headline.click();
+
+    const panel = page.locator('aside[data-inspector-ui]');
+    const bold = panel.getByRole('button', { name: 'Bold' });
+    const italic = panel.getByRole('button', { name: 'Italic' });
+    await bold.click();
+    await italic.click();
+    await expect(bold).toHaveAttribute('aria-pressed', 'true');
+    await expect(italic).toHaveAttribute('aria-pressed', 'true');
+    await expect(headline).toHaveCSS('font-weight', '700');
+    await expect(headline).toHaveCSS('font-style', 'italic');
+
+    const saved = page.waitForResponse(
+      (res) => res.url().includes('/__edit') && res.request().method() === 'POST',
+    );
+    await page.getByRole('button', { name: 'Save' }).click();
+    expect((await saved).status()).toBe(200);
+    await expect
+      .poll(() => readSlideSource('insp-style'))
+      .toMatch(/fontWeight[\s\S]*fontStyle|fontStyle[\s\S]*fontWeight/);
+  });
+
   test('the i shortcut toggles inspect mode', async ({ page, request }) => {
     await openEditable(page, request, 'insp-key');
     await page.keyboard.press('i');
