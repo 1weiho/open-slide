@@ -12,6 +12,7 @@ import { LiveDemo } from '@/components/landing/live-demo';
 import { Nav } from '@/components/landing/nav';
 import { PromptComposer } from '@/components/landing/prompt-composer';
 import { ScrollReveal } from '@/components/landing/scroll-reveal';
+import { UsedBy } from '@/components/landing/used-by';
 import { fetchGitHubStars, formatStarCount } from '@/lib/github';
 import { appName, gitConfig, siteUrl } from '@/lib/shared';
 
@@ -131,6 +132,7 @@ export default async function HomePage() {
         <Inspector />
         <Assets />
         <Agents />
+        <UsedBy />
         <FAQ />
         <StripeBand />
         <GetStarted />
