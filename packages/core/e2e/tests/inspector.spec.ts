@@ -102,19 +102,22 @@ test.describe('inspector editing', () => {
     const italic = panel.getByRole('button', { name: 'Italic' });
     await bold.click();
     await italic.click();
+    await panel.getByRole('button', { name: 'center', exact: true }).click();
     await expect(bold).toHaveAttribute('aria-pressed', 'true');
     await expect(italic).toHaveAttribute('aria-pressed', 'true');
     await expect(headline).toHaveCSS('font-weight', '700');
     await expect(headline).toHaveCSS('font-style', 'italic');
+    await expect(headline).toHaveCSS('text-align', 'center');
 
     const saved = page.waitForResponse(
       (res) => res.url().includes('/__edit') && res.request().method() === 'POST',
     );
     await page.getByRole('button', { name: 'Save' }).click();
     expect((await saved).status()).toBe(200);
-    await expect
-      .poll(() => readSlideSource('insp-style'))
-      .toMatch(/fontWeight[\s\S]*fontStyle|fontStyle[\s\S]*fontWeight/);
+    await expect.poll(() => readSlideSource('insp-style')).toContain('textAlign');
+    const src = await readSlideSource('insp-style');
+    expect(src).toContain('fontWeight');
+    expect(src).toContain('fontStyle');
   });
 
   test('undo and redo step through an inspector edit', async ({ page, request }) => {

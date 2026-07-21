@@ -95,6 +95,24 @@ test.describe('slide viewer', () => {
     await expect(editorCanvas(page).locator('[data-osd-step="pending"]')).toHaveCount(0);
   });
 
+  test('thumbnail context menu duplicates and deletes a page', async ({ page, request }) => {
+    try {
+      await duplicateSlide(request, 'alpha', 'thumb-ops');
+      await openSlide(page, 'thumb-ops');
+      await expect(page.getByRole('button', { name: 'Go to page 3' })).toBeVisible();
+
+      await page.getByRole('button', { name: 'Go to page 1' }).click({ button: 'right' });
+      await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+      await expect(page.getByRole('button', { name: 'Go to page 4' })).toBeVisible();
+
+      await page.getByRole('button', { name: 'Go to page 4' }).click({ button: 'right' });
+      await page.getByRole('menuitem', { name: 'Delete' }).click();
+      await expect(page.getByRole('button', { name: 'Go to page 4' })).toHaveCount(0);
+    } finally {
+      await deleteSlide(request, 'thumb-ops');
+    }
+  });
+
   test('toolbar title editor renames the deck and saves to disk', async ({ page, request }) => {
     try {
       await duplicateSlide(request, 'edit-target', 'rename-ui');
