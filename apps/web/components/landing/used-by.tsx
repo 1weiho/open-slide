@@ -7,25 +7,22 @@ const videoId = 'zxvyO5vnknI';
 type Tweet = {
   name: string;
   handle: string;
-  initials: string;
+  avatar: string;
   body: string;
-  gradient: string;
 };
 
 const thread: Tweet[] = [
   {
     name: 'Hang Huang',
     handle: '@hanghuang_',
-    initials: 'HH',
+    avatar: '/assets/avatar/hanghuang_.png',
     body: 'what’s the secret sauce you landed on 👀',
-    gradient: 'linear-gradient(135deg, var(--color-warm), var(--color-accent))',
   },
   {
     name: 'Sam Lambert',
     handle: '@samlambert',
-    initials: 'SL',
+    avatar: '/assets/avatar/samlambert.png',
     body: 'open-slide + cursor',
-    gradient: 'linear-gradient(135deg, var(--color-accent), var(--color-accent-soft))',
   },
 ];
 
@@ -53,27 +50,23 @@ export function UsedBy() {
             rel="noopener noreferrer"
             className="floating group block rounded-[10px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-6 sm:p-7 transition-[border-color,box-shadow] duration-300 hover:border-[color:var(--color-dim)]"
           >
-            <div className="flex items-center justify-between">
-              <span className="caption">on x</span>
+            <div className="flex items-center justify-end">
               <XGlyph className="size-4 text-[color:var(--color-dim)] transition-colors group-hover:text-[color:var(--color-text)]" />
             </div>
 
-            <div className="mt-5 flex flex-col">
-              {thread.map((t, i) => (
-                <div key={t.handle} className="relative flex gap-3">
-                  <div className="flex flex-col items-center">
-                    <span
-                      aria-hidden
-                      className="flex size-10 shrink-0 items-center justify-center rounded-full font-[family-name:var(--font-sans)] text-[13px] font-semibold text-white"
-                      style={{ background: t.gradient }}
-                    >
-                      {t.initials}
-                    </span>
-                    {i < thread.length - 1 && (
-                      <span aria-hidden className="mt-1 w-px flex-1 bg-[color:var(--color-rule)]" />
-                    )}
-                  </div>
-                  <div className={i < thread.length - 1 ? 'pb-5' : ''}>
+            <div className="relative mt-5 flex flex-col">
+              <span
+                aria-hidden
+                className="absolute left-5 top-5 bottom-5 w-px -translate-x-1/2 bg-[color:var(--color-rule)]"
+              />
+              {thread.map((t) => (
+                <div key={t.handle} className="relative flex gap-3 pb-5 last:pb-0">
+                  <img
+                    src={t.avatar}
+                    alt=""
+                    className="relative size-10 shrink-0 rounded-full object-cover"
+                  />
+                  <div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-[15px] font-semibold tracking-[-0.01em] text-[color:var(--color-text)]">
                         {t.name}
