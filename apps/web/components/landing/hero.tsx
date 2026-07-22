@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { DotGrid } from './dot-grid';
 import { HeroSetup } from './hero-setup';
 
@@ -11,8 +10,10 @@ export function Hero() {
       <div className="relative mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 pt-16 sm:pt-24 lg:pt-32 pb-20 sm:pb-32">
         <div className="flex flex-col gap-10 sm:gap-14 max-w-[920px]">
           <div className="flex flex-col items-start gap-6 sm:gap-8">
-            <Link
-              href="/docs/primitive/morph-element"
+            <a
+              href="https://x.com/1weiho/status/2078505891247329700"
+              target="_blank"
+              rel="noopener noreferrer"
               className="group pressable inline-flex items-center gap-2.5 rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]/70 py-1.5 pl-3.5 pr-3 text-[13px] font-medium text-[color:var(--color-text-soft)] backdrop-blur hover:border-[color:var(--color-dim)] hover:text-[color:var(--color-text)] rise"
               style={{ animationDelay: '40ms' }}
             >
@@ -27,7 +28,7 @@ export function Hero() {
               >
                 →
               </span>
-            </Link>
+            </a>
 
             <h1
               className="text-sheen text-[42px] sm:text-[68px] lg:text-[92px] leading-[1.05] sm:leading-[1.0] tracking-[-0.045em] font-medium text-[color:var(--color-text)] rise-blur"

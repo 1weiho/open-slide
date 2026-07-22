@@ -128,8 +128,12 @@ function AssetManagerMock() {
   // only happens after the dialog is already hidden.
   const typingProgress = useMotionValue(1);
   const dialogPhase = useMotionValue(1);
-  const queryText = useTransform(typingProgress, (p) =>
-    SVGL_QUERY.slice(0, Math.max(0, Math.round(p * SVGL_QUERY.length))),
+  // The leading zero-width space keeps the line box alive when the query is
+  // empty — without it the row collapses to caret height and the absolutely
+  // positioned placeholder drifts out of alignment.
+  const queryText = useTransform(
+    typingProgress,
+    (p) => `\u200B${SVGL_QUERY.slice(0, Math.max(0, Math.round(p * SVGL_QUERY.length)))}`,
   );
   const placeholderOpacity = useTransform(typingProgress, [0, 0.06], [1, 0]);
   const nonMatchOpacity = useTransform(typingProgress, [0, 0.12], [1, 0]);

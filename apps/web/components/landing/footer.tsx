@@ -18,8 +18,8 @@ export function Footer() {
             <span className="tracking-[-0.01em]">open-slide</span>
           </div>
           <p className="text-[14px] leading-[1.6] text-[color:var(--color-muted)] max-w-[38ch]">
-            A React-first slide framework authored by AI agents. MIT licensed, built for the long
-            haul.
+            A React-first slide framework authored by AI agents. Free and open source under the MIT
+            license.
           </p>
         </div>
 
