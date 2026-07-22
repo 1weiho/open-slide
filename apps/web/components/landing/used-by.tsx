@@ -91,23 +91,31 @@ export function UsedBy() {
           >
             <VideoPlayer />
             <figcaption className="flex items-center gap-3.5 border-t border-[color:var(--color-rule-soft)] px-6 py-5">
-              <img
-                src="/assets/planetscale-light.svg"
-                alt="PlanetScale"
-                className="logo-light size-8 shrink-0"
-              />
-              <img
-                src="/assets/planetscale-dark.svg"
-                alt="PlanetScale"
-                aria-hidden
-                className="logo-dark size-8 shrink-0"
-              />
+              <a
+                href="https://planetscale.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="PlanetScale"
+                className="shrink-0 rounded-sm transition-opacity hover:opacity-70"
+              >
+                <img
+                  src="/assets/planetscale-light.svg"
+                  alt="PlanetScale"
+                  className="logo-light size-8"
+                />
+                <img
+                  src="/assets/planetscale-dark.svg"
+                  alt="PlanetScale"
+                  aria-hidden
+                  className="logo-dark size-8"
+                />
+              </a>
               <div>
                 <div className="text-[16px] font-medium tracking-[-0.01em] text-[color:var(--color-text)]">
                   Cursor Compile 26
                 </div>
                 <div className="mt-0.5 text-[14px] text-[color:var(--color-text-soft)]">
-                  CEO of PlanetScale Sam Lambert
+                  Sam Lambert — CEO of PlanetScale
                 </div>
               </div>
             </figcaption>
@@ -125,7 +133,7 @@ function VideoPlayer() {
     return (
       <div className="relative aspect-video bg-black">
         <iframe
-          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&start=733&rel=0&color=white&iv_load_policy=3&playsinline=1`}
+          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&color=white&iv_load_policy=3&playsinline=1`}
           title="Sam Lambert at Cursor Compile 2026"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           referrerPolicy="strict-origin-when-cross-origin"
