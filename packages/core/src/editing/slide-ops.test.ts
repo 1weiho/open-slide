@@ -10,6 +10,7 @@ import {
   removePageFromDefaultExportInSource,
   reorderDefaultExportPagesInSource,
   reorderNotesArrayInSource,
+  updateMetaTagsInSource,
   updateMetaTitleInSource,
   validateSlideName,
 } from './slide-ops.ts';
@@ -145,8 +146,125 @@ describe('updateMetaTitleInSource', () => {
     expect(out).toContain('export default []');
   });
 
+  it('replaces an existing title that contains a closing brace (no duplicate)', () => {
+    const source = `export const meta = { title: 'contains }' };\nexport default [];\n`;
+    const out = updateMetaTitleInSource(source, 'new');
+    expect(out).toBe(`export const meta = { title: 'new' };\nexport default [];\n`);
+  });
+
   it('returns null if there is no meta and no default export', () => {
     expect(updateMetaTitleInSource('// nothing here', 'x')).toBeNull();
+  });
+});
+
+describe('updateMetaTagsInSource', () => {
+  it('replaces an existing tags array literal', () => {
+    const source = `export const meta: SlideMeta = { tags: ['old'] };\nexport default [];\n`;
+    const out = updateMetaTagsInSource(source, ['a', 'b']);
+    expect(out).toContain("tags: ['a', 'b']");
+    expect(out).not.toContain("'old'");
+  });
+
+  it('replaces a tags array alongside a preserved title', () => {
+    const source = `export const meta = { title: 'T', tags: ['x'] };\nexport default [];\n`;
+    const out = updateMetaTagsInSource(source, ['y', 'z']);
+    expect(out).toContain("title: 'T'");
+    expect(out).toContain("tags: ['y', 'z']");
+  });
+
+  it('escapes single quotes inside a tag', () => {
+    const source = `export const meta = { tags: [] };\nexport default [];\n`;
+    const out = updateMetaTagsInSource(source, ["it's"]);
+    expect(out).toContain("tags: ['it\\'s']");
+  });
+
+  it('injects tags into a meta object that lacks them', () => {
+    const source = `export const meta = {\n  title: 'x',\n};\nexport default [];\n`;
+    const out = updateMetaTagsInSource(source, ['first']);
+    expect(out).toMatch(/tags:\s*\['first'\]/);
+    expect(out).toContain("title: 'x'");
+  });
+
+  it('injects a fresh meta export when none exists', () => {
+    const source = `export default [];\n`;
+    const out = updateMetaTagsInSource(source, ['fresh']);
+    expect(out).toContain("export const meta: SlideMeta = { tags: ['fresh'] };");
+    expect(out).toContain('export default []');
+  });
+
+  it('writes an empty array when clearing all tags', () => {
+    const source = `export const meta = { tags: ['a', 'b'] };\nexport default [];\n`;
+    const out = updateMetaTagsInSource(source, []);
+    expect(out).toContain('tags: []');
+  });
+
+  it('handles an existing tag literal that contains a closing bracket', () => {
+    const source = `export const meta = { tags: ['a]b', 'c'] };\nexport default [];\n`;
+    const out = updateMetaTagsInSource(source, ['new']);
+    expect(out).toBe(`export const meta = { tags: ['new'] };\nexport default [];\n`);
+  });
+
+  it('does not mutate tags-like text inside another field string value', () => {
+    const source = `export const meta = { title: 'my tags: [cool] stuff' };\nexport default [];\n`;
+    const out = updateMetaTagsInSource(source, ['x']);
+    // No real tags key, so a fresh one is injected and the title is left intact.
+    expect(out).toContain("title: 'my tags: [cool] stuff'");
+    expect(out).toMatch(/tags:\s*\['x'\]/);
+  });
+
+  it('rewrites only the real tags key when a decoy lives in another string', () => {
+    const source = `export const meta = { title: 'has tags: [decoy]', tags: ['old'] };\nexport default [];\n`;
+    const out = updateMetaTagsInSource(source, ['new']);
+    expect(out).toBe(
+      `export const meta = { title: 'has tags: [decoy]', tags: ['new'] };\nexport default [];\n`,
+    );
+  });
+
+  it('brace-matches past an unbalanced curly inside another field string value', () => {
+    const source = `export const meta = { title: 'use {curly here', tags: ['old'] };\nexport default [];\n`;
+    const out = updateMetaTagsInSource(source, ['new']);
+    expect(out).toBe(
+      `export const meta = { title: 'use {curly here', tags: ['new'] };\nexport default [];\n`,
+    );
+  });
+
+  it('ignores a commented-out tags decoy and injects a real key', () => {
+    const source = `export const meta = {\n  // tags: ['old'],\n  title: 'x',\n};\nexport default [];\n`;
+    const out = updateMetaTagsInSource(source, ['new']);
+    expect(out).not.toBeNull();
+    // The comment is left verbatim; a real tags key is injected.
+    expect(out).toContain("// tags: ['old'],");
+    expect(out).toMatch(/^\s*tags: \['new'\],/m);
+  });
+
+  it('rewrites the real tags key and leaves a commented-out decoy intact', () => {
+    const source = `export const meta = {\n  // tags: ['old'],\n  tags: ['real'],\n};\nexport default [];\n`;
+    const out = updateMetaTagsInSource(source, ['new']);
+    expect(out).toContain("// tags: ['old'],");
+    expect(out).toContain("tags: ['new'],");
+    expect(out).not.toContain("tags: ['real']");
+  });
+
+  it('rewrites a quoted tags key rather than inserting a duplicate', () => {
+    const source = `export const meta = { 'tags': ['old'] };\nexport default [];\n`;
+    const out = updateMetaTagsInSource(source, ['new']);
+    expect(out).toBe(`export const meta = { 'tags': ['new'] };\nexport default [];\n`);
+  });
+
+  it('injects a real tags key past an unrelated quoted key', () => {
+    const source = `export const meta = { 'data-x': 'v' };\nexport default [];\n`;
+    const out = updateMetaTagsInSource(source, ['new']);
+    expect(out).toContain("'data-x': 'v'");
+    expect(out).toMatch(/tags: \['new'\]/);
+  });
+
+  it('returns null for a quoted tags key with a non-array value', () => {
+    const source = `export const meta = { 'tags': 'oops' };\nexport default [];\n`;
+    expect(updateMetaTagsInSource(source, ['new'])).toBeNull();
+  });
+
+  it('returns null if there is no meta and no default export', () => {
+    expect(updateMetaTagsInSource('// nothing here', ['x'])).toBeNull();
   });
 });
 

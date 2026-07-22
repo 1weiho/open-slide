@@ -215,19 +215,7 @@ export function updateMetaTitleInSource(source: string, title: string): string |
     const openBrace = source.indexOf('{', eqIdx);
     if (openBrace === -1) return null;
 
-    let depth = 0;
-    let closeBrace = -1;
-    for (let i = openBrace; i < source.length; i++) {
-      const ch = source[i];
-      if (ch === '{') depth++;
-      else if (ch === '}') {
-        depth--;
-        if (depth === 0) {
-          closeBrace = i;
-          break;
-        }
-      }
-    }
+    const closeBrace = matchMetaBrace(source, openBrace);
     if (closeBrace === -1) return null;
 
     const body = source.slice(openBrace + 1, closeBrace);
@@ -251,6 +239,226 @@ export function updateMetaTitleInSource(source: string, title: string): string |
   const exportDefaultIdx = source.search(/export\s+default\b/);
   if (exportDefaultIdx === -1) return null;
   const insertion = `export const meta: SlideMeta = { title: ${newLiteral} };\n\n`;
+  return source.slice(0, exportDefaultIdx) + insertion + source.slice(exportDefaultIdx);
+}
+
+/** Advance past the string literal that starts at `source[i]` (a quote char), honoring backslash escapes. */
+export function skipStringLiteral(source: string, i: number): number {
+  const quote = source[i];
+  i++;
+  while (i < source.length) {
+    const ch = source[i];
+    if (ch === '\\') {
+      i += 2;
+      continue;
+    }
+    if (ch === quote) return i + 1;
+    i++;
+  }
+  return i;
+}
+
+/**
+ * If `source[i]` starts a `//` line or `/* *\/` block comment, return the index
+ * just past it; otherwise return `i` unchanged (so callers can tell whether a
+ * comment was consumed). Prevents commented-out `tags:`/braces from being read
+ * as real syntax.
+ */
+export function skipComment(source: string, i: number): number {
+  if (source[i] !== '/') return i;
+  const next = source[i + 1];
+  if (next === '/') {
+    i += 2;
+    while (i < source.length && source[i] !== '\n') i++;
+    return i;
+  }
+  if (next === '*') {
+    i += 2;
+    while (i < source.length && !(source[i] === '*' && source[i + 1] === '/')) i++;
+    return Math.min(i + 2, source.length);
+  }
+  return i;
+}
+
+/**
+ * Locate the matching `}` of an object literal whose opening `{` is at
+ * `openBrace`, skipping over string literals and comments so a brace inside a
+ * string or comment can't skew the match. Returns the close index, or -1.
+ */
+export function matchMetaBrace(source: string, openBrace: number): number {
+  let depth = 0;
+  let i = openBrace;
+  while (i < source.length) {
+    const ch = source[i];
+    if (ch === '"' || ch === "'" || ch === '`') {
+      i = skipStringLiteral(source, i);
+      continue;
+    }
+    if (ch === '/') {
+      const after = skipComment(source, i);
+      if (after > i) {
+        i = after;
+        continue;
+      }
+    }
+    if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) return i;
+    }
+    i++;
+  }
+  return -1;
+}
+
+/**
+ * Find the `tags: [...]` array of a meta object by scanning `[scanStart, scanEnd)`
+ * — the object's contents. Tracks bracket depth and skips over string literals
+ * and comments, and recognises the `tags` key whether it is written bare
+ * (`tags:`) or quoted (`'tags':`), so neither a `]` inside a tag, `tags: [...]`
+ * text inside another field's string/comment, nor a quoted key is mishandled.
+ *
+ * Returns the source range of the array literal (bracket indices, both
+ * inclusive), `null` when there is no top-level `tags` key, or `'unsafe'` when a
+ * `tags` key exists but its value is not an array literal.
+ */
+export function findMetaTagsArrayRange(
+  source: string,
+  scanStart: number,
+  scanEnd: number,
+): { start: number; end: number } | null | 'unsafe' {
+  // `from` sits just past a confirmed `tags` key token: skip to the `:`, then
+  // require a `[` and walk the array to its matching `]` (string/comment aware).
+  const readArrayValue = (from: number): { start: number; end: number } | 'unsafe' => {
+    let k = from;
+    while (k < scanEnd && /\s/.test(source[k])) k++;
+    if (source[k] !== ':') return 'unsafe';
+    k++;
+    while (k < scanEnd && /\s/.test(source[k])) k++;
+    if (source[k] !== '[') return 'unsafe';
+    let m = k;
+    let arrDepth = 0;
+    while (m < scanEnd) {
+      const c = source[m];
+      if (c === '"' || c === "'" || c === '`') {
+        m = skipStringLiteral(source, m);
+        continue;
+      }
+      if (c === '/') {
+        const after = skipComment(source, m);
+        if (after > m) {
+          m = after;
+          continue;
+        }
+      }
+      if (c === '[') arrDepth++;
+      else if (c === ']') {
+        arrDepth--;
+        if (arrDepth === 0) return { start: k, end: m };
+      }
+      m++;
+    }
+    return 'unsafe';
+  };
+
+  let i = scanStart;
+  let depth = 0;
+  while (i < scanEnd) {
+    const ch = source[i];
+    if (ch === '"' || ch === "'" || ch === '`') {
+      const end = skipStringLiteral(source, i);
+      // A quoted string at depth 0 followed by `:` is an object key. Recognise a
+      // quoted `tags` key; skip any other quoted key (never scan its content).
+      if (depth === 0) {
+        let p = end;
+        while (p < scanEnd && /\s/.test(source[p])) p++;
+        if (source[p] === ':' && source.slice(i + 1, end - 1) === 'tags') {
+          return readArrayValue(end);
+        }
+      }
+      i = end;
+      continue;
+    }
+    if (ch === '/') {
+      const after = skipComment(source, i);
+      if (after > i) {
+        i = after;
+        continue;
+      }
+    }
+    if (ch === '{' || ch === '[' || ch === '(') {
+      depth++;
+      i++;
+      continue;
+    }
+    if (ch === '}' || ch === ']' || ch === ')') {
+      depth--;
+      i++;
+      continue;
+    }
+    if (depth === 0 && /[A-Za-z_$]/.test(ch)) {
+      let j = i + 1;
+      while (j < scanEnd && /[A-Za-z0-9_$]/.test(source[j])) j++;
+      if (source.slice(i, j) === 'tags') {
+        let k = j;
+        while (k < scanEnd && /\s/.test(source[k])) k++;
+        if (source[k] === ':') return readArrayValue(j);
+      }
+      i = j;
+      continue;
+    }
+    i++;
+  }
+  return null;
+}
+
+/**
+ * Rewrite (or insert) the `tags` array in the slide module's `export const meta`.
+ *
+ * Mirrors {@link updateMetaTitleInSource}:
+ *   1. Find `export const meta` and brace-match its object literal.
+ *   2. If it already has a `tags: [...]` entry, replace the array literal.
+ *   3. If the object exists but has no tags, inject a new `tags: [...]` line
+ *      as the first property (preserving the author's indentation).
+ *   4. If there is no `meta` export at all, insert a fresh one right before
+ *      `export default`.
+ *
+ * Returns the rewritten source, or `null` if the file shape was too surprising
+ * to touch safely.
+ */
+export function updateMetaTagsInSource(source: string, tags: string[]): string | null {
+  const arrayLiteral = `[${tags.map((t) => `'${escapeSingleQuoted(t)}'`).join(', ')}]`;
+
+  const metaStart = source.search(/export\s+const\s+meta\b/);
+  if (metaStart !== -1) {
+    const eqIdx = source.indexOf('=', metaStart);
+    if (eqIdx === -1) return null;
+    const openBrace = source.indexOf('{', eqIdx);
+    if (openBrace === -1) return null;
+
+    const closeBrace = matchMetaBrace(source, openBrace);
+    if (closeBrace === -1) return null;
+
+    const located = findMetaTagsArrayRange(source, openBrace + 1, closeBrace);
+    if (located === 'unsafe') return null;
+    if (located) {
+      return source.slice(0, located.start) + arrayLiteral + source.slice(located.end + 1);
+    }
+
+    // No tags yet — inject as the first property, copying the indentation of
+    // the first existing property (or a sensible default for an empty object).
+    const body = source.slice(openBrace + 1, closeBrace);
+    const firstIndentMatch = body.match(/\n([ \t]+)\S/);
+    const indent = firstIndentMatch ? firstIndentMatch[1] : '  ';
+    const trimmedBody = body.replace(/^\s*\n?/, '');
+    const needsSeparator = trimmedBody.trim().length > 0;
+    const insertion = `\n${indent}tags: ${arrayLiteral}${needsSeparator ? ',' : ''}`;
+    return source.slice(0, openBrace + 1) + insertion + body + source.slice(closeBrace);
+  }
+
+  const exportDefaultIdx = source.search(/export\s+default\b/);
+  if (exportDefaultIdx === -1) return null;
+  const insertion = `export const meta: SlideMeta = { tags: ${arrayLiteral} };\n\n`;
   return source.slice(0, exportDefaultIdx) + insertion + source.slice(exportDefaultIdx);
 }
 

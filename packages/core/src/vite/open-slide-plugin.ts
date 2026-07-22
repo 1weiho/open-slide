@@ -4,7 +4,13 @@ import path from 'node:path';
 import fg from 'fast-glob';
 import { loadConfigFromFile, normalizePath, type Plugin, type ViteDevServer } from 'vite';
 import type { OpenSlideConfig } from '../config.ts';
-import { SLIDE_ID_RE } from '../editing/slide-ops.ts';
+import {
+  findMetaTagsArrayRange,
+  matchMetaBrace,
+  SLIDE_ID_RE,
+  skipComment,
+  skipStringLiteral,
+} from '../editing/slide-ops.ts';
 import { hasRecentWrite } from './recent-writes.ts';
 
 export type { OpenSlideConfig };
@@ -17,7 +23,7 @@ export type OpenSlidePluginOptions = {
 
 const CONFIG_FILE = 'open-slide.config.ts';
 
-const SLIDES_VMOD = 'virtual:open-slide/slides';
+export const SLIDES_VMOD = 'virtual:open-slide/slides';
 const CONFIG_VMOD = 'virtual:open-slide/config';
 const FOLDERS_VMOD = 'virtual:open-slide/folders';
 
@@ -68,29 +74,46 @@ function toId(absFile: string, slidesRoot: string): string {
 const META_THEME_RE = /(?:^|[\s,{])theme\s*:\s*['"]([^'"]+)['"]/;
 const META_CREATED_AT_RE = /(?:^|[\s,{])createdAt\s*:\s*['"]([^'"]+)['"]/;
 
-type ExtractedMeta = { theme: string | null; createdAt: string | null };
+function parseTags(body: string): string[] {
+  const range = findMetaTagsArrayRange(body, 0, body.length);
+  if (range === null || range === 'unsafe') return [];
+  const out: string[] = [];
+  let i = range.start + 1;
+  while (i < range.end) {
+    const ch = body[i];
+    if (ch === '/') {
+      const after = skipComment(body, i);
+      if (after > i) {
+        i = after;
+        continue;
+      }
+    }
+    if (ch === '"' || ch === "'" || ch === '`') {
+      const strEnd = skipStringLiteral(body, i);
+      const t = body
+        .slice(i + 1, strEnd - 1)
+        .replace(/\\(.)/g, '$1')
+        .trim();
+      if (t && !out.includes(t)) out.push(t);
+      i = strEnd;
+      continue;
+    }
+    i++;
+  }
+  return out;
+}
+
+type ExtractedMeta = { theme: string | null; createdAt: string | null; tags: string[] };
 
 function extractMeta(src: string): ExtractedMeta {
-  const empty: ExtractedMeta = { theme: null, createdAt: null };
+  const empty: ExtractedMeta = { theme: null, createdAt: null, tags: [] };
   const metaStart = src.search(/export\s+const\s+meta\b/);
   if (metaStart === -1) return empty;
   const eqIdx = src.indexOf('=', metaStart);
   if (eqIdx === -1) return empty;
   const openBrace = src.indexOf('{', eqIdx);
   if (openBrace === -1) return empty;
-  let depth = 0;
-  let closeBrace = -1;
-  for (let i = openBrace; i < src.length; i++) {
-    const ch = src[i];
-    if (ch === '{') depth++;
-    else if (ch === '}') {
-      depth--;
-      if (depth === 0) {
-        closeBrace = i;
-        break;
-      }
-    }
-  }
+  const closeBrace = matchMetaBrace(src, openBrace);
   if (closeBrace === -1) return empty;
   const body = src.slice(openBrace + 1, closeBrace);
   const themeMatch = body.match(META_THEME_RE);
@@ -98,6 +121,7 @@ function extractMeta(src: string): ExtractedMeta {
   return {
     theme: themeMatch ? themeMatch[1] : null,
     createdAt: createdAtMatch ? createdAtMatch[1] : null,
+    tags: parseTags(body),
   };
 }
 
@@ -106,7 +130,7 @@ async function readSlideMeta(abs: string): Promise<ExtractedMeta> {
     const src = await fs.readFile(abs, 'utf8');
     return extractMeta(src);
   } catch {
-    return { theme: null, createdAt: null };
+    return { theme: null, createdAt: null, tags: [] };
   }
 }
 
@@ -130,7 +154,13 @@ export async function generateSlidesModule(
       const id = toId(abs, slidesRoot);
       const importPath = isDev ? `@fs/${normalizePath(abs).replace(/^\/+/, '')}` : abs;
       const meta = await readSlideMeta(abs);
-      return { id, importPath, theme: meta.theme, createdAt: parseCreatedAtMs(meta.createdAt) };
+      return {
+        id,
+        importPath,
+        theme: meta.theme,
+        createdAt: parseCreatedAtMs(meta.createdAt),
+        tags: Array.isArray(meta.tags) ? meta.tags : [],
+      };
     }),
   );
 
@@ -144,12 +174,15 @@ export async function generateSlidesModule(
   const ids = JSON.stringify(entries.map((e) => e.id).sort());
   const themesMap: Record<string, string> = {};
   const createdAtMap: Record<string, number> = {};
+  const tagsMap: Record<string, string[]> = {};
   for (const e of entries) {
     if (e.theme) themesMap[e.id] = e.theme;
     if (e.createdAt !== null) createdAtMap[e.id] = e.createdAt;
+    if (e.tags && e.tags.length > 0) tagsMap[e.id] = e.tags;
   }
   const themesJson = JSON.stringify(themesMap);
   const createdAtJson = JSON.stringify(createdAtMap);
+  const tagsJson = JSON.stringify(tagsMap);
   const importTokens = JSON.stringify(Object.fromEntries(entries.map((e) => [e.id, 0])));
   const devRuntime = isDev
     ? `
@@ -178,6 +211,7 @@ if (import.meta.hot) {
 export const slideIds = ${ids};
 export const slideThemes = ${themesJson};
 export const slideCreatedAt = ${createdAtJson};
+export const slideTags = ${tagsJson};
 ${devRuntime}
 
 export async function loadSlide(id) {

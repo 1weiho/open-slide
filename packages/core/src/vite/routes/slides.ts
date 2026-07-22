@@ -11,22 +11,34 @@ import {
   resolveSlideEntry,
   rmSlideDir,
   SLIDE_ID_RE,
+  updateMetaTagsInSource,
   updateMetaTitleInSource,
   validateSlideName,
 } from '../../editing/slide-ops.ts';
 import { readManifest, writeManifest } from '../../files/folders.ts';
 import { validateMutationRequest } from '../../http/request-guard.ts';
+import { SLIDES_VMOD } from '../open-slide-plugin.ts';
 import { type ApiContext, json, readBody } from './context.ts';
 
 // PUT    /__slides/:id/reorder            reorder pages { order: number[] }
 // DELETE /__slides/:id/pages/:i           remove page
 // POST   /__slides/:id/pages/:i/duplicate duplicate page
 // POST   /__slides/:id/duplicate          duplicate slide directory { newId? }
-// PATCH  /__slides/:id                    rename slide (writes meta.title)
+// PATCH  /__slides/:id                    rename slide + edit tags (writes meta.title/meta.tags)
 // DELETE /__slides/:id                    delete slide directory + folder assignment
 
 type DuplicateSlideBody = { newId?: unknown };
-type SlidePatchBody = { name?: unknown };
+type SlidePatchBody = { name?: unknown; tags?: unknown };
+
+function sanitizeTag(v: unknown): string | null {
+  if (typeof v !== 'string') return null;
+  const t = v
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^\p{L}\p{N}._-]/gu, '');
+  return t.length > 0 && t.length <= 64 ? t : null;
+}
 
 export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): void {
   server.middlewares.use('/__slides', async (req, res, next) => {
@@ -169,8 +181,27 @@ export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): voi
           return json(res, requestCheck.status, { error: requestCheck.error });
         }
         const body = (await readBody(req)) as SlidePatchBody;
-        const name = validateSlideName(body.name);
-        if (!name) return json(res, 400, { error: 'invalid name' });
+        const hasName = body.name !== undefined;
+        const hasTags = body.tags !== undefined;
+        if (!hasName && !hasTags) return json(res, 400, { error: 'nothing to update' });
+
+        const name = hasName ? validateSlideName(body.name) : null;
+        if (hasName && !name) return json(res, 400, { error: 'invalid name' });
+
+        let tags: string[] | null = null;
+        if (hasTags) {
+          if (!Array.isArray(body.tags)) return json(res, 400, { error: 'invalid tags' });
+          const seen = new Set<string>();
+          tags = [];
+          for (const raw of body.tags) {
+            const tag = sanitizeTag(raw);
+            if (tag && !seen.has(tag)) {
+              seen.add(tag);
+              tags.push(tag);
+            }
+            if (tags.length >= 50) break;
+          }
+        }
 
         const entry = resolveSlideEntry(ctx.slidesRoot, slideId);
         if (!entry) return json(res, 400, { error: 'invalid slideId' });
@@ -182,20 +213,42 @@ export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): voi
           return json(res, 404, { error: 'slide not found' });
         }
 
-        const updated = updateMetaTitleInSource(source, name);
-        if (updated === null) {
-          return json(res, 422, {
-            error: 'could not locate a safe place to write meta.title in index.tsx',
-          });
+        let updated = source;
+        if (name) {
+          const next = updateMetaTitleInSource(updated, name);
+          if (next === null) {
+            return json(res, 422, {
+              error: 'could not locate a safe place to write meta.title in index.tsx',
+            });
+          }
+          updated = next;
+        }
+        if (tags !== null) {
+          const next = updateMetaTagsInSource(updated, tags);
+          if (next === null) {
+            return json(res, 422, {
+              error: 'could not locate a safe place to write meta.tags in index.tsx',
+            });
+          }
+          updated = next;
         }
         if (updated !== source) {
           await fs.writeFile(entry, updated, 'utf8');
         }
         // The TSX edit lands through Vite's normal HMR pipeline, but the
         // React state holding `slide.meta` in the editor won't re-fetch on
-        // its own — tell every client to refresh so the new title shows up.
+        // its own — tell every client to refresh so the new title/tags show up.
+        // Invalidate the slides virtual module first so the reload rebuilds it
+        // with the new meta.tags rather than racing the debounced file watcher.
+        const slidesMod = server.moduleGraph.getModuleById(`\0${SLIDES_VMOD}`);
+        if (slidesMod) server.moduleGraph.invalidateModule(slidesMod);
         server.ws.send({ type: 'full-reload' });
-        return json(res, 200, { ok: true, slideId, name });
+        return json(res, 200, {
+          ok: true,
+          slideId,
+          name: name ?? undefined,
+          tags: tags ?? undefined,
+        });
       }
 
       if (method === 'DELETE') {

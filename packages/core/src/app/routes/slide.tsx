@@ -14,6 +14,7 @@ import {
   MoreHorizontal,
   Play,
   Presentation,
+  Tag,
 } from 'lucide-react';
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
@@ -40,6 +41,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useFolders } from '@/lib/folders';
@@ -57,16 +59,23 @@ import { PptxProgressToast } from '../components/pptx-progress-toast';
 import { SlideCanvas } from '../components/slide-canvas';
 import { isDeckWarmed, markDeckWarmed, SlidePreloadLayer } from '../components/slide-preload-layer';
 import { SlideTransitionLayer } from '../components/slide-transition-layer';
+import { TagCombobox } from '../components/tag-combobox';
 import { type ThumbnailActions, ThumbnailRail } from '../components/thumbnail-rail';
 import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf, isSafari } from '../lib/export-pdf';
 import { exportSlideAsImagePptx } from '../lib/export-pptx';
 import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
 import type { SlideModule } from '../lib/sdk';
+import { slideTags } from '../lib/slides';
 import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
 import { useSlideModule } from '../lib/use-slide-module';
 
 const { showSlideUi, showSlideBrowser, allowHtmlDownload } = config.build;
+
+// Stable empty-tags fallback: a fresh `[]` each render would give the tags
+// editor's draft effect a new dependency identity on every parent re-render and
+// wipe what the user is typing.
+const NO_TAGS: string[] = [];
 
 export function Slide() {
   const { slideId = '' } = useParams();
@@ -89,7 +98,7 @@ export function Slide() {
       if (linkCopiedTimerRef.current) clearTimeout(linkCopiedTimerRef.current);
     };
   }, []);
-  const { renameSlide } = useFolders();
+  const { renameSlide, setSlideTags } = useFolders();
   const slideViewportRef = useRef<HTMLElement>(null);
   const t = useLocale();
   const isMobile = useIsMobile();
@@ -415,6 +424,12 @@ export function Slide() {
   }
 
   const title = slide.meta?.title ?? slideId;
+  const slideTagsValue = slide.meta?.tags ?? NO_TAGS;
+  // Plain const (not a hook): this runs after the component's early returns, so
+  // a useMemo here would violate the rules of hooks. The arrays are tiny.
+  const allKnownTags = Array.from(new Set(Object.values(slideTags).flat())).sort((a, b) =>
+    a.localeCompare(b),
+  );
 
   const copyLink = async () => {
     try {
@@ -580,6 +595,13 @@ export function Slide() {
                 </Tabs>
               )}
               {import.meta.env.DEV && <AgentConnectedBadge />}
+              {import.meta.env.DEV && (
+                <SlideTagsControl
+                  tags={slideTagsValue}
+                  suggestions={allKnownTags}
+                  onSave={(next) => setSlideTags(slideId, next)}
+                />
+              )}
             </div>
 
             {/* On md+ the title centers to the viewport via absolute positioning. On mobile the
@@ -1037,6 +1059,74 @@ function SlideViewportNavigation({
   });
 
   return null;
+}
+
+// DEV-only tags editor in the slide top bar. Keeps a local draft while open and
+// persists once (writing meta.tags to the file) when the popover closes, so
+// adding several tags doesn't trigger a reload per keystroke.
+function SlideTagsControl({
+  tags,
+  suggestions,
+  onSave,
+}: {
+  tags: string[];
+  suggestions: string[];
+  onSave: (next: string[]) => Promise<void> | void;
+}) {
+  const t = useLocale();
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [draft, setDraft] = useState<string[]>(tags);
+  useEffect(() => {
+    setDraft(tags);
+  }, [tags]);
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        // Ignore re-open attempts while the previous full-replacement PATCH is
+        // still in flight, so a slower earlier request can't land last and
+        // clobber the newer tags.
+        if (next && saving) return;
+        setOpen(next);
+        if (!next) {
+          const changed = draft.length !== tags.length || draft.some((x, i) => x !== tags[i]);
+          if (changed) {
+            setSaving(true);
+            Promise.resolve(onSave(draft))
+              .catch(() => toast.error(t.slide.tagsSaveFailed))
+              .finally(() => setSaving(false));
+          }
+        }
+      }}
+    >
+      <PopoverTrigger
+        disabled={saving}
+        render={
+          <button
+            type="button"
+            aria-label={t.slide.tagsAria}
+            title={t.slide.tagsAria}
+            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'gap-1.5')}
+          >
+            <Tag className="size-3.5" />
+            {tags.length > 0 && <span className="text-[12px] tabular-nums">{tags.length}</span>}
+          </button>
+        }
+      />
+      <PopoverContent align="start" className="w-[280px]">
+        <TagCombobox
+          value={draft}
+          onChange={setDraft}
+          suggestions={suggestions}
+          allowCreate
+          placeholder={t.slide.addTag}
+          ariaLabel={t.slide.tagsAria}
+          createLabel={(raw) => format(t.slide.createTag, { name: raw })}
+        />
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 function InlineTitleEditor({

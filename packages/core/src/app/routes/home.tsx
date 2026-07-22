@@ -35,9 +35,10 @@ import { cn } from '@/lib/utils';
 import { FolderIconChip, SLIDE_DND_MIME } from '../components/sidebar/folder-item';
 import { ALL_SLIDES_ID, DRAFT_ID } from '../components/sidebar/sidebar';
 import { SlideCanvas } from '../components/slide-canvas';
+import { TagCombobox } from '../components/tag-combobox';
 import { SlidePageProvider } from '../lib/page-context';
 import type { Folder, FolderIcon, SlideModule } from '../lib/sdk';
-import { loadSlide, slideCreatedAt, slideIds } from '../lib/slides';
+import { loadSlide, slideCreatedAt, slideIds, slideTags } from '../lib/slides';
 import type { HomeOutletContext } from './home-shell';
 
 type SortKey = 'created-desc' | 'created-asc' | 'title-asc' | 'title-desc';
@@ -65,6 +66,31 @@ function useSortPref(): [SortKey, (next: SortKey) => void] {
     } catch {}
   };
   return [sortKey, update];
+}
+
+const TAGS_STORAGE_KEY = 'open-slide:home-tags';
+
+function readTagsPref(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(TAGS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.filter((t): t is string => typeof t === 'string');
+    }
+  } catch {}
+  return [];
+}
+
+function useTagFilterPref(): [string[], (next: string[]) => void] {
+  const [tags, setTags] = useState<string[]>(readTagsPref);
+  const update = (next: string[]) => {
+    setTags(next);
+    try {
+      window.localStorage.setItem(TAGS_STORAGE_KEY, JSON.stringify(next));
+    } catch {}
+  };
+  return [tags, update];
 }
 
 const TITLE_COLLATOR = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
@@ -104,16 +130,36 @@ export function Home() {
 
   const [query, setQuery] = useState('');
   const [sortKey, setSortKey] = useSortPref();
+  const [selectedTags, setSelectedTags] = useTagFilterPref();
+
+  const availableTags = useMemo(() => {
+    const set = new Set<string>();
+    for (const id of visibleSlides) for (const tg of slideTags[id] ?? []) set.add(tg);
+    return Array.from(set).sort((a, b) => TITLE_COLLATOR.compare(a, b));
+  }, [visibleSlides]);
+
+  // Only keep selected tags that still exist in this view, so stale selections
+  // don't silently hide everything.
+  const activeTags = useMemo(
+    () => selectedTags.filter((tg) => availableTags.includes(tg)),
+    [selectedTags, availableTags],
+  );
 
   const trimmedQuery = query.trim().toLowerCase();
   const filteredSlides = useMemo(() => {
-    if (!trimmedQuery) return visibleSlides;
     return visibleSlides.filter((id) => {
-      if (id.toLowerCase().includes(trimmedQuery)) return true;
-      const tl = titleMap[id]?.toLowerCase();
-      return tl ? tl.includes(trimmedQuery) : false;
+      if (activeTags.length > 0) {
+        const tags = slideTags[id] ?? [];
+        if (!activeTags.every((tg) => tags.includes(tg))) return false;
+      }
+      if (trimmedQuery) {
+        if (id.toLowerCase().includes(trimmedQuery)) return true;
+        const tl = titleMap[id]?.toLowerCase();
+        return tl ? tl.includes(trimmedQuery) : false;
+      }
+      return true;
     });
-  }, [visibleSlides, titleMap, trimmedQuery]);
+  }, [visibleSlides, titleMap, trimmedQuery, activeTags]);
   const sortedSlides = useMemo(() => {
     const list = filteredSlides.slice();
     const titleOf = (id: string) => titleMap[id] ?? id;
@@ -133,6 +179,12 @@ export function Home() {
     return list;
   }, [filteredSlides, sortKey, titleMap]);
   const isSearching = trimmedQuery.length > 0;
+  const isFiltering = isSearching || activeTags.length > 0;
+
+  const clearFilters = () => {
+    setQuery('');
+    setSelectedTags([]);
+  };
 
   return (
     <>
@@ -188,17 +240,27 @@ export function Home() {
           </DropdownMenu>
           {!loading && (
             <span className="folio ml-1 self-end pb-2">
-              {(isSearching ? filteredSlides.length : visibleSlides.length)
+              {(isFiltering ? filteredSlides.length : visibleSlides.length)
                 .toString()
                 .padStart(2, '0')}
-              {isSearching && (
+              {isFiltering && (
                 <span className="opacity-40">
                   /{visibleSlides.length.toString().padStart(2, '0')}
                 </span>
               )}
             </span>
           )}
-          <div className="ml-auto flex w-full items-center gap-2 md:w-auto">
+          <div className="ml-auto flex w-full flex-wrap items-center gap-2 md:w-auto">
+            {availableTags.length > 0 && (
+              <TagCombobox
+                value={activeTags}
+                onChange={setSelectedTags}
+                suggestions={availableTags}
+                placeholder={t.home.filterTagsPlaceholder}
+                ariaLabel={t.home.filterByTag}
+                className="w-full md:w-[260px]"
+              />
+            )}
             <SortControl value={sortKey} onChange={setSortKey} />
             <SearchInput value={query} onChange={setQuery} />
           </div>
@@ -210,7 +272,7 @@ export function Home() {
       ) : visibleSlides.length === 0 ? (
         <EmptyState isDraft={isAll || isDraft} folderName={selectedFolder?.name} />
       ) : filteredSlides.length === 0 ? (
-        <NoResultsState query={query} onClear={() => setQuery('')} />
+        <NoResultsState query={query} onClear={clearFilters} />
       ) : (
         <ul className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-x-6 gap-y-9 md:grid-cols-[repeat(auto-fill,minmax(300px,1fr))]">
           {sortedSlides.map((id) => (
