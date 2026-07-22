@@ -16,7 +16,8 @@ import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import { FolderIconChip } from '../components/sidebar/folder-item';
 import { ALL_SLIDES_ID, ASSETS_ID, Sidebar, THEMES_ID } from '../components/sidebar/sidebar';
-import type { FoldersManifest } from '../lib/sdk';
+import { groupFoldersByParent } from '../lib/folder-tree';
+import type { Folder, FoldersManifest } from '../lib/sdk';
 import { slideIds } from '../lib/slides';
 import { themes as themeRegistry } from '../lib/themes';
 
@@ -25,6 +26,8 @@ export type HomeOutletContext = {
   loading: boolean;
   draftSlides: string[];
   slidesByFolder: Record<string, string[]>;
+  /** Recursive slide count for a folder (own + descendants); Draft for `null`. */
+  countFor: (folderId: string | null) => number;
   /** Selected view id: ALL_SLIDES_ID, DRAFT_ID, a folder id, THEMES_ID, or ASSETS_ID. */
   selectedId: string;
   selectFolder: (id: string) => void;
@@ -98,8 +101,23 @@ export function HomeShell() {
     return { draftSlides: draft, slidesByFolder: byFolder };
   }, [manifest]);
 
-  const countFor = (folderId: string | null) =>
-    folderId === null ? draftSlides.length : (slidesByFolder[folderId]?.length ?? 0);
+  const childrenByParent = useMemo(() => groupFoldersByParent(manifest.folders), [manifest]);
+
+  const countFor = (folderId: string | null) => {
+    if (folderId === null) return draftSlides.length;
+    let total = slidesByFolder[folderId]?.length ?? 0;
+    const stack = [...(childrenByParent.get(folderId) ?? [])];
+    const seen = new Set<string>();
+    while (stack.length) {
+      const child = stack.pop() as Folder;
+      if (seen.has(child.id)) continue;
+      seen.add(child.id);
+      total += slidesByFolder[child.id]?.length ?? 0;
+      const kids = childrenByParent.get(child.id);
+      if (kids) stack.push(...kids);
+    }
+    return total;
+  };
 
   const moveSlideWithToast = useCallback(
     async (slideId: string, folderId: string | null) => {
@@ -124,6 +142,7 @@ export function HomeShell() {
     loading,
     draftSlides,
     slidesByFolder,
+    countFor,
     selectedId,
     selectFolder,
     reportTitle,
@@ -148,6 +167,7 @@ export function HomeShell() {
           onCreate={(name, icon) => create(name, icon)}
           onRename={(id, name) => update(id, { name })}
           onChangeIcon={(id, icon) => update(id, { icon })}
+          onMove={(id, parentId) => update(id, { parentId })}
           onDelete={async (id) => {
             const name = manifest.folders.find((f) => f.id === id)?.name ?? id;
             if (selectedId === id) selectFolder(ALL_SLIDES_ID);

@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import type { APIRequestContext } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 import {
   coreRoot,
@@ -11,6 +12,25 @@ import {
   slideSourcePath,
   TINY_PNG,
 } from './helpers.ts';
+
+type FolderRow = { id: string; name: string; parentId?: string | null };
+
+async function createFolder(
+  request: APIRequestContext,
+  name: string,
+  parentId?: string,
+): Promise<string> {
+  const res = await request.post('/__folders', {
+    data: { name, icon: { type: 'emoji', value: '📁' }, ...(parentId ? { parentId } : {}) },
+  });
+  expect(res.ok()).toBe(true);
+  return ((await res.json()) as FolderRow).id;
+}
+
+async function readFolders(request: APIRequestContext): Promise<FolderRow[]> {
+  const manifest = (await (await request.get('/__folders')).json()) as { folders: FolderRow[] };
+  return manifest.folders;
+}
 
 test.describe('dev server http api', () => {
   test.afterEach(async ({ request }) => {
@@ -78,6 +98,51 @@ test.describe('dev server http api', () => {
     };
     expect(after.folders).toEqual([]);
     expect(after.assignments).toEqual({});
+  });
+
+  test('moving a folder under its own descendant is rejected', async ({ request }) => {
+    const a = await createFolder(request, 'A');
+    const b = await createFolder(request, 'B', a);
+    const c = await createFolder(request, 'C', b);
+
+    const res = await request.patch(`/__folders/${a}`, { data: { parentId: c } });
+    expect(res.status()).toBe(400);
+    expect(((await res.json()) as { error: string }).error).toBe('cycle detected');
+
+    // The rejected move left the chain intact.
+    const folders = await readFolders(request);
+    expect(folders.find((f) => f.id === a)?.parentId ?? null).toBeNull();
+  });
+
+  test('deleting a middle folder re-parents its children onto the grandparent', async ({
+    request,
+  }) => {
+    const a = await createFolder(request, 'A');
+    const b = await createFolder(request, 'B', a);
+    const c = await createFolder(request, 'C', b);
+
+    const removed = await request.delete(`/__folders/${b}`);
+    expect(removed.ok()).toBe(true);
+
+    const folders = await readFolders(request);
+    expect(folders.some((f) => f.id === b)).toBe(false);
+    // C's parent B is gone, so C re-parents onto B's parent A.
+    expect(folders.find((f) => f.id === c)?.parentId).toBe(a);
+  });
+
+  test('deleting a root folder promotes its children to top level', async ({ request }) => {
+    const a = await createFolder(request, 'A');
+    const b = await createFolder(request, 'B', a);
+
+    const removed = await request.delete(`/__folders/${a}`);
+    expect(removed.ok()).toBe(true);
+
+    const folders = await readFolders(request);
+    expect(folders.some((f) => f.id === a)).toBe(false);
+    const child = folders.find((f) => f.id === b);
+    // Promoted to top level: parentId is omitted, not left as null.
+    expect(child).toBeDefined();
+    expect('parentId' in (child as FolderRow)).toBe(false);
   });
 
   test('slides can be duplicated, renamed, and deleted', async ({ request }) => {

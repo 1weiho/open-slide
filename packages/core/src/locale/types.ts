@@ -58,6 +58,12 @@ export type Locale = {
     iconEmojiTab: string;
     iconColorTab: string;
     folderActions: string;
+    folderExpand: string;
+    folderCollapse: string;
+    moveUnder: string;
+    /** template: "Move into {name}" */
+    moveInto: string;
+    moveTopLevel: string;
     searchPlaceholder: string;
     clearSearch: string;
     sortLabel: string;

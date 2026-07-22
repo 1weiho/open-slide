@@ -7,6 +7,7 @@ import {
   readManifest,
   validateIcon,
   validateName,
+  validateParentId,
   validateReorder,
   writeManifest,
 } from '../../files/folders.ts';
@@ -14,14 +15,14 @@ import { validateMutationRequest } from '../../http/request-guard.ts';
 import { type ApiContext, json, readBody } from './context.ts';
 
 // GET    /__folders            list manifest
-// POST   /__folders            create folder { name, icon }
+// POST   /__folders            create folder { name, icon, parentId? }
 // PUT    /__folders/assign     assign slide to folder { slideId, folderId | null }
 // PUT    /__folders/reorder    reorder folders { ids: string[] } (permutation)
-// PATCH  /__folders/:id        rename / re-icon folder { name?, icon? }
-// DELETE /__folders/:id        delete folder + drop its assignments
+// PATCH  /__folders/:id        rename / re-icon / re-parent folder { name?, icon?, parentId? }
+// DELETE /__folders/:id        delete folder, re-parent its children, drop its assignments
 
-type CreateFolderBody = { name?: unknown; icon?: unknown };
-type PatchFolderBody = { name?: unknown; icon?: unknown };
+type CreateFolderBody = { name?: unknown; icon?: unknown; parentId?: unknown };
+type PatchFolderBody = { name?: unknown; icon?: unknown; parentId?: unknown };
 type AssignFolderBody = { slideId?: unknown; folderId?: unknown };
 type ReorderFoldersBody = { ids?: unknown };
 
@@ -48,7 +49,11 @@ export function registerFolderRoutes(server: ViteDevServer, ctx: ApiContext): vo
         if (!icon) return json(res, 400, { error: 'invalid icon' });
 
         const manifest = await readManifest(ctx.manifestPath);
+        const parentCheck = validateParentId(body.parentId, manifest.folders, null);
+        if (!parentCheck.ok) return json(res, 400, { error: parentCheck.error });
         const folder: Folder = { id: newFolderId(), name, icon };
+        // Omit parentId for top-level folders so hand-edited manifests stay tidy.
+        if (parentCheck.value !== null) folder.parentId = parentCheck.value;
         manifest.folders.push(folder);
         await writeManifest(ctx.manifestPath, manifest);
         return json(res, 200, folder);
@@ -126,6 +131,12 @@ export function registerFolderRoutes(server: ViteDevServer, ctx: ApiContext): vo
             if (!icon) return json(res, 400, { error: 'invalid icon' });
             folder.icon = icon;
           }
+          if (body.parentId !== undefined) {
+            const parentCheck = validateParentId(body.parentId, manifest.folders, id);
+            if (!parentCheck.ok) return json(res, 400, { error: parentCheck.error });
+            if (parentCheck.value === null) delete folder.parentId;
+            else folder.parentId = parentCheck.value;
+          }
           await writeManifest(ctx.manifestPath, manifest);
           return json(res, 200, folder);
         }
@@ -136,11 +147,17 @@ export function registerFolderRoutes(server: ViteDevServer, ctx: ApiContext): vo
             return json(res, requestCheck.status, { error: requestCheck.error });
           }
           const manifest = await readManifest(ctx.manifestPath);
-          const before = manifest.folders.length;
-          manifest.folders = manifest.folders.filter((f) => f.id !== id);
-          if (manifest.folders.length === before) {
-            return json(res, 404, { error: 'folder not found' });
+          const target = manifest.folders.find((f) => f.id === id);
+          if (!target) return json(res, 404, { error: 'folder not found' });
+          // Re-parent direct children onto the deleted folder's parent so the
+          // subtree is preserved rather than orphaned.
+          const grandparent = target.parentId ?? null;
+          for (const f of manifest.folders) {
+            if ((f.parentId ?? null) !== id) continue;
+            if (grandparent === null) delete f.parentId;
+            else f.parentId = grandparent;
           }
+          manifest.folders = manifest.folders.filter((f) => f.id !== id);
           for (const [slideId, folderId] of Object.entries(manifest.assignments)) {
             if (folderId === id) delete manifest.assignments[slideId];
           }

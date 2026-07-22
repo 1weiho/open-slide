@@ -26,6 +26,7 @@ export type Folder = {
   id: string;
   name: string;
   icon: FolderIcon;
+  parentId?: string | null;
 };
 
 export type FoldersManifest = {

@@ -51,11 +51,15 @@ async function deleteSlideReq(slideId: string): Promise<void> {
   if (!res.ok) throw new Error(`DELETE /__slides/${slideId} ${res.status}`);
 }
 
-async function postFolder(name: string, icon: FolderIcon): Promise<Folder> {
+async function postFolder(
+  name: string,
+  icon: FolderIcon,
+  parentId: string | null = null,
+): Promise<Folder> {
   const res = await fetch('/__folders', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ name, icon }),
+    body: JSON.stringify({ name, icon, parentId }),
   });
   if (!res.ok) throw new Error(`POST /__folders ${res.status}`);
   return (await res.json()) as Folder;
@@ -63,7 +67,7 @@ async function postFolder(name: string, icon: FolderIcon): Promise<Folder> {
 
 async function patchFolder(
   id: string,
-  patch: { name?: string; icon?: FolderIcon },
+  patch: { name?: string; icon?: FolderIcon; parentId?: string | null },
 ): Promise<Folder> {
   const res = await fetch(`/__folders/${id}`, {
     method: 'PATCH',
@@ -101,7 +105,10 @@ export type UseFoldersResult = {
   manifest: FoldersManifest;
   loading: boolean;
   create: (name: string, icon: FolderIcon) => Promise<Folder>;
-  update: (id: string, patch: { name?: string; icon?: FolderIcon }) => Promise<void>;
+  update: (
+    id: string,
+    patch: { name?: string; icon?: FolderIcon; parentId?: string | null },
+  ) => Promise<void>;
   remove: (id: string) => Promise<void>;
   reorder: (ids: string[]) => Promise<void>;
   assign: (slideId: string, folderId: string | null) => Promise<void>;
@@ -158,7 +165,7 @@ export function useFolders(): UseFoldersResult {
   );
 
   const update = useCallback(
-    async (id: string, patch: { name?: string; icon?: FolderIcon }) => {
+    async (id: string, patch: { name?: string; icon?: FolderIcon; parentId?: string | null }) => {
       await patchFolder(id, patch);
       await refresh();
     },

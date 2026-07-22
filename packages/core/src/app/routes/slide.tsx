@@ -16,7 +16,7 @@ import {
   Presentation,
 } from 'lucide-react';
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AssetView } from '@/components/asset-view';
 import { HistoryProvider } from '@/components/history-provider';
@@ -71,6 +71,16 @@ const { showSlideUi, showSlideBrowser, allowHtmlDownload } = config.build;
 export function Slide() {
   const { slideId = '' } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  // Back arrow: return to the previous in-app view (e.g. the folder you came
+  // from, encoded as ?f=… in the home URL) instead of always resetting to the
+  // home root. Falls back to home when the slide was opened directly (no prior
+  // history entry — location.key is 'default').
+  const goBack = () => {
+    if (location.key !== 'default') navigate(-1);
+    else navigate('/');
+  };
   const { slide, error } = useSlideModule(slideId);
   const [playMode, setPlayMode] = useState<'window' | 'fullscreen' | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -548,14 +558,15 @@ export function Slide() {
           <header className="relative flex h-12 shrink-0 items-center gap-2 border-b border-hairline bg-sidebar/85 px-2 backdrop-blur-md md:px-3">
             <div className="flex flex-1 items-center gap-1.5 md:flex-none md:gap-2">
               {showSlideBrowser && (
-                <Link
-                  to="/"
-                  aria-label={t.slide.backToHome}
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
                   title={t.slide.home}
-                  className={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
+                  aria-label={t.slide.backToHome}
+                  onClick={goBack}
                 >
                   <ChevronLeft className="size-4" />
-                </Link>
+                </Button>
               )}
               <span aria-hidden className="mx-0.5 hidden h-5 w-px bg-hairline md:block" />
               {import.meta.env.DEV && (
