@@ -87,6 +87,36 @@ describe('editable PPTX OOXML', () => {
     expect(files['ppt/media/image1.png']).toEqual(pngBytes);
   });
 
+  it('writes index-aligned speaker notes into native PowerPoint notes slides', async () => {
+    const bytes = await buildEditablePptx(
+      [
+        { background: '#ffffff', objects: [] },
+        { background: '#ffffff', objects: [] },
+      ],
+      ['第一段\n\nSecond paragraph', undefined],
+    );
+
+    const files = unzip(bytes);
+    const presentation = xml(files, 'ppt/presentation.xml');
+    const presentationRels = xml(files, 'ppt/_rels/presentation.xml.rels');
+    const slideRels = xml(files, 'ppt/slides/_rels/slide1.xml.rels');
+    const notes = xml(files, 'ppt/notesSlides/notesSlide1.xml');
+    const noteRels = xml(files, 'ppt/notesSlides/_rels/notesSlide1.xml.rels');
+    const contentTypes = xml(files, '[Content_Types].xml');
+
+    expect(presentation).toContain('<p:notesMasterId r:id="rId5"/>');
+    expect(presentationRels).toContain(
+      'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster"',
+    );
+    expect(slideRels).toContain('Target="../notesSlides/notesSlide1.xml"');
+    expect(notes).toContain('<a:t xml:space="preserve">第一段</a:t>');
+    expect(notes).toContain('<a:t xml:space="preserve">Second paragraph</a:t>');
+    expect(noteRels).toContain('Target="../slides/slide1.xml"');
+    expect(contentTypes).toContain('/ppt/notesMasters/notesMaster1.xml');
+    expect(contentTypes).toContain('/ppt/notesSlides/notesSlide1.xml');
+    expect(files['ppt/notesSlides/notesSlide2.xml']).toBeUndefined();
+  });
+
   it('writes linear gradients as vector gradient fills', async () => {
     const bytes = await buildEditablePptx([
       {
@@ -229,10 +259,42 @@ describe('editable PPTX OOXML', () => {
 
     const slideXml = xml(unzip(await buildEditablePptx([slide])), 'ppt/slides/slide1.xml');
     expect(slideXml).toContain('<a:gd name="adj" fmla="val 3019"/>');
-    expect(slideXml).toContain('<a:gs pos="0"><a:srgbClr val="061B16"/></a:gs>');
-    expect(slideXml).toContain('<a:gs pos="100000"><a:srgbClr val="0B0B0B"/></a:gs>');
+    expect(slideXml).toContain(
+      '<a:gs pos="0"><a:srgbClr val="07231C"><a:alpha val="72000"/></a:srgbClr></a:gs>',
+    );
+    expect(slideXml).toContain(
+      '<a:gs pos="100000"><a:srgbClr val="FFFFFF"><a:alpha val="2500"/></a:srgbClr></a:gs>',
+    );
     expect(slideXml).toContain('<a:lin ang="5400000" scaled="0"/>');
     expect(slideXml).toContain('<a:srgbClr val="6EE7B7"><a:alpha val="34000"/></a:srgbClr>');
+  });
+
+  it('normalizes scaled preview coordinates back to the 1920 by 1080 slide canvas', async () => {
+    const panel = fakeElement('DIV', {
+      rect: { left: 150, top: 100, width: 200, height: 100 },
+      styles: {
+        display: 'block',
+        backgroundColor: '#0071e3',
+      },
+    });
+    const frame = fakeElement('DIV', {
+      rect: { left: 100, top: 50, width: 960, height: 540 },
+      children: [panel],
+      queryResults: [panel],
+      styles: { backgroundColor: '#ffffff', display: 'block' },
+    });
+    stubDom();
+
+    const slide = await collectEditableSlide(frame as unknown as HTMLElement);
+    const shape = slide.objects.find((object) => object.kind === 'shape');
+
+    expect(shape).toMatchObject({
+      kind: 'shape',
+      x: 100,
+      y: 100,
+      w: 400,
+      h: 200,
+    });
   });
 
   it('can disable wrapping for single-line text boxes', async () => {
@@ -283,6 +345,50 @@ describe('editable PPTX OOXML', () => {
     const textObject = slide.objects.find((object) => object.kind === 'text');
 
     expect(textObject).toMatchObject({ kind: 'text', wrap: true });
+  });
+
+  it('preserves explicit line breaks and CSS line height without adding extra wrapping', async () => {
+    const first = fakeTextNode('AI');
+    const second = fakeTextNode('Engineering');
+    const br = fakeElement('BR', {
+      rect: { left: 0, top: 0, width: 1, height: 1 },
+      styles: { display: 'inline' },
+    });
+    const heading = fakeElement('H1', {
+      rect: { left: 128, top: 264, width: 820, height: 304 },
+      textContent: 'AIEngineering',
+      childNodes: [first, br, second],
+      styles: {
+        display: 'block',
+        fontFamily: '"SF Pro Text", Arial, sans-serif',
+        fontSize: '176px',
+        fontWeight: '760',
+        lineHeight: '151.36px',
+        whiteSpace: 'normal',
+      },
+    });
+    const frame = fakeElement('DIV', {
+      rect: { left: 0, top: 0, width: 1920, height: 1080 },
+      children: [heading],
+      queryResults: [heading],
+      styles: { backgroundColor: '#ffffff', display: 'block' },
+    });
+    stubDom();
+
+    const slide = await collectEditableSlide(frame as unknown as HTMLElement);
+    const textObject = slide.objects.find((object) => object.kind === 'text');
+
+    expect(textObject).toMatchObject({
+      kind: 'text',
+      fontFamily: 'SF Pro Text',
+      wrap: false,
+    });
+    expect((textObject as { lineHeight?: number }).lineHeight).toBeCloseTo(0.86);
+
+    const slideXml = xml(unzip(await buildEditablePptx([slide])), 'ppt/slides/slide1.xml');
+    expect(slideXml).toContain('<a:bodyPr wrap="none"');
+    expect(slideXml).toContain('<a:normAutofit/>');
+    expect(slideXml).toContain('<a:spcPct val="86000"/>');
   });
 
   it('uses flex centering for native PowerPoint text boxes', async () => {
@@ -499,7 +605,7 @@ describe('editable PPTX OOXML', () => {
 
     const slideXml = xml(unzip(await buildEditablePptx([slide])), 'ppt/slides/slide1.xml');
     expect(slideXml).toContain('<a:bodyPr wrap="none" anchor="ctr"');
-    expect(slideXml).toContain('<a:pPr algn="ctr"/>');
+    expect(slideXml).toContain('<a:pPr algn="ctr">');
   });
 
   it('centers text inside circle-like number badges', async () => {

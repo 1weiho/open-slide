@@ -8,6 +8,8 @@ const XML_DECL = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
 const REL_NS = 'http://schemas.openxmlformats.org/package/2006/relationships';
 const OD_REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 const IMAGE_REL = `${OD_REL}/image`;
+const NOTES_REL = `${OD_REL}/notesSlide`;
+const NOTES_MASTER_REL = `${OD_REL}/notesMaster`;
 
 type PptxGradientStop = {
   color: string;
@@ -74,6 +76,7 @@ type PptxTextObject = PptxBox & {
   color?: string;
   fontFamily?: string;
   fontSize?: number;
+  lineHeight?: number;
   wrap?: boolean;
 };
 
@@ -144,7 +147,6 @@ export async function collectEditableSlide(frame: HTMLElement): Promise<Editable
   const rootRect = frame.getBoundingClientRect();
   const rootStyles = getComputedStyle(frame);
   const background = fillFromStyles(rootStyles) ?? '#ffffff';
-  const compositeBase = frameCompositeBase(frame, rootRect, background);
   const objects: PptxObject[] = [];
   const skipped = new WeakSet<Element>();
 
@@ -188,7 +190,7 @@ export async function collectEditableSlide(frame: HTMLElement): Promise<Editable
       continue;
     }
 
-    const fill = fillFromStyles(styles, compositeBase);
+    const fill = fillFromStyles(styles);
     const stroke = strokeFromStyles(styles);
     const borderShapes = stroke ? [] : borderShapesFromStyles(box, styles);
     if (fill || stroke) {
@@ -216,21 +218,32 @@ export async function collectEditableSlide(frame: HTMLElement): Promise<Editable
   };
 }
 
-export async function buildEditablePptx(slides: EditablePptxSlide[]): Promise<Uint8Array> {
+export async function buildEditablePptx(
+  slides: EditablePptxSlide[],
+  notes: (string | undefined)[] = [],
+): Promise<Uint8Array> {
   const { zipSync, strToU8 } = await import('fflate');
   const files: Record<string, Uint8Array> = {};
   const slideRels: SlideRels[] = [];
+  const noteIndexes = slides
+    .map((_, index) => index)
+    .filter((index) => Boolean(notes[index]?.trim()));
+  const hasNotes = noteIndexes.length > 0;
 
-  files['[Content_Types].xml'] = strToU8(editableContentTypesXml(slides.length));
+  files['[Content_Types].xml'] = strToU8(editableContentTypesXml(slides.length, noteIndexes));
   files['_rels/.rels'] = strToU8(rootRelsXml());
-  files['ppt/presentation.xml'] = strToU8(presentationXml(slides.length));
-  files['ppt/_rels/presentation.xml.rels'] = strToU8(presentationRelsXml(slides.length));
+  files['ppt/presentation.xml'] = strToU8(presentationXml(slides.length, hasNotes));
+  files['ppt/_rels/presentation.xml.rels'] = strToU8(presentationRelsXml(slides.length, hasNotes));
   files['ppt/presProps.xml'] = strToU8(presPropsXml());
   files['ppt/theme/theme1.xml'] = strToU8(themeXml());
   files['ppt/slideMasters/slideMaster1.xml'] = strToU8(slideMasterXml());
   files['ppt/slideMasters/_rels/slideMaster1.xml.rels'] = strToU8(slideMasterRelsXml());
   files['ppt/slideLayouts/slideLayout1.xml'] = strToU8(slideLayoutXml());
   files['ppt/slideLayouts/_rels/slideLayout1.xml.rels'] = strToU8(slideLayoutRelsXml());
+  if (hasNotes) {
+    files['ppt/notesMasters/notesMaster1.xml'] = strToU8(notesMasterXml());
+    files['ppt/notesMasters/_rels/notesMaster1.xml.rels'] = strToU8(notesMasterRelsXml());
+  }
 
   for (let i = 0; i < slides.length; i++) {
     const ctx: SlideBuildContext = {
@@ -252,6 +265,16 @@ export async function buildEditablePptx(slides: EditablePptxSlide[]): Promise<Ui
       );
       mediaIndex++;
     }
+    if (notes[i]?.trim()) {
+      const noteRelId = `rId${rels.rels.length + 2}`;
+      rels.rels.push(
+        `<Relationship Id="${noteRelId}" Type="${NOTES_REL}" Target="../notesSlides/notesSlide${i + 1}.xml"/>`,
+      );
+      files[`ppt/notesSlides/notesSlide${i + 1}.xml`] = strToU8(notesSlideXml(notes[i] ?? ''));
+      files[`ppt/notesSlides/_rels/notesSlide${i + 1}.xml.rels`] = strToU8(
+        notesSlideRelsXml(i + 1),
+      );
+    }
     files[`ppt/slides/_rels/slide${i + 1}.xml.rels`] = strToU8(editableSlideRelsXml(rels.rels));
   }
 
@@ -268,14 +291,20 @@ function elementBox(
   if (opacity <= 0) return null;
 
   const rect = el.getBoundingClientRect();
-  const w = clamp(rect.width, 0, SLIDE_W);
-  const h = clamp(rect.height, 0, SLIDE_H);
+  const scaleX = rootRect.width > 0 ? SLIDE_W / rootRect.width : 1;
+  const scaleY = rootRect.height > 0 ? SLIDE_H / rootRect.height : 1;
   const rotate = rotationFromTransform(styles.transform);
+  const logicalW = rotate && el.offsetWidth > 0 ? el.offsetWidth * scaleX : rect.width * scaleX;
+  const logicalH = rotate && el.offsetHeight > 0 ? el.offsetHeight * scaleY : rect.height * scaleY;
+  const w = clamp(logicalW, 0, SLIDE_W);
+  const h = clamp(logicalH, 0, SLIDE_H);
   if (w < 1 || h < 1) return null;
+  const centerX = (rect.left + rect.width / 2 - rootRect.left) * scaleX;
+  const centerY = (rect.top + rect.height / 2 - rootRect.top) * scaleY;
 
   return {
-    x: clamp(rect.left - rootRect.left, 0, SLIDE_W),
-    y: clamp(rect.top - rootRect.top, 0, SLIDE_H),
+    x: clamp(rotate ? centerX - w / 2 : (rect.left - rootRect.left) * scaleX, 0, SLIDE_W),
+    y: clamp(rotate ? centerY - h / 2 : (rect.top - rootRect.top) * scaleY, 0, SLIDE_H),
     w,
     h,
     opacity: opacity < 1 ? opacity : undefined,
@@ -283,64 +312,10 @@ function elementBox(
   };
 }
 
-function fillFromStyles(styles: CSSStyleDeclaration, compositeBase?: ParsedColor | null): PptxFill {
+function fillFromStyles(styles: CSSStyleDeclaration): PptxFill {
   const gradient = parseLinearGradient(styles.backgroundImage);
-  if (gradient) return compositeBase ? compositeGradientStops(gradient, compositeBase) : gradient;
+  if (gradient) return gradient;
   return colorWithPaint(styles.backgroundColor);
-}
-
-function solidCompositeBase(fill: PptxFill): ParsedColor | null {
-  if (typeof fill !== 'string') return null;
-  const color = parseColor(fill);
-  if (!color || color.alpha < 0.999) return null;
-  return color;
-}
-
-function frameCompositeBase(
-  frame: HTMLElement,
-  rootRect: DOMRect,
-  fallback: PptxFill,
-): ParsedColor | null {
-  for (const el of Array.from(frame.querySelectorAll<HTMLElement>('*'))) {
-    const styles = getComputedStyle(el);
-    const box = elementBox(el, rootRect, styles);
-    if (!box || box.opacity !== undefined || !coversSlide(box)) continue;
-    const fill = fillFromStyles(styles);
-    const base = solidCompositeBase(fill);
-    if (base) return base;
-  }
-  return solidCompositeBase(fallback);
-}
-
-function coversSlide(box: PptxBox): boolean {
-  return box.x <= 1 && box.y <= 1 && box.w >= SLIDE_W - 1 && box.h >= SLIDE_H - 1;
-}
-
-function compositeGradientStops(
-  gradient: PptxLinearGradientFill,
-  base: ParsedColor,
-): PptxLinearGradientFill {
-  return {
-    ...gradient,
-    stops: gradient.stops.map((stop) => ({
-      ...stop,
-      color: compositeColorOverBase(stop.color, base),
-    })),
-  };
-}
-
-function compositeColorOverBase(value: string, base: ParsedColor): string {
-  const foreground = parseColor(value);
-  if (!foreground) return value;
-  if (foreground.alpha >= 0.999) return `#${foreground.hex}`;
-  if (foreground.alpha <= 0.001) return `#${base.hex}`;
-
-  const fg = hexToRgb(foreground.hex);
-  const bg = hexToRgb(base.hex);
-  const alpha = foreground.alpha;
-  return `#${byteToHex(fg.r * alpha + bg.r * (1 - alpha))}${byteToHex(
-    fg.g * alpha + bg.g * (1 - alpha),
-  )}${byteToHex(fg.b * alpha + bg.b * (1 - alpha))}`;
 }
 
 function strokeFromStyles(styles: CSSStyleDeclaration): PptxStroke | null {
@@ -448,6 +423,8 @@ function textFromElement(
   const hasText = paragraphs.some((paragraph) => paragraph.some((run) => run.text.trim()));
   if (!hasText) return null;
   const textBox = adjustedTextBoxForEmbeddedLeadingContent(el, box, styles);
+  const fontSize = parseCssPx(styles.fontSize) || 18;
+  const lineHeightPx = parseCssPx(styles.lineHeight);
 
   return {
     kind: 'text',
@@ -457,8 +434,9 @@ function textFromElement(
     vertical: verticalTextAnchor(textBox, styles),
     color: colorWithPaint(styles.color) ?? undefined,
     fontFamily: normalizeFontFamily(styles.fontFamily),
-    fontSize: parseCssPx(styles.fontSize) || undefined,
-    wrap: shouldWrapTextBox(textBox, styles),
+    fontSize,
+    lineHeight: lineHeightPx > 0 ? lineHeightPx / fontSize : undefined,
+    wrap: paragraphs.length > 1 ? false : shouldWrapTextBox(textBox, styles),
     shadow: parseCssShadow(styles.textShadow),
   };
 }
@@ -684,12 +662,23 @@ async function rasterizeElement(el: HTMLElement, box: PptxBox): Promise<PptxImag
     }
 
     const { toBlob } = await import('html-to-image');
+    const captureWidth = el.offsetWidth || box.w;
+    const captureHeight = el.offsetHeight || box.h;
     const blob = await toBlob(el, {
-      width: Math.max(1, Math.round(box.w)),
-      height: Math.max(1, Math.round(box.h)),
+      width: Math.max(1, Math.round(captureWidth)),
+      height: Math.max(1, Math.round(captureHeight)),
       pixelRatio: 2,
       backgroundColor: undefined,
       cacheBust: true,
+      style: {
+        position: 'relative',
+        left: '0',
+        top: '0',
+        right: 'auto',
+        bottom: 'auto',
+        margin: '0',
+        transform: 'none',
+      },
     });
     if (!blob) return null;
     return {
@@ -1024,14 +1013,23 @@ function textXml(text: PptxTextObject, ctx: SlideBuildContext): string {
   const paragraphs = text.paragraphs.map((paragraph) => paragraphXml(paragraph, text)).join('');
   const wrap = text.wrap === false ? 'none' : 'square';
   const anchor = textAnchorXml(text.vertical);
-  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Text ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr>${xfrmXml(text)}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln>${effectXml(text.shadow ?? null, text.opacity)}</p:spPr><p:txBody><a:bodyPr wrap="${wrap}"${anchor} lIns="0" tIns="0" rIns="0" bIns="0"/><a:lstStyle/>${paragraphs}</p:txBody></p:sp>`;
+  const bodyPrAttrs = `wrap="${wrap}"${anchor} lIns="0" tIns="0" rIns="0" bIns="0"`;
+  const bodyPr =
+    text.wrap === false
+      ? `<a:bodyPr ${bodyPrAttrs}><a:normAutofit/></a:bodyPr>`
+      : `<a:bodyPr ${bodyPrAttrs}/>`;
+  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Text ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr>${xfrmXml(text)}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln>${effectXml(text.shadow ?? null, text.opacity)}</p:spPr><p:txBody>${bodyPr}<a:lstStyle/>${paragraphs}</p:txBody></p:sp>`;
 }
 
 function paragraphXml(paragraph: PptxTextRun[], text: PptxTextObject): string {
   const align =
     text.align && text.align !== 'left' ? ` algn="${pptxTextAlignValue(text.align)}"` : '';
+  const lineSpacing = text.lineHeight
+    ? `<a:lnSpc><a:spcPct val="${Math.round(text.lineHeight * 100000)}"/></a:lnSpc><a:spcBef><a:spcPts val="0"/></a:spcBef><a:spcAft><a:spcPts val="0"/></a:spcAft>`
+    : '';
   const runs = paragraph.map((run) => runXml(run, text)).join('');
-  return `<a:p><a:pPr${align}/>${runs}</a:p>`;
+  const properties = lineSpacing ? `<a:pPr${align}>${lineSpacing}</a:pPr>` : `<a:pPr${align}/>`;
+  return `<a:p>${properties}${runs}</a:p>`;
 }
 
 function runXml(run: PptxTextRun, text: PptxTextObject): string {
@@ -1230,13 +1228,22 @@ function effectXml(shadow: PptxShadow | null, opacity?: number): string {
   return `<a:effectLst><a:outerShdw blurRad="${Math.round(shadow.blur * CSS_PX_EMU)}" dist="${Math.round(shadow.distance * CSS_PX_EMU)}" dir="${angleToOoxml(shadow.angle)}" algn="ctr" rotWithShape="0">${colorXml(shadow.color, opacity, '000000')}</a:outerShdw></a:effectLst>`;
 }
 
-function editableContentTypesXml(n: number): string {
+function editableContentTypesXml(n: number, noteIndexes: number[]): string {
   const slideOverrides = Array.from(
     { length: n },
     (_, i) =>
       `<Override PartName="/ppt/slides/slide${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`,
   ).join('');
-  return `${XML_DECL}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="jpg" ContentType="image/jpeg"/><Default Extension="jpeg" ContentType="image/jpeg"/><Default Extension="gif" ContentType="image/gif"/><Default Extension="svg" ContentType="image/svg+xml"/><Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/><Override PartName="/ppt/presProps.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presProps+xml"/><Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/><Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/><Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>${slideOverrides}</Types>`;
+  const noteOverrides = noteIndexes
+    .map(
+      (index) =>
+        `<Override PartName="/ppt/notesSlides/notesSlide${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml"/>`,
+    )
+    .join('');
+  const notesMasterOverride = noteIndexes.length
+    ? '<Override PartName="/ppt/notesMasters/notesMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesMaster+xml"/>'
+    : '';
+  return `${XML_DECL}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="jpg" ContentType="image/jpeg"/><Default Extension="jpeg" ContentType="image/jpeg"/><Default Extension="gif" ContentType="image/gif"/><Default Extension="svg" ContentType="image/svg+xml"/><Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/><Override PartName="/ppt/presProps.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presProps+xml"/><Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/><Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/><Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>${notesMasterOverride}${slideOverrides}${noteOverrides}</Types>`;
 }
 
 function editableSlideRelsXml(imageRels: string[]): string {
@@ -1247,15 +1254,18 @@ function rootRelsXml(): string {
   return `${XML_DECL}<Relationships xmlns="${REL_NS}"><Relationship Id="rId1" Type="${OD_REL}/officeDocument" Target="ppt/presentation.xml"/></Relationships>`;
 }
 
-function presentationXml(n: number): string {
+function presentationXml(n: number, hasNotes: boolean): string {
   const sldIds = Array.from(
     { length: n },
     (_, i) => `<p:sldId id="${256 + i}" r:id="rId${i + 3}"/>`,
   ).join('');
-  return `${XML_DECL}<p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="${OD_REL}" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst><p:sldIdLst>${sldIds}</p:sldIdLst><p:sldSz cx="${EMU_W}" cy="${EMU_H}"/><p:notesSz cx="6858000" cy="9144000"/></p:presentation>`;
+  const notesMaster = hasNotes
+    ? `<p:notesMasterIdLst><p:notesMasterId r:id="rId${n + 3}"/></p:notesMasterIdLst>`
+    : '';
+  return `${XML_DECL}<p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="${OD_REL}" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst>${notesMaster}<p:sldIdLst>${sldIds}</p:sldIdLst><p:sldSz cx="${EMU_W}" cy="${EMU_H}"/><p:notesSz cx="6858000" cy="9144000"/></p:presentation>`;
 }
 
-function presentationRelsXml(n: number): string {
+function presentationRelsXml(n: number, hasNotes: boolean): string {
   const rels = [
     `<Relationship Id="rId1" Type="${OD_REL}/slideMaster" Target="slideMasters/slideMaster1.xml"/>`,
     `<Relationship Id="rId2" Type="${OD_REL}/presProps" Target="presProps.xml"/>`,
@@ -1265,11 +1275,41 @@ function presentationRelsXml(n: number): string {
       `<Relationship Id="rId${i + 3}" Type="${OD_REL}/slide" Target="slides/slide${i + 1}.xml"/>`,
     );
   }
+  if (hasNotes) {
+    rels.push(
+      `<Relationship Id="rId${n + 3}" Type="${NOTES_MASTER_REL}" Target="notesMasters/notesMaster1.xml"/>`,
+    );
+  }
   return `${XML_DECL}<Relationships xmlns="${REL_NS}">${rels.join('')}</Relationships>`;
 }
 
 function presPropsXml(): string {
   return `${XML_DECL}<p:presentationPr xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="${OD_REL}" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"/>`;
+}
+
+function notesSlideXml(note: string): string {
+  const paragraphs = note
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map((line) =>
+      line
+        ? `<a:p><a:r><a:rPr lang="zh-CN" altLang="en-US" sz="1200"/><a:t xml:space="preserve">${escapeXml(line)}</a:t></a:r></a:p>`
+        : '<a:p><a:endParaRPr lang="zh-CN" altLang="en-US" sz="1200"/></a:p>',
+    )
+    .join('');
+  return `${XML_DECL}<p:notes xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="${OD_REL}" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr><p:sp><p:nvSpPr><p:cNvPr id="2" name="Speaker Notes"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="body" idx="1"/></p:nvPr></p:nvSpPr><p:spPr><a:xfrm><a:off x="685800" y="3429000"/><a:ext cx="5486400" cy="4572000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln></p:spPr><p:txBody><a:bodyPr lIns="91440" tIns="45720" rIns="91440" bIns="45720"/><a:lstStyle/>${paragraphs}</p:txBody></p:sp></p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:notes>`;
+}
+
+function notesSlideRelsXml(slideNumber: number): string {
+  return `${XML_DECL}<Relationships xmlns="${REL_NS}"><Relationship Id="rId1" Type="${NOTES_MASTER_REL}" Target="../notesMasters/notesMaster1.xml"/><Relationship Id="rId2" Type="${OD_REL}/slide" Target="../slides/slide${slideNumber}.xml"/></Relationships>`;
+}
+
+function notesMasterXml(): string {
+  return `${XML_DECL}<p:notesMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="${OD_REL}" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr><p:sp><p:nvSpPr><p:cNvPr id="2" name="Notes Placeholder"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="body" idx="1"/></p:nvPr></p:nvSpPr><p:spPr><a:xfrm><a:off x="685800" y="3429000"/><a:ext cx="5486400" cy="4572000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln></p:spPr><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="zh-CN" sz="1200"/></a:p></p:txBody></p:sp></p:spTree></p:cSld><p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/><p:notesStyle><a:lvl1pPr marL="0" algn="l"><a:defRPr sz="1200"><a:solidFill><a:schemeClr val="tx1"/></a:solidFill><a:latin typeface="+mn-lt"/><a:ea typeface="+mn-ea"/><a:cs typeface="+mn-cs"/></a:defRPr></a:lvl1pPr></p:notesStyle></p:notesMaster>`;
+}
+
+function notesMasterRelsXml(): string {
+  return `${XML_DECL}<Relationships xmlns="${REL_NS}"><Relationship Id="rId1" Type="${OD_REL}/theme" Target="../theme/theme1.xml"/></Relationships>`;
 }
 
 function slideMasterXml(): string {
@@ -1644,14 +1684,6 @@ function byteToHex(value: number): string {
   return clamp(Math.round(byte), 0, 255).toString(16).padStart(2, '0').toUpperCase();
 }
 
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  return {
-    r: Number.parseInt(hex.slice(0, 2), 16),
-    g: Number.parseInt(hex.slice(2, 4), 16),
-    b: Number.parseInt(hex.slice(4, 6), 16),
-  };
-}
-
 function horizontalTextAlign(box: PptxBox, styles: CSSStyleDeclaration): PptxTextObject['align'] {
   const explicit = textAlign(styles.textAlign);
   if (explicit !== 'left') return explicit;
@@ -1731,9 +1763,10 @@ function mapPowerPointFontFamily(family: string): string | undefined {
   ) {
     return 'Menlo';
   }
+  if (normalized === 'sf pro display' || normalized === 'sf pro text') {
+    return family;
+  }
   if (
-    normalized === 'sf pro display' ||
-    normalized === 'sf pro text' ||
     normalized === '-apple-system' ||
     normalized === 'blinkmacsystemfont' ||
     normalized === 'system-ui' ||

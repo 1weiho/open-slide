@@ -116,7 +116,7 @@ export async function exportSlideAsPptx(
     }
 
     onProgress?.({ phase: 'generating', current: total, total, percent: 98 });
-    const pptx = await buildEditablePptx(editableSlides);
+    const pptx = await buildEditablePptx(editableSlides, slide.notes);
     downloadBlob(
       new Blob([pptx as BlobPart], {
         type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
