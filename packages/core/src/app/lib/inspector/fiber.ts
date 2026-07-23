@@ -5,9 +5,10 @@ export type SlideSourceHit = {
 };
 
 export type FindSlideSourceOptions = {
-  // Visual editor uses this: skip component-invocation JSX (`<MyComp/>`)
-  // since most components don't forward `style`. Comments leave it off
-  // so any JSX can be annotated.
+  // When true, only match host DOM fibers (`div`, `p`, …). Component
+  // call-site fibers (`<MyComp/>`) are skipped. Prefer leaving this off so
+  // imported/shared components remain selectable; their host children are
+  // authored outside `slides/` and never get `data-slide-loc`.
   hostOnly?: boolean;
 };
 
@@ -34,30 +35,22 @@ function normalizeDebugFileName(fileName: string): string {
   return fileName.split(/[?#]/)[0].replace(/\\/g, '/');
 }
 
-export function findSlideSource(
+function parseSlideLoc(el: HTMLElement): { line: number; column: number } | null {
+  const loc = el.dataset.slideLoc;
+  if (!loc) return null;
+  const idx = loc.indexOf(':');
+  if (idx <= 0) return null;
+  const line = Number(loc.slice(0, idx));
+  const column = Number(loc.slice(idx + 1));
+  if (!Number.isFinite(line) || !Number.isFinite(column)) return null;
+  return { line, column };
+}
+
+function findViaFiber(
   el: HTMLElement,
   slideId: string,
   opts?: FindSlideSourceOptions,
 ): SlideSourceHit | null {
-  // Primary path: the `data-slide-loc` attribute injected by the
-  // loc-tags Vite plugin. Immune to HMR-stale fiber state.
-  const tagged = el.closest<HTMLElement>('[data-slide-loc]');
-  if (tagged) {
-    const loc = tagged.dataset.slideLoc;
-    if (loc) {
-      const idx = loc.indexOf(':');
-      if (idx > 0) {
-        const line = Number(loc.slice(0, idx));
-        const column = Number(loc.slice(idx + 1));
-        if (Number.isFinite(line) && Number.isFinite(column)) {
-          return { line, column, anchor: tagged };
-        }
-      }
-    }
-  }
-
-  // Fallback for JSX rendered from imported component files (which the
-  // loc-tags plugin doesn't transform).
   const needle = `/slides/${slideId}/index.tsx`;
   let fiber = getFiber(el);
   let anchor: HTMLElement = el;
@@ -81,5 +74,33 @@ export function findSlideSource(
     }
     fiber = fiber.return;
   }
+  return null;
+}
+
+export function findSlideSource(
+  el: HTMLElement,
+  slideId: string,
+  opts?: FindSlideSourceOptions,
+): SlideSourceHit | null {
+  // Exact tag on the clicked element (slide-authored host JSX). Immune to
+  // HMR-stale fiber state.
+  const own = parseSlideLoc(el);
+  if (own) {
+    return { ...own, anchor: el };
+  }
+
+  // Fiber walk resolves imported/shared component call sites. Host children
+  // rendered from another file are never tagged by loc-tags, and must win
+  // over a tagged slide ancestor (otherwise a wrapper steals the click).
+  const fiberHit = findViaFiber(el, slideId, opts);
+  if (fiberHit) return fiberHit;
+
+  // Ancestor tag: last-resort mapping when fiber debug source is missing.
+  const tagged = el.closest<HTMLElement>('[data-slide-loc]');
+  if (tagged) {
+    const loc = parseSlideLoc(tagged);
+    if (loc) return { ...loc, anchor: tagged };
+  }
+
   return null;
 }

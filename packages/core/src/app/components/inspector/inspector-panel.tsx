@@ -64,7 +64,7 @@ type RangeStylePreview = {
 };
 
 function resolveSelectedTarget(target: SelectedTarget, slideId: string): SelectedTarget {
-  const hit = findSlideSource(target.anchor, slideId, { hostOnly: true });
+  const hit = findSlideSource(target.anchor, slideId);
   if (!hit) return target;
   if (hit.line === target.line && hit.column === target.column && hit.anchor === target.anchor) {
     return target;
@@ -1068,7 +1068,7 @@ function findElementByLine(slideId: string, line: number, column: number): HTMLE
   if (tagged) return tagged;
   const candidates = root.querySelectorAll<HTMLElement>('*');
   for (const el of candidates) {
-    const hit = findSlideSource(el, slideId, { hostOnly: true });
+    const hit = findSlideSource(el, slideId);
     if (hit && hit.line === line) return hit.anchor;
   }
   return null;
