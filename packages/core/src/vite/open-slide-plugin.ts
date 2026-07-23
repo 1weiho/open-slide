@@ -112,9 +112,10 @@ export async function generateSlidesModule(
   );
 
   // Discovery globs every `slides/*/index.*`, but a slide id is used in URLs,
-  // filesystem paths, and the editing routes — all guarded by SLIDE_ID_RE. Drop
-  // folders with an unusable id instead of listing them as slides that then fail
-  // every folder/edit action; `load` warns about each ignored folder.
+  // filesystem paths, and the editing routes — all guarded by SLIDE_ID_RE
+  // (Unicode letters/digits plus "-"/"_"). Drop folders with an unusable id
+  // instead of listing them as slides that then fail every folder/edit action;
+  // `load` warns about each ignored folder.
   const entries = scanned.filter((e) => SLIDE_ID_RE.test(e.id));
   const ignored = scanned.filter((e) => !SLIDE_ID_RE.test(e.id)).map((e) => e.id);
 
@@ -220,7 +221,7 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
           if (warnedInvalidSlideIds.has(slideId)) continue;
           warnedInvalidSlideIds.add(slideId);
           this.warn(
-            `Ignoring slide folder "${slideId}": slide ids must match ${SLIDE_ID_RE} (lowercase/uppercase letters, digits, "-", "_"). Rename the folder under "${slidesDir}/" to a kebab-case id so it appears in the browser and can be moved into folders.`,
+            `Ignoring slide folder "${slideId}": slide ids must match ${SLIDE_ID_RE} (Unicode letters/digits, "-", "_"; no spaces or punctuation). Rename the folder under "${slidesDir}/" so it appears in the browser and can be moved into folders.`,
           );
         }
         return code;

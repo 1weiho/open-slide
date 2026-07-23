@@ -73,3 +73,12 @@ export async function readSlideSource(file: string): Promise<string | null> {
     throw err;
   }
 }
+
+/** Decode a URL path segment; returns null if the percent-encoding is malformed. */
+export function decodePathSegment(raw: string): string | null {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+}

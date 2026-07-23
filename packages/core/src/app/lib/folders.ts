@@ -64,13 +64,13 @@ function asFolder(value: unknown): Folder {
 }
 
 async function patchSlideName(slideId: string, name: string): Promise<void> {
-  await request('PATCH', `/__slides/${slideId}`, { name });
+  await request('PATCH', `/__slides/${encodeURIComponent(slideId)}`, { name });
 }
 
 async function duplicateSlideReq(slideId: string, newId?: string): Promise<string> {
   const body = await requestJson<{ slideId?: unknown }>(
     'POST',
-    `/__slides/${slideId}/duplicate`,
+    `/__slides/${encodeURIComponent(slideId)}/duplicate`,
     newId === undefined ? undefined : { newId },
   );
   if (typeof body.slideId !== 'string') throw new Error('duplicate response missing slideId');
@@ -78,7 +78,7 @@ async function duplicateSlideReq(slideId: string, newId?: string): Promise<strin
 }
 
 async function deleteSlideReq(slideId: string): Promise<void> {
-  await request('DELETE', `/__slides/${slideId}`);
+  await request('DELETE', `/__slides/${encodeURIComponent(slideId)}`);
 }
 
 async function postFolder(name: string, icon: FolderIcon): Promise<Folder> {

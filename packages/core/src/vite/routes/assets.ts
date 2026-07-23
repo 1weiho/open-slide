@@ -13,7 +13,7 @@ import {
   validateAssetName,
 } from '../../files/assets.ts';
 import { validateMutationRequest } from '../../http/request-guard.ts';
-import { type ApiContext, json, readBody } from './context.ts';
+import { type ApiContext, decodePathSegment, json, readBody } from './context.ts';
 
 // GET    /__assets/:scope                     list assets in slide or @global
 // GET    /__assets/:scope/:file               serve raw asset bytes
@@ -33,9 +33,10 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
       const usagesMatch = url.pathname.match(/^\/([^/]+)\/([^/]+)\/usages$/);
 
       if (usagesMatch && method === 'GET') {
-        const scope = usagesMatch[1];
+        const scope = decodePathSegment(usagesMatch[1]);
         const filename = decodeURIComponent(usagesMatch[2]);
-        if (!validateAssetName(filename)) return json(res, 400, { error: 'invalid path' });
+        if (!scope || !validateAssetName(filename))
+          return json(res, 400, { error: 'invalid path' });
 
         const isGlobal = scope === GLOBAL_SCOPE;
         const assetPath = isGlobal ? `@assets/${filename}` : `./assets/${filename}`;
@@ -76,7 +77,8 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
       }
 
       if (listMatch && method === 'GET') {
-        const slideId = listMatch[1];
+        const slideId = decodePathSegment(listMatch[1]);
+        if (!slideId) return json(res, 400, { error: 'invalid slideId' });
         const scopedDir = resolveScopedAssetsDir(ctx.slidesRoot, ctx.globalAssetsRoot, slideId);
         if (!scopedDir) return json(res, 400, { error: 'invalid slideId' });
 
@@ -109,7 +111,7 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
             createdAt: assetCreatedAt(stat.birthtimeMs, stat.mtimeMs),
             mtime: stat.mtimeMs,
             mime: mimeForFilename(name),
-            url: `/__assets/${slideId}/${encodeURIComponent(name)}`,
+            url: `/__assets/${encodeURIComponent(slideId)}/${encodeURIComponent(name)}`,
             unused: true,
           });
         }
@@ -152,8 +154,9 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
       }
 
       if (fileMatch) {
-        const slideId = fileMatch[1];
+        const slideId = decodePathSegment(fileMatch[1]);
         const filename = decodeURIComponent(fileMatch[2]);
+        if (!slideId) return json(res, 400, { error: 'invalid path' });
         const file = resolveScopedAssetFile(
           ctx.slidesRoot,
           ctx.globalAssetsRoot,
@@ -230,7 +233,7 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
             createdAt: assetCreatedAt(stat.birthtimeMs, stat.mtimeMs),
             mtime: stat.mtimeMs,
             mime: mimeForFilename(filename),
-            url: `/__assets/${slideId}/${encodeURIComponent(filename)}`,
+            url: `/__assets/${encodeURIComponent(slideId)}/${encodeURIComponent(filename)}`,
           });
         }
 

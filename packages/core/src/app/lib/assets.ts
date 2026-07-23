@@ -15,9 +15,15 @@ export type AssetEntry = {
 
 export type UploadOptions = { overwrite?: boolean };
 
+function assetsScopeUrl(slideId: string, ...parts: string[]): string {
+  const segments = [encodeURIComponent(slideId), ...parts.map((p) => encodeURIComponent(p))];
+  return `/__assets/${segments.join('/')}`;
+}
+
 export async function listAssets(slideId: string): Promise<AssetEntry[]> {
-  const res = await fetch(`/__assets/${slideId}`);
-  if (!res.ok) throw new Error(`GET /__assets/${slideId} ${res.status}`);
+  const url = assetsScopeUrl(slideId);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`GET ${url} ${res.status}`);
   const data = (await res.json()) as { assets?: AssetEntry[] };
   return data.assets ?? [];
 }
@@ -28,7 +34,7 @@ export async function uploadAsset(
   opts: UploadOptions = {},
 ): Promise<Response> {
   const qs = opts.overwrite ? '?overwrite=1' : '';
-  return fetch(`/__assets/${slideId}/${encodeURIComponent(file.name)}${qs}`, {
+  return fetch(`${assetsScopeUrl(slideId, file.name)}${qs}`, {
     method: 'POST',
     headers: {
       'content-type': file.type || 'application/octet-stream',
@@ -39,7 +45,7 @@ export async function uploadAsset(
 }
 
 async function renameAsset(slideId: string, from: string, to: string): Promise<Response> {
-  return fetch(`/__assets/${slideId}/${encodeURIComponent(from)}`, {
+  return fetch(assetsScopeUrl(slideId, from), {
     method: 'PATCH',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ name: to }),
@@ -47,13 +53,13 @@ async function renameAsset(slideId: string, from: string, to: string): Promise<R
 }
 
 async function deleteAsset(slideId: string, name: string): Promise<Response> {
-  return fetch(`/__assets/${slideId}/${encodeURIComponent(name)}`, { method: 'DELETE' });
+  return fetch(assetsScopeUrl(slideId, name), { method: 'DELETE' });
 }
 
 export type AssetUsage = { slideId: string; count: number };
 
 export async function listAssetUsages(slideId: string, name: string): Promise<AssetUsage[]> {
-  const res = await fetch(`/__assets/${slideId}/${encodeURIComponent(name)}/usages`);
+  const res = await fetch(`${assetsScopeUrl(slideId, name)}/usages`);
   if (!res.ok) return [];
   const data = (await res.json().catch(() => null)) as { usages?: AssetUsage[] } | null;
   return data?.usages ?? [];
@@ -96,7 +102,7 @@ export async function uploadWithAutoRename(
     createdAt: body?.createdAt ?? now,
     mtime: body?.mtime ?? now,
     mime: body?.mime ?? uploaded.type ?? 'application/octet-stream',
-    url: body?.url ?? `/__assets/${slideId}/${encodeURIComponent(uploaded.name)}`,
+    url: body?.url ?? assetsScopeUrl(slideId, uploaded.name),
     unused: body?.unused ?? false,
   };
   return { ok: true, status: res.status, entry };
