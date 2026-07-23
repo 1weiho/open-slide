@@ -60,6 +60,8 @@ export type Locale = {
     folderActions: string;
     searchPlaceholder: string;
     clearSearch: string;
+    filterByTag: string;
+    filterTagsPlaceholder: string;
     sortLabel: string;
     sortByCreatedDesc: string;
     sortByCreatedAsc: string;
@@ -133,6 +135,11 @@ export type Locale = {
     slidesTab: string;
     assetsTab: string;
     renameSlide: string;
+    tagsAria: string;
+    addTag: string;
+    /** template: 'Create "{name}"' */
+    createTag: string;
+    tagsSaveFailed: string;
     loadingEyebrow: string;
     loadingAssetsEyebrow: string;
     emptyEyebrow: string;

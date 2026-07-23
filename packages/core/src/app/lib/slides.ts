@@ -2,6 +2,7 @@ import {
   slideCreatedAt as createdAt,
   slideIds as ids,
   loadSlide as load,
+  slideTags as tags,
   slideThemes as themes,
 } from 'virtual:open-slide/slides';
 import type { SlideModule } from './sdk';
@@ -9,6 +10,7 @@ import type { SlideModule } from './sdk';
 export const slideIds: string[] = ids;
 export const slideThemes: Record<string, string> = themes;
 export const slideCreatedAt: Record<string, number> = createdAt;
+export const slideTags: Record<string, string[]> = tags;
 
 export function slidesByTheme(themeId: string): string[] {
   return slideIds.filter((id) => slideThemes[id] === themeId);

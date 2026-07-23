@@ -24,6 +24,13 @@ async function writeSlide(root: string, id: string): Promise<string> {
   return entry;
 }
 
+async function writeSlideSource(root: string, id: string, source: string): Promise<string> {
+  await fs.mkdir(path.join(root, id), { recursive: true });
+  const entry = path.join(root, id, 'index.tsx');
+  await fs.writeFile(entry, source, 'utf8');
+  return entry;
+}
+
 describe('generateSlidesModule', () => {
   it('keeps slides whose id is ASCII-safe and reports none ignored', async () => {
     await withSlidesRoot(async (root) => {
@@ -45,6 +52,77 @@ describe('generateSlidesModule', () => {
       expect(ignored).toEqual(['推薦系統']);
       expect(code).toContain('export const slideIds = ["cover"];');
       expect(code).not.toContain('推薦系統');
+    });
+  });
+
+  it('emits slideTags parsed from meta, unescaping quotes and ignoring decoys', async () => {
+    await withSlidesRoot(async (root) => {
+      const files = [
+        await writeSlideSource(
+          root,
+          'a',
+          `export const meta = { title: 'has tags: [decoy]', tags: ['it\\'s', 'topic'] };\nexport default [];\n`,
+        ),
+        await writeSlideSource(
+          root,
+          'b',
+          `export const meta = { title: 'b' };\nexport default [];\n`,
+        ),
+      ].sort();
+
+      const { code } = await generateSlidesModule(files, root, false);
+
+      // The escaped quote is decoded and the [decoy] inside the title string is
+      // not mistaken for the tags array; slides without tags are omitted.
+      expect(code).toContain(`export const slideTags = {"a":["it's","topic"]};`);
+    });
+  });
+
+  it('ignores a commented-out tags decoy when emitting slideTags', async () => {
+    await withSlidesRoot(async (root) => {
+      const files = [
+        await writeSlideSource(
+          root,
+          'a',
+          `export const meta = {\n  // tags: ['decoy'],\n  tags: ['real'],\n};\nexport default [];\n`,
+        ),
+      ];
+
+      const { code } = await generateSlidesModule(files, root, false);
+
+      expect(code).toContain(`export const slideTags = {"a":["real"]};`);
+    });
+  });
+
+  it('extracts tags when a string value contains an unbalanced brace', async () => {
+    await withSlidesRoot(async (root) => {
+      const files = [
+        await writeSlideSource(
+          root,
+          'a',
+          `export const meta = { title: 'contains }', tags: ['kept'] };\nexport default [];\n`,
+        ),
+      ];
+
+      const { code } = await generateSlidesModule(files, root, false);
+
+      expect(code).toContain(`export const slideTags = {"a":["kept"]};`);
+    });
+  });
+
+  it('ignores string tokens inside comments within the tags array', async () => {
+    await withSlidesRoot(async (root) => {
+      const files = [
+        await writeSlideSource(
+          root,
+          'a',
+          `export const meta = { tags: [/* 'internal' */ 'public'] };\nexport default [];\n`,
+        ),
+      ];
+
+      const { code } = await generateSlidesModule(files, root, false);
+
+      expect(code).toContain(`export const slideTags = {"a":["public"]};`);
     });
   });
 });
