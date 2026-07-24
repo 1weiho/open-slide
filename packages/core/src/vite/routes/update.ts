@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { ViteDevServer } from 'vite';
 import { validateMutationRequest } from '../../http/request-guard.ts';
+import { resolveViteCacheDir } from '../cache-dir.ts';
 import { type ApiContext, json } from './context.ts';
 
 // GET /__update-check  → { current, latest, outdated }
@@ -143,6 +144,18 @@ async function runCommand(spec: CommandSpec, cwd: string): Promise<void> {
   });
 }
 
+// Drop Vite's optimize-deps cache so the post-update restart re-bundles against the
+// freshly installed version. Vite keys that cache off a dep hash that doesn't reflect
+// an @open-slide/core version bump (notably it can't read bun's text lockfile), so
+// without this it keeps serving the previous version's deps. Best-effort: on Windows
+// the outgoing server may still hold the files, and a stale cache only costs a manual
+// restart, never correctness.
+async function clearViteCache(cwd: string): Promise<void> {
+  try {
+    await fs.rm(resolveViteCacheDir(cwd), { recursive: true, force: true });
+  } catch {}
+}
+
 async function updatePackage(ctx: ApiContext): Promise<UpdateResult> {
   const packageManager = await detectPackageManager(ctx.userCwd);
   const updateCommand = updateCommandFor(packageManager);
@@ -150,6 +163,7 @@ async function updatePackage(ctx: ApiContext): Promise<UpdateResult> {
 
   await runCommand(updateCommand, ctx.userCwd);
   await runCommand(syncCommand, ctx.userCwd);
+  await clearViteCache(ctx.userCwd);
 
   cache = null;
   const latest = await fetchLatest(Date.now());
