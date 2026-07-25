@@ -433,6 +433,35 @@ export type Locale = {
     done: string;
   };
 
+  commandMenu: {
+    trigger: string;
+    triggerAria: string;
+    placeholder: string;
+    slidePlaceholder: string;
+    empty: string;
+    groupSlides: string;
+    groupFolders: string;
+    groupNavigation: string;
+    groupPresent: string;
+    groupDeck: string;
+    groupExport: string;
+    groupPages: string;
+    groupAppearance: string;
+    groupDeveloper: string;
+    /** template: "Page {n}" */
+    goToPage: string;
+    overview: string;
+    designPanel: string;
+    backToSlides: string;
+    /** template: "Theme: {name}" */
+    themeItem: string;
+    /** template: "Language: {name}" */
+    languageItem: string;
+    hintNavigate: string;
+    hintSelect: string;
+    hintClose: string;
+  };
+
   themeToggle: {
     toggleAria: string;
     title: string;

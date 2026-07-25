@@ -14,6 +14,7 @@ import { useAssets } from '@/lib/assets';
 import { useFolders } from '@/lib/folders';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
+import { HomeCommandMenu } from '../components/command/home-command-menu';
 import { FolderIconChip } from '../components/sidebar/folder-item';
 import { ALL_SLIDES_ID, ASSETS_ID, Sidebar, THEMES_ID } from '../components/sidebar/sidebar';
 import type { FoldersManifest } from '../lib/sdk';
@@ -28,6 +29,7 @@ export type HomeOutletContext = {
   /** Selected view id: ALL_SLIDES_ID, DRAFT_ID, a folder id, THEMES_ID, or ASSETS_ID. */
   selectedId: string;
   selectFolder: (id: string) => void;
+  openCommandMenu: () => void;
   reportTitle: (slideId: string, title: string) => void;
   titleMap: Record<string, string>;
   assign: (slideId: string, folderId: string | null) => Promise<void>;
@@ -61,6 +63,9 @@ export function HomeShell() {
   const t = useLocale();
 
   const selectedId = pathToSelectedId(location.pathname, searchParams);
+
+  const [commandOpen, setCommandOpen] = useState(false);
+  const openCommandMenu = useCallback(() => setCommandOpen(true), []);
 
   const [titleMap, setTitleMap] = useState<Record<string, string>>({});
   const reportTitle = useCallback((slideId: string, slideTitle: string) => {
@@ -126,6 +131,7 @@ export function HomeShell() {
     slidesByFolder,
     selectedId,
     selectFolder,
+    openCommandMenu,
     reportTitle,
     titleMap,
     assign,
@@ -234,6 +240,14 @@ export function HomeShell() {
           <Outlet context={ctx} />
         </div>
       </div>
+
+      <HomeCommandMenu
+        open={commandOpen}
+        onOpenChange={setCommandOpen}
+        folders={manifest.folders}
+        titleMap={titleMap}
+        onSelectView={selectFolder}
+      />
     </div>
   );
 }
