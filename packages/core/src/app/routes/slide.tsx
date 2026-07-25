@@ -679,6 +679,10 @@ export function Slide() {
                     )}
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="min-w-[200px]">
+                    <DropdownMenuItem onClick={() => setCommandOpen(true)}>
+                      <Terminal />
+                      {t.commandMenu.trigger}
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={copyLink}>
                       <Link2 />
                       {t.slide.copyLink}

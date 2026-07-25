@@ -55,6 +55,8 @@ export function CommandMenu({
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'k' && event.key !== 'K') return;
       if (!event.metaKey && !event.ctrlKey) return;
+      // Auto-repeat while the combo is held would toggle the menu shut again.
+      if (event.repeat) return;
       event.preventDefault();
       onOpenChange(!open);
     };

@@ -49,6 +49,14 @@ test.describe('command menu', () => {
     await expect(page).toHaveURL(/[?&]p=2/);
   });
 
+  test('mobile opens the menu from the slide more-actions dropdown', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 780 });
+    await openSlide(page, 'alpha');
+    await page.getByRole('button', { name: 'More actions' }).click();
+    await page.getByRole('menuitem', { name: 'Commands' }).click();
+    await expect(page.getByPlaceholder('Search this deck or run a command')).toBeFocused();
+  });
+
   test('runs a slide command — overview opens from the menu', async ({ page }) => {
     await openSlide(page, 'alpha');
     await page.keyboard.press('ControlOrMeta+k');
