@@ -5,26 +5,19 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format, useLocale } from '@/lib/use-locale';
+import { useRestartServer } from '@/lib/use-restart-server';
 
 type UpdateCheck = { current: string; latest: string | null; outdated: boolean };
-type ServerStatus = { executionId: string; canRestart: boolean };
 type UpdateStatus = 'idle' | 'running' | 'done' | 'error';
 
 const buttonClassName =
   'h-6 w-fit rounded-[5px] border border-background/15 bg-background/8 px-2 text-[11px] text-background shadow-none hover:bg-background/14';
 
-async function fetchServerStatus(): Promise<ServerStatus | null> {
-  const res = await fetch('/__server-status');
-  if (!res.ok) return null;
-  return (await res.json()) as ServerStatus;
-}
-
 export function SidebarFooter() {
   const t = useLocale();
   const [update, setUpdate] = useState<UpdateCheck | null>(null);
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus>('idle');
-  const [canRestart, setCanRestart] = useState(false);
-  const [restarting, setRestarting] = useState(false);
+  const { canRestart, restarting, restartServer } = useRestartServer();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -34,11 +27,6 @@ export function SidebarFooter() {
       .then((res) => (res.ok ? (res.json() as Promise<UpdateCheck>) : null))
       .then((data) => {
         if (!cancelled && data?.outdated) setUpdate(data);
-      })
-      .catch(() => {});
-    fetchServerStatus()
-      .then((status) => {
-        if (!cancelled && status) setCanRestart(status.canRestart);
       })
       .catch(() => {});
     return () => {
@@ -62,29 +50,6 @@ export function SidebarFooter() {
     } catch {
       setUpdateStatus('error');
       toast.error(t.home.updatePackageFailed);
-    }
-  }
-
-  async function restartServer() {
-    if (restarting) return;
-    setRestarting(true);
-    try {
-      const before = await fetchServerStatus();
-      if (!before) throw new Error('server status unavailable');
-      const res = await fetch('/__restart-server', { method: 'POST' });
-      if (!res.ok) throw new Error('restart failed');
-      for (let attempt = 0; attempt < 30; attempt++) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        const status = await fetchServerStatus().catch(() => null);
-        if (status && status.executionId !== before.executionId) {
-          window.location.reload();
-          return;
-        }
-      }
-      throw new Error('restart timed out');
-    } catch {
-      setRestarting(false);
-      toast.error(t.home.restartServerFailed);
     }
   }
 

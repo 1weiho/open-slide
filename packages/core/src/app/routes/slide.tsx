@@ -14,6 +14,7 @@ import {
   MoreHorizontal,
   Play,
   Presentation,
+  Terminal,
 } from 'lucide-react';
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
@@ -49,6 +50,7 @@ import { useIsMobile } from '@/lib/use-is-mobile';
 import { format, useLocale } from '@/lib/use-locale';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
+import { SlideCommandMenu } from '../components/command/slide-command-menu';
 import { NotesDrawer } from '../components/notes-drawer';
 import { OverviewGrid } from '../components/overview-grid';
 import { PdfProgressToast } from '../components/pdf-progress-toast';
@@ -78,6 +80,7 @@ export function Slide() {
   const linkCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [designOpen, setDesignOpen] = useState(false);
   const [overviewOpen, setOverviewOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
   const [, setWarmedTick] = useState(0);
   const handleAssetsWarmed = useCallback(() => {
     markDeckWarmed(slideId);
@@ -661,6 +664,10 @@ export function Slide() {
                     )}
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="min-w-[200px]">
+                    <DropdownMenuItem onClick={() => setCommandOpen(true)}>
+                      <Terminal />
+                      {t.commandMenu.trigger}
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={copyLink}>
                       <Link2 />
                       {t.slide.copyLink}
@@ -811,6 +818,31 @@ export function Slide() {
                 />
               </div>
             </DesignProvider>
+          )}
+
+          {view === 'slides' && (
+            <SlideCommandMenu
+              open={commandOpen}
+              onOpenChange={setCommandOpen}
+              pageCount={pageCount}
+              currentIndex={index}
+              exporting={exporting}
+              handlers={{
+                onPresentWindow: () => setPlayMode('window'),
+                onPresentFullscreen: () => setPlayMode('fullscreen'),
+                onPresenterView: () => {
+                  if (slideId) openPresenterWindow(slideId);
+                  setPlayMode('window');
+                },
+                onCopyLink: copyLink,
+                onOverview: () => setOverviewOpen(true),
+                onToggleDesignPanel: () => setDesignOpen((v) => !v),
+                onExportHtml: exportHtml,
+                onExportPdf: exportPdf,
+                onExportImagePptx: exportImagePptx,
+                onGoToPage: goTo,
+              }}
+            />
           )}
         </div>
       </InspectorProvider>
