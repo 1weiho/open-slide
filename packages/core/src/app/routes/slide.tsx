@@ -1076,6 +1076,9 @@ function InlineTitleEditor({
     try {
       await onSubmit(trimmed);
       setEditing(false);
+    } catch {
+      setValue(title);
+      setEditing(false);
     } finally {
       setSaving(false);
     }

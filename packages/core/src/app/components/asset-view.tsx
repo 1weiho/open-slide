@@ -1110,6 +1110,9 @@ function RenameAsset({
     setSaving(true);
     try {
       await onSubmit(trimmed);
+    } catch {
+      toast.error(t.asset.toastRenameFailed);
+      onCancel();
     } finally {
       setSaving(false);
     }

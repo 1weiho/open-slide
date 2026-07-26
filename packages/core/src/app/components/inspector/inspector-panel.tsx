@@ -689,7 +689,6 @@ function ColorField({
   return (
     <Field label={label}>
       <label
-        aria-label={label}
         className="relative inline-flex size-8 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border bg-background shadow-xs"
       >
         <span
@@ -705,6 +704,7 @@ function ColorField({
         />
         <input
           type="color"
+          aria-label={label}
           value={value}
           onChange={(e) => {
             setDraft(e.target.value);
@@ -915,6 +915,8 @@ function CommentsSection({
     try {
       await onAdd(selected.line, selected.column, trimmed);
       setDraft('');
+    } catch {
+      // comment add failed; keep draft so user can retry
     } finally {
       setSubmitting(false);
     }

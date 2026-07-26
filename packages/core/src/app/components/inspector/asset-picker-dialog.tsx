@@ -57,7 +57,6 @@ export function AssetPickerDialog({
     [effectiveSlideId, scope, refresh, onPick, t],
   );
 
-  /* oxlint-disable jsx-a11y/no-noninteractive-element-interactions -- file drop zone */
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-xl">
@@ -103,6 +102,7 @@ export function AssetPickerDialog({
             if (file) handleFile(file).catch(() => {});
           }}
         />
+        {/* oxlint-disable jsx-a11y/no-noninteractive-element-interactions -- file drop zone */}
         <section
           aria-label={t.inspector.replaceImageDialogTitle}
           className="relative max-h-[60vh] overflow-y-auto"
@@ -184,11 +184,11 @@ export function AssetPickerDialog({
             </div>
           )}
         </section>
+        {/* oxlint-enable jsx-a11y/no-noninteractive-element-interactions */}
       </DialogContent>
     </Dialog>
   );
 }
-/* oxlint-enable jsx-a11y/no-noninteractive-element-interactions */
 
 function hasFiles(e: React.DragEvent): boolean {
   const types = e.dataTransfer?.types;
