@@ -74,7 +74,21 @@ export async function readSlideSource(file: string): Promise<string | null> {
   }
 }
 
-/** Decode a URL path segment; returns null if the percent-encoding is malformed. */
+/**
+ * Decode one URL path segment, reporting malformed percent-encoding as null
+ * instead of throwing.
+ *
+ * `decodeURIComponent` raises `URIError` on a truncated or invalid escape such
+ * as `%E0%A4%A` or a lone `%`. Inside a dev-server request handler that becomes
+ * an unhandled exception and a 500, which reads as a broken server rather than
+ * what it is: a request the client got wrong. Returning null lets each route
+ * answer 400 on its own terms, alongside the invalid-path rejections it already
+ * performs.
+ *
+ * Supporting non-ASCII slide ids is what makes this reachable in ordinary use.
+ * Every segment of an asset URL is percent-encoded on the way out now, so any
+ * segment can come back damaged.
+ */
 export function decodePathSegment(raw: string): string | null {
   try {
     return decodeURIComponent(raw);

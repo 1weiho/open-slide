@@ -34,8 +34,8 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
 
       if (usagesMatch && method === 'GET') {
         const scope = decodePathSegment(usagesMatch[1]);
-        const filename = decodeURIComponent(usagesMatch[2]);
-        if (!scope || !validateAssetName(filename))
+        const filename = decodePathSegment(usagesMatch[2]);
+        if (!scope || filename === null || !validateAssetName(filename))
           return json(res, 400, { error: 'invalid path' });
 
         const isGlobal = scope === GLOBAL_SCOPE;
@@ -155,8 +155,8 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
 
       if (fileMatch) {
         const slideId = decodePathSegment(fileMatch[1]);
-        const filename = decodeURIComponent(fileMatch[2]);
-        if (!slideId) return json(res, 400, { error: 'invalid path' });
+        const filename = decodePathSegment(fileMatch[2]);
+        if (!slideId || filename === null) return json(res, 400, { error: 'invalid path' });
         const file = resolveScopedAssetFile(
           ctx.slidesRoot,
           ctx.globalAssetsRoot,
