@@ -1077,6 +1077,7 @@ function InlineTitleEditor({
       await onSubmit(trimmed);
       setEditing(false);
     } catch {
+      toast.error(t.slide.toastRenameFailed);
       setValue(title);
       setEditing(false);
     } finally {
