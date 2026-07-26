@@ -28,7 +28,7 @@ jobs:
 
       - name: Enable Corepack
         run: |
-          npm install -g corepack@latest
+          npm install -g corepack@0.30.0
           corepack enable
           corepack prepare --activate
 
