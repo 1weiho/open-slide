@@ -436,6 +436,7 @@ export type Locale = {
   commandMenu: {
     trigger: string;
     triggerAria: string;
+    triggerTooltip: string;
     placeholder: string;
     slidePlaceholder: string;
     empty: string;

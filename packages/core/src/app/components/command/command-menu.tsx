@@ -1,10 +1,12 @@
-import { Check, Languages, Loader2, Monitor, Moon, RotateCw, Sun, Terminal } from 'lucide-react';
+import { Check, Languages, Loader2, Monitor, Moon, RotateCw, Search, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { IconTooltip } from '@/components/icon-tooltip';
+import { buttonVariants } from '@/components/ui/button';
+import { TooltipTrigger } from '@/components/ui/tooltip';
 import { LOCALE_OPTIONS, setLocale } from '@/lib/locale-store';
 import { format, useLocale } from '@/lib/use-locale';
 import { useRestartServer } from '@/lib/use-restart-server';
-import { cn } from '@/lib/utils';
 import {
   Command,
   CommandDialog,
@@ -121,31 +123,20 @@ const IS_APPLE =
 
 export const COMMAND_MENU_SHORTCUT = IS_APPLE ? '⌘K' : 'Ctrl K';
 
-export function CommandMenuTrigger({
-  onClick,
-  className,
-}: {
-  onClick: () => void;
-  className?: string;
-}) {
+export function CommandMenuTrigger({ onClick }: { onClick: () => void }) {
   const t = useLocale();
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={t.commandMenu.triggerAria}
-      title={t.commandMenu.triggerAria}
-      className={cn(
-        'flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[6px] border border-border bg-background px-2 text-[12.5px] font-medium text-foreground outline-none hover:bg-muted focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30',
-        className,
-      )}
-    >
-      <Terminal className="size-3.5 text-muted-foreground" aria-hidden />
-      <span className="hidden md:inline">{t.commandMenu.trigger}</span>
-      <kbd className="hidden rounded-[3px] bg-muted px-1 py-0.5 font-mono text-[9.5px] tracking-[0.04em] text-muted-foreground md:inline">
-        {COMMAND_MENU_SHORTCUT}
-      </kbd>
-    </button>
+    <IconTooltip label={t.commandMenu.triggerTooltip} shortcut={COMMAND_MENU_SHORTCUT}>
+      <TooltipTrigger
+        type="button"
+        onClick={onClick}
+        aria-label={t.commandMenu.triggerAria}
+        aria-haspopup="dialog"
+        className={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
+      >
+        <Search className="size-3.5" />
+      </TooltipTrigger>
+    </IconTooltip>
   );
 }
 

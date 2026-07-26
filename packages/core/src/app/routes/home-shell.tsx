@@ -14,6 +14,7 @@ import { useAssets } from '@/lib/assets';
 import { useFolders } from '@/lib/folders';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
+import { CommandMenuTrigger } from '../components/command/command-menu';
 import { HomeCommandMenu } from '../components/command/home-command-menu';
 import { FolderIconChip } from '../components/sidebar/folder-item';
 import { ALL_SLIDES_ID, ASSETS_ID, Sidebar, THEMES_ID } from '../components/sidebar/sidebar';
@@ -29,7 +30,6 @@ export type HomeOutletContext = {
   /** Selected view id: ALL_SLIDES_ID, DRAFT_ID, a folder id, THEMES_ID, or ASSETS_ID. */
   selectedId: string;
   selectFolder: (id: string) => void;
-  openCommandMenu: () => void;
   reportTitle: (slideId: string, title: string) => void;
   titleMap: Record<string, string>;
   assign: (slideId: string, folderId: string | null) => Promise<void>;
@@ -131,7 +131,6 @@ export function HomeShell() {
     slidesByFolder,
     selectedId,
     selectFolder,
-    openCommandMenu,
     reportTitle,
     titleMap,
     assign,
@@ -164,6 +163,7 @@ export function HomeShell() {
               toast.error(t.home.toastFolderDeleteFailed);
             }
           }}
+          onOpenCommandMenu={openCommandMenu}
           onDropToFolder={(folderId, slideId) => moveSlideWithToast(slideId, folderId)}
           onDropToDraft={(slideId) => moveSlideWithToast(slideId, null)}
           onReorder={async (ids) => {
@@ -180,6 +180,7 @@ export function HomeShell() {
         <div className="flex items-center justify-between border-b border-hairline bg-sidebar px-4 py-3 md:hidden">
           <h1 className="font-heading text-lg font-bold tracking-tight">{t.home.appTitle}</h1>
           <div className="-mr-1.5 flex items-center gap-0.5">
+            <CommandMenuTrigger onClick={openCommandMenu} />
             <LanguageToggle />
             <ThemeToggle />
             <DropdownMenu>

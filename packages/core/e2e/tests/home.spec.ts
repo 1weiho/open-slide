@@ -70,6 +70,24 @@ test.describe('home slide browser', () => {
     await expect(page.getByText('投影片').first()).toBeVisible();
   });
 
+  test('sidebar toolbar buttons label themselves on hover', async ({ page }) => {
+    await page.goto('/');
+    const tooltip = page.locator('[data-slot="tooltip-content"]').last();
+    // A single move lands without the pointer ever resting, which is what the
+    // tooltip waits for.
+    for (const [name, label] of [
+      ['Open command menu', 'Search'],
+      ['Change language', 'Language'],
+      ['Toggle theme', 'Theme'],
+    ]) {
+      const box = await page.getByRole('button', { name }).boundingBox();
+      if (!box) throw new Error(`${name} has no bounding box`);
+      await page.mouse.move(box.x + box.width / 2 - 2, box.y + box.height / 2 - 2);
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await expect(tooltip).toContainText(label);
+    }
+  });
+
   test('unknown routes render the not-found page', async ({ page }) => {
     await page.goto('/definitely-not-a-route');
     await expect(page.getByText('Page not found')).toBeVisible();

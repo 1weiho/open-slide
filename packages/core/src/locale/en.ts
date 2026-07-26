@@ -409,6 +409,7 @@ export const en: Locale = {
   commandMenu: {
     trigger: 'Commands',
     triggerAria: 'Open command menu',
+    triggerTooltip: 'Search',
     placeholder: 'Search slides or run a command…',
     slidePlaceholder: 'Search this deck or run a command…',
     empty: 'No results.',

@@ -413,6 +413,7 @@ export const ja: Locale = {
   commandMenu: {
     trigger: 'コマンド',
     triggerAria: 'コマンドメニューを開く',
+    triggerTooltip: '検索',
     placeholder: 'スライドを検索、またはコマンドを実行…',
     slidePlaceholder: 'このデッキを検索、またはコマンドを実行…',
     empty: '結果がありません。',

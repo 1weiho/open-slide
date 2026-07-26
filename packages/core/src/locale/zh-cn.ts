@@ -407,6 +407,7 @@ export const zhCN: Locale = {
   commandMenu: {
     trigger: '命令',
     triggerAria: '打开命令菜单',
+    triggerTooltip: '搜索',
     placeholder: '搜索幻灯片或执行命令…',
     slidePlaceholder: '搜索这份幻灯片或执行命令…',
     empty: '没有匹配的结果。',

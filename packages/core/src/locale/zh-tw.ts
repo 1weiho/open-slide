@@ -407,6 +407,7 @@ export const zhTW: Locale = {
   commandMenu: {
     trigger: '指令',
     triggerAria: '開啟指令選單',
+    triggerTooltip: '搜尋',
     placeholder: '搜尋簡報或執行指令…',
     slidePlaceholder: '搜尋這份簡報或執行指令…',
     empty: '沒有符合的結果。',
