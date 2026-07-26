@@ -50,7 +50,6 @@ import { useIsMobile } from '@/lib/use-is-mobile';
 import { format, useLocale } from '@/lib/use-locale';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
-import { COMMAND_MENU_SHORTCUT } from '../components/command/command-menu';
 import { SlideCommandMenu } from '../components/command/slide-command-menu';
 import { NotesDrawer } from '../components/notes-drawer';
 import { OverviewGrid } from '../components/overview-grid';
@@ -596,20 +595,6 @@ export function Slide() {
             </div>
 
             <div className="flex flex-1 items-center justify-end gap-1 md:ml-auto md:flex-none">
-              {view === 'slides' && (
-                <button
-                  type="button"
-                  aria-label={t.commandMenu.triggerAria}
-                  title={`${t.commandMenu.triggerAria} (${COMMAND_MENU_SHORTCUT})`}
-                  className={cn(
-                    buttonVariants({ variant: 'ghost', size: 'icon-sm' }),
-                    'hidden md:inline-flex',
-                  )}
-                  onClick={() => setCommandOpen(true)}
-                >
-                  <Terminal className="size-4" />
-                </button>
-              )}
               {view === 'slides' && (
                 <button
                   type="button"
