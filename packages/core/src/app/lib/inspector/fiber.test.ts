@@ -198,6 +198,35 @@ describe('findSlideSource fallback', () => {
     expect(hit?.anchor).toBe(el as unknown as HTMLElement);
   });
 
+  it('anchors an imported call site to the nearest host fiber, not the clicked node', () => {
+    const hostEl = makeEl();
+    const callSite = makeFiber({
+      fileName: '/repo/slides/cover/index.tsx',
+      line: 20,
+      column: 4,
+    });
+    const libraryHost = makeFiber({
+      fileName: '/repo/components/Heading.tsx',
+      line: 3,
+      column: 2,
+      hostEl,
+      parent: callSite,
+    });
+    const leaf = makeFiber({ parent: libraryHost });
+    const el = makeEl({ fiber: leaf });
+
+    const hit = findSlideSource(el as unknown as HTMLElement, 'cover');
+    expect(hit).not.toBeNull();
+    expect(hit?.line).toBe(20);
+    expect(hit?.column).toBe(4);
+    // Assert against hostEl rather than el. `anchor` is seeded with the clicked
+    // element, so the sibling test above would still pass if the walk never
+    // recognised libraryHost as a host fiber; only a distinct host element
+    // proves the `instanceof HTMLElement` branch actually ran.
+    expect(hit?.anchor).toBe(hostEl as unknown as HTMLElement);
+    expect(hit?.anchor).not.toBe(el as unknown as HTMLElement);
+  });
+
   it('rejects imported call sites when hostOnly is set', () => {
     const callSite = makeFiber({
       fileName: '/repo/slides/cover/index.tsx',

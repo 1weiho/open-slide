@@ -1061,17 +1061,37 @@ function parseLetterSpacing(value: string): number {
   return Number.isFinite(n) ? round2(n) : 0;
 }
 
+/**
+ * Re-resolve a selection whose anchor has been detached, which happens on
+ * every HMR round that replaces the DOM node behind the selected element.
+ *
+ * The `data-slide-loc` query is exact and settles the common case. The scan
+ * below covers what that attribute cannot: imported and shared components
+ * carry their call site in the fiber tree rather than the DOM, so they are
+ * never tagged.
+ *
+ * That scan prefers a line *and* column hit before falling back to line alone.
+ * Several elements routinely originate on one source line, and dropping
+ * `hostOnly` from the lookup (needed so shared components stay selectable)
+ * widened the candidate set further, so a line-only match hands back whichever
+ * element the DOM walk happened to reach first. Keeping the line-only result
+ * as a last resort means an edit that shifts a column degrades to the previous
+ * behavior instead of dropping the selection outright.
+ */
 function findElementByLine(slideId: string, line: number, column: number): HTMLElement | null {
   const root = document.querySelector('[data-inspector-root]');
   if (!root) return null;
   const tagged = root.querySelector<HTMLElement>(`[data-slide-loc="${line}:${column}"]`);
   if (tagged) return tagged;
   const candidates = root.querySelectorAll<HTMLElement>('*');
+  let lineOnly: HTMLElement | null = null;
   for (const el of candidates) {
     const hit = findSlideSource(el, slideId);
-    if (hit && hit.line === line) return hit.anchor;
+    if (!hit || hit.line !== line) continue;
+    if (hit.column === column) return hit.anchor;
+    lineOnly ??= hit.anchor;
   }
-  return null;
+  return lineOnly;
 }
 
 function useReloadCounter(): number {
