@@ -152,10 +152,12 @@ export function CommandMenuTrigger({
 function CommandFooter() {
   const t = useLocale();
   return (
-    <div className="flex items-center gap-3 border-t border-hairline bg-muted/30 px-3 py-2 text-[10.5px] text-muted-foreground">
-      <Hint keys="↑↓" label={t.commandMenu.hintNavigate} />
-      <Hint keys="↵" label={t.commandMenu.hintSelect} />
+    <div className="flex items-center justify-between gap-3 border-t border-hairline bg-muted/30 px-3 py-2 text-[10.5px] text-muted-foreground">
       <Hint keys="esc" label={t.commandMenu.hintClose} />
+      <span className="inline-flex items-center gap-3">
+        <Hint keys="↑↓" label={t.commandMenu.hintNavigate} />
+        <Hint keys="↵" label={t.commandMenu.hintSelect} />
+      </span>
     </div>
   );
 }
