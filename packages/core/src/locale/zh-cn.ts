@@ -113,6 +113,7 @@ export const zhCN: Locale = {
     moreActions: '更多操作',
     toastCopyLinkSuccess: '已复制链接到剪贴板',
     toastCopyLinkFailed: '复制链接失败',
+    toastRenameFailed: '重命名幻灯片失败',
     exportAsHtml: '导出为 HTML',
     exportAsPdf: '导出为 PDF',
     exportAsImagePptx: '导出图片 PPTX',

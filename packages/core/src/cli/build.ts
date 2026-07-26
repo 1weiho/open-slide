@@ -9,9 +9,7 @@ export interface BuildOptions {
 export async function build(opts: BuildOptions = {}): Promise<void> {
   const base = await createViteConfig({ userCwd: process.cwd(), mode: 'build' });
   const config = mergeConfig(base, {
-    build: {
-      ...(opts.outDir !== undefined ? { outDir: path.resolve(process.cwd(), opts.outDir) } : {}),
-    },
+    build: opts.outDir !== undefined ? { outDir: path.resolve(process.cwd(), opts.outDir) } : {},
   });
   await viteBuild(config);
 }

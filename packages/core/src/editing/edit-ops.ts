@@ -115,7 +115,7 @@ export function safeAssetIdentifier(filename: string, taken: Set<string>): strin
   }
   let base = camel;
   if (!base || !/^[A-Za-z_$]/.test(base)) {
-    base = `asset${base.charAt(0).toUpperCase()}${base.slice(1)}` || 'asset';
+    base = `asset${base.charAt(0).toUpperCase()}${base.slice(1)}`;
   }
   base = base.charAt(0).toLowerCase() + base.slice(1);
   let candidate = base;

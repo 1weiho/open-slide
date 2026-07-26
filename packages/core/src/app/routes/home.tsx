@@ -90,11 +90,10 @@ export function Home() {
   const isDraft = selectedId === DRAFT_ID;
   const selectedFolder =
     isAll || isDraft ? null : (manifest.folders.find((f) => f.id === selectedId) ?? null);
-  const visibleSlides = isAll
-    ? slideIds
-    : isDraft
-      ? draftSlides
-      : (slidesByFolder[selectedId] ?? []);
+  const visibleSlides = useMemo(
+    () => (isAll ? slideIds : isDraft ? draftSlides : (slidesByFolder[selectedId] ?? [])),
+    [isAll, isDraft, draftSlides, slidesByFolder, selectedId],
+  );
 
   const title = selectedFolder?.name ?? (isAll ? t.home.slides : t.home.draft);
   const headerIcon = selectedFolder?.icon ?? {
@@ -676,7 +675,7 @@ function RenameDialog({
             if (e.nativeEvent.isComposing) return;
             if (e.key === 'Enter') {
               e.preventDefault();
-              submit();
+              void submit();
             }
           }}
           maxLength={80}

@@ -93,6 +93,7 @@ export function AssetPickerDialog({
           id={inputId}
           type="file"
           accept="image/*"
+          aria-label={t.asset.upload}
           className="sr-only"
           disabled={uploading}
           onChange={(e) => {
@@ -101,6 +102,7 @@ export function AssetPickerDialog({
             if (file) handleFile(file).catch(() => {});
           }}
         />
+        {/* oxlint-disable jsx-a11y/no-noninteractive-element-interactions -- file drop zone */}
         <section
           aria-label={t.inspector.replaceImageDialogTitle}
           className="relative max-h-[60vh] overflow-y-auto"
@@ -142,6 +144,7 @@ export function AssetPickerDialog({
                 <button
                   key={asset.name}
                   type="button"
+                  aria-label={asset.name}
                   onClick={() => onPick(asset, scope)}
                   className={cn(
                     'group flex flex-col overflow-hidden rounded-lg border bg-card text-left shadow-sm transition-all',
@@ -181,6 +184,7 @@ export function AssetPickerDialog({
             </div>
           )}
         </section>
+        {/* oxlint-enable jsx-a11y/no-noninteractive-element-interactions */}
       </DialogContent>
     </Dialog>
   );

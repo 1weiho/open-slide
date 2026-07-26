@@ -72,6 +72,7 @@ export function HeroSetup() {
             ) : null}
             <button
               type="button"
+              aria-label={setupOptions[key].label}
               aria-pressed={mode === key}
               onClick={() => selectMode(key)}
               className={`pressable rounded-md py-1.5 ${

@@ -52,8 +52,10 @@ pnpm dev
 pnpm dev          # turbo: runs demo against local core
 pnpm build        # build all packages
 pnpm typecheck    # tsc across the graph
-pnpm check        # biome (format + lint + organize imports)
-pnpm check:fix    # auto-fix what biome can
+pnpm format:check # biome formatter
+pnpm lint         # oxlint (JS/TS) + biome (CSS/JSON)
+pnpm check        # format:check + lint + typecheck
+pnpm check:fix   # oxlint --fix + biome check --write
 pnpm test         # vitest
 ```
 
@@ -70,8 +72,7 @@ pnpm cli <script>
 2. **Make your change.** Match the surrounding style. Don't reformat unrelated code.
 3. **Run the checks before pushing:**
    ```bash
-   pnpm check       # must pass — CI enforces it
-   pnpm typecheck
+   pnpm check       # must pass — CI enforces format + lint + typecheck
    pnpm test
    ```
    `pnpm check:fix` will auto-fix most formatting and lint issues.
@@ -98,10 +99,10 @@ pnpm cli <script>
 
 ## Style & conventions
 
-- **Biome must pass.** Formatting, lint, and import organisation are all enforced by `pnpm check`.
+- **Format and lint must pass.** Formatting and non-JS lint are enforced by Biome; JS/TS semantic lint is enforced by Oxlint. Use `pnpm check`.
 - **No casual dependencies.** The `core` runtime ships to users — every dep inflates install size. Prefer a small piece of inline code over a new package.
 - **Default to writing no comments.** Only add one when the *why* is non-obvious — a hidden constraint, a subtle invariant, a workaround for a specific bug. Don't explain *what* the code does; well-named identifiers handle that.
-- **Leave `packages/core/src/app/components/ui` alone.** It's shadcn-generated and biome-ignored unless you're regenerating it.
+- **Leave `packages/core/src/app/components/ui` alone.** It's shadcn-generated and ignored by Biome/Oxlint unless you're regenerating it.
 
 ## Testing
 

@@ -1,0 +1,49 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "react", "import", "vitest", "jsx-a11y"],
+  "categories": {
+    "correctness": "error"
+  },
+  "env": {
+    "builtin": true
+  },
+  "settings": {
+    "react": {
+      "version": "19.2.7"
+    }
+  },
+  "ignorePatterns": [
+    "**/dist/**",
+    "**/node_modules/**",
+    "**/*.tsbuildinfo",
+    "packages/core/src/app/components/ui/**",
+    "packages/cli/template/**"
+  ],
+  "rules": {
+    "import/no-cycle": "error",
+    "typescript/no-floating-promises": "error",
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "vitest/expect-expect": [
+      "error",
+      {
+        "assertFunctionNames": [
+          "expect",
+          "expectTypeOf",
+          "assert",
+          "expectTagged",
+          "expectTaggedTransform"
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["**/slides/**", "apps/web/components/landing/**"],
+      "rules": {
+        "jsx-a11y/no-static-element-interactions": "off",
+        "jsx-a11y/no-noninteractive-element-interactions": "off",
+        "jsx-a11y/prefer-tag-over-role": "off"
+      }
+    }
+  ]
+}

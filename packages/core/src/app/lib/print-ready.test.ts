@@ -7,7 +7,7 @@ afterEach(() => {
 
 describe('waitForFonts', () => {
   it('awaits document.fonts.ready without force-loading any face', async () => {
-    const load = vi.fn();
+    const load = vi.fn<() => Promise<void>>();
     const faces = [
       { status: 'loaded', load },
       { status: 'unloaded', load },

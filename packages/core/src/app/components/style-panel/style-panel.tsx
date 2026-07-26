@@ -232,10 +232,13 @@ function ColorField({
 
   return (
     <Field label={label}>
-      <label className="relative inline-flex size-8 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border bg-background shadow-xs">
+      <label
+        className="relative inline-flex size-8 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border bg-background shadow-xs"
+      >
         <span className="size-5 rounded-sm" style={{ backgroundColor: value }} />
         <input
           type="color"
+          aria-label={label}
           value={normalizeHex(value)}
           onChange={(e) => onChange(e.target.value)}
           className="absolute inset-0 cursor-pointer opacity-0"

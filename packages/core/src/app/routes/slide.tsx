@@ -1108,6 +1108,10 @@ function InlineTitleEditor({
     try {
       await onSubmit(trimmed);
       setEditing(false);
+    } catch {
+      toast.error(t.slide.toastRenameFailed);
+      setValue(title);
+      setEditing(false);
     } finally {
       setSaving(false);
     }
@@ -1135,13 +1139,13 @@ function InlineTitleEditor({
             disabled={saving}
             onChange={(e) => setValue(e.target.value)}
             onBlur={() => {
-              if (!saving) commit();
+              if (!saving) void commit();
             }}
             onKeyDown={(e) => {
               if (e.nativeEvent.isComposing) return;
               if (e.key === 'Enter') {
                 e.preventDefault();
-                commit();
+                void commit();
               } else if (e.key === 'Escape') {
                 e.preventDefault();
                 cancel();
