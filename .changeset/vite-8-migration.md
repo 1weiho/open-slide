@@ -3,4 +3,4 @@
 "@open-slide/cli": major
 ---
 
-Migrate the runtime and generated workspaces to Vite 8 with native Rolldown optimizer options.
+Migrate the runtime and generated workspaces to Vite 8.
