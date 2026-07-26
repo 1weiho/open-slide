@@ -10,7 +10,7 @@
     "sync:skills": "open-slide sync:skills"
   },
   "dependencies": {
-    "@open-slide/core": "^0.0.6",
+    "@open-slide/core": "^1.0.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },
