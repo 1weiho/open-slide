@@ -13,7 +13,7 @@ export async function waitForPageReady(frame: HTMLElement): Promise<void> {
   }
 }
 
-function sleep(ms: number): Promise<void> {
+export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
@@ -63,6 +63,6 @@ export function isFrameAnimationSettled(frame: Element): boolean {
   return true;
 }
 
-function nextFrame(): Promise<void> {
+export function nextFrame(): Promise<void> {
   return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }

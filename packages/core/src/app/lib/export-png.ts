@@ -33,7 +33,7 @@ import {
   type Rasteriser,
 } from './export-png.rasterize';
 import { SlidePageProvider } from './page-context';
-import { waitForPageReady } from './print-ready';
+import { nextFrame, waitForPageReady } from './print-ready';
 import { CANVAS_HEIGHT, CANVAS_WIDTH, type SlideModule } from './sdk';
 
 /**
@@ -203,8 +203,8 @@ async function renderPageToPng(slide: SlideModule, pageIndex: number): Promise<B
       ),
     );
 
-    await nextPaint();
-    await nextPaint();
+    await nextFrame();
+    await nextFrame();
 
     await waitForPageReady(host);
     freezeForCapture(host);
@@ -219,8 +219,4 @@ async function renderPageToPng(slide: SlideModule, pageIndex: number): Promise<B
     if (root) root.unmount();
     host.remove();
   }
-}
-
-function nextPaint(): Promise<void> {
-  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }
