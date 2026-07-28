@@ -123,6 +123,11 @@ export const zhTW: Locale = {
     imagePptxExportFailed: 'PPTX 匯出失敗',
     pdfExportSafariUnsupported:
       '匯出 PDF 目前不支援 Safari 裝置，請嘗試用 Chromium 基底瀏覽器替代。',
+    exportCurrentPageAsPng: '將目前投影片匯出為 PNG',
+    exportAllPagesAsPng: '將所有投影片匯出為 PNG',
+    pngExportFailed: 'PNG 匯出失敗',
+    pngSafariBestEffort:
+      '在 Safari 上 PNG 匯出僅為盡力而為，輸出可能不正確。如需穩定結果，請改用 Chromium 基底瀏覽器。',
     present: '簡報',
     presentMenuAria: '簡報選項',
     presentInWindow: '播放',
@@ -429,6 +434,14 @@ export const zhTW: Locale = {
     hintNavigate: '移動',
     hintSelect: '選擇',
     hintClose: '關閉',
+  },
+
+  pngToast: {
+    title: '匯出 PNG',
+    processing: '處理第 {current} / {total} 頁',
+    rasterising: '正在點陣化第 {current} / {total} 頁',
+    zipping: '正在建立壓縮檔…',
+    done: '完成',
   },
 
   themeToggle: {

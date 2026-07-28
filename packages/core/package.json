@@ -1,7 +1,7 @@
 {
   "name": "@open-slide/core",
   "version": "1.17.1",
-  "description": "Runtime and CLI for open-slide — write slides in slides/, we handle the rest.",
+  "description": "Runtime and CLI for open-slide \u2014 write slides in slides/, we handle the rest.",
   "type": "module",
   "exports": {
     ".": {
@@ -35,7 +35,7 @@
   "scripts": {
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
-    "test:e2e": "pnpm run build && playwright test",
+    "test:e2e": "pnpm run build && node node_modules/@playwright/test/cli.js test",
     "prepack": "pnpm build"
   },
   "engines": {
@@ -102,6 +102,7 @@
     "@types/node": "^22.19.17",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "playwright-chromium": "~1.56.1",
     "tsdown": "^0.9.9",
     "typescript": "^5.9.3"
   }

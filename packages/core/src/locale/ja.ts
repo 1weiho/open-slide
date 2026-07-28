@@ -125,6 +125,11 @@ export const ja: Locale = {
     imagePptxExportFailed: 'PPTX の書き出しに失敗しました',
     pdfExportSafariUnsupported:
       'PDF の書き出しは現在 Safari では対応していません。Chromium ベースのブラウザでお試しください。',
+    exportCurrentPageAsPng: '現在のスライドを PNG として書き出し',
+    exportAllPagesAsPng: 'すべてのスライドを PNG として書き出し',
+    pngExportFailed: 'PNG の書き出しに失敗しました',
+    pngSafariBestEffort:
+      'Safari では PNG の書き出しはベストエフォートで、出力が崩れる場合があります。確実な結果には Chromium ベースのブラウザをお試しください。',
     present: '発表',
     presentMenuAria: '発表オプション',
     presentInWindow: '再生',
@@ -435,6 +440,14 @@ export const ja: Locale = {
     hintNavigate: '移動',
     hintSelect: '選択',
     hintClose: '閉じる',
+  },
+
+  pngToast: {
+    title: 'PNG を書き出し中',
+    processing: 'ページ {current} / {total} を処理中',
+    rasterising: 'ページ {current} / {total} をラスタライズ中',
+    zipping: 'アーカイブを作成中…',
+    done: '完了',
   },
 
   themeToggle: {

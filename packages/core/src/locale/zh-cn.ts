@@ -123,6 +123,11 @@ export const zhCN: Locale = {
     imagePptxExportFailed: 'PPTX 导出失败',
     pdfExportSafariUnsupported:
       '导出 PDF 目前不支持 Safari 设备，请尝试使用基于 Chromium 的浏览器替代。',
+    exportCurrentPageAsPng: '将当前幻灯片导出为 PNG',
+    exportAllPagesAsPng: '将所有幻灯片导出为 PNG',
+    pngExportFailed: 'PNG 导出失败',
+    pngSafariBestEffort:
+      '在 Safari 上 PNG 导出仅为尽力而为，输出可能不正确。如需稳定结果，请使用基于 Chromium 的浏览器。',
     present: '演示',
     presentMenuAria: '演示选项',
     presentInWindow: '播放',
@@ -429,6 +434,14 @@ export const zhCN: Locale = {
     hintNavigate: '移动',
     hintSelect: '选择',
     hintClose: '关闭',
+  },
+
+  pngToast: {
+    title: '导出 PNG',
+    processing: '正在处理第 {current} / {total} 页',
+    rasterising: '正在栅格化第 {current} / {total} 页',
+    zipping: '正在打包归档…',
+    done: '完成',
   },
 
   themeToggle: {

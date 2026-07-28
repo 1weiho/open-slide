@@ -49,9 +49,11 @@ Manage images, videos, and fonts per deck through a built-in assets panel. Searc
 
 Fullscreen playback with keyboard navigation, plus a **presenter mode** with current/next slide preview, speaker notes, and a timer. Built for the stage, not just the browser tab.
 
-### 📦 Export to static HTML & PDF
+### 📦 Export to static HTML, PDF & PNG
 
-One command exports your deck as a self-contained static HTML site or a print-ready PDF. Share without a server.
+One command exports your deck as a self-contained static HTML site, a print-ready PDF, or 1920×1080 PNGs (current slide or a ZIP of every page). For CI or batch pipelines, `open-slide export` renders the same PNGs headlessly via Playwright. Share without a server.
+
+PNG export is also how the agent writing your slides **checks its own work**: a 1920×1080 image is readable by vision-capable models, so clipping, overflow, distorted aspect ratios, and collisions get caught by looking at the slide instead of guessing at it.
 
 ### 📁 Slide manager
 
@@ -77,7 +79,7 @@ This repo is a pnpm + Turbo monorepo.
 
 | Path | Description |
 | --- | --- |
-| [packages/core](packages/core) | `@open-slide/core` — runtime (home page, slide viewer, present mode, inspector), Vite plugin, and the `open-slide` dev/build/preview CLI. |
+| [packages/core](packages/core) | `@open-slide/core` — runtime (home page, slide viewer, present mode, inspector), Vite plugin, and the `open-slide` dev/build/preview/export CLI. |
 | [packages/cli](packages/cli) | `@open-slide/cli` — `npx @open-slide/cli init` scaffolder. Generates a minimal workspace where Vite/React/tsconfig stay hidden inside core. |
 | [apps/demo](apps/demo) | Example workspace that consumes `@open-slide/core` via `workspace:*`. Used for local development of the framework. |
 

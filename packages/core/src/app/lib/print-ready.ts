@@ -1,5 +1,22 @@
 const DEFAULT_WAITFOR_TIMEOUT_MS = 10_000;
 
+export const ANIMATION_TIMEOUT_MS = 15_000;
+export const POLL_INTERVAL_MS = 100;
+
+export async function waitForPageReady(frame: HTMLElement): Promise<void> {
+  await waitForFonts();
+  await waitForDataWaitfor(frame);
+  const deadline = performance.now() + ANIMATION_TIMEOUT_MS;
+  while (performance.now() < deadline) {
+    if (isFrameAnimationSettled(frame)) return;
+    await sleep(POLL_INTERVAL_MS);
+  }
+}
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 // `document.fonts.ready` already waits for every in-flight face. Never call
 // `face.load()` on the rest: unloaded faces were never requested by CSS, and
 // `load()` ignores `unicode-range`, so a subsetted CJK family (hundreds of
@@ -46,6 +63,6 @@ export function isFrameAnimationSettled(frame: Element): boolean {
   return true;
 }
 
-function nextFrame(): Promise<void> {
+export function nextFrame(): Promise<void> {
   return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }

@@ -81,6 +81,25 @@ interface SyncFlags {
   dryRun?: boolean;
 }
 
+interface ExportCliFlags {
+  slide?: string;
+  all?: boolean;
+  page?: number;
+  out?: string;
+  port?: number;
+  timeout?: number;
+}
+
+function parsePositiveInt(label: string) {
+  return (value: string): number => {
+    const n = Number(value);
+    if (!Number.isInteger(n) || n < 1) {
+      throw new Error(`Invalid ${label}: ${value}`);
+    }
+    return n;
+  };
+}
+
 function resolveBuiltinSkillsDir(): string {
   // dist/cli/bin.js → ../../skills (package root + /skills)
   const here = path.dirname(fileURLToPath(import.meta.url));
@@ -131,6 +150,42 @@ export async function run(argv: string[]): Promise<void> {
     .action(async (flags: ServerFlags) => {
       const { preview } = await import('./preview.ts');
       await preview(flags);
+    });
+
+  program
+    .command('export')
+    .description('Render every page of every deck to PNG via headless Chromium')
+    .option('--slide <id>', 'restrict export to a single deck')
+    .option('--all', 'export every discoverable deck (mutually exclusive with --slide)')
+    .addOption(
+      new Option('--page <n>', 'export a single 1-based page (requires --slide)').argParser(
+        parsePositiveInt('page'),
+      ),
+    )
+    .option('--out <dir>', 'destination directory (defaults to ./png-export)')
+    .addOption(
+      new Option('--port <port>', 'ephemeral dev-server port override').argParser(parsePort),
+    )
+    .addOption(
+      new Option('--timeout <ms>', 'per-page readiness timeout (default 15000)').argParser(
+        parsePositiveInt('timeout'),
+      ),
+    )
+    .addHelpText(
+      'after',
+      `
+Examples:
+  $ open-slide export --all                       # every page of every deck to ./png-export
+  $ open-slide export --slide intro               # every page of one deck
+  $ open-slide export --slide intro --page 2      # a single page of one deck
+  $ open-slide export --all --out ./tmp-png       # custom output directory
+  $ open-slide export --all --port 5174           # pin the ephemeral dev-server port
+  $ open-slide export --all --timeout 30000       # raise per-page readiness timeout to 30s
+`,
+    )
+    .action(async (flags: ExportCliFlags) => {
+      const { exportCommand } = await import('./export.ts');
+      await exportCommand(flags);
     });
 
   program

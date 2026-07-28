@@ -7,6 +7,8 @@ import {
   FileCode2,
   FileImage,
   FileText,
+  Image,
+  Images,
   Link2,
   Loader2,
   Maximize,
@@ -55,6 +57,7 @@ import { NotesDrawer } from '../components/notes-drawer';
 import { OverviewGrid } from '../components/overview-grid';
 import { PdfProgressToast } from '../components/pdf-progress-toast';
 import { openPresenterWindow, Player } from '../components/player';
+import { PngProgressToast } from '../components/png-progress-toast';
 import { PptxProgressToast } from '../components/pptx-progress-toast';
 import { SlideCanvas } from '../components/slide-canvas';
 import { isDeckWarmed, markDeckWarmed, SlidePreloadLayer } from '../components/slide-preload-layer';
@@ -62,8 +65,10 @@ import { SlideTransitionLayer } from '../components/slide-transition-layer';
 import { type ThumbnailActions, ThumbnailRail } from '../components/thumbnail-rail';
 import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf, isSafari } from '../lib/export-pdf';
+import { exportSlideAsPngZip, exportSlidePageAsPng } from '../lib/export-png';
 import { exportSlideAsImagePptx } from '../lib/export-pptx';
 import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
+import { waitForPageReady } from '../lib/print-ready';
 import type { SlideModule } from '../lib/sdk';
 import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
 import { useSlideModule } from '../lib/use-slide-module';
@@ -107,6 +112,39 @@ export function Slide() {
   const rawIndex = Number(searchParams.get('p') ?? '1') - 1;
   const index = Number.isFinite(rawIndex) ? Math.max(0, Math.min(pageCount - 1, rawIndex)) : 0;
   const view = searchParams.get('view') === 'assets' ? 'assets' : 'slides';
+  const exportMode = searchParams.get('export');
+
+  useEffect(() => {
+    if (exportMode !== 'png') return;
+    if (!slide || pageCount === 0) return;
+    void index;
+    let cancelled = false;
+    (async () => {
+      // Export mode renders only the bare slide (the Player branch below), so
+      // the canvas is unambiguous in the document. Poll briefly in case it
+      // mounts a tick after this effect runs.
+      let frame: HTMLElement | null = null;
+      for (let i = 0; i < 100 && !cancelled; i++) {
+        frame = document.querySelector<HTMLElement>('[data-osd-canvas]');
+        if (frame) break;
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      if (!frame || cancelled) return;
+      await waitForPageReady(frame);
+      if (cancelled) return;
+      frame.setAttribute('data-os-export-ready', 'true');
+      (window as unknown as { __OPEN_SLIDE_EXPORT_READY?: boolean }).__OPEN_SLIDE_EXPORT_READY =
+        true;
+    })();
+    return () => {
+      cancelled = true;
+      document
+        .querySelector<HTMLElement>('[data-osd-canvas]')
+        ?.removeAttribute('data-os-export-ready');
+      (window as unknown as { __OPEN_SLIDE_EXPORT_READY?: boolean }).__OPEN_SLIDE_EXPORT_READY =
+        false;
+    };
+  }, [exportMode, slide, pageCount, index]);
 
   useEffect(() => {
     if (!import.meta.hot) return;
@@ -361,7 +399,10 @@ export function Slide() {
 
   // Hold the loader while a hidden layer warms the whole deck's images and
   // fonts, so the slide UI first paints with every asset already in cache.
-  if (view !== 'assets' && !isDeckWarmed(slideId)) {
+  // Export mode skips it: the loader would keep `[data-osd-canvas]` out of the
+  // document past the readiness poll's window, and `waitForPageReady` already
+  // waits on the single frame being captured.
+  if (view !== 'assets' && exportMode !== 'png' && !isDeckWarmed(slideId)) {
     return (
       <div className="grid min-h-dvh place-items-center px-8 text-muted-foreground">
         <div className="flex flex-col items-center gap-4">
@@ -387,7 +428,7 @@ export function Slide() {
     );
   }
 
-  if (!showSlideUi) {
+  if (!showSlideUi || exportMode === 'png') {
     return (
       <Player
         pages={pages}
@@ -498,6 +539,50 @@ export function Slide() {
     }
   };
 
+  const exportPngPage = async () => {
+    if (!slide || exporting) return;
+    if (isSafari()) {
+      toast.message(t.slide.pngSafariBestEffort, { duration: 5000 });
+    }
+    setExporting(true);
+    try {
+      await exportSlidePageAsPng(slide, slideId, index);
+    } catch (err) {
+      console.error('[open-slide] png export failed', err);
+      toast.error(t.slide.pngExportFailed, { duration: 4000 });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const exportPngZip = async () => {
+    if (!slide || exporting) return;
+    if (isSafari()) {
+      toast.message(t.slide.pngSafariBestEffort, { duration: 5000 });
+    }
+    setExporting(true);
+    const toastId = `png-export-${slideId}`;
+    toast.custom(
+      () => (
+        <PngProgressToast
+          progress={{ phase: 'processing', current: 0, total: pages.length, percent: 0 }}
+        />
+      ),
+      { id: toastId, duration: Infinity },
+    );
+    try {
+      await exportSlideAsPngZip(slide, slideId, (p) => {
+        toast.custom(() => <PngProgressToast progress={p} />, { id: toastId, duration: Infinity });
+      });
+    } catch (err) {
+      console.error('[open-slide] png zip export failed', err);
+      toast.error(t.slide.pngExportFailed, { id: toastId, duration: 4000 });
+    } finally {
+      setExporting(false);
+      toast.dismiss(toastId);
+    }
+  };
+
   const exportMenuItems = (
     <>
       <DropdownMenuItem disabled={exporting} onClick={exportHtml}>
@@ -507,6 +592,14 @@ export function Slide() {
       <DropdownMenuItem disabled={exporting} onClick={exportPdf}>
         <FileText />
         {t.slide.exportAsPdf}
+      </DropdownMenuItem>
+      <DropdownMenuItem disabled={exporting} onClick={exportPngPage}>
+        <Image />
+        {t.slide.exportCurrentPageAsPng}
+      </DropdownMenuItem>
+      <DropdownMenuItem disabled={exporting} onClick={exportPngZip}>
+        <Images />
+        {t.slide.exportAllPagesAsPng}
       </DropdownMenuItem>
       <DropdownMenuSeparator />
       <DropdownMenuItem disabled={exporting} onClick={exportImagePptx}>

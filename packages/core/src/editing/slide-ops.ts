@@ -291,6 +291,22 @@ function findDefaultExportArray(
 }
 
 /**
+ * Count the pages declared by a slide module's `export default [...]`.
+ *
+ * Pages are the elements of the array-literal default export — the same shape
+ * that `reorderDefaultExportPagesInSource` walks. Returns `null` when the
+ * source does not parse, or its default export is not an array literal, so
+ * the caller can decide whether to surface that as a hard error (e.g. the
+ * CLI enumeration endpoint backing `open-slide export`) rather than silently
+ * reporting `0`.
+ */
+export function countDefaultExportPagesInSource(source: string): number | null {
+  const found = findDefaultExportArray(source);
+  if (!found) return null;
+  return found.elements.length;
+}
+
+/**
  * Rewrite `export default [...]` so its elements appear in the requested order.
  *
  * `order[i]` is the original index that should land at new position `i`. The
