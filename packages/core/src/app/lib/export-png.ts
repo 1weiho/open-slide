@@ -1,20 +1,18 @@
 /**
  * PNG export entry points for the open-slide viewer.
  *
- * Phase 2 adds the single-page rasterisation pipeline: a page is mounted into
- * a hidden 1920×1080 host (mirroring the offscreen-mount pattern from
- * `export-pdf.ts`), readiness is gated on fonts / `data-waitfor` / animation
- * settle, then the mounted subtree is rasterised through the hand-rolled
- * `<foreignObject>` → canvas helpers in `export-png.rasterize.ts`. Phase 3
- * layers the full-deck ZIP path on top: pages are rasterised one at a time
- * and bundled flat via the existing `fflate` dependency, with progress
- * reported through `onProgress`.
+ * Single-page export mounts a page into a hidden 1920×1080 host (mirroring the
+ * offscreen-mount pattern from `export-pdf.ts`), gates readiness on fonts /
+ * `data-waitfor` / animation settle, then rasterises the mounted subtree
+ * through the hand-rolled `<foreignObject>` → canvas helpers in
+ * `export-png.rasterize.ts`. Full-deck export layers a ZIP path on top: pages
+ * are rasterised one at a time and bundled flat via the existing `fflate`
+ * dependency, with progress reported through `onProgress`.
  *
  * The rasterisation helpers (clone+style inlining, font/image inlining, SVG
  * wrap, supersampled canvas encode) live in the sibling
- * `export-png.rasterize.ts` per the CR's NFR-1 "helpers may be split into
- * sibling files in the same namespace if the count is exceeded" escape hatch,
- * so this entry-point module stays focused on orchestration.
+ * `export-png.rasterize.ts` so this entry-point module stays focused on
+ * orchestration and both files stay small enough to read in one sitting.
  *
  * @agents-index PNG export entry points — orchestration for single-page +
  *               full-deck ZIP export; rasteriser helpers live in the sibling.
@@ -75,7 +73,7 @@ export function __setRasteriserForTesting(next: Rasteriser | null): void {
 /**
  * Compute the per-page PNG filename, padding the 1-based page number to the
  * width of the total page count so file-system sort order matches slide order
- * for any deck size (per FR-1 / Open Question 2).
+ * for any deck size.
  */
 export function pngFilenameFor(slideId: string, pageIndex: number, total: number): string {
   const width = String(Math.max(1, total)).length;
@@ -110,7 +108,8 @@ export async function exportSlidePageAsPng(
  *
  * Pages are mounted and torn down one at a time (rather than concurrently
  * like the PDF exporter) to bound peak DOM size to a single 1920×1080 host
- * plus one in-flight PNG `Blob`, per Risk 5 of the CR.
+ * plus one in-flight PNG `Blob` — a 100-page deck would otherwise hold every
+ * rasterised page in memory at once.
  */
 export async function exportSlideAsPngZip(
   slide: SlideModule,

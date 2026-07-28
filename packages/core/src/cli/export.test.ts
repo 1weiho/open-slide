@@ -1,9 +1,8 @@
 /**
  * @agents-index Unit tests for `open-slide export` — covers the pure, Node-side
- * pieces of CR-0002 (flag parsing, filename padding, slide/page resolution,
- * atomic writes, and the missing-Playwright preflight branch). The real
- * headless render is exercised manually per AC-1; Vitest cannot launch
- * Chromium.
+ * pieces (flag parsing, filename padding, slide/page resolution, atomic writes,
+ * and the missing-Playwright preflight branch). The real headless render is
+ * exercised end-to-end by hand; Vitest cannot launch Chromium.
  */
 
 import fs from 'node:fs/promises';
@@ -35,7 +34,7 @@ import {
 } from './export.ts';
 
 describe('pngFilenameFor', () => {
-  it('uses page-count-width zero padding (FR-8)', () => {
+  it('uses page-count-width zero padding', () => {
     expect(pngFilenameFor('slide', 0, 9)).toBe('slide-p1.png');
     expect(pngFilenameFor('slide', 8, 9)).toBe('slide-p9.png');
     expect(pngFilenameFor('slide', 0, 100)).toBe('slide-p001.png');
@@ -99,7 +98,7 @@ describe('atomicWriteFile', () => {
     await fs.rm(tmpDir, { recursive: true, force: true });
   });
 
-  it('writes to <file>.tmp then renames to the final path (FR-11)', async () => {
+  it('writes to <file>.tmp then renames to the final path', async () => {
     const target = path.join(tmpDir, 'out.png');
     const renameSpy = vi.spyOn(fs, 'rename');
     const writeSpy = vi.spyOn(fs, 'writeFile');
@@ -141,7 +140,7 @@ describe('atomicWriteFile', () => {
   });
 });
 
-describe('exportCommand flag preflight (FR-13)', () => {
+describe('exportCommand flag preflight', () => {
   const stderrChunks: string[] = [];
 
   beforeEach(() => {
@@ -183,7 +182,7 @@ describe('exportCommand flag preflight (FR-13)', () => {
   });
 });
 
-describe('exportCommand missing-Playwright preflight (FR-4, NFR-8, AC-4)', () => {
+describe('exportCommand missing-Playwright preflight', () => {
   const stderrChunks: string[] = [];
 
   beforeEach(() => {

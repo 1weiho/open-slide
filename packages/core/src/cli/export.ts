@@ -47,8 +47,8 @@ const DEFAULT_OUT_DIR = './png-export';
  * Returns `null` on any module-resolution failure so the caller can surface
  * a friendly install message instead of a raw stack trace. A dynamic import
  * (not a top-level one) is mandatory: a top-level import would force the
- * runtime bundle to declare Playwright as a hard dependency, which violates
- * FR-5 / NFR-2 of CR-0002.
+ * runtime bundle to declare Playwright as a hard dependency, inflating every
+ * end-user install with a browser they will never launch.
  */
 export async function tryImportPlaywright(): Promise<PlaywrightChromium | null> {
   try {
@@ -173,7 +173,7 @@ export function resolveExportTargets(flags: ExportFlags, slides: SlideEntry[]): 
 }
 
 /**
- * Sentinel for usage / preflight errors that map to exit code 2 per FR-13.
+ * Sentinel for usage / preflight errors, which exit with code 2.
  *
  * Separating these from generic `Error`s lets the top-level orchestrator
  * pick the right exit code without sniffing string contents.
@@ -203,12 +203,13 @@ export async function atomicWriteFile(file: string, bytes: Buffer | Uint8Array):
 
 /**
  * Drive Playwright through a single page: navigate to the viewer under
- * `?export=png`, wait for the readiness signal the Phase 2 viewer change
- * surfaces, capture a 1920×1080 PNG, and atomically write it to `outDir`.
+ * `?export=png`, wait for the readiness signal the viewer sets once fonts,
+ * `data-waitfor` targets, and intro animations have settled, capture a
+ * 1920×1080 PNG, and atomically write it to `outDir`.
  *
- * On readiness timeout the screenshot still runs (best-effort capture per
- * FR-10), and a single warning line is logged so CI surfaces the issue
- * without aborting the whole run.
+ * On readiness timeout the screenshot still runs and a single warning line is
+ * logged: a deck with a perpetual animation would otherwise never export at
+ * all, and a slightly-early frame is more useful than no frame.
  */
 export async function renderOne(
   page: Page,
@@ -258,7 +259,8 @@ function validateFlags(flags: ExportFlags): void {
 /**
  * Entry point invoked by `run.ts` after Commander parses the flags. Wraps the
  * whole render loop in `try/finally` so the launched Chromium browser and the
- * in-process Vite server are torn down on every exit path (FR-16).
+ * in-process Vite server are torn down on every exit path — a leaked browser
+ * process would hang CI until the job times out.
  */
 export async function exportCommand(flags: ExportFlags = {}): Promise<void> {
   try {

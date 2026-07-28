@@ -1,8 +1,7 @@
 /**
  * Hand-rolled rasterisation helpers for the PNG exporter. Split from
- * `export-png.ts` per the CR's "helpers may be split into sibling files in the
- * same namespace if the count is exceeded" escape hatch (NFR-1), so the main
- * module respects the small-single-purpose-file SHOULD-under-300-lines target.
+ * `export-png.ts` so that module stays focused on orchestration and neither
+ * file grows past the point where it can be read in one sitting.
  *
  * The pipeline clones the mounted slide subtree with computed styles inlined
  * (including `::before` / `::after` pseudo-elements), embeds Geist
@@ -170,8 +169,10 @@ export async function inlineGeistFonts(clone: HTMLElement): Promise<void> {
 /**
  * For each `<img>` in `clone` whose `src` is same-origin, fetch the bytes and
  * rewrite the `src` to a `data:` URI so the serialised SVG can paint the
- * image without a cross-origin canvas taint. Cross-origin `<img>` elements
- * are deliberately left untouched (documented limitation in the CR).
+ * image without a cross-origin canvas taint. Cross-origin `<img>` elements are
+ * deliberately left untouched: fetching them would either fail on CORS or taint
+ * the canvas and break `toBlob`, so they render as broken images rather than
+ * failing the whole export.
  */
 export async function inlineSameOriginImages(clone: HTMLElement): Promise<void> {
   const cache = new Map<string, string>();
@@ -272,7 +273,7 @@ export function nodeToSvgDataUrl(node: HTMLElement, width: number, height: numbe
 
 /**
  * Load an SVG data URL into an `Image` and draw it onto an offscreen canvas
- * sized to the exact 1920×1080 output (FR-3). The SVG is rasterised by the
+ * sized to the exact 1920×1080 canvas. The SVG is rasterised by the
  * browser at ×2 density (see `nodeToSvgDataUrl`) and drawn down here with
  * high-quality smoothing, which is the PNG analogue of the `zoom: 2` /
  * `scale(0.5)` supersample trick `export-pdf.ts` uses for crisp output.
