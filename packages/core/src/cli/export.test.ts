@@ -31,6 +31,7 @@ import {
   exportCommand,
   pngFilenameFor,
   resolveExportTargets,
+  zeroPageDeckIds,
 } from './export.ts';
 
 describe('pngFilenameFor', () => {
@@ -137,6 +138,26 @@ describe('atomicWriteFile', () => {
         .catch(() => false),
     ).toBe(false);
     writeSpy.mockRestore();
+  });
+});
+
+describe('zeroPageDeckIds', () => {
+  const slides = [
+    { id: 'good', pages: 3 },
+    { id: 'unparseable', pages: 0 },
+  ];
+
+  it('reports zero-page decks under --all so a parse failure is not silently skipped', () => {
+    expect(zeroPageDeckIds({ all: true }, slides)).toEqual(['unparseable']);
+  });
+
+  it('reports the named deck when --slide targets a zero-page deck', () => {
+    expect(zeroPageDeckIds({ slide: 'unparseable' }, slides)).toEqual(['unparseable']);
+  });
+
+  it('stays quiet when every deck in scope has pages', () => {
+    expect(zeroPageDeckIds({ slide: 'good' }, slides)).toEqual([]);
+    expect(zeroPageDeckIds({ all: true }, [{ id: 'good', pages: 3 }])).toEqual([]);
   });
 });
 

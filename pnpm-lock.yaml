@@ -247,8 +247,8 @@ importers:
         specifier: ^18.3.1
         version: 18.3.7(@types/react@18.3.28)
       playwright-chromium:
-        specifier: ^1.49.0
-        version: 1.60.0
+        specifier: ~1.56.1
+        version: 1.56.1
       tsdown:
         specifier: ^0.9.9
         version: 0.9.9(typescript@5.9.3)
@@ -4145,18 +4145,13 @@ packages:
     resolution: {integrity: sha512-wQ0b/W4Fr01qtpHlqSqspcj3EhBvimsdh0KlHhH8HRZnMsEa0ea2fTULOXOS9ccQr3om+GcGRk4e+isrZWV8qQ==}
     engines: {node: '>=16.20.0'}
 
-  playwright-chromium@1.60.0:
-    resolution: {integrity: sha512-xxz9pc2HIxQW/Qg9ijG2fZOHRT//KhLo0KfvJRa45YYRrcA7ZONoilgJR40SW5pmecb6HkuROaeViXoCaXTZyQ==}
+  playwright-chromium@1.56.1:
+    resolution: {integrity: sha512-5TU+NMrofQg2j+DwIaQL/9eC84hs5YGz5Wng8OOdgq+kmu8usPLedxx2pJJ1Pb2TNFNiz3167RsUNFFvY3srNA==}
     engines: {node: '>=18'}
     hasBin: true
 
   playwright-core@1.56.1:
     resolution: {integrity: sha512-hutraynyn31F+Bifme+Ps9Vq59hKuUCz7H1kDOcBs+2oGguKkWTU50bBWrtz34OUWmIwpBTWDxaRPXrIXkgvmQ==}
-    engines: {node: '>=18'}
-    hasBin: true
-
-  playwright-core@1.60.0:
-    resolution: {integrity: sha512-9bW6zvX/m0lEbgTKJ6YppOKx8H3VOPBMOCFh2irXFOT4BbHgrx5hPjwJYLT40Lu+4qtD36qKc/Hn56StUW57IA==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -9155,13 +9150,11 @@ snapshots:
 
   pkce-challenge@5.0.1: {}
 
-  playwright-chromium@1.60.0:
+  playwright-chromium@1.56.1:
     dependencies:
-      playwright-core: 1.60.0
+      playwright-core: 1.56.1
 
   playwright-core@1.56.1: {}
-
-  playwright-core@1.60.0: {}
 
   playwright@1.56.1:
     dependencies:

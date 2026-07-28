@@ -11,7 +11,11 @@
 
 import { createElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cloneWithInlinedStyles, nodeToSvgDataUrl } from './export-png.rasterize.ts';
+import {
+  cloneWithInlinedStyles,
+  inlineBackgroundImages,
+  nodeToSvgDataUrl,
+} from './export-png.rasterize.ts';
 import {
   __setRasteriserForTesting,
   computePercent,
@@ -95,6 +99,43 @@ describe('cloneWithInlinedStyles', () => {
       expect(clone.style.left).not.toContain('99999');
     } finally {
       host.remove();
+    }
+  });
+});
+
+describe('inlineBackgroundImages', () => {
+  it('inlines same-origin url() backgrounds declared on pseudo-elements', async () => {
+    // Pseudo-element styles are serialised into a generated stylesheet rather than
+    // onto an element, so an element-only walk silently drops their images.
+    const host = document.createElement('div');
+    const style = document.createElement('style');
+    style.setAttribute('data-osp-style', '');
+    style.textContent = '[data-osp="osp0"]::before{background-image:url(/logo.png);}';
+    host.appendChild(style);
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn(async () => ({
+      ok: true,
+      blob: async () => new Blob(['x'], { type: 'image/png' }),
+    })) as unknown as typeof fetch;
+    const originalFileReader = globalThis.FileReader;
+    class StubFileReader {
+      result = 'data:image/png;base64,AAAA';
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      readAsDataURL() {
+        this.onload?.();
+      }
+    }
+    globalThis.FileReader = StubFileReader as unknown as typeof FileReader;
+
+    try {
+      await inlineBackgroundImages(host);
+      expect(style.textContent).toContain('data:image/png;base64');
+      expect(style.textContent).not.toContain('/logo.png');
+    } finally {
+      globalThis.fetch = originalFetch;
+      globalThis.FileReader = originalFileReader;
     }
   });
 });

@@ -142,4 +142,4 @@ Pass:
    (`apps/web/lib/layout.shared.tsx`, `packages/core/src/http/request-guard.ts`)
    and pre-date this branch; fixing them would expand scope.
 
-REPORT_PATH=/Users/desek/Repo/github/1weiho/open-slide/docs/cr/CR-0001-validation-report.md FAIL=0 PARTIAL=1 GAP=0
+REPORT_PATH=docs/cr/CR-0001-validation-report.md FAIL=0 PARTIAL=1 GAP=0

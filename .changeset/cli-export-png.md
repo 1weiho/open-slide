@@ -2,4 +2,4 @@
 "@open-slide/core": minor
 ---
 
-Add `open-slide export` CLI subcommand for headless PNG export. `playwright-chromium` is a devDependency only, so end-user installs are unaffected; the subcommand preflights for it and prints copy-pasteable install instructions when absent.
+Add an `open-slide export` command that renders deck pages to 1920x1080 PNGs via headless Chromium.

@@ -32,6 +32,9 @@ export type Rasteriser = (url: string, width: number, height: number) => Promise
 /** Supersample factor: render the SVG at this density, then draw down. */
 const SUPERSAMPLE = 2;
 
+/** Marks the generated pseudo-element stylesheet so its `url()`s can be inlined too. */
+const PSEUDO_STYLE_ATTR = 'data-osp-style';
+
 let pseudoUid = 0;
 
 /**
@@ -63,6 +66,7 @@ export function cloneWithInlinedStyles(source: HTMLElement): HTMLElement {
   neutraliseRootPositioning(clone);
   if (pseudoRules.length > 0) {
     const style = document.createElement('style');
+    style.setAttribute(PSEUDO_STYLE_ATTR, '');
     style.textContent = pseudoRules.join('\n');
     clone.insertBefore(style, clone.firstChild);
   }
@@ -196,14 +200,30 @@ export async function inlineSameOriginImages(clone: HTMLElement): Promise<void> 
 export async function inlineBackgroundImages(clone: HTMLElement): Promise<void> {
   const cache = new Map<string, string>();
   const all: HTMLElement[] = [clone, ...Array.from(clone.querySelectorAll<HTMLElement>('*'))];
-  await Promise.all(
-    all.map(async (el) => {
+  await Promise.all([
+    ...all.map(async (el) => {
       const bg = el.style.backgroundImage;
       if (!bg?.includes('url(')) return;
       const replaced = await inlineCssUrls(bg, cache);
       if (replaced !== bg) el.style.backgroundImage = replaced;
     }),
-  );
+    // Pseudo-element styles are emitted as CSS text in a generated stylesheet, not as
+    // inline styles on an element, so the element walk above cannot reach their
+    // `url()`s. Without this pass a `::before { background-image: url(...) }` renders
+    // as nothing in the serialised SVG.
+    inlinePseudoStyleUrls(clone, cache),
+  ]);
+}
+
+async function inlinePseudoStyleUrls(
+  clone: HTMLElement,
+  cache: Map<string, string>,
+): Promise<void> {
+  const style = clone.querySelector<HTMLStyleElement>(`style[${PSEUDO_STYLE_ATTR}]`);
+  const css = style?.textContent;
+  if (!style || !css?.includes('url(')) return;
+  const replaced = await inlineCssUrls(css, cache);
+  if (replaced !== css) style.textContent = replaced;
 }
 
 /**

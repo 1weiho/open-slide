@@ -146,4 +146,4 @@ The CR explicitly scopes the actual headless Chromium run to manual verification
 
 These are marked PARTIAL above (not GAP) because the CR itself defines them as manual-only, consistent with how CR-0001's manual ACs were validated. None should be promoted to PASS until the manual smoke is recorded; none should be downgraded to FAIL because the unit-testable infrastructure is in place and all unit tests pass.
 
-REPORT_PATH=/Users/desek/Repo/github/1weiho/open-slide/docs/cr/CR-0002-validation-report.md FAIL=0 PARTIAL=7 GAP=0
+REPORT_PATH=docs/cr/CR-0002-validation-report.md FAIL=0 PARTIAL=7 GAP=0

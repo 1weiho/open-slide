@@ -142,6 +142,23 @@ export async function enumerateSlides(port: number): Promise<SlideEntry[]> {
 type ResolvedTuple = { slideId: string; pageIndex: number; total: number };
 
 /**
+ * Deck ids in scope for this run that report zero pages.
+ *
+ * Enumeration reports a deck whose default export cannot be parsed as `pages: 0`
+ * rather than omitting it, so the failure stays visible. Without this the CLI
+ * would then contribute no render targets for it and finish successfully, and a
+ * broken deck would look identical to one that was never there.
+ */
+export function zeroPageDeckIds(flags: ExportFlags, slides: SlideEntry[]): string[] {
+  if (flags.all) return slides.filter((s) => s.pages === 0).map((s) => s.id);
+  if (flags.slide) {
+    const s = slides.find((x) => x.id === flags.slide);
+    return s && s.pages === 0 ? [s.id] : [];
+  }
+  return [];
+}
+
+/**
  * Project the user-supplied flag set onto a flat list of `(slideId, pageIndex,
  * total)` tuples to render. Centralising this resolution keeps the rendering
  * loop trivial and lets it be unit-tested in isolation from Vite/Playwright.
@@ -291,6 +308,12 @@ export async function exportCommand(flags: ExportFlags = {}): Promise<void> {
     server = started.server;
     const slides = await enumerateSlides(started.port);
     const targets = resolveExportTargets(flags, slides);
+
+    for (const id of zeroPageDeckIds(flags, slides)) {
+      process.stderr.write(
+        `${id}: 0 pages — skipped (deck is empty, or its default export could not be parsed)\n`,
+      );
+    }
 
     browser = await playwright.chromium.launch();
     const context = await browser.newContext({
