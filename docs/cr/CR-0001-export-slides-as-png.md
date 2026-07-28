@@ -12,7 +12,9 @@ stakeholders:
 priority: "medium"
 target-version: "@open-slide/core 1.8.0"
 source-branch: feat/export-slides-as-png
-source-commit: 1edb9a7
+source-commit: 14496d0
+reconciled-date: 2026-07-28
+reconciled-commit: 5e07293
 ---
 
 # Export slides as PNG
@@ -28,7 +30,25 @@ exporters in `packages/core/src/app/lib/`.
 
 ## Motivation and Background
 
-PNG is the lowest-friction way to embed a slide in a blog post, social card, README,
+> **Reconciled 2026-07-28.** The primary motivation below was identified after the
+> original CR was written and is recorded here because it, not the sharing use case,
+> is the feature's main justification.
+
+**Primary: visual verification by an agent.** A model authoring a deck is blind to its
+own output — it can compute a layout but never look at it. This CR's own
+`slide-authoring` guidance asks the model to predict the vertical budget with
+arithmetic (sum `font_size × line_height × lines` + gaps + padding ≤ 1080px) and calls
+overflow "the #1 cause of broken slides", precisely because nothing in the loop can
+check the prediction. A 1920×1080 PNG closes that loop: frontier models with
+high-resolution image understanding read the file directly and review the slide the way
+a human would, catching **clipping** (content cropped past the bottom edge), **overflow**
+(text escaping its card or safe area), **aspect-ratio distortion** (images stretched by a
+bad `object-fit`), **collision** (a heading landing on a figure), and **illegibility**
+(type too small or contrast too low at projector distance). Because the export is
+exactly the canonical canvas size, what the model inspects is what the audience sees,
+not an approximation.
+
+**Secondary: sharing.** PNG is the lowest-friction way to embed a slide in a blog post, social card, README,
 Notion page, Figma board, or design review. PDF is the right output for handout-style
 delivery, and HTML is right for self-hosting, but neither is a drop-in raster. Authors
 today have to screenshot the viewer at whatever zoom their browser happens to be using,
@@ -41,6 +61,9 @@ viewer they just authored against.
 
 ### Change Drivers
 
+* **Agent self-review:** a slide-authoring model has no way to verify its own layout.
+  A readable 1920×1080 raster turns "I think this fits" into "I can see that it fits",
+  and is the only mechanism in the project that catches visual defects at all.
 * Author feedback: screenshots of the viewer are blurry, cropped, or include UI chrome.
 * Parity with `Export as HTML` / `Export as PDF` — PNG is the natural third option in
   the same download dropdown.
@@ -246,13 +269,34 @@ flowchart TD
 
 ## Affected Components
 
+> **Reconciled 2026-07-28** — annotated with what shipped. `*` marks components that
+> were not anticipated when this list was written.
+
 * `packages/core/src/app/lib/export-png.ts` — **new**, the rasterisation entry points.
-* `packages/core/src/app/lib/print-ready.ts` — read-only consumer; no edits unless a
-  helper needs to be extracted.
+* `packages/core/src/app/lib/export-png.rasterize.ts` — **new** \*, the rasterisation
+  helpers (clone with inlined styles and pseudo-elements, font/image/background
+  embedding, SVG `<foreignObject>` wrap, supersampled canvas draw). Split from
+  `export-png.ts` under the NFR-1 escape hatch to keep both files near the 300-line
+  target.
+* `packages/core/src/app/lib/capture-freeze.ts` — **new** \*, shared
+  `freezeForCapture` (see Phase 6). Extracted from `export-pptx.ts`, now imported by
+  both image exporters.
+* `packages/core/src/app/lib/export-pptx.ts` — **modified** \*, drops its local
+  `freezeForCapture` in favour of the shared module. Output is byte-identical.
+* `packages/core/src/app/lib/download.ts` — **new**, the shared `downloadBlob`
+  helper extracted per Phase 2 (see Risk 6).
+* `packages/core/src/app/lib/export-html.ts` — **modified**, consumes `downloadBlob`.
+* `packages/core/src/app/lib/print-ready.ts` — read-only consumer for this CR. (It is
+  edited by CR-0002, which adds `waitForPageReady` and the animation-settle deadline.)
 * `packages/core/src/app/components/png-progress-toast.tsx` — **new**, mirrors
   `pdf-progress-toast.tsx`.
-* `packages/core/src/app/routes/slide.tsx` — adds two `DropdownMenuItem`s, two click
-  handlers, and a second `exporting` lock (or reuses the existing one).
+* `packages/core/src/app/routes/slide.tsx` — adds two menu entries, two handlers, and
+  reuses the existing `exporting` lock. \* Upstream has since extracted the download
+  dropdown into a shared `exportMenuItems` fragment; the PNG entries live inside it, so
+  they appear in both the desktop dropdown and the mobile more-actions menu from a
+  single definition (see Phase 4).
+* `package.json` — **modified** \*, adds `happy-dom` as a root devDependency for the
+  DOM-dependent unit tests.
 * `packages/core/src/locale/types.ts` — adds the new locale keys to the type contract.
 * `packages/core/src/locale/en.ts`, `ja.ts`, `zh-cn.ts`, `zh-tw.ts` — adds the
   translated strings.
@@ -475,6 +519,16 @@ shared import).
       progressCallback)` with a `toast.custom` lifecycle identical to the PDF flow,
       using `PngProgressToast`.
    5. Use a stable `toastId` of `png-export-${slideId}`.
+
+> **Reconciled 2026-07-28 — as shipped.** Upstream extracted the download dropdown's
+> contents into a single `exportMenuItems` fragment, rendered by both the desktop
+> dropdown and the mobile more-actions menu. The PNG entries are therefore defined once
+> inside that fragment rather than added as standalone items in two places, and their
+> handlers (`exportPngPage`, `exportPngZip`) are named functions declared alongside
+> `exportPdf` / `exportImagePptx` rather than inline `onSelect` closures. Behaviour,
+> guards, lock, toast lifecycle, and `toastId` are exactly as specified above; only the
+> insertion point changed. Final menu order is HTML → PDF → PNG (current) → PNG (all)
+> → separator → image PPTX.
 3. Pick appropriate `lucide-react` icons for the two items
    (e.g. `Image` for the single page, `Images` for the ZIP).
 
@@ -493,6 +547,41 @@ shared import).
 
 **Affected components:** `packages/core/src/app/lib/export-png.test.ts` (new),
 `.changeset/<slug>.md` (new).
+
+### Phase 6: Capture freeze (added 2026-07-28, post-completion)
+
+Not part of the original plan. Added after the branch was rebased onto upstream, when
+end-to-end verification showed decks that animate their content in exporting as bare
+background and footer — every text element missing.
+
+**Cause.** Rasterisation draws a *clone* of the mounted slide, and a clone re-enters the
+document with its CSS animations back at the 0% frame. Intro animations conventionally
+start at `opacity: 0` with `animation-fill-mode: both`, so a clone taken after the live
+animations settled still painted an empty slide. Waiting for the live DOM to settle
+(Phase 2 / CR-0002's `waitForPageReady`) is necessary but **not sufficient** — the
+settled state has to be pinned into the markup the rasteriser actually reads.
+
+1. Extract `freezeForCapture` from `export-pptx.ts` into
+   `packages/core/src/app/lib/capture-freeze.ts`. It reads back each element's settled
+   `opacity` / `transform` / `filter` / `clip-path`, pins them inline with
+   `!important`, and sets `animation: none` / `transition: none` so the clone cannot
+   replay.
+2. Import it in `export-pptx.ts` (behaviour-preserving; PPTX output verified
+   byte-identical).
+3. Call `freezeForCapture(host)` in `export-png.ts` after `waitForPageReady` and before
+   `cloneWithInlinedStyles`.
+4. Neutralise `animation` / `transition` in the generated pseudo-element rules in
+   `export-png.rasterize.ts`. `freezeForCapture` walks elements and cannot reach
+   pseudo-elements, whose styles are emitted as CSS text carrying the `animation`
+   shorthand with them. (`export-pptx.ts` covers this case with a capture stylesheet
+   instead.)
+
+Verified on a deck that reproduced the bug: every page went from ~46 KB blank to
+150–185 KB fully rendered; a deck that already worked exported byte-identically.
+
+**Affected components:** `packages/core/src/app/lib/capture-freeze.ts` (new),
+`capture-freeze.test.ts` (new), `export-png.ts`, `export-png.rasterize.ts`,
+`export-pptx.ts`.
 
 ### Implementation Flow
 
@@ -539,6 +628,13 @@ flowchart LR
 | `packages/core/src/app/lib/export-png.test.ts` | `exportSlidePageAsPng rejects with no DOM residue when the rasterizer throws` | Mocks the internal `rasteriseSvgToPng` helper to reject. Asserts the offscreen container has been removed from `document.body` after the rejection. | Mocked `toBlob` rejection; jsdom environment. | Promise rejects; `document.querySelectorAll('[data-png-export-host]')` returns empty NodeList. |
 | `packages/core/src/app/lib/export-png.test.ts` | `exportSlideAsPngZip calls onProgress at least once per phase` | Mocks `toBlob` to resolve and asserts onProgress sees all four phases at least once. | 2-page slide module; mocked `toBlob`. | onProgress called with `processing`, `rasterising`, `zipping`, `done` at least once each. |
 | `packages/core/src/app/lib/download.test.ts` | `downloadBlob creates and revokes object URL` | Verifies the extracted helper triggers an `<a download>` click and revokes the URL afterwards. | `Blob` + filename. | `URL.createObjectURL` called once; `URL.revokeObjectURL` called once; `<a>` removed from DOM. |
+| `packages/core/src/app/lib/capture-freeze.test.ts` \* | `strips animations that would replay from their 0% frame in a clone` | Added with Phase 6. Asserts `freezeForCapture` sets `animation: none !important` on an element carrying an intro animation. | Element with `animation: fadeUp 1s ease both`. | Inline `animation` is `none` with `important` priority. |
+| `packages/core/src/app/lib/capture-freeze.test.ts` \* | `disables transitions so a re-entering clone does not animate` | As above for `transition`. | Element with `transition: opacity 300ms`. | Inline `transition` is `none` with `important` priority. |
+| `packages/core/src/app/lib/capture-freeze.test.ts` \* | `pins the settled visual state with !important so the clone keeps it` | Asserts the settled value is written back inline at `important` priority so a re-declared animation cannot override it. | Element with `opacity: 1`. | Inline `opacity` is `1` with `important` priority. |
+| `packages/core/src/app/lib/capture-freeze.test.ts` \* | `freezes the whole subtree, not just direct children` | Guards against a shallow walk. | Element nested three levels deep. | Nested element's `animation` is `none`. |
+| `packages/core/src/app/lib/capture-freeze.test.ts` \* | `leaves elements outside the frozen root untouched` | Confirms the mutation is scoped, since both exporters call it on an offscreen host while the live deck is on screen. | Two sibling roots; only one frozen. | The unfrozen root's `animation` is unchanged. |
+
+\* Added 2026-07-28 with Phase 6, after the original completion.
 
 ### Tests to Modify
 
@@ -728,6 +824,13 @@ feature breaks, replicate the `neutralizeGradientBackgrounds` workaround the PDF
 exporter already uses, scoped to the offscreen host only. Pixel-perfect output for
 the heaviest CSS is deferred to the future Playwright-based CLI path described under
 "Future Enhancements".
+
+**Outcome (2026-07-28): materialised, resolved.** The failure was not a CSS *feature*
+the SVG renderer could not paint, but CSS *animations* replaying in the clone — the
+rasteriser drew the first, invisible keyframe of every animated element. Resolved by
+Phase 6's `freezeForCapture`. The mitigation's smoke-test step is what surfaced it,
+though only once decks with intro animations were exercised end-to-end; the unit tests
+could not catch it because they stub the rasteriser. See Phase 6.
 
 ### Risk 2: Safari `<foreignObject>` quirks produce broken or empty PNGs
 
@@ -924,3 +1027,44 @@ No drift detected.
 the CR prose and are now resolved per the orchestrator's "act on stated leanings"
 rule. Open Question 4 (presenter/fullscreen export) is explicitly out of scope.
 <!-- /review-summary -->
+
+## Implementation Reconciliation (2026-07-28)
+
+This CR was completed on 2026-05-30 against a branch that was ~120 commits behind
+upstream. Rebasing onto upstream before opening a PR, plus the end-to-end verification
+that followed, changed the implementation in ways the original document did not
+anticipate. Recorded here so the CR matches the code that shipped; the sections above
+carry inline "Reconciled" notes where their text would otherwise mislead.
+
+**What changed and why:**
+
+1. **Motivation.** The feature's primary justification — visual verification by an
+   agent — was articulated after the CR was written and is now stated first under
+   Motivation and Background, with a matching change driver. The sharing use case the
+   CR originally led with is real but secondary.
+2. **Menu integration.** Upstream extracted the download dropdown into a shared
+   `exportMenuItems` fragment (used by both the desktop and mobile menus) and added an
+   image-PPTX export. The PNG entries are defined once inside that fragment. Phase 4
+   records the delta; guards, lock, and toast lifecycle are unchanged.
+3. **Capture freeze (Phase 6).** Rasterisation replayed CSS animations in the clone,
+   exporting animated decks as blank pages. Fixed by sharing `freezeForCapture` with
+   the image-PPTX exporter and neutralising pseudo-element animations. This is the
+   substantive behavioural fix of the reconciliation; see Phase 6 and Risk 1's outcome.
+4. **Component list.** Corrected to the files actually touched, including
+   `export-png.rasterize.ts`, `download.ts`, `capture-freeze.ts`, the `export-pptx.ts`
+   refactor, and the `happy-dom` devDependency.
+5. **Test strategy.** Five `capture-freeze.test.ts` cases added. Suite total is 330.
+6. **Documentation.** The agent-verification rationale is recorded in the CLI export
+   docs, the export feature page, the README, the docs index, and — as an executable
+   step rather than prose — the bundled `slide-authoring` skill's self-review section,
+   which now instructs the model to export the pages it touched and inspect them.
+
+**Not changed:** every Functional Requirement, Non-Functional Requirement, and
+Acceptance Criterion in this CR still describes the shipped behaviour. The
+reconciliation adds a phase and corrects component and motivation records; it does not
+alter the contract.
+
+**Commit trail:** `14496d0` (original phase 5) → `9e99e1a` (docs) → rebase onto
+upstream → `e062070` (capture freeze) → `5e07293` (agent-verification docs and skill).
+Commit hashes recorded before the rebase no longer resolve; the frontmatter's
+`source-commit` has been updated to the rebased equivalent.

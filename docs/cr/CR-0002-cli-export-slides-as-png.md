@@ -12,7 +12,9 @@ stakeholders:
 priority: "medium"
 target-version: "@open-slide/core 1.9.0"
 source-branch: feat/export-slides-as-png
-source-commit: 52c0d91
+source-commit: 6294553
+reconciled-date: 2026-07-28
+reconciled-commit: 5e07293
 ---
 
 # Export slides as PNG from the CLI (headless)
@@ -49,8 +51,22 @@ never run `open-slide export`.
 
 ## Motivation and Background
 
+> **Reconciled 2026-07-28.** The agent-verification driver below was articulated
+> after this CR was written. It is the strongest justification for the *headless*
+> path specifically, because it is the only one of these needs where no human is
+> present at any point in the loop.
+
+**Primary: closing the agent's verification loop.** CR-0001 established that a
+1920×1080 PNG is what lets a slide-authoring model see its own output — catching
+clipping, overflow, distorted aspect ratios, collisions, and illegible type that
+arithmetic cannot. The CLI is what makes that loop *autonomous*: an agent runs
+`open-slide export --slide <id>`, reads the resulting images back, and fixes what
+they reveal, all within a single turn and with no human clicking a dropdown. The
+in-viewer path still requires someone to be looking at the deck. The bundled
+`slide-authoring` skill's self-review step is written against this command.
+
 The in-viewer export from CR-0001 covers the interactive case: an author looks
-at the deck and clicks a button. It does not cover three concrete user needs:
+at the deck and clicks a button. It does not cover three further concrete needs:
 
 * **CI rendering.** A repository wants to regenerate deck thumbnails on every
   commit and post them as PR comments or push them to a docs site. There is no
@@ -70,6 +86,8 @@ that already exist (the dev server, the viewer route, the readiness signals).
 
 ### Change Drivers
 
+* **Agent self-review without a human in the loop:** the authoring model must be
+  able to produce and read back its own renders unattended.
 * Author feedback: "I want to regenerate deck PNGs in CI without keeping a
   browser tab open."
 * Parity with Slidev's `slidev export --format png` ergonomics.
@@ -393,6 +411,25 @@ flowchart TD
   one-line, present-tense, user-perspective description.
 * `docs/cr/CR-0002-cli-export-slides-as-png.md` — this file.
 
+> **Reconciled 2026-07-28 — components not anticipated above:**
+>
+> * `packages/core/src/editing/slide-ops.ts` — exports
+>   `countDefaultExportPagesInSource`, the parser `GET /__slides` uses to report each
+>   deck's page count. Enumeration reuses the plugin's existing disk walk as required,
+>   but the page count needed a source-level parse that did not previously exist. A deck
+>   whose default export does not parse is reported with `pages: 0` rather than dropped,
+>   so enumeration errors surface as visible zero-page decks.
+> * `packages/core/tsdown.config.ts` — marks `playwright-chromium` external so the
+>   build does not attempt to bundle a devDependency that end users will not have.
+> * `packages/core/package.json` (`test:e2e` script) — `playwright-chromium` also
+>   claims the `playwright` bin, and pnpm resolved the collision in its favour; that
+>   CLI has no `test` command, so upstream's own e2e suite failed with
+>   `unknown command 'test'`. The script now invokes `@playwright/test`'s `cli.js` by
+>   path, making it independent of which package wins the bin. This is a direct
+>   consequence of this CR's devDependency and belongs to its scope.
+> * `packages/core/src/app/lib/export-png.ts` / `export-png.test.ts` — migrated to the
+>   extracted `waitForPageReady` helper as Phase 2 requires.
+
 ## Scope Boundaries
 
 ### In Scope
@@ -597,6 +634,24 @@ re-export the underlying predicates + constants),
 the in-viewer PNG exporter call site (migrate to `waitForPageReady`), and
 the in-viewer PDF exporter (import the shared predicates/constants from
 `print-ready.ts` rather than inlining them).
+
+> **Reconciled 2026-07-28 — additional constraint discovered on rebase.** Upstream
+> added a deck asset-warming gate to `slide.tsx`: before rendering, the route holds a
+> loader while a hidden layer preloads the whole deck's images and fonts. That gate
+> keeps `[data-osd-canvas]` out of the document, so the readiness effect's element poll
+> (5 s budget) can expire before the canvas ever mounts, and the signal is then never
+> set — the CLI would time out on every page of a large deck.
+>
+> The export path therefore **MUST** bypass the warming gate: the condition is
+> `view !== 'assets' && exportMode !== 'png' && !isDeckWarmed(slideId)`. This is
+> correct rather than merely expedient — warming the *whole deck's* assets is pointless
+> when the headless run loads one page per browser navigation, and `waitForPageReady`
+> already waits on the single frame being captured. The bypass carries an inline
+> comment, since the reason is not visible from the call site.
+>
+> Export mode also renders the bare full-bleed player (`!showSlideUi || exportMode ===
+> 'png'`), so no toolbar or chrome appears in the capture and the canvas is unambiguous
+> in the document.
 
 ### Phase 3: Headless render loop
 
@@ -1250,3 +1305,47 @@ enumeration mechanism is finalised to option (b): a new read-only
    independent of a running viewer page and is reusable by other tooling.
    Decision needed before Phase 3 work begins.
 <!-- /review-summary -->
+
+## Implementation Reconciliation (2026-07-28)
+
+This CR was completed on 2026-05-30 against a branch ~120 commits behind upstream.
+Rebasing before opening a PR, and the end-to-end verification that followed, surfaced
+constraints the original document could not have anticipated. Recorded here so the CR
+matches the code that shipped; the sections above carry inline "Reconciled" notes where
+their text would otherwise mislead.
+
+**What changed and why:**
+
+1. **Motivation.** Autonomous visual verification by an agent is now stated as the
+   primary driver for the headless path, ahead of CI rendering and batch export. It is
+   the one need where no human is in the loop at any point, which is exactly what a CLI
+   provides over the in-viewer button.
+2. **Readiness signal vs. asset warming (Phase 2).** Upstream added a deck-warming
+   loader gate that holds the render, keeping the canvas out of the document past the
+   readiness poll's window. The export path now bypasses that gate. Without this the
+   CLI times out on every page of a warm-gated deck — the single behavioural
+   requirement the rebase added to this CR.
+3. **Component list.** Extended with `slide-ops.ts` (page-count parsing for
+   `GET /__slides`), `tsdown.config.ts` (external Playwright), and the `test:e2e`
+   script fix forced by this CR's `playwright-chromium` devDependency shadowing the
+   `playwright` bin.
+4. **Verification.** The suite upstream added (`pnpm test:e2e`, 72 Playwright tests)
+   now passes alongside this CR's own tests; the CLI was exercised end-to-end against a
+   12-page deck producing correct 1920×1080 output.
+
+**Not changed:** every Functional Requirement, Non-Functional Requirement, and
+Acceptance Criterion still describes the shipped behaviour, including the exit-code
+contract, the filename convention shared with CR-0001, and the Playwright-missing
+preflight. `playwright-chromium` remains a `devDependency` only.
+
+**Relationship to CR-0001's Phase 6.** The capture-freeze fix recorded in CR-0001 does
+not apply to this path: the headless exporter screenshots real Chromium and never
+clones the DOM, so animation replay cannot occur. That asymmetry is why the CLI
+rendered a deck correctly that the in-viewer exporter rendered blank — which is what
+isolated the bug to the client-side rasteriser.
+
+**Commit trail:** `6294553` (tsdown external, original completion) → `7326fdf` (docs) →
+rebase onto upstream → `3228ed3` (bare full-bleed export render) → `c15eacf`
+(`test:e2e` bin fix) → `5e07293` (agent-verification docs and skill). Commit hashes
+recorded before the rebase no longer resolve; the frontmatter's `source-commit` has
+been updated to the rebased equivalent.
