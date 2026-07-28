@@ -1,5 +1,6 @@
 import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { freezeForCapture } from './capture-freeze';
 import { designToCssVars } from './design';
 import { SlidePageProvider } from './page-context';
 import { isFrameAnimationSettled, waitForDataWaitfor, waitForFonts } from './print-ready';
@@ -17,10 +18,6 @@ const POLL_INTERVAL_MS = 100;
 
 const CAPTURE_CLASS = 'os-pptx-capture';
 const CAPTURE_STYLE_ID = 'os-pptx-capture-style';
-// Properties intro animations drive from a hidden start state to a visible end
-// state. We read them back once settled and pin them inline so the capture clone
-// can't re-run the keyframes from their invisible 0% frame (see freezeForCapture).
-const FROZEN_PROPS = ['opacity', 'transform', 'filter', 'clip-path'] as const;
 
 export type PptxExportProgress = {
   phase: 'processing' | 'generating' | 'done';
@@ -141,20 +138,6 @@ export async function exportSlideAsImagePptx(
     for (const r of reactRoots) r.unmount();
     container.remove();
     captureStyle.remove();
-  }
-}
-
-// Pin each element's settled visual state inline and remove its animation so the
-// clone html-to-image rasterises renders the final frame instead of replaying the
-// (initially invisible) keyframes. Pseudo-elements are handled by CAPTURE_STYLE_ID.
-function freezeForCapture(root: HTMLElement): void {
-  for (const el of root.querySelectorAll<HTMLElement>('*')) {
-    const cs = getComputedStyle(el);
-    for (const prop of FROZEN_PROPS) {
-      el.style.setProperty(prop, cs.getPropertyValue(prop), 'important');
-    }
-    el.style.setProperty('animation', 'none', 'important');
-    el.style.setProperty('transition', 'none', 'important');
   }
 }
 

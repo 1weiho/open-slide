@@ -22,6 +22,7 @@
 
 import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { freezeForCapture } from './capture-freeze';
 import { designToCssVars } from './design';
 import { downloadBlob } from './download';
 import {
@@ -207,6 +208,7 @@ async function renderPageToPng(slide: SlideModule, pageIndex: number): Promise<B
     await nextPaint();
 
     await waitForPageReady(host);
+    freezeForCapture(host);
 
     const clone = cloneWithInlinedStyles(host);
     await inlineGeistFonts(clone);

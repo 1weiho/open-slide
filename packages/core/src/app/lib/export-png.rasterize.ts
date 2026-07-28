@@ -127,6 +127,11 @@ function capturePseudoElements(src: Element, dst: Element, out: string[]): void 
       const value = cs.getPropertyValue(prop);
       if (value) cssText += `${prop}:${value};`;
     }
+    // The values above are the settled ones, but they carry the `animation`
+    // shorthand with them — and a rule that re-declares the animation replays
+    // it from its (typically invisible) 0% frame in the clone. `freezeForCapture`
+    // cannot reach pseudo-elements, so neutralise them here instead.
+    cssText += 'animation:none !important;transition:none !important;';
     out.push(`[data-osp="${uid}"]${pseudo}{${cssText}}`);
   }
 }
