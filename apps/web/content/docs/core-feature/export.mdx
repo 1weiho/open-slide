@@ -31,6 +31,16 @@ The **Export** menu in the slide toolbar exports the active deck directly:
 
 ## PNG
 
+PNG export exists primarily to **let an agent see the slide**. A model
+authoring a deck is otherwise blind to its own output — it can compute a
+layout but never look at it. A 1920×1080 PNG is readable by frontier
+models with high-resolution image understanding, which turns "I think this
+fits" into "I can see that it fits", and surfaces clipping, overflow,
+aspect-ratio distortion, overlapping elements, and unreadable type. Humans
+get the same benefit; agents get it in a loop they can act on. See
+[open-slide export](/docs/cli/export) for the headless, scriptable path
+and the `slide-authoring` skill's self-review step.
+
 From the toolbar pick **Export → Export current slide as PNG** for a single
 1920×1080 PNG of the active page, or **Export all slides as PNG** for a ZIP
 containing one PNG per page (named `{slideId}-p{N}.png`). Rasterisation runs

@@ -53,6 +53,8 @@ Fullscreen playback with keyboard navigation, plus a **presenter mode** with cur
 
 One command exports your deck as a self-contained static HTML site, a print-ready PDF, or 1920×1080 PNGs (current slide or a ZIP of every page). For CI or batch pipelines, `open-slide export` renders the same PNGs headlessly via Playwright. Share without a server.
 
+PNG export is also how the agent writing your slides **checks its own work**: a 1920×1080 image is readable by vision-capable models, so clipping, overflow, distorted aspect ratios, and collisions get caught by looking at the slide instead of guessing at it.
+
 ### 📁 Slide manager
 
 Organise decks into folders with custom emoji and drag-and-drop to reorder. Useful once you've built more than three decks and need to find anything.

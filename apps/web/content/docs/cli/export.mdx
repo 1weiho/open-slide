@@ -18,8 +18,35 @@ exporter uses (fonts, `data-waitfor`, animation settle), and writes one
 This is the pixel-perfect, scriptable counterpart to the in-viewer PNG
 export ([Export](/docs/core-feature/export)): the browser's own compositor
 paints, so advanced CSS (filters, blend modes, `backdrop-filter`) renders
-faithfully, and there is no human in the loop — suitable for CI thumbnail
-regeneration and batch pipelines.
+faithfully, and there is no human in the loop.
+
+## Why: giving agents eyes
+
+The primary motivation is **visual verification by an agent**. A model
+writing slides is otherwise working blind — it can reason about a layout
+but never see it, so it predicts the vertical budget with arithmetic and
+hopes. A 1920×1080 PNG closes that loop: frontier models with
+high-resolution image understanding can read these files directly and
+check the deck the way a human reviewer would.
+
+That catches the defect classes static analysis cannot:
+
+- **Clipping** — content pushed past the 1080px bottom edge, silently cropped.
+- **Overflow** — text escaping its card, column, or safe area.
+- **Aspect-ratio distortion** — images stretched or squashed by a bad `object-fit`.
+- **Collision and overlap** — a heading landing on a figure, a caption on a chart.
+- **Legibility** — type too small, or contrast too low, to read at projector distance.
+
+The workflow is: author the deck, export the pages, look at them, fix what
+the images reveal, re-export. The bundled `slide-authoring` skill builds
+this into its self-review checklist, so agents following it verify their
+own output instead of declaring success unseen.
+
+Because each file is exactly 1920×1080 — the canvas as the audience sees
+it — what the model inspects is what gets presented, not an approximation.
+
+The same properties make it suitable for CI thumbnail regeneration, visual
+regression diffing, and batch pipelines.
 
 ## Prerequisite: install Playwright
 

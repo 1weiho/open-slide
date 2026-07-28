@@ -317,6 +317,17 @@ This applies whenever the *visual element* repeats, not whenever the *data* does
 
 ## Self-review before finishing
 
+**Look at the slide, don't just reason about it.** Export the pages you touched to PNG and read the images back:
+
+```bash
+open-slide export --slide <id> --out ./png-export
+```
+
+Each file is exactly 1920×1080 — the canvas as the audience sees it. Vision-capable models can read these directly, which catches the whole class of defects that arithmetic misses: content cropped past the bottom edge, text colliding with a figure, a bullet that wrapped, an image at the wrong aspect ratio, an element that overflows its card, type too small to read at projector distance. The vertical-budget math below is the prediction; the PNG is the ground truth. When the two disagree, the PNG is right.
+
+Do this before declaring the deck finished, and again after any layout change.
+
+- [ ] Pages that were added or changed have been exported to PNG and visually inspected — no cropping, overflow, collision, or distorted aspect ratios.
 - [ ] `slides/<id>/index.tsx` `export default`s a non-empty `Page[]`.
 - [ ] Every page's root fills `100% × 100%`.
 - [ ] Content lives inside padding (no text kisses the edge).
