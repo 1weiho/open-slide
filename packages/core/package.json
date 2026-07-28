@@ -35,7 +35,7 @@
   "scripts": {
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
-    "test:e2e": "pnpm run build && playwright test",
+    "test:e2e": "pnpm run build && node node_modules/@playwright/test/cli.js test",
     "prepack": "pnpm build"
   },
   "engines": {
