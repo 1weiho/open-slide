@@ -125,13 +125,29 @@ export function DragResizeLayer({
       suppressNextClick();
     };
 
+    // The browser can take the pointer away mid-gesture (a touch turning into a
+    // scroll, the window losing the device). No pointerup follows, so the drag
+    // has to be unwound here or the element keeps the position it happened to
+    // have when the gesture died.
+    const onPointerCancel = () => {
+      const current = drag;
+      drag = null;
+      if (!current?.moved) return;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      const { anchor: el } = stateRef.current;
+      if (el?.isConnected) restoreInline(el, current.snapshot);
+    };
+
     window.addEventListener('pointerdown', onPointerDown, true);
     window.addEventListener('pointermove', onPointerMove, true);
     window.addEventListener('pointerup', onPointerUp, true);
+    window.addEventListener('pointercancel', onPointerCancel, true);
     return () => {
       window.removeEventListener('pointerdown', onPointerDown, true);
       window.removeEventListener('pointermove', onPointerMove, true);
       window.removeEventListener('pointerup', onPointerUp, true);
+      window.removeEventListener('pointercancel', onPointerCancel, true);
       if (drag?.moved) {
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
@@ -172,11 +188,14 @@ function ResizeHandle({
     e.currentTarget.setPointerCapture(e.pointerId);
 
     const scale = canvasScale(el);
-    const box = el.getBoundingClientRect();
     const snapshot = readInline(el);
     const base = readTranslate(el);
-    const startW = box.width / scale;
-    const startH = box.height / scale;
+    // Seed from the computed style, not the rendered box: under content-box the
+    // two differ by padding and border, and it is the computed value that means
+    // the same thing as the width we are about to write.
+    const { width, height } = getComputedStyle(el);
+    const startW = Number.parseFloat(width) || 0;
+    const startH = Number.parseFloat(height) || 0;
     const startX = e.clientX;
     const startY = e.clientY;
     let moved = false;
@@ -203,9 +222,14 @@ function ResizeHandle({
       el.style.translate = `${x}px ${y}px`;
     };
 
-    const onUp = () => {
+    const detach = () => {
       window.removeEventListener('pointermove', onMove, true);
       window.removeEventListener('pointerup', onUp, true);
+      window.removeEventListener('pointercancel', onCancel, true);
+    };
+
+    const onUp = () => {
+      detach();
       if (!moved) return;
 
       const { anchor: live, selected: sel, bufferOps: buffer } = stateRef.current;
@@ -220,8 +244,16 @@ function ResizeHandle({
       suppressNextClick();
     };
 
+    // Without this the listeners outlive a cancelled gesture and the element
+    // keeps resizing on every later pointer move.
+    const onCancel = () => {
+      detach();
+      if (moved && el.isConnected) restoreInline(el, snapshot);
+    };
+
     window.addEventListener('pointermove', onMove, true);
     window.addEventListener('pointerup', onUp, true);
+    window.addEventListener('pointercancel', onCancel, true);
   };
 
   const top = corner === 'nw' || corner === 'ne' ? rect.top : rect.top + rect.height;
