@@ -14,6 +14,8 @@ import { useAssets } from '@/lib/assets';
 import { useFolders } from '@/lib/folders';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
+import { CommandMenuTrigger } from '../components/command/command-menu';
+import { HomeCommandMenu } from '../components/command/home-command-menu';
 import { FolderIconChip } from '../components/sidebar/folder-item';
 import { ALL_SLIDES_ID, ASSETS_ID, Sidebar, THEMES_ID } from '../components/sidebar/sidebar';
 import type { FoldersManifest } from '../lib/sdk';
@@ -61,6 +63,9 @@ export function HomeShell() {
   const t = useLocale();
 
   const selectedId = pathToSelectedId(location.pathname, searchParams);
+
+  const [commandOpen, setCommandOpen] = useState(false);
+  const openCommandMenu = useCallback(() => setCommandOpen(true), []);
 
   const [titleMap, setTitleMap] = useState<Record<string, string>>({});
   const reportTitle = useCallback((slideId: string, slideTitle: string) => {
@@ -158,6 +163,7 @@ export function HomeShell() {
               toast.error(t.home.toastFolderDeleteFailed);
             }
           }}
+          onOpenCommandMenu={openCommandMenu}
           onDropToFolder={(folderId, slideId) => moveSlideWithToast(slideId, folderId)}
           onDropToDraft={(slideId) => moveSlideWithToast(slideId, null)}
           onReorder={async (ids) => {
@@ -174,6 +180,7 @@ export function HomeShell() {
         <div className="flex items-center justify-between border-b border-hairline bg-sidebar px-4 py-3 md:hidden">
           <h1 className="font-heading text-lg font-bold tracking-tight">{t.home.appTitle}</h1>
           <div className="-mr-1.5 flex items-center gap-0.5">
+            <CommandMenuTrigger onClick={openCommandMenu} />
             <LanguageToggle />
             <ThemeToggle />
             <DropdownMenu>
@@ -234,6 +241,14 @@ export function HomeShell() {
           <Outlet context={ctx} />
         </div>
       </div>
+
+      <HomeCommandMenu
+        open={commandOpen}
+        onOpenChange={setCommandOpen}
+        folders={manifest.folders}
+        titleMap={titleMap}
+        onSelectView={selectFolder}
+      />
     </div>
   );
 }
