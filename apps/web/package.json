@@ -12,28 +12,28 @@
     "format": "biome format --write"
   },
   "dependencies": {
-    "fumadocs-core": "16.8.5",
-    "fumadocs-mdx": "14.3.2",
-    "fumadocs-ui": "16.8.5",
+    "fumadocs-core": "16.11.5",
+    "fumadocs-mdx": "15.2.0",
+    "fumadocs-ui": "16.11.5",
     "geist": "^1.7.2",
     "lucide-react": "^1.25.0",
-    "motion": "^12.38.0",
+    "motion": "^12.42.2",
     "next": "16.2.10",
     "next-themes": "^0.4.6",
-    "posthog-js": "^1",
+    "posthog-js": "^1.402.3",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.14",
-    "@tailwindcss/postcss": "^4.2.4",
-    "@types/mdx": "^2.0.13",
-    "@types/node": "^25.6.0",
+    "@tailwindcss/postcss": "^4.3.2",
+    "@types/mdx": "^2.0.14",
+    "@types/node": "^22.19.21",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "postcss": "^8.5.13",
-    "tailwindcss": "^4.2.4",
+    "postcss": "^8.5.19",
+    "tailwindcss": "^4.3.2",
     "typescript": "^6.0.3"
   }
 }

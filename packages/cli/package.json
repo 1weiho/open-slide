@@ -44,14 +44,14 @@
     "access": "public"
   },
   "dependencies": {
-    "chalk": "^5.3.0",
+    "chalk": "^5.6.2",
     "commander": "^15.0.0",
     "prompts": "^2.4.2"
   },
   "devDependencies": {
-    "@types/node": "^22.19.17",
+    "@types/node": "^22.19.21",
     "@types/prompts": "^2.4.9",
-    "tsdown": "^0.9.9",
-    "typescript": "^5.9.3"
+    "tsdown": "^0.21.10",
+    "typescript": "^6.0.3"
   }
 }

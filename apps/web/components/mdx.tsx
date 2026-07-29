@@ -6,7 +6,10 @@ import type { MDXComponents } from 'mdx/types';
 export function getMDXComponents(components?: MDXComponents) {
   return {
     ...defaultMdxComponents,
-    img: (props) => <ImageZoom {...props} />,
+    img: (props) => {
+      const { src, ...rest } = props;
+      return <ImageZoom {...rest} src={typeof src === 'string' ? src : undefined} />;
+    },
     TypeTable,
     ...components,
   } satisfies MDXComponents;

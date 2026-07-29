@@ -5,7 +5,7 @@ const WHEEL_NAV_COOLDOWN_MS = 100;
 const WHEEL_GESTURE_IDLE_MS = 80;
 
 type UseWheelPageNavigationOptions<T extends HTMLElement> = {
-  ref: RefObject<T>;
+  ref: RefObject<T | null>;
   enabled?: boolean;
   canPrev: boolean;
   canNext: boolean;
