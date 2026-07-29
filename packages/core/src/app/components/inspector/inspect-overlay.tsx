@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { findSlideSource, type SlideSourceHit } from '@/lib/inspector/fiber';
 import { useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
+import { DragResizeLayer } from './drag-resize-layer';
 import { useInspector } from './inspector-provider';
 
 type Highlight = { hit: SlideSourceHit };
@@ -87,7 +88,13 @@ export function InspectOverlay() {
   if (!active) return null;
   return (
     <div ref={overlayRef} data-inspector-ui className="pointer-events-none absolute inset-0 z-30">
-      <Frame anchor={selectedAnchor} overlayRef={overlayRef} variant="selected" showImageActions />
+      <Frame
+        anchor={selectedAnchor}
+        overlayRef={overlayRef}
+        variant="selected"
+        showImageActions
+        interactive
+      />
       <Frame anchor={dedupedHover} overlayRef={overlayRef} variant="hover" />
     </div>
   );
@@ -105,11 +112,14 @@ function Frame({
   overlayRef,
   variant,
   showImageActions = false,
+  interactive = false,
 }: {
   anchor: HTMLElement | null;
   overlayRef: React.RefObject<HTMLDivElement>;
   variant: FrameVariant;
   showImageActions?: boolean;
+  /** Selected frame only: drag to move, corner handles to resize. */
+  interactive?: boolean;
 }) {
   const [rect, setRect] = useState<RelRect | null>(null);
   const [hasTarget, setHasTarget] = useState(false);
@@ -213,6 +223,7 @@ function Frame({
           ...FRAME_STYLES[variant],
         }}
       />
+      {interactive && anchor && <DragResizeLayer anchor={anchor} rect={rect} visible={visible} />}
       {showImageActions && imageAnchor && (
         <ImageActionPanel
           anchor={imageAnchor}
