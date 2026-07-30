@@ -44,7 +44,7 @@
     "access": "public"
   },
   "dependencies": {
-    "chalk": "^5.3.0",
+    "chalk": "^6.0.0",
     "commander": "^15.0.0",
     "prompts": "^2.4.2"
   },
