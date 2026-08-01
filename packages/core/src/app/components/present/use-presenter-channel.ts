@@ -16,7 +16,8 @@ export type PresenterCommand =
   | { type: 'prev' }
   | { type: 'request-state' }
   | { type: 'restart-timer' }
-  | { type: 'toggle-blackout'; mode: 'black' | 'white' };
+  | { type: 'toggle-blackout'; mode: 'black' | 'white' }
+  | { type: 'switch-slide'; slideId: string };
 
 type Handler = (msg: PresenterCommand) => void;
 

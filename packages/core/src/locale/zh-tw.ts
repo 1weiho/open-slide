@@ -165,6 +165,9 @@ export const zhTW: Locale = {
     jump: '跳至',
     loadingSlide: '正在載入 {slideId}…',
     loadingAssets: '正在載入資源…',
+    switchDeck: '切換簡報',
+    searchDecks: '搜尋簡報…',
+    noDecksFound: '沒有符合的簡報',
   },
 
   present: {

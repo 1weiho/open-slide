@@ -167,6 +167,9 @@ export const ja: Locale = {
     jump: 'ジャンプ',
     loadingSlide: '{slideId} を読み込み中…',
     loadingAssets: 'アセットを読み込み中…',
+    switchDeck: 'デッキを切り替え',
+    searchDecks: 'デッキを検索…',
+    noDecksFound: '一致するデッキがありません',
   },
 
   present: {

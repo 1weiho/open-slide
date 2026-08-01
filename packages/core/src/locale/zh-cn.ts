@@ -165,6 +165,9 @@ export const zhCN: Locale = {
     jump: '跳至',
     loadingSlide: '正在加载 {slideId}…',
     loadingAssets: '正在加载资源…',
+    switchDeck: '切换演示文稿',
+    searchDecks: '搜索演示文稿…',
+    noDecksFound: '没有匹配的演示文稿',
   },
 
   present: {
