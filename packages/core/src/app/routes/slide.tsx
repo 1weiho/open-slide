@@ -70,6 +70,8 @@ import { useSlideModule } from '../lib/use-slide-module';
 
 const { showSlideUi, showSlideBrowser, allowHtmlDownload } = config.build;
 
+const noop = () => {};
+
 export function Slide() {
   const { slideId = '' } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -351,7 +353,7 @@ export function Slide() {
           design={presented.slide.design}
           transition={presented.slide.transition}
           index={presented.index}
-          onIndexChange={goTo}
+          onIndexChange={presentReady ? goTo : noop}
           onExit={() => setPlayMode(null)}
           controls
           slideId={presented.slideId}

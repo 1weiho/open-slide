@@ -73,6 +73,7 @@ export function Presenter() {
   }
 
   // Hydrate from the projection window once.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: slideId re-fires the handshake on a deck switch even when the channel memo keeps its identity (available toggling false→true in one commit nets to no change)
   useEffect(() => {
     if (!channel.available || requestedRef.current) return;
     requestedRef.current = true;
@@ -80,7 +81,7 @@ export function Presenter() {
     // If nothing answers within a beat, surface the "no projection" hint.
     const t = setTimeout(() => setHasProjection((v) => v), 600);
     return () => clearTimeout(t);
-  }, [channel]);
+  }, [channel, slideId]);
 
   const navigate = useNavigate();
   const send = channel.send;
