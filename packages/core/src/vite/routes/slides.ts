@@ -17,6 +17,7 @@ import {
 import { readManifest, writeManifest } from '../../files/folders.ts';
 import { validateMutationRequest } from '../../http/request-guard.ts';
 import { type ApiContext, json, readBody } from './context.ts';
+import { mountDevRoute } from './mount.ts';
 
 // PUT    /__slides/:id/reorder            reorder pages { order: number[] }
 // DELETE /__slides/:id/pages/:i           remove page
@@ -29,7 +30,7 @@ type DuplicateSlideBody = { newId?: unknown };
 type SlidePatchBody = { name?: unknown };
 
 export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): void {
-  server.middlewares.use('/__slides', async (req, res, next) => {
+  mountDevRoute(server, '/__slides', async (req, res, next) => {
     const url = new URL(req.url ?? '/', 'http://local');
     const method = req.method ?? 'GET';
 

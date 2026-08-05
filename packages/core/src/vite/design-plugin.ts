@@ -5,6 +5,7 @@ import { type DesignSystem, defaultDesign } from '../app/lib/design.ts';
 import type { AstNode } from '../editing/babel-walk.ts';
 import { validateMutationRequest } from '../http/request-guard.ts';
 import { json, readBody, resolveSlidePath } from './routes/context.ts';
+import { mountDevRoute } from './routes/mount.ts';
 
 function parseSource(source: string): AstNode | null {
   try {
@@ -340,7 +341,7 @@ export function designPlugin(opts: DesignPluginOptions): Plugin {
     name: 'open-slide:design',
     apply: 'serve',
     configureServer(server: ViteDevServer) {
-      server.middlewares.use('/__design', async (req, res, next) => {
+      mountDevRoute(server, '/__design', async (req, res, next) => {
         const url = new URL(req.url ?? '/', 'http://local');
         const method = req.method ?? 'GET';
         const slideId = url.searchParams.get('slideId') ?? '';

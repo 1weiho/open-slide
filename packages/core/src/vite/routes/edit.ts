@@ -4,6 +4,7 @@ import { applyEdit, type EditOp } from '../../editing/edit-ops.ts';
 import { applyRevertAsset } from '../../editing/revert-asset.ts';
 import { validateMutationRequest } from '../../http/request-guard.ts';
 import { type ApiContext, json, readBody, resolveSlideEntryPath } from './context.ts';
+import { mountDevRoute } from './mount.ts';
 
 // POST /__edit                applyEdit({ slideId, line, column, ops })
 // POST /__edit/revert-asset   applyRevertAsset({ slideId, assetPath })
@@ -22,7 +23,7 @@ type EditBatchBody = {
 };
 
 export function registerEditRoutes(server: ViteDevServer, ctx: ApiContext): void {
-  server.middlewares.use('/__edit', async (req, res, next) => {
+  mountDevRoute(server, '/__edit', async (req, res, next) => {
     const url = new URL(req.url ?? '/', 'http://local');
     const method = req.method ?? 'GET';
     if (method !== 'POST') return next();

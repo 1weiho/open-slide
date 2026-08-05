@@ -5,6 +5,7 @@ import type { Plugin, ViteDevServer } from 'vite';
 import { validateMutationRequest } from '../http/request-guard.ts';
 import { hasRecentWrite, recordWrite } from './recent-writes.ts';
 import { json, readBody, resolveSlidePath } from './routes/context.ts';
+import { mountDevRoute } from './routes/mount.ts';
 
 type NotesBody = {
   slideId?: string;
@@ -170,7 +171,7 @@ export function notesPlugin(opts: NotesPluginOptions): Plugin {
       return undefined;
     },
     configureServer(server: ViteDevServer) {
-      server.middlewares.use('/__notes', async (req, res, next) => {
+      mountDevRoute(server, '/__notes', async (req, res, next) => {
         const url = new URL(req.url ?? '/', 'http://local');
         const method = req.method ?? 'GET';
         if (method !== 'PUT' || url.pathname !== '/') return next();

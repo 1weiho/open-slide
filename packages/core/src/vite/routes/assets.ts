@@ -14,6 +14,7 @@ import {
 } from '../../files/assets.ts';
 import { validateMutationRequest } from '../../http/request-guard.ts';
 import { type ApiContext, json, readBody } from './context.ts';
+import { mountDevRoute, withBase } from './mount.ts';
 
 // GET    /__assets/:scope                     list assets in slide or @global
 // GET    /__assets/:scope/:file               serve raw asset bytes
@@ -23,7 +24,8 @@ import { type ApiContext, json, readBody } from './context.ts';
 // GET    /__assets/:scope/:file/usages        count <img src={import}> references
 
 export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): void {
-  server.middlewares.use('/__assets', async (req, res, next) => {
+  const base = server.config.base;
+  mountDevRoute(server, '/__assets', async (req, res, next) => {
     const url = new URL(req.url ?? '/', 'http://local');
     const method = req.method ?? 'GET';
 
@@ -109,7 +111,7 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
             createdAt: assetCreatedAt(stat.birthtimeMs, stat.mtimeMs),
             mtime: stat.mtimeMs,
             mime: mimeForFilename(name),
-            url: `/__assets/${slideId}/${encodeURIComponent(name)}`,
+            url: withBase(base, `/__assets/${slideId}/${encodeURIComponent(name)}`),
             unused: true,
           });
         }
@@ -230,7 +232,7 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
             createdAt: assetCreatedAt(stat.birthtimeMs, stat.mtimeMs),
             mtime: stat.mtimeMs,
             mime: mimeForFilename(filename),
-            url: `/__assets/${slideId}/${encodeURIComponent(filename)}`,
+            url: withBase(base, `/__assets/${slideId}/${encodeURIComponent(filename)}`),
           });
         }
 
