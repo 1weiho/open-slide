@@ -1,1 +1,1 @@
-export { en } from '@open-slide/core/locale';
+export { en } from '@open-slide/shared/locale';

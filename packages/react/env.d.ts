@@ -1,1 +1,1 @@
-/// <reference types="@open-slide/core/env" />
+/// <reference types="@open-slide/shared/env" />

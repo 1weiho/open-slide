@@ -1,6 +1,6 @@
 # Contributing to open-slide
 
-Thanks for your interest in improving open-slide! This guide covers the framework-neutral core, React and Svelte runtimes, CLI scaffolder, and supporting apps.
+Thanks for your interest in improving open-slide! This guide covers the shared framework contracts, compatibility package, React and Svelte runtimes, CLI scaffolder, and supporting apps.
 
 If you're authoring slides inside a scaffolded project, you don't need this file — drive your deck through your coding agent or edit `slides/<id>/index.tsx` directly.
 
@@ -19,7 +19,8 @@ pnpm + Turbo monorepo.
 
 | Path | Package | Role |
 | --- | --- | --- |
-| [`packages/core`](packages/core) | `@open-slide/core` | Framework-neutral config, types, slide discovery, virtual modules, and shared utilities. |
+| [`packages/core`](packages/core) | `@open-slide/core` | Compatibility package that automatically routes existing installations to the React runtime. |
+| [`packages/shared`](packages/shared) | `@open-slide/shared` | Framework-neutral config, types, slide discovery, virtual modules, and shared utilities. |
 | [`packages/react`](packages/react) | `@open-slide/react` | React viewer, presenter, inspector, Vite integration, and runtime CLI. |
 | [`packages/svelte`](packages/svelte) | `@open-slide/svelte` | Svelte viewer, presenter, inspector, Vite integration, and runtime CLI. |
 | [`packages/cli`](packages/cli) | `@open-slide/cli` | `npx @open-slide/cli init` scaffolder + project template. |
@@ -64,6 +65,7 @@ Filter to one package:
 
 ```bash
 pnpm core <script>   # e.g. pnpm core build
+pnpm shared <script>
 pnpm react <script>
 pnpm svelte <script>
 pnpm cli <script>

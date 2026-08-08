@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { OpenSlideConfig } from '@open-slide/core';
-import { loadUserConfig, openSlidePlugin } from '@open-slide/core/vite';
+import type { OpenSlideConfig } from '@open-slide/shared';
+import { loadUserConfig, openSlidePlugin } from '@open-slide/shared/vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
 import type { InlineConfig } from 'vite';
@@ -65,7 +65,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
     },
     optimizeDeps: {
       entries: [path.join(APP_ROOT, 'main.ts')],
-      exclude: ['@open-slide/core', '@open-slide/svelte'],
+      exclude: ['@open-slide/shared', '@open-slide/svelte'],
     },
     server: {
       port: config.port ?? 5173,

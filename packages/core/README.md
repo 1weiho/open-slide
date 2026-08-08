@@ -1,5 +1,7 @@
 # @open-slide/core
 
-Framework-neutral contracts and utilities shared by the open-slide React and Svelte runtimes.
+Compatibility package for existing open-slide React projects.
 
-Most projects should install `@open-slide/react` or `@open-slide/svelte`. Runtime packages re-export the common authoring types from this package.
+Updating an installation that depends on `@open-slide/core` automatically installs and uses `@open-slide/react`. Existing imports, Vite configuration, TypeScript environment references, and the `open-slide` command continue to work without project changes.
+
+New React projects should depend on `@open-slide/react` directly.

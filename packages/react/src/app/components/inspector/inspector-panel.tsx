@@ -1,3 +1,4 @@
+import type { Locale } from '@open-slide/shared/locale';
 import {
   AlignCenter,
   AlignJustify,

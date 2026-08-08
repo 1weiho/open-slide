@@ -244,7 +244,7 @@ function addDesignSystemImport(
   source: string,
   imports: ImportInfo[],
 ): { source: string; offsetShift: number } {
-  const stmt = `import type { DesignSystem } from '@open-slide/core';\n`;
+  const stmt = `import type { DesignSystem } from '@open-slide/react';\n`;
   if (imports.length > 0) {
     const last = imports[imports.length - 1];
     const insertAt = last.node.end;
@@ -261,23 +261,25 @@ function ensureDesignSystemImport(
   ast: AstNode,
 ): { source: string; offsetShift: number } {
   const imports = findImports(ast);
-  const coreImport = imports.find((imp) => imp.source === '@open-slide/core');
-  if (!coreImport) return addDesignSystemImport(source, imports);
+  const runtimeImport = imports.find(
+    (imp) => imp.source === '@open-slide/react' || imp.source === '@open-slide/core',
+  );
+  if (!runtimeImport) return addDesignSystemImport(source, imports);
 
-  const hasDesignSystem = coreImport.specifiers.some((spec) => {
+  const hasDesignSystem = runtimeImport.specifiers.some((spec) => {
     if (spec.type !== 'ImportSpecifier') return false;
     const imported = (spec as unknown as { imported?: { name?: string } }).imported;
     return imported?.name === 'DesignSystem';
   });
   if (hasDesignSystem) return { source, offsetShift: 0 };
 
-  const node = coreImport.node;
+  const node = runtimeImport.node;
   // `import type { … }` already applies to every specifier, and repeating the
   // modifier on one of them is a TypeScript error.
   const typeOnlyDecl = (node as unknown as { importKind?: string }).importKind === 'type';
   const specifier = typeOnlyDecl ? 'DesignSystem' : 'type DesignSystem';
 
-  const named = coreImport.specifiers.filter((spec) => spec.type === 'ImportSpecifier');
+  const named = runtimeImport.specifiers.filter((spec) => spec.type === 'ImportSpecifier');
   const lastNamed = named[named.length - 1];
   if (lastNamed) {
     const insertText = `, ${specifier}`;

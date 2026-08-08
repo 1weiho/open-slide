@@ -1,1 +1,1 @@
-export { zhTW } from '@open-slide/core/locale';
+export { zhTW } from '@open-slide/shared/locale';

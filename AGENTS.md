@@ -10,7 +10,8 @@ pnpm + Turbo monorepo.
 
 | Path | Package | Role |
 | --- | --- | --- |
-| `packages/core` | `@open-slide/core` | Framework-neutral config, types, slide discovery, virtual modules, and shared utilities. |
+| `packages/core` | `@open-slide/core` | Compatibility package that automatically routes existing installations to the React runtime. |
+| `packages/shared` | `@open-slide/shared` | Framework-neutral config, types, slide discovery, virtual modules, and shared utilities. |
 | `packages/react` | `@open-slide/react` | React viewer, presenter, inspector, Vite integration, and runtime CLI. |
 | `packages/svelte` | `@open-slide/svelte` | Svelte viewer, presenter, inspector, Vite integration, and runtime CLI. |
 | `packages/cli` | `@open-slide/cli` | `npx @open-slide/cli init` scaffolder + project template. |
@@ -31,7 +32,7 @@ pnpm check:fix    # auto-fix what biome can
 pnpm test         # vitest
 ```
 
-Filter to one package: `pnpm core <script>` / `pnpm react <script>` / `pnpm svelte <script>` / `pnpm cli <script>`.
+Filter to one package: `pnpm shared <script>` / `pnpm core <script>` / `pnpm react <script>` / `pnpm svelte <script>` / `pnpm cli <script>`.
 
 ## Hard rules
 

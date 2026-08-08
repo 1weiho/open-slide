@@ -1,10 +1,6 @@
 import config from 'virtual:open-slide/config';
+import { en, ja, type Locale, zhCN, zhTW } from '@open-slide/shared/locale';
 import { useSyncExternalStore } from 'react';
-import { en } from '../../locale/en';
-import { ja } from '../../locale/ja';
-import type { Locale } from '../../locale/types';
-import { zhCN } from '../../locale/zh-cn';
-import { zhTW } from '../../locale/zh-tw';
 
 export type LocaleId = Locale['id'];
 

@@ -65,7 +65,7 @@ function planEnsureImagePlaceholderImport(ast: t.File): Splice | null {
   const imports = findImports(ast);
   let valueImport: ImportInfo | null = null;
   for (const imp of imports) {
-    if (imp.source !== '@open-slide/react') continue;
+    if (imp.source !== '@open-slide/react' && imp.source !== '@open-slide/core') continue;
     const declIsTypeOnly = readKind(imp.node);
     for (const spec of imp.node.specifiers) {
       if (!t.isImportSpecifier(spec)) continue;
@@ -91,10 +91,13 @@ function planEnsureImagePlaceholderImport(ast: t.File): Splice | null {
     const insertAt = (node.source.start ?? 0) - 'from '.length;
     return { from: insertAt, to: insertAt, text: '{ ImagePlaceholder } ' };
   }
+  const runtimePackage = imports.some((imp) => imp.source === '@open-slide/core')
+    ? '@open-slide/core'
+    : '@open-slide/react';
   return {
     from: 0,
     to: 0,
-    text: "import { ImagePlaceholder } from '@open-slide/react';\n",
+    text: `import { ImagePlaceholder } from '${runtimePackage}';\n`,
   };
 }
 

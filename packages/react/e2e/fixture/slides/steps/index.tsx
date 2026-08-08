@@ -1,4 +1,4 @@
-import { type Page, type SlideMeta, Step, Steps } from '@open-slide/react';
+import { type Page, type SlideMeta, Step, Steps } from '@open-slide/core';
 
 export const meta: SlideMeta = {
   title: 'Steps Deck',

@@ -1,1 +1,1 @@
-export * from './request-guard.ts';
+export * from '@open-slide/shared/http';

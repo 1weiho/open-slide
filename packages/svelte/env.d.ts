@@ -1,4 +1,4 @@
-/// <reference types="@open-slide/core/env" />
+/// <reference types="@open-slide/shared/env" />
 
 declare module '*.svelte' {
   import type { Component } from 'svelte';

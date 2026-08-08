@@ -1,8 +1,9 @@
 ---
-'@open-slide/core': major
+'@open-slide/core': minor
+'@open-slide/shared': minor
 '@open-slide/react': minor
 '@open-slide/svelte': minor
 '@open-slide/cli': minor
 ---
 
-Split framework-neutral core from React and add a native Svelte runtime option.
+Add native Svelte support while automatically keeping existing core installations on React.

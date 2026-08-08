@@ -156,6 +156,19 @@ describe('applyRevertAsset', () => {
     expect(r.source).toMatch(/import \{ type Page, ImagePlaceholder \} from '@open-slide\/react';/);
   });
 
+  it('adds ImagePlaceholder to an existing @open-slide/core named import', () => {
+    const src = [
+      "import { type Page } from '@open-slide/core';",
+      "import hero from './assets/hero.png';",
+      "export default [() => (<img src={hero} alt='x' />)];",
+      '',
+    ].join('\n');
+    const r = applyRevertAsset(src, './assets/hero.png');
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toMatch(/import \{ type Page, ImagePlaceholder \} from '@open-slide\/core';/);
+    expect(r.source).not.toContain("from '@open-slide/react'");
+  });
+
   it('adds a separate value import when the only @open-slide/react import is type-only', () => {
     const src = [
       "import type { DesignSystem, Page, SlideMeta } from '@open-slide/react';",

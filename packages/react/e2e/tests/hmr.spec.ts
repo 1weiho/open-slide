@@ -9,7 +9,7 @@ import {
   slideSourcePath,
 } from './helpers.ts';
 
-const FRESH_DECK = `import type { Page, SlideMeta } from '@open-slide/react';
+const FRESH_DECK = `import type { Page, SlideMeta } from '@open-slide/core';
 
 export const meta: SlideMeta = {
   title: 'Fresh Deck',

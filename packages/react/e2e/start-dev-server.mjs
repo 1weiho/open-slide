@@ -7,9 +7,10 @@ import { fileURLToPath } from 'node:url';
 import { fixtureDir, prepareScratchProject } from './scratch.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const coreRoot = path.resolve(here, '..');
+const reactRoot = path.resolve(here, '..');
+const compatibilityBin = path.resolve(reactRoot, '..', 'core', 'bin.js');
 
-if (!existsSync(path.join(coreRoot, 'dist', 'cli', 'bin.js'))) {
+if (!existsSync(path.join(reactRoot, 'dist', 'cli', 'bin.js'))) {
   console.error(
     'packages/react/dist is missing. Run `pnpm --filter @open-slide/react build` first.',
   );
@@ -27,14 +28,7 @@ const scratchDir = prepareScratchProject('dev');
 // `http://127.0.0.1` readiness probe hanging until the webServer timeout.
 const child = spawn(
   process.execPath,
-  [
-    path.join(coreRoot, 'bin.js'),
-    'dev',
-    '--no-skills-check',
-    '--host',
-    '127.0.0.1',
-    ...process.argv.slice(2),
-  ],
+  [compatibilityBin, 'dev', '--no-skills-check', '--host', '127.0.0.1', ...process.argv.slice(2)],
   {
     cwd: scratchDir,
     stdio: 'inherit',

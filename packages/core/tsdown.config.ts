@@ -15,5 +15,5 @@ export default defineConfig({
   clean: true,
   dts: { resolve: false },
   shims: false,
-  deps: { neverBundle: ['vite'] },
+  deps: { neverBundle: [/^@open-slide\/(?:react|shared)(?:\/|$)/] },
 });

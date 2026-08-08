@@ -1,1 +1,1 @@
-export type { Locale, Plural } from '@open-slide/core/locale';
+export type { Locale, Plural } from '@open-slide/shared/locale';

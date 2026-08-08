@@ -59,7 +59,7 @@
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.8",
-    "@open-slide/core": "workspace:*",
+    "@open-slide/shared": "workspace:^",
     "@sveltejs/vite-plugin-svelte": "^4.0.4",
     "@tailwindcss/vite": "^4.3.3",
     "chalk": "^5.3.0",

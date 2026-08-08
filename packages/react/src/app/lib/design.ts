@@ -3,5 +3,5 @@ export type {
   DesignPalette,
   DesignSystem,
   DesignTypeScale,
-} from '@open-slide/core';
-export { cssVarsToString, defaultDesign, designToCssVars } from '@open-slide/core';
+} from '@open-slide/shared';
+export { cssVarsToString, defaultDesign, designToCssVars } from '@open-slide/shared';

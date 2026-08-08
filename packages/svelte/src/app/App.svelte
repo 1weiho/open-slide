@@ -1,7 +1,7 @@
 <script lang="ts">
 import config from 'virtual:open-slide/config';
 import { loadSlide, slideIds } from 'virtual:open-slide/slides';
-import { CANVAS_HEIGHT, CANVAS_WIDTH, type SlideModule } from '@open-slide/core';
+import { CANVAS_HEIGHT, CANVAS_WIDTH, type SlideModule } from '@open-slide/shared';
 import { onMount } from 'svelte';
 import type { Page } from '../index.ts';
 

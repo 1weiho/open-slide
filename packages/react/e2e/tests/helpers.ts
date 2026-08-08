@@ -12,7 +12,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 export const devServerUrl = `http://127.0.0.1:${DEV_SERVER_PORT}`;
 
 export const coreRoot = path.resolve(here, '..', '..');
-export const coreBin = path.join(coreRoot, 'bin.js');
+export const coreBin = path.resolve(coreRoot, '..', 'core', 'bin.js');
 export const devScratchDir = path.join(coreRoot, 'e2e', '.scratch', 'dev');
 
 export function slideSourcePath(slideId: string, projectDir = devScratchDir): string {

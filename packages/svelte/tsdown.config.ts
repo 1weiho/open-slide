@@ -12,5 +12,5 @@ export default defineConfig({
   clean: true,
   dts: { resolve: false },
   shims: false,
-  external: [/^@open-slide\/core(?:\/|$)/, 'svelte', 'vite'],
+  external: [/^@open-slide\/shared(?:\/|$)/, 'svelte', 'vite'],
 });

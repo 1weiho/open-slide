@@ -1,6 +1,6 @@
 declare module 'virtual:open-slide/slides' {
   import type { Page } from '@open-slide/svelte';
-  import type { SlideModule } from '@open-slide/core';
+  import type { SlideModule } from '@open-slide/shared';
 
   export const slideIds: string[];
   export const slideThemes: Record<string, string>;
@@ -9,7 +9,7 @@ declare module 'virtual:open-slide/slides' {
 }
 
 declare module 'virtual:open-slide/config' {
-  import type { OpenSlideConfig } from '@open-slide/core';
+  import type { OpenSlideConfig } from '@open-slide/shared';
 
   const config: OpenSlideConfig & {
     version: string;

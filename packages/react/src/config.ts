@@ -1,1 +1,1 @@
-export type { OpenSlideBuildConfig, OpenSlideConfig } from '@open-slide/core';
+export type { OpenSlideBuildConfig, OpenSlideConfig } from '@open-slide/shared';

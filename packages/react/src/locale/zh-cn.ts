@@ -1,1 +1,1 @@
-export { zhCN } from '@open-slide/core/locale';
+export { zhCN } from '@open-slide/shared/locale';

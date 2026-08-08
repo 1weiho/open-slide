@@ -16,6 +16,10 @@
       "types": "./dist/locale/index.d.ts",
       "import": "./dist/locale/index.js"
     },
+    "./cli": {
+      "types": "./dist/cli/bin.d.ts",
+      "import": "./dist/cli/bin.js"
+    },
     "./env": {
       "types": "./env.d.ts"
     }
@@ -71,7 +75,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@fontsource-variable/geist": "^5.2.8",
-    "@open-slide/core": "workspace:*",
+    "@open-slide/shared": "workspace:^",
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^6.1.0",
     "chalk": "^6.0.0",

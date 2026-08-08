@@ -1,7 +1,7 @@
 {
   "name": "@open-slide/core",
   "version": "2.0.0-beta.1",
-  "description": "Framework-neutral types and utilities for open-slide runtimes.",
+  "description": "Compatibility package that automatically provides the open-slide React runtime.",
   "type": "module",
   "exports": {
     ".": {
@@ -28,7 +28,11 @@
       "types": "./env.d.ts"
     }
   },
+  "bin": {
+    "open-slide": "./bin.js"
+  },
   "files": [
+    "bin.js",
     "dist",
     "env.d.ts",
     "README.md"
@@ -44,8 +48,8 @@
   "keywords": [
     "slides",
     "presentation",
-    "framework-agnostic",
-    "typescript"
+    "react",
+    "vite"
   ],
   "license": "MIT",
   "author": {
@@ -65,8 +69,8 @@
     "access": "public"
   },
   "dependencies": {
-    "fast-glob": "^3.3.2",
-    "vite": "^8.2.2"
+    "@open-slide/react": "workspace:^",
+    "@open-slide/shared": "workspace:^"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

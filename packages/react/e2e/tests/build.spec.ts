@@ -10,7 +10,7 @@ import {
   waitForHttpOk,
 } from './helpers.ts';
 
-const FLAGS_CONFIG = `import type { OpenSlideConfig } from '@open-slide/react';
+const FLAGS_CONFIG = `import type { OpenSlideConfig } from '@open-slide/core';
 
 const openSlideConfig: OpenSlideConfig = {
   build: { showSlideBrowser: false, showSlideUi: false },

@@ -6,8 +6,8 @@ export type {
   Locale,
   OpenSlideConfig,
   Plural,
-} from '@open-slide/core';
-export { cssVarsToString, defaultDesign, designToCssVars } from '@open-slide/core';
+} from '@open-slide/shared';
+export { cssVarsToString, defaultDesign, designToCssVars } from '@open-slide/shared';
 export type { ImagePlaceholderProps } from './app/components/image-placeholder.tsx';
 export { ImagePlaceholder } from './app/components/image-placeholder.tsx';
 export type { MorphElementProps } from './app/components/morph-element.tsx';

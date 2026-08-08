@@ -1,1 +1,1 @@
-export * from '@open-slide/core/files';
+export * from '@open-slide/shared/files';

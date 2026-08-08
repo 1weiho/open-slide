@@ -21,11 +21,12 @@
     "test:e2e": "pnpm --filter @open-slide/react test:e2e",
     "core": "pnpm --filter @open-slide/core",
     "react": "pnpm --filter @open-slide/react",
+    "shared": "pnpm --filter @open-slide/shared",
     "svelte": "pnpm --filter @open-slide/svelte",
     "cli": "pnpm --filter @open-slide/cli",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "turbo run build --filter=@open-slide/core --filter=@open-slide/react --filter=@open-slide/svelte --filter=@open-slide/cli && changeset publish"
+    "release": "turbo run build --filter=@open-slide/shared --filter=@open-slide/core --filter=@open-slide/react --filter=@open-slide/svelte --filter=@open-slide/cli && changeset publish"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.7",

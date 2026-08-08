@@ -5,6 +5,30 @@ export default defineConfig({
   resolve: {
     alias: [
       {
+        find: '@open-slide/shared/files',
+        replacement: fileURLToPath(
+          new URL('./packages/shared/src/files/index.ts', import.meta.url),
+        ),
+      },
+      {
+        find: '@open-slide/shared/http',
+        replacement: fileURLToPath(new URL('./packages/shared/src/http/index.ts', import.meta.url)),
+      },
+      {
+        find: '@open-slide/shared/locale',
+        replacement: fileURLToPath(
+          new URL('./packages/shared/src/locale/index.ts', import.meta.url),
+        ),
+      },
+      {
+        find: '@open-slide/shared/vite',
+        replacement: fileURLToPath(new URL('./packages/shared/src/vite/index.ts', import.meta.url)),
+      },
+      {
+        find: '@open-slide/shared',
+        replacement: fileURLToPath(new URL('./packages/shared/src/index.ts', import.meta.url)),
+      },
+      {
         find: '@open-slide/core/files',
         replacement: fileURLToPath(new URL('./packages/core/src/files/index.ts', import.meta.url)),
       },

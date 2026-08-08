@@ -78,7 +78,8 @@ This repo is a pnpm + Turbo monorepo.
 
 | Path | Description |
 | --- | --- |
-| [packages/core](packages/core) | `@open-slide/core` — framework-neutral config, types, slide discovery, virtual modules, filesystem helpers, and shared runtime utilities. |
+| [packages/core](packages/core) | `@open-slide/core` — compatibility package that automatically routes existing installations to the React runtime. |
+| [packages/shared](packages/shared) | `@open-slide/shared` — framework-neutral config, types, slide discovery, virtual modules, filesystem helpers, and shared runtime utilities. |
 | [packages/react](packages/react) | `@open-slide/react` — the existing React viewer, presenter, inspector, Vite integration, and runtime CLI. |
 | [packages/svelte](packages/svelte) | `@open-slide/svelte` — native Svelte viewer, presenter, inspector, Vite integration, and runtime CLI. |
 | [packages/cli](packages/cli) | `@open-slide/cli` — framework-selecting workspace scaffolder. |

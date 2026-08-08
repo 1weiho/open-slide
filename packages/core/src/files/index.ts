@@ -1,2 +1,1 @@
-export * from './assets.ts';
-export * from './folders.ts';
+export * from '@open-slide/shared/files';

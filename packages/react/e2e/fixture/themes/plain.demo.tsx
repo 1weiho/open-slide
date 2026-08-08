@@ -1,4 +1,4 @@
-import type { Page } from '@open-slide/react';
+import type { Page } from '@open-slide/core';
 
 const base = {
   width: '100%',
