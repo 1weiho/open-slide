@@ -11,6 +11,7 @@ export type Folder = {
   id: string;
   name: string;
   icon: FolderIcon;
+  parentId?: string | null;
 };
 
 export type FoldersManifest = {
@@ -67,6 +68,36 @@ export function validateReorder(v: unknown, current: Folder[]): string[] | null 
     out.push(id);
   }
   return out;
+}
+
+/**
+ * Validate a `parentId` for create/move. Returns the normalized value (`null`
+ * for top level) or an error. When `selfId` is provided (a move), it rejects
+ * self-parenting and cycles.
+ */
+export function validateParentId(
+  v: unknown,
+  folders: Folder[],
+  selfId: string | null,
+): { ok: true; value: string | null } | { ok: false; error: string } {
+  if (v === null || v === undefined) return { ok: true, value: null };
+  if (typeof v !== 'string' || !FOLDER_ID_RE.test(v)) {
+    return { ok: false, error: 'invalid parentId' };
+  }
+  if (selfId && v === selfId) return { ok: false, error: 'folder cannot be its own parent' };
+  const target = folders.find((f) => f.id === v);
+  if (!target) return { ok: false, error: 'parent folder not found' };
+  if (selfId) {
+    let current = target.parentId ?? null;
+    const seen = new Set<string>();
+    while (current) {
+      if (current === selfId) return { ok: false, error: 'cycle detected' };
+      if (seen.has(current)) break;
+      seen.add(current);
+      current = folders.find((f) => f.id === current)?.parentId ?? null;
+    }
+  }
+  return { ok: true, value: v };
 }
 
 export function validateIcon(v: unknown): FolderIcon | null {

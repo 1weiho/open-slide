@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { type Folder, validateIcon, validateName, validateReorder } from './folders.ts';
+import {
+  type Folder,
+  validateIcon,
+  validateName,
+  validateParentId,
+  validateReorder,
+} from './folders.ts';
 
 describe('validateName', () => {
   it('trims whitespace and accepts non-empty strings', () => {
@@ -79,5 +85,66 @@ describe('validateReorder', () => {
     expect(validateReorder(['f-00000001', 'f-00000001', 'f-00000002'], folders)).toBeNull();
     expect(validateReorder(['f-00000001', 'f-00000002', 'f-99999999'], folders)).toBeNull();
     expect(validateReorder(['f-00000001', 'f-00000002', 'nope'], folders)).toBeNull();
+  });
+});
+
+describe('validateParentId', () => {
+  const icon = { type: 'color', value: '#aabbcc' } as const;
+  // Tree: a → b → c (chain), plus a sibling root d.
+  const folders: Folder[] = [
+    { id: 'f-0000000a', name: 'a', icon },
+    { id: 'f-0000000b', name: 'b', icon, parentId: 'f-0000000a' },
+    { id: 'f-0000000c', name: 'c', icon, parentId: 'f-0000000b' },
+    { id: 'f-0000000d', name: 'd', icon },
+  ];
+
+  it('treats null / undefined as top level', () => {
+    expect(validateParentId(null, folders, null)).toEqual({ ok: true, value: null });
+    expect(validateParentId(undefined, folders, null)).toEqual({ ok: true, value: null });
+  });
+
+  it('accepts an existing folder as parent (create)', () => {
+    expect(validateParentId('f-0000000a', folders, null)).toEqual({
+      ok: true,
+      value: 'f-0000000a',
+    });
+  });
+
+  it('rejects malformed and non-string parentIds', () => {
+    expect(validateParentId('nope', folders, null)).toEqual({
+      ok: false,
+      error: 'invalid parentId',
+    });
+    expect(validateParentId(42, folders, null)).toEqual({ ok: false, error: 'invalid parentId' });
+  });
+
+  it('rejects a non-existent parent folder', () => {
+    expect(validateParentId('f-99999999', folders, null)).toEqual({
+      ok: false,
+      error: 'parent folder not found',
+    });
+  });
+
+  it('rejects self-parenting on a move', () => {
+    expect(validateParentId('f-0000000b', folders, 'f-0000000b')).toEqual({
+      ok: false,
+      error: 'folder cannot be its own parent',
+    });
+  });
+
+  it('rejects a cycle (moving a folder under its own descendant)', () => {
+    // Moving `a` under `c` would make a → c → b → a a cycle.
+    expect(validateParentId('f-0000000c', folders, 'f-0000000a')).toEqual({
+      ok: false,
+      error: 'cycle detected',
+    });
+  });
+
+  it('accepts a valid re-parent that does not create a cycle', () => {
+    // Moving `d` under `c` is fine — `c` is not a descendant of `d`.
+    expect(validateParentId('f-0000000c', folders, 'f-0000000d')).toEqual({
+      ok: true,
+      value: 'f-0000000c',
+    });
   });
 });

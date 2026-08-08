@@ -83,9 +83,11 @@ test.describe('slide viewer', () => {
     await expect(page.getByText('Failed to load slide')).toBeVisible();
   });
 
-  test('back link returns to the home browser', async ({ page }) => {
+  test('back button returns to the home browser', async ({ page }) => {
     await openSlide(page, 'alpha');
-    await page.getByRole('link', { name: 'Back to home' }).click();
+    // Opened via a direct navigation (no prior history), so the history-aware
+    // back control falls back to the home root.
+    await page.getByRole('button', { name: 'Back to home' }).click();
     await expect(page.locator('li h3')).toHaveCount(4);
   });
 
