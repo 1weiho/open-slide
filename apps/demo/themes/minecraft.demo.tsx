@@ -1,5 +1,5 @@
-import type { DesignSystem } from '@open-slide/core';
-import { type Page, useSlidePageNumber } from '@open-slide/core';
+import type { DesignSystem } from '@open-slide/react';
+import { type Page, useSlidePageNumber } from '@open-slide/react';
 
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');

@@ -1,6 +1,6 @@
 # Contributing to open-slide
 
-Thanks for your interest in improving open-slide! This guide covers the workflow for contributing to the framework itself — the `@open-slide/core` runtime, the `@open-slide/cli` scaffolder, and the supporting apps.
+Thanks for your interest in improving open-slide! This guide covers the framework-neutral core, React and Svelte runtimes, CLI scaffolder, and supporting apps.
 
 If you're authoring slides inside a scaffolded project, you don't need this file — drive your deck through your coding agent or edit `slides/<id>/index.tsx` directly.
 
@@ -19,9 +19,12 @@ pnpm + Turbo monorepo.
 
 | Path | Package | Role |
 | --- | --- | --- |
-| [`packages/core`](packages/core) | `@open-slide/core` | Runtime (viewer, present mode, inspector), Vite plugin, `open-slide` dev/build CLI. |
+| [`packages/core`](packages/core) | `@open-slide/core` | Framework-neutral config, types, slide discovery, virtual modules, and shared utilities. |
+| [`packages/react`](packages/react) | `@open-slide/react` | React viewer, presenter, inspector, Vite integration, and runtime CLI. |
+| [`packages/svelte`](packages/svelte) | `@open-slide/svelte` | Svelte viewer, presenter, inspector, Vite integration, and runtime CLI. |
 | [`packages/cli`](packages/cli) | `@open-slide/cli` | `npx @open-slide/cli init` scaffolder + project template. |
-| [`apps/demo`](apps/demo) | private | Local consumer of `@open-slide/core` via `workspace:*`. The dogfood target for the framework. |
+| [`apps/demo`](apps/demo) | private | React dogfood target consuming `@open-slide/react` via `workspace:*`. |
+| [`apps/svelte-demo`](apps/svelte-demo) | private | Svelte dogfood target consuming `@open-slide/svelte` via `workspace:*`. |
 | [`apps/web`](apps/web) | private | Marketing site (Next.js). |
 
 ## Prerequisites
@@ -38,13 +41,13 @@ cd open-slide
 pnpm install
 ```
 
-Then run the demo against the local `@open-slide/core`:
+Then run both demos against the local runtime packages:
 
 ```bash
 pnpm dev
 ```
 
-`apps/demo` is the fastest way to exercise framework changes — edit `packages/core`, the demo hot-reloads.
+Use `apps/demo` for React and `pnpm dev:svelte-demo` for Svelte. Both consume the workspace packages directly.
 
 ## Useful scripts
 
@@ -61,6 +64,8 @@ Filter to one package:
 
 ```bash
 pnpm core <script>   # e.g. pnpm core build
+pnpm react <script>
+pnpm svelte <script>
 pnpm cli <script>
 ```
 
@@ -75,7 +80,7 @@ pnpm cli <script>
    pnpm test
    ```
    `pnpm check:fix` will auto-fix most formatting and lint issues.
-4. **Add a changeset if you touched `packages/core` or `packages/cli`:**
+4. **Add a changeset if you touched a published package:**
    ```bash
    pnpm changeset
    ```
@@ -99,9 +104,9 @@ pnpm cli <script>
 ## Style & conventions
 
 - **Biome must pass.** Formatting, lint, and import organisation are all enforced by `pnpm check`.
-- **No casual dependencies.** The `core` runtime ships to users — every dep inflates install size. Prefer a small piece of inline code over a new package.
+- **No casual dependencies.** The framework runtimes ship to users — every dep inflates install size. Prefer a small piece of inline code over a new package.
 - **Default to writing no comments.** Only add one when the *why* is non-obvious — a hidden constraint, a subtle invariant, a workaround for a specific bug. Don't explain *what* the code does; well-named identifiers handle that.
-- **Leave `packages/core/src/app/components/ui` alone.** It's shadcn-generated and biome-ignored unless you're regenerating it.
+- **Leave `packages/react/src/app/components/ui` alone.** It's shadcn-generated and biome-ignored unless you're regenerating it.
 
 ## Testing
 
@@ -110,7 +115,7 @@ pnpm cli <script>
 
 ## Releases
 
-Releases are cut by the maintainer via `pnpm release`, which builds `@open-slide/core` + `@open-slide/cli` and runs `changeset publish`. Contributors don't need to publish anything — just land the changeset alongside your code.
+Releases are cut by the maintainer via `pnpm release`, which builds every published package and runs `changeset publish`. Contributors don't need to publish anything — just land the changeset alongside your code.
 
 ## Questions
 

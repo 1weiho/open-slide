@@ -4,15 +4,15 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const CORE_SKILLS = path.resolve(HERE, '..', '..', 'core', 'skills');
-const TEMPLATE_SKILLS = path.resolve(HERE, '..', 'template', '.agents', 'skills');
+const REACT_SKILLS = path.resolve(HERE, '..', '..', 'react', 'skills');
+const TEMPLATE_SKILLS = path.resolve(HERE, '..', 'templates', 'react', '.agents', 'skills');
 
 async function main() {
-  if (!existsSync(CORE_SKILLS)) {
-    throw new Error(`Canonical skills not found at ${CORE_SKILLS}.`);
+  if (!existsSync(REACT_SKILLS)) {
+    throw new Error(`Canonical skills not found at ${REACT_SKILLS}.`);
   }
 
-  const names = (await readdir(CORE_SKILLS, { withFileTypes: true }))
+  const names = (await readdir(REACT_SKILLS, { withFileTypes: true }))
     .filter((e) => e.isDirectory())
     .map((e) => e.name)
     .sort();
@@ -23,12 +23,12 @@ async function main() {
   }
 
   for (const name of names) {
-    const src = path.join(CORE_SKILLS, name);
+    const src = path.join(REACT_SKILLS, name);
     const dst = path.join(TEMPLATE_SKILLS, name);
     await cp(src, dst, { recursive: true });
   }
 
-  process.stdout.write(`Mirrored ${names.length} skills into template/.agents/skills/.\n`);
+  process.stdout.write(`Mirrored ${names.length} skills into templates/react/.agents/skills/.\n`);
 }
 
 main().catch((err) => {

@@ -1,4 +1,4 @@
 packages:
   - "apps/*"
   - "packages/*"
-  - "packages/core/e2e/fixture"
+  - "packages/react/e2e/fixture"

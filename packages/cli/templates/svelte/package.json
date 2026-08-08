@@ -1,0 +1,18 @@
+{
+  "name": "playground",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "open-slide dev",
+    "build": "open-slide build",
+    "preview": "open-slide preview"
+  },
+  "dependencies": {
+    "@open-slide/svelte": "^0.1.0",
+    "svelte": "^5.56.8"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10"
+  }
+}

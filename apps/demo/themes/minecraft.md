@@ -168,7 +168,7 @@ const Title = ({ children }: { children: React.ReactNode }) => (
 Hotbar-style footer — the page number sits in an inventory slot. The brand mark reuses a mini `<IsoBlock size={16} variant="grass" />` so it matches the hero blocks. Pull the page number from `useSlidePageNumber()` — never hardcode `pageNum` / `total`.
 
 ```tsx
-import { useSlidePageNumber } from '@open-slide/core';
+import { useSlidePageNumber } from '@open-slide/react';
 
 const Footer = () => {
   const { current, total } = useSlidePageNumber();

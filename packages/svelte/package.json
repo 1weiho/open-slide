@@ -1,0 +1,77 @@
+{
+  "name": "@open-slide/svelte",
+  "version": "0.1.0",
+  "description": "Native Svelte runtime and CLI for open-slide.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./vite": {
+      "types": "./dist/vite/index.d.ts",
+      "import": "./dist/vite/index.js"
+    },
+    "./env": {
+      "types": "./env.d.ts"
+    }
+  },
+  "bin": {
+    "open-slide": "./bin.js"
+  },
+  "files": [
+    "bin.js",
+    "dist",
+    "env.d.ts",
+    "src/app",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json",
+    "prepack": "pnpm build"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "slides",
+    "presentation",
+    "svelte",
+    "vite"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "1weiho",
+    "url": "https://github.com/1weiho"
+  },
+  "homepage": "https://open-slide.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/1weiho/open-slide.git",
+    "directory": "packages/svelte"
+  },
+  "bugs": {
+    "url": "https://github.com/1weiho/open-slide/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "^5.2.8",
+    "@open-slide/core": "workspace:*",
+    "@sveltejs/vite-plugin-svelte": "^4.0.4",
+    "@tailwindcss/vite": "^4.3.3",
+    "chalk": "^5.3.0",
+    "commander": "^15.0.0",
+    "svelte": "^5.56.8",
+    "tailwindcss": "^4.2.2",
+    "vite": "^5.4.10"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.17",
+    "svelte-check": "^4.7.5",
+    "tsdown": "^0.9.9",
+    "typescript": "^5.9.3"
+  }
+}

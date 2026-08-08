@@ -9,11 +9,11 @@ open-slide sync:skills
 npm run sync:skills
 ```
 
-Copies the latest skill definitions from your installed `@open-slide/core`
+Copies the latest skill definitions from your installed `@open-slide/react`
 into the workspace under `.agents/skills/`, and refreshes the
 `.claude/skills/` symlinks so Claude Code picks them up too.
 
-Run this after upgrading `@open-slide/core` — that's how you pull in skill
+Run this after upgrading `@open-slide/react` — that's how you pull in skill
 fixes and new skills without re-scaffolding.
 
 ## Flags
@@ -27,7 +27,7 @@ fixes and new skills without re-scaffolding.
 ```text
 .agents/
 └── skills/
-    └── <name>/        # canonical copy from @open-slide/core
+    └── <name>/        # canonical copy from @open-slide/react
 .claude/
 └── skills/
     └── <name>         # symlink to ../../.agents/skills/<name>

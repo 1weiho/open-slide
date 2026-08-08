@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { SLIDE_ID_RE } from '../editing/slide-ops.ts';
+import { SLIDE_ID_RE } from '../slide-id.ts';
 
 export const GLOBAL_SCOPE = '@global';
 export const ASSET_MAX_BYTES = 25 * 1024 * 1024;

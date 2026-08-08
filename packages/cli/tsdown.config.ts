@@ -4,7 +4,12 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'tsdown';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const corePkg = JSON.parse(readFileSync(resolve(here, '..', 'core', 'package.json'), 'utf8')) as {
+const reactPkg = JSON.parse(readFileSync(resolve(here, '..', 'react', 'package.json'), 'utf8')) as {
+  version: string;
+};
+const sveltePkg = JSON.parse(
+  readFileSync(resolve(here, '..', 'svelte', 'package.json'), 'utf8'),
+) as {
   version: string;
 };
 
@@ -20,6 +25,7 @@ export default defineConfig({
   dts: false,
   shims: false,
   define: {
-    __CORE_VERSION_AT_BUILD__: JSON.stringify(corePkg.version),
+    __REACT_VERSION_AT_BUILD__: JSON.stringify(reactPkg.version),
+    __SVELTE_VERSION_AT_BUILD__: JSON.stringify(sveltePkg.version),
   },
 });

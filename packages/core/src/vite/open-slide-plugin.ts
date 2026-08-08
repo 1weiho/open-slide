@@ -4,8 +4,8 @@ import path from 'node:path';
 import fg from 'fast-glob';
 import { loadConfigFromFile, normalizePath, type Plugin, type ViteDevServer } from 'vite';
 import type { OpenSlideConfig } from '../config.ts';
-import { SLIDE_ID_RE } from '../editing/slide-ops.ts';
 import { foldersManifestPath, readManifest } from '../files/folders.ts';
+import { SLIDE_ID_RE } from '../slide-id.ts';
 import { hasRecentWrite } from './recent-writes.ts';
 
 export type { OpenSlideConfig };
@@ -14,6 +14,7 @@ export type OpenSlidePluginOptions = {
   userCwd: string;
   config: OpenSlideConfig;
   coreVersion: string;
+  entryExtensions?: string[];
 };
 
 const CONFIG_FILE = 'open-slide.config.ts';
@@ -26,10 +27,16 @@ function resolved(id: string): string {
   return `\0${id}`;
 }
 
-async function findSlides(userCwd: string, slidesDir: string): Promise<string[]> {
+async function findSlides(
+  userCwd: string,
+  slidesDir: string,
+  entryExtensions: string[],
+): Promise<string[]> {
   const abs = path.resolve(userCwd, slidesDir);
   if (!existsSync(abs)) return [];
-  const hits = await fg('*/index.{tsx,jsx,ts,js}', {
+  const extensionGlob =
+    entryExtensions.length === 1 ? entryExtensions[0] : `{${entryExtensions.join(',')}}`;
+  const hits = await fg(`*/index.${extensionGlob}`, {
     cwd: abs,
     absolute: true,
     onlyFiles: true,
@@ -169,6 +176,8 @@ ${cases}
 
 export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
   const { userCwd, config, coreVersion } = opts;
+  const entryExtensions = opts.entryExtensions ?? ['tsx', 'jsx', 'ts', 'js'];
+  const entryPattern = new RegExp(`^index\\.(${entryExtensions.join('|')})$`);
   const slidesDir = config.slidesDir ?? 'slides';
   const slidesRoot = path.resolve(userCwd, slidesDir);
   const manifestPath = foldersManifestPath(slidesRoot);
@@ -179,7 +188,7 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
     if (rel.startsWith('..') || path.isAbsolute(rel)) return null;
     const parts = rel.split(path.sep);
     if (parts.length !== 2) return null;
-    if (!/^index\.(tsx|jsx|ts|js)$/.test(parts[1])) return null;
+    if (!entryPattern.test(parts[1])) return null;
     return parts[0];
   };
   let slideChangeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -214,7 +223,7 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
     },
     async load(id) {
       if (id === resolved(SLIDES_VMOD)) {
-        const files = await findSlides(userCwd, slidesDir);
+        const files = await findSlides(userCwd, slidesDir, entryExtensions);
         const { code, ignored } = await generateSlidesModule(files, slidesRoot, isDev);
         for (const slideId of ignored) {
           if (warnedInvalidSlideIds.has(slideId)) continue;

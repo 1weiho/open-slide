@@ -36,7 +36,7 @@ const jsonLd = [
     logo: `${siteUrl}/open-slide.png`,
     sameAs: [
       repoUrl,
-      'https://www.npmjs.com/package/@open-slide/core',
+      'https://www.npmjs.com/package/@open-slide/react',
       'https://www.npmjs.com/package/@open-slide/cli',
     ],
   },
