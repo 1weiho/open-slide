@@ -1,8 +1,8 @@
 import path from 'node:path';
 import type { ViteDevServer } from 'vite';
-import { SLIDE_ID_RE } from '../../editing/slide-ops.ts';
-import { GLOBAL_SCOPE } from '../../files/assets.ts';
-import type { ApiContext } from './context.ts';
+import { GLOBAL_SCOPE } from '../files/assets.ts';
+import { SLIDE_ID_RE } from '../slide-id.ts';
+import type { ApiContext } from './api-context.ts';
 
 // Surface folder-manifest and asset-tree mutations as HMR pings so the
 // editor's panels can refresh without a full reload.

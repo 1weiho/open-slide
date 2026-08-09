@@ -21,9 +21,19 @@ let pageIndex = 0;
 let loading = false;
 let error = '';
 let inspectorOpen = false;
+let presenting = false;
+let overviewOpen = false;
+let overviewIndex = 0;
+let helpOpen = false;
+let blackout: 'black' | 'white' | null = null;
+let laserEnabled = false;
+let laserX = 0;
+let laserY = 0;
+let jumpDigits = '';
 let viewport: HTMLElement;
 let scale = 1;
 let channel: BroadcastChannel | null = null;
+let lastWheelAt = 0;
 
 $: activePage = deck?.default[pageIndex] ?? null;
 $: nextPage = deck?.default[pageIndex + 1] ?? null;
@@ -98,9 +108,77 @@ function goToPage(next: number, broadcast = true): void {
   if (broadcast) channel?.postMessage({ type: 'page', page: pageIndex } satisfies PresenterMessage);
 }
 
+function openOverview(): void {
+  overviewIndex = pageIndex;
+  overviewOpen = true;
+}
+
+function closeTransientOverlays(): boolean {
+  if (overviewOpen) {
+    overviewOpen = false;
+    return true;
+  }
+  if (helpOpen) {
+    helpOpen = false;
+    return true;
+  }
+  if (blackout) {
+    blackout = null;
+    channel?.postMessage({ type: 'blackout', value: null });
+    return true;
+  }
+  return false;
+}
+
+function enterPresentMode(): void {
+  presenting = true;
+  inspectorOpen = false;
+}
+
+function onWheel(event: WheelEvent): void {
+  const now = Date.now();
+  if (now - lastWheelAt < 350 || Math.abs(event.deltaY) < 30) return;
+  lastWheelAt = now;
+  goToPage(pageIndex + (event.deltaY > 0 ? 1 : -1));
+}
+
+function onPointerMove(event: MouseEvent): void {
+  laserX = event.clientX;
+  laserY = event.clientY;
+}
+
+function toggleBlackout(value: 'black' | 'white'): void {
+  blackout = blackout === value ? null : value;
+  channel?.postMessage({ type: 'blackout', value: blackout });
+}
+
 function onKeydown(event: KeyboardEvent): void {
   if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement)
     return;
+  if (overviewOpen) {
+    if (event.key === 'Escape' || event.key.toLowerCase() === 'o') overviewOpen = false;
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      overviewIndex = Math.min(pageCount - 1, overviewIndex + 1);
+    }
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      overviewIndex = Math.max(0, overviewIndex - 1);
+    }
+    if (event.key === 'Enter') {
+      goToPage(overviewIndex);
+      overviewOpen = false;
+    }
+    return;
+  }
+
+  if (presenting && /^\d$/.test(event.key)) {
+    jumpDigits = `${jumpDigits}${event.key}`.replace(/^0+/, '').slice(0, 3);
+    return;
+  }
+  if (presenting && event.key === 'Enter' && jumpDigits) {
+    goToPage(Number(jumpDigits) - 1);
+    jumpDigits = '';
+    return;
+  }
   if (event.key === 'ArrowRight' || event.key === 'PageDown' || event.key === ' ') {
     event.preventDefault();
     goToPage(pageIndex + 1);
@@ -109,9 +187,27 @@ function onKeydown(event: KeyboardEvent): void {
     event.preventDefault();
     goToPage(pageIndex - 1);
   }
+  if (presenting && event.key === 'Home') goToPage(0);
+  if (presenting && event.key === 'End') goToPage(pageCount - 1);
+  if (event.key === 'Enter' && route.kind === 'slide' && !presenting) enterPresentMode();
+  if (event.key.toLowerCase() === 'o') openOverview();
+  if (presenting && event.key.toLowerCase() === 'b') toggleBlackout('black');
+  if (presenting && event.key.toLowerCase() === 'w') toggleBlackout('white');
+  if (presenting && event.key.toLowerCase() === 'l') laserEnabled = !laserEnabled;
+  if (presenting && event.key === '?') helpOpen = !helpOpen;
+  if (presenting && event.key.toLowerCase() === 'p') openPresenter();
   if (event.key.toLowerCase() === 'f') void document.documentElement.requestFullscreen();
   if (event.key.toLowerCase() === 'i' && route.kind === 'slide') inspectorOpen = !inspectorOpen;
-  if (event.key === 'Escape' && inspectorOpen) inspectorOpen = false;
+  if (event.key === 'Escape') {
+    if (closeTransientOverlays()) return;
+    if (presenting) {
+      presenting = false;
+      laserEnabled = false;
+      jumpDigits = '';
+      return;
+    }
+    if (inspectorOpen) inspectorOpen = false;
+  }
 }
 
 function openPresenter(): void {
@@ -198,6 +294,55 @@ onMount(() => {
     <h1>{error || 'This deck has no pages.'}</h1>
     <button class="button" onclick={backHome}>Back home</button>
   </main>
+{:else if presenting}
+  <main class="play-shell" onmousemove={onPointerMove} onwheel={onWheel}>
+    <section class="play-viewport" use:measure aria-label={`Page ${pageIndex + 1}`}>
+      <div class="canvas play-canvas" style={`transform: translate(-50%, -50%) scale(${scale});`}>
+        <svelte:component this={activePage} />
+      </div>
+    </section>
+
+    {#if blackout === 'black'}
+      <div class="absolute inset-0 bg-black blackout-layer"></div>
+    {:else if blackout === 'white'}
+      <div class="absolute inset-0 bg-white blackout-layer"></div>
+    {/if}
+
+    {#if laserEnabled}
+      <div
+        class="z-[60] laser-pointer"
+        style={`left: ${laserX}px; top: ${laserY}px;`}
+        aria-hidden="true"
+      ></div>
+    {/if}
+
+    {#if helpOpen}
+      <section class="play-overlay help-overlay" aria-label="Keyboard shortcuts">
+        <h2>Keyboard shortcuts</h2>
+        <dl>
+          <div><dt>Next / previous</dt><dd>← →</dd></div>
+          <div><dt>Overview</dt><dd>O</dd></div>
+          <div><dt>Black / white screen</dt><dd>B / W</dd></div>
+          <div><dt>Laser pointer</dt><dd>L</dd></div>
+          <div><dt>Presenter view</dt><dd>P</dd></div>
+          <div><dt>Exit</dt><dd>Esc</dd></div>
+        </dl>
+      </section>
+    {/if}
+
+    {#if jumpDigits}
+      <div class="jump-indicator" aria-live="polite">{jumpDigits}</div>
+    {/if}
+
+    <nav class="play-controls" aria-label="Presentation controls">
+      <button class="icon-button" onclick={() => goToPage(pageIndex - 1)} aria-label="Previous slide (←)" disabled={pageIndex === 0}>←</button>
+      <span>{String(pageIndex + 1).padStart(2, '0')} / {String(pageCount).padStart(2, '0')}</span>
+      <button class="icon-button" onclick={() => goToPage(pageIndex + 1)} aria-label="Next slide (→)" disabled={pageIndex === pageCount - 1}>→</button>
+      <button class="button" onclick={openOverview}>Overview</button>
+      <button class="button" onclick={openPresenter}>Presenter</button>
+      <button class="button" onclick={() => (presenting = false)}>Exit</button>
+    </nav>
+  </main>
 {:else if route.kind === 'presenter'}
   <main class="presenter-shell">
     <section class="presenter-stage">
@@ -240,7 +385,7 @@ onMount(() => {
       <div class="viewer-actions">
         <button class="button subtle" onclick={() => (inspectorOpen = !inspectorOpen)}>Inspector</button>
         <button class="button" onclick={openPresenter}>Presenter</button>
-        <button class="button primary" onclick={() => document.documentElement.requestFullscreen()}>Present</button>
+        <button class="button primary" onclick={enterPresentMode}>Present</button>
       </div>
     </header>
 
@@ -261,7 +406,7 @@ onMount(() => {
         {/each}
       </nav>
 
-      <section class="viewport" use:measure aria-label={`Page ${pageIndex + 1}`}>
+      <section class="viewport" use:measure onwheel={onWheel} aria-label={`Page ${pageIndex + 1}`}>
         <div class="canvas" style={`transform: translate(-50%, -50%) scale(${scale});`}>
           <svelte:component this={activePage} />
         </div>
@@ -291,4 +436,30 @@ onMount(() => {
       {/if}
     </div>
   </main>
+{/if}
+
+{#if overviewOpen && deck}
+  <dialog open class="overview-overlay" aria-label="Slide overview">
+    <div class="overview-header">
+      <h2>Slide overview</h2>
+      <button class="icon-button" onclick={() => (overviewOpen = false)} aria-label="Close overview">×</button>
+    </div>
+    <div class="overview-grid">
+      {#each deck.default as PageComponent, index}
+        <button
+          class:active={index === overviewIndex}
+          class="overview-item"
+          aria-label={`Go to slide ${index + 1}`}
+          aria-current={index === pageIndex ? 'true' : undefined}
+          onclick={() => {
+            goToPage(index);
+            overviewOpen = false;
+          }}
+        >
+          <span>{index + 1}</span>
+          <div class="overview-canvas"><svelte:component this={PageComponent} /></div>
+        </button>
+      {/each}
+    </div>
+  </dialog>
 {/if}

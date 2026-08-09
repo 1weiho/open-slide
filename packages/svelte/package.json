@@ -28,6 +28,7 @@
   ],
   "scripts": {
     "build": "tsdown",
+    "test:e2e": "pnpm run build && playwright test",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json",
     "prepack": "pnpm build"
   },
@@ -69,6 +70,7 @@
     "vite": "^5.4.10"
   },
   "devDependencies": {
+    "@playwright/test": "~1.56.1",
     "@types/node": "^22.19.17",
     "svelte-check": "^4.7.5",
     "tsdown": "^0.9.9",

@@ -13,10 +13,10 @@ import {
   SLIDE_ID_RE,
   updateMetaTitleInSource,
   validateSlideName,
-} from '../../editing/slide-ops.ts';
-import { readManifest, writeManifest } from '../../files/folders.ts';
-import { validateMutationRequest } from '../../http/request-guard.ts';
-import { type ApiContext, json, readBody } from './context.ts';
+} from '../editing/slide-ops.ts';
+import { readManifest, writeManifest } from '../files/folders.ts';
+import { validateMutationRequest } from '../http/request-guard.ts';
+import { type ApiContext, json, readBody } from './api-context.ts';
 
 // PUT    /__slides/:id/reorder            reorder pages { order: number[] }
 // DELETE /__slides/:id/pages/:i           remove page
@@ -51,7 +51,7 @@ export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): voi
           order.push(v as number);
         }
 
-        const entry = resolveSlideEntry(ctx.slidesRoot, slideId);
+        const entry = resolveSlideEntry(ctx.slidesRoot, slideId, ctx.entryFile);
         if (!entry) return json(res, 400, { error: 'invalid slideId' });
 
         let source: string;
@@ -96,7 +96,7 @@ export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): voi
           return json(res, requestCheck.status, { error: requestCheck.error });
         }
 
-        const entry = resolveSlideEntry(ctx.slidesRoot, slideId);
+        const entry = resolveSlideEntry(ctx.slidesRoot, slideId, ctx.entryFile);
         if (!entry) return json(res, 400, { error: 'invalid slideId' });
 
         let source: string;
@@ -146,7 +146,12 @@ export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): voi
           return json(res, 400, { error: 'invalid newId' });
         }
 
-        const duplicated = await duplicateSlideDir(ctx.slidesRoot, slideId, body.newId);
+        const duplicated = await duplicateSlideDir(
+          ctx.slidesRoot,
+          slideId,
+          body.newId,
+          ctx.entryFile,
+        );
         if (!duplicated.ok) return json(res, duplicated.status, { error: duplicated.error });
 
         const manifest = await readManifest(ctx.manifestPath);
@@ -172,7 +177,7 @@ export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): voi
         const name = validateSlideName(body.name);
         if (!name) return json(res, 400, { error: 'invalid name' });
 
-        const entry = resolveSlideEntry(ctx.slidesRoot, slideId);
+        const entry = resolveSlideEntry(ctx.slidesRoot, slideId, ctx.entryFile);
         if (!entry) return json(res, 400, { error: 'invalid slideId' });
 
         let source: string;
@@ -185,7 +190,7 @@ export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): voi
         const updated = updateMetaTitleInSource(source, name);
         if (updated === null) {
           return json(res, 422, {
-            error: 'could not locate a safe place to write meta.title in index.tsx',
+            error: `could not locate a safe place to write meta.title in ${ctx.entryFile}`,
           });
         }
         if (updated !== source) {

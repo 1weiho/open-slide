@@ -1,8 +1,7 @@
+import type { Dirent } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { ViteDevServer } from 'vite';
-import { findAssetUsages, findReferencedAssets } from '../../editing/revert-asset.ts';
-import { resolveSlideEntry, SLIDE_ID_RE } from '../../editing/slide-ops.ts';
 import {
   ASSET_MAX_BYTES,
   assetCreatedAt,
@@ -11,9 +10,62 @@ import {
   resolveScopedAssetFile,
   resolveScopedAssetsDir,
   validateAssetName,
-} from '../../files/assets.ts';
-import { validateMutationRequest } from '../../http/request-guard.ts';
-import { type ApiContext, json, readBody } from './context.ts';
+} from '../files/assets.ts';
+import { validateMutationRequest } from '../http/request-guard.ts';
+import { SLIDE_ID_RE } from '../slide-id.ts';
+import { type ApiContext, json, readBody } from './api-context.ts';
+
+export type AssetReferenceAdapter = {
+  findAssetUsages: (source: string, assetPath: string) => number;
+  findReferencedAssets: (source: string, assetPaths: string[]) => Set<string>;
+  readSlideSources?: (ctx: ApiContext, slideId: string) => Promise<string[]>;
+};
+
+const SOURCE_EXTENSIONS = new Set(['.js', '.jsx', '.svelte', '.ts', '.tsx']);
+
+async function readSourceTree(dir: string): Promise<string[]> {
+  const sources: string[] = [];
+  let entries: Dirent[];
+  try {
+    entries = await fs.readdir(dir, { withFileTypes: true });
+  } catch {
+    return sources;
+  }
+  for (const entry of entries) {
+    if (entry.name === 'assets' || entry.name.startsWith('.')) continue;
+    const file = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      sources.push(...(await readSourceTree(file)));
+    } else if (entry.isFile() && SOURCE_EXTENSIONS.has(path.extname(entry.name))) {
+      try {
+        sources.push(await fs.readFile(file, 'utf8'));
+      } catch {}
+    }
+  }
+  return sources;
+}
+
+async function defaultReadSlideSources(ctx: ApiContext, slideId: string): Promise<string[]> {
+  if (!SLIDE_ID_RE.test(slideId)) return [];
+  return readSourceTree(path.join(ctx.slidesRoot, slideId));
+}
+
+const defaultAssetReferenceAdapter: AssetReferenceAdapter = {
+  findAssetUsages(source, assetPath) {
+    let count = 0;
+    let offset = 0;
+    let match = source.indexOf(assetPath, offset);
+    while (match !== -1) {
+      count++;
+      offset = match + assetPath.length;
+      match = source.indexOf(assetPath, offset);
+    }
+    return count;
+  },
+  findReferencedAssets(source, assetPaths) {
+    return new Set(assetPaths.filter((assetPath) => source.includes(assetPath)));
+  },
+};
 
 // GET    /__assets/:scope                     list assets in slide or @global
 // GET    /__assets/:scope/:file               serve raw asset bytes
@@ -22,7 +74,12 @@ import { type ApiContext, json, readBody } from './context.ts';
 // DELETE /__assets/:scope/:file               delete
 // GET    /__assets/:scope/:file/usages        count <img src={import}> references
 
-export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): void {
+export function registerAssetRoutes(
+  server: ViteDevServer,
+  ctx: ApiContext,
+  adapter: AssetReferenceAdapter = defaultAssetReferenceAdapter,
+): void {
+  const readSlideSources = adapter.readSlideSources ?? defaultReadSlideSources;
   server.middlewares.use('/__assets', async (req, res, next) => {
     const url = new URL(req.url ?? '/', 'http://local');
     const method = req.method ?? 'GET';
@@ -58,15 +115,11 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
         const usages: Array<{ slideId: string; count: number }> = [];
         let totalCount = 0;
         for (const sid of slideIds) {
-          const entry = resolveSlideEntry(ctx.slidesRoot, sid);
-          if (!entry) continue;
-          let source: string;
-          try {
-            source = await fs.readFile(entry, 'utf8');
-          } catch {
-            continue;
-          }
-          const count = findAssetUsages(source, assetPath);
+          const sources = await readSlideSources(ctx, sid);
+          const count = sources.reduce(
+            (total, source) => total + adapter.findAssetUsages(source, assetPath),
+            0,
+          );
           if (count > 0) {
             usages.push({ slideId: sid, count });
             totalCount += count;
@@ -133,17 +186,11 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
           const paths = assets.map((a) => (isGlobal ? `@assets/${a.name}` : `./assets/${a.name}`));
           const pathToAsset = new Map(paths.map((p, i) => [p, assets[i]]));
           for (const sid of scanIds) {
-            const entry = resolveSlideEntry(ctx.slidesRoot, sid);
-            if (!entry) continue;
-            let source: string;
-            try {
-              source = await fs.readFile(entry, 'utf8');
-            } catch {
-              continue;
-            }
-            for (const p of findReferencedAssets(source, paths)) {
-              const a = pathToAsset.get(p);
-              if (a) a.unused = false;
+            for (const source of await readSlideSources(ctx, sid)) {
+              for (const p of adapter.findReferencedAssets(source, paths)) {
+                const a = pathToAsset.get(p);
+                if (a) a.unused = false;
+              }
             }
           }
         }

@@ -1,12 +1,11 @@
 import fs from 'node:fs/promises';
-import path from 'node:path';
 import * as t from '@babel/types';
 import type { Plugin, ViteDevServer } from 'vite';
 import { parseSource } from '../editing/babel-walk.ts';
 import { resolveSlideEntry } from '../editing/slide-ops.ts';
 import { validateMutationRequest } from '../http/request-guard.ts';
+import { json, readBody, readSlideSource, resolveSlidePath } from './api-context.ts';
 import { hasRecentWrite, recordWrite } from './recent-writes.ts';
-import { json, readBody, readSlideSource } from './routes/context.ts';
 
 type NotesBody = {
   slideId?: string;
@@ -146,10 +145,13 @@ export function applyNotesEdit(source: string, index: number, text: string): App
 export type NotesPluginOptions = {
   userCwd: string;
   slidesDir?: string;
+  entryFile?: string;
 };
 
 export function notesPlugin(opts: NotesPluginOptions): Plugin {
-  const slidesRoot = path.resolve(opts.userCwd, opts.slidesDir ?? 'slides');
+  const userCwd = opts.userCwd;
+  const slidesDir = opts.slidesDir ?? 'slides';
+  const entryFile = opts.entryFile ?? 'index.tsx';
 
   return {
     name: 'open-slide:notes',
@@ -171,7 +173,7 @@ export function notesPlugin(opts: NotesPluginOptions): Plugin {
         try {
           const body = (await readBody(req)) as NotesBody;
           const slideId = body.slideId ?? '';
-          const file = resolveSlideEntry(slidesRoot, slideId);
+          const file = resolveSlidePath(userCwd, slidesDir, slideId, entryFile);
           if (!file) return json(res, 400, { error: 'invalid slideId' });
           if (typeof body.index !== 'number') return json(res, 400, { error: 'missing index' });
           if (typeof body.text !== 'string') return json(res, 400, { error: 'missing text' });

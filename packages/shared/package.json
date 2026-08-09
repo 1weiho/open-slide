@@ -16,6 +16,14 @@
       "types": "./dist/vite/index.d.ts",
       "import": "./dist/vite/index.js"
     },
+    "./editing": {
+      "types": "./dist/editing/index.d.ts",
+      "import": "./dist/editing/index.js"
+    },
+    "./cli": {
+      "types": "./dist/cli/index.d.ts",
+      "import": "./dist/cli/index.js"
+    },
     "./files": {
       "types": "./dist/files/index.d.ts",
       "import": "./dist/files/index.js"
@@ -65,6 +73,8 @@
     "access": "public"
   },
   "dependencies": {
+    "@babel/parser": "^7.29.2",
+    "@babel/types": "^7.29.0",
     "fast-glob": "^3.3.2",
     "vite": "^5.4.10"
   },

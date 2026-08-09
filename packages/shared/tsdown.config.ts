@@ -3,6 +3,8 @@ import { defineConfig } from 'tsdown';
 export default defineConfig({
   entry: {
     index: 'src/index.ts',
+    'cli/index': 'src/cli/index.ts',
+    'editing/index': 'src/editing/index.ts',
     'files/index': 'src/files/index.ts',
     'http/index': 'src/http/index.ts',
     'locale/index': 'src/locale/index.ts',

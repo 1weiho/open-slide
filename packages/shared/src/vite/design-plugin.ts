@@ -1,12 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Plugin, ViteDevServer } from 'vite';
-import { type DesignSystem, defaultDesign } from '../app/lib/design.ts';
+import { type DesignSystem, defaultDesign } from '../design.ts';
 import { type AstNode, parseSource, tryParse } from '../editing/babel-walk.ts';
 import { jsString } from '../editing/edit-ops.ts';
-import { resolveSlideEntry } from '../editing/slide-ops.ts';
 import { validateMutationRequest } from '../http/request-guard.ts';
-import { json, readBody } from './routes/context.ts';
+import { json, readBody, resolveSlidePath } from './api-context.ts';
 
 // Reading tolerates a slide mid-edit; writing splices by AST offset, so a
 // best-guess tree recovered from a syntax error must not reach the file.
@@ -243,8 +242,9 @@ function findImports(ast: AstNode): ImportInfo[] {
 function addDesignSystemImport(
   source: string,
   imports: ImportInfo[],
+  runtimePackage: string,
 ): { source: string; offsetShift: number } {
-  const stmt = `import type { DesignSystem } from '@open-slide/react';\n`;
+  const stmt = `import type { DesignSystem } from '${runtimePackage}';\n`;
   if (imports.length > 0) {
     const last = imports[imports.length - 1];
     const insertAt = last.node.end;
@@ -259,12 +259,17 @@ function addDesignSystemImport(
 function ensureDesignSystemImport(
   source: string,
   ast: AstNode,
+  runtimePackage: string,
 ): { source: string; offsetShift: number } {
   const imports = findImports(ast);
   const runtimeImport = imports.find(
-    (imp) => imp.source === '@open-slide/react' || imp.source === '@open-slide/core',
+    (imp) =>
+      imp.source === runtimePackage ||
+      imp.source === '@open-slide/react' ||
+      imp.source === '@open-slide/core' ||
+      imp.source === '@open-slide/svelte',
   );
-  if (!runtimeImport) return addDesignSystemImport(source, imports);
+  if (!runtimeImport) return addDesignSystemImport(source, imports, runtimePackage);
 
   const hasDesignSystem = runtimeImport.specifiers.some((spec) => {
     if (spec.type !== 'ImportSpecifier') return false;
@@ -291,7 +296,7 @@ function ensureDesignSystemImport(
   const braceClose = importText.lastIndexOf('}');
   // A namespace, default-only, or side-effect import has no named list to
   // extend, so `DesignSystem` needs an import statement of its own.
-  if (braceClose === -1) return addDesignSystemImport(source, imports);
+  if (braceClose === -1) return addDesignSystemImport(source, imports, runtimePackage);
   const absoluteBrace = node.start + braceClose;
   const next = `${source.slice(0, absoluteBrace)}${specifier}${source.slice(absoluteBrace)}`;
   return { source: next, offsetShift: specifier.length };
@@ -312,7 +317,11 @@ export type WriteResult =
   | { ok: true; source: string; created: boolean }
   | { ok: false; status: number; error: string };
 
-export function applyDesignWrite(source: string, next: DesignSystem): WriteResult {
+export function applyDesignWrite(
+  source: string,
+  next: DesignSystem,
+  runtimePackage = '@open-slide/react',
+): WriteResult {
   let body: string;
   try {
     body = serializeDesign(next);
@@ -329,7 +338,7 @@ export function applyDesignWrite(source: string, next: DesignSystem): WriteResul
     return { ok: true, source: out, created: false };
   }
 
-  const withImport = ensureDesignSystemImport(source, ast);
+  const withImport = ensureDesignSystemImport(source, ast, runtimePackage);
   const ast2 = parseStrict(withImport.source);
   if (!ast2) {
     return { ok: false, status: 422, error: 'failed to re-parse after adding import' };
@@ -343,10 +352,15 @@ export function applyDesignWrite(source: string, next: DesignSystem): WriteResul
 export type DesignPluginOptions = {
   userCwd: string;
   slidesDir?: string;
+  entryFile?: string;
+  runtimePackage?: string;
 };
 
 export function designPlugin(opts: DesignPluginOptions): Plugin {
-  const slidesRoot = path.resolve(opts.userCwd, opts.slidesDir ?? 'slides');
+  const userCwd = opts.userCwd;
+  const slidesDir = opts.slidesDir ?? 'slides';
+  const entryFile = opts.entryFile ?? 'index.tsx';
+  const runtimePackage = opts.runtimePackage ?? '@open-slide/react';
 
   return {
     name: 'open-slide:design',
@@ -356,7 +370,7 @@ export function designPlugin(opts: DesignPluginOptions): Plugin {
         const url = new URL(req.url ?? '/', 'http://local');
         const method = req.method ?? 'GET';
         const slideId = url.searchParams.get('slideId') ?? '';
-        const file = resolveSlideEntry(slidesRoot, slideId);
+        const file = resolveSlidePath(userCwd, slidesDir, slideId, entryFile);
         if (!file) return json(res, 400, { error: 'invalid slideId' });
 
         try {
@@ -399,7 +413,7 @@ export function designPlugin(opts: DesignPluginOptions): Plugin {
               return json(res, 422, { error: parsed.error });
             }
             const merged = mergeDesign(baseDesign, patch);
-            const written = applyDesignWrite(source, merged);
+            const written = applyDesignWrite(source, merged, runtimePackage);
             if (!written.ok) return json(res, written.status, { error: written.error });
             if (written.source !== source) await fs.writeFile(file, written.source, 'utf8');
             return json(res, 200, { ok: true, design: merged, created: written.created });
@@ -416,7 +430,7 @@ export function designPlugin(opts: DesignPluginOptions): Plugin {
             } catch {
               return json(res, 404, { error: 'slide not found' });
             }
-            const written = applyDesignWrite(source, defaultDesign);
+            const written = applyDesignWrite(source, defaultDesign, runtimePackage);
             if (!written.ok) return json(res, written.status, { error: written.error });
             if (written.source !== source) await fs.writeFile(file, written.source, 'utf8');
             return json(res, 200, { ok: true, design: defaultDesign, created: written.created });

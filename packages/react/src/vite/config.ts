@@ -2,16 +2,13 @@ import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { currentPlugin, designPlugin, notesPlugin, themesPlugin } from '@open-slide/shared/vite';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import type { InlineConfig } from 'vite';
 import { apiPlugin } from './api-plugin.ts';
-import { currentPlugin } from './current-plugin.ts';
-import { designPlugin } from './design-plugin.ts';
 import { locTagsPlugin } from './loc-tags-plugin.ts';
-import { notesPlugin } from './notes-plugin.ts';
 import { loadUserConfig, type OpenSlideConfig, openSlidePlugin } from './open-slide-plugin.ts';
-import { themesPlugin } from './themes-plugin.ts';
 
 function findPackageRoot(fromFile: string): string {
   let dir = path.dirname(fromFile);

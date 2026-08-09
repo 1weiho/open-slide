@@ -2,7 +2,15 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { OpenSlideConfig } from '@open-slide/shared';
-import { loadUserConfig, openSlidePlugin } from '@open-slide/shared/vite';
+import {
+  currentPlugin,
+  designPlugin,
+  loadUserConfig,
+  notesPlugin,
+  openSlidePlugin,
+  sharedApiPlugin,
+  themesPlugin,
+} from '@open-slide/shared/vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
 import type { InlineConfig } from 'vite';
@@ -39,8 +47,10 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
   const userCwd = path.resolve(opts.userCwd);
   const config = opts.config ?? (await loadUserConfig(userCwd));
   const slidesDir = config.slidesDir ?? 'slides';
+  const themesDir = config.themesDir ?? 'themes';
   const assetsDir = config.assetsDir ?? 'assets';
   const slidesAbs = path.resolve(userCwd, slidesDir);
+  const themesAbs = path.resolve(userCwd, themesDir);
   const assetsAbs = path.resolve(userCwd, assetsDir);
 
   return {
@@ -57,6 +67,22 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
         coreVersion: readRuntimeVersion(),
         entryExtensions: ['ts', 'js'],
       }),
+      themesPlugin({ userCwd, config, demoExtensions: ['svelte'] }),
+      currentPlugin({ userCwd, slidesDir, entryFile: 'index.ts' }),
+      notesPlugin({ userCwd, slidesDir, entryFile: 'index.ts' }),
+      designPlugin({
+        userCwd,
+        slidesDir,
+        entryFile: 'index.ts',
+        runtimePackage: '@open-slide/svelte',
+      }),
+      sharedApiPlugin({
+        userCwd,
+        slidesDir,
+        assetsDir,
+        coreVersion: readRuntimeVersion(),
+        entryFile: 'index.ts',
+      }),
     ],
     resolve: {
       alias: {
@@ -69,7 +95,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
     },
     server: {
       port: config.port ?? 5173,
-      fs: { allow: [APP_ROOT, DEPENDENCY_ROOT, userCwd, slidesAbs, assetsAbs] },
+      fs: { allow: [APP_ROOT, DEPENDENCY_ROOT, userCwd, slidesAbs, themesAbs, assetsAbs] },
     },
     build: {
       outDir: path.resolve(userCwd, 'dist'),

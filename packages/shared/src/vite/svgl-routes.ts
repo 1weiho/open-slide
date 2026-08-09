@@ -1,5 +1,5 @@
 import type { ViteDevServer } from 'vite';
-import { json } from './context.ts';
+import { json } from './api-context.ts';
 
 // GET /__svgl/search?q=&limit=  proxy https://api.svgl.app/?search=…
 // GET /__svgl/svg?u=…           proxy raw svg from svgl.app (https only)

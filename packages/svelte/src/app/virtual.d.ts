@@ -21,3 +21,22 @@ declare module 'virtual:open-slide/config' {
   };
   export default config;
 }
+
+declare module 'virtual:open-slide/themes' {
+  import type { DesignSystem } from '@open-slide/shared';
+  import type { Page } from '@open-slide/svelte';
+
+  export type ThemeMeta = {
+    id: string;
+    name: string;
+    description: string;
+    body: string;
+    hasDemo: boolean;
+  };
+
+  export const themes: ThemeMeta[];
+  export function loadThemeDemo(id: string): Promise<{
+    default: Page[];
+    design?: DesignSystem;
+  }>;
+}

@@ -1,5 +1,4 @@
 import type { ViteDevServer } from 'vite';
-import { SLIDE_ID_RE } from '../../editing/slide-ops.ts';
 import {
   FOLDER_ID_RE,
   type Folder,
@@ -9,9 +8,10 @@ import {
   validateName,
   validateReorder,
   writeManifest,
-} from '../../files/folders.ts';
-import { validateMutationRequest } from '../../http/request-guard.ts';
-import { type ApiContext, json, readBody } from './context.ts';
+} from '../files/folders.ts';
+import { validateMutationRequest } from '../http/request-guard.ts';
+import { SLIDE_ID_RE } from '../slide-id.ts';
+import { type ApiContext, json, readBody } from './api-context.ts';
 
 // GET    /__folders            list manifest
 // POST   /__folders            create folder { name, icon }

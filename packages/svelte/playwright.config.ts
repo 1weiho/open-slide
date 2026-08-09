@@ -1,11 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
 
-export const DEV_SERVER_PORT = 43117;
+export const DEV_SERVER_PORT = 43118;
 
 export default defineConfig({
   testDir: './e2e/tests',
   workers: 1,
-  forbidOnly: !!process.env.CI,
+  forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   expect: { timeout: 10_000 },

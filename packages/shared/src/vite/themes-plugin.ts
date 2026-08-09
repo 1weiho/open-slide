@@ -8,6 +8,7 @@ import type { OpenSlideConfig } from '../config.ts';
 export type ThemesPluginOptions = {
   userCwd: string;
   config: OpenSlideConfig;
+  demoExtensions?: readonly string[];
 };
 
 const THEMES_VMOD = 'virtual:open-slide/themes';
@@ -65,11 +66,15 @@ async function findThemes(userCwd: string, themesDir: string): Promise<string[]>
   return hits.sort();
 }
 
-async function readTheme(mdAbs: string, themesRoot: string): Promise<ParsedTheme> {
+async function readTheme(
+  mdAbs: string,
+  themesRoot: string,
+  demoExtensions: readonly string[],
+): Promise<ParsedTheme> {
   const id = path.basename(mdAbs, '.md');
   const raw = await fs.readFile(mdAbs, 'utf8');
   const { fm, body } = parseFrontmatter(raw, id);
-  const demoCandidates = [`${id}.demo.tsx`, `${id}.demo.jsx`, `${id}.demo.ts`, `${id}.demo.js`];
+  const demoCandidates = demoExtensions.map((extension) => `${id}.demo.${extension}`);
   let demoAbs: string | null = null;
   for (const cand of demoCandidates) {
     const p = path.join(themesRoot, cand);
@@ -116,6 +121,7 @@ ${cases}
 
 export function themesPlugin(opts: ThemesPluginOptions): Plugin {
   const { userCwd, config } = opts;
+  const demoExtensions = opts.demoExtensions ?? ['tsx', 'jsx', 'ts', 'js'];
   const themesDir = config.themesDir ?? 'themes';
   const themesRoot = path.resolve(userCwd, themesDir);
 
@@ -133,7 +139,7 @@ export function themesPlugin(opts: ThemesPluginOptions): Plugin {
     async load(id) {
       if (id !== resolved(THEMES_VMOD)) return null;
       const files = await findThemes(userCwd, themesDir);
-      const themes = await Promise.all(files.map((f) => readTheme(f, themesRoot)));
+      const themes = await Promise.all(files.map((f) => readTheme(f, themesRoot, demoExtensions)));
       return generateThemesModule(themes, isDev);
     },
     configureServer(server) {
@@ -141,7 +147,10 @@ export function themesPlugin(opts: ThemesPluginOptions): Plugin {
         const rel = path.relative(themesRoot, p);
         if (rel.startsWith('..') || path.isAbsolute(rel)) return false;
         if (rel.includes(path.sep)) return false;
-        return /\.(md|demo\.(tsx|jsx|ts|js))$/.test(rel);
+        return (
+          rel.endsWith('.md') ||
+          demoExtensions.some((extension) => rel.endsWith(`.demo.${extension}`))
+        );
       };
 
       let reloadTimer: ReturnType<typeof setTimeout> | null = null;

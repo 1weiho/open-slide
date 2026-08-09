@@ -5,6 +5,12 @@ export default defineConfig({
   resolve: {
     alias: [
       {
+        find: '@open-slide/shared/editing',
+        replacement: fileURLToPath(
+          new URL('./packages/shared/src/editing/index.ts', import.meta.url),
+        ),
+      },
+      {
         find: '@open-slide/shared/files',
         replacement: fileURLToPath(
           new URL('./packages/shared/src/files/index.ts', import.meta.url),

@@ -2,3 +2,4 @@ packages:
   - "apps/*"
   - "packages/*"
   - "packages/react/e2e/fixture"
+  - "packages/svelte/e2e/fixture"
