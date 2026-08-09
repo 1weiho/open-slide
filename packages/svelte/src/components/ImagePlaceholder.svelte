@@ -5,6 +5,7 @@ export let height: number | undefined = undefined;
 </script>
 
 <div
+  {...$$restProps}
   class="image-placeholder"
   data-slide-placeholder={hint}
   data-placeholder-w={width}

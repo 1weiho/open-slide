@@ -6,6 +6,7 @@ import Three from './03-three.svelte';
 Two.transition = {
   duration: 1_200,
   enter: { keyframes: [{ opacity: 0 }, { opacity: 1 }] },
+  morph: true,
 };
 
 export const meta = {

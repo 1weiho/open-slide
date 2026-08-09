@@ -153,4 +153,26 @@ test.describe('Svelte slide viewer', () => {
     await expect(viewport.locator('[data-osd-morph="beta-heading"]')).toBeVisible();
     await expect(viewport.getByRole('img', { name: 'Beta chart' })).toBeVisible();
   });
+
+  test('runs matching MorphElement markers through a view transition', async ({ page }) => {
+    await page.addInitScript(() => {
+      const original = document.startViewTransition?.bind(document);
+      Object.assign(window, { __morphTransitionCount: 0 });
+      if (!original) return;
+      document.startViewTransition = (update) => {
+        Object.assign(window, {
+          __morphTransitionCount: Number(Reflect.get(window, '__morphTransitionCount')) + 1,
+        });
+        return original(update);
+      };
+    });
+    await page.goto('/s/alpha');
+    await page.getByRole('button', { name: 'Next page' }).click();
+    await expect(
+      page.locator('.viewport').getByRole('heading', { name: 'Alpha page two' }),
+    ).toBeVisible();
+    await expect
+      .poll(() => page.evaluate(() => Reflect.get(window, '__morphTransitionCount')))
+      .toBe(1);
+  });
 });

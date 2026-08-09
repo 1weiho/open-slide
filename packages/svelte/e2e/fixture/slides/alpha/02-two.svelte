@@ -1,4 +1,4 @@
-<div class="page"><h1>Alpha page two</h1><p>Middle content</p></div>
+<div class="page"><h1 data-osd-morph="alpha-heading">Alpha page two</h1><p>Middle content</p></div>
 
 <style>
   .page { width: 100%; height: 100%; padding: 120px; color: #f2f2ef; background: #101014; font-family: system-ui, sans-serif; }

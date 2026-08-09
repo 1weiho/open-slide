@@ -14,6 +14,7 @@ import {
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
 import type { InlineConfig } from 'vite';
+import { svelteCommentsPlugin } from './comments-plugin.ts';
 import { svelteEditPlugin } from './edit-plugin.ts';
 import { svelteLocPlugin } from './loc-plugin.ts';
 
@@ -87,6 +88,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
         entryFile: 'index.ts',
       }),
       svelteEditPlugin({ slidesRoot: slidesAbs }),
+      svelteCommentsPlugin({ slidesRoot: slidesAbs }),
     ],
     resolve: {
       alias: {

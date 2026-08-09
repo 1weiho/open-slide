@@ -1,6 +1,13 @@
-import type { SlideModule } from '@open-slide/shared';
+import { designToCssVars, type SlideModule } from '@open-slide/shared';
+import {
+  exportFramesAsImagePptx,
+  isFrameAnimationSettled,
+  waitForDataWaitfor,
+  waitForFonts,
+} from '@open-slide/shared/client';
 import { mount, unmount } from 'svelte';
 import type { Page } from '../index.ts';
+import ExportPageHost from './ExportPageHost.svelte';
 
 type MountedPage = { instance: ReturnType<typeof mount>; frame: HTMLElement };
 
@@ -45,6 +52,10 @@ function nextPaint(): Promise<void> {
   );
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function exportPdf(slide: SlideModule<Page>, slideId: string): Promise<void> {
   const style = document.createElement('style');
   style.textContent = PRINT_STYLES;
@@ -57,7 +68,13 @@ export async function exportPdf(slide: SlideModule<Page>, slideId: string): Prom
   const previousTitle = document.title;
   document.title = slide.meta?.title ?? slideId;
   await nextPaint();
-  await document.fonts?.ready;
+  await waitForFonts();
+  const deadline = performance.now() + 15_000;
+  while (performance.now() < deadline) {
+    if (pages.every(({ frame }) => isFrameAnimationSettled(frame))) break;
+    await sleep(100);
+  }
+  await waitForDataWaitfor(root);
 
   try {
     const printed = new Promise<void>((resolve) => {
@@ -116,4 +133,19 @@ html,body{margin:0;background:#111}.os-export-page{width:1920px;height:1080px;ov
   anchor.click();
   anchor.remove();
   setTimeout(() => URL.revokeObjectURL(anchor.href), 0);
+}
+
+export function exportPptx(slide: SlideModule<Page>, slideId: string): Promise<void> {
+  return exportFramesAsImagePptx({
+    pageCount: slide.default.length,
+    filename: `${slideId}.pptx`,
+    designVars: slide.design ? designToCssVars(slide.design) : null,
+    renderPage(host, index) {
+      const instance = mount(ExportPageHost, {
+        target: host,
+        props: { component: slide.default[index], index, total: slide.default.length },
+      });
+      return () => unmount(instance);
+    },
+  });
 }

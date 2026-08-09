@@ -23,9 +23,9 @@ import {
   uploadAsset,
 } from '@open-slide/shared/client';
 import { en, ja, type Locale, zhCN, zhTW } from '@open-slide/shared/locale';
-import { onMount } from 'svelte';
+import { onMount, tick } from 'svelte';
 import type { Page } from '../index.ts';
-import { exportHtml, exportPdf } from './export.ts';
+import { exportHtml, exportPdf, exportPptx } from './export.ts';
 import StepHost from './StepHost.svelte';
 
 type Route =
@@ -61,12 +61,45 @@ type PresenterMessage =
 type SortKey = 'created-desc' | 'created-asc' | 'title-asc' | 'title-desc';
 type Appearance = 'light' | 'dark' | 'system';
 type SelectedElement = {
+  anchor: HTMLElement;
   file: string;
   line: number;
   column: number;
   tag: string;
   text: string;
+  originalText: string;
+  styles: Record<EditableStyle, string>;
+  stylePatch: Partial<Record<EditableStyle, string | null>>;
+  originalStyles: Partial<Record<EditableStyle, string | null>>;
+  placeholderHint: string | null;
 };
+type SlideComment = { id: string; line: number; ts: string; note: string; hint?: string };
+type EditableStyle =
+  | 'font-size'
+  | 'font-weight'
+  | 'font-style'
+  | 'color'
+  | 'background-color'
+  | 'text-align'
+  | 'line-height'
+  | 'letter-spacing';
+type EditSnapshot = { text?: string; styles: Partial<Record<EditableStyle, string | null>> };
+type EditHistoryEntry = {
+  target: Pick<SelectedElement, 'file' | 'line' | 'column'>;
+  before: EditSnapshot;
+  after: EditSnapshot;
+};
+
+const editableStyles: EditableStyle[] = [
+  'font-size',
+  'font-weight',
+  'font-style',
+  'color',
+  'background-color',
+  'text-align',
+  'line-height',
+  'letter-spacing',
+];
 
 const locales: Record<Locale['id'], Locale> = { en, ja, 'zh-CN': zhCN, 'zh-TW': zhTW };
 
@@ -98,6 +131,11 @@ let designDraft: DesignSystem | null = null;
 let designWarning = '';
 let selectedElement: SelectedElement | null = null;
 let elementSaving = false;
+let comments: SlideComment[] = [];
+let commentDraft = '';
+let commentSaving = false;
+let editHistory: EditHistoryEntry[] = [];
+let editHistoryIndex = 0;
 let pageIndex = 0;
 let entryDirection: EntryDirection = 'jump';
 let stepController: StepController | null = null;
@@ -122,6 +160,7 @@ let remoteStepRevealed = 0;
 let remoteStepCount = 0;
 let lastWheelAt = 0;
 let touchStartX: number | null = null;
+let navigationSequence = 0;
 
 $: activePage = deck?.default[pageIndex] ?? null;
 $: activeTransition = activePage?.transition ?? deck?.transition;
@@ -175,11 +214,20 @@ $: designCss = deck?.design ? cssVarsToString(designToCssVars(deck.design)) : ''
 function parseRoute(): Route {
   const base = (config.base ?? '/').replace(/\/$/, '');
   const pathname = window.location.pathname.slice(base.length) || '/';
-  if (pathname === '/') return { kind: 'home' };
-  if (pathname === '/themes' || pathname === '/themes/') return { kind: 'themes' };
-  if (pathname === '/assets' || pathname === '/assets/') return { kind: 'assets' };
+  if (pathname === '/')
+    return config.build.showSlideBrowser ? { kind: 'home' } : { kind: 'not-found' };
+  if (pathname === '/themes' || pathname === '/themes/') {
+    return config.build.showSlideBrowser ? { kind: 'themes' } : { kind: 'not-found' };
+  }
+  if (pathname === '/assets' || pathname === '/assets/') {
+    return config.build.showSlideBrowser ? { kind: 'assets' } : { kind: 'not-found' };
+  }
   const themeMatch = pathname.match(/^\/themes\/([^/]+)\/?$/);
-  if (themeMatch) return { kind: 'theme', themeId: decodeURIComponent(themeMatch[1]) };
+  if (themeMatch) {
+    return config.build.showSlideBrowser
+      ? { kind: 'theme', themeId: decodeURIComponent(themeMatch[1]) }
+      : { kind: 'not-found' };
+  }
   const match = pathname.match(/^\/s\/([^/]+)(\/presenter)?\/?$/);
   if (!match) return { kind: 'not-found' };
   return {
@@ -418,15 +466,80 @@ function measure(node: HTMLElement): { destroy: () => void } {
 
 function goToPage(next: number, broadcast = true): void {
   if (!deck || deck.default.length === 0) return;
+  const navigation = ++navigationSequence;
   const target = Math.max(0, Math.min(next, deck.default.length - 1));
+  const transition = deck.default[target]?.transition ?? deck.transition;
+  const startViewTransition = (
+    document as Document & {
+      startViewTransition?: (update: () => Promise<void>) => { finished: Promise<void> };
+    }
+  ).startViewTransition;
+  const morph = transition?.morph;
+  if (target !== pageIndex && morph && startViewTransition && viewport) {
+    const elements = setMorphViewTransitionNames(viewport);
+    if (elements.length > 0) {
+      const duration =
+        typeof morph === 'object' ? (morph.duration ?? transition.duration) : transition.duration;
+      const easing =
+        typeof morph === 'object' ? (morph.easing ?? transition.easing) : transition.easing;
+      const delay = typeof morph === 'object' ? (morph.delay ?? 0) : 0;
+      const style = document.createElement('style');
+      style.textContent = [
+        '::view-transition-old(root), ::view-transition-new(root) { animation: none; }',
+        ...elements.map(
+          ({ name }) =>
+            `::view-transition-group(${name}) { animation-duration: ${duration}ms; animation-delay: ${delay}ms; animation-timing-function: ${easing ?? 'ease'}; }`,
+        ),
+      ].join('\n');
+      document.head.appendChild(style);
+      const viewTransition = startViewTransition.call(document, async () => {
+        if (navigation !== navigationSequence) return;
+        commitPage(target, broadcast);
+        await tick();
+        setMorphViewTransitionNames(viewport);
+      });
+      void viewTransition.finished.finally(() => {
+        style.remove();
+        clearMorphViewTransitionNames();
+      });
+      return;
+    }
+  }
+  if (navigation !== navigationSequence) return;
+  commitPage(target, broadcast);
+}
+
+function commitPage(target: number, broadcast: boolean): void {
+  if (!deck) return;
   entryDirection = target > pageIndex ? 'forward' : target < pageIndex ? 'backward' : 'jump';
   pageIndex = target;
   selectedElement = null;
+  comments = [];
   notesDraft = deck.notes?.[pageIndex] ?? '';
   const url = new URL(window.location.href);
   url.searchParams.set('p', String(pageIndex + 1));
   window.history.replaceState({}, '', url);
   if (broadcast) channel?.postMessage({ type: 'page', page: pageIndex } satisfies PresenterMessage);
+}
+
+function setMorphViewTransitionNames(root: HTMLElement): Array<{ name: string }> {
+  const seen = new Set<string>();
+  const elements: Array<{ name: string }> = [];
+  for (const element of root.querySelectorAll<HTMLElement>('[data-osd-morph]')) {
+    const id = element.dataset.osdMorph;
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    const name = `os-morph-${id.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+    element.style.viewTransitionName = name;
+    elements.push({ name });
+  }
+  return elements;
+}
+
+function clearMorphViewTransitionNames(): void {
+  for (const element of document.querySelectorAll<HTMLElement>('[data-osd-morph]')) {
+    element.style.viewTransitionName = '';
+  }
 }
 
 async function saveNotes(): Promise<void> {
@@ -489,33 +602,215 @@ function inspectElement(event: Event): void {
   event.stopPropagation();
   const [line, column] = (element.dataset.osdLoc ?? '').split(':').map(Number);
   if (!Number.isInteger(line) || !Number.isInteger(column) || !element.dataset.osdFile) return;
-  selectedElement = {
+  const computed = getComputedStyle(element);
+  const styles = Object.fromEntries(
+    editableStyles.map((property) => [property, computed.getPropertyValue(property)]),
+  ) as Record<EditableStyle, string>;
+  styles.color = rgbToHex(styles.color) ?? '#000000';
+  styles['background-color'] = rgbToHex(styles['background-color']) ?? '#000000';
+  const text = element.textContent?.trim() ?? '';
+  const selection = {
+    anchor: element,
     file: element.dataset.osdFile,
     line,
     column,
     tag: element.tagName.toLowerCase(),
-    text: element.textContent?.trim() ?? '',
+    text,
+    originalText: text,
+    styles,
+    stylePatch: {},
+    originalStyles: {},
+    placeholderHint: element.dataset.slidePlaceholder ?? null,
   };
+  selectedElement = selection;
+  void loadComments(selection.file);
+  if (selection.placeholderHint) {
+    assetScope = currentSlideId;
+    void loadAssets();
+  }
+}
+
+function selectedElementNode(): HTMLElement | null {
+  if (!selectedElement) return null;
+  if (selectedElement.anchor.isConnected) return selectedElement.anchor;
+  return (
+    [...document.querySelectorAll<HTMLElement>('[data-osd-file][data-osd-loc]')].find(
+      (element) =>
+        element.dataset.osdFile === selectedElement?.file &&
+        element.dataset.osdLoc === `${selectedElement?.line}:${selectedElement?.column}`,
+    ) ?? null
+  );
+}
+
+function updateSelectedStyle(property: EditableStyle, value: string): void {
+  if (!selectedElement) return;
+  const element = selectedElementNode();
+  const originalStyles = { ...selectedElement.originalStyles };
+  if (!(property in originalStyles)) {
+    originalStyles[property] = element?.style.getPropertyValue(property) || null;
+  }
+  element?.style.setProperty(property, value);
+  selectedElement = {
+    ...selectedElement,
+    styles: { ...selectedElement.styles, [property]: value },
+    stylePatch: { ...selectedElement.stylePatch, [property]: value },
+    originalStyles,
+  };
+}
+
+function rgbToHex(value: string): string | null {
+  if (/^#[0-9a-f]{6}$/i.test(value.trim())) return value.trim();
+  const match = value.match(/rgba?\(\s*(\d+)\D+(\d+)\D+(\d+)(?:\D+([\d.]+))?/i);
+  if (!match || Number(match[4] ?? 1) === 0) return null;
+  return `#${[match[1], match[2], match[3]]
+    .map((part) => Number(part).toString(16).padStart(2, '0'))
+    .join('')}`;
+}
+
+function numericStyle(value: string, fallback: number): number {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 async function saveSelectedElement(): Promise<void> {
   if (!selectedElement) return;
+  const target = {
+    file: selectedElement.file,
+    line: selectedElement.line,
+    column: selectedElement.column,
+  };
+  const textChanged = selectedElement.originalText !== selectedElement.text;
+  const before = {
+    text: textChanged ? selectedElement.originalText : undefined,
+    styles: selectedElement.originalStyles,
+  };
+  const after = {
+    text: textChanged ? selectedElement.text : undefined,
+    styles: selectedElement.stylePatch,
+  };
+  if (!textChanged && Object.keys(after.styles).length === 0) return;
   elementSaving = true;
+  const response = await applyElementSnapshot(target, after);
+  elementSaving = false;
+  if (!response.ok) {
+    designWarning = `Element edit failed (${response.status}).`;
+    return;
+  }
+  editHistory = [...editHistory.slice(0, editHistoryIndex), { target, before, after }];
+  editHistoryIndex = editHistory.length;
+  selectedElement = {
+    ...selectedElement,
+    originalText: selectedElement.text,
+    stylePatch: {},
+    originalStyles: {},
+  };
+}
+
+function applyElementSnapshot(
+  target: Pick<SelectedElement, 'file' | 'line' | 'column'>,
+  snapshot: EditSnapshot,
+): Promise<Response> {
+  return fetch('/__svelte-edit', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ ...target, ...snapshot }),
+  });
+}
+
+function discardSelectedElement(): void {
+  if (!selectedElement) return;
+  const element = selectedElementNode();
+  if (element) {
+    for (const [property, value] of Object.entries(selectedElement.originalStyles)) {
+      if (value) element.style.setProperty(property, value);
+      else element.style.removeProperty(property);
+    }
+  }
+  selectedElement = {
+    ...selectedElement,
+    text: selectedElement.originalText,
+    stylePatch: {},
+    originalStyles: {},
+  };
+}
+
+async function undoElementEdit(): Promise<void> {
+  if (editHistoryIndex === 0) return;
+  const entry = editHistory[editHistoryIndex - 1];
+  const response = await applyElementSnapshot(entry.target, entry.before);
+  if (response.ok) editHistoryIndex -= 1;
+}
+
+async function redoElementEdit(): Promise<void> {
+  if (editHistoryIndex >= editHistory.length) return;
+  const entry = editHistory[editHistoryIndex];
+  const response = await applyElementSnapshot(entry.target, entry.after);
+  if (response.ok) editHistoryIndex += 1;
+}
+
+async function loadComments(file = selectedElement?.file): Promise<void> {
+  if (!file) return;
+  const response = await fetch(`/__comments?file=${encodeURIComponent(file)}`);
+  if (!response.ok) return;
+  const body = (await response.json()) as { comments?: SlideComment[] };
+  comments = body.comments ?? [];
+}
+
+async function addSelectedComment(): Promise<void> {
+  if (!selectedElement || !commentDraft.trim()) return;
+  commentSaving = true;
+  const response = await fetch('/__comments/add', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      file: selectedElement.file,
+      line: selectedElement.line,
+      column: selectedElement.column,
+      text: commentDraft,
+      hint: `<${selectedElement.tag}>`,
+    }),
+  });
+  commentSaving = false;
+  if (!response.ok) {
+    designWarning = `Comment failed (${response.status}).`;
+    return;
+  }
+  commentDraft = '';
+  await loadComments();
+}
+
+async function removeComment(id: string): Promise<void> {
+  if (!selectedElement) return;
+  const response = await fetch(
+    `/__comments/${encodeURIComponent(id)}?file=${encodeURIComponent(selectedElement.file)}`,
+    { method: 'DELETE' },
+  );
+  if (response.ok) await loadComments();
+}
+
+async function replaceSelectedPlaceholder(asset: AssetEntry): Promise<void> {
+  if (!selectedElement?.placeholderHint) return;
+  const assetPath = assetScope === '@global' ? `@assets/${asset.name}` : `./assets/${asset.name}`;
   const response = await fetch('/__svelte-edit', {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(selectedElement),
+    body: JSON.stringify({
+      file: selectedElement.file,
+      line: selectedElement.line,
+      column: selectedElement.column,
+      assetPath,
+    }),
   });
-  elementSaving = false;
-  if (!response.ok) designWarning = `Element edit failed (${response.status}).`;
+  if (response.ok) selectedElement = null;
 }
 
-async function runExport(format: 'html' | 'pdf'): Promise<void> {
+async function runExport(format: 'html' | 'pdf' | 'pptx'): Promise<void> {
   if (!deck || !currentSlideId || exporting) return;
   exporting = true;
   try {
     if (format === 'html') await exportHtml(deck, currentSlideId);
-    else await exportPdf(deck, currentSlideId);
+    else if (format === 'pdf') await exportPdf(deck, currentSlideId);
+    else await exportPptx(deck, currentSlideId);
   } finally {
     exporting = false;
   }
@@ -1065,7 +1360,7 @@ onMount(() => {
     <h1>{error || 'This deck has no pages.'}</h1>
     <button class="button" onclick={backHome}>Back home</button>
   </main>
-{:else if presenting}
+{:else if presenting || (route.kind === 'slide' && !config.build.showSlideUi)}
   <main
     class="play-shell"
     data-step-count={stepAggregate.stepCount}
@@ -1091,13 +1386,13 @@ onMount(() => {
       </div>
     </section>
 
-    {#if blackout === 'black'}
+    {#if config.build.showSlideUi && blackout === 'black'}
       <div class="absolute inset-0 bg-black blackout-layer"></div>
-    {:else if blackout === 'white'}
+    {:else if config.build.showSlideUi && blackout === 'white'}
       <div class="absolute inset-0 bg-white blackout-layer"></div>
     {/if}
 
-    {#if laserEnabled}
+    {#if config.build.showSlideUi && laserEnabled}
       <div
         class="z-[60] laser-pointer"
         style={`left: ${laserX}px; top: ${laserY}px;`}
@@ -1105,7 +1400,7 @@ onMount(() => {
       ></div>
     {/if}
 
-    {#if helpOpen}
+    {#if config.build.showSlideUi && helpOpen}
       <section class="play-overlay help-overlay" aria-label="Keyboard shortcuts">
         <h2>Keyboard shortcuts</h2>
         <dl>
@@ -1119,18 +1414,18 @@ onMount(() => {
       </section>
     {/if}
 
-    {#if jumpDigits}
+    {#if config.build.showSlideUi && jumpDigits}
       <div class="jump-indicator" aria-live="polite">{jumpDigits}</div>
     {/if}
 
-    <nav class="play-controls" aria-label="Presentation controls">
+    {#if config.build.showSlideUi}<nav class="play-controls" aria-label="Presentation controls">
       <button class="icon-button" onclick={retreat} aria-label="Previous slide (←)" disabled={pageIndex === 0 && stepAggregate.revealed === 0}>←</button>
       <span>{String(pageIndex + 1).padStart(2, '0')} / {String(pageCount).padStart(2, '0')}</span>
       <button class="icon-button" onclick={advance} aria-label="Next slide (→)" disabled={pageIndex === pageCount - 1 && stepAggregate.revealed === stepAggregate.stepCount}>→</button>
       <button class="button" onclick={openOverview}>Overview</button>
       <button class="button" onclick={openPresenter}>Presenter</button>
       <button class="button" onclick={() => (presenting = false)}>Exit</button>
-    </nav>
+    </nav>{/if}
   </main>
 {:else if route.kind === 'presenter'}
   <main class="presenter-shell">
@@ -1207,8 +1502,9 @@ onMount(() => {
       <div class="viewer-actions">
         <button class="button subtle" aria-label="Open command menu" onclick={() => (commandOpen = true)}>⌘K</button>
         <button class="button subtle" onclick={toggleInspector}>Inspector</button>
-        <button class="button subtle" onclick={() => runExport('html')} disabled={exporting}>Export HTML</button>
+        {#if config.build.allowHtmlDownload}<button class="button subtle" onclick={() => runExport('html')} disabled={exporting}>Export HTML</button>{/if}
         <button class="button subtle" onclick={() => runExport('pdf')} disabled={exporting}>Export PDF</button>
+        <button class="button subtle" onclick={() => runExport('pptx')} disabled={exporting}>Export PPTX</button>
         <button class="button subtle" aria-label="Move page earlier" onclick={() => reorderPage(pageIndex - 1)} disabled={pageIndex === 0}>↑</button>
         <button class="button subtle" aria-label="Move page later" onclick={() => reorderPage(pageIndex + 1)} disabled={pageIndex === pageCount - 1}>↓</button>
         <button class="button subtle" onclick={duplicatePage}>Duplicate page</button>
@@ -1285,13 +1581,152 @@ onMount(() => {
           {#if selectedElement}
             <section class="element-card">
               <p class="eyebrow">Selected &lt;{selectedElement.tag}&gt;</p>
+              {#if !selectedElement.placeholderHint}
               <label>
                 Text
                 <textarea aria-label="Selected element text" bind:value={selectedElement.text}></textarea>
               </label>
-              <button class="button" onclick={saveSelectedElement} disabled={elementSaving}>
-                {elementSaving ? 'Saving…' : 'Save element'}
-              </button>
+              <div class="inspector-fields">
+                <label>
+                  Font size
+                  <input
+                    aria-label="Font size"
+                    type="number"
+                    min="1"
+                    value={numericStyle(selectedElement.styles['font-size'], 16)}
+                    oninput={(event) => updateSelectedStyle('font-size', `${event.currentTarget.value}px`)}
+                  />
+                </label>
+                <label>
+                  Font weight
+                  <select
+                    aria-label="Font weight"
+                    value={selectedElement.styles['font-weight']}
+                    onchange={(event) => updateSelectedStyle('font-weight', event.currentTarget.value)}
+                  >
+                    <option value="300">Light</option>
+                    <option value="400">Regular</option>
+                    <option value="500">Medium</option>
+                    <option value="600">Semibold</option>
+                    <option value="700">Bold</option>
+                    <option value="800">Extra bold</option>
+                  </select>
+                </label>
+                <label>
+                  Text color
+                  <input
+                    aria-label="Text color"
+                    type="color"
+                    value={selectedElement.styles.color}
+                    oninput={(event) => updateSelectedStyle('color', event.currentTarget.value)}
+                  />
+                </label>
+                <label>
+                  Background
+                  <input
+                    aria-label="Element background"
+                    type="color"
+                    value={selectedElement.styles['background-color']}
+                    oninput={(event) => updateSelectedStyle('background-color', event.currentTarget.value)}
+                  />
+                </label>
+                <label>
+                  Alignment
+                  <select
+                    aria-label="Text alignment"
+                    value={selectedElement.styles['text-align']}
+                    onchange={(event) => updateSelectedStyle('text-align', event.currentTarget.value)}
+                  >
+                    <option value="left">Left</option>
+                    <option value="center">Center</option>
+                    <option value="right">Right</option>
+                    <option value="justify">Justify</option>
+                  </select>
+                </label>
+                <label>
+                  Line height
+                  <input
+                    aria-label="Line height"
+                    type="number"
+                    min="0.5"
+                    step="0.1"
+                    value={numericStyle(selectedElement.styles['line-height'], numericStyle(selectedElement.styles['font-size'], 16) * 1.2) / numericStyle(selectedElement.styles['font-size'], 16)}
+                    oninput={(event) => updateSelectedStyle('line-height', event.currentTarget.value)}
+                  />
+                </label>
+                <label>
+                  Letter spacing
+                  <input
+                    aria-label="Letter spacing"
+                    type="number"
+                    step="0.1"
+                    value={numericStyle(selectedElement.styles['letter-spacing'], 0)}
+                    oninput={(event) => updateSelectedStyle('letter-spacing', `${event.currentTarget.value}px`)}
+                  />
+                </label>
+                <button
+                  class="button"
+                  aria-pressed={selectedElement.styles['font-style'] === 'italic'}
+                  onclick={() => updateSelectedStyle('font-style', selectedElement!.styles['font-style'] === 'italic' ? 'normal' : 'italic')}
+                >Italic</button>
+              </div>
+              <div class="element-actions">
+                <button class="button primary" onclick={saveSelectedElement} disabled={elementSaving}>
+                  {elementSaving ? 'Saving…' : 'Save element'}
+                </button>
+                <button class="button" onclick={discardSelectedElement}>Discard</button>
+                <button class="button" onclick={undoElementEdit} disabled={editHistoryIndex === 0}>Undo</button>
+                <button class="button" onclick={redoElementEdit} disabled={editHistoryIndex >= editHistory.length}>Redo</button>
+              </div>
+              {:else}
+                <div class="placeholder-picker">
+                  <p>Replace “{selectedElement.placeholderHint}”</p>
+                  <select
+                    aria-label="Replacement asset scope"
+                    value={assetScope}
+                    onchange={(event) => {
+                      assetScope = event.currentTarget.value;
+                      void loadAssets();
+                    }}
+                  >
+                    <option value={currentSlideId}>Deck assets</option>
+                    <option value="@global">Global assets</option>
+                  </select>
+                  {#if assetsLoading}
+                    <p>Loading images…</p>
+                  {:else}
+                    <ul aria-label="Replacement images">
+                      {#each assets.filter((asset) => asset.mime.startsWith('image/')) as asset}
+                        <li>
+                          <button onclick={() => replaceSelectedPlaceholder(asset)}>
+                            <img src={asset.url} alt="" />
+                            <span>{asset.name}</span>
+                          </button>
+                        </li>
+                      {/each}
+                    </ul>
+                  {/if}
+                </div>
+              {/if}
+              <div class="comment-editor">
+                <label>
+                  Leave a comment
+                  <textarea aria-label="Element comment" bind:value={commentDraft} placeholder="Describe a change for this element…"></textarea>
+                </label>
+                <button class="button" onclick={addSelectedComment} disabled={commentSaving || !commentDraft.trim()}>
+                  {commentSaving ? 'Adding…' : 'Add comment'}
+                </button>
+                {#if comments.length > 0}
+                  <ul aria-label="Slide comments" class="comment-list">
+                    {#each comments as comment}
+                      <li>
+                        <span>{comment.note}</span>
+                        <button aria-label={`Delete comment ${comment.note}`} onclick={() => removeComment(comment.id)}>×</button>
+                      </li>
+                    {/each}
+                  </ul>
+                {/if}
+              </div>
             </section>
           {:else}
             <p class="inspector-hint">Click an element on the slide to edit its direct text.</p>
@@ -1352,8 +1787,9 @@ onMount(() => {
               openOverview();
             }}
           >Slide overview</button>
-          <button role="option" aria-selected="false" onclick={() => runExport('html')}>Export HTML</button>
+          {#if config.build.allowHtmlDownload}<button role="option" aria-selected="false" onclick={() => runExport('html')}>Export HTML</button>{/if}
           <button role="option" aria-selected="false" onclick={() => runExport('pdf')}>Export PDF</button>
+          <button role="option" aria-selected="false" onclick={() => runExport('pptx')}>Export PPTX</button>
           <button role="option" aria-selected="false" onclick={() => applyCommandAppearance('light')}>Theme: Light</button>
           <button role="option" aria-selected="false" onclick={() => applyCommandAppearance('dark')}>Theme: Dark</button>
         {:else}

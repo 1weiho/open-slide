@@ -17,7 +17,13 @@ function collectElements(value: unknown, elements: AstNode[], seen = new Set<obj
     return;
   }
   const node = value as AstNode;
-  if (node.type === 'RegularElement' && node.name_loc) elements.push(node);
+  if (
+    (node.type === 'RegularElement' ||
+      (node.type === 'Component' && node.name === 'ImagePlaceholder')) &&
+    node.name_loc
+  ) {
+    elements.push(node);
+  }
   for (const child of Object.values(node)) collectElements(child, elements, seen);
 }
 

@@ -50,4 +50,21 @@ describe('svelteLocPlugin', () => {
 
     expect(result).toBeNull();
   });
+
+  it('instruments ImagePlaceholder component invocations', async () => {
+    const plugin = svelteLocPlugin({ slidesRoot: '/workspace/slides' });
+    const transform = plugin.transform;
+    if (typeof transform !== 'function') throw new Error('Expected a transform hook');
+
+    const result = await transform.call(
+      {} as never,
+      '<ImagePlaceholder hint="Chart" />',
+      '/workspace/slides/example/01-title.svelte',
+      {} as never,
+    );
+
+    expect(result).toMatchObject({
+      code: '<ImagePlaceholder data-osd-loc="1:1" data-osd-file="example/01-title.svelte" hint="Chart" />',
+    });
+  });
 });
