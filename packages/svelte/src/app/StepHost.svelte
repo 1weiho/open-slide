@@ -7,18 +7,22 @@ import {
   type StepController,
 } from '@open-slide/shared';
 import { type Component, onDestroy, onMount, setContext } from 'svelte';
+import { PAGE_CONTEXT } from '../components/page-context.ts';
 import { STEP_CONTEXT } from '../components/step-context.ts';
 
 export let entryDirection: EntryDirection = 'forward';
 export let component: Component;
 export let pageTransition: SlideTransition | undefined = undefined;
 export let controlledRevealed: number | undefined = undefined;
+export let pageIndex = 0;
+export let pageCount = 1;
 export let onController: (controller: StepController, mounted: boolean) => void;
 export let onAggregate: (controller: StepController, aggregate: StepAggregate) => void = () => {};
 
 const registry = createStepRegistry((aggregate) => onAggregate(registry.controller, aggregate));
 let host: HTMLDivElement;
 setContext(STEP_CONTEXT, { entryDirection, register: registry.register });
+setContext(PAGE_CONTEXT, { index: pageIndex, total: pageCount });
 $: onController(registry.controller, true);
 $: if (controlledRevealed !== undefined) registry.setRevealed(controlledRevealed);
 onMount(() => {

@@ -480,6 +480,41 @@ code {
   border-radius: 6px;
 }
 
+.element-card {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 14px;
+  background: #19191c;
+  border: 1px solid #2b2b30;
+  border-radius: 10px;
+}
+
+.element-card label {
+  display: grid;
+  gap: 8px;
+  color: #aaaab0;
+  font-size: 12px;
+}
+
+.element-card textarea {
+  min-height: 100px;
+  resize: vertical;
+  padding: 9px;
+  color: #dddde0;
+  font: inherit;
+  background: #111114;
+  border: 1px solid #303035;
+  border-radius: 7px;
+}
+
+.inspector-hint {
+  margin-top: 18px;
+  color: #77777e;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .presenter-shell {
   display: grid;
   height: 100%;

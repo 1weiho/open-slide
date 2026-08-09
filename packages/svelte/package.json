@@ -18,6 +18,8 @@
     },
     "./Step.svelte": "./src/components/Step.svelte",
     "./Steps.svelte": "./src/components/Steps.svelte",
+    "./MorphElement.svelte": "./src/components/MorphElement.svelte",
+    "./ImagePlaceholder.svelte": "./src/components/ImagePlaceholder.svelte",
     "./env": {
       "types": "./env.d.ts"
     }

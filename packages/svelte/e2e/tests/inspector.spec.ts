@@ -18,8 +18,8 @@ test.describe('Svelte inspector', () => {
       await page.getByRole('button', { name: 'Save notes' }).click();
       expect((await saved).status()).toBe(200);
 
-      await page.getByRole('button', { name: 'Next page' }).click();
-      await page.getByRole('button', { name: 'Previous page' }).click();
+      await page.getByRole('button', { name: 'Go to page 2' }).click();
+      await page.getByRole('button', { name: 'Go to page 1' }).click();
       await expect(notes).toHaveValue('Updated from Svelte inspector');
     } finally {
       await request.put('/__notes', {
@@ -50,6 +50,28 @@ test.describe('Svelte inspector', () => {
       );
     } finally {
       await fs.writeFile(entryUrl, originalSource);
+    }
+  });
+
+  test('edits direct Svelte element text using compiler source locations', async ({ page }) => {
+    const sourceUrl = new URL('../fixture/slides/alpha/01-one.svelte', import.meta.url);
+    const originalSource = await fs.readFile(sourceUrl, 'utf8');
+    try {
+      await page.goto('/s/alpha');
+      await page.getByRole('button', { name: 'Inspector' }).click();
+      await page.locator('.viewport').getByRole('heading', { name: 'Alpha page one' }).click();
+      const text = page.getByLabel('Selected element text');
+      await expect(text).toHaveValue('Alpha page one');
+      await text.fill('Edited Svelte heading');
+      const saved = page.waitForResponse(
+        (response) =>
+          response.url().endsWith('/__svelte-edit') && response.request().method() === 'PUT',
+      );
+      await page.getByRole('button', { name: 'Save element' }).click();
+      expect((await saved).status()).toBe(200);
+      await expect(page.locator('.viewport').getByText('Edited Svelte heading')).toBeVisible();
+    } finally {
+      await fs.writeFile(sourceUrl, originalSource);
     }
   });
 });

@@ -60,6 +60,13 @@ type PresenterMessage =
     };
 type SortKey = 'created-desc' | 'created-asc' | 'title-asc' | 'title-desc';
 type Appearance = 'light' | 'dark' | 'system';
+type SelectedElement = {
+  file: string;
+  line: number;
+  column: number;
+  tag: string;
+  text: string;
+};
 
 const locales: Record<Locale['id'], Locale> = { en, ja, 'zh-CN': zhCN, 'zh-TW': zhTW };
 
@@ -89,13 +96,15 @@ let notesSaving = false;
 let exporting = false;
 let designDraft: DesignSystem | null = null;
 let designWarning = '';
+let selectedElement: SelectedElement | null = null;
+let elementSaving = false;
 let pageIndex = 0;
 let entryDirection: EntryDirection = 'jump';
 let stepController: StepController | null = null;
 let stepAggregate: StepAggregate = { revealed: 0, stepCount: 0 };
 let loading = false;
 let error = '';
-let inspectorOpen = false;
+let inspectorOpen = sessionStorage.getItem('open-slide:inspector-open') === 'true';
 let presenting = false;
 let overviewOpen = false;
 let overviewIndex = 0;
@@ -412,6 +421,7 @@ function goToPage(next: number, broadcast = true): void {
   const target = Math.max(0, Math.min(next, deck.default.length - 1));
   entryDirection = target > pageIndex ? 'forward' : target < pageIndex ? 'backward' : 'jump';
   pageIndex = target;
+  selectedElement = null;
   notesDraft = deck.notes?.[pageIndex] ?? '';
   const url = new URL(window.location.href);
   url.searchParams.set('p', String(pageIndex + 1));
@@ -462,8 +472,42 @@ async function saveDesign(patch: Partial<DesignSystem>): Promise<void> {
 }
 
 function toggleInspector(): void {
-  inspectorOpen = !inspectorOpen;
+  setInspectorOpen(!inspectorOpen);
   if (inspectorOpen && !designDraft) void loadDesign();
+}
+
+function setInspectorOpen(open: boolean): void {
+  inspectorOpen = open;
+  sessionStorage.setItem('open-slide:inspector-open', String(open));
+}
+
+function inspectElement(event: Event): void {
+  if (!inspectorOpen || !(event.target instanceof Element)) return;
+  const element = event.target.closest<HTMLElement>('[data-osd-loc][data-osd-file]');
+  if (!element) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const [line, column] = (element.dataset.osdLoc ?? '').split(':').map(Number);
+  if (!Number.isInteger(line) || !Number.isInteger(column) || !element.dataset.osdFile) return;
+  selectedElement = {
+    file: element.dataset.osdFile,
+    line,
+    column,
+    tag: element.tagName.toLowerCase(),
+    text: element.textContent?.trim() ?? '',
+  };
+}
+
+async function saveSelectedElement(): Promise<void> {
+  if (!selectedElement) return;
+  elementSaving = true;
+  const response = await fetch('/__svelte-edit', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(selectedElement),
+  });
+  elementSaving = false;
+  if (!response.ok) designWarning = `Element edit failed (${response.status}).`;
 }
 
 async function runExport(format: 'html' | 'pdf'): Promise<void> {
@@ -562,7 +606,7 @@ function closeTransientOverlays(): boolean {
 
 function enterPresentMode(): void {
   presenting = true;
-  inspectorOpen = false;
+  setInspectorOpen(false);
 }
 
 function onWheel(event: WheelEvent): void {
@@ -655,7 +699,7 @@ function onKeydown(event: KeyboardEvent): void {
   if (presenting && event.key === '?') helpOpen = !helpOpen;
   if (presenting && event.key.toLowerCase() === 'p') openPresenter();
   if (event.key.toLowerCase() === 'f') void document.documentElement.requestFullscreen();
-  if (event.key.toLowerCase() === 'i' && route.kind === 'slide') inspectorOpen = !inspectorOpen;
+  if (event.key.toLowerCase() === 'i' && route.kind === 'slide') toggleInspector();
   if (event.key === 'Escape') {
     if (closeTransientOverlays()) return;
     if (presenting) {
@@ -664,7 +708,7 @@ function onKeydown(event: KeyboardEvent): void {
       jumpDigits = '';
       return;
     }
-    if (inspectorOpen) inspectorOpen = false;
+    if (inspectorOpen) setInspectorOpen(false);
   }
 }
 
@@ -1038,6 +1082,8 @@ onMount(() => {
             {entryDirection}
             component={activePage}
             pageTransition={activeTransition}
+            {pageIndex}
+            {pageCount}
             onController={updateStepController}
             onAggregate={updateStepAggregate}
           />
@@ -1100,6 +1146,8 @@ onMount(() => {
               component={activePage}
               pageTransition={activeTransition}
               controlledRevealed={remoteStepRevealed}
+              {pageIndex}
+              {pageCount}
               onController={updateStepController}
               onAggregate={updateStepAggregate}
             />
@@ -1187,12 +1235,18 @@ onMount(() => {
         {/each}
       </nav>
 
-      <section
+      <div
         class="viewport"
         use:measure
         onwheel={onWheel}
         ontouchstart={onTouchStart}
         ontouchend={onTouchEnd}
+        onclick={inspectElement}
+        onkeydown={(event) => {
+          if (event.key === 'Enter') inspectElement(event);
+        }}
+        role="button"
+        tabindex="0"
         aria-label={`Page ${pageIndex + 1}`}
       >
         <div class="canvas" style={`transform: translate(-50%, -50%) scale(${scale}); ${designCss}`}>
@@ -1201,14 +1255,18 @@ onMount(() => {
               {entryDirection}
               component={activePage}
               pageTransition={activeTransition}
+              {pageIndex}
+              {pageCount}
               onController={updateStepController}
               onAggregate={updateStepAggregate}
             />
           {/key}
         </div>
-        <button class="page-hit prev" onclick={() => goToPage(pageIndex - 1)} aria-label="Previous page"></button>
-        <button class="page-hit next" onclick={() => goToPage(pageIndex + 1)} aria-label="Next page"></button>
-      </section>
+        {#if !inspectorOpen}
+          <button class="page-hit prev" onclick={() => goToPage(pageIndex - 1)} aria-label="Previous page"></button>
+          <button class="page-hit next" onclick={() => goToPage(pageIndex + 1)} aria-label="Next page"></button>
+        {/if}
+      </div>
 
       {#if inspectorOpen}
         <aside class="inspector">
@@ -1217,13 +1275,27 @@ onMount(() => {
               <p class="eyebrow">Inspector</p>
               <h2>Page {pageIndex + 1}</h2>
             </div>
-            <button class="icon-button" onclick={() => (inspectorOpen = false)} aria-label="Close inspector">×</button>
+            <button class="icon-button" onclick={() => setInspectorOpen(false)} aria-label="Close inspector">×</button>
           </div>
           <dl>
             <div><dt>Deck</dt><dd>{deck.meta?.title ?? currentSlideId}</dd></div>
             <div><dt>Theme</dt><dd>{deck.meta?.theme ?? 'Default'}</dd></div>
             <div><dt>Canvas</dt><dd>{CANVAS_WIDTH} × {CANVAS_HEIGHT}</dd></div>
           </dl>
+          {#if selectedElement}
+            <section class="element-card">
+              <p class="eyebrow">Selected &lt;{selectedElement.tag}&gt;</p>
+              <label>
+                Text
+                <textarea aria-label="Selected element text" bind:value={selectedElement.text}></textarea>
+              </label>
+              <button class="button" onclick={saveSelectedElement} disabled={elementSaving}>
+                {elementSaving ? 'Saving…' : 'Save element'}
+              </button>
+            </section>
+          {:else}
+            <p class="inspector-hint">Click an element on the slide to edit its direct text.</p>
+          {/if}
           {#if designDraft}
             <section class="design-card">
               <p class="eyebrow">Design system</p>

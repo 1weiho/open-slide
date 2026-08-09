@@ -14,6 +14,8 @@ import {
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
 import type { InlineConfig } from 'vite';
+import { svelteEditPlugin } from './edit-plugin.ts';
+import { svelteLocPlugin } from './loc-plugin.ts';
 
 function findPackageRoot(fromFile: string): string {
   let dir = path.dirname(fromFile);
@@ -59,6 +61,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
     configFile: false,
     envDir: userCwd,
     plugins: [
+      svelteLocPlugin({ slidesRoot: slidesAbs }),
       svelte(),
       tailwindcss(),
       openSlidePlugin({
@@ -83,6 +86,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
         coreVersion: readRuntimeVersion(),
         entryFile: 'index.ts',
       }),
+      svelteEditPlugin({ slidesRoot: slidesAbs }),
     ],
     resolve: {
       alias: {

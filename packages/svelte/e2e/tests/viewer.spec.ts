@@ -93,6 +93,23 @@ test.describe('Svelte slide viewer', () => {
     await expect(page).toHaveURL(/[?&]p=2/);
   });
 
+  test('runs page, overview, appearance, and export commands', async ({ page }) => {
+    await page.goto('/s/alpha');
+    await page.keyboard.press('ControlOrMeta+k');
+    const search = page.getByPlaceholder('Search this deck or run a command');
+    await search.fill('page 2');
+    await page.getByRole('option', { name: 'Page 2' }).click();
+    await expect(page).toHaveURL(/[?&]p=2/);
+
+    await page.keyboard.press('ControlOrMeta+k');
+    await page.getByRole('option', { name: 'Theme: Dark' }).click();
+    await expect(page.locator('html')).toHaveClass(/dark/);
+
+    await page.keyboard.press('ControlOrMeta+k');
+    await page.getByRole('option', { name: 'Slide overview' }).click();
+    await expect(page.getByRole('dialog', { name: 'Slide overview' })).toBeVisible();
+  });
+
   test('duplicates, reorders, and deletes pages through shared slide operations', async ({
     page,
   }) => {
@@ -125,5 +142,15 @@ test.describe('Svelte slide viewer', () => {
     expect((await request.get('/__server-status')).ok()).toBe(true);
     expect((await request.get('/__folders/')).ok()).toBe(true);
     expect((await request.get('/__assets/alpha/')).ok()).toBe(true);
+  });
+
+  test('provides native page context, morph, and image placeholder authoring APIs', async ({
+    page,
+  }) => {
+    await page.goto('/s/beta');
+    const viewport = page.locator('.viewport');
+    await expect(viewport.getByText('Page 1 of 1')).toBeVisible();
+    await expect(viewport.locator('[data-osd-morph="beta-heading"]')).toBeVisible();
+    await expect(viewport.getByRole('img', { name: 'Beta chart' })).toBeVisible();
   });
 });
