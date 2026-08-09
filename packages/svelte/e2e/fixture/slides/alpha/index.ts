@@ -3,6 +3,11 @@ import One from './01-one.svelte';
 import Two from './02-two.svelte';
 import Three from './03-three.svelte';
 
+Two.transition = {
+  duration: 1_200,
+  enter: { keyframes: [{ opacity: 0 }, { opacity: 1 }] },
+};
+
 export const meta = {
   title: 'Alpha Deck',
   theme: 'plain',

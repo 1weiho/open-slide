@@ -25,6 +25,7 @@ import {
 import { en, ja, type Locale, zhCN, zhTW } from '@open-slide/shared/locale';
 import { onMount } from 'svelte';
 import type { Page } from '../index.ts';
+import { exportHtml, exportPdf } from './export.ts';
 import StepHost from './StepHost.svelte';
 
 type Route =
@@ -76,6 +77,7 @@ let assetSearch = '';
 let assetError = '';
 let notesDraft = '';
 let notesSaving = false;
+let exporting = false;
 let designDraft: DesignSystem | null = null;
 let designWarning = '';
 let pageIndex = 0;
@@ -102,6 +104,7 @@ let lastWheelAt = 0;
 let touchStartX: number | null = null;
 
 $: activePage = deck?.default[pageIndex] ?? null;
+$: activeTransition = activePage?.transition ?? deck?.transition;
 $: nextPage = deck?.default[pageIndex + 1] ?? null;
 $: pageCount = deck?.default.length ?? 0;
 $: note = deck?.notes?.[pageIndex] ?? '';
@@ -139,6 +142,11 @@ $: commandDecks = deckSummaries.filter((summary) => {
     summary.title.toLowerCase().includes(query)
   );
 });
+$: commandPageIndexes = commandQuery.trim()
+  ? Array.from({ length: pageCount }, (_, index) => index).filter((index) =>
+      `page ${index + 1}`.includes(commandQuery.trim().toLowerCase()),
+    )
+  : [];
 $: visibleAssets = assets.filter((asset) =>
   asset.name.toLowerCase().includes(assetSearch.trim().toLowerCase()),
 );
@@ -218,6 +226,11 @@ function applyAppearance(next: Appearance): void {
     'dark',
     next === 'dark' || (next === 'system' && prefersDark),
   );
+}
+
+function applyCommandAppearance(next: Appearance): void {
+  applyAppearance(next);
+  commandOpen = false;
 }
 
 function applyLocale(next: Locale['id']): void {
@@ -350,6 +363,17 @@ async function saveDesign(patch: Partial<DesignSystem>): Promise<void> {
 function toggleInspector(): void {
   inspectorOpen = !inspectorOpen;
   if (inspectorOpen && !designDraft) void loadDesign();
+}
+
+async function runExport(format: 'html' | 'pdf'): Promise<void> {
+  if (!deck || !currentSlideId || exporting) return;
+  exporting = true;
+  try {
+    if (format === 'html') await exportHtml(deck, currentSlideId);
+    else await exportPdf(deck, currentSlideId);
+  } finally {
+    exporting = false;
+  }
 }
 
 async function loadAssets(): Promise<void> {
@@ -882,6 +906,7 @@ onMount(() => {
           <StepHost
             {entryDirection}
             component={activePage}
+            pageTransition={activeTransition}
             onController={updateStepController}
             onAggregate={updateStepAggregate}
           />
@@ -942,6 +967,7 @@ onMount(() => {
             <StepHost
               {entryDirection}
               component={activePage}
+              pageTransition={activeTransition}
               onController={updateStepController}
               onAggregate={updateStepAggregate}
             />
@@ -1000,6 +1026,8 @@ onMount(() => {
       <div class="viewer-actions">
         <button class="button subtle" aria-label="Open command menu" onclick={() => (commandOpen = true)}>⌘K</button>
         <button class="button subtle" onclick={toggleInspector}>Inspector</button>
+        <button class="button subtle" onclick={() => runExport('html')} disabled={exporting}>Export HTML</button>
+        <button class="button subtle" onclick={() => runExport('pdf')} disabled={exporting}>Export PDF</button>
         <button class="button" onclick={openPresenter}>Presenter</button>
         <button class="button primary" onclick={enterPresentMode}>Present</button>
       </div>
@@ -1035,6 +1063,7 @@ onMount(() => {
             <StepHost
               {entryDirection}
               component={activePage}
+              pageTransition={activeTransition}
               onController={updateStepController}
               onAggregate={updateStepAggregate}
             />
@@ -1094,7 +1123,7 @@ onMount(() => {
       <div class="command-results" role="listbox" aria-label="Commands">
         {#if route.kind === 'slide' && deck}
           <p>Pages</p>
-          {#each deck.default as _, index}
+          {#each commandPageIndexes as index}
             <button
               role="option"
               aria-selected="false"
@@ -1113,9 +1142,11 @@ onMount(() => {
               commandOpen = false;
               openOverview();
             }}
-          >Open overview</button>
-          <button role="option" aria-selected="false" onclick={() => applyAppearance('light')}>Light appearance</button>
-          <button role="option" aria-selected="false" onclick={() => applyAppearance('dark')}>Dark appearance</button>
+          >Slide overview</button>
+          <button role="option" aria-selected="false" onclick={() => runExport('html')}>Export HTML</button>
+          <button role="option" aria-selected="false" onclick={() => runExport('pdf')}>Export PDF</button>
+          <button role="option" aria-selected="false" onclick={() => applyCommandAppearance('light')}>Theme: Light</button>
+          <button role="option" aria-selected="false" onclick={() => applyCommandAppearance('dark')}>Theme: Dark</button>
         {:else}
           <p>Decks</p>
           {#each commandDecks as summary}
@@ -1123,8 +1154,8 @@ onMount(() => {
           {/each}
           <p>Actions</p>
           <button role="option" aria-selected="false" onclick={() => navigate('/themes')}>{locale.home.themes}</button>
-          <button role="option" aria-selected="false" onclick={() => applyAppearance('light')}>Light appearance</button>
-          <button role="option" aria-selected="false" onclick={() => applyAppearance('dark')}>Dark appearance</button>
+          <button role="option" aria-selected="false" onclick={() => applyCommandAppearance('light')}>Theme: Light</button>
+          <button role="option" aria-selected="false" onclick={() => applyCommandAppearance('dark')}>Theme: Dark</button>
         {/if}
       </div>
     </section>

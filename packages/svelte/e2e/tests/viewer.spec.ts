@@ -10,6 +10,9 @@ test.describe('Svelte slide viewer', () => {
     await page.keyboard.press('ArrowRight');
     await expect(page).toHaveURL(/[?&]p=2/);
     await expect(viewport.getByText('Alpha page two')).toBeVisible();
+    await expect
+      .poll(() => viewport.locator('.os-page-host').evaluate((node) => node.getAnimations().length))
+      .toBe(1);
 
     await page.keyboard.press('o');
     const overview = page.getByRole('dialog', { name: 'Slide overview' });
