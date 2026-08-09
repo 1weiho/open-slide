@@ -67,7 +67,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
         coreVersion: readRuntimeVersion(),
         entryExtensions: ['ts', 'js'],
       }),
-      themesPlugin({ userCwd, config, demoExtensions: ['svelte'] }),
+      themesPlugin({ userCwd, config, demoExtensions: ['ts', 'js', 'svelte'] }),
       currentPlugin({ userCwd, slidesDir, entryFile: 'index.ts' }),
       notesPlugin({ userCwd, slidesDir, entryFile: 'index.ts' }),
       designPlugin({

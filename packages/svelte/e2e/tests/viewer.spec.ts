@@ -55,6 +55,30 @@ test.describe('Svelte slide viewer', () => {
     await expect(page).toHaveURL(/[?&]p=2/);
   });
 
+  test('reveals Svelte steps before advancing and restores them when retreating', async ({
+    page,
+  }) => {
+    await page.goto('/s/steps');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.play-shell')).toHaveAttribute('data-step-count', '0');
+    await page.keyboard.press('ArrowRight');
+    await expect(page).toHaveURL(/[?&]p=2/);
+    await expect(page.locator('[data-osd-step="pending"]')).toHaveCount(2);
+    await expect(page.locator('.play-shell')).toHaveAttribute('data-step-count', '2');
+
+    await page.keyboard.press('ArrowRight');
+    await expect(page.locator('.play-shell')).toHaveAttribute('data-step-revealed', '1');
+    await expect(page.locator('[data-osd-step="revealed"]')).toHaveCount(1);
+    await page.keyboard.press('ArrowRight');
+    await expect(page.locator('[data-osd-step="revealed"]')).toHaveCount(2);
+    await page.keyboard.press('ArrowRight');
+    await expect(page).toHaveURL(/[?&]p=3/);
+
+    await page.keyboard.press('ArrowLeft');
+    await expect(page).toHaveURL(/[?&]p=2/);
+    await expect(page.locator('[data-osd-step="revealed"]')).toHaveCount(2);
+  });
+
   test('serves shared dev APIs', async ({ request }) => {
     expect((await request.get('/__server-status')).ok()).toBe(true);
     expect((await request.get('/__folders/')).ok()).toBe(true);

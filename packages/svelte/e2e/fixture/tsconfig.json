@@ -7,5 +7,11 @@
     "strict": true,
     "target": "ES2022"
   },
-  "include": ["slides/**/*.svelte", "slides/**/*.ts", "open-slide.config.ts"]
+  "include": [
+    "slides/**/*.svelte",
+    "slides/**/*.ts",
+    "themes/**/*.svelte",
+    "themes/**/*.ts",
+    "open-slide.config.ts"
+  ]
 }

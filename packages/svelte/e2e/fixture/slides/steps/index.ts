@@ -4,11 +4,8 @@ import Two from './02-two.svelte';
 import Three from './03-three.svelte';
 
 export const meta = {
-  title: 'Alpha Deck',
-  theme: 'plain',
-  createdAt: '2026-01-03T00:00:00.000Z',
+  title: 'Steps Deck',
+  createdAt: '2025-06-03T00:00:00.000Z',
 } satisfies SlideMeta;
-
-export const notes: (string | undefined)[] = ['Alpha speaker note', undefined, 'Alpha final note'];
 
 export default [One, Two, Three] satisfies Page[];

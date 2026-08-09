@@ -8,6 +8,14 @@ export type {
 export { cssVarsToString, defaultDesign, designToCssVars } from './design.ts';
 export type { Locale, Plural } from './locale/types.ts';
 export type {
+  EntryDirection,
+  StepAggregate,
+  StepController,
+  StepRegistration,
+  StepRegistry,
+} from './steps.ts';
+export { createStepRegistry } from './steps.ts';
+export type {
   MorphTransition,
   SlideTransition,
   TransitionPhase,

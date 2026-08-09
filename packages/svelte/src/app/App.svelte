@@ -1,23 +1,67 @@
 <script lang="ts">
 import config from 'virtual:open-slide/config';
-import { loadSlide, slideIds } from 'virtual:open-slide/slides';
-import { CANVAS_HEIGHT, CANVAS_WIDTH, type SlideModule } from '@open-slide/shared';
+import folderManifest from 'virtual:open-slide/folders';
+import { loadSlide, slideCreatedAt, slideIds, slideThemes } from 'virtual:open-slide/slides';
+import { loadThemeDemo, themes } from 'virtual:open-slide/themes';
+import {
+  CANVAS_HEIGHT,
+  CANVAS_WIDTH,
+  type EntryDirection,
+  type FoldersManifest,
+  type SlideModule,
+  type StepAggregate,
+  type StepController,
+} from '@open-slide/shared';
+import { en, ja, type Locale, zhCN, zhTW } from '@open-slide/shared/locale';
 import { onMount } from 'svelte';
 import type { Page } from '../index.ts';
+import StepHost from './StepHost.svelte';
 
 type Route =
   | { kind: 'home' }
+  | { kind: 'themes' }
+  | { kind: 'theme'; themeId: string }
   | { kind: 'slide'; slideId: string }
   | { kind: 'presenter'; slideId: string }
   | { kind: 'not-found' };
 
-type DeckSummary = { id: string; title: string; pages: number };
-type PresenterMessage = { type: 'page'; page: number };
+type DeckSummary = {
+  id: string;
+  title: string;
+  pages: number;
+  theme?: string;
+  createdAt: number;
+};
+type PresenterMessage =
+  | { type: 'hello' }
+  | { type: 'page'; page: number }
+  | { type: 'blackout'; value: 'black' | 'white' | null }
+  | { type: 'state'; page: number; blackout: 'black' | 'white' | null };
+type SortKey = 'created-desc' | 'created-asc' | 'title-asc' | 'title-desc';
+type Appearance = 'light' | 'dark' | 'system';
+
+const locales: Record<Locale['id'], Locale> = { en, ja, 'zh-CN': zhCN, 'zh-TW': zhTW };
 
 let route = parseRoute();
 let deck: SlideModule<Page> | null = null;
 let deckSummaries: DeckSummary[] = [];
+let folders: FoldersManifest = structuredClone(folderManifest);
+let searchQuery = '';
+let sortKey: SortKey = 'created-desc';
+let selectedFolder = 'all';
+let creatingFolder = false;
+let newFolderName = '';
+let commandOpen = false;
+let commandQuery = '';
+let appearance: Appearance = 'system';
+let localeId: Locale['id'] = 'en';
+let themeModule: SlideModule<Page> | null = null;
+let themePageIndex = 0;
+let themePromptOpen = false;
 let pageIndex = 0;
+let entryDirection: EntryDirection = 'jump';
+let stepController: StepController | null = null;
+let stepAggregate: StepAggregate = { revealed: 0, stepCount: 0 };
 let loading = false;
 let error = '';
 let inspectorOpen = false;
@@ -33,17 +77,55 @@ let jumpDigits = '';
 let viewport: HTMLElement;
 let scale = 1;
 let channel: BroadcastChannel | null = null;
+let presenterLinked = false;
 let lastWheelAt = 0;
 
 $: activePage = deck?.default[pageIndex] ?? null;
 $: nextPage = deck?.default[pageIndex + 1] ?? null;
 $: pageCount = deck?.default.length ?? 0;
 $: note = deck?.notes?.[pageIndex] ?? '';
+$: currentSlideId = route.kind === 'slide' || route.kind === 'presenter' ? route.slideId : '';
+$: locale = locales[localeId];
+$: selectedTheme =
+  route.kind === 'theme' ? themes.find((theme) => theme.id === route.themeId) : null;
+$: themePage = themeModule?.default[themePageIndex] ?? null;
+$: visibleSummaries = deckSummaries.filter((summary) => {
+  const folderMatches =
+    selectedFolder === 'all'
+      ? true
+      : selectedFolder === 'draft'
+        ? !folders.assignments[summary.id]
+        : folders.assignments[summary.id] === selectedFolder;
+  if (!folderMatches) return false;
+  const query = searchQuery.trim().toLowerCase();
+  return (
+    !query ||
+    summary.id.toLowerCase().includes(query) ||
+    summary.title.toLowerCase().includes(query)
+  );
+});
+$: sortedSummaries = visibleSummaries.slice().sort((a, b) => {
+  if (sortKey === 'title-asc') return a.title.localeCompare(b.title);
+  if (sortKey === 'title-desc') return b.title.localeCompare(a.title);
+  if (sortKey === 'created-asc') return a.createdAt - b.createdAt;
+  return b.createdAt - a.createdAt;
+});
+$: commandDecks = deckSummaries.filter((summary) => {
+  const query = commandQuery.trim().toLowerCase();
+  return (
+    !query ||
+    summary.id.toLowerCase().includes(query) ||
+    summary.title.toLowerCase().includes(query)
+  );
+});
 
 function parseRoute(): Route {
   const base = (config.base ?? '/').replace(/\/$/, '');
   const pathname = window.location.pathname.slice(base.length) || '/';
   if (pathname === '/') return { kind: 'home' };
+  if (pathname === '/themes' || pathname === '/themes/') return { kind: 'themes' };
+  const themeMatch = pathname.match(/^\/themes\/([^/]+)\/?$/);
+  if (themeMatch) return { kind: 'theme', themeId: decodeURIComponent(themeMatch[1]) };
   const match = pathname.match(/^\/s\/([^/]+)(\/presenter)?\/?$/);
   if (!match) return { kind: 'not-found' };
   return {
@@ -77,13 +159,98 @@ async function loadSummaries(): Promise<void> {
     slideIds.map(async (id) => {
       try {
         const module = await loadSlide(id);
-        return { id, title: module.meta?.title ?? id, pages: module.default.length };
+        return {
+          id,
+          title: module.meta?.title ?? id,
+          pages: module.default.length,
+          theme: module.meta?.theme ?? slideThemes[id],
+          createdAt: slideCreatedAt[id] ?? (Date.parse(module.meta?.createdAt ?? '') || 0),
+        };
       } catch {
-        return { id, title: id, pages: 0 };
+        return { id, title: id, pages: 0, createdAt: slideCreatedAt[id] ?? 0 };
       }
     }),
   );
   deckSummaries = summaries;
+}
+
+async function loadCurrentTheme(): Promise<void> {
+  if (route.kind !== 'theme' || !selectedTheme?.hasDemo) return;
+  try {
+    themeModule = await loadThemeDemo(route.themeId);
+  } catch {
+    themeModule = null;
+  }
+}
+
+function applyAppearance(next: Appearance): void {
+  appearance = next;
+  localStorage.setItem('open-slide:appearance', next);
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  document.documentElement.classList.toggle(
+    'dark',
+    next === 'dark' || (next === 'system' && prefersDark),
+  );
+}
+
+function applyLocale(next: Locale['id']): void {
+  localeId = next;
+  localStorage.setItem('open-slide:locale', next);
+}
+
+function applySort(next: SortKey): void {
+  sortKey = next;
+  localStorage.setItem('open-slide:home-sort', next);
+}
+
+async function createFolder(): Promise<void> {
+  const name = newFolderName.trim();
+  if (!name) return;
+  const response = await fetch('/__folders/', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name, icon: { type: 'emoji', value: '📁' } }),
+  });
+  if (!response.ok) return;
+  const folder = (await response.json()) as FoldersManifest['folders'][number];
+  folders = { ...folders, folders: [...folders.folders, folder] };
+  selectedFolder = folder.id;
+  newFolderName = '';
+  creatingFolder = false;
+}
+
+async function deleteFolder(folderId: string): Promise<void> {
+  const response = await fetch(`/__folders/${encodeURIComponent(folderId)}`, { method: 'DELETE' });
+  if (!response.ok) return;
+  folders = {
+    folders: folders.folders.filter((folder) => folder.id !== folderId),
+    assignments: Object.fromEntries(
+      Object.entries(folders.assignments).filter(([, assigned]) => assigned !== folderId),
+    ),
+  };
+  if (selectedFolder === folderId) selectedFolder = 'all';
+}
+
+async function assignSlide(slideId: string, folderId: string | null): Promise<void> {
+  const response = await fetch('/__folders/assign', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ slideId, folderId }),
+  });
+  if (!response.ok) return;
+  const assignments = { ...folders.assignments };
+  if (folderId) assignments[slideId] = folderId;
+  else delete assignments[slideId];
+  folders = { ...folders, assignments };
+}
+
+function navigate(pathname: string): void {
+  const base = (config.base ?? '/').replace(/\/$/, '');
+  window.location.assign(`${base}${pathname}` || '/');
+}
+
+function focus(node: HTMLElement): void {
+  queueMicrotask(() => node.focus());
 }
 
 function updateScale(): void {
@@ -101,11 +268,32 @@ function measure(node: HTMLElement): { destroy: () => void } {
 
 function goToPage(next: number, broadcast = true): void {
   if (!deck || deck.default.length === 0) return;
-  pageIndex = Math.max(0, Math.min(next, deck.default.length - 1));
+  const target = Math.max(0, Math.min(next, deck.default.length - 1));
+  entryDirection = target > pageIndex ? 'forward' : target < pageIndex ? 'backward' : 'jump';
+  pageIndex = target;
   const url = new URL(window.location.href);
   url.searchParams.set('p', String(pageIndex + 1));
   window.history.replaceState({}, '', url);
   if (broadcast) channel?.postMessage({ type: 'page', page: pageIndex } satisfies PresenterMessage);
+}
+
+function advance(): void {
+  if (stepController?.advance()) return;
+  goToPage(pageIndex + 1);
+}
+
+function updateStepController(controller: StepController, mounted: boolean): void {
+  if (mounted) stepController = controller;
+  else if (stepController === controller) stepController = null;
+}
+
+function updateStepAggregate(controller: StepController, aggregate: StepAggregate): void {
+  if (stepController === controller) stepAggregate = aggregate;
+}
+
+function retreat(): void {
+  if (stepController?.retreat()) return;
+  goToPage(pageIndex - 1);
 }
 
 function openOverview(): void {
@@ -139,7 +327,8 @@ function onWheel(event: WheelEvent): void {
   const now = Date.now();
   if (now - lastWheelAt < 350 || Math.abs(event.deltaY) < 30) return;
   lastWheelAt = now;
-  goToPage(pageIndex + (event.deltaY > 0 ? 1 : -1));
+  if (event.deltaY > 0) advance();
+  else retreat();
 }
 
 function onPointerMove(event: MouseEvent): void {
@@ -153,8 +342,22 @@ function toggleBlackout(value: 'black' | 'white'): void {
 }
 
 function onKeydown(event: KeyboardEvent): void {
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+    event.preventDefault();
+    commandOpen = !commandOpen;
+    return;
+  }
+  if (commandOpen && event.key === 'Escape') {
+    commandOpen = false;
+    return;
+  }
   if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement)
     return;
+  if (event.key === '/' && !presenting) {
+    event.preventDefault();
+    commandOpen = true;
+    return;
+  }
   if (overviewOpen) {
     if (event.key === 'Escape' || event.key.toLowerCase() === 'o') overviewOpen = false;
     if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
@@ -181,11 +384,11 @@ function onKeydown(event: KeyboardEvent): void {
   }
   if (event.key === 'ArrowRight' || event.key === 'PageDown' || event.key === ' ') {
     event.preventDefault();
-    goToPage(pageIndex + 1);
+    advance();
   }
   if (event.key === 'ArrowLeft' || event.key === 'PageUp') {
     event.preventDefault();
-    goToPage(pageIndex - 1);
+    retreat();
   }
   if (presenting && event.key === 'Home') goToPage(0);
   if (presenting && event.key === 'End') goToPage(pageCount - 1);
@@ -227,14 +430,49 @@ function backHome(): void {
 onMount(() => {
   void loadCurrentDeck();
   if (route.kind === 'home') void loadSummaries();
+  if (route.kind === 'theme') void loadCurrentTheme();
+
+  const storedLocale = localStorage.getItem('open-slide:locale');
+  const seededLocale = storedLocale ?? config.locale?.id;
+  if (seededLocale && seededLocale in locales) localeId = seededLocale as Locale['id'];
+  const storedAppearance = localStorage.getItem('open-slide:appearance');
+  applyAppearance(
+    storedAppearance === 'light' || storedAppearance === 'dark' ? storedAppearance : 'system',
+  );
+  const storedSort = localStorage.getItem('open-slide:home-sort');
+  if (storedSort === 'created-asc' || storedSort === 'title-asc' || storedSort === 'title-desc') {
+    sortKey = storedSort;
+  }
 
   const channelName =
     route.kind === 'slide' || route.kind === 'presenter' ? `open-slide:${route.slideId}` : null;
   if (channelName) {
     channel = new BroadcastChannel(channelName);
     channel.onmessage = (event: MessageEvent<PresenterMessage>) => {
-      if (event.data?.type === 'page') goToPage(event.data.page, false);
+      if (event.data?.type === 'hello' && route.kind === 'slide') {
+        presenterLinked = true;
+        channel?.postMessage({
+          type: 'state',
+          page: pageIndex,
+          blackout,
+        } satisfies PresenterMessage);
+      }
+      if (event.data?.type === 'state' && route.kind === 'presenter') {
+        presenterLinked = true;
+        blackout = event.data.blackout;
+        goToPage(event.data.page, false);
+      }
+      if (event.data?.type === 'page') {
+        presenterLinked = true;
+        goToPage(event.data.page, false);
+      }
+      if (event.data?.type === 'blackout') {
+        presenterLinked = true;
+        blackout = event.data.value;
+      }
     };
+    if (route.kind === 'presenter')
+      channel.postMessage({ type: 'hello' } satisfies PresenterMessage);
   }
 
   window.addEventListener('keydown', onKeydown);
@@ -247,35 +485,176 @@ onMount(() => {
 </script>
 
 {#if route.kind === 'home'}
-  <main class="home-shell">
-    <header class="home-header">
-      <div>
-        <p class="eyebrow">open-slide · svelte</p>
-        <h1>Your slides</h1>
+  <main class="home-shell home-layout">
+    <aside class="home-sidebar">
+      <a class="home-brand" href={config.base ?? '/'}>open-slide</a>
+      <nav aria-label={locale.home.folders}>
+        <button class:active={selectedFolder === 'all'} onclick={() => (selectedFolder = 'all')}>
+          <span>🎞️</span><span>{locale.home.slides}</span><small>{deckSummaries.length}</small>
+        </button>
+        <button class:active={selectedFolder === 'draft'} onclick={() => (selectedFolder = 'draft')}>
+          <span>📝</span><span>{locale.home.draft}</span><small>{deckSummaries.filter((summary) => !folders.assignments[summary.id]).length}</small>
+        </button>
+        {#each folders.folders as folder}
+          <div class="folder-row">
+            <button class:active={selectedFolder === folder.id} onclick={() => (selectedFolder = folder.id)}>
+              <span>{folder.icon.type === 'emoji' ? folder.icon.value : '●'}</span><span>{folder.name}</span><small>{deckSummaries.filter((summary) => folders.assignments[summary.id] === folder.id).length}</small>
+            </button>
+            <button class="folder-delete" aria-label={`Delete ${folder.name}`} onclick={() => deleteFolder(folder.id)}>×</button>
+          </div>
+        {/each}
+      </nav>
+      {#if creatingFolder}
+        <div class="new-folder-form">
+          <input
+            use:focus
+            placeholder={locale.home.folderName}
+            bind:value={newFolderName}
+            onkeydown={(event) => {
+              if (event.key === 'Enter') void createFolder();
+              if (event.key === 'Escape') creatingFolder = false;
+            }}
+          />
+          <button class="button" onclick={() => createFolder()}>{locale.common.add}</button>
+        </div>
+      {:else}
+        <button class="new-folder-button" onclick={() => (creatingFolder = true)}>＋ {locale.home.newFolder}</button>
+      {/if}
+      <div class="sidebar-spacer"></div>
+      <a class="sidebar-link" href="./themes">🎨 {locale.home.themes}</a>
+      <button class="sidebar-link" onclick={() => (commandOpen = true)}>⌘ {locale.home.menu}</button>
+      <div class="preference-row">
+        <select
+          aria-label="Change language"
+          value={localeId}
+          onchange={(event) => applyLocale(event.currentTarget.value as Locale['id'])}
+        >
+          <option value="en">English</option>
+          <option value="zh-TW">繁體中文</option>
+          <option value="zh-CN">简体中文</option>
+          <option value="ja">日本語</option>
+        </select>
+        <select
+          aria-label="Toggle theme"
+          value={appearance}
+          onchange={(event) => applyAppearance(event.currentTarget.value as Appearance)}
+        >
+          <option value="system">{locale.common.system}</option>
+          <option value="light">{locale.common.light}</option>
+          <option value="dark">{locale.common.dark}</option>
+        </select>
       </div>
       <p class="version">v{config.version}</p>
-    </header>
+    </aside>
 
-    {#if deckSummaries.length > 0}
-      <section class="deck-grid" aria-label="Slides">
-        {#each deckSummaries as summary}
-          <a class="deck-card" href={`./s/${encodeURIComponent(summary.id)}`}>
-            <div class="deck-preview">
-              <span>{summary.title.slice(0, 1).toUpperCase()}</span>
-            </div>
-            <div class="deck-meta">
-              <strong>{summary.title}</strong>
-              <span>{summary.pages} {summary.pages === 1 ? 'page' : 'pages'}</span>
-            </div>
-          </a>
-        {/each}
+    <section class="home-content">
+      <header class="home-header">
+        <div>
+          <p class="eyebrow">open-slide · svelte</p>
+          <h1>
+            {selectedFolder === 'all'
+              ? locale.home.slides
+              : selectedFolder === 'draft'
+                ? locale.home.draft
+                : folders.folders.find((folder) => folder.id === selectedFolder)?.name ?? locale.home.slides}
+          </h1>
+        </div>
+        <div class="home-tools">
+          <select
+            aria-label={locale.home.sortLabel}
+            value={sortKey}
+            onchange={(event) => applySort(event.currentTarget.value as SortKey)}
+          >
+            <option value="created-desc">{locale.home.sortByCreatedDesc}</option>
+            <option value="created-asc">{locale.home.sortByCreatedAsc}</option>
+            <option value="title-asc">{locale.home.sortByTitleAsc}</option>
+            <option value="title-desc">{locale.home.sortByTitleDesc}</option>
+          </select>
+          <div class="search-field">
+            <input placeholder={locale.home.searchPlaceholder} bind:value={searchQuery} />
+            {#if searchQuery}
+              <button aria-label={locale.home.clearSearch} onclick={() => (searchQuery = '')}>×</button>
+            {/if}
+          </div>
+          <button class="icon-button" aria-label="Open command menu" onclick={() => (commandOpen = true)}>⌘</button>
+        </div>
+      </header>
+
+      {#if deckSummaries.length === 0}
+        <section class="empty-state">
+          <p class="eyebrow">{locale.home.noSlidesYet}</p>
+          <h2>Add a deck under <code>slides/&lt;id&gt;/index.ts</code></h2>
+        </section>
+      {:else if sortedSummaries.length === 0}
+        <section class="empty-state">
+          <p class="eyebrow">{locale.home.noMatches}</p>
+          <h2>{locale.home.nothingMatchesPrefix}<strong>{searchQuery}</strong>.</h2>
+        </section>
+      {:else}
+        <ul class="deck-grid" aria-label={locale.home.slides}>
+          {#each sortedSummaries as summary}
+            <li>
+              <a class="deck-card" href={`./s/${encodeURIComponent(summary.id)}`} aria-label={summary.title}>
+                <div class="deck-preview">
+                  <span>{summary.title.slice(0, 1).toUpperCase()}</span>
+                </div>
+                <div class="deck-meta">
+                  <h3>{summary.title}</h3>
+                  <span>{summary.pages} {summary.pages === 1 ? 'page' : 'pages'}</span>
+                </div>
+              </a>
+              <div class="deck-actions">
+                {#if summary.theme}
+                  <a href={`./themes/${encodeURIComponent(summary.theme)}`}>{summary.theme}</a>
+                {/if}
+                <select
+                  aria-label={`Move ${summary.title} to folder`}
+                  value={folders.assignments[summary.id] ?? ''}
+                  onchange={(event) => assignSlide(summary.id, event.currentTarget.value || null)}
+                >
+                  <option value="">{locale.home.draft}</option>
+                  {#each folders.folders as folder}<option value={folder.id}>{folder.name}</option>{/each}
+                </select>
+              </div>
+            </li>
+          {/each}
+        </ul>
+      {/if}
+    </section>
+  </main>
+{:else if route.kind === 'themes'}
+  <main class="home-shell themes-shell">
+    <header class="home-header">
+      <div><p class="eyebrow">open-slide</p><h1>{locale.themes.title}</h1></div>
+      <button class="button" onclick={backHome}>{locale.common.backToHome}</button>
+    </header>
+    <ul class="themes-grid">
+      {#each themes as theme}
+        <li><a class="theme-card" href={`./themes/${encodeURIComponent(theme.id)}`}><span>🎨</span><h2>{theme.name}</h2><p>{theme.description}</p></a></li>
+      {/each}
+    </ul>
+  </main>
+{:else if route.kind === 'theme' && selectedTheme}
+  <main class="home-shell theme-detail-shell">
+    <header class="home-header">
+      <div><p class="eyebrow">{locale.themes.title}</p><h1>{selectedTheme.name}</h1></div>
+      <a class="button" href="../themes">{locale.common.backToHome}</a>
+    </header>
+    <p class="theme-description">{selectedTheme.description}</p>
+    {#if themePage}
+      <section class="theme-demo">
+        <div class="theme-demo-canvas"><svelte:component this={themePage} /></div>
       </section>
-    {:else}
-      <section class="empty-state">
-        <p class="eyebrow">No slides yet</p>
-        <h2>Add a deck under <code>slides/&lt;id&gt;/index.ts</code></h2>
-      </section>
+      <div class="theme-demo-controls">
+        <button class="button" onclick={() => (themePageIndex = Math.max(0, themePageIndex - 1))} disabled={themePageIndex === 0}>Previous</button>
+        <span>{themePageIndex + 1} / {themeModule?.default.length ?? 0}</span>
+        <button class="button" onclick={() => (themePageIndex = Math.min((themeModule?.default.length ?? 1) - 1, themePageIndex + 1))} disabled={themePageIndex === (themeModule?.default.length ?? 1) - 1}>Next</button>
+      </div>
     {/if}
+    <button class="theme-prompt-toggle" aria-expanded={themePromptOpen} onclick={() => (themePromptOpen = !themePromptOpen)}>
+      {themePromptOpen ? 'Collapse prompt' : 'Expand prompt'}
+    </button>
+    {#if themePromptOpen}<pre class="theme-prompt">{selectedTheme.body}</pre>{/if}
   </main>
 {:else if route.kind === 'not-found'}
   <main class="centered-state">
@@ -295,10 +674,23 @@ onMount(() => {
     <button class="button" onclick={backHome}>Back home</button>
   </main>
 {:else if presenting}
-  <main class="play-shell" onmousemove={onPointerMove} onwheel={onWheel}>
+  <main
+    class="play-shell"
+    data-step-count={stepAggregate.stepCount}
+    data-step-revealed={stepAggregate.revealed}
+    onmousemove={onPointerMove}
+    onwheel={onWheel}
+  >
     <section class="play-viewport" use:measure aria-label={`Page ${pageIndex + 1}`}>
       <div class="canvas play-canvas" style={`transform: translate(-50%, -50%) scale(${scale});`}>
-        <svelte:component this={activePage} />
+        {#key pageIndex}
+          <StepHost
+            {entryDirection}
+            component={activePage}
+            onController={updateStepController}
+            onAggregate={updateStepAggregate}
+          />
+        {/key}
       </div>
     </section>
 
@@ -335,9 +727,9 @@ onMount(() => {
     {/if}
 
     <nav class="play-controls" aria-label="Presentation controls">
-      <button class="icon-button" onclick={() => goToPage(pageIndex - 1)} aria-label="Previous slide (←)" disabled={pageIndex === 0}>←</button>
+      <button class="icon-button" onclick={retreat} aria-label="Previous slide (←)" disabled={pageIndex === 0 && stepAggregate.revealed === 0}>←</button>
       <span>{String(pageIndex + 1).padStart(2, '0')} / {String(pageCount).padStart(2, '0')}</span>
-      <button class="icon-button" onclick={() => goToPage(pageIndex + 1)} aria-label="Next slide (→)" disabled={pageIndex === pageCount - 1}>→</button>
+      <button class="icon-button" onclick={advance} aria-label="Next slide (→)" disabled={pageIndex === pageCount - 1 && stepAggregate.revealed === stepAggregate.stepCount}>→</button>
       <button class="button" onclick={openOverview}>Overview</button>
       <button class="button" onclick={openPresenter}>Presenter</button>
       <button class="button" onclick={() => (presenting = false)}>Exit</button>
@@ -351,7 +743,14 @@ onMount(() => {
           class="canvas"
           style={`transform: translate(-50%, -50%) scale(${scale});`}
         >
-          <svelte:component this={activePage} />
+          {#key pageIndex}
+            <StepHost
+              {entryDirection}
+              component={activePage}
+              onController={updateStepController}
+              onAggregate={updateStepAggregate}
+            />
+          {/key}
         </div>
       </div>
       <div class="presenter-next">
@@ -365,11 +764,32 @@ onMount(() => {
       </div>
     </section>
     <aside class="presenter-notes">
-      <div class="presenter-count">{pageIndex + 1} / {pageCount}</div>
+      <div class="presenter-status">
+        <strong>Presenter</strong>
+        <span>{presenterLinked ? 'Linked' : 'Not linked'}</span>
+      </div>
+      <div class="presenter-count">{String(pageIndex + 1).padStart(2, '0')} / {String(pageCount).padStart(2, '0')}</div>
       <h2>Speaker notes</h2>
-      <p>{note || 'No notes for this page.'}</p>
+      <p>{note || 'No speaker notes for this slide.'}</p>
+      {#if pageIndex === pageCount - 1}<p class="presenter-last">Last slide</p>{/if}
+      <div class="presenter-blackout">
+        <button class="button" aria-pressed={blackout === 'black'} onclick={() => toggleBlackout('black')}>Black</button>
+        <button class="button" aria-pressed={blackout === 'white'} onclick={() => toggleBlackout('white')}>White</button>
+      </div>
+      <label class="presenter-jump">
+        Jump to slide
+        <input
+          type="number"
+          min="1"
+          max={pageCount}
+          value={pageIndex + 1}
+          onkeydown={(event) => {
+            if (event.key === 'Enter') goToPage(Number(event.currentTarget.value) - 1);
+          }}
+        />
+      </label>
       <div class="presenter-actions">
-        <button class="button" onclick={() => goToPage(pageIndex - 1)} disabled={pageIndex === 0}>Previous</button>
+        <button class="button" onclick={() => goToPage(pageIndex - 1)} disabled={pageIndex === 0}>Prev</button>
         <button class="button primary" onclick={() => goToPage(pageIndex + 1)} disabled={pageIndex === pageCount - 1}>Next</button>
       </div>
     </aside>
@@ -379,10 +799,11 @@ onMount(() => {
     <header class="viewer-bar">
       <button class="icon-button" onclick={backHome} aria-label="Back home">←</button>
       <div class="viewer-title">
-        <strong>{deck.meta?.title ?? route.slideId}</strong>
+        <strong>{deck.meta?.title ?? currentSlideId}</strong>
         <span>{pageIndex + 1} / {pageCount}</span>
       </div>
       <div class="viewer-actions">
+        <button class="button subtle" aria-label="Open command menu" onclick={() => (commandOpen = true)}>⌘K</button>
         <button class="button subtle" onclick={() => (inspectorOpen = !inspectorOpen)}>Inspector</button>
         <button class="button" onclick={openPresenter}>Presenter</button>
         <button class="button primary" onclick={enterPresentMode}>Present</button>
@@ -408,7 +829,14 @@ onMount(() => {
 
       <section class="viewport" use:measure onwheel={onWheel} aria-label={`Page ${pageIndex + 1}`}>
         <div class="canvas" style={`transform: translate(-50%, -50%) scale(${scale});`}>
-          <svelte:component this={activePage} />
+          {#key pageIndex}
+            <StepHost
+              {entryDirection}
+              component={activePage}
+              onController={updateStepController}
+              onAggregate={updateStepAggregate}
+            />
+          {/key}
         </div>
         <button class="page-hit prev" onclick={() => goToPage(pageIndex - 1)} aria-label="Previous page"></button>
         <button class="page-hit next" onclick={() => goToPage(pageIndex + 1)} aria-label="Next page"></button>
@@ -424,7 +852,7 @@ onMount(() => {
             <button class="icon-button" onclick={() => (inspectorOpen = false)} aria-label="Close inspector">×</button>
           </div>
           <dl>
-            <div><dt>Deck</dt><dd>{deck.meta?.title ?? route.slideId}</dd></div>
+            <div><dt>Deck</dt><dd>{deck.meta?.title ?? currentSlideId}</dd></div>
             <div><dt>Theme</dt><dd>{deck.meta?.theme ?? 'Default'}</dd></div>
             <div><dt>Canvas</dt><dd>{CANVAS_WIDTH} × {CANVAS_HEIGHT}</dd></div>
           </dl>
@@ -436,6 +864,55 @@ onMount(() => {
       {/if}
     </div>
   </main>
+{/if}
+
+{#if commandOpen}
+  <dialog open class="command-dialog" aria-label="Command menu">
+    <button class="command-backdrop" aria-label="Close command menu" onclick={() => (commandOpen = false)}></button>
+    <section class="command-panel">
+      <input
+        use:focus
+        placeholder={route.kind === 'slide' ? 'Search this deck or run a command' : 'Search decks or run a command'}
+        bind:value={commandQuery}
+      />
+      <div class="command-results" role="listbox" aria-label="Commands">
+        {#if route.kind === 'slide' && deck}
+          <p>Pages</p>
+          {#each deck.default as _, index}
+            <button
+              role="option"
+              aria-selected="false"
+              aria-label={`Page ${index + 1}`}
+              onclick={() => {
+                goToPage(index);
+                commandOpen = false;
+              }}
+            >Page {index + 1}</button>
+          {/each}
+          <p>Actions</p>
+          <button
+            role="option"
+            aria-selected="false"
+            onclick={() => {
+              commandOpen = false;
+              openOverview();
+            }}
+          >Open overview</button>
+          <button role="option" aria-selected="false" onclick={() => applyAppearance('light')}>Light appearance</button>
+          <button role="option" aria-selected="false" onclick={() => applyAppearance('dark')}>Dark appearance</button>
+        {:else}
+          <p>Decks</p>
+          {#each commandDecks as summary}
+            <button role="option" aria-selected="false" onclick={() => navigate(`/s/${encodeURIComponent(summary.id)}`)}>{summary.title}</button>
+          {/each}
+          <p>Actions</p>
+          <button role="option" aria-selected="false" onclick={() => navigate('/themes')}>{locale.home.themes}</button>
+          <button role="option" aria-selected="false" onclick={() => applyAppearance('light')}>Light appearance</button>
+          <button role="option" aria-selected="false" onclick={() => applyAppearance('dark')}>Dark appearance</button>
+        {/if}
+      </div>
+    </section>
+  </dialog>
 {/if}
 
 {#if overviewOpen && deck}

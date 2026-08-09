@@ -40,3 +40,10 @@ declare module 'virtual:open-slide/themes' {
     design?: DesignSystem;
   }>;
 }
+
+declare module 'virtual:open-slide/folders' {
+  import type { FoldersManifest } from '@open-slide/shared';
+
+  const manifest: FoldersManifest;
+  export default manifest;
+}

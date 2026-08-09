@@ -12,6 +12,12 @@
       "types": "./dist/vite/index.d.ts",
       "import": "./dist/vite/index.js"
     },
+    "./locale": {
+      "types": "./dist/locale/index.d.ts",
+      "import": "./dist/locale/index.js"
+    },
+    "./Step.svelte": "./src/components/Step.svelte",
+    "./Steps.svelte": "./src/components/Steps.svelte",
     "./env": {
       "types": "./env.d.ts"
     }
@@ -24,6 +30,7 @@
     "dist",
     "env.d.ts",
     "src/app",
+    "src/components",
     "README.md"
   ],
   "scripts": {
