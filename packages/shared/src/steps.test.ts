@@ -37,4 +37,21 @@ describe('createStepRegistry', () => {
       { revealed: 1, stepCount: 1 },
     ]);
   });
+
+  it('distributes a controlled reveal count across registrations', () => {
+    const first = vi.fn();
+    const second = vi.fn();
+    const registry = createStepRegistry();
+    registry.register({ initialRevealed: false, setRevealed: first });
+    registry.register({ initialRevealed: false, setRevealed: second });
+
+    registry.setRevealed(1);
+    expect(first).toHaveBeenLastCalledWith(true);
+    expect(second).not.toHaveBeenCalled();
+    expect(registry.aggregate()).toEqual({ revealed: 1, stepCount: 2 });
+
+    registry.setRevealed(0);
+    expect(first).toHaveBeenLastCalledWith(false);
+    expect(registry.aggregate()).toEqual({ revealed: 0, stepCount: 2 });
+  });
 });

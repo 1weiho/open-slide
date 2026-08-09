@@ -1,3 +1,4 @@
+import fs from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 
 test.describe('Svelte slide viewer', () => {
@@ -90,6 +91,34 @@ test.describe('Svelte slide viewer', () => {
       changedTouches: [{ identifier: 1, clientX: 120 }],
     });
     await expect(page).toHaveURL(/[?&]p=2/);
+  });
+
+  test('duplicates, reorders, and deletes pages through shared slide operations', async ({
+    page,
+  }) => {
+    const entryUrl = new URL('../fixture/slides/alpha/index.ts', import.meta.url);
+    const originalSource = await fs.readFile(entryUrl, 'utf8');
+    try {
+      await page.goto('/s/alpha');
+      await page.getByRole('button', { name: 'Duplicate page' }).click();
+      await expect(page).toHaveURL(/[?&]p=2/);
+      await expect(page.getByText('2 / 4').first()).toBeVisible();
+
+      const reordered = page.waitForResponse(
+        (response) =>
+          response.url().endsWith('/__slides/alpha/reorder') &&
+          response.request().method() === 'PUT',
+      );
+      await page.getByRole('button', { name: 'Move page later' }).click();
+      expect((await reordered).status()).toBe(200);
+      await expect(page).toHaveURL(/[?&]p=3/);
+
+      page.once('dialog', (dialog) => dialog.accept());
+      await page.getByRole('button', { name: 'Delete page' }).click();
+      await expect(page.getByText('3 / 3').first()).toBeVisible();
+    } finally {
+      await fs.writeFile(entryUrl, originalSource);
+    }
   });
 
   test('serves shared dev APIs', async ({ request }) => {

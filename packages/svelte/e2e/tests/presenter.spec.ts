@@ -36,4 +36,30 @@ test.describe('Svelte presenter', () => {
     await black.click();
     await expect(page.locator('.bg-black')).toBeHidden();
   });
+
+  test('drives incremental Svelte steps before advancing the player page', async ({
+    page,
+    context,
+  }) => {
+    await page.goto('/s/steps');
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('ArrowRight');
+    await expect(page).toHaveURL(/[?&]p=2/);
+
+    const popupPromise = context.waitForEvent('page');
+    await page.keyboard.press('p');
+    const popup = await popupPromise;
+    await expect(popup.getByText('Step 0 / 2')).toBeVisible();
+    const next = popup.getByRole('button', { name: 'Next', exact: true });
+
+    await next.click();
+    await expect(page.locator('[data-osd-step="revealed"]')).toHaveCount(1);
+    await expect(popup.getByText('Step 1 / 2')).toBeVisible();
+    await next.click();
+    await expect(page.locator('[data-osd-step="revealed"]')).toHaveCount(2);
+    await expect(popup.getByText('Step 2 / 2')).toBeVisible();
+    await next.click();
+    await expect(page).toHaveURL(/[?&]p=3/);
+    await expect(popup.getByText('03 / 03')).toBeVisible();
+  });
 });

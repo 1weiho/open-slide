@@ -19,10 +19,12 @@ export type StepRegistry = {
   controller: StepController;
   register: (registration: StepRegistration) => () => void;
   aggregate: () => StepAggregate;
+  setRevealed: (revealed: number) => void;
 };
 
 export function createStepRegistry(onChange?: (aggregate: StepAggregate) => void): StepRegistry {
   const registrations: Array<StepRegistration & { revealed: boolean }> = [];
+  let controlledRevealed: number | null = null;
 
   const aggregate = (): StepAggregate => ({
     revealed: registrations.filter((registration) => registration.revealed).length,
@@ -33,6 +35,18 @@ export function createStepRegistry(onChange?: (aggregate: StepAggregate) => void
     registration.revealed = revealed;
     registration.setRevealed(revealed);
     notify();
+  };
+  const distribute = () => {
+    if (controlledRevealed === null) return;
+    const target = Math.max(0, Math.min(Math.floor(controlledRevealed), registrations.length));
+    for (let index = 0; index < registrations.length; index++) {
+      const registration = registrations[index];
+      const next = index < target;
+      if (registration.revealed !== next) {
+        registration.revealed = next;
+        registration.setRevealed(next);
+      }
+    }
   };
 
   return {
@@ -56,6 +70,7 @@ export function createStepRegistry(onChange?: (aggregate: StepAggregate) => void
     register: (registration) => {
       const tracked = { ...registration, revealed: registration.initialRevealed };
       registrations.push(tracked);
+      distribute();
       notify();
       return () => {
         const index = registrations.indexOf(tracked);
@@ -64,5 +79,10 @@ export function createStepRegistry(onChange?: (aggregate: StepAggregate) => void
       };
     },
     aggregate,
+    setRevealed: (revealed) => {
+      controlledRevealed = revealed;
+      distribute();
+      notify();
+    },
   };
 }

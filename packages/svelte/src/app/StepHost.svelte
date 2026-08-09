@@ -12,6 +12,7 @@ import { STEP_CONTEXT } from '../components/step-context.ts';
 export let entryDirection: EntryDirection = 'forward';
 export let component: Component;
 export let pageTransition: SlideTransition | undefined = undefined;
+export let controlledRevealed: number | undefined = undefined;
 export let onController: (controller: StepController, mounted: boolean) => void;
 export let onAggregate: (controller: StepController, aggregate: StepAggregate) => void = () => {};
 
@@ -19,6 +20,7 @@ const registry = createStepRegistry((aggregate) => onAggregate(registry.controll
 let host: HTMLDivElement;
 setContext(STEP_CONTEXT, { entryDirection, register: registry.register });
 $: onController(registry.controller, true);
+$: if (controlledRevealed !== undefined) registry.setRevealed(controlledRevealed);
 onMount(() => {
   const phase = pageTransition?.enter;
   if (!phase) return;

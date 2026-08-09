@@ -46,9 +46,18 @@ type DeckSummary = {
 };
 type PresenterMessage =
   | { type: 'hello' }
+  | { type: 'advance' }
+  | { type: 'retreat' }
   | { type: 'page'; page: number }
+  | { type: 'steps'; revealed: number; stepCount: number }
   | { type: 'blackout'; value: 'black' | 'white' | null }
-  | { type: 'state'; page: number; blackout: 'black' | 'white' | null };
+  | {
+      type: 'state';
+      page: number;
+      blackout: 'black' | 'white' | null;
+      revealed: number;
+      stepCount: number;
+    };
 type SortKey = 'created-desc' | 'created-asc' | 'title-asc' | 'title-desc';
 type Appearance = 'light' | 'dark' | 'system';
 
@@ -100,6 +109,8 @@ let viewport: HTMLElement;
 let scale = 1;
 let channel: BroadcastChannel | null = null;
 let presenterLinked = false;
+let remoteStepRevealed = 0;
+let remoteStepCount = 0;
 let lastWheelAt = 0;
 let touchStartX: number | null = null;
 
@@ -284,6 +295,96 @@ async function assignSlide(slideId: string, folderId: string | null): Promise<vo
   folders = { ...folders, assignments };
 }
 
+async function renameSlide(summary: DeckSummary): Promise<void> {
+  const name = window.prompt('Slide name', summary.title)?.trim();
+  if (!name || name === summary.title) return;
+  const response = await fetch(`/__slides/${encodeURIComponent(summary.id)}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+  if (response.ok) {
+    deckSummaries = deckSummaries.map((candidate) =>
+      candidate.id === summary.id ? { ...candidate, title: name } : candidate,
+    );
+  }
+}
+
+async function duplicateSlide(summary: DeckSummary): Promise<void> {
+  const newId = window.prompt('New slide id', `${summary.id}-copy`)?.trim();
+  if (!newId) return;
+  const response = await fetch(`/__slides/${encodeURIComponent(summary.id)}/duplicate`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ newId }),
+  });
+  if (!response.ok) return;
+  const body = (await response.json()) as { slideId: string };
+  deckSummaries = [
+    ...deckSummaries,
+    { ...summary, id: body.slideId, title: `${summary.title} Copy`, createdAt: Date.now() },
+  ];
+}
+
+async function removeSlide(summary: DeckSummary): Promise<void> {
+  if (!window.confirm(`Delete ${summary.title}?`)) return;
+  const response = await fetch(`/__slides/${encodeURIComponent(summary.id)}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) return;
+  deckSummaries = deckSummaries.filter((candidate) => candidate.id !== summary.id);
+  const assignments = { ...folders.assignments };
+  delete assignments[summary.id];
+  folders = { ...folders, assignments };
+}
+
+async function reorderPage(target: number): Promise<void> {
+  if (!deck || !currentSlideId || target < 0 || target >= pageCount || target === pageIndex) return;
+  const order = Array.from({ length: pageCount }, (_, index) => index);
+  [order[pageIndex], order[target]] = [order[target], order[pageIndex]];
+  const response = await fetch(`/__slides/${encodeURIComponent(currentSlideId)}/reorder`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ order }),
+  });
+  if (!response.ok) return;
+  const pages = order.map((index) => deck!.default[index]);
+  const notes = order.map((index) => deck!.notes?.[index]);
+  deck = { ...deck, default: pages, notes };
+  goToPage(target);
+}
+
+async function duplicatePage(): Promise<void> {
+  if (!deck || !currentSlideId) return;
+  const response = await fetch(
+    `/__slides/${encodeURIComponent(currentSlideId)}/pages/${pageIndex}/duplicate`,
+    { method: 'POST' },
+  );
+  if (!response.ok) return;
+  const pages = [...deck.default];
+  pages.splice(pageIndex + 1, 0, pages[pageIndex]);
+  const notes = [...(deck.notes ?? [])];
+  notes.splice(pageIndex + 1, 0, notes[pageIndex]);
+  deck = { ...deck, default: pages, notes };
+  goToPage(pageIndex + 1);
+}
+
+async function deletePage(): Promise<void> {
+  if (!deck || !currentSlideId || pageCount <= 1) return;
+  if (!window.confirm(`Delete page ${pageIndex + 1}?`)) return;
+  const response = await fetch(
+    `/__slides/${encodeURIComponent(currentSlideId)}/pages/${pageIndex}`,
+    { method: 'DELETE' },
+  );
+  if (!response.ok) return;
+  const pages = [...deck.default];
+  const notes = [...(deck.notes ?? [])];
+  pages.splice(pageIndex, 1);
+  notes.splice(pageIndex, 1);
+  deck = { ...deck, default: pages, notes };
+  goToPage(Math.min(pageIndex, pages.length - 1));
+}
+
 function navigate(pathname: string): void {
   const base = (config.base ?? '/').replace(/\/$/, '');
   window.location.assign(`${base}${pathname}` || '/');
@@ -425,7 +526,11 @@ function updateStepController(controller: StepController, mounted: boolean): voi
 }
 
 function updateStepAggregate(controller: StepController, aggregate: StepAggregate): void {
-  if (stepController === controller) stepAggregate = aggregate;
+  if (stepController !== controller) return;
+  stepAggregate = aggregate;
+  if (route.kind === 'slide' && presenting) {
+    channel?.postMessage({ type: 'steps', ...aggregate } satisfies PresenterMessage);
+  }
 }
 
 function retreat(): void {
@@ -572,6 +677,16 @@ function openPresenter(): void {
   );
 }
 
+function presenterAdvance(): void {
+  if (presenterLinked) channel?.postMessage({ type: 'advance' } satisfies PresenterMessage);
+  else advance();
+}
+
+function presenterRetreat(): void {
+  if (presenterLinked) channel?.postMessage({ type: 'retreat' } satisfies PresenterMessage);
+  else retreat();
+}
+
 function backHome(): void {
   const base = config.base ?? '/';
   window.location.assign(base);
@@ -609,16 +724,29 @@ onMount(() => {
           type: 'state',
           page: pageIndex,
           blackout,
+          revealed: stepAggregate.revealed,
+          stepCount: stepAggregate.stepCount,
         } satisfies PresenterMessage);
       }
       if (event.data?.type === 'state' && route.kind === 'presenter') {
         presenterLinked = true;
         blackout = event.data.blackout;
+        remoteStepRevealed = event.data.revealed;
+        remoteStepCount = event.data.stepCount;
         goToPage(event.data.page, false);
       }
+      if (event.data?.type === 'advance' && route.kind === 'slide') advance();
+      if (event.data?.type === 'retreat' && route.kind === 'slide') retreat();
       if (event.data?.type === 'page') {
         presenterLinked = true;
+        remoteStepRevealed = 0;
+        remoteStepCount = 0;
         goToPage(event.data.page, false);
+      }
+      if (event.data?.type === 'steps') {
+        presenterLinked = true;
+        remoteStepRevealed = event.data.revealed;
+        remoteStepCount = event.data.stepCount;
       }
       if (event.data?.type === 'blackout') {
         presenterLinked = true;
@@ -770,6 +898,9 @@ onMount(() => {
                   <option value="">{locale.home.draft}</option>
                   {#each folders.folders as folder}<option value={folder.id}>{folder.name}</option>{/each}
                 </select>
+                <button aria-label={`Rename ${summary.title}`} onclick={() => renameSlide(summary)}>Rename</button>
+                <button aria-label={`Duplicate ${summary.title}`} onclick={() => duplicateSlide(summary)}>Duplicate</button>
+                <button aria-label={`Delete ${summary.title}`} onclick={() => removeSlide(summary)}>Delete</button>
               </div>
             </li>
           {/each}
@@ -968,6 +1099,7 @@ onMount(() => {
               {entryDirection}
               component={activePage}
               pageTransition={activeTransition}
+              controlledRevealed={remoteStepRevealed}
               onController={updateStepController}
               onAggregate={updateStepAggregate}
             />
@@ -990,6 +1122,7 @@ onMount(() => {
         <span>{presenterLinked ? 'Linked' : 'Not linked'}</span>
       </div>
       <div class="presenter-count">{String(pageIndex + 1).padStart(2, '0')} / {String(pageCount).padStart(2, '0')}</div>
+      {#if remoteStepCount > 0}<p class="presenter-steps">Step {remoteStepRevealed} / {remoteStepCount}</p>{/if}
       <h2>Speaker notes</h2>
       <p>{note || 'No speaker notes for this slide.'}</p>
       {#if pageIndex === pageCount - 1}<p class="presenter-last">Last slide</p>{/if}
@@ -1010,8 +1143,8 @@ onMount(() => {
         />
       </label>
       <div class="presenter-actions">
-        <button class="button" onclick={() => goToPage(pageIndex - 1)} disabled={pageIndex === 0}>Prev</button>
-        <button class="button primary" onclick={() => goToPage(pageIndex + 1)} disabled={pageIndex === pageCount - 1}>Next</button>
+        <button class="button" onclick={presenterRetreat} disabled={pageIndex === 0 && remoteStepRevealed === 0}>Prev</button>
+        <button class="button primary" onclick={presenterAdvance} disabled={pageIndex === pageCount - 1 && remoteStepRevealed >= remoteStepCount}>Next</button>
       </div>
     </aside>
   </main>
@@ -1028,6 +1161,10 @@ onMount(() => {
         <button class="button subtle" onclick={toggleInspector}>Inspector</button>
         <button class="button subtle" onclick={() => runExport('html')} disabled={exporting}>Export HTML</button>
         <button class="button subtle" onclick={() => runExport('pdf')} disabled={exporting}>Export PDF</button>
+        <button class="button subtle" aria-label="Move page earlier" onclick={() => reorderPage(pageIndex - 1)} disabled={pageIndex === 0}>↑</button>
+        <button class="button subtle" aria-label="Move page later" onclick={() => reorderPage(pageIndex + 1)} disabled={pageIndex === pageCount - 1}>↓</button>
+        <button class="button subtle" onclick={duplicatePage}>Duplicate page</button>
+        <button class="button subtle" onclick={deletePage} disabled={pageCount <= 1}>Delete page</button>
         <button class="button" onclick={openPresenter}>Presenter</button>
         <button class="button primary" onclick={enterPresentMode}>Present</button>
       </div>

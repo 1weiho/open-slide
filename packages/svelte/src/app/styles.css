@@ -981,6 +981,19 @@ ul.deck-grid,
   padding: 9px 4px 0;
 }
 
+.deck-actions button {
+  padding: 4px 6px;
+  color: #8f8f96;
+  font-size: 11px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.home-content .deck-grid .deck-actions button:hover {
+  color: #f1f1f3;
+}
+
 .deck-actions a {
   color: #9e91e8;
   font-size: 12px;

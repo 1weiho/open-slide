@@ -76,4 +76,24 @@ test.describe('Svelte home browser', () => {
       for (const folder of state.folders) await request.delete(`/__folders/${folder.id}`);
     }
   });
+
+  test('duplicates, renames, and deletes a deck', async ({ page, request }) => {
+    const copyId = 'svelte-ui-copy';
+    try {
+      await page.goto('/');
+      page.once('dialog', (dialog) => dialog.accept(copyId));
+      await page.getByRole('button', { name: 'Duplicate Alpha Deck' }).click();
+      await expect(page.getByText('Alpha Deck Copy')).toBeVisible();
+
+      page.once('dialog', (dialog) => dialog.accept('Renamed Svelte Copy'));
+      await page.getByRole('button', { name: 'Rename Alpha Deck Copy' }).click();
+      await expect(page.getByText('Renamed Svelte Copy')).toBeVisible();
+
+      page.once('dialog', (dialog) => dialog.accept());
+      await page.getByRole('button', { name: 'Delete Renamed Svelte Copy' }).click();
+      await expect(page.getByText('Renamed Svelte Copy')).toHaveCount(0);
+    } finally {
+      await request.delete(`/__slides/${copyId}`);
+    }
+  });
 });
