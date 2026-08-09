@@ -4,6 +4,7 @@ export default defineConfig({
   entry: {
     index: 'src/index.ts',
     'cli/index': 'src/cli/index.ts',
+    'client/index': 'src/client/index.ts',
     'editing/index': 'src/editing/index.ts',
     'files/index': 'src/files/index.ts',
     'http/index': 'src/http/index.ts',

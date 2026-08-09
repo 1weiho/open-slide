@@ -12,6 +12,13 @@ import {
   type StepAggregate,
   type StepController,
 } from '@open-slide/shared';
+import {
+  type AssetEntry,
+  deleteAsset,
+  listAssets,
+  renameAsset,
+  uploadAsset,
+} from '@open-slide/shared/client';
 import { en, ja, type Locale, zhCN, zhTW } from '@open-slide/shared/locale';
 import { onMount } from 'svelte';
 import type { Page } from '../index.ts';
@@ -21,6 +28,7 @@ type Route =
   | { kind: 'home' }
   | { kind: 'themes' }
   | { kind: 'theme'; themeId: string }
+  | { kind: 'assets' }
   | { kind: 'slide'; slideId: string }
   | { kind: 'presenter'; slideId: string }
   | { kind: 'not-found' };
@@ -58,6 +66,13 @@ let localeId: Locale['id'] = 'en';
 let themeModule: SlideModule<Page> | null = null;
 let themePageIndex = 0;
 let themePromptOpen = false;
+let assetScope = '@global';
+let assets: AssetEntry[] = [];
+let assetsLoading = false;
+let assetSearch = '';
+let assetError = '';
+let notesDraft = '';
+let notesSaving = false;
 let pageIndex = 0;
 let entryDirection: EntryDirection = 'jump';
 let stepController: StepController | null = null;
@@ -118,12 +133,16 @@ $: commandDecks = deckSummaries.filter((summary) => {
     summary.title.toLowerCase().includes(query)
   );
 });
+$: visibleAssets = assets.filter((asset) =>
+  asset.name.toLowerCase().includes(assetSearch.trim().toLowerCase()),
+);
 
 function parseRoute(): Route {
   const base = (config.base ?? '/').replace(/\/$/, '');
   const pathname = window.location.pathname.slice(base.length) || '/';
   if (pathname === '/') return { kind: 'home' };
   if (pathname === '/themes' || pathname === '/themes/') return { kind: 'themes' };
+  if (pathname === '/assets' || pathname === '/assets/') return { kind: 'assets' };
   const themeMatch = pathname.match(/^\/themes\/([^/]+)\/?$/);
   if (themeMatch) return { kind: 'theme', themeId: decodeURIComponent(themeMatch[1]) };
   const match = pathname.match(/^\/s\/([^/]+)(\/presenter)?\/?$/);
@@ -146,6 +165,7 @@ async function loadCurrentDeck(): Promise<void> {
   try {
     deck = await loadSlide(route.slideId);
     pageIndex = Math.min(initialPage(), Math.max(0, deck.default.length - 1));
+    notesDraft = deck.notes?.[pageIndex] ?? '';
   } catch (caught) {
     error = caught instanceof Error ? caught.message : String(caught);
     deck = null;
@@ -271,10 +291,65 @@ function goToPage(next: number, broadcast = true): void {
   const target = Math.max(0, Math.min(next, deck.default.length - 1));
   entryDirection = target > pageIndex ? 'forward' : target < pageIndex ? 'backward' : 'jump';
   pageIndex = target;
+  notesDraft = deck.notes?.[pageIndex] ?? '';
   const url = new URL(window.location.href);
   url.searchParams.set('p', String(pageIndex + 1));
   window.history.replaceState({}, '', url);
   if (broadcast) channel?.postMessage({ type: 'page', page: pageIndex } satisfies PresenterMessage);
+}
+
+async function saveNotes(): Promise<void> {
+  if (!deck || !currentSlideId) return;
+  notesSaving = true;
+  const response = await fetch('/__notes', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ slideId: currentSlideId, index: pageIndex, text: notesDraft }),
+  });
+  if (response.ok) {
+    const next = [...(deck.notes ?? [])];
+    next[pageIndex] = notesDraft || undefined;
+    deck = { ...deck, notes: next };
+  }
+  notesSaving = false;
+}
+
+async function loadAssets(): Promise<void> {
+  assetsLoading = true;
+  assetError = '';
+  try {
+    assets = await listAssets(assetScope);
+  } catch (caught) {
+    assets = [];
+    assetError = caught instanceof Error ? caught.message : String(caught);
+  } finally {
+    assetsLoading = false;
+  }
+}
+
+async function addAsset(file: File): Promise<void> {
+  const response = await uploadAsset(assetScope, file);
+  if (response.status === 409) {
+    assetError = `${file.name} already exists.`;
+    return;
+  }
+  if (!response.ok) {
+    assetError = `Upload failed (${response.status}).`;
+    return;
+  }
+  await loadAssets();
+}
+
+async function removeAsset(name: string): Promise<void> {
+  const response = await deleteAsset(assetScope, name);
+  if (response.ok) assets = assets.filter((asset) => asset.name !== name);
+}
+
+async function changeAssetName(from: string, to: string): Promise<void> {
+  const name = to.trim();
+  if (!name || name === from) return;
+  const response = await renameAsset(assetScope, from, name);
+  if (response.ok) await loadAssets();
 }
 
 function advance(): void {
@@ -430,6 +505,10 @@ function backHome(): void {
 onMount(() => {
   void loadCurrentDeck();
   if (route.kind === 'home') void loadSummaries();
+  if (route.kind === 'assets') {
+    void loadSummaries();
+    void loadAssets();
+  }
   if (route.kind === 'theme') void loadCurrentTheme();
 
   const storedLocale = localStorage.getItem('open-slide:locale');
@@ -522,6 +601,7 @@ onMount(() => {
       {/if}
       <div class="sidebar-spacer"></div>
       <a class="sidebar-link" href="./themes">🎨 {locale.home.themes}</a>
+      <a class="sidebar-link" href="./assets">🗂 Assets</a>
       <button class="sidebar-link" onclick={() => (commandOpen = true)}>⌘ {locale.home.menu}</button>
       <div class="preference-row">
         <select
@@ -655,6 +735,68 @@ onMount(() => {
       {themePromptOpen ? 'Collapse prompt' : 'Expand prompt'}
     </button>
     {#if themePromptOpen}<pre class="theme-prompt">{selectedTheme.body}</pre>{/if}
+  </main>
+{:else if route.kind === 'assets'}
+  <main class="home-shell assets-shell">
+    <header class="home-header">
+      <div><p class="eyebrow">open-slide</p><h1>Assets</h1></div>
+      <button class="button" onclick={backHome}>{locale.common.backToHome}</button>
+    </header>
+    <section class="asset-toolbar">
+      <select
+        aria-label="Asset scope"
+        value={assetScope}
+        onchange={(event) => {
+          assetScope = event.currentTarget.value;
+          void loadAssets();
+        }}
+      >
+        <option value="@global">Global assets</option>
+        {#each deckSummaries as summary}<option value={summary.id}>{summary.title}</option>{/each}
+      </select>
+      <input placeholder="Search assets" bind:value={assetSearch} />
+      <label class="button asset-upload">
+        Upload
+        <input
+          type="file"
+          onchange={(event) => {
+            const file = event.currentTarget.files?.[0];
+            if (file) void addAsset(file);
+            event.currentTarget.value = '';
+          }}
+        />
+      </label>
+    </section>
+    {#if assetError}<p class="asset-error" role="alert">{assetError}</p>{/if}
+    {#if assetsLoading}
+      <section class="empty-state"><p class="eyebrow">Loading assets…</p></section>
+    {:else if visibleAssets.length === 0}
+      <section class="empty-state"><p class="eyebrow">No assets</p><h2>Upload a file to this scope.</h2></section>
+    {:else}
+      <ul class="asset-grid">
+        {#each visibleAssets as asset}
+          <li>
+            <div class="asset-preview">
+              {#if asset.mime.startsWith('image/')}
+                <img src={asset.url} alt={asset.name} />
+              {:else}<span>{asset.name.split('.').pop()?.toUpperCase()}</span>{/if}
+            </div>
+            <input
+              aria-label={`Rename ${asset.name}`}
+              value={asset.name}
+              onkeydown={(event) => {
+                if (event.key === 'Enter') void changeAssetName(asset.name, event.currentTarget.value);
+              }}
+            />
+            <div class="asset-meta">
+              <span>{Math.max(1, Math.round(asset.size / 1024))} KB</span>
+              {#if asset.unused}<span>Unused</span>{/if}
+              <button aria-label={`Delete ${asset.name}`} onclick={() => removeAsset(asset.name)}>Delete</button>
+            </div>
+          </li>
+        {/each}
+      </ul>
+    {/if}
   </main>
 {:else if route.kind === 'not-found'}
   <main class="centered-state">
@@ -858,7 +1000,10 @@ onMount(() => {
           </dl>
           <section class="notes-card">
             <p class="eyebrow">Speaker notes</p>
-            <p>{note || 'No notes for this page.'}</p>
+            <textarea aria-label="Speaker notes" bind:value={notesDraft} placeholder="Add speaker notes…"></textarea>
+            <button class="button" onclick={() => saveNotes()} disabled={notesSaving}>
+              {notesSaving ? 'Saving…' : 'Save notes'}
+            </button>
           </section>
         </aside>
       {/if}

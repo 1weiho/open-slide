@@ -24,6 +24,10 @@
       "types": "./dist/cli/index.d.ts",
       "import": "./dist/cli/index.js"
     },
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "import": "./dist/client/index.js"
+    },
     "./files": {
       "types": "./dist/files/index.d.ts",
       "import": "./dist/files/index.js"

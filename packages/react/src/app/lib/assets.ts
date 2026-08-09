@@ -1,54 +1,19 @@
+import {
+  type AssetEntry,
+  deleteAsset,
+  listAssets,
+  renameAsset,
+  uploadAsset,
+} from '@open-slide/shared/client';
 import { useCallback, useEffect, useState } from 'react';
 import { changedSlideIds } from './slides';
 
 export const GLOBAL_ASSET_SCOPE = '@global';
 
-export type AssetEntry = {
-  name: string;
-  size: number;
-  createdAt: number;
-  mtime: number;
-  mime: string;
-  url: string;
-  unused: boolean;
-};
+export type { AssetEntry } from '@open-slide/shared/client';
+export { deleteAsset, listAssets, renameAsset, uploadAsset } from '@open-slide/shared/client';
 
 export type UploadOptions = { overwrite?: boolean };
-
-export async function listAssets(slideId: string): Promise<AssetEntry[]> {
-  const res = await fetch(`/__assets/${slideId}`);
-  if (!res.ok) throw new Error(`GET /__assets/${slideId} ${res.status}`);
-  const data = (await res.json()) as { assets?: AssetEntry[] };
-  return data.assets ?? [];
-}
-
-export async function uploadAsset(
-  slideId: string,
-  file: File,
-  opts: UploadOptions = {},
-): Promise<Response> {
-  const qs = opts.overwrite ? '?overwrite=1' : '';
-  return fetch(`/__assets/${slideId}/${encodeURIComponent(file.name)}${qs}`, {
-    method: 'POST',
-    headers: {
-      'content-type': file.type || 'application/octet-stream',
-      'content-length': String(file.size),
-    },
-    body: file,
-  });
-}
-
-async function renameAsset(slideId: string, from: string, to: string): Promise<Response> {
-  return fetch(`/__assets/${slideId}/${encodeURIComponent(from)}`, {
-    method: 'PATCH',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ name: to }),
-  });
-}
-
-async function deleteAsset(slideId: string, name: string): Promise<Response> {
-  return fetch(`/__assets/${slideId}/${encodeURIComponent(name)}`, { method: 'DELETE' });
-}
 
 export type AssetUsage = { slideId: string; count: number };
 

@@ -426,6 +426,23 @@ code {
   border-radius: 10px;
 }
 
+.notes-card textarea {
+  width: 100%;
+  min-height: 150px;
+  resize: vertical;
+  padding: 10px;
+  color: #d8d8dc;
+  font: inherit;
+  line-height: 1.5;
+  background: #111114;
+  border: 1px solid #303035;
+  border-radius: 8px;
+}
+
+.notes-card .button {
+  margin-top: 10px;
+}
+
 .presenter-shell {
   display: grid;
   height: 100%;
@@ -1033,6 +1050,94 @@ ul.deck-grid,
   background: #111113;
   border: 1px solid #2b2b30;
   border-radius: 12px;
+}
+
+.assets-shell {
+  min-height: 100%;
+  padding: 48px;
+}
+
+.asset-toolbar {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.35fr) minmax(220px, 1fr) auto;
+  gap: 10px;
+  margin: 28px 0;
+}
+
+.asset-toolbar select,
+.asset-toolbar > input,
+.asset-grid > li > input {
+  min-height: 40px;
+  padding: 0 12px;
+  color: #dddde0;
+  background: #17171a;
+  border: 1px solid #303035;
+  border-radius: 8px;
+}
+
+.asset-upload {
+  position: relative;
+  overflow: hidden;
+}
+
+.asset-upload input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.asset-error {
+  color: #fb7185;
+}
+
+.asset-grid {
+  display: grid;
+  padding: 0;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  list-style: none;
+}
+
+.asset-grid li {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  background: #141416;
+  border: 1px solid #29292d;
+  border-radius: 12px;
+}
+
+.asset-preview {
+  display: grid;
+  height: 150px;
+  place-items: center;
+  overflow: hidden;
+  color: #787880;
+  background: #0c0c0e;
+  border-radius: 8px;
+}
+
+.asset-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.asset-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #85858c;
+  font-size: 12px;
+}
+
+.asset-meta button {
+  margin-left: auto;
+  color: #fda4af;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
 }
 
 .command-dialog {
