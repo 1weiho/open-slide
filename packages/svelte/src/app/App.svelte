@@ -6,6 +6,9 @@ import { loadThemeDemo, themes } from 'virtual:open-slide/themes';
 import {
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
+  cssVarsToString,
+  type DesignSystem,
+  designToCssVars,
   type EntryDirection,
   type FoldersManifest,
   type SlideModule,
@@ -73,6 +76,8 @@ let assetSearch = '';
 let assetError = '';
 let notesDraft = '';
 let notesSaving = false;
+let designDraft: DesignSystem | null = null;
+let designWarning = '';
 let pageIndex = 0;
 let entryDirection: EntryDirection = 'jump';
 let stepController: StepController | null = null;
@@ -94,6 +99,7 @@ let scale = 1;
 let channel: BroadcastChannel | null = null;
 let presenterLinked = false;
 let lastWheelAt = 0;
+let touchStartX: number | null = null;
 
 $: activePage = deck?.default[pageIndex] ?? null;
 $: nextPage = deck?.default[pageIndex + 1] ?? null;
@@ -136,6 +142,7 @@ $: commandDecks = deckSummaries.filter((summary) => {
 $: visibleAssets = assets.filter((asset) =>
   asset.name.toLowerCase().includes(assetSearch.trim().toLowerCase()),
 );
+$: designCss = deck?.design ? cssVarsToString(designToCssVars(deck.design)) : '';
 
 function parseRoute(): Route {
   const base = (config.base ?? '/').replace(/\/$/, '');
@@ -314,6 +321,37 @@ async function saveNotes(): Promise<void> {
   notesSaving = false;
 }
 
+async function loadDesign(): Promise<void> {
+  if (!currentSlideId) return;
+  const response = await fetch(`/__design?slideId=${encodeURIComponent(currentSlideId)}`);
+  if (!response.ok) return;
+  const body = (await response.json()) as { design: DesignSystem; warning?: string | null };
+  designDraft = body.design;
+  designWarning = body.warning ?? '';
+}
+
+async function saveDesign(patch: Partial<DesignSystem>): Promise<void> {
+  if (!currentSlideId) return;
+  const response = await fetch(`/__design?slideId=${encodeURIComponent(currentSlideId)}`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ patch }),
+  });
+  const body = (await response.json()) as { design?: DesignSystem; error?: string };
+  if (!response.ok || !body.design) {
+    designWarning = body.error ?? `Save failed (${response.status}).`;
+    return;
+  }
+  designDraft = body.design;
+  if (deck) deck = { ...deck, design: body.design };
+  designWarning = '';
+}
+
+function toggleInspector(): void {
+  inspectorOpen = !inspectorOpen;
+  if (inspectorOpen && !designDraft) void loadDesign();
+}
+
 async function loadAssets(): Promise<void> {
   assetsLoading = true;
   assetError = '';
@@ -409,6 +447,19 @@ function onWheel(event: WheelEvent): void {
 function onPointerMove(event: MouseEvent): void {
   laserX = event.clientX;
   laserY = event.clientY;
+}
+
+function onTouchStart(event: TouchEvent): void {
+  touchStartX = event.touches[0]?.clientX ?? null;
+}
+
+function onTouchEnd(event: TouchEvent): void {
+  if (touchStartX === null) return;
+  const delta = (event.changedTouches[0]?.clientX ?? touchStartX) - touchStartX;
+  touchStartX = null;
+  if (Math.abs(delta) < 50) return;
+  if (delta < 0) advance();
+  else retreat();
 }
 
 function toggleBlackout(value: 'black' | 'white'): void {
@@ -822,9 +873,11 @@ onMount(() => {
     data-step-revealed={stepAggregate.revealed}
     onmousemove={onPointerMove}
     onwheel={onWheel}
+    ontouchstart={onTouchStart}
+    ontouchend={onTouchEnd}
   >
     <section class="play-viewport" use:measure aria-label={`Page ${pageIndex + 1}`}>
-      <div class="canvas play-canvas" style={`transform: translate(-50%, -50%) scale(${scale});`}>
+      <div class="canvas play-canvas" style={`transform: translate(-50%, -50%) scale(${scale}); ${designCss}`}>
         {#key pageIndex}
           <StepHost
             {entryDirection}
@@ -883,7 +936,7 @@ onMount(() => {
     <div class="presenter-current" use:measure>
         <div
           class="canvas"
-          style={`transform: translate(-50%, -50%) scale(${scale});`}
+          style={`transform: translate(-50%, -50%) scale(${scale}); ${designCss}`}
         >
           {#key pageIndex}
             <StepHost
@@ -946,7 +999,7 @@ onMount(() => {
       </div>
       <div class="viewer-actions">
         <button class="button subtle" aria-label="Open command menu" onclick={() => (commandOpen = true)}>⌘K</button>
-        <button class="button subtle" onclick={() => (inspectorOpen = !inspectorOpen)}>Inspector</button>
+        <button class="button subtle" onclick={toggleInspector}>Inspector</button>
         <button class="button" onclick={openPresenter}>Presenter</button>
         <button class="button primary" onclick={enterPresentMode}>Present</button>
       </div>
@@ -969,8 +1022,15 @@ onMount(() => {
         {/each}
       </nav>
 
-      <section class="viewport" use:measure onwheel={onWheel} aria-label={`Page ${pageIndex + 1}`}>
-        <div class="canvas" style={`transform: translate(-50%, -50%) scale(${scale});`}>
+      <section
+        class="viewport"
+        use:measure
+        onwheel={onWheel}
+        ontouchstart={onTouchStart}
+        ontouchend={onTouchEnd}
+        aria-label={`Page ${pageIndex + 1}`}
+      >
+        <div class="canvas" style={`transform: translate(-50%, -50%) scale(${scale}); ${designCss}`}>
           {#key pageIndex}
             <StepHost
               {entryDirection}
@@ -998,6 +1058,17 @@ onMount(() => {
             <div><dt>Theme</dt><dd>{deck.meta?.theme ?? 'Default'}</dd></div>
             <div><dt>Canvas</dt><dd>{CANVAS_WIDTH} × {CANVAS_HEIGHT}</dd></div>
           </dl>
+          {#if designDraft}
+            <section class="design-card">
+              <p class="eyebrow">Design system</p>
+              <label>Background <input type="color" aria-label="Design background" value={designDraft.palette.bg} onchange={(event) => saveDesign({ palette: { ...designDraft!.palette, bg: event.currentTarget.value } })} /></label>
+              <label>Text <input type="color" aria-label="Design text" value={designDraft.palette.text} onchange={(event) => saveDesign({ palette: { ...designDraft!.palette, text: event.currentTarget.value } })} /></label>
+              <label>Accent <input type="color" aria-label="Design accent" value={designDraft.palette.accent} onchange={(event) => saveDesign({ palette: { ...designDraft!.palette, accent: event.currentTarget.value } })} /></label>
+              <label>Display font <input aria-label="Display font" value={designDraft.fonts.display} onchange={(event) => saveDesign({ fonts: { ...designDraft!.fonts, display: event.currentTarget.value } })} /></label>
+              <label>Body font <input aria-label="Body font" value={designDraft.fonts.body} onchange={(event) => saveDesign({ fonts: { ...designDraft!.fonts, body: event.currentTarget.value } })} /></label>
+              {#if designWarning}<p role="alert">{designWarning}</p>{/if}
+            </section>
+          {/if}
           <section class="notes-card">
             <p class="eyebrow">Speaker notes</p>
             <textarea aria-label="Speaker notes" bind:value={notesDraft} placeholder="Add speaker notes…"></textarea>

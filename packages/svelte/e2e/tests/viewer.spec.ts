@@ -79,6 +79,16 @@ test.describe('Svelte slide viewer', () => {
     await expect(page.locator('[data-osd-step="revealed"]')).toHaveCount(2);
   });
 
+  test('supports touch swipe navigation', async ({ page }) => {
+    await page.goto('/s/alpha');
+    const viewport = page.locator('.viewport');
+    await viewport.dispatchEvent('touchstart', { touches: [{ identifier: 1, clientX: 320 }] });
+    await viewport.dispatchEvent('touchend', {
+      changedTouches: [{ identifier: 1, clientX: 120 }],
+    });
+    await expect(page).toHaveURL(/[?&]p=2/);
+  });
+
   test('serves shared dev APIs', async ({ request }) => {
     expect((await request.get('/__server-status')).ok()).toBe(true);
     expect((await request.get('/__folders/')).ok()).toBe(true);

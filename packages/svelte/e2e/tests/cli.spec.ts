@@ -1,5 +1,7 @@
 import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
@@ -44,5 +46,19 @@ test.describe('Svelte CLI', () => {
     const result = await runCli(['dev', '--port', 'abc']);
     expect(result.code).toBe(1);
     expect(result.stderr).toContain('Invalid port: abc');
+  });
+
+  test('builds a static Svelte site', async () => {
+    const output = await fs.mkdtemp(path.join(os.tmpdir(), 'open-slide-svelte-build-'));
+    try {
+      const result = await runCli(['build', '--out-dir', output]);
+      expect(result.code).toBe(0);
+      const html = await fs.readFile(path.join(output, 'index.html'), 'utf8');
+      expect(html).toContain('<div id="app"></div>');
+      const files = await fs.readdir(path.join(output, 'assets'));
+      expect(files.some((file) => file.endsWith('.js'))).toBe(true);
+    } finally {
+      await fs.rm(output, { recursive: true, force: true });
+    }
   });
 });
