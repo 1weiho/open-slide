@@ -80,6 +80,8 @@
     "@babel/parser": "^7.29.2",
     "@babel/types": "^7.29.0",
     "fast-glob": "^3.3.2",
+    "fflate": "^0.8.3",
+    "html-to-image": "^1.11.13",
     "vite": "^5.4.10"
   },
   "devDependencies": {

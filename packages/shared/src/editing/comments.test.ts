@@ -69,4 +69,18 @@ describe('parseMarkers', () => {
     expect(comments.map((c) => c.note)).toEqual(['one', 'two']);
     expect(comments.map((c) => c.line)).toEqual([1, 3]);
   });
+
+  it('extracts Svelte HTML comment markers', () => {
+    const payload = b64urlEncode(JSON.stringify({ note: 'Svelte note' }));
+    const source = `<div>\n  <!-- @slide-comment id="c-1234abcd" ts="2026-01-01T00:00:00.000Z" text="${payload}" -->\n  Content\n</div>`;
+
+    expect(parseMarkers(source)).toEqual([
+      {
+        id: 'c-1234abcd',
+        line: 2,
+        ts: '2026-01-01T00:00:00.000Z',
+        note: 'Svelte note',
+      },
+    ]);
+  });
 });

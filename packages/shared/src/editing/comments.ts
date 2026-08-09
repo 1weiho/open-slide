@@ -3,7 +3,7 @@ import { shortId } from '../files/short-id.ts';
 import { findJsxAncestors, type JsxContainer, parseSource } from './babel-walk.ts';
 
 const MARKER_RE =
-  /\{\/\*\s*@slide-comment\s+id="(c-[a-f0-9]+)"\s+ts="([^"]+)"\s+text="([A-Za-z0-9_-]+={0,2})"\s*\*\/\}/;
+  /(?:\{\/\*|<!--)\s*@slide-comment\s+id="(c-[a-f0-9]+)"\s+ts="([^"]+)"\s+text="([A-Za-z0-9_-]+={0,2})"\s*(?:\*\/\}|-->)/;
 
 export type Comment = { id: string; line: number; ts: string; note: string; hint?: string };
 
@@ -42,7 +42,7 @@ export function newCommentId(): string {
 
 export function markerDeleteRegex(id: string): RegExp {
   return new RegExp(
-    `\\{\\/\\*\\s*@slide-comment\\s+id="${id}"\\s+ts="[^"]+"\\s+text="[A-Za-z0-9_\\-]+={0,2}"\\s*\\*\\/\\}`,
+    `(?:\\{\\/\\*|<!--)\\s*@slide-comment\\s+id="${id}"\\s+ts="[^"]+"\\s+text="[A-Za-z0-9_\\-]+={0,2}"\\s*(?:\\*\\/\\}|-->)`,
   );
 }
 

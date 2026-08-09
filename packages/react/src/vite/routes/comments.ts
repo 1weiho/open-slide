@@ -1,5 +1,4 @@
 import fs from 'node:fs/promises';
-import type { ViteDevServer } from 'vite';
 import {
   b64urlEncode,
   findInsertion,
@@ -7,7 +6,8 @@ import {
   newCommentId,
   offsetToLine,
   parseMarkers,
-} from '../../editing/comments.ts';
+} from '@open-slide/shared/editing';
+import type { ViteDevServer } from 'vite';
 import { validateMutationRequest } from '../../http/request-guard.ts';
 import {
   type ApiContext,

@@ -1,9 +1,13 @@
+import {
+  isFrameAnimationSettled,
+  waitForDataWaitfor,
+  waitForFonts,
+} from '@open-slide/shared/client';
 import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { designToCssVars } from './design';
 import { nextPaint, sleep } from './dom';
 import { SlidePageProvider } from './page-context';
-import { isFrameAnimationSettled, waitForDataWaitfor, waitForFonts } from './print-ready';
 import { CANVAS_HEIGHT, CANVAS_WIDTH, type SlideModule } from './sdk';
 
 const PRINT_ROOT_ID = 'os-print-root';
