@@ -13,7 +13,14 @@ type ElementNode = {
     end: { character: number };
   };
   attributes?: AttributeNode[];
-  fragment?: { nodes?: Array<{ type: string; start: number; end: number }> };
+  fragment?: { nodes?: FragmentNode[] };
+  start: number;
+  end: number;
+};
+
+type FragmentNode = {
+  type: string;
+  name?: string;
   start: number;
   end: number;
 };
@@ -171,12 +178,17 @@ export function applySvelteElementEdit(
       return { ok: false, error: 'element text is not directly editable' };
     }
     const nodes = element.fragment?.nodes ?? [];
-    if (nodes.length !== 1 || nodes[0].type !== 'Text') {
+    if (
+      nodes.length === 0 ||
+      nodes.some(
+        (node) => node.type !== 'Text' && !(node.type === 'RegularElement' && node.name === 'br'),
+      )
+    ) {
       return { ok: false, error: 'element text is not directly editable' };
     }
     replacements.push({
       start: nodes[0].start,
-      end: nodes[0].end,
+      end: nodes.at(-1)?.end ?? nodes[0].end,
       value: escapeText(edit.text),
     });
   }

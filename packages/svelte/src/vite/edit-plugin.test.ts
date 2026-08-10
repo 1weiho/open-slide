@@ -16,6 +16,19 @@ describe('applySvelteElementEdit', () => {
     });
   });
 
+  it('updates text separated by line breaks', () => {
+    const result = applySvelteElementEdit('<h1>One deck index.<br />Any number of pages.</h1>', {
+      line: 1,
+      column: 1,
+      text: 'Quarterly Results. Built with Svelte.',
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      source: '<h1>Quarterly Results. Built with Svelte.</h1>',
+    });
+  });
+
   it('updates and removes properties while preserving unrelated styles', () => {
     const result = applySvelteElementEdit(
       '<h1 style="font-size: 48px; margin: 0; color: red">Title</h1>',
