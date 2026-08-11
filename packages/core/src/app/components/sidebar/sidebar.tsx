@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import type { Folder, FolderIcon } from '@/lib/sdk';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
+import { CommandMenuTrigger } from '../command/command-menu';
 import { FolderIconChip, FolderItem } from './folder-item';
 import { IconPicker, PRESET_COLORS } from './icon-picker';
 import { SidebarFooter } from './sidebar-footer';
@@ -33,6 +34,7 @@ export function Sidebar({
   onDropToFolder,
   onDropToDraft,
   onReorder,
+  onOpenCommandMenu,
 }: {
   folders: Folder[];
   countFor: (folderId: string | null) => number;
@@ -48,6 +50,7 @@ export function Sidebar({
   onDropToFolder: (folderId: string, slideId: string) => void;
   onDropToDraft: (slideId: string) => void;
   onReorder: (ids: string[]) => void;
+  onOpenCommandMenu: () => void;
 }) {
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<{ id: string; before: boolean } | null>(null);
@@ -130,6 +133,7 @@ export function Sidebar({
       <div className="flex items-center justify-between px-4 pt-5 pb-4">
         <h1 className="font-heading text-lg font-bold tracking-tight">{t.home.appTitle}</h1>
         <div className="-mr-1.5 flex items-center">
+          <CommandMenuTrigger onClick={onOpenCommandMenu} />
           <LanguageToggle />
           <ThemeToggle />
         </div>

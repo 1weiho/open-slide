@@ -1,5 +1,27 @@
 # @open-slide/core
 
+## 1.18.0
+
+### Minor Changes
+
+- [#368](https://github.com/1weiho/open-slide/pull/368) [`35dc46c`](https://github.com/1weiho/open-slide/commit/35dc46ca27716ea86f8a76710bbd3640e9590628) Thanks [@1weiho](https://github.com/1weiho)! - Add a ⌘K command menu for searching decks, jumping to pages, and running slide actions.
+
+### Patch Changes
+
+- [#354](https://github.com/1weiho/open-slide/pull/354) [`3380558`](https://github.com/1weiho/open-slide/commit/3380558fb1c157ccbcbbeface024ea7b122dff31) Thanks [@1weiho](https://github.com/1weiho)! - Add a Playwright e2e suite covering the viewer, present mode, presenter sync, inspector editing, dev API, and static builds.
+
+## 1.17.1
+
+### Patch Changes
+
+- [#356](https://github.com/1weiho/open-slide/pull/356) [`f182fbd`](https://github.com/1weiho/open-slide/commit/f182fbdf13b367c6245a8a14049b82dc830545cf) Thanks [@1weiho](https://github.com/1weiho)! - Restore React 18 and Vite 5 compatibility for existing and newly generated projects.
+
+## 1.17.0
+
+### Minor Changes
+
+- [#344](https://github.com/1weiho/open-slide/pull/344) [`4a4fa17`](https://github.com/1weiho/open-slide/commit/4a4fa17484a3caabf28cdd6885db3a1feaef356d) Thanks [@1weiho](https://github.com/1weiho)! - Upgrade to React 19 and Vite 8.
+
 ## 1.16.0
 
 ### Minor Changes

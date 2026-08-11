@@ -165,6 +165,9 @@ export const zhTW: Locale = {
     jump: '跳至',
     loadingSlide: '正在載入 {slideId}…',
     loadingAssets: '正在載入資源…',
+    switchDeck: '切換簡報',
+    searchDecks: '搜尋簡報…',
+    noDecksFound: '沒有符合的簡報',
   },
 
   present: {
@@ -402,6 +405,33 @@ export const zhTW: Locale = {
     processing: '正在算繪第 {current} / {total} 頁',
     generating: '正在組合簡報…',
     done: '完成',
+  },
+
+  commandMenu: {
+    trigger: '指令',
+    triggerAria: '開啟指令選單',
+    triggerTooltip: '搜尋',
+    placeholder: '搜尋簡報或執行指令…',
+    slidePlaceholder: '搜尋這份簡報或執行指令…',
+    empty: '沒有符合的結果。',
+    groupSlides: '簡報',
+    groupFolders: '資料夾',
+    groupNavigation: '前往',
+    groupPresent: '播放',
+    groupDeck: '這份簡報',
+    groupExport: '匯出',
+    groupPages: '頁面',
+    groupAppearance: '外觀',
+    groupDeveloper: '開發',
+    goToPage: '第 {n} 頁',
+    overview: '頁面總覽',
+    designPanel: '切換設計面板',
+    backToSlides: '回到所有簡報',
+    themeItem: '主題：{name}',
+    languageItem: '語言：{name}',
+    hintNavigate: '移動',
+    hintSelect: '選擇',
+    hintClose: '關閉',
   },
 
   themeToggle: {

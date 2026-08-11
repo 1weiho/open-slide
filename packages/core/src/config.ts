@@ -22,6 +22,7 @@ export type OpenSlideConfig = {
   themesDir?: string;
   assetsDir?: string;
   port?: number;
+  allowedHosts?: string[] | true;
   themeImport?: OpenSlideThemeImportConfig;
   /**
    * @deprecated Pick the UI language from the language switcher in the slide UI

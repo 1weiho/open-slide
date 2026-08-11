@@ -1,79 +1,86 @@
 /* open-slide landing styles — scoped to .os-landing so they don't bleed
    into the rest of the docs site (which uses fumadocs-ui's defaults).
 
-   Palette mirrors packages/core: warm paper + ink, single vermillion
-   accent. Brand consistency is the whole point — same identity across
-   the marketing surface, the docs, and the editor itself. */
+   Palette mirrors packages/core/src/app/styles.css: a pure zero-chroma
+   neutral ramp — clean white surfaces, hairline borders — with vermillion
+   as the single accent. Brand consistency is the whole point: same
+   identity across the marketing surface, the docs, and the editor. */
 
 .os-landing {
-  /* Dark mode is the default — warm near-black ink, paper text. */
-  --color-ink: oklch(0.155 0.005 70);
-  --color-paper: oklch(0.945 0.005 80);
-  --color-panel: oklch(0.195 0.006 70);
-  --color-panel-hi: oklch(0.245 0.006 70);
-  --color-rule: oklch(1 0 0 / 0.1);
-  --color-rule-soft: oklch(1 0 0 / 0.06);
-  --color-text: oklch(0.945 0.005 80);
-  --color-text-soft: oklch(0.86 0.006 78);
-  --color-muted: oklch(0.68 0.008 75);
-  --color-dim: oklch(0.42 0.008 70);
+  --color-ink: oklch(0.99 0 0);
+  --color-panel: oklch(1 0 0);
+  --color-panel-hi: oklch(0.97 0 0);
+  --color-rule: oklch(0.92 0 0);
+  --color-rule-soft: oklch(0.945 0 0);
+  --color-text: oklch(0.145 0 0);
+  --color-text-soft: oklch(0.35 0 0);
+  --color-muted: oklch(0.5 0 0);
+  --color-dim: oklch(0.72 0 0);
 
   /* Vermillion — single accent across the brand. Mirrors core's
-     --brand and --brand-soft tokens. */
-  --color-accent: oklch(0.66 0.19 28);
-  --color-accent-soft: oklch(0.76 0.14 28);
-  --color-accent-deep: oklch(0.555 0.185 28);
-  --color-warm: oklch(0.78 0.14 60);
-  --color-mint: oklch(0.7 0.14 160);
+     --brand token; restraint is the point. */
+  --color-accent: oklch(0.6 0.2 25);
+  --color-accent-soft: oklch(0.54 0.16 25);
+  --color-warm: oklch(0.55 0.12 75);
+  --color-mint: oklch(0.55 0.12 160);
 
-  --font-display: var(--font-instrument-serif);
+  --shadow-edge: 0 0 0 0.5px oklch(0 0 0 / 0.06), 0 1px 0 oklch(0 0 0 / 0.025);
+  --shadow-floating:
+    0 1px 1px oklch(0 0 0 / 0.03), 0 4px 16px -2px oklch(0 0 0 / 0.05),
+    0 16px 40px -12px oklch(0 0 0 / 0.06);
+
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-jetbrains-mono);
+  --font-mono: var(--font-geist-mono);
+  --font-pixel: var(--font-geist-pixel-square);
+
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
 
   background: var(--color-ink);
   color: var(--color-text);
   font-family: var(--font-sans);
   letter-spacing: -0.005em;
   font-feature-settings: "ss01", "cv11", "calt";
-  text-rendering: geometricPrecision;
+  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-html.light .os-landing {
-  /* Light mode — core's warm paper + ink. */
-  --color-ink: oklch(0.985 0.004 75);
-  --color-paper: oklch(0.2 0.012 60);
-  --color-panel: oklch(1 0 0);
-  --color-panel-hi: oklch(0.96 0.006 75);
-  --color-rule: oklch(0.86 0.008 70);
-  --color-rule-soft: oklch(0.91 0.008 70);
-  --color-text: oklch(0.2 0.012 60);
-  --color-text-soft: oklch(0.32 0.012 60);
-  --color-muted: oklch(0.485 0.012 60);
-  --color-dim: oklch(0.72 0.008 70);
+html.dark .os-landing {
+  --color-ink: oklch(0.145 0 0);
+  --color-panel: oklch(0.19 0 0);
+  --color-panel-hi: oklch(0.24 0 0);
+  --color-rule: oklch(1 0 0 / 0.1);
+  --color-rule-soft: oklch(1 0 0 / 0.06);
+  --color-text: oklch(0.93 0 0);
+  --color-text-soft: oklch(0.8 0 0);
+  --color-muted: oklch(0.68 0 0);
+  --color-dim: oklch(0.45 0 0);
 
-  --color-accent: oklch(0.555 0.185 28);
-  --color-accent-soft: oklch(0.66 0.16 28);
-  --color-accent-deep: oklch(0.46 0.18 28);
-  --color-warm: oklch(0.6 0.14 60);
-  --color-mint: oklch(0.5 0.13 160);
+  --color-accent: oklch(0.63 0.2 25);
+  --color-accent-soft: oklch(0.74 0.14 25);
+  --color-warm: oklch(0.75 0.12 75);
+  --color-mint: oklch(0.72 0.12 160);
+
+  --shadow-edge: 0 0 0 0.5px oklch(0 0 0 / 0.2);
+  --shadow-floating: 0 1px 1px oklch(0 0 0 / 0.2), 0 8px 24px -8px oklch(0 0 0 / 0.35);
 }
 
 .os-landing ::selection {
-  background: color-mix(in oklab, var(--color-accent) 30%, transparent);
+  background: color-mix(in oklab, var(--color-accent) 20%, transparent);
   color: var(--color-text);
 }
 
 /* ————————————————————————— utilities ————————————————————————— */
 
+/* Eyebrow label — mirrors core's .eyebrow: tracked-out small caps in
+   muted ink, one typographic gesture for every section label. */
 .os-landing .caption {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
-  letter-spacing: 0.18em;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-muted);
-  font-weight: 500;
 }
 
 .os-landing .hair {
@@ -81,46 +88,102 @@ html.light .os-landing {
   background: var(--color-rule);
 }
 
-.os-landing .tick::before {
-  content: "";
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  margin-right: 10px;
-  border-left: 1px solid var(--color-accent);
-  border-top: 1px solid var(--color-accent);
-  transform: translateY(1px);
+/* Shared frame width — the page-long vertical rails and every crosshair
+   marker align to this box, so all the "engineering grid" lines meet. */
+.os-landing .frame-w {
+  width: min(100% - 40px, 1360px);
+  margin-inline: auto;
 }
 
-.os-landing .brackets::before {
-  content: "‹";
-  margin-right: 6px;
-  color: var(--color-muted);
-}
-.os-landing .brackets::after {
-  content: "›";
-  margin-left: 6px;
-  color: var(--color-muted);
-}
-
-.os-landing .noise::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='7'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.4 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-  opacity: 0.35;
-  mix-blend-mode: overlay;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.os-landing .specimen {
-  background-image: radial-gradient(
-    circle at 1px 1px,
-    color-mix(in oklab, var(--color-text) 12%, transparent) 1px,
-    transparent 0
+.os-landing .stripes {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-rule-soft) 0,
+    var(--color-rule-soft) 1px,
+    transparent 1px,
+    transparent 9px
   );
-  background-size: 16px 16px;
+}
+
+.os-landing .dot-grid {
+  color: color-mix(in oklab, var(--color-text) 16%, transparent);
+  background-image: radial-gradient(currentcolor 1px, transparent 1.5px);
+  background-size: 24px 24px;
+  -webkit-mask-image: radial-gradient(110% 84% at 50% 0%, #000 0%, transparent 70%);
+  mask-image: radial-gradient(110% 84% at 50% 0%, #000 0%, transparent 70%);
+}
+
+.os-landing .bloom {
+  background: radial-gradient(
+    56% 44% at 66% -12%,
+    color-mix(in oklab, var(--color-accent) 7%, transparent),
+    transparent 70%
+  );
+}
+html.dark .os-landing .bloom {
+  background: radial-gradient(
+    56% 44% at 66% -12%,
+    color-mix(in oklab, var(--color-accent) 11%, transparent),
+    transparent 70%
+  );
+}
+
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  .os-landing .text-sheen {
+    background-image: linear-gradient(
+      180deg,
+      var(--color-text) 45%,
+      color-mix(in oklab, var(--color-text) 62%, transparent)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .os-landing .text-sheen .accent-fill {
+    -webkit-text-fill-color: var(--color-accent);
+  }
+}
+
+.os-landing .edge {
+  box-shadow: var(--shadow-edge);
+}
+
+.os-landing .floating {
+  box-shadow: var(--shadow-floating);
+}
+
+.os-landing .prompt-stage-grid {
+  color: color-mix(in oklab, var(--color-text) 10%, transparent);
+  background-image: radial-gradient(currentcolor 0.7px, transparent 0.9px);
+  background-size: 20px 20px;
+  -webkit-mask-image: radial-gradient(58% 70% at 50% 50%, #000 0%, transparent 74%);
+  mask-image: radial-gradient(58% 70% at 50% 50%, #000 0%, transparent 74%);
+}
+
+.os-landing .prompt-stage-glow {
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in oklab, var(--color-accent) 10%, transparent) 0%,
+    color-mix(in oklab, var(--color-accent) 5%, transparent) 42%,
+    transparent 72%
+  );
+}
+
+.os-landing .prompt-composer {
+  background: color-mix(in oklab, var(--color-panel) 94%, transparent);
+}
+
+html.dark .os-landing .prompt-stage-glow {
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in oklab, var(--color-accent) 15%, transparent) 0%,
+    color-mix(in oklab, var(--color-accent) 7%, transparent) 42%,
+    transparent 72%
+  );
+}
+
+html.dark .os-landing .prompt-composer {
+  background: color-mix(in oklab, var(--color-panel) 90%, transparent);
 }
 
 @keyframes os-marquee {
@@ -160,8 +223,105 @@ html.light .os-landing {
     transform: translateY(0);
   }
 }
+/* backwards (not both): the last keyframe matches natural styles, and a
+   forwards fill would pin transform/filter and block hover/press feedback. */
 .os-landing .rise {
-  animation: os-rise 900ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation: os-rise 900ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+@keyframes os-riseBlur {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+.os-landing .rise-blur {
+  animation: os-riseBlur 1s var(--ease-out-strong) backwards;
+}
+
+/* Scroll reveals — ScrollReveal only marks elements still below the fold
+   as .reveal-hidden, so content never flashes and non-JS visitors see
+   everything. Removing the class transitions back to natural styles. */
+.os-landing [data-reveal].reveal-hidden {
+  opacity: 0;
+  transform: translateY(18px);
+}
+.os-landing [data-reveal="blur"].reveal-hidden {
+  filter: blur(7px);
+}
+/* Cells inside seamed grids (gap-px over the rule color) fade in place —
+   translating them would smear the hairline seams. */
+.os-landing [data-reveal="fade"].reveal-hidden {
+  transform: none;
+}
+.os-landing [data-reveal].reveal-shown {
+  transition:
+    opacity 800ms var(--ease-out-strong),
+    transform 800ms var(--ease-out-strong),
+    filter 700ms var(--ease-out-strong);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+/* Press feedback for anything clickable. Transition list covers the hover
+   color moves those elements already rely on, since this shorthand wins
+   over the tailwind utility. */
+.os-landing .pressable {
+  transition:
+    transform 160ms var(--ease-out-strong),
+    color 200ms ease,
+    background-color 200ms ease,
+    border-color 200ms ease,
+    opacity 200ms ease;
+}
+.os-landing .pressable:active {
+  transform: scale(0.97);
+}
+
+.os-landing .site-nav {
+  transition: box-shadow 500ms ease;
+}
+.os-landing .site-nav[data-scrolled] {
+  box-shadow: 0 12px 32px -24px oklch(0 0 0 / 0.25);
+}
+html.dark .os-landing .site-nav[data-scrolled] {
+  box-shadow: 0 16px 40px -24px oklch(0 0 0 / 0.55);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .os-landing .marquee-track:hover {
+    animation-play-state: paused;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .os-landing .rise,
+  .os-landing .rise-blur {
+    animation: none;
+  }
+  .os-landing .marquee-track {
+    animation-play-state: paused;
+  }
+  .os-landing .pressable:active {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .os-landing .prompt-composer {
+    background: var(--color-panel);
+  }
+}
+
+@media (prefers-contrast: more) {
+  .os-landing .prompt-composer {
+    border-color: var(--color-text-soft);
+  }
 }
 
 @keyframes os-caret {
@@ -186,7 +346,7 @@ html.light .os-landing {
 
 @keyframes os-codePulse {
   0% {
-    background-color: color-mix(in oklab, var(--color-accent) 32%, transparent);
+    background-color: color-mix(in oklab, var(--color-accent) 22%, transparent);
   }
   100% {
     background-color: transparent;
@@ -223,29 +383,23 @@ html.light .os-landing {
   }
 }
 
-.os-landing .logo-light {
+.os-landing .logo-dark {
   display: none;
 }
-html.light .os-landing .logo-dark {
-  display: none;
-}
-html.light .os-landing .logo-light {
+html.dark .os-landing .logo-dark {
   display: inline-block;
+}
+html.dark .os-landing .logo-light {
+  display: none;
 }
 
 .os-landing .agent-mono {
-  filter: brightness(0) invert(1);
-}
-html.light .os-landing .agent-mono {
   filter: brightness(0);
   opacity: 0.7;
 }
-
-.os-landing .vercel-oss-badge {
-  filter: invert(1) brightness(1.08);
-}
-html.light .os-landing .vercel-oss-badge {
-  filter: none;
+html.dark .os-landing .agent-mono {
+  filter: brightness(0) invert(1);
+  opacity: 1;
 }
 
 .os-landing :where(a, button, [role="button"]):focus-visible {

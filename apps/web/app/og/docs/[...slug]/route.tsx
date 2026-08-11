@@ -7,13 +7,13 @@ import { getPageImage, source } from '@/lib/source';
 
 export const revalidate = false;
 
-// Mirrors apps/web/app/(home)/landing.css.
-const PAPER = '#F7F4EC';
-const INK = '#1A1814';
-const INK_SOFT = '#3A352E';
-const MUTED = '#6E665B';
-const RULE = '#D9D2C3';
-const ACCENT = '#C2410C';
+// Mirrors apps/web/app/(home)/landing.css — clean neutral surface, vermillion accent.
+const PAPER = '#FCFCFC';
+const INK = '#0A0A0A';
+const INK_SOFT = '#3A3A3A';
+const MUTED = '#636363';
+const RULE = '#E4E4E4';
+const ACCENT = '#DE3B3D';
 
 async function loadGoogleFont(family: string, weight: number, italic = false) {
   const ital = italic ? 'ital,' : '';
@@ -35,7 +35,7 @@ export async function GET(_req: Request, { params }: RouteContext<'/og/docs/[...
   const [geistRegular, geistMedium, mono, logoBuffer] = await Promise.all([
     loadGoogleFont('Geist', 400),
     loadGoogleFont('Geist', 500),
-    loadGoogleFont('JetBrains Mono', 500),
+    loadGoogleFont('Geist Mono', 500),
     readFile(path.join(process.cwd(), 'public/open-slide.png')),
   ]);
   const logoSrc = `data:image/png;base64,${logoBuffer.toString('base64')}`;
@@ -52,7 +52,7 @@ export async function GET(_req: Request, { params }: RouteContext<'/og/docs/[...
       fonts: [
         { name: 'Geist', data: geistRegular, weight: 400, style: 'normal' },
         { name: 'Geist', data: geistMedium, weight: 500, style: 'normal' },
-        { name: 'JetBrains Mono', data: mono, weight: 500, style: 'normal' },
+        { name: 'Geist Mono', data: mono, weight: 500, style: 'normal' },
       ],
     },
   );
@@ -77,10 +77,6 @@ function Frame({
         width: '100%',
         height: '100%',
         backgroundColor: PAPER,
-        backgroundImage:
-          // subtle dot grid — mirrors `.specimen` in landing.css
-          `radial-gradient(circle at 1px 1px, rgba(26,24,20,0.06) 1px, transparent 0)`,
-        backgroundSize: '20px 20px',
         fontFamily: 'Geist',
         color: INK,
         padding: '72px 80px',
@@ -105,9 +101,9 @@ function Frame({
         <img src={logoSrc} width={48} height={48} alt="" style={{ borderRadius: 8 }} />
         <div
           style={{
-            fontFamily: 'JetBrains Mono',
+            fontFamily: 'Geist Mono',
             fontSize: 18,
-            letterSpacing: '0.18em',
+            letterSpacing: '0.08em',
             textTransform: 'uppercase',
             color: MUTED,
             display: 'flex',
@@ -183,7 +179,7 @@ function Frame({
           marginTop: 'auto',
           paddingTop: 24,
           borderTop: `1px solid ${RULE}`,
-          fontFamily: 'JetBrains Mono',
+          fontFamily: 'Geist Mono',
           fontSize: 18,
           color: MUTED,
         }}

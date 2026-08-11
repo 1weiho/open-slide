@@ -36,25 +36,31 @@ export function LiveDemo() {
           Live demo
         </h2>
         <div
-          className="relative block w-full overflow-hidden rounded-[8px] border border-[color:var(--color-rule)] bg-black"
+          data-reveal
+          className="floating relative block w-full overflow-hidden rounded-[8px] border border-[color:var(--color-rule)] bg-black"
           style={{ aspectRatio: '16 / 9' }}
         >
           <InlineSlidePlayer index={index} onIndexChange={setIndex} />
         </div>
 
-        <div className="mt-6 flex items-center justify-between font-[family-name:var(--font-mono)] text-[11px] tracking-[0.12em] uppercase text-[color:var(--color-muted)]">
+        <div className="mt-6 flex items-center justify-between text-[13px] font-medium text-[color:var(--color-muted)]">
           <a
             href="https://demo.open-slide.dev/"
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => posthog.capture('view_more_demos_clicked')}
-            className="inline-flex items-center gap-2 hover:text-[color:var(--color-text)] transition-colors"
+            className="group inline-flex items-center gap-2 hover:text-[color:var(--color-text)] transition-colors"
           >
             View more demos
-            <span aria-hidden>↗</span>
+            <span
+              aria-hidden
+              className="transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+            >
+              ↗
+            </span>
           </a>
           <span className="flex items-center gap-3">
-            <span className="text-[color:var(--color-text-soft)]">
+            <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.08em] text-[color:var(--color-text-soft)]">
               {String(index + 1).padStart(2, '0')} / {String(count).padStart(2, '0')}
             </span>
             <button
@@ -62,7 +68,7 @@ export function LiveDemo() {
               onClick={handlePrev}
               disabled={atStart}
               aria-label="Previous slide"
-              className="px-1.5 py-0.5 text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text)] transition disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-[color:var(--color-text-soft)]"
+              className="pressable px-1.5 py-0.5 text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text)] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-[color:var(--color-text-soft)]"
             >
               ←
             </button>
@@ -71,7 +77,7 @@ export function LiveDemo() {
               onClick={handleNext}
               disabled={atEnd}
               aria-label="Next slide"
-              className="px-1.5 py-0.5 text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text)] transition disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-[color:var(--color-text-soft)]"
+              className="pressable px-1.5 py-0.5 text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text)] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-[color:var(--color-text-soft)]"
             >
               →
             </button>

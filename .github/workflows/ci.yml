@@ -76,3 +76,37 @@ jobs:
 
       - name: Run unit tests
         run: pnpm test
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      # Image version must match @playwright/test in packages/core/package.json.
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --user 1001
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run e2e tests
+        run: pnpm test:e2e
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_attempt }}
+          path: packages/core/playwright-report
+          retention-days: 7

@@ -165,6 +165,9 @@ export const zhCN: Locale = {
     jump: '跳至',
     loadingSlide: '正在加载 {slideId}…',
     loadingAssets: '正在加载资源…',
+    switchDeck: '切换演示文稿',
+    searchDecks: '搜索演示文稿…',
+    noDecksFound: '没有匹配的演示文稿',
   },
 
   present: {
@@ -402,6 +405,33 @@ export const zhCN: Locale = {
     processing: '正在渲染第 {current} / {total} 页',
     generating: '正在组合演示文稿…',
     done: '完成',
+  },
+
+  commandMenu: {
+    trigger: '命令',
+    triggerAria: '打开命令菜单',
+    triggerTooltip: '搜索',
+    placeholder: '搜索幻灯片或执行命令…',
+    slidePlaceholder: '搜索这份幻灯片或执行命令…',
+    empty: '没有匹配的结果。',
+    groupSlides: '幻灯片',
+    groupFolders: '文件夹',
+    groupNavigation: '前往',
+    groupPresent: '放映',
+    groupDeck: '这份幻灯片',
+    groupExport: '导出',
+    groupPages: '页面',
+    groupAppearance: '外观',
+    groupDeveloper: '开发',
+    goToPage: '第 {n} 页',
+    overview: '页面总览',
+    designPanel: '切换设计面板',
+    backToSlides: '回到所有幻灯片',
+    themeItem: '主题：{name}',
+    languageItem: '语言：{name}',
+    hintNavigate: '移动',
+    hintSelect: '选择',
+    hintClose: '关闭',
   },
 
   themeToggle: {

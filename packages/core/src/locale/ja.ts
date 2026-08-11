@@ -167,6 +167,9 @@ export const ja: Locale = {
     jump: 'ジャンプ',
     loadingSlide: '{slideId} を読み込み中…',
     loadingAssets: 'アセットを読み込み中…',
+    switchDeck: 'デッキを切り替え',
+    searchDecks: 'デッキを検索…',
+    noDecksFound: '一致するデッキがありません',
   },
 
   present: {
@@ -408,6 +411,33 @@ export const ja: Locale = {
     processing: 'ページ {current} / {total} を描画中',
     generating: 'プレゼンテーションを構築中…',
     done: '完了',
+  },
+
+  commandMenu: {
+    trigger: 'コマンド',
+    triggerAria: 'コマンドメニューを開く',
+    triggerTooltip: '検索',
+    placeholder: 'スライドを検索、またはコマンドを実行…',
+    slidePlaceholder: 'このデッキを検索、またはコマンドを実行…',
+    empty: '結果がありません。',
+    groupSlides: 'スライド',
+    groupFolders: 'フォルダ',
+    groupNavigation: '移動',
+    groupPresent: '発表',
+    groupDeck: 'このデッキ',
+    groupExport: 'エクスポート',
+    groupPages: 'ページ',
+    groupAppearance: '外観',
+    groupDeveloper: '開発',
+    goToPage: '{n} ページ目',
+    overview: 'ページ一覧',
+    designPanel: 'デザインパネルの切り替え',
+    backToSlides: 'すべてのスライドへ戻る',
+    themeItem: 'テーマ: {name}',
+    languageItem: '言語: {name}',
+    hintNavigate: '移動',
+    hintSelect: '選択',
+    hintClose: '閉じる',
   },
 
   themeToggle: {

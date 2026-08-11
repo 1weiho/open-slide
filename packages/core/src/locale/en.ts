@@ -167,6 +167,9 @@ export const en: Locale = {
     jump: 'Jump',
     loadingSlide: 'Loading {slideId}…',
     loadingAssets: 'Loading assets…',
+    switchDeck: 'Switch presentation',
+    searchDecks: 'Search presentations…',
+    noDecksFound: 'No presentations match',
   },
 
   present: {
@@ -404,6 +407,33 @@ export const en: Locale = {
     processing: 'Rendering page {current} of {total}',
     generating: 'Building presentation…',
     done: 'Done',
+  },
+
+  commandMenu: {
+    trigger: 'Commands',
+    triggerAria: 'Open command menu',
+    triggerTooltip: 'Search',
+    placeholder: 'Search slides or run a command…',
+    slidePlaceholder: 'Search this deck or run a command…',
+    empty: 'No results.',
+    groupSlides: 'Slides',
+    groupFolders: 'Folders',
+    groupNavigation: 'Go to',
+    groupPresent: 'Present',
+    groupDeck: 'This deck',
+    groupExport: 'Export',
+    groupPages: 'Pages',
+    groupAppearance: 'Appearance',
+    groupDeveloper: 'Developer',
+    goToPage: 'Page {n}',
+    overview: 'Slide overview',
+    designPanel: 'Toggle design panel',
+    backToSlides: 'Back to all slides',
+    themeItem: 'Theme: {name}',
+    languageItem: 'Language: {name}',
+    hintNavigate: 'Navigate',
+    hintSelect: 'Select',
+    hintClose: 'Close',
   },
 
   themeToggle: {

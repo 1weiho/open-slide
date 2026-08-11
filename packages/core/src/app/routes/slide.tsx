@@ -14,9 +14,10 @@ import {
   MoreHorizontal,
   Play,
   Presentation,
+  Terminal,
 } from 'lucide-react';
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AssetView } from '@/components/asset-view';
 import { HistoryProvider } from '@/components/history-provider';
@@ -49,6 +50,7 @@ import { useIsMobile } from '@/lib/use-is-mobile';
 import { format, useLocale } from '@/lib/use-locale';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
+import { SlideCommandMenu } from '../components/command/slide-command-menu';
 import { NotesDrawer } from '../components/notes-drawer';
 import { OverviewGrid } from '../components/overview-grid';
 import { PdfProgressToast } from '../components/pdf-progress-toast';
@@ -68,16 +70,30 @@ import { useSlideModule } from '../lib/use-slide-module';
 
 const { showSlideUi, showSlideBrowser, allowHtmlDownload } = config.build;
 
+const noop = () => {};
+
 export function Slide() {
   const { slideId = '' } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { slide, error } = useSlideModule(slideId);
   const [playMode, setPlayMode] = useState<'window' | 'fullscreen' | null>(null);
+  // Last deck the Player showed. During a presenter-driven deck switch the
+  // route's slideId changes while the new module loads and warms; rendering
+  // from this cache keeps the Player mounted, which preserves fullscreen
+  // (re-entry needs a user gesture) and the elapsed timer.
+  const lastPresentedRef = useRef<{
+    slideId: string;
+    slide: SlideModule;
+    pages: SlideModule['default'];
+    index: number;
+  } | null>(null);
   const [exporting, setExporting] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const linkCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [designOpen, setDesignOpen] = useState(false);
   const [overviewOpen, setOverviewOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
   const [, setWarmedTick] = useState(0);
   const handleAssetsWarmed = useCallback(() => {
     markDeckWarmed(slideId);
@@ -116,6 +132,13 @@ export function Slide() {
       view,
     });
   }, [slideId, index, pageCount, slide, view]);
+
+  const switchPresentedSlide = useCallback(
+    (id: string) => {
+      navigate(`/s/${encodeURIComponent(id)}`, { replace: true });
+    },
+    [navigate],
+  );
 
   const goTo = useCallback(
     (i: number) => {
@@ -311,6 +334,45 @@ export function Slide() {
     );
   }
 
+  const presentReady = Boolean(slide) && pageCount > 0 && isDeckWarmed(slideId);
+  if (playMode && slide && presentReady) {
+    lastPresentedRef.current = { slideId, slide, pages, index };
+  }
+  const presented = playMode
+    ? slide && presentReady
+      ? { slideId, slide, pages, index }
+      : (lastPresentedRef.current ??
+        (slide && pageCount > 0 ? { slideId, slide, pages, index } : null))
+    : null;
+
+  if (playMode && presented) {
+    return (
+      <>
+        <Player
+          pages={presented.pages}
+          design={presented.slide.design}
+          transition={presented.slide.transition}
+          index={presented.index}
+          onIndexChange={presentReady ? goTo : noop}
+          onExit={() => setPlayMode(null)}
+          controls
+          slideId={presented.slideId}
+          onSwitchSlide={switchPresentedSlide}
+          fullscreen={playMode === 'fullscreen'}
+        />
+        {!presentReady && slide && pageCount > 0 && (
+          <SlidePreloadLayer
+            pages={pages}
+            index={index}
+            design={slide.design}
+            includeCurrent
+            onDone={handleAssetsWarmed}
+          />
+        )}
+      </>
+    );
+  }
+
   if (!slide) {
     return (
       <div className="grid min-h-dvh place-items-center px-8 text-muted-foreground">
@@ -394,22 +456,6 @@ export function Slide() {
         onIndexChange={goTo}
         onExit={() => {}}
         allowExit={false}
-      />
-    );
-  }
-
-  if (playMode) {
-    return (
-      <Player
-        pages={pages}
-        design={slide.design}
-        transition={slide.transition}
-        index={index}
-        onIndexChange={goTo}
-        onExit={() => setPlayMode(null)}
-        controls
-        slideId={slideId}
-        fullscreen={playMode === 'fullscreen'}
       />
     );
   }
@@ -661,6 +707,10 @@ export function Slide() {
                     )}
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="min-w-[200px]">
+                    <DropdownMenuItem onClick={() => setCommandOpen(true)}>
+                      <Terminal />
+                      {t.commandMenu.trigger}
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={copyLink}>
                       <Link2 />
                       {t.slide.copyLink}
@@ -811,6 +861,31 @@ export function Slide() {
                 />
               </div>
             </DesignProvider>
+          )}
+
+          {view === 'slides' && (
+            <SlideCommandMenu
+              open={commandOpen}
+              onOpenChange={setCommandOpen}
+              pageCount={pageCount}
+              currentIndex={index}
+              exporting={exporting}
+              handlers={{
+                onPresentWindow: () => setPlayMode('window'),
+                onPresentFullscreen: () => setPlayMode('fullscreen'),
+                onPresenterView: () => {
+                  if (slideId) openPresenterWindow(slideId);
+                  setPlayMode('window');
+                },
+                onCopyLink: copyLink,
+                onOverview: () => setOverviewOpen(true),
+                onToggleDesignPanel: () => setDesignOpen((v) => !v),
+                onExportHtml: exportHtml,
+                onExportPdf: exportPdf,
+                onExportImagePptx: exportImagePptx,
+                onGoToPage: goTo,
+              }}
+            />
           )}
         </div>
       </InspectorProvider>
