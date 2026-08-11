@@ -40,6 +40,7 @@ type Props = {
   allowExit?: boolean;
   controls?: boolean;
   slideId?: string;
+  onSwitchSlide?: (slideId: string) => void;
   /**
    * When true, the Player enters the browser Fullscreen API on mount.
    * When false, it renders as a window-sized overlay (viewport-filling)
@@ -58,6 +59,7 @@ export function Player({
   allowExit = true,
   controls = false,
   slideId,
+  onSwitchSlide,
   fullscreen = true,
 }: Props) {
   const isMobile = useIsMobile();
@@ -250,9 +252,11 @@ export function Player({
         setBlackout((cur) => (cur === msg.mode ? null : msg.mode));
       } else if (msg.type === 'request-state') {
         send({ type: 'state', state: presenterStateRef.current });
+      } else if (msg.type === 'switch-slide') {
+        if (msg.slideId !== slideId) onSwitchSlide?.(msg.slideId);
       }
     },
-    [goNext, goPrev, handleIndexChange, pages.length],
+    [goNext, goPrev, handleIndexChange, pages.length, slideId, onSwitchSlide],
   );
 
   const channel = usePresenterChannel(slideId ?? '__none__', (msg) => {
@@ -402,7 +406,10 @@ export function Player({
       style={design ? { background: design.palette.bg } : undefined}
     >
       <SlideCanvas flat design={design}>
+        {/* Keyed per deck so a presenter-driven deck switch cuts instead of
+            animating a transition between two unrelated decks. */}
         <SlideTransitionLayer
+          key={slideId}
           pages={pages}
           index={index}
           total={pages.length}
