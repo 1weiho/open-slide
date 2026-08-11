@@ -43,6 +43,11 @@ export default config;
       default: 'first free port from 5173 upward',
       description: 'Dev server port.',
     },
+    allowedHosts: {
+      type: 'string[] | true',
+      default: "Vite's default host check",
+      description: 'Hostnames the dev/preview server responds to. `true` allows any host.',
+    },
     build: {
       type: 'OpenSlideBuildConfig',
       default: 'all toggles on',
@@ -103,6 +108,25 @@ const config: OpenSlideConfig = {
 
 The value is passed straight to Vite's `base` and to React Router's
 `basename`, so client-side navigation matches the deployed path.
+
+### Remote IDE / proxied dev server
+
+Cloud workspaces (Coder, Codespaces, Gitpod, …) reach the dev server through
+a generated domain, so Vite blocks the request with
+`Blocked request. This host (…) is not allowed.` Allow your workspace domain
+— a leading dot matches every subdomain:
+
+```ts
+const config: OpenSlideConfig = {
+  allowedHosts: ['.my-workspace.example.com'],
+};
+```
+
+Or set `allowedHosts: true` to accept any host. Only do this on a trusted
+network — it disables Vite's DNS-rebinding protection. The value is passed
+straight to Vite's
+[`server.allowedHosts`](https://vite.dev/config/server-options#server-allowedhosts)
+and also applies to `open-slide preview`.
 
 ### Organizing many decks
 
