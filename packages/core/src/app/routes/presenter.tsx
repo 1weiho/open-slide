@@ -132,6 +132,7 @@ export function Presenter() {
   const note = slide.notes?.[index];
   const blackout = state?.blackout ?? null;
   const startedAt = state?.startedAt ?? localStart;
+  const slideStartedAt = state?.slideStartedAt ?? localStart;
   const stepIndex = Math.max(0, state?.stepIndex ?? 0);
   const stepCount = Math.max(0, state?.stepCount ?? 0);
 
@@ -175,6 +176,7 @@ export function Presenter() {
         index={index}
         total={total}
         startedAt={startedAt}
+        slideStartedAt={slideStartedAt}
         slideTitle={slide.meta?.title ?? slideId}
         connected={hasProjection}
       />
@@ -252,12 +254,14 @@ function PresenterTopBar({
   index,
   total,
   startedAt,
+  slideStartedAt,
   slideTitle,
   connected,
 }: {
   index: number;
   total: number;
   startedAt: number;
+  slideStartedAt: number;
   slideTitle: string;
   connected: boolean;
 }) {
@@ -277,7 +281,12 @@ function PresenterTopBar({
       </div>
       <div className="flex items-center gap-6">
         <Clock />
-        <ElapsedClock startedAt={startedAt} />
+        <TimerStat label={t.presenter.elapsed}>
+          <ElapsedClock startedAt={startedAt} title={t.presenter.elapsed} />
+        </TimerStat>
+        <TimerStat label={t.presenter.slideElapsed}>
+          <ElapsedClock startedAt={slideStartedAt} title={t.presenter.slideElapsed} muted />
+        </TimerStat>
         <div className="font-mono text-[18px] tabular-nums">
           <span className="text-foreground">{(index + 1).toString().padStart(2, '0')}</span>
           <span className="text-foreground/30"> / </span>
@@ -285,6 +294,15 @@ function PresenterTopBar({
         </div>
       </div>
     </header>
+  );
+}
+
+function TimerStat({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col items-end leading-none">
+      <span className="eyebrow text-[9px] text-white/35">{label}</span>
+      {children}
+    </div>
   );
 }
 
@@ -481,9 +499,16 @@ function Clock() {
   );
 }
 
-function ElapsedClock({ startedAt }: { startedAt: number }) {
+function ElapsedClock({
+  startedAt,
+  title,
+  muted,
+}: {
+  startedAt: number;
+  title: string;
+  muted?: boolean;
+}) {
   const [now, setNow] = useState(() => Date.now());
-  const t = useLocale();
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
@@ -498,8 +523,11 @@ function ElapsedClock({ startedAt }: { startedAt: number }) {
       : `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   return (
     <time
-      title={t.presenter.elapsed}
-      className="font-mono text-[18px] tabular-nums text-foreground"
+      title={title}
+      className={cn(
+        'font-mono text-[18px] tabular-nums',
+        muted ? 'text-muted-foreground' : 'text-foreground',
+      )}
     >
       {text}
     </time>

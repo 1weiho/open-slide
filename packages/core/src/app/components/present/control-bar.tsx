@@ -23,6 +23,7 @@ type Props = {
   total: number;
   visible: boolean;
   startedAt: number;
+  slideStartedAt: number;
   blackout: 'black' | 'white' | null;
   laser: boolean;
   allowExit: boolean;
@@ -50,6 +51,7 @@ export function PresentControlBar({
   total,
   visible,
   startedAt,
+  slideStartedAt,
   blackout,
   laser,
   allowExit,
@@ -115,7 +117,8 @@ export function PresentControlBar({
 
             <Divider />
 
-            <ElapsedClock startedAt={startedAt} />
+            <ElapsedClock startedAt={startedAt} title={t.present.elapsedTime} />
+            <ElapsedClock startedAt={slideStartedAt} title={t.present.slideElapsedTime} muted />
 
             <Divider />
 
@@ -297,9 +300,16 @@ function Divider() {
   return <span aria-hidden className="mx-1 h-4 w-px bg-white/15" />;
 }
 
-function ElapsedClock({ startedAt }: { startedAt: number }) {
+function ElapsedClock({
+  startedAt,
+  title,
+  muted,
+}: {
+  startedAt: number;
+  title: string;
+  muted?: boolean;
+}) {
   const [now, setNow] = useState(() => Date.now());
-  const t = useLocale();
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
@@ -309,8 +319,11 @@ function ElapsedClock({ startedAt }: { startedAt: number }) {
   const s = elapsed % 60;
   return (
     <time
-      title={t.present.elapsedTime}
-      className="px-2 font-mono text-[11.5px] tracking-[0.08em] tabular-nums uppercase select-none text-white/70"
+      title={title}
+      className={cn(
+        'px-2 font-mono text-[11.5px] tracking-[0.08em] tabular-nums uppercase select-none',
+        muted ? 'text-white/40' : 'text-white/70',
+      )}
     >
       {m.toString().padStart(2, '0')}:{s.toString().padStart(2, '0')}
     </time>

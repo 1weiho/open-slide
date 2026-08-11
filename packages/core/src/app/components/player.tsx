@@ -80,12 +80,21 @@ export function Player({
   const [mobileChromeVisible, setMobileChromeVisible] = useState(false);
   const [mobileChromeDeadline, setMobileChromeDeadline] = useState(0);
   const [startedAt] = useState(() => Date.now());
+  const [slideStartedAt, setSlideStartedAt] = useState(() => Date.now());
+  const [timedIndex, setTimedIndex] = useState(index);
   const [windowed, setWindowed] = useState(!fullscreen);
   // Mirror windowed into a ref so the fullscreenchange listener can read the
   // latest value without re-binding — exits from window mode must not call
   // onExit, but exits initiated by the browser (Esc in fullscreen) must.
   const windowedRef = useRef(windowed);
   windowedRef.current = windowed;
+
+  // Reset the per-slide timer the moment the slide changes, during render, so
+  // the new timestamp is in place before paint instead of after an extra pass.
+  if (timedIndex !== index) {
+    setTimedIndex(index);
+    setSlideStartedAt(Date.now());
+  }
 
   const canPrev = index > 0;
   const canNext = index < pages.length - 1;
@@ -223,6 +232,16 @@ export function Player({
     setWindowed((w) => !w);
   }, []);
 
+  const openPresenter = useCallback(() => {
+    if (!slideId) return;
+    // Opening the popup drops the browser out of fullscreen; flip to windowed
+    // first so the fullscreenchange listener doesn't treat it as an exit. The
+    // ref is set synchronously because that event can fire before re-render.
+    windowedRef.current = true;
+    setWindowed(true);
+    openPresenterWindow(slideId);
+  }, [slideId]);
+
   // Player is the source of truth: it re-publishes state on every change
   // and answers `request-state` pings so newly opened presenter windows
   // hydrate immediately.
@@ -232,10 +251,11 @@ export function Player({
       pageCount: pages.length,
       blackout,
       startedAt,
+      slideStartedAt,
       stepIndex: stepAggregate.revealed,
       stepCount: stepAggregate.stepCount,
     }),
-    [index, pages.length, blackout, startedAt, stepAggregate],
+    [index, pages.length, blackout, startedAt, slideStartedAt, stepAggregate],
   );
   const presenterStateRef = useRef(presenterState);
   presenterStateRef.current = presenterState;
@@ -349,7 +369,7 @@ export function Player({
         setHelpOpen((v) => !v);
       } else if ((e.key === 'p' || e.key === 'P') && slideId) {
         e.preventDefault();
-        openPresenterWindow(slideId);
+        openPresenter();
       }
     };
     window.addEventListener('keydown', onKey);
@@ -367,6 +387,7 @@ export function Player({
     handleIndexChange,
     pages.length,
     slideId,
+    openPresenter,
   ]);
 
   // The control bar + progress strip only surface when the pointer is in
@@ -426,6 +447,7 @@ export function Player({
             total={pages.length}
             visible={chromeVisible}
             startedAt={startedAt}
+            slideStartedAt={slideStartedAt}
             blackout={blackout}
             laser={laser}
             allowExit={allowExit}
@@ -436,7 +458,7 @@ export function Player({
             onOverview={() => setOverviewOpen(true)}
             onBlackout={(mode) => setBlackout((c) => (c === mode ? null : mode))}
             onLaser={() => setLaser((v) => !v)}
-            onPresenter={() => slideId && openPresenterWindow(slideId)}
+            onPresenter={openPresenter}
             onToggleFullscreen={toggleFullscreen}
             onHelp={() => setHelpOpen(true)}
             onExit={onExit}
@@ -462,5 +484,6 @@ export function Player({
 export function openPresenterWindow(slideId: string) {
   if (typeof window === 'undefined') return;
   const url = `${import.meta.env.BASE_URL}s/${encodeURIComponent(slideId)}/presenter`;
-  window.open(url, `open-slide-presenter-${slideId}`, 'popup,width=1280,height=800');
+  const win = window.open(url, `open-slide-presenter-${slideId}`, 'popup,width=1280,height=800');
+  win?.focus();
 }

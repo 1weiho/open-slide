@@ -164,6 +164,7 @@ export type Locale = {
     resetTimer: string;
     currentTime: string;
     elapsed: string;
+    slideElapsed: string;
     jump: string;
     /** template: "Loading {slideId}…" */
     loadingSlide: string;
@@ -183,6 +184,7 @@ export type Locale = {
     helpAria: string;
     exitAria: string;
     elapsedTime: string;
+    slideElapsedTime: string;
     helpEyebrow: string;
     helpTitle: string;
     shortcutNext: string;
