@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.12/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.7/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -11,6 +11,7 @@
       "!**/dist",
       "!**/node_modules",
       "!**/*.tsbuildinfo",
+      "!**/*.svg",
       "!packages/core/src/app/components/ui"
     ]
   },
@@ -23,7 +24,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "preset": "recommended"
     }
   },
   "overrides": [
