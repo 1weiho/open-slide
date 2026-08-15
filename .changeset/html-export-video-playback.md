@@ -2,4 +2,4 @@
 "@open-slide/core": patch
 ---
 
-Preserve video poster assets and autoplay behavior in HTML exports.
+HTML exports preserve video posters and rendered mute state, limit autoplay to visible pages, and pause and reset videos on hidden pages.
