@@ -76,6 +76,8 @@ If the `frontend-design` skill is available, consult it for deeper aesthetic gui
 
 Read the **`slide-authoring`** skill before writing — it covers the file contract, canvas rules, type scale, spacing, and asset imports, and it includes a starter template you can copy. Don't duplicate that knowledge here; use it.
 
+Set `meta.summary` on every new slide: one sentence on what the deck covers, written for someone who hasn't seen it. You already have everything you need from Step 2 — write it from the topic and takeaway the user gave you, don't ask a further question for it. It is what an agent reads in the generated `llms.txt` to tell this deck from the others, and it is published with the built site, so keep it public-safe.
+
 ## Step 7 — Self-review
 
 Run the checklist in `slide-authoring` ("Self-review before finishing"). It covers structural correctness, layout discipline, and asset existence.

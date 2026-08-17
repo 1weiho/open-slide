@@ -11,6 +11,7 @@ const Cover: Page = () => <div>{/* ... */}</div>;
 export const meta: SlideMeta = {
   title: 'Cover',
   theme: 'corporate',
+  summary: 'Q3 numbers and what they mean for the roadmap.',
 };
 
 export const notes = ['Open with the analyst quote.'];
@@ -41,12 +42,40 @@ type Page = ComponentType & {
       type: 'string',
       description: 'Name of a theme under themes/<id>.md. The agent reads it before authoring.',
     },
+    summary: {
+      type: 'string',
+      description:
+        'One-line description of the deck, listed in the generated llms.txt. Published — treat it as public, like title.',
+    },
     createdAt: {
       type: 'string',
       description: 'ISO 8601 timestamp set at scaffold time. Sorts the slide list.',
     },
   }}
 />
+
+Every value here must be a plain string literal — the framework reads `meta` with
+a regex at build time rather than evaluating the module, so template literals and
+expressions are not picked up.
+
+### The generated `llms.txt`
+
+`open-slide dev` writes an `llms.txt` at the root of your project listing every
+deck with its `title`, `theme`, `createdAt`, and `summary`, so an agent can see
+what a workspace contains without reading a single 1500-line `index.tsx`.
+`open-slide build` writes the same index into the build output, with links
+pointing at the deployed `/s/<id>` routes.
+
+The file is regenerated on every slide change and carries a
+`Generated file — edits are overwritten.` marker on its blockquote line. If an
+`llms.txt` without that marker already exists, open-slide leaves it alone and
+logs a warning — a hand-written index is never clobbered.
+
+<Callout type="warn">
+  `summary` is published, not a private note. The build copy ships with your site
+  and the project-root copy is normally committed, so treat it with exactly the
+  same care as `title`.
+</Callout>
 
 ## `notes` (optional)
 
