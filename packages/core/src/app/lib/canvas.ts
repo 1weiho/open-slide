@@ -1,14 +1,10 @@
 import config from 'virtual:open-slide/config';
 
-/**
- * Live canvas dimensions for the running workspace, resolved from the `canvas`
- * field in `open-slide.config.ts` (see `src/canvas.ts` for presets and
- * validation). The Vite plugin normalises presets to explicit pixels before
- * they reach the browser, so there is nothing to parse here.
- *
- * This lives apart from `sdk.ts` on purpose: the virtual module only resolves
- * inside a Vite graph, and `sdk.ts` is bundled into `dist` by tsdown and
- * imported by unit tests.
- */
+// Separate from sdk.ts because the virtual module only resolves inside a Vite
+// graph, and sdk.ts is bundled into dist and imported by unit tests.
+
+/** Width in CSS pixels of the canvas this workspace renders into. */
 export const CANVAS_WIDTH = config.canvas.width;
+
+/** Height in CSS pixels of the canvas this workspace renders into. */
 export const CANVAS_HEIGHT = config.canvas.height;

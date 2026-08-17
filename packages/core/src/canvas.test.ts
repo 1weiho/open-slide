@@ -49,6 +49,13 @@ describe('resolveCanvasSize', () => {
     expect(CANVAS_PRESETS['16:9'].width).toBe(1920);
   });
 
+  it('rejects names inherited from Object.prototype', () => {
+    for (const name of ['constructor', 'toString', 'hasOwnProperty', '__proto__']) {
+      // @ts-expect-error — exercising the runtime guard for untyped config files
+      expect(() => resolveCanvasSize(name)).toThrow(/Invalid "canvas" preset/);
+    }
+  });
+
   it('rejects an unknown preset name', () => {
     // @ts-expect-error — exercising the runtime guard for untyped config files
     expect(() => resolveCanvasSize('21:9')).toThrow(/Invalid "canvas" preset/);
