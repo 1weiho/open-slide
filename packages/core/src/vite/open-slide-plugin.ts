@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import fg from 'fast-glob';
 import { loadConfigFromFile, normalizePath, type Plugin, type ViteDevServer } from 'vite';
+import { resolveCanvasSize } from '../canvas.ts';
 import type { OpenSlideConfig } from '../config.ts';
 import { SLIDE_ID_RE } from '../editing/slide-ops.ts';
 import { hasRecentWrite } from './recent-writes.ts';
@@ -260,7 +261,16 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
               showSlideUi: userBuild.showSlideUi ?? true,
               allowHtmlDownload: userBuild.allowHtmlDownload ?? true,
             };
-        const resolvedConfig = { ...config, build: buildResolved, version: coreVersion };
+        // Normalise the preset to explicit pixels here so the browser never
+        // parses it, and so an invalid value throws at dev-server / build start
+        // instead of producing a silently mis-sized deck.
+        const canvasResolved = resolveCanvasSize(config.canvas);
+        const resolvedConfig = {
+          ...config,
+          build: buildResolved,
+          canvas: canvasResolved,
+          version: coreVersion,
+        };
         return `export default ${JSON.stringify(resolvedConfig)};\n`;
       }
       if (id === resolved(FOLDERS_VMOD)) {

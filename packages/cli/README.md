@@ -15,7 +15,7 @@ This creates a workspace containing:
 
 - `slides/getting-started/` — a starter slide you can edit or delete.
 - `package.json` — depends on `@open-slide/core`, which provides the runtime (home page, slide viewer, fullscreen mode) and the `open-slide` CLI.
-- `open-slide.config.ts` — optional typed config (slidesDir, port).
+- `open-slide.config.ts` — optional typed config (slidesDir, port, canvas).
 - `.claude/skills/` and `.agents/skills/` — Claude Code skills (`create-slide`, `apply-comments`, …).
 - `CLAUDE.md` — agent guide for authoring slides.
 
@@ -33,6 +33,6 @@ You won't see any Vite, React, or tsconfig files in the workspace. They live ins
 
 ## Authoring
 
-Inside the scaffolded workspace, slides live under `slides/<kebab-case-id>/index.tsx` and default-export an array of `Page` components. Each page renders into a fixed 1920×1080 canvas; the framework handles scaling.
+Inside the scaffolded workspace, slides live under `slides/<kebab-case-id>/index.tsx` and default-export an array of `Page` components. Each page renders into a fixed canvas — 1920×1080 unless `canvas` says otherwise — and the framework handles scaling.
 
 Ask Claude Code to "make slides about X" and the `create-slide` skill will take it from there.

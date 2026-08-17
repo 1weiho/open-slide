@@ -70,7 +70,9 @@ This lists every `const Foo: Page = …` declaration with its line number. Read 
 
 ## Canvas
 
-Every page renders into a fixed **1920 × 1080** canvas. The framework scales it; you design as if the viewport is literally 1920×1080.
+Every page renders into a fixed pixel canvas. The framework scales it; you design as if the viewport is literally that size.
+
+The default is **1920 × 1080**, but a workspace can set another size via `canvas` in `open-slide.config.ts` (`'4:3'`, `'4:5'`, `'1:1'`, `'9:16'`, or explicit `{ width, height }`). **Check that file before writing a page** — on a portrait canvas the type scale below is too large and side-by-side layouts have to stack. Import `CANVAS_WIDTH` / `CANVAS_HEIGHT` from `@open-slide/core` if a page needs the numbers at runtime.
 
 - Use **absolute pixel values** for `font-size`, padding, positioning. No `rem`, no `vw`/`vh`, no `%` for type.
 - The root element of each page should fill the canvas: `width: '100%'; height: '100%'`.

@@ -13,5 +13,8 @@ export default defineConfig({
   clean: true,
   dts: true,
   shims: false,
-  external: ['vite', 'react', 'react-dom', 'react-router-dom'],
+  // `virtual:open-slide/*` is served by our own Vite plugin, so it can only be
+  // resolved inside a consumer's Vite graph. Leave the import bare in dist and
+  // let their build resolve it, exactly as the shipped `src/app` sources do.
+  external: ['vite', 'react', 'react-dom', 'react-router-dom', /^virtual:open-slide\//],
 });

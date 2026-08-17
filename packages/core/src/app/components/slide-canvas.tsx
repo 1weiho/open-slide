@@ -1,7 +1,7 @@
 import { type CSSProperties, type ReactNode, useLayoutEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/canvas';
 import { type DesignSystem, designToCssVars } from '../lib/design';
-import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
 
 type Props = {
   children: ReactNode;

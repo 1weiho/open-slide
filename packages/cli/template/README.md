@@ -33,7 +33,7 @@ export const meta: SlideMeta = { title: 'My slide' };
 export default [Cover] satisfies Page[];
 ```
 
-Every page renders into a fixed **1920 × 1080** canvas — design with absolute pixel values. Put images, videos, and fonts under `slides/<id>/assets/` and import them directly.
+Every page renders into a fixed **1920 × 1080** canvas — design with absolute pixel values. Set `canvas` in `open-slide.config.ts` to author at another size (`'4:5'`, `'9:16'`, or explicit `{ width, height }`). Put images, videos, and fonts under `slides/<id>/assets/` and import them directly.
 
 See [`CLAUDE.md`](./CLAUDE.md) for the full authoring guide.
 
@@ -61,4 +61,4 @@ const openSlideConfig: OpenSlideConfig = {
 export default openSlideConfig;
 ```
 
-Supported fields: `slidesDir`, `port`.
+Supported fields: `slidesDir`, `port`, `canvas`.

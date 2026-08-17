@@ -1,5 +1,6 @@
 import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from './canvas';
 import { designToCssVars } from './design';
 import { SlidePageProvider } from './page-context';
 import { isFrameAnimationSettled, waitForDataWaitfor, waitForFonts } from './print-ready';
@@ -9,7 +10,7 @@ const PRINT_ROOT_ID = 'os-print-root';
 const PRINT_STYLE_ID = 'os-print-style';
 
 const PRINT_STYLES = `
-@page { size: 1920px 1080px; margin: 0; }
+@page { size: ${CANVAS_WIDTH}px ${CANVAS_HEIGHT}px; margin: 0; }
 
 @media screen {
   #${PRINT_ROOT_ID} {
@@ -36,8 +37,8 @@ const PRINT_STYLES = `
     background: #fff !important;
   }
   #${PRINT_ROOT_ID} .os-print-frame {
-    width: 1920px !important;
-    height: 1080px !important;
+    width: ${CANVAS_WIDTH}px !important;
+    height: ${CANVAS_HEIGHT}px !important;
     background: #fff;
     color: #000;
     overflow: hidden;
@@ -52,13 +53,13 @@ const PRINT_STYLES = `
   }
   /* Supersample: Chrome rasterizes filtered/composited layers (e.g. filter:
      blur, mix-blend-mode) at the layer's CSS-pixel size, so a blurred
-     gradient on a 1920×1080 page bakes in at ~1× DPI and bands when the PDF
-     is viewed scaled up. zoom:2 doubles the layer raster size; scale(0.5)
-     composites it back to 1920×1080. Vector content (text, plain CSS
-     gradients, SVG) stays vector through both transforms. */
+     gradient bakes in at ~1× DPI and bands when the PDF is viewed scaled up.
+     zoom:2 doubles the layer raster size; scale(0.5) composites it back to the
+     canvas size. Vector content (text, plain CSS gradients, SVG) stays vector
+     through both transforms. */
   #${PRINT_ROOT_ID} .os-print-supersample {
-    width: 1920px !important;
-    height: 1080px !important;
+    width: ${CANVAS_WIDTH}px !important;
+    height: ${CANVAS_HEIGHT}px !important;
     zoom: 2;
     transform: scale(0.5);
     transform-origin: top left;
@@ -130,15 +131,15 @@ export async function exportSlideAsPdf(
     const host = document.createElement('div');
     host.className = 'os-print-frame';
     host.setAttribute('data-osd-canvas', '');
-    host.style.width = '1920px';
-    host.style.height = '1080px';
+    host.style.width = `${CANVAS_WIDTH}px`;
+    host.style.height = `${CANVAS_HEIGHT}px`;
     if (designVars) {
       for (const [k, v] of Object.entries(designVars)) host.style.setProperty(k, v);
     }
     const inner = document.createElement('div');
     inner.className = 'os-print-supersample';
-    inner.style.width = '1920px';
-    inner.style.height = '1080px';
+    inner.style.width = `${CANVAS_WIDTH}px`;
+    inner.style.height = `${CANVAS_HEIGHT}px`;
     host.appendChild(inner);
     root.appendChild(host);
     frames.push(host);

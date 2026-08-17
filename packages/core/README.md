@@ -12,7 +12,7 @@ Most users get this installed automatically by running `npx @open-slide/cli init
 
 ## What's inside
 
-- **Runtime** — home page, slide viewer, thumbnail rail, keyboard navigation, and fullscreen presenter mode. Every slide renders into a fixed **1920×1080** canvas; the framework scales it.
+- **Runtime** — home page, slide viewer, thumbnail rail, keyboard navigation, and fullscreen presenter mode. Every slide renders into a fixed pixel canvas — **1920×1080** by default, configurable via `canvas` — and the framework scales it.
 - **Vite plugin** — discovers `slides/<id>/index.{tsx,jsx,ts,js}`, exposes them via virtual modules, and reloads when slides are added or removed.
 - **CLI** — `open-slide dev | build | preview` so workspaces never need to touch Vite, React, or tsconfig directly.
 
@@ -36,10 +36,33 @@ import type { OpenSlideConfig } from '@open-slide/core';
 const openSlideConfig: OpenSlideConfig = {
   slidesDir: 'slides',
   port: 5173,
+  canvas: '16:9',
 };
 
 export default openSlideConfig;
 ```
+
+### Canvas size
+
+`canvas` sets the pixel canvas every slide renders into. It takes a named preset or explicit dimensions:
+
+```ts
+const openSlideConfig: OpenSlideConfig = {
+  canvas: '4:5', // or { width: 1080, height: 1350 }
+};
+```
+
+| Preset | Size | Typical use |
+| --- | --- | --- |
+| `'16:9'` *(default)* | 1920 × 1080 | Talks, screen shares |
+| `'4:3'` | 1440 × 1080 | Projectors, older displays |
+| `'4:5'` | 1080 × 1350 | LinkedIn document carousels, Instagram |
+| `'1:1'` | 1080 × 1080 | Square social posts |
+| `'9:16'` | 1080 × 1920 | Stories, Reels, Shorts |
+
+The setting is workspace-wide and flows through the viewer, thumbnails, presenter, and the PDF, HTML, and PPTX exports — a PDF exported from a `'4:5'` workspace has 1080 × 1350 pages. Landscape presets keep the 1080px height so a deck authored at 1920 × 1080 keeps its type scale when narrowed.
+
+Slides do not reflow. The canvas is scaled to fit, so changing this on an existing deck re-frames its layout rather than adapting it.
 
 ### Hosting under a subpath
 
@@ -76,8 +99,8 @@ export const meta = { title: 'Hello' };
 
 ```ts
 import {
-  CANVAS_WIDTH,   // 1920
-  CANVAS_HEIGHT,  // 1080
+  CANVAS_WIDTH,   // 1920 by default, or whatever `canvas` resolves to
+  CANVAS_HEIGHT,  // 1080 by default
   MorphElement,   // match or fade objects across pages for morph transitions
   type Page,
   type SlideMeta,

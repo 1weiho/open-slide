@@ -1,15 +1,19 @@
 import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from './canvas';
 import { designToCssVars } from './design';
 import { SlidePageProvider } from './page-context';
 import { isFrameAnimationSettled, waitForDataWaitfor, waitForFonts } from './print-ready';
 import type { SlideModule } from './sdk';
 
-const SLIDE_W = 1920;
-const SLIDE_H = 1080;
-// 16:9 widescreen in English Metric Units (914400 EMU per inch → 13.333in × 7.5in).
-const EMU_W = 12192000;
-const EMU_H = 6858000;
+const SLIDE_W = CANVAS_WIDTH;
+const SLIDE_H = CANVAS_HEIGHT;
+// PowerPoint sizes slides in English Metric Units (914400 EMU per inch). The
+// canvas maps at 144px per inch, which is what makes the 16:9 default land on
+// PowerPoint's own 13.333in × 7.5in widescreen (12192000 × 6858000 EMU).
+const EMU_PER_PX = 914400 / 144;
+const EMU_W = SLIDE_W * EMU_PER_PX;
+const EMU_H = SLIDE_H * EMU_PER_PX;
 const CAPTURE_PIXEL_RATIO = 2;
 
 const ANIMATION_TIMEOUT_MS = 15_000;

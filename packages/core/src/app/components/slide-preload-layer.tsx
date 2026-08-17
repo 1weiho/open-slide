@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/canvas';
 import { type DesignSystem, designToCssVars } from '../lib/design';
 import { SlidePageProvider } from '../lib/page-context';
-import { CANVAS_HEIGHT, CANVAS_WIDTH, type Page } from '../lib/sdk';
+import type { Page } from '../lib/sdk';
 import { type StepController, StepHost } from '../lib/step-context';
 
 const PAGES_PER_FRAME = 2;
