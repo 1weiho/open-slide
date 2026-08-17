@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { generateSlidesModule } from './open-slide-plugin.ts';
+import { extractMeta, generateSlidesModule } from './open-slide-plugin.ts';
 
 async function withSlidesRoot<T>(fn: (root: string) => Promise<T>): Promise<T> {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'open-slide-test-'));
@@ -23,6 +23,62 @@ async function writeSlide(root: string, id: string): Promise<string> {
   );
   return entry;
 }
+
+describe('extractMeta', () => {
+  it('reads every supported field', () => {
+    const src = [
+      "export const meta = { title: 'Cover', theme: 'aurora',",
+      "  summary: 'What the deck covers.', createdAt: '2026-05-16T12:00:00Z' };",
+      'export default [];',
+    ].join('\n');
+    expect(extractMeta(src)).toEqual({
+      title: 'Cover',
+      theme: 'aurora',
+      summary: 'What the deck covers.',
+      createdAt: '2026-05-16T12:00:00Z',
+    });
+  });
+
+  it('returns nulls when there is no meta export', () => {
+    expect(extractMeta('export default [];\n')).toEqual({
+      title: null,
+      theme: null,
+      summary: null,
+      createdAt: null,
+    });
+  });
+
+  it('keeps apostrophes inside a double-quoted value', () => {
+    const src = `export const meta = { title: "Pre-Rendering & 'use cache'" };\n`;
+    expect(extractMeta(src).title).toBe("Pre-Rendering & 'use cache'");
+  });
+
+  it('keeps double quotes inside a single-quoted value', () => {
+    const src = `export const meta = { summary: 'They call it "streaming".' };\n`;
+    expect(extractMeta(src).summary).toBe('They call it "streaming".');
+  });
+
+  it('unescapes an escaped delimiter', () => {
+    const src = `export const meta = { title: 'It\\'s here' };\n`;
+    expect(extractMeta(src).title).toBe("It's here");
+  });
+
+  it('ignores a template literal rather than capturing it half-parsed', () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal `${}` is the test input
+    const src = 'export const meta = { title: `Backticks ${nope}` };\n';
+    expect(extractMeta(src).title).toBeNull();
+  });
+
+  it('only reads inside the meta object body', () => {
+    const src = [
+      "const decoy = { title: 'Decoy' };",
+      "export const meta = { theme: 'aurora' };",
+    ].join('\n');
+    const meta = extractMeta(src);
+    expect(meta.title).toBeNull();
+    expect(meta.theme).toBe('aurora');
+  });
+});
 
 describe('generateSlidesModule', () => {
   it('keeps slides whose id is ASCII-safe and reports none ignored', async () => {

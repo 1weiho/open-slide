@@ -21,12 +21,12 @@ const SLIDES_VMOD = 'virtual:open-slide/slides';
 const CONFIG_VMOD = 'virtual:open-slide/config';
 const FOLDERS_VMOD = 'virtual:open-slide/folders';
 
-type FoldersManifest = {
+export type FoldersManifest = {
   folders: unknown[];
   assignments: Record<string, string>;
 };
 
-async function readFoldersManifest(file: string): Promise<FoldersManifest> {
+export async function readFoldersManifest(file: string): Promise<FoldersManifest> {
   try {
     const raw = await fs.readFile(file, 'utf8');
     const parsed = JSON.parse(raw) as Partial<FoldersManifest>;
@@ -49,7 +49,7 @@ function resolved(id: string): string {
   return `\0${id}`;
 }
 
-async function findSlides(userCwd: string, slidesDir: string): Promise<string[]> {
+export async function findSlides(userCwd: string, slidesDir: string): Promise<string[]> {
   const abs = path.resolve(userCwd, slidesDir);
   if (!existsSync(abs)) return [];
   const hits = await fg('*/index.{tsx,jsx,ts,js}', {
@@ -60,18 +60,43 @@ async function findSlides(userCwd: string, slidesDir: string): Promise<string[]>
   return hits.sort();
 }
 
-function toId(absFile: string, slidesRoot: string): string {
+export function toId(absFile: string, slidesRoot: string): string {
   const rel = path.relative(slidesRoot, absFile);
   return rel.split(path.sep)[0];
 }
 
-const META_THEME_RE = /(?:^|[\s,{])theme\s*:\s*['"]([^'"]+)['"]/;
-const META_CREATED_AT_RE = /(?:^|[\s,{])createdAt\s*:\s*['"]([^'"]+)['"]/;
+// Matches a whole single- or double-quoted literal rather than stopping at the
+// first inner quote, so prose values keep their apostrophes ("Rendering & 'use
+// cache'"). Template literals and expressions stay unsupported by design.
+const STRING_LITERAL_SRC = String.raw`(?:'((?:[^'\\\n]|\\.)*)'|"((?:[^"\\\n]|\\.)*)")`;
 
-type ExtractedMeta = { theme: string | null; createdAt: string | null };
+function metaFieldRe(key: string): RegExp {
+  return new RegExp(String.raw`(?:^|[\s,{])${key}\s*:\s*${STRING_LITERAL_SRC}`);
+}
 
-function extractMeta(src: string): ExtractedMeta {
-  const empty: ExtractedMeta = { theme: null, createdAt: null };
+const META_TITLE_RE = metaFieldRe('title');
+const META_THEME_RE = metaFieldRe('theme');
+const META_SUMMARY_RE = metaFieldRe('summary');
+const META_CREATED_AT_RE = metaFieldRe('createdAt');
+
+function matchMetaField(body: string, re: RegExp): string | null {
+  const match = body.match(re);
+  if (!match) return null;
+  const raw = match[1] ?? match[2];
+  return raw === undefined ? null : raw.replace(/\\(.)/g, '$1');
+}
+
+export type ExtractedMeta = {
+  title: string | null;
+  theme: string | null;
+  summary: string | null;
+  createdAt: string | null;
+};
+
+const EMPTY_META: ExtractedMeta = { title: null, theme: null, summary: null, createdAt: null };
+
+export function extractMeta(src: string): ExtractedMeta {
+  const empty = EMPTY_META;
   const metaStart = src.search(/export\s+const\s+meta\b/);
   if (metaStart === -1) return empty;
   const eqIdx = src.indexOf('=', metaStart);
@@ -93,20 +118,20 @@ function extractMeta(src: string): ExtractedMeta {
   }
   if (closeBrace === -1) return empty;
   const body = src.slice(openBrace + 1, closeBrace);
-  const themeMatch = body.match(META_THEME_RE);
-  const createdAtMatch = body.match(META_CREATED_AT_RE);
   return {
-    theme: themeMatch ? themeMatch[1] : null,
-    createdAt: createdAtMatch ? createdAtMatch[1] : null,
+    title: matchMetaField(body, META_TITLE_RE),
+    theme: matchMetaField(body, META_THEME_RE),
+    summary: matchMetaField(body, META_SUMMARY_RE),
+    createdAt: matchMetaField(body, META_CREATED_AT_RE),
   };
 }
 
-async function readSlideMeta(abs: string): Promise<ExtractedMeta> {
+export async function readSlideMeta(abs: string): Promise<ExtractedMeta> {
   try {
     const src = await fs.readFile(abs, 'utf8');
     return extractMeta(src);
   } catch {
-    return { theme: null, createdAt: null };
+    return EMPTY_META;
   }
 }
 

@@ -7,6 +7,8 @@ export type Page = ComponentType & { transition?: SlideTransition };
 export type SlideMeta = {
   title?: string;
   theme?: string;
+  /** One-line description of the deck. Published alongside `title` in the generated `llms.txt`. */
+  summary?: string;
   /** ISO 8601 timestamp. Set once at scaffold time; used to sort the slide list. */
   createdAt?: string;
 };
