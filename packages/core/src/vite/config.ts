@@ -7,6 +7,7 @@ import type { InlineConfig } from 'vite';
 import { apiPlugin } from './api-plugin.ts';
 import { currentPlugin } from './current-plugin.ts';
 import { designPlugin } from './design-plugin.ts';
+import { llmsPlugin } from './llms-plugin.ts';
 import { locTagsPlugin } from './loc-tags-plugin.ts';
 import { notesPlugin } from './notes-plugin.ts';
 import { loadUserConfig, type OpenSlideConfig, openSlidePlugin } from './open-slide-plugin.ts';
@@ -66,6 +67,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
       apiPlugin({ userCwd, slidesDir, assetsDir, coreVersion: CORE_VERSION }),
       notesPlugin({ userCwd, slidesDir }),
       currentPlugin({ userCwd, slidesDir }),
+      llmsPlugin({ userCwd, slidesDir }),
     ],
     resolve: {
       alias: {
