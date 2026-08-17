@@ -82,7 +82,7 @@ jobs:
     timeout-minutes: 20
     container:
       # Image version must match @playwright/test in packages/core/package.json.
-      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
       options: --user 1001
     steps:
       - name: Checkout
