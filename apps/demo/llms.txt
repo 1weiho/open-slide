@@ -1,0 +1,28 @@
+# demo — decks
+
+> 19 decks built with open-slide. Generated file — edits are overwritten.
+
+## motion
+
+- [Material Design (2014)](slides/material-design-2014/index.tsx): bright-sans · 2026-05-03
+- [open-slide — Launch Motion](slides/open-slide-launch/index.tsx): 2026-05-02
+
+## Decks
+
+- [Introducing Morph Transition](slides/morph-messages/index.tsx): 2026-07-15
+- [Morph Transition Prototype](slides/morph-demo/index.tsx): 2026-06-22
+- [Steps, in Motion](slides/steps-in-motion/index.tsx): 2026-06-02
+- [Using open-slide in Replit](slides/open-slide-on-replit/index.tsx): replit · 2026-05-28
+- [Build on Reveal](slides/build-on-reveal/index.tsx): 2026-05-25
+- [Maximal — Eight Transitions](slides/slide-transitions-maximal/index.tsx): 2026-05-24
+- [On Tasteful Transitions](slides/slide-transitions/index.tsx): 2026-05-20
+- [Vercel Labs · 2026](slides/vercel-labs-2026/index.tsx): 2026-05-12
+- [Image Placeholder Demo](slides/image-placeholder-demo/index.tsx): 2026-05-10
+- [Inside open-slide](slides/open-slide-anatomy/index.tsx): 2026-05-05
+- [Vercel AI SDK](slides/vercel-ai-sdk/index.tsx): 2026-05-03
+- [Harness Engineering](slides/harness-engineering/index.tsx): 2026-04-27
+- [Claude Code · A Field Guide](slides/claude-code-intro/index.tsx): 2026-04-26
+- [How LLMs Work](slides/llm-fundamentals/index.tsx): 2026-04-26
+- [How SSH Works](slides/ssh-explained/index.tsx): 2026-04-26
+- [Raycast Developer API](slides/raycast-api/index.tsx): aurora · 2026-04-25
+- [Next.js: Partial Pre-Rendering & 'use cache'](slides/nextjs-ppr-cache/index.tsx): 2026-04-25
