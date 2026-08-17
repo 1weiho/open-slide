@@ -79,11 +79,56 @@ const META_THEME_RE = metaFieldRe('theme');
 const META_SUMMARY_RE = metaFieldRe('summary');
 const META_CREATED_AT_RE = metaFieldRe('createdAt');
 
+const SHORT_ESCAPES: Record<string, string> = {
+  n: '\n',
+  t: '\t',
+  r: '\r',
+  b: '\b',
+  f: '\f',
+  v: '\v',
+  '0': '\0',
+};
+
+const ESCAPE_RE = /\\(u\{[0-9a-fA-F]{1,6}\}|u[0-9a-fA-F]{4}|x[0-9a-fA-F]{2}|[\s\S])/g;
+
+// Resolve escapes the way the JS parser would, so `\n` becomes a newline rather
+// than a literal "n". Anything unrecognised keeps its escaped character, which
+// covers `\'`, `\"` and `\\`.
+function unescapeStringLiteral(raw: string): string {
+  return raw.replace(ESCAPE_RE, (_: string, seq: string) => {
+    if (seq[0] === 'u' || seq[0] === 'x') {
+      const hex = seq[1] === '{' ? seq.slice(2, -1) : seq.slice(1);
+      const code = Number.parseInt(hex, 16);
+      // Out of range would throw in String.fromCodePoint; keep the escape as
+      // written rather than failing a whole build over one odd title.
+      if (code > 0x10ffff) return `\\${seq}`;
+      return String.fromCodePoint(code);
+    }
+    return SHORT_ESCAPES[seq] ?? seq;
+  });
+}
+
+// Index of the literal's closing quote, or -1 if it never closes. Only `` ` ``
+// may span lines; an unterminated quote means the source is unparseable anyway.
+function skipStringLiteral(src: string, start: number): number {
+  const quote = src[start];
+  for (let i = start + 1; i < src.length; i++) {
+    const ch = src[i];
+    if (ch === '\\') {
+      i++;
+      continue;
+    }
+    if (ch === quote) return i;
+    if (ch === '\n' && quote !== '`') return -1;
+  }
+  return -1;
+}
+
 function matchMetaField(body: string, re: RegExp): string | null {
   const match = body.match(re);
   if (!match) return null;
   const raw = match[1] ?? match[2];
-  return raw === undefined ? null : raw.replace(/\\(.)/g, '$1');
+  return raw === undefined ? null : unescapeStringLiteral(raw);
 }
 
 export type ExtractedMeta = {
@@ -107,6 +152,14 @@ export function extractMeta(src: string): ExtractedMeta {
   let closeBrace = -1;
   for (let i = openBrace; i < src.length; i++) {
     const ch = src[i];
+    if (ch === "'" || ch === '"' || ch === '`') {
+      // Skip the whole literal: a brace inside a value ("the {curly} case")
+      // must not be mistaken for the end of the meta object.
+      const end = skipStringLiteral(src, i);
+      if (end === -1) return empty;
+      i = end;
+      continue;
+    }
     if (ch === '{') depth++;
     else if (ch === '}') {
       depth--;

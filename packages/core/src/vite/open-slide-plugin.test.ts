@@ -63,6 +63,33 @@ describe('extractMeta', () => {
     expect(extractMeta(src).title).toBe("It's here");
   });
 
+  it('resolves control escapes instead of dropping the backslash', () => {
+    const src = `export const meta = { summary: 'Line one\\nline two\\ttabbed' };\n`;
+    expect(extractMeta(src).summary).toBe('Line one\nline two\ttabbed');
+  });
+
+  it('keeps a literal backslash', () => {
+    const src = `export const meta = { title: 'C:\\\\Users' };\n`;
+    expect(extractMeta(src).title).toBe('C:\\Users');
+  });
+
+  it('resolves hex and unicode escapes', () => {
+    const src = `export const meta = { title: '\\x41 \\u00e9 \\u{1f600}' };\n`;
+    expect(extractMeta(src).title).toBe('A é 😀');
+  });
+
+  it('leaves an out-of-range code point as written rather than throwing', () => {
+    const src = `export const meta = { title: 'edge \\u{110000}' };\n`;
+    expect(extractMeta(src).title).toBe('edge \\u{110000}');
+  });
+
+  it('does not end the meta object at a brace inside a value', () => {
+    const src = `export const meta = { summary: 'Covers the {curly} case', title: 'Braces' };\n`;
+    const meta = extractMeta(src);
+    expect(meta.summary).toBe('Covers the {curly} case');
+    expect(meta.title).toBe('Braces');
+  });
+
   it('ignores a template literal rather than capturing it half-parsed', () => {
     // biome-ignore lint/suspicious/noTemplateCurlyInString: literal `${}` is the test input
     const src = 'export const meta = { title: `Backticks ${nope}` };\n';

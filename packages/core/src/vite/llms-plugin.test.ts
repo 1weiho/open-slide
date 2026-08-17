@@ -147,6 +147,33 @@ describe('renderLlmsTxt / linkBase', () => {
     expect(out).not.toContain('index.tsx');
   });
 
+  it('puts site links under a configured base', () => {
+    const out = renderLlmsTxt([deck({ id: 'coffee-brewing' })], {
+      projectName: 'p',
+      linkBase: 'site',
+      base: '/my-slides/',
+    });
+    expect(out).toContain('](/my-slides/s/coffee-brewing)');
+  });
+
+  it('tolerates a base without its trailing slash', () => {
+    const out = renderLlmsTxt([deck({ id: 'coffee-brewing' })], {
+      projectName: 'p',
+      linkBase: 'site',
+      base: '/my-slides',
+    });
+    expect(out).toContain('](/my-slides/s/coffee-brewing)');
+  });
+
+  it('leaves source links untouched by base', () => {
+    const out = renderLlmsTxt([deck({ id: 'coffee-brewing' })], {
+      projectName: 'p',
+      linkBase: 'source',
+      base: '/my-slides/',
+    });
+    expect(out).toContain('](slides/coffee-brewing/index.tsx)');
+  });
+
   it('keeps a non-default slidesDir in the source link', () => {
     const out = renderLlmsTxt(
       [deck({ id: 'coffee-brewing', sourcePath: 'decks/coffee-brewing/index.jsx' })],

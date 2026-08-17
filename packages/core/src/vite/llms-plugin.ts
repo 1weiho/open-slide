@@ -29,6 +29,8 @@ export type LlmsLinkBase = 'source' | 'site';
 export type RenderLlmsTxtOptions = {
   projectName: string;
   linkBase: LlmsLinkBase;
+  /** Vite's resolved `base`. Site links must sit under it when hosted on a subpath. */
+  base?: string;
   folders?: LlmsFolder[];
 };
 
@@ -70,17 +72,17 @@ function compareDecks(a: LlmsDeck, b: LlmsDeck): number {
   return 0;
 }
 
-function deckLink(deck: LlmsDeck, linkBase: LlmsLinkBase): string {
-  return linkBase === 'site' ? `/s/${deck.id}` : deck.sourcePath;
+function deckLink(deck: LlmsDeck, linkBase: LlmsLinkBase, base: string): string {
+  return linkBase === 'site' ? `${base}s/${deck.id}` : deck.sourcePath;
 }
 
-function renderDeckLine(deck: LlmsDeck, linkBase: LlmsLinkBase): string {
+function renderDeckLine(deck: LlmsDeck, linkBase: LlmsLinkBase, base: string): string {
   const title = sanitizeField(deck.title) ?? deck.id;
   const facets = [sanitizeField(deck.theme), formatCreatedAt(deck.createdAt)].filter(
     (value): value is string => value !== null,
   );
   const summary = sanitizeField(deck.summary);
-  let line = `- [${title}](${deckLink(deck, linkBase)})`;
+  let line = `- [${title}](${deckLink(deck, linkBase, base)})`;
   if (facets.length > 0) line += `: ${facets.join(' · ')}`;
   if (summary !== null) line += ` — ${summary}`;
   return line;
@@ -89,6 +91,8 @@ function renderDeckLine(deck: LlmsDeck, linkBase: LlmsLinkBase): string {
 export function renderLlmsTxt(decks: LlmsDeck[], opts: RenderLlmsTxtOptions): string {
   const sorted = [...decks].sort(compareDecks);
   const projectName = sanitizeField(opts.projectName) ?? 'open-slide';
+  const rawBase = opts.base ?? '/';
+  const base = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
   const noun = sorted.length === 1 ? 'deck' : 'decks';
   const lines = [
     `# ${projectName} — decks`,
@@ -113,7 +117,7 @@ export function renderLlmsTxt(decks: LlmsDeck[], opts: RenderLlmsTxtOptions): st
   const pushSection = (heading: string, items: LlmsDeck[]) => {
     if (items.length === 0) return;
     lines.push('', `## ${heading}`, '');
-    for (const deck of items) lines.push(renderDeckLine(deck, opts.linkBase));
+    for (const deck of items) lines.push(renderDeckLine(deck, opts.linkBase, base));
   };
 
   for (const folder of folders) {
@@ -248,6 +252,7 @@ export function llmsPlugin(opts: LlmsPluginOptions): Plugin {
 
   let isDev = false;
   let buildOutDir = '';
+  let base = '/';
   let logger: Logger | null = null;
 
   const isSlideEntry = (p: string): boolean => {
@@ -262,6 +267,7 @@ export function llmsPlugin(opts: LlmsPluginOptions): Plugin {
     const contents = renderLlmsTxt(decks, {
       projectName: await readProjectName(userCwd),
       linkBase,
+      base,
       folders,
     });
     const result = await writeLlmsTxt(targetDir, contents);
@@ -275,6 +281,7 @@ export function llmsPlugin(opts: LlmsPluginOptions): Plugin {
     configResolved(config) {
       isDev = config.command === 'serve';
       buildOutDir = path.resolve(config.root, config.build.outDir);
+      base = config.base;
       logger = config.logger;
     },
     configureServer(server: ViteDevServer) {
