@@ -47,14 +47,21 @@ Use **kebab-case**, short, descriptive. Examples: `rust-intro`, `q2-roadmap`, `t
 
 ## Step 4 — Plan the structure
 
-Sketch the slide as a list of page roles before writing code. Common page types:
+Before sketching page roles, classify how each source idea communicates: narrative, comparison, quantitative, process, sequence, relationship/dependency, state/lifecycle, hierarchy, or timeline. Decide the **representation of the information**, not only the page role.
+
+Before converting structured source material into bullets, check whether its meaning is better represented spatially, relationally, sequentially, as a state model, or as a process. If so, read `slide-authoring/references/mermaid.md` and consider a Mermaid diagram. Use Mermaid only when it improves communication; an architecture-related topic does not automatically need a diagram.
+
+For example, “Client calls Kong; Kong validates JWT; Kong proxies to the backend; the backend queries the DB; the response returns through Kong” is an interaction sequence. Prefer a Mermaid `sequenceDiagram` over five bullets because the actors and message order are the meaning.
+
+Sketch the slide as a list of page roles and chosen representations before writing code. Common page types:
 
 | Role             | Purpose                                       |
 | ---------------- | --------------------------------------------- |
 | Cover            | Title + subtitle, strong visual               |
 | Agenda           | What's coming (3–5 items)                     |
 | Section divider  | Big label between chapters                    |
-| Content          | Heading + 2–5 bullets OR heading + one visual |
+| Content          | Heading + concise explanatory text            |
+| Diagram          | Heading + one Mermaid visualization           |
 | Big number       | One statistic the size of the canvas          |
 | Quote            | Pull-quote with attribution                   |
 | Comparison       | Two-column before/after or A vs B             |

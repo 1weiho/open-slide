@@ -1,5 +1,7 @@
 export type { ImagePlaceholderProps } from './app/components/image-placeholder.tsx';
 export { ImagePlaceholder } from './app/components/image-placeholder.tsx';
+export type { MermaidProps } from './app/components/mermaid.tsx';
+export { Mermaid } from './app/components/mermaid.tsx';
 export type { MorphElementProps } from './app/components/morph-element.tsx';
 export { MorphElement } from './app/components/morph-element.tsx';
 export type {

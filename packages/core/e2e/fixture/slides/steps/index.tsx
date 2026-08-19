@@ -1,4 +1,5 @@
-import { type Page, type SlideMeta, Step, Steps } from '@open-slide/core';
+import { Mermaid, type Page, type SlideMeta, Step, Steps } from '@open-slide/core';
+import { useEffect, useState } from 'react';
 
 export const meta: SlideMeta = {
   title: 'Steps Deck',
@@ -40,4 +41,31 @@ const Three: Page = () => (
   </div>
 );
 
-export default [One, Two, Three] satisfies Page[];
+const MermaidPage: Page = () => {
+  const [updated, setUpdated] = useState(false);
+  useEffect(() => {
+    const update = () => setUpdated(true);
+    window.addEventListener('open-slide-mermaid-update', update);
+    return () => window.removeEventListener('open-slide-mermaid-update', update);
+  }, []);
+  const firstChart = updated
+    ? 'flowchart LR\n  Updated[Updated source] --> Result'
+    : 'flowchart LR\n  Initial[Initial source] --> Result';
+
+  return (
+    <div style={{ ...fill, padding: 80 }}>
+      <h1 style={{ fontSize: 72, margin: '0 0 24px' }}>Mermaid diagrams</h1>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, height: 480 }}>
+        <Mermaid chart={firstChart} />
+        <Mermaid chart={'sequenceDiagram\n  Client->>API: Request\n  API-->>Client: Response'} />
+      </div>
+      <Mermaid
+        chart="this is not valid mermaid syntax"
+        fallback={<div data-testid="custom-mermaid-fallback">Diagram unavailable</div>}
+        style={{ height: 140 }}
+      />
+    </div>
+  );
+};
+
+export default [One, Two, Three, MermaidPage] satisfies Page[];
