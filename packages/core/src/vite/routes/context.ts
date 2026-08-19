@@ -74,3 +74,19 @@ export function resolveSlidePath(
 export function resolveSlideEntryPath(ctx: ApiContext, slideId: string): string | null {
   return resolveSlidePath(ctx.userCwd, ctx.slidesDir, slideId);
 }
+
+export function resolveSlideSourcePath(
+  ctx: ApiContext,
+  slideId: string,
+  sourceFile?: string,
+): string | null {
+  if (!sourceFile) return resolveSlideEntryPath(ctx, slideId);
+  if (!SLIDE_ID_RE.test(slideId)) return null;
+  if (path.isAbsolute(sourceFile) || sourceFile.split(/[\\/]/).includes('..')) return null;
+  if (!sourceFile.endsWith('.tsx')) return null;
+  if (sourceFile.endsWith('.d.ts') || sourceFile.endsWith('.test.tsx')) return null;
+  const slideRoot = path.resolve(ctx.slidesRoot, slideId);
+  const full = path.resolve(slideRoot, sourceFile);
+  if (!full.startsWith(slideRoot + path.sep) && full !== slideRoot) return null;
+  return full;
+}

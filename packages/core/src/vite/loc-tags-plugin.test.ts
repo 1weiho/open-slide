@@ -137,6 +137,12 @@ describe('locTagsPlugin', () => {
     expectTaggedTransform('/repo/slides/cover/index.tsx');
   });
 
+  it('adds the slide-relative source file to plugin-injected tags', () => {
+    const out = transformWithLocTags('/repo/slides/cover/01-Cover.tsx');
+    if (out === null) throw new Error('expected tagged transform result');
+    expect(out.code).toContain('data-slide-file="01-Cover.tsx"');
+  });
+
   it('tags shared slide source files', () => {
     expectTaggedTransform('/repo/slides/cover/shared.tsx');
   });

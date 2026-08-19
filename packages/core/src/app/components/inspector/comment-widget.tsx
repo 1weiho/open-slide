@@ -60,7 +60,7 @@ export function CommentWidget() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => remove(c.id)}
+                      onClick={() => remove(c.id, c.sourceFile)}
                       className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-red-600"
                       title={t.inspector.commentDeleteAria}
                     >

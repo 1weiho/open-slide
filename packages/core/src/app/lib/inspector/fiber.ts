@@ -1,6 +1,7 @@
 export type SlideSourceHit = {
   line: number;
   column: number;
+  sourceFile?: string;
   anchor: HTMLElement;
 };
 
@@ -34,6 +35,67 @@ function normalizeDebugFileName(fileName: string): string {
   return fileName.split(/[?#]/)[0].replace(/\\/g, '/');
 }
 
+function slideSourceFileName(fileName: string, slideId: string): string | null {
+  const normalized = normalizeDebugFileName(fileName);
+  const needle = `/${slideId}/`;
+  const idx = normalized.lastIndexOf(needle);
+  if (idx === -1) return null;
+  const sourceFile = normalized.slice(idx + needle.length);
+  if (!sourceFile.endsWith('.tsx')) return null;
+  if (sourceFile.endsWith('.d.ts') || sourceFile.endsWith('.test.tsx')) return null;
+  return sourceFile;
+}
+
+function findTaggedSource(el: HTMLElement): SlideSourceHit | null {
+  const tagged = el.closest<HTMLElement>('[data-slide-loc]');
+  if (!tagged) return null;
+  const loc = tagged.dataset.slideLoc;
+  if (!loc) return null;
+  const idx = loc.indexOf(':');
+  if (idx <= 0) return null;
+  const line = Number(loc.slice(0, idx));
+  const column = Number(loc.slice(idx + 1));
+  if (!Number.isFinite(line) || !Number.isFinite(column)) return null;
+  return { line, column, sourceFile: tagged.dataset.slideFile, anchor: tagged };
+}
+
+function findFiberSource(
+  el: HTMLElement,
+  slideId: string,
+  opts?: FindSlideSourceOptions & { componentOnly?: boolean; outermost?: boolean },
+): SlideSourceHit | null {
+  let fiber = getFiber(el);
+  let anchor: HTMLElement = el;
+  let hit: SlideSourceHit | null = null;
+  while (fiber) {
+    const src = getSource(fiber);
+    const isHost = fiber.stateNode instanceof HTMLElement;
+    const sourceFile = src?.fileName ? slideSourceFileName(src.fileName, slideId) : null;
+    const lineNumber = src?.lineNumber;
+    const columnNumber = src?.columnNumber ?? 0;
+    if (
+      sourceFile &&
+      lineNumber &&
+      (!opts?.hostOnly || isHost) &&
+      (!opts?.componentOnly || !isHost)
+    ) {
+      const nextHit = {
+        line: lineNumber,
+        column: columnNumber,
+        sourceFile,
+        anchor: isHost ? (fiber.stateNode as HTMLElement) : anchor,
+      };
+      if (!opts?.outermost) return nextHit;
+      hit = nextHit;
+    }
+    if (isHost) {
+      anchor = fiber.stateNode as HTMLElement;
+    }
+    fiber = fiber.return;
+  }
+  return hit;
+}
+
 export function findSlideSource(
   el: HTMLElement,
   slideId: string,
@@ -41,45 +103,17 @@ export function findSlideSource(
 ): SlideSourceHit | null {
   // Primary path: the `data-slide-loc` attribute injected by the
   // loc-tags Vite plugin. Immune to HMR-stale fiber state.
-  const tagged = el.closest<HTMLElement>('[data-slide-loc]');
-  if (tagged) {
-    const loc = tagged.dataset.slideLoc;
-    if (loc) {
-      const idx = loc.indexOf(':');
-      if (idx > 0) {
-        const line = Number(loc.slice(0, idx));
-        const column = Number(loc.slice(idx + 1));
-        if (Number.isFinite(line) && Number.isFinite(column)) {
-          return { line, column, anchor: tagged };
-        }
-      }
-    }
-  }
+  const tagged = findTaggedSource(el);
+  if (tagged) return tagged;
 
   // Fallback for JSX rendered from imported component files (which the
   // loc-tags plugin doesn't transform).
-  const needle = `/slides/${slideId}/index.tsx`;
-  let fiber = getFiber(el);
-  let anchor: HTMLElement = el;
-  while (fiber) {
-    const src = getSource(fiber);
-    const isHost = fiber.stateNode instanceof HTMLElement;
-    if (
-      src?.fileName &&
-      normalizeDebugFileName(src.fileName).endsWith(needle) &&
-      src.lineNumber &&
-      (!opts?.hostOnly || isHost)
-    ) {
-      return {
-        line: src.lineNumber,
-        column: src.columnNumber ?? 0,
-        anchor: isHost ? (fiber.stateNode as HTMLElement) : anchor,
-      };
-    }
-    if (isHost) {
-      anchor = fiber.stateNode as HTMLElement;
-    }
-    fiber = fiber.return;
-  }
-  return null;
+  return findFiberSource(el, slideId, opts);
+}
+
+export function findCommentSource(el: HTMLElement, slideId: string): SlideSourceHit | null {
+  return (
+    findFiberSource(el, slideId, { componentOnly: true, outermost: true }) ??
+    findSlideSource(el, slideId)
+  );
 }

@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { findSlideSource } from './fiber.ts';
+import { findCommentSource, findSlideSource } from './fiber.ts';
 
 class FakeHTMLElement {
   dataset: Record<string, string> = {};
@@ -37,6 +37,7 @@ function makeFiber(opts: {
   line?: number;
   column?: number;
   host?: boolean;
+  stateNode?: unknown;
   parent?: FakeFiber | null;
 }): FakeFiber {
   const source: DebugSource | undefined =
@@ -45,7 +46,7 @@ function makeFiber(opts: {
       : undefined;
   return {
     return: opts.parent ?? null,
-    stateNode: opts.host ? new FakeHTMLElement() : undefined,
+    stateNode: opts.host ? (opts.stateNode ?? new FakeHTMLElement()) : undefined,
     _debugSource: source,
   };
 }
@@ -61,10 +62,12 @@ afterAll(() => {
 describe('findSlideSource primary path', () => {
   it('reads line:column from data-slide-loc', () => {
     const el = makeEl({ slideLoc: '42:7' });
+    el.dataset.slideFile = '01-Cover.tsx';
     const hit = findSlideSource(el as unknown as HTMLElement, 'cover');
     expect(hit).not.toBeNull();
     expect(hit?.line).toBe(42);
     expect(hit?.column).toBe(7);
+    expect(hit?.sourceFile).toBe('01-Cover.tsx');
     expect(hit?.anchor).toBe(el as unknown as HTMLElement);
   });
 });
@@ -150,5 +153,92 @@ describe('findSlideSource fallback', () => {
     expect(hit).not.toBeNull();
     expect(hit?.line).toBe(99);
     expect(hit?.column).toBe(3);
+  });
+});
+
+describe('findCommentSource', () => {
+  it('prefers the component call-site source over the host definition source', () => {
+    const component = makeFiber({
+      fileName: '/repo/slides/cover/index.tsx',
+      line: 20,
+      column: 4,
+      host: false,
+    });
+    const host = makeFiber({
+      fileName: '/repo/slides/cover/index.tsx',
+      line: 3,
+      column: 2,
+      host: true,
+      parent: component,
+    });
+    const el = makeEl({ slideLoc: '3:2', fiber: host });
+    const hit = findCommentSource(el as unknown as HTMLElement, 'cover');
+    expect(hit).not.toBeNull();
+    expect(hit?.line).toBe(20);
+    expect(hit?.column).toBe(4);
+    expect(hit?.sourceFile).toBe('index.tsx');
+  });
+
+  it('prefers component call-sites in non-index slide files under custom slide roots', () => {
+    const component = makeFiber({
+      fileName: '/repo/decks/cover/01-Cover.tsx',
+      line: 20,
+      column: 4,
+      host: false,
+    });
+    const host = makeFiber({
+      fileName: '/repo/decks/cover/shared.tsx',
+      line: 3,
+      column: 2,
+      host: true,
+      parent: component,
+    });
+    const el = makeEl({ slideLoc: '3:2', fiber: host });
+    el.dataset.slideFile = 'shared.tsx';
+    const hit = findCommentSource(el as unknown as HTMLElement, 'cover');
+    expect(hit).not.toBeNull();
+    expect(hit?.line).toBe(20);
+    expect(hit?.column).toBe(4);
+    expect(hit?.sourceFile).toBe('01-Cover.tsx');
+  });
+
+  it('walks nested shared component chains to the page-specific call-site', () => {
+    const pageCallSite = makeFiber({
+      fileName: '/repo/decks/cover/01-Cover.tsx',
+      line: 20,
+      column: 4,
+      host: false,
+    });
+    const sharedCallSite = makeFiber({
+      fileName: '/repo/decks/cover/Card.tsx',
+      line: 8,
+      column: 6,
+      host: false,
+      parent: pageCallSite,
+    });
+    const host = makeFiber({
+      fileName: '/repo/decks/cover/Header.tsx',
+      line: 3,
+      column: 2,
+      host: true,
+      parent: sharedCallSite,
+    });
+    const el = makeEl({ slideLoc: '3:2', fiber: host });
+    el.dataset.slideFile = 'Header.tsx';
+    const hit = findCommentSource(el as unknown as HTMLElement, 'cover');
+    expect(hit).not.toBeNull();
+    expect(hit?.line).toBe(20);
+    expect(hit?.column).toBe(4);
+    expect(hit?.sourceFile).toBe('01-Cover.tsx');
+  });
+
+  it('falls back to data-slide-loc for direct host elements', () => {
+    const el = makeEl({ slideLoc: '42:7' });
+    el.dataset.slideFile = '01-Cover.tsx';
+    const hit = findCommentSource(el as unknown as HTMLElement, 'cover');
+    expect(hit).not.toBeNull();
+    expect(hit?.line).toBe(42);
+    expect(hit?.column).toBe(7);
+    expect(hit?.sourceFile).toBe('01-Cover.tsx');
   });
 });

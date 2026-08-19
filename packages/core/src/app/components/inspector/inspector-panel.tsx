@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { Field, NumberField, Section } from '@/components/panel/panel-fields';
 import { PANEL_TRANSITION_MS, PanelShell, useAnimatedOpen } from '@/components/panel/panel-shell';
 import { Button } from '@/components/ui/button';
@@ -28,7 +29,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { findSlideSource } from '@/lib/inspector/fiber';
+import { findCommentSource, findSlideSource } from '@/lib/inspector/fiber';
 import type { EditOp } from '@/lib/inspector/use-editor';
 import { useAgentSocketConnected } from '@/lib/use-agent-socket';
 import { useLocale } from '@/lib/use-locale';
@@ -260,7 +261,7 @@ export function InspectorPanel() {
           </div>
         </>
       }
-      footer={<CommentsSection selected={pinSelected} onAdd={add} />}
+      footer={<CommentsSection slideId={slideId} selected={pinSelected} onAdd={add} />}
     >
       {pinSnapshot.text !== null && (
         <>
@@ -880,11 +881,13 @@ function AgentWatchingBadge() {
 }
 
 function CommentsSection({
+  slideId,
   selected,
   onAdd,
 }: {
-  selected: { line: number; column: number };
-  onAdd: (line: number, column: number, text: string) => Promise<void>;
+  slideId: string;
+  selected: SelectedTarget;
+  onAdd: (line: number, column: number, text: string, sourceFile?: string) => Promise<void>;
 }) {
   const [draft, setDraft] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -910,8 +913,11 @@ function CommentsSection({
     if (!trimmed) return;
     setSubmitting(true);
     try {
-      await onAdd(selected.line, selected.column, trimmed);
+      const target = findCommentSource(selected.anchor, slideId) ?? selected;
+      await onAdd(target.line, target.column, trimmed, target.sourceFile);
       setDraft('');
+    } catch (err) {
+      toast.error(String((err as Error).message ?? err));
     } finally {
       setSubmitting(false);
     }

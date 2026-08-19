@@ -24,7 +24,7 @@ function alreadyTagged(opening: t.JSXOpeningElement): boolean {
   );
 }
 
-export function injectLocTags(code: string): string | null {
+export function injectLocTags(code: string, sourceFile?: string): string | null {
   let ast: t.File;
   try {
     ast = babelParse(code, {
@@ -42,9 +42,10 @@ export function injectLocTags(code: string): string | null {
     const opening = node.openingElement;
     const name = opening.name;
     if (!isTaggableJsxName(name) || alreadyTagged(opening)) return;
+    const sourceAttr = sourceFile ? ` data-slide-file="${sourceFile}"` : '';
     insertions.push({
       offset: name.end ?? 0,
-      text: ` data-slide-loc="${node.loc.start.line}:${node.loc.start.column}"`,
+      text: ` data-slide-loc="${node.loc.start.line}:${node.loc.start.column}"${sourceAttr}`,
     });
   });
 
@@ -85,7 +86,10 @@ export function locTagsPlugin(opts: LocTagsPluginOptions): Plugin {
     enforce: 'pre',
     transform(code, id) {
       if (!isSlideSourceFile(id, slidesRoot)) return null;
-      const next = injectLocTags(code);
+      const filePath = id.split(/[?#]/)[0].replace(/\\/g, '/');
+      const rel = filePath.slice(slidesRoot.length + 1).split('/');
+      const sourceFile = rel.slice(1).join('/');
+      const next = injectLocTags(code, sourceFile);
       if (next === null) return null;
       return { code: next, map: null };
     },

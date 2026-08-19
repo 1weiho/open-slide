@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 export type SlideComment = {
   id: string;
+  sourceFile?: string;
   line: number;
   ts: string;
   note: string;
@@ -31,11 +32,11 @@ export function useComments(slideId: string) {
   }, [slideId]);
 
   const add = useCallback(
-    async (line: number, column: number, text: string) => {
+    async (line: number, column: number, text: string, sourceFile?: string) => {
       const res = await fetch('/__comments/add', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ slideId, line, column, text }),
+        body: JSON.stringify({ slideId, sourceFile, line, column, text }),
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
@@ -47,10 +48,10 @@ export function useComments(slideId: string) {
   );
 
   const remove = useCallback(
-    async (id: string) => {
-      const res = await fetch(`/__comments/${id}?slideId=${encodeURIComponent(slideId)}`, {
-        method: 'DELETE',
-      });
+    async (id: string, sourceFile?: string) => {
+      const params = new URLSearchParams({ slideId });
+      if (sourceFile) params.set('sourceFile', sourceFile);
+      const res = await fetch(`/__comments/${id}?${params.toString()}`, { method: 'DELETE' });
       if (!res.ok) throw new Error(`DELETE /__comments/${id} → ${res.status}`);
       await refetch();
     },
