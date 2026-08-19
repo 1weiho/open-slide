@@ -37,6 +37,26 @@ test.describe('inspector editing', () => {
     await expect(panel.getByPlaceholder('Element text')).toHaveValue('Editable headline');
   });
 
+  test('keeps the editor shell within the viewport', async ({ page, request }) => {
+    await openEditable(page, request, 'insp-viewport');
+
+    const metrics = await page.evaluate(() => {
+      const root = document.getElementById('root');
+      return {
+        documentHeight: document.documentElement.scrollHeight,
+        viewportHeight: window.innerHeight,
+        htmlOverflow: getComputedStyle(document.documentElement).overflow,
+        bodyOverflow: getComputedStyle(document.body).overflow,
+        rootOverflow: root ? getComputedStyle(root).overflow : null,
+      };
+    });
+
+    expect(metrics.documentHeight).toBe(metrics.viewportHeight);
+    expect(metrics.htmlOverflow).toBe('hidden');
+    expect(metrics.bodyOverflow).toBe('hidden');
+    expect(metrics.rootOverflow).toBe('hidden');
+  });
+
   test('saving a text edit rewrites the slide source on disk', async ({ page, request }) => {
     await openEditable(page, request, 'insp-save');
     await page.getByTitle('Inspect').click();
