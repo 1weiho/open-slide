@@ -14,6 +14,9 @@ export function PresentBlackoutOverlay({ mode }: Props) {
   useEffect(() => {
     if (mode) setColor(mode);
   }, [mode]);
+  // Render from `mode` directly while active — the latched state is one
+  // frame behind and would flash the previous color on a direct switch.
+  const visibleColor = mode ?? color;
   if (!mounted) return null;
   return (
     <div
@@ -21,7 +24,7 @@ export function PresentBlackoutOverlay({ mode }: Props) {
       className={cn(
         'pointer-events-none absolute inset-0 z-20 motion-safe:transition-opacity',
         animVisible ? 'opacity-100 motion-safe:duration-150' : 'opacity-0 motion-safe:duration-100',
-        color === 'black' ? 'bg-black' : 'bg-white',
+        visibleColor === 'black' ? 'bg-black' : 'bg-white',
       )}
     />
   );

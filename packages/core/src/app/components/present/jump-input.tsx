@@ -24,6 +24,14 @@ export function PresentJumpInput({ pageCount, onJump }: Props) {
     if (buffer) setDisplay(buffer);
   }, [buffer]);
 
+  // Drop the latched text once the exit fade finishes so the aria-live
+  // region does not keep a stale value mounted.
+  useEffect(() => {
+    if (buffer || !display) return;
+    const id = setTimeout(() => setDisplay(''), 150);
+    return () => clearTimeout(id);
+  }, [buffer, display]);
+
   useEffect(() => {
     const flush = () => {
       setBuffer((current) => {

@@ -879,7 +879,7 @@ function AssetCard({
   const isImage = asset.mime.startsWith('image/');
   const t = useLocale();
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-[6px] border border-border bg-card shadow-edge transition-[box-shadow,scale] duration-150 hover:shadow-floating active:scale-[0.99] focus-within:ring-2 focus-within:ring-ring/30">
+    <div className="group relative flex flex-col overflow-hidden rounded-[6px] border border-border bg-card shadow-edge transition-[box-shadow,scale] duration-150 hover:shadow-floating motion-safe:active:scale-[0.99] focus-within:ring-2 focus-within:ring-ring/30">
       <button
         type="button"
         onClick={onPreview}
@@ -941,7 +941,7 @@ function AssetListItem({
   const isImage = asset.mime.startsWith('image/');
   const t = useLocale();
   return (
-    <div className="group flex min-h-14 items-center gap-3 rounded-[6px] border border-border bg-card p-2 shadow-edge transition-[box-shadow,scale] duration-150 hover:shadow-floating active:scale-[0.995] focus-within:ring-2 focus-within:ring-ring/30">
+    <div className="group flex min-h-14 items-center gap-3 rounded-[6px] border border-border bg-card p-2 shadow-edge transition-[box-shadow,scale] duration-150 hover:shadow-floating motion-safe:active:scale-[0.995] focus-within:ring-2 focus-within:ring-ring/30">
       <button
         type="button"
         onClick={onPreview}

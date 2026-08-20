@@ -146,7 +146,7 @@ export function AssetPickerDialog({
                   className={cn(
                     'group flex flex-col overflow-hidden rounded-[8px] border bg-card text-left shadow-edge transition-[translate,scale,box-shadow,border-color] duration-150 ease-swift',
                     'motion-safe:hover:-translate-y-0.5 hover:shadow-floating focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none',
-                    'active:translate-y-0 active:scale-[0.98]',
+                    'motion-safe:active:translate-y-0 motion-safe:active:scale-[0.98]',
                   )}
                 >
                   <div className="flex aspect-square w-full items-center justify-center overflow-hidden bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:12px_12px]">

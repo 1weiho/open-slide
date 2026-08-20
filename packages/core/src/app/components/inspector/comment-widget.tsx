@@ -11,6 +11,8 @@ export function CommentWidget() {
   const [open, setOpen] = useState(false);
   const count = comments.length;
   const ref = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const fabRef = useRef<HTMLButtonElement>(null);
   const { mounted, animVisible } = usePanelMount(open);
 
   useEffect(() => {
@@ -22,6 +24,13 @@ export function CommentWidget() {
     return () => document.removeEventListener('pointerdown', onPointerDown);
   }, [open]);
 
+  // The panel stays mounted through its close fade; hand focus back to the
+  // toggle so it doesn't sit on a control that's about to unmount.
+  useEffect(() => {
+    if (open) return;
+    if (panelRef.current?.contains(document.activeElement)) fabRef.current?.focus();
+  }, [open]);
+
   return (
     <div
       ref={ref}
@@ -30,12 +39,14 @@ export function CommentWidget() {
     >
       {mounted && (
         <div
+          ref={panelRef}
+          aria-hidden={!animVisible}
           className={cn(
             'w-80 origin-bottom-right rounded-[8px] border bg-card shadow-overlay',
             'motion-safe:transition-[opacity,translate,scale] motion-safe:duration-200 motion-safe:ease-swift',
             animVisible
               ? 'translate-y-0 scale-100 opacity-100'
-              : 'translate-y-1.5 scale-95 opacity-0',
+              : 'pointer-events-none translate-y-1.5 scale-95 opacity-0',
           )}
         >
           <div className="flex items-center justify-between border-b px-3 py-2">
@@ -94,6 +105,7 @@ export function CommentWidget() {
         </div>
       )}
       <button
+        ref={fabRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-2 rounded-full border bg-card px-3 py-2 text-xs font-medium shadow-floating transition-[background-color,scale] duration-150 hover:bg-muted active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"

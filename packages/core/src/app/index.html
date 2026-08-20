@@ -16,14 +16,15 @@
     <script>
       // Apply the stored theme before first paint; next-themes only runs
       // after the bundle loads, which flashes white for dark-mode users.
+      let stored = null;
       try {
-        const stored = localStorage.getItem('theme');
-        const dark =
-          stored === 'dark' ||
-          (stored !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
-        document.documentElement.classList.toggle('dark', dark);
-        document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+        stored = localStorage.getItem('theme');
       } catch (_) {}
+      const dark =
+        stored === 'dark' ||
+        (stored !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.classList.toggle('dark', dark);
+      document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
     </script>
   </head>
   <body>
