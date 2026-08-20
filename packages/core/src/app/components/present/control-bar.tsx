@@ -79,11 +79,10 @@ export function PresentControlBar({
       className={cn(
         'pointer-events-none absolute inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:px-4 md:pb-4',
         'will-change-[translate,scale,opacity,filter]',
-        'motion-safe:transition-[translate,scale,opacity,filter]',
-        'motion-safe:duration-[420ms] motion-safe:[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]',
+        'motion-safe:transition-[translate,scale,opacity,filter] motion-safe:ease-swift',
         visible
-          ? 'translate-y-0 scale-100 opacity-100 blur-none'
-          : 'translate-y-8 scale-90 opacity-0 blur-md',
+          ? 'translate-y-0 scale-100 opacity-100 blur-none motion-safe:duration-[360ms]'
+          : 'translate-y-8 scale-90 opacity-0 blur-sm motion-safe:duration-[220ms]',
       )}
     >
       <TooltipProvider delay={300}>
@@ -229,8 +228,9 @@ function MobileBarButton({
         onClick();
       }}
       className={cn(
-        'inline-flex size-8 shrink-0 touch-manipulation items-center justify-center rounded-full transition-colors',
+        'inline-flex size-8 shrink-0 touch-manipulation items-center justify-center rounded-full transition-[background-color,color,opacity,scale] duration-150',
         'text-white/85 hover:bg-white/12 focus-visible:bg-white/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35',
+        'active:scale-[0.94] active:bg-white/12',
         'disabled:pointer-events-none disabled:opacity-30',
       )}
     >
@@ -270,8 +270,9 @@ function BarButton({
               onClick();
             }}
             className={cn(
-              'inline-flex size-8 items-center justify-center rounded-full transition-colors',
-              'hover:bg-white/12 focus-visible:bg-white/12 focus-visible:outline-none',
+              'inline-flex size-8 items-center justify-center rounded-full transition-[background-color,color,opacity,scale] duration-150',
+              'hover:bg-white/12 focus-visible:bg-white/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35',
+              'active:scale-[0.94]',
               'disabled:pointer-events-none disabled:opacity-30',
               active && 'bg-[var(--brand,#e5484d)]/85 text-white hover:bg-[var(--brand,#e5484d)]',
             )}
@@ -301,8 +302,15 @@ function ElapsedClock({ startedAt }: { startedAt: number }) {
   const [now, setNow] = useState(() => Date.now());
   const t = useLocale();
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
+    // Re-arm against the wall clock each tick; a plain setInterval drifts
+    // and visibly skips seconds over a long talk.
+    let id: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      setNow(Date.now());
+      id = setTimeout(tick, 1000 - (Date.now() % 1000));
+    };
+    id = setTimeout(tick, 1000 - (Date.now() % 1000));
+    return () => clearTimeout(id);
   }, []);
   const elapsed = Math.max(0, Math.floor((now - startedAt) / 1000));
   const m = Math.floor(elapsed / 60);

@@ -55,7 +55,7 @@ export function PanelShell({
   return (
     <aside
       {...dataAttrs}
-      className="flex h-full shrink-0 justify-end overflow-hidden bg-sidebar transition-[width,border-left-width] ease-out"
+      className="flex h-full shrink-0 justify-end overflow-hidden bg-sidebar transition-[width,border-left-width] ease-swift motion-reduce:transition-none"
       style={{
         width: animVisible ? PANEL_W : 0,
         borderLeftWidth: animVisible ? 1 : 0,

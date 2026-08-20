@@ -52,7 +52,9 @@ export function OverviewGrid({
   useEffect(() => {
     if (!open) return;
     focusedRef.current?.focus();
-    focusedRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    // Keyboard-driven focus moves repeat quickly; queued smooth scrolls
+    // fight each other during key repeat, so jump instantly.
+    focusedRef.current?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
   }, [focused, open]);
 
   useEffect(() => {
@@ -108,7 +110,11 @@ export function OverviewGrid({
       role="dialog"
       aria-modal="true"
       aria-label={t.present.overviewDialogAria}
-      className={cn('absolute inset-0 z-50 flex flex-col backdrop-blur-sm', styles.surface)}
+      className={cn(
+        'absolute inset-0 z-50 flex flex-col backdrop-blur-sm',
+        'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-150',
+        styles.surface,
+      )}
     >
       <div className="flex shrink-0 items-center justify-between px-8 pt-6 pb-3">
         <span className={cn('eyebrow', styles.eyebrow)}>{t.present.overviewEyebrow}</span>
@@ -121,7 +127,7 @@ export function OverviewGrid({
             onClick={onClose}
             aria-label={t.common.close}
             className={cn(
-              'flex size-6 items-center justify-center rounded-[4px] outline-none transition-colors',
+              'flex size-6 items-center justify-center rounded-[4px] outline-none transition-[background-color,color,scale] duration-150 active:scale-90',
               styles.closeButton,
             )}
           >
@@ -216,7 +222,7 @@ function OverviewThumb({
       aria-label={format(t.present.overviewGoToAria, { n: index + 1 })}
       aria-current={isCurrent ? 'true' : undefined}
       className={cn(
-        'group/thumb flex flex-col items-start gap-2 rounded-[6px] p-1.5 outline-none transition-colors',
+        'group/thumb flex flex-col items-start gap-2 rounded-[6px] p-1.5 outline-none transition-[background-color,scale] duration-150 active:scale-[0.98]',
         isFocused ? styles.thumbFocused : styles.thumbHover,
       )}
     >

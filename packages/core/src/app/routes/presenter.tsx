@@ -232,6 +232,7 @@ export function Presenter() {
                 aria-hidden
                 className={cn(
                   'pointer-events-none absolute inset-0 grid place-items-center text-[11px] tracking-[0.08em] uppercase',
+                  'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-150',
                   blackout === 'black' ? 'bg-black text-white/35' : 'bg-white text-black/35',
                 )}
               >
@@ -456,7 +457,7 @@ function DeckSwitcher({
                   onClick={() => select(id)}
                   onMouseMove={() => setActiveIndex(i)}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-[6px] p-2 text-left',
+                    'flex w-full items-center gap-3 rounded-[6px] p-2 text-left outline-none transition-[background-color,scale] duration-100 active:scale-[0.99] focus-visible:ring-1 focus-visible:ring-ring/40',
                     i === active && 'bg-muted',
                   )}
                 >
@@ -478,7 +479,7 @@ function DeckSwitcher({
                     <div className="truncate text-[13px] font-medium text-foreground">
                       {mod?.meta?.title ?? id}
                     </div>
-                    <div className="mt-0.5 truncate font-mono text-[10.5px] text-muted-foreground">
+                    <div className="mt-0.5 truncate font-mono text-[10.5px] tabular-nums text-muted-foreground">
                       {id}
                       {mod && ` · ${mod.default.length.toString().padStart(2, '0')}`}
                     </div>
@@ -647,7 +648,7 @@ function PresenterJumpControl({
         placeholder={(current + 1).toString()}
         className="h-8 w-20 rounded-[5px] border border-border bg-card px-2 font-mono text-[12px] tabular-nums outline-none focus-visible:border-foreground/30"
       />
-      <span className="font-mono text-[11px] text-muted-foreground">/ {total}</span>
+      <span className="font-mono text-[11px] tabular-nums text-muted-foreground">/ {total}</span>
     </form>
   );
 }

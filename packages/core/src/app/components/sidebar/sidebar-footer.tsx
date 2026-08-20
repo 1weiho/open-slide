@@ -53,11 +53,18 @@ export function SidebarFooter() {
     }
   }
 
-  const versionRow = (
-    <span className="inline-flex cursor-default items-center gap-1.5">
-      {update?.latest && <span className="size-1.5 rounded-full bg-brand" aria-hidden />}
+  const versionRow = update?.latest ? (
+    // Real button: the tooltip holds actionable controls, so keyboard users
+    // must be able to reach and open it.
+    <button
+      type="button"
+      className="inline-flex cursor-default items-center gap-1.5 rounded-[3px] outline-none focus-visible:ring-1 focus-visible:ring-brand"
+    >
+      <span className="size-1.5 rounded-full bg-brand" aria-hidden />
       {label}
-    </span>
+    </button>
+  ) : (
+    <span className="inline-flex cursor-default items-center gap-1.5">{label}</span>
   );
 
   return (
@@ -93,7 +100,7 @@ export function SidebarFooter() {
                       onClick={restartServer}
                     >
                       {restarting ? (
-                        <Loader2 className="animate-spin" aria-hidden />
+                        <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden />
                       ) : (
                         <RotateCw aria-hidden />
                       )}
@@ -115,7 +122,7 @@ export function SidebarFooter() {
                     onClick={updatePackage}
                   >
                     {isUpdating ? (
-                      <Loader2 className="animate-spin" aria-hidden />
+                      <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden />
                     ) : (
                       <RefreshCw aria-hidden />
                     )}

@@ -32,6 +32,7 @@ import { findSlideSource } from '@/lib/inspector/fiber';
 import type { EditOp } from '@/lib/inspector/use-editor';
 import { useAgentSocketConnected } from '@/lib/use-agent-socket';
 import { useLocale } from '@/lib/use-locale';
+import { cn } from '@/lib/utils';
 import type { Locale } from '../../../locale/types';
 import { AssetPickerDialog } from './asset-picker-dialog';
 import { type SelectedTarget, useInspector } from './inspector-provider';
@@ -688,7 +689,7 @@ function ColorField({
 
   return (
     <Field label={label}>
-      <label className="relative inline-flex size-8 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border bg-background shadow-xs">
+      <label className="relative inline-flex size-8 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border bg-background shadow-xs transition-[border-color,scale] duration-150 hover:border-foreground/20 active:scale-[0.96] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring/40">
         <span
           className="size-5 rounded-sm"
           style={{
@@ -717,7 +718,7 @@ function ColorField({
           setDraft(e.target.value);
           commitHex(e.target.value);
         }}
-        className="h-8 flex-1 font-mono text-[11px] uppercase"
+        className="nums h-8 flex-1 font-mono text-[11px] uppercase"
         spellCheck={false}
       />
       {clearable && onClear && (
@@ -851,12 +852,12 @@ function AgentWatchingBadge() {
           render={
             <button
               type="button"
-              className="flex shrink-0 cursor-help items-center gap-1.5 rounded-[3px] border border-hairline bg-card px-1.5 py-px text-[10.5px] text-foreground/85 outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+              className="flex shrink-0 cursor-help items-center gap-1.5 rounded-[3px] border border-hairline bg-card px-1.5 py-px text-[10.5px] text-foreground/85 outline-none transition-colors duration-150 hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/30"
             >
               <span aria-hidden className="relative flex size-1.5 items-center justify-center">
                 {connected ? (
                   <>
-                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+                    <span className="absolute inline-flex size-full rounded-full bg-emerald-500 opacity-60 motion-safe:animate-ping" />
                     <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
                   </>
                 ) : (
@@ -879,6 +880,10 @@ function AgentWatchingBadge() {
   );
 }
 
+// The cue animation re-mounts with every element selection; without this
+// guard it replays each time instead of once per inspector session.
+let commentCuePlayed = false;
+
 function CommentsSection({
   selected,
   onAdd,
@@ -888,8 +893,13 @@ function CommentsSection({
 }) {
   const [draft, setDraft] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showCue] = useState(() => !commentCuePlayed);
   const wrapRef = useRef<HTMLDivElement>(null);
   const t = useLocale();
+
+  useEffect(() => {
+    commentCuePlayed = true;
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -920,7 +930,7 @@ function CommentsSection({
   return (
     <Section title={t.inspector.leaveComment}>
       <div className="flex flex-col gap-2">
-        <div ref={wrapRef} className="comment-cue rounded-[6px]">
+        <div ref={wrapRef} className={cn('rounded-[6px]', showCue && 'comment-cue')}>
           <Textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
