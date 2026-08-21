@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Field, NumberField, Section } from '@/components/panel/panel-fields';
 import { PanelShell, usePanelMount } from '@/components/panel/panel-shell';
 import { useLocale } from '@/lib/use-locale';
+import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -29,12 +30,14 @@ type DesignPanelProps = {
 
 export function DesignPanel({ open, onClose }: DesignPanelProps) {
   const { draft, exists, warning, loaded, dirty, update, shuffle } = useDesignPanelState();
-  const { mounted, animVisible } = usePanelMount(open);
+  // Gate the mount on data readiness so the first open still slides in
+  // instead of popping fully expanded once loading finishes.
+  const ready = loaded && draft != null;
+  const { mounted, animVisible } = usePanelMount(open && ready);
   const t = useLocale();
 
-  if (!loaded) return null;
+  if (!ready) return null;
   if (!mounted) return null;
-  if (!draft) return null;
 
   return (
     <PanelShell
@@ -52,13 +55,14 @@ export function DesignPanel({ open, onClose }: DesignPanelProps) {
                 {t.stylePanel.draftBadge}
               </span>
             )}
-            {dirty && (
-              <span
-                className="size-1.5 rounded-full bg-brand"
-                title={t.stylePanel.unsavedTitle}
-                aria-hidden
-              />
-            )}
+            <span
+              className={cn(
+                'size-1.5 rounded-full bg-brand transition-opacity duration-150',
+                dirty ? 'opacity-100' : 'opacity-0',
+              )}
+              title={dirty ? t.stylePanel.unsavedTitle : undefined}
+              aria-hidden
+            />
           </div>
           <div className="flex items-center gap-0.5">
             <Button
@@ -232,7 +236,7 @@ function ColorField({
 
   return (
     <Field label={label}>
-      <label className="relative inline-flex size-8 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border bg-background shadow-xs">
+      <label className="relative inline-flex size-8 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border bg-background shadow-xs transition-[border-color,scale] duration-150 hover:border-foreground/20 active:scale-[0.96] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring/40">
         <span className="size-5 rounded-sm" style={{ backgroundColor: value }} />
         <input
           type="color"
@@ -252,7 +256,7 @@ function ColorField({
         onBlur={() => {
           if (!/^#[0-9a-fA-F]{6}$/.test(hexDraft)) setHexDraft(value);
         }}
-        className="h-8 flex-1 font-mono text-[11px] uppercase"
+        className="nums h-8 flex-1 font-mono text-[11px] uppercase"
         spellCheck={false}
       />
     </Field>

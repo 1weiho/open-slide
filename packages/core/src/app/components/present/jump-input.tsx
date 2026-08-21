@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { cn } from '@/lib/utils';
 
 const FLUSH_DELAY_MS = 1200;
 
@@ -15,7 +16,21 @@ type Props = {
  */
 export function PresentJumpInput({ pageCount, onJump }: Props) {
   const [buffer, setBuffer] = useState('');
+  // Latch the last text so the badge keeps its digits while fading out.
+  const [display, setDisplay] = useState('');
   const flushRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (buffer) setDisplay(buffer);
+  }, [buffer]);
+
+  // Drop the latched text once the exit fade finishes so the aria-live
+  // region does not keep a stale value mounted.
+  useEffect(() => {
+    if (buffer || !display) return;
+    const id = setTimeout(() => setDisplay(''), 150);
+    return () => clearTimeout(id);
+  }, [buffer, display]);
 
   useEffect(() => {
     const flush = () => {
@@ -61,14 +76,20 @@ export function PresentJumpInput({ pageCount, onJump }: Props) {
     };
   }, [pageCount, onJump]);
 
-  if (!buffer) return null;
+  if (!display && !buffer) return null;
   return (
     <div
       aria-live="polite"
-      className="pointer-events-none absolute top-1/2 left-1/2 z-40 -translate-x-1/2 -translate-y-1/2 select-none rounded-[10px] bg-black/70 px-6 py-4 font-mono text-[44px] font-medium tracking-[0.05em] text-white tabular-nums shadow-[0_8px_40px_-8px_oklch(0_0_0/0.6)] backdrop-blur-md"
+      className={cn(
+        'pointer-events-none absolute top-1/2 left-1/2 z-40 -translate-x-1/2 -translate-y-1/2 select-none rounded-[10px] bg-black/70 px-6 py-4 font-mono text-[44px] font-medium tracking-[0.05em] text-white tabular-nums shadow-[0_8px_40px_-8px_oklch(0_0_0/0.6)] backdrop-blur-md',
+        'motion-safe:transition-[opacity,scale] motion-safe:ease-swift',
+        buffer
+          ? 'scale-100 opacity-100 motion-safe:duration-200'
+          : 'scale-95 opacity-0 motion-safe:duration-150',
+      )}
     >
       <span className="text-white/60">→ </span>
-      {buffer}
+      {buffer || display}
     </div>
   );
 }

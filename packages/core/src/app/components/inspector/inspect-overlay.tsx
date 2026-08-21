@@ -190,9 +190,10 @@ function Frame({
   }, [visible]);
 
   if (!rect) return null;
+  const morphEase = 'var(--ease-swift)';
   const transition = morph
-    ? `left ${FRAME_MORPH_MS}ms ease-out, top ${FRAME_MORPH_MS}ms ease-out, ` +
-      `width ${FRAME_MORPH_MS}ms ease-out, height ${FRAME_MORPH_MS}ms ease-out, ` +
+    ? `left ${FRAME_MORPH_MS}ms ${morphEase}, top ${FRAME_MORPH_MS}ms ${morphEase}, ` +
+      `width ${FRAME_MORPH_MS}ms ${morphEase}, height ${FRAME_MORPH_MS}ms ${morphEase}, ` +
       `opacity ${FRAME_FADE_MS}ms ease-out`
     : `opacity ${FRAME_FADE_MS}ms ease-out`;
 
@@ -265,7 +266,7 @@ function ImageActionPanel({
                   e.stopPropagation();
                   openReplace(anchor);
                 }}
-                className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-[background-color,color,scale] duration-150 hover:bg-muted hover:text-foreground active:scale-[0.94] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
               >
                 <ImageIcon className="size-3.5" />
               </button>
@@ -285,7 +286,7 @@ function ImageActionPanel({
                   e.stopPropagation();
                   openCrop(anchor as HTMLImageElement);
                 }}
-                className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-[background-color,color,scale] duration-150 hover:bg-muted hover:text-foreground active:scale-[0.94] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
               >
                 <Crop className="size-3.5" />
               </button>

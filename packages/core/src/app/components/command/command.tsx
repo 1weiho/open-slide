@@ -31,7 +31,9 @@ function CommandDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="top-[14vh] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-[560px]"
+        // ⌘K fires dozens of times a day — opacity-only and fast, no scale
+        // theater on a keyboard-triggered surface.
+        className="top-[14vh] translate-y-0 gap-0 overflow-hidden p-0 duration-100 data-starting-style:scale-100 data-ending-style:scale-100 sm:max-w-[560px]"
       >
         <DialogTitle className="sr-only">{title}</DialogTitle>
         <DialogDescription className="sr-only">{description}</DialogDescription>
@@ -107,7 +109,7 @@ function CommandItem({ className, ...props }: React.ComponentProps<typeof Comman
       data-slot="command-item"
       className={cn(
         'relative flex cursor-default select-none items-center gap-2 rounded-[5px] px-2 py-1.5 text-[12.5px] outline-none',
-        'data-[selected=true]:bg-muted data-[selected=true]:text-foreground',
+        'data-[selected=true]:bg-muted data-[selected=true]:text-foreground active:bg-muted/80',
         'data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-45',
         "[&_svg]:size-3.5 [&_svg]:shrink-0 [&_svg]:text-muted-foreground [&_svg:not([class*='opacity'])]:opacity-80",
         className,

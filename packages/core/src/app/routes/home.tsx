@@ -266,7 +266,7 @@ function SearchInput({ value, onChange }: { value: string; onChange: (value: str
           type="button"
           onClick={() => onChange('')}
           aria-label={t.home.clearSearch}
-          className="absolute right-1.5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-[4px] text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="absolute right-1.5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-[4px] text-muted-foreground outline-none transition-[background-color,color,scale] duration-100 hover:bg-muted hover:text-foreground active:scale-90 focus-visible:ring-2 focus-visible:ring-ring/30"
         >
           <X className="size-3" />
         </button>
@@ -296,7 +296,7 @@ function SortControl({ value, onChange }: { value: SortKey; onChange: (next: Sor
           <button
             type="button"
             aria-label={`${t.home.sortLabel}: ${labels[value]}`}
-            className="flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[6px] border border-border bg-background pl-2 pr-1.5 text-[12.5px] font-medium text-foreground outline-none hover:bg-muted focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30"
+            className="flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[6px] border border-border bg-background pl-2 pr-1.5 text-[12.5px] font-medium text-foreground outline-none transition-[background-color,translate] duration-100 hover:bg-muted active:translate-y-px focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30"
           >
             <FieldIcon k={value} className="size-3.5 text-muted-foreground" />
             <span>{labels[value]}</span>
@@ -510,11 +510,14 @@ function SlideCard({
         onDragEnd={() => setDragging(false)}
         className={cn('group relative motion-safe:transition-opacity', dragging && 'opacity-40')}
       >
-        <Link to={`/s/${id}`} className="block focus-visible:outline-none">
+        <Link
+          to={`/s/${id}`}
+          className="block rounded-[6px] outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
           {/* Slide thumb — tight border, grey baseboard, no shadcn rounded-xl */}
-          <div className="relative aspect-video overflow-hidden rounded-[6px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] group-hover:shadow-floating group-hover:ring-foreground/20 motion-safe:transition-[box-shadow,--tw-ring-color] motion-safe:duration-200">
+          <div className="relative aspect-video overflow-hidden rounded-[6px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] group-hover:shadow-floating group-hover:ring-foreground/20 motion-safe:transition-[box-shadow,--tw-ring-color,scale] motion-safe:duration-200 group-active:scale-[0.99]">
             {FirstPage ? (
-              <div className="h-full w-full motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-[1.03]">
+              <div className="h-full w-full ease-swift motion-safe:transition-transform motion-safe:duration-200 motion-safe:group-hover:scale-[1.03]">
                 <SlideCanvas flat freezeMotion design={slide?.design}>
                   <SlidePageProvider index={0} total={slide?.default.length ?? 1}>
                     <FirstPage />
@@ -556,7 +559,7 @@ function SlideCard({
                       e.stopPropagation();
                       e.preventDefault();
                     }}
-                    className="flex size-7 items-center justify-center rounded-[5px] bg-card/90 text-foreground shadow-edge ring-1 ring-border opacity-0 backdrop-blur hover:bg-card group-hover:opacity-100 aria-expanded:opacity-100 motion-safe:transition-opacity"
+                    className="flex size-7 items-center justify-center rounded-[5px] bg-card/90 text-foreground shadow-edge ring-1 ring-border opacity-0 outline-none backdrop-blur hover:bg-card group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-ring/40 aria-expanded:opacity-100 motion-safe:transition-opacity motion-safe:duration-150"
                     aria-label={tCard.home.slideActions}
                   >
                     <MoreHorizontal className="size-3.5" />
@@ -794,7 +797,7 @@ function FolderOption({
       type="button"
       onClick={onClick}
       className={cn(
-        'flex w-full items-center gap-2 border-b border-hairline px-3 py-2 text-left text-[13px] transition-colors last:border-b-0',
+        'flex w-full items-center gap-2 border-b border-hairline px-3 py-2 text-left text-[13px] outline-none transition-colors duration-100 last:border-b-0 focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-brand active:bg-muted',
         active ? 'bg-muted text-foreground' : 'hover:bg-muted/60',
       )}
     >

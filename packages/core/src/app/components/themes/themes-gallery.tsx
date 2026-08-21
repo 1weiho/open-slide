@@ -40,9 +40,9 @@ function ThemeCard({
       type="button"
       onClick={onOpen}
       aria-label={ariaLabel}
-      className="group block w-full text-left focus-visible:outline-none"
+      className="group block w-full rounded-[6px] text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
-      <div className="relative aspect-video overflow-hidden rounded-[6px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] group-hover:shadow-floating group-hover:ring-foreground/20 motion-safe:transition-[box-shadow,--tw-ring-color] motion-safe:duration-200">
+      <div className="relative aspect-video overflow-hidden rounded-[6px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] group-hover:shadow-floating group-hover:ring-foreground/20 group-active:scale-[0.99] motion-safe:transition-[box-shadow,--tw-ring-color,scale] motion-safe:duration-200">
         <ThemePreview theme={theme} />
       </div>
       <div className="mt-3">
@@ -77,7 +77,7 @@ function ThemePreview({ theme }: { theme: Theme }) {
   if (!FirstPage) return <NoDemoState />;
 
   return (
-    <div className="h-full w-full motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-[1.03]">
+    <div className="h-full w-full ease-swift motion-safe:transition-transform motion-safe:duration-200 motion-safe:group-hover:scale-[1.03]">
       <SlideCanvas flat freezeMotion design={demo.design}>
         <SlidePageProvider index={0} total={demo.default.length}>
           <FirstPage />

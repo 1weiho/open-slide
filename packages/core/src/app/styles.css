@@ -58,6 +58,10 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 
+  /* House motion curve — one strong ease-out for every chrome entrance,
+     instead of per-file cubic-bezier literals. */
+  --ease-swift: cubic-bezier(0.22, 1, 0.36, 1);
+
   --shadow-edge: 0 0 0 0.5px oklch(0 0 0 / 0.06), 0 1px 0 oklch(0 0 0 / 0.025);
   --shadow-floating:
     0 0 0 0.5px oklch(0 0 0 / 0.08), 0 1px 1px oklch(0 0 0 / 0.04),
@@ -68,6 +72,9 @@
 }
 
 :root {
+  /* Runtime copy of the @theme token for inline style/JS consumers. */
+  --ease-swift: cubic-bezier(0.22, 1, 0.36, 1);
+
   /* Pure neutral ramp — zero chroma, flat surfaces, hairline borders.
      Near-white background with white cards floating on a slightly
      recessed canvas. */

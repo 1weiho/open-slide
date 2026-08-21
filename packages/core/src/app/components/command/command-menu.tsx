@@ -211,7 +211,11 @@ function useSharedCommandGroups(): CommandGroupSpec[] {
             {
               id: 'restart-dev-server',
               label: restarting ? t.home.restartingServer : t.home.restartServer,
-              icon: restarting ? <Loader2 className="animate-spin" /> : <RotateCw />,
+              icon: restarting ? (
+                <Loader2 className="animate-spin motion-reduce:animate-none" />
+              ) : (
+                <RotateCw />
+              ),
               keywords: ['restart', 'dev', 'server', 'reload'],
               disabled: restarting,
               run: restartServer,

@@ -547,21 +547,28 @@ export function AssetView({ slideId }: Props) {
         )}
       </div>
 
-      {dragActive && (
-        <div
-          className="pointer-events-none absolute inset-0 z-30 animate-in fade-in-0 duration-200"
-          aria-hidden="true"
-        >
-          <div className="absolute inset-0 bg-brand/5" />
-          <div className="absolute inset-2 rounded-[10px] border border-dashed border-brand/40" />
-          <div className="absolute inset-x-0 bottom-8 flex justify-center">
-            <div className="flex animate-in items-center gap-2 rounded-[6px] border border-border bg-card px-3 py-1.5 text-[12px] font-medium shadow-floating fade-in-0 slide-in-from-bottom-1 duration-300">
-              <ArrowDownToLine className="size-3.5 text-brand" />
-              <span>{t.asset.dropToUpload}</span>
-            </div>
+      <div
+        className={cn(
+          'pointer-events-none absolute inset-0 z-30 motion-safe:transition-opacity motion-safe:duration-150',
+          dragActive ? 'opacity-100' : 'opacity-0',
+        )}
+        aria-hidden="true"
+      >
+        <div className="absolute inset-0 bg-brand/5" />
+        <div className="absolute inset-2 rounded-[10px] border border-dashed border-brand/40" />
+        <div className="absolute inset-x-0 bottom-8 flex justify-center">
+          <div
+            className={cn(
+              'flex items-center gap-2 rounded-[6px] border border-border bg-card px-3 py-1.5 text-[12px] font-medium shadow-floating',
+              'ease-swift motion-safe:transition-[opacity,translate] motion-safe:duration-200',
+              dragActive ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0',
+            )}
+          >
+            <ArrowDownToLine className="size-3.5 text-brand" />
+            <span>{t.asset.dropToUpload}</span>
           </div>
         </div>
-      )}
+      </div>
 
       {conflict && (
         <ConflictDialog
@@ -806,7 +813,7 @@ function SortableColumnHeader({
         <DirectionIcon className="size-2.5 shrink-0" aria-hidden />
       ) : (
         <ArrowUpDown
-          className="size-2.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-60 group-focus-visible:opacity-60"
+          className="size-2.5 shrink-0 opacity-0 transition-opacity duration-150 group-hover:opacity-60 group-focus-visible:opacity-60 [@media(hover:none)]:opacity-40"
           aria-hidden
         />
       )}
@@ -872,7 +879,7 @@ function AssetCard({
   const isImage = asset.mime.startsWith('image/');
   const t = useLocale();
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-[6px] border border-border bg-card shadow-edge transition-shadow hover:shadow-floating focus-within:ring-2 focus-within:ring-ring/30">
+    <div className="group relative flex flex-col overflow-hidden rounded-[6px] border border-border bg-card shadow-edge transition-[box-shadow,scale] duration-150 hover:shadow-floating motion-safe:active:scale-[0.99] focus-within:ring-2 focus-within:ring-ring/30">
       <button
         type="button"
         onClick={onPreview}
@@ -934,7 +941,7 @@ function AssetListItem({
   const isImage = asset.mime.startsWith('image/');
   const t = useLocale();
   return (
-    <div className="group flex min-h-14 items-center gap-3 rounded-[6px] border border-border bg-card p-2 shadow-edge transition-shadow hover:shadow-floating focus-within:ring-2 focus-within:ring-ring/30">
+    <div className="group flex min-h-14 items-center gap-3 rounded-[6px] border border-border bg-card p-2 shadow-edge transition-[box-shadow,scale] duration-150 hover:shadow-floating motion-safe:active:scale-[0.995] focus-within:ring-2 focus-within:ring-ring/30">
       <button
         type="button"
         onClick={onPreview}
@@ -1012,7 +1019,7 @@ function AssetActions({
         aria-label={format(t.asset.actionsAria, { name: asset.name })}
         className={cn(
           buttonVariants({ variant: 'ghost', size: 'icon-xs' }),
-          'opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 aria-expanded:opacity-100',
+          'opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-visible:opacity-100 aria-expanded:opacity-100 [@media(hover:none)]:opacity-100',
         )}
       >
         <MoreVertical />
@@ -1457,7 +1464,7 @@ function LogoSearchDialog({
               {SKELETON_SLOTS.map((slot) => (
                 <div
                   key={slot}
-                  className="aspect-square animate-pulse rounded-lg border bg-muted/40"
+                  className="aspect-square animate-pulse rounded-lg border bg-muted/40 motion-reduce:animate-none"
                 />
               ))}
             </div>
@@ -1581,8 +1588,10 @@ function LogoResultCard({
                 type="button"
                 onClick={() => setVariant('light')}
                 className={cn(
-                  'px-1.5 py-0.5 transition-colors',
-                  variant === 'light' ? 'bg-foreground text-background' : 'hover:bg-muted',
+                  'px-1.5 py-0.5 outline-none transition-colors duration-100 focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring/40',
+                  variant === 'light'
+                    ? 'bg-foreground text-background'
+                    : 'hover:bg-muted active:bg-muted',
                 )}
               >
                 {t.asset.logoVariantLight}
@@ -1591,8 +1600,10 @@ function LogoResultCard({
                 type="button"
                 onClick={() => setVariant('dark')}
                 className={cn(
-                  'border-l px-1.5 py-0.5 transition-colors',
-                  variant === 'dark' ? 'bg-foreground text-background' : 'hover:bg-muted',
+                  'border-l px-1.5 py-0.5 outline-none transition-colors duration-100 focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring/40',
+                  variant === 'dark'
+                    ? 'bg-foreground text-background'
+                    : 'hover:bg-muted active:bg-muted',
                 )}
               >
                 {t.asset.logoVariantDark}
@@ -1613,7 +1624,11 @@ function LogoResultCard({
             }}
             className="ml-auto h-6 px-2 text-[11px]"
           >
-            {pending ? <Loader2 className="size-3 animate-spin" /> : t.common.add}
+            {pending ? (
+              <Loader2 className="size-3 animate-spin motion-reduce:animate-none" />
+            ) : (
+              t.common.add
+            )}
           </Button>
         </div>
       </div>

@@ -189,7 +189,7 @@ export function HomeShell() {
                   <button
                     type="button"
                     aria-label={t.home.menu}
-                    className="flex size-8 items-center justify-center rounded-[6px] text-muted-foreground hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground"
+                    className="flex size-8 items-center justify-center rounded-[6px] text-muted-foreground outline-none transition-[background-color,color,scale] duration-100 hover:bg-muted hover:text-foreground active:scale-95 focus-visible:ring-2 focus-visible:ring-ring/30 aria-expanded:bg-muted aria-expanded:text-foreground"
                   >
                     <Menu className="size-4" />
                   </button>

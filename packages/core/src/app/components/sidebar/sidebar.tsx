@@ -257,7 +257,7 @@ export function Sidebar({
                   render={
                     <button
                       type="button"
-                      className="flex size-5 shrink-0 items-center justify-center rounded transition-transform hover:scale-110"
+                      className="flex size-5 shrink-0 items-center justify-center rounded outline-none motion-safe:transition-transform motion-safe:duration-150 hover:scale-110 active:scale-95 focus-visible:ring-1 focus-visible:ring-brand"
                       aria-label={t.home.pickIcon}
                     >
                       <FolderIconChip icon={newIcon} />
@@ -286,7 +286,7 @@ export function Sidebar({
             <button
               type="button"
               onClick={startCreating}
-              className="mt-1 flex w-full items-center gap-2 rounded-[5px] px-2 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+              className="mt-1 flex w-full items-center gap-2 rounded-[5px] px-2 py-1.5 text-[12px] text-muted-foreground outline-none transition-[background-color,color,scale] duration-100 hover:bg-muted/60 hover:text-foreground active:scale-[0.98] focus-visible:ring-1 focus-visible:ring-brand"
             >
               <Plus className="size-3.5" />
               <span>{t.home.newFolder}</span>
