@@ -1,5 +1,13 @@
 # @open-slide/core
 
+## 1.19.1
+
+### Patch Changes
+
+- [#415](https://github.com/1weiho/open-slide/pull/415) [`40e2454`](https://github.com/1weiho/open-slide/commit/40e2454776ba97e1e47c67bdce6edd9671bbccf9) Thanks [@1weiho](https://github.com/1weiho)! - Fix the sidebar language and theme dropdowns not opening when clicked.
+
+- [#413](https://github.com/1weiho/open-slide/pull/413) [`b540f0b`](https://github.com/1weiho/open-slide/commit/b540f0be7db9978793fe06800aaee3d780c8a754) Thanks [@1weiho](https://github.com/1weiho)! - Polish viewer micro-interactions: shared motion curve, press and focus feedback across controls, animated enter/exit for overlays and the save bar, flick-to-swipe in present mode, grouped instant tooltips, reduced-motion coverage, tabular numerals, and a fix for the dark-mode boot flash.
+
 ## 1.19.0
 
 ### Minor Changes
