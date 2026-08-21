@@ -1,7 +1,7 @@
 import { Monitor, Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
-import { IconTooltip } from '@/components/icon-tooltip';
+import { IconTooltip, MenuTooltipTrigger } from '@/components/icon-tooltip';
 import { buttonVariants } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -9,7 +9,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { TooltipTrigger } from '@/components/ui/tooltip';
 import { useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 
@@ -27,7 +26,7 @@ export function ThemeToggle() {
       <IconTooltip label={t.themeToggle.title}>
         <DropdownMenuTrigger
           render={
-            <TooltipTrigger
+            <MenuTooltipTrigger
               type="button"
               aria-label={t.themeToggle.toggleAria}
               className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }), 'relative')}

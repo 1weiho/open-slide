@@ -1,10 +1,19 @@
+import { Tooltip as TooltipPrimitive } from '@base-ui/react/tooltip';
 import type { ReactNode } from 'react';
 import { Tooltip, TooltipContent } from '@/components/ui/tooltip';
 
 /**
+ * Tooltip trigger for a button that also opens a menu. The `ui/tooltip` wrapper
+ * is a plain function component, so on React 18 it swallows the ref that
+ * `DropdownMenuTrigger` hands to its `render` element and the menu never opens —
+ * the primitive forwards it.
+ */
+export const MenuTooltipTrigger = TooltipPrimitive.Trigger;
+
+/**
  * Shared hover label for the toolbar icon buttons. `children` supplies the
  * `TooltipTrigger`; a button that also opens a menu has to compose it inward
- * (`<DropdownMenuTrigger render={<TooltipTrigger />}>`) — the other nesting
+ * (`<DropdownMenuTrigger render={<MenuTooltipTrigger />}>`) — the other nesting
  * order swallows the trigger ref and the tooltip never opens.
  */
 export function IconTooltip({
