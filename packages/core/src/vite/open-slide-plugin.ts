@@ -133,7 +133,7 @@ export async function generateSlidesModule(
 const slideImportTokens = ${importTokens};
 if (import.meta.hot) {
   import.meta.hot.on('open-slide:slide-changed', (data) => {
-    const ids = Array.isArray(data?.slideIds) ? data.slideIds : data?.slideId ? [data.slideId] : [];
+    const ids = Array.isArray(data?.slideIds) ? data.slideIds : [];
     const token = Date.now();
     for (const id of ids) {
       if (Object.prototype.hasOwnProperty.call(slideImportTokens, id)) slideImportTokens[id] = token;
@@ -205,9 +205,6 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
     name: 'open-slide',
     config(_c, env) {
       isDev = env.command === 'serve';
-      return {
-        server: { fs: { allow: [userCwd] } },
-      };
     },
     resolveId(id) {
       if (id === SLIDES_VMOD) return resolved(SLIDES_VMOD);

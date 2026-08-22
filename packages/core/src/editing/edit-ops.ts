@@ -174,9 +174,7 @@ function findUniqueElementByText(ast: t.Node, prevText: string): t.JSXElement | 
   const hits: Array<{ node: t.JSXElement; size: number }> = [];
   walkJsx(ast, (n) => {
     if (!t.isJSXElement(n)) return;
-    const parts: TextRangePart[] = [];
-    collectTextRangeParts(n, parts);
-    if (textRangeContent(parts) !== prevText) return;
+    if (textRangeContent(collectTextRangeParts(n)) !== prevText) return;
     hits.push({ node: n, size: (n.end ?? 0) - (n.start ?? 0) });
   });
   if (hits.length === 0) return null;
@@ -207,9 +205,7 @@ function hasOnlyTextOps(ops: EditOp[]): boolean {
 }
 
 function elementTextMatches(element: t.JSXElement, prevText: string): boolean {
-  const parts: TextRangePart[] = [];
-  collectTextRangeParts(element, parts);
-  return textRangeContent(parts) === prevText;
+  return textRangeContent(collectTextRangeParts(element)) === prevText;
 }
 
 function findElementForEdit(
@@ -475,10 +471,10 @@ function collectTextCandidates(element: JsxParent, out: TextCandidate[]): void {
   }
 }
 
-function collectTextRangeParts(element: JsxParent, out: TextRangePart[]): void {
+function collectTextRangeParts(element: JsxParent): TextRangePart[] {
   const parts: TextRangePart[] = [];
   collectTextRangePartsRaw(element, parts);
-  out.push(...normalizeTextRangeParts(parts));
+  return normalizeTextRangeParts(parts);
 }
 
 function collectTextRangePartsRaw(element: JsxParent, out: TextRangePart[]): void {
@@ -573,7 +569,7 @@ function formatRichText(value: string, formatText = formatJsxText): string {
     .join('<br />');
 }
 
-function formatOptionalText(value: string, formatText = formatJsxText): string {
+function formatOptionalText(value: string, formatText: (v: string) => string): string {
   return value ? formatText(value) : '';
 }
 
@@ -663,8 +659,7 @@ function buildTextContentSplices(
   value: string,
   prevText: string,
 ): Splice[] | { error: string } {
-  const parts: TextRangePart[] = [];
-  collectTextRangeParts(element, parts);
+  const parts = collectTextRangeParts(element);
   const current = textRangeContent(parts);
   if (!textMatchesExpected(current, prevText)) {
     return { error: 'no text candidate matches the current value' };
@@ -687,12 +682,11 @@ function buildTextRangeStyleSplices(
     return { error: 'invalid text range' };
   }
 
-  const parts: TextRangePart[] = [];
-  collectTextRangeParts(element, parts);
-  const current = prevText ?? textRangeContent(parts);
+  const parts = collectTextRangeParts(element);
+  const renderedText = textRangeContent(parts);
+  const current = prevText ?? renderedText;
   if (!current) return { error: 'element has no editable text' };
   if (end > current.length) return { error: 'text range is out of bounds' };
-  const renderedText = textRangeContent(parts);
   if (prevText !== undefined && renderedText !== prevText) {
     if (elementTextCandidateMatches(ast, element, prevText)) {
       const result = buildStyleSplice(source, element, [op]);

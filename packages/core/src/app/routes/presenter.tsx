@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { hasModifier, isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
 import { format, useLocale } from '@/lib/use-locale';
-import { cn } from '@/lib/utils';
+import { cn, pad2 } from '@/lib/utils';
 import {
   type PresenterState,
   usePresenterChannel,
@@ -317,9 +317,9 @@ function PresenterTopBar({
         <Clock />
         <ElapsedClock startedAt={startedAt} />
         <div className="font-mono text-[18px] tabular-nums">
-          <span className="text-foreground">{(index + 1).toString().padStart(2, '0')}</span>
+          <span className="text-foreground">{pad2(index + 1)}</span>
           <span className="text-foreground/30"> / </span>
-          <span className="text-muted-foreground">{total.toString().padStart(2, '0')}</span>
+          <span className="text-muted-foreground">{pad2(total)}</span>
         </div>
       </div>
     </header>
@@ -474,7 +474,7 @@ function DeckSwitcher({
                     </div>
                     <div className="mt-0.5 truncate font-mono text-[10.5px] tabular-nums text-muted-foreground">
                       {id}
-                      {mod && ` · ${mod.default.length.toString().padStart(2, '0')}`}
+                      {mod && ` · ${pad2(mod.default.length)}`}
                     </div>
                   </div>
                   {id === slideId && <Check className="size-3.5 shrink-0 text-muted-foreground" />}
@@ -692,10 +692,7 @@ function ElapsedClock({ startedAt }: { startedAt: number }) {
   const h = Math.floor(elapsed / 3600);
   const m = Math.floor((elapsed % 3600) / 60);
   const s = elapsed % 60;
-  const text =
-    h > 0
-      ? `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
-      : `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  const text = h > 0 ? `${h}:${pad2(m)}:${pad2(s)}` : `${pad2(m)}:${pad2(s)}`;
   return (
     <time
       title={t.presenter.elapsed}

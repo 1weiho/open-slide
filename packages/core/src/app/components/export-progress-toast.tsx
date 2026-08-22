@@ -1,5 +1,6 @@
 import { Check, Loader2 } from 'lucide-react';
 import { format, useLocale } from '@/lib/use-locale';
+import { pad2 } from '@/lib/utils';
 import type { PdfExportProgress } from '../lib/export-pdf';
 import type { PptxExportProgress } from '../lib/export-pptx';
 import { Progress } from './ui/progress';
@@ -35,8 +36,8 @@ function ExportProgressToast({
 
 function pageCounts(progress: { current: number; total: number }) {
   return {
-    current: progress.current.toString().padStart(2, '0'),
-    total: progress.total.toString().padStart(2, '0'),
+    current: pad2(progress.current),
+    total: pad2(progress.total),
   };
 }
 
