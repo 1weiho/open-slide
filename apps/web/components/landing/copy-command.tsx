@@ -3,7 +3,7 @@
 import posthog from 'posthog-js';
 import { useState } from 'react';
 
-export function CopyCommand({ command, size = 'lg' }: { command: string; size?: 'lg' | 'md' }) {
+export function CopyCommand({ command }: { command: string }) {
   const [copied, setCopied] = useState(false);
 
   const onCopy = async () => {
@@ -17,9 +17,9 @@ export function CopyCommand({ command, size = 'lg' }: { command: string; size?: 
     }
   };
 
-  const height = size === 'lg' ? 'h-[48px] sm:h-[52px]' : 'h-10';
-  const pad = size === 'lg' ? 'px-4 sm:px-5' : 'px-4';
-  const text = size === 'lg' ? 'text-[13px] sm:text-[15px]' : 'text-[13px]';
+  const height = 'h-[48px] sm:h-[52px]';
+  const pad = 'px-4 sm:px-5';
+  const text = 'text-[13px] sm:text-[15px]';
 
   return (
     <button

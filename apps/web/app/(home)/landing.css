@@ -144,10 +144,6 @@ html.dark .os-landing .bloom {
   }
 }
 
-.os-landing .edge {
-  box-shadow: var(--shadow-edge);
-}
-
 .os-landing .floating {
   box-shadow: var(--shadow-floating);
 }
