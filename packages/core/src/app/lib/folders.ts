@@ -44,9 +44,20 @@ async function requestJson<T>(method: string, path: string, body?: unknown): Pro
   return (await res.json()) as T;
 }
 
+function isFolderIcon(value: unknown): value is FolderIcon {
+  if (!value || typeof value !== 'object') return false;
+  const icon = value as { type?: unknown; value?: unknown };
+  return (icon.type === 'emoji' || icon.type === 'color') && typeof icon.value === 'string';
+}
+
 function asFolder(value: unknown): Folder {
   const folder = value as Partial<Folder> | null;
-  if (!folder || typeof folder.id !== 'string' || typeof folder.name !== 'string' || !folder.icon) {
+  if (
+    !folder ||
+    typeof folder.id !== 'string' ||
+    typeof folder.name !== 'string' ||
+    !isFolderIcon(folder.icon)
+  ) {
     throw new Error('malformed folder response');
   }
   return folder as Folder;

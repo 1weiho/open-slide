@@ -146,6 +146,15 @@ describe('applyDesignWrite — slide without design', () => {
     expect(r.source).toContain("import { Step, type DesignSystem } from '@open-slide/core'");
   });
 
+  it('adds its own type import when the core import has no named list', () => {
+    const slide = `import * as Core from '@open-slide/core';\n\nexport default [];\n`;
+    const r = applyDesignWrite(slide, defaultDesign);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.source).toContain("import * as Core from '@open-slide/core'");
+    expect(r.source).toContain("import type { DesignSystem } from '@open-slide/core'");
+    expect(r.source).toContain('const design: DesignSystem =');
+  });
+
   it('adds a fresh @open-slide/core type import when none exists', () => {
     const slide = `const Cover = () => <div>Hi</div>;\nexport default [Cover];\n`;
     const r = applyDesignWrite(slide, defaultDesign);

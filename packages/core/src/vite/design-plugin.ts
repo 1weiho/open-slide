@@ -240,43 +240,10 @@ function findImports(ast: AstNode): ImportInfo[] {
   return out;
 }
 
-function ensureDesignSystemImport(
+function addDesignSystemImport(
   source: string,
-  ast: AstNode,
+  imports: ImportInfo[],
 ): { source: string; offsetShift: number } {
-  const imports = findImports(ast);
-  const coreImport = imports.find((imp) => imp.source === '@open-slide/core');
-  if (coreImport) {
-    const hasDesignSystem = coreImport.specifiers.some((spec) => {
-      if (spec.type !== 'ImportSpecifier') return false;
-      const imported = (spec as unknown as { imported?: { name?: string } }).imported;
-      return imported?.name === 'DesignSystem';
-    });
-    if (hasDesignSystem) return { source, offsetShift: 0 };
-
-    const node = coreImport.node;
-    // `import type { … }` already applies to every specifier, and repeating the
-    // modifier on one of them is a TypeScript error.
-    const typeOnlyDecl = (node as unknown as { importKind?: string }).importKind === 'type';
-    const specifier = typeOnlyDecl ? 'DesignSystem' : 'type DesignSystem';
-
-    const named = coreImport.specifiers.filter((spec) => spec.type === 'ImportSpecifier');
-    const lastNamed = named[named.length - 1];
-    if (lastNamed) {
-      const insertText = `, ${specifier}`;
-      const next = `${source.slice(0, lastNamed.end)}${insertText}${source.slice(lastNamed.end)}`;
-      return { source: next, offsetShift: insertText.length };
-    }
-
-    const importText = source.slice(node.start, node.end);
-    const braceClose = importText.lastIndexOf('}');
-    if (braceClose === -1) return { source, offsetShift: 0 };
-    const absoluteBrace = node.start + braceClose;
-    const next = `${source.slice(0, absoluteBrace)}${specifier}${source.slice(absoluteBrace)}`;
-    return { source: next, offsetShift: specifier.length };
-  }
-
-  // No @open-slide/core import — add one after the last import (or at top).
   const stmt = `import type { DesignSystem } from '@open-slide/core';\n`;
   if (imports.length > 0) {
     const last = imports[imports.length - 1];
@@ -287,6 +254,45 @@ function ensureDesignSystemImport(
   }
   const next = `${stmt}\n${source}`;
   return { source: next, offsetShift: stmt.length + 1 };
+}
+
+function ensureDesignSystemImport(
+  source: string,
+  ast: AstNode,
+): { source: string; offsetShift: number } {
+  const imports = findImports(ast);
+  const coreImport = imports.find((imp) => imp.source === '@open-slide/core');
+  if (!coreImport) return addDesignSystemImport(source, imports);
+
+  const hasDesignSystem = coreImport.specifiers.some((spec) => {
+    if (spec.type !== 'ImportSpecifier') return false;
+    const imported = (spec as unknown as { imported?: { name?: string } }).imported;
+    return imported?.name === 'DesignSystem';
+  });
+  if (hasDesignSystem) return { source, offsetShift: 0 };
+
+  const node = coreImport.node;
+  // `import type { … }` already applies to every specifier, and repeating the
+  // modifier on one of them is a TypeScript error.
+  const typeOnlyDecl = (node as unknown as { importKind?: string }).importKind === 'type';
+  const specifier = typeOnlyDecl ? 'DesignSystem' : 'type DesignSystem';
+
+  const named = coreImport.specifiers.filter((spec) => spec.type === 'ImportSpecifier');
+  const lastNamed = named[named.length - 1];
+  if (lastNamed) {
+    const insertText = `, ${specifier}`;
+    const next = `${source.slice(0, lastNamed.end)}${insertText}${source.slice(lastNamed.end)}`;
+    return { source: next, offsetShift: insertText.length };
+  }
+
+  const importText = source.slice(node.start, node.end);
+  const braceClose = importText.lastIndexOf('}');
+  // A namespace, default-only, or side-effect import has no named list to
+  // extend, so `DesignSystem` needs an import statement of its own.
+  if (braceClose === -1) return addDesignSystemImport(source, imports);
+  const absoluteBrace = node.start + braceClose;
+  const next = `${source.slice(0, absoluteBrace)}${specifier}${source.slice(absoluteBrace)}`;
+  return { source: next, offsetShift: specifier.length };
 }
 
 function findInsertionPoint(source: string, ast: AstNode): number {
