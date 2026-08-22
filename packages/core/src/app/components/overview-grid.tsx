@@ -1,6 +1,7 @@
 import { ListOrdered, type LucideIcon, Sparkles, X } from 'lucide-react';
 import { type Ref, useEffect, useRef, useState } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { isTypingTarget } from '@/lib/keys';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import type { DesignSystem } from '../lib/design';
@@ -60,7 +61,7 @@ export function OverviewGrid({
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLElement && e.target.matches('input, textarea')) return;
+      if (isTypingTarget(e.target)) return;
       const cols = computeCols(gridRef.current);
       if (e.key === 'ArrowRight') {
         e.preventDefault();

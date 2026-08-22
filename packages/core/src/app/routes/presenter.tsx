@@ -20,6 +20,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { hasModifier, isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import {
@@ -102,17 +103,12 @@ export function Presenter() {
     const onKey = (e: KeyboardEvent) => {
       // The deck-switcher menu owns its own arrow-key navigation.
       if (e.defaultPrevented) return;
-      if (e.target instanceof HTMLElement && e.target.matches('input, textarea')) return;
-      if (e.altKey || e.ctrlKey || e.metaKey) return;
-      if (
-        e.key === 'ArrowRight' ||
-        e.key === 'ArrowDown' ||
-        e.key === ' ' ||
-        e.key === 'PageDown'
-      ) {
+      if (isTypingTarget(e.target)) return;
+      if (hasModifier(e)) return;
+      if (isForwardKey(e)) {
         e.preventDefault();
         goNext();
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
+      } else if (isBackwardKey(e)) {
         e.preventDefault();
         goPrev();
       } else if (e.key === 'b' || e.key === 'B') {

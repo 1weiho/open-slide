@@ -1,10 +1,12 @@
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import type { Plugin, ViteDevServer } from 'vite';
 import { type DesignSystem, defaultDesign } from '../app/lib/design.ts';
 import { type AstNode, tryParse } from '../editing/babel-walk.ts';
 import { jsString } from '../editing/edit-ops.ts';
+import { resolveSlideEntry } from '../editing/slide-ops.ts';
 import { validateMutationRequest } from '../http/request-guard.ts';
-import { json, readBody, resolveSlidePath } from './routes/context.ts';
+import { json, readBody } from './routes/context.ts';
 
 function parseSource(source: string): AstNode | null {
   return tryParse(source) as unknown as AstNode | null;
@@ -321,8 +323,7 @@ export type DesignPluginOptions = {
 };
 
 export function designPlugin(opts: DesignPluginOptions): Plugin {
-  const userCwd = opts.userCwd;
-  const slidesDir = opts.slidesDir ?? 'slides';
+  const slidesRoot = path.resolve(opts.userCwd, opts.slidesDir ?? 'slides');
 
   return {
     name: 'open-slide:design',
@@ -332,7 +333,7 @@ export function designPlugin(opts: DesignPluginOptions): Plugin {
         const url = new URL(req.url ?? '/', 'http://local');
         const method = req.method ?? 'GET';
         const slideId = url.searchParams.get('slideId') ?? '';
-        const file = resolveSlidePath(userCwd, slidesDir, slideId);
+        const file = resolveSlideEntry(slidesRoot, slideId);
         if (!file) return json(res, 400, { error: 'invalid slideId' });
 
         try {

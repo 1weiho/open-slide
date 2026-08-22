@@ -43,6 +43,7 @@ import { SlidePageProvider } from '../lib/page-context';
 import type { Page } from '../lib/sdk';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
 import type { SlideTransition } from '../lib/transition';
+import { prefersReducedMotion } from '../lib/use-prefers-reduced-motion';
 import { SlideCanvas } from './slide-canvas';
 import {
   getCenteredThumbnailScrollTop,
@@ -727,7 +728,7 @@ function getInitialVisibleRange(current: number, count: number): VisibleRange {
 }
 
 function scrollBehavior(): ScrollBehavior {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+  return prefersReducedMotion() ? 'auto' : 'smooth';
 }
 
 function ThumbContents({

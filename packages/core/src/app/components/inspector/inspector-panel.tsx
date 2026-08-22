@@ -29,10 +29,11 @@ import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { findSlideSource } from '@/lib/inspector/fiber';
+import { hasOnlyInlineTextChildren } from '@/lib/inspector/inline-text';
 import type { EditOp } from '@/lib/inspector/use-editor';
 import { useAgentSocketConnected } from '@/lib/use-agent-socket';
 import { useLocale } from '@/lib/use-locale';
-import { cn } from '@/lib/utils';
+import { cn, round2 } from '@/lib/utils';
 import type { Locale } from '../../../locale/types';
 import { AssetPickerDialog } from './asset-picker-dialog';
 import { type SelectedTarget, useInspector } from './inspector-provider';
@@ -985,36 +986,6 @@ function readSnapshot(el: HTMLElement): ElementSnapshot {
   };
 }
 
-const INLINE_TEXT_TAGS = new Set([
-  'B',
-  'CODE',
-  'DEL',
-  'EM',
-  'I',
-  'INS',
-  'MARK',
-  'S',
-  'SMALL',
-  'SPAN',
-  'STRONG',
-  'SUB',
-  'SUP',
-  'U',
-]);
-
-function hasOnlyInlineTextChildren(el: HTMLElement): boolean {
-  for (const child of Array.from(el.childNodes)) {
-    if (child.nodeType === Node.TEXT_NODE) {
-      continue;
-    } else if (child instanceof HTMLElement) {
-      if (child.tagName === 'BR') continue;
-      if (INLINE_TEXT_TAGS.has(child.tagName) && hasOnlyInlineTextChildren(child)) continue;
-    }
-    return false;
-  }
-  return true;
-}
-
 function readEditableText(el: HTMLElement): string {
   const parts: string[] = [];
   for (const child of Array.from(el.childNodes)) {
@@ -1088,10 +1059,6 @@ function parseLetterSpacing(value: string): number {
   if (!value || value === 'normal') return 0;
   const n = parseFloat(value);
   return Number.isFinite(n) ? round2(n) : 0;
-}
-
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
 }
 
 function findElementByLine(slideId: string, line: number, column: number): HTMLElement | null {

@@ -1,4 +1,5 @@
 import * as t from '@babel/types';
+import { textDiff } from '../app/lib/text-diff.ts';
 import { findJsxAncestors, parseSource, walkAll, walkJsx } from './babel-walk.ts';
 
 export type EditOp =
@@ -574,26 +575,6 @@ function formatRichText(value: string, formatText = formatJsxText): string {
 
 function formatOptionalText(value: string, formatText = formatJsxText): string {
   return value ? formatText(value) : '';
-}
-
-function textDiff(prevText: string, nextText: string) {
-  let start = 0;
-  while (
-    start < prevText.length &&
-    start < nextText.length &&
-    prevText[start] === nextText[start]
-  ) {
-    start += 1;
-  }
-
-  let prevEnd = prevText.length;
-  let nextEnd = nextText.length;
-  while (prevEnd > start && nextEnd > start && prevText[prevEnd - 1] === nextText[nextEnd - 1]) {
-    prevEnd -= 1;
-    nextEnd -= 1;
-  }
-
-  return { start, end: prevEnd, value: nextText.slice(start, nextEnd) };
 }
 
 function textLeafSplice(part: TextRangeLeaf, value: string): Splice {

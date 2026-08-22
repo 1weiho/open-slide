@@ -16,7 +16,15 @@ import {
   Presentation,
   Terminal,
 } from 'lucide-react';
-import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type ReactElement,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AssetView } from '@/components/asset-view';
@@ -44,6 +52,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useFolders } from '@/lib/folders';
+import { hasModifier, isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
 import { useAgentSocketConnected } from '@/lib/use-agent-socket';
 import { useClickPageNavigation } from '@/lib/use-click-page-navigation';
 import { useIsMobile } from '@/lib/use-is-mobile';
@@ -51,18 +60,17 @@ import { format, useLocale } from '@/lib/use-locale';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
 import { SlideCommandMenu } from '../components/command/slide-command-menu';
+import { PdfProgressToast, PptxProgressToast } from '../components/export-progress-toast';
 import { NotesDrawer } from '../components/notes-drawer';
 import { OverviewGrid } from '../components/overview-grid';
-import { PdfProgressToast } from '../components/pdf-progress-toast';
 import { openPresenterWindow, Player } from '../components/player';
-import { PptxProgressToast } from '../components/pptx-progress-toast';
 import { SlideCanvas } from '../components/slide-canvas';
 import { isDeckWarmed, markDeckWarmed, SlidePreloadLayer } from '../components/slide-preload-layer';
 import { SlideTransitionLayer } from '../components/slide-transition-layer';
 import { type ThumbnailActions, ThumbnailRail } from '../components/thumbnail-rail';
 import { exportSlideAsHtml } from '../lib/export-html';
-import { exportSlideAsPdf, isSafari } from '../lib/export-pdf';
-import { exportSlideAsImagePptx } from '../lib/export-pptx';
+import { exportSlideAsPdf, isSafari, type PdfExportProgress } from '../lib/export-pdf';
+import { exportSlideAsImagePptx, type PptxExportProgress } from '../lib/export-pptx';
 import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
 import type { SlideModule } from '../lib/sdk';
 import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
@@ -272,9 +280,9 @@ export function Slide() {
     // page-nav handler too would race it and skip <Steps> reveals, so bail out.
     if (playMode || !showSlideUi) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLElement && e.target.matches('input, textarea')) return;
+      if (isTypingTarget(e.target)) return;
       // Letter shortcuts only fire bare so browser combos (Cmd/Ctrl-P, ⌘F…) stay intact.
-      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      if (hasModifier(e)) return;
       // Toggle overview from either state — the overview's own capture-phase
       // handler doesn't consume O, so this stays consistent open ↔ closed.
       if (e.key === 'o' || e.key === 'O') {
@@ -285,17 +293,12 @@ export function Slide() {
       // Once overview owns focus, swallow everything else here — its
       // capture-phase listener drives the focused thumbnail.
       if (overviewOpen) return;
-      if (
-        e.key === 'ArrowRight' ||
-        e.key === 'ArrowDown' ||
-        e.key === ' ' ||
-        e.key === 'PageDown'
-      ) {
+      if (isForwardKey(e)) {
         e.preventDefault();
         goTo(index + 1);
         return;
       }
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
+      if (isBackwardKey(e)) {
         e.preventDefault();
         goTo(index - 1);
         return;
@@ -487,58 +490,55 @@ export function Slide() {
     }
   };
 
-  const exportPdf = async () => {
-    if (!slide || exporting) return;
-    if (isSafari()) {
-      toast.error(t.slide.pdfExportSafariUnsupported, { duration: 5000 });
-      return;
-    }
+  // One toast id drives the whole export: the same id is re-rendered on every
+  // progress tick, swapped for the error toast on failure, then dismissed.
+  const runProgressExport = async <P,>(opts: {
+    kind: string;
+    initial: P;
+    failedMessage: string;
+    renderToast: (progress: P) => ReactElement;
+    run: (onProgress: (progress: P) => void) => Promise<void>;
+  }) => {
     setExporting(true);
-    const toastId = `pdf-export-${slideId}`;
-    toast.custom(
-      () => (
-        <PdfProgressToast
-          progress={{ phase: 'processing', current: 0, total: pages.length, percent: 0 }}
-        />
-      ),
-      { id: toastId, duration: Infinity },
-    );
+    const toastId = `${opts.kind}-export-${slideId}`;
+    const show = (progress: P) =>
+      toast.custom(() => opts.renderToast(progress), { id: toastId, duration: Infinity });
+    show(opts.initial);
     try {
-      await exportSlideAsPdf(slide, slideId, (p) => {
-        toast.custom(() => <PdfProgressToast progress={p} />, { id: toastId, duration: Infinity });
-      });
+      await opts.run(show);
     } catch (err) {
-      console.error('[open-slide] pdf export failed', err);
-      toast.error(t.slide.pdfExportFailed, { id: toastId, duration: 4000 });
+      console.error(`[open-slide] ${opts.kind} export failed`, err);
+      toast.error(opts.failedMessage, { id: toastId, duration: 4000 });
     } finally {
       setExporting(false);
       toast.dismiss(toastId);
     }
   };
 
+  const exportPdf = async () => {
+    if (!slide || exporting) return;
+    if (isSafari()) {
+      toast.error(t.slide.pdfExportSafariUnsupported, { duration: 5000 });
+      return;
+    }
+    await runProgressExport<PdfExportProgress>({
+      kind: 'pdf',
+      initial: { phase: 'processing', current: 0, total: pages.length, percent: 0 },
+      failedMessage: t.slide.pdfExportFailed,
+      renderToast: (progress) => <PdfProgressToast progress={progress} />,
+      run: (onProgress) => exportSlideAsPdf(slide, slideId, onProgress),
+    });
+  };
+
   const exportImagePptx = async () => {
     if (!slide || exporting) return;
-    setExporting(true);
-    const toastId = `pptx-export-${slideId}`;
-    toast.custom(
-      () => (
-        <PptxProgressToast
-          progress={{ phase: 'processing', current: 0, total: pages.length, percent: 0 }}
-        />
-      ),
-      { id: toastId, duration: Infinity },
-    );
-    try {
-      await exportSlideAsImagePptx(slide, slideId, (p) => {
-        toast.custom(() => <PptxProgressToast progress={p} />, { id: toastId, duration: Infinity });
-      });
-    } catch (err) {
-      console.error('[open-slide] image pptx export failed', err);
-      toast.error(t.slide.imagePptxExportFailed, { id: toastId, duration: 4000 });
-    } finally {
-      setExporting(false);
-      toast.dismiss(toastId);
-    }
+    await runProgressExport<PptxExportProgress>({
+      kind: 'pptx',
+      initial: { phase: 'processing', current: 0, total: pages.length, percent: 0 },
+      failedMessage: t.slide.imagePptxExportFailed,
+      renderToast: (progress) => <PptxProgressToast progress={progress} />,
+      run: (onProgress) => exportSlideAsImagePptx(slide, slideId, onProgress),
+    });
   };
 
   const exportMenuItems = (

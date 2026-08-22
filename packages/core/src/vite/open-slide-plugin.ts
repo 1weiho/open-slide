@@ -5,6 +5,7 @@ import fg from 'fast-glob';
 import { loadConfigFromFile, normalizePath, type Plugin, type ViteDevServer } from 'vite';
 import type { OpenSlideConfig } from '../config.ts';
 import { SLIDE_ID_RE } from '../editing/slide-ops.ts';
+import { foldersManifestPath, readManifest } from '../files/folders.ts';
 import { hasRecentWrite } from './recent-writes.ts';
 
 export type { OpenSlideConfig };
@@ -20,30 +21,6 @@ const CONFIG_FILE = 'open-slide.config.ts';
 const SLIDES_VMOD = 'virtual:open-slide/slides';
 const CONFIG_VMOD = 'virtual:open-slide/config';
 const FOLDERS_VMOD = 'virtual:open-slide/folders';
-
-type FoldersManifest = {
-  folders: unknown[];
-  assignments: Record<string, string>;
-};
-
-async function readFoldersManifest(file: string): Promise<FoldersManifest> {
-  try {
-    const raw = await fs.readFile(file, 'utf8');
-    const parsed = JSON.parse(raw) as Partial<FoldersManifest>;
-    return {
-      folders: Array.isArray(parsed.folders) ? parsed.folders : [],
-      assignments:
-        parsed.assignments && typeof parsed.assignments === 'object'
-          ? (parsed.assignments as Record<string, string>)
-          : {},
-    };
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-      return { folders: [], assignments: {} };
-    }
-    throw err;
-  }
-}
 
 function resolved(id: string): string {
   return `\0${id}`;
@@ -194,7 +171,7 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
   const { userCwd, config, coreVersion } = opts;
   const slidesDir = config.slidesDir ?? 'slides';
   const slidesRoot = path.resolve(userCwd, slidesDir);
-  const foldersManifestPath = path.join(slidesRoot, '.folders.json');
+  const manifestPath = foldersManifestPath(slidesRoot);
 
   let isDev = false;
   const slideIdForEntry = (p: string): string | null => {
@@ -264,7 +241,7 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
         return `export default ${JSON.stringify(resolvedConfig)};\n`;
       }
       if (id === resolved(FOLDERS_VMOD)) {
-        const manifest = await readFoldersManifest(foldersManifestPath);
+        const manifest = await readManifest(manifestPath);
         return `export default ${JSON.stringify(manifest)};\n`;
       }
       return null;
@@ -315,15 +292,15 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
           if (mod) server.moduleGraph.invalidateModule(mod);
         }, 100);
       };
-      server.watcher.add(foldersManifestPath);
+      server.watcher.add(manifestPath);
       server.watcher.on('change', (p) => {
-        if (p === foldersManifestPath) invalidateFolders();
+        if (p === manifestPath) invalidateFolders();
       });
       server.watcher.on('add', (p) => {
-        if (p === foldersManifestPath) invalidateFolders();
+        if (p === manifestPath) invalidateFolders();
       });
       server.watcher.on('unlink', (p) => {
-        if (p === foldersManifestPath) invalidateFolders();
+        if (p === manifestPath) invalidateFolders();
       });
     },
   };

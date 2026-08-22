@@ -18,6 +18,10 @@ export type FoldersManifest = {
   assignments: Record<string, string>;
 };
 
+export function foldersManifestPath(slidesRoot: string): string {
+  return path.join(slidesRoot, '.folders.json');
+}
+
 function emptyManifest(): FoldersManifest {
   return { folders: [], assignments: {} };
 }
