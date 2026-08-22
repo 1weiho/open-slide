@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { changedSlideIds } from './slides';
 
-/** Scope id for assets that live in the project-level `assets/` folder. */
 export const GLOBAL_ASSET_SCOPE = '@global';
 
 export type AssetEntry = {

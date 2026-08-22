@@ -18,7 +18,6 @@ export async function loadSlide(id: string): Promise<SlideModule> {
   return load(id);
 }
 
-/** ids carried by an `open-slide:slide-changed` payload. */
 export function changedSlideIds(data: unknown): string[] {
   if (!data || typeof data !== 'object') return [];
   const ids = (data as { slideIds?: unknown }).slideIds;

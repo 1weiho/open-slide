@@ -65,11 +65,11 @@ export function resolveSlideEntryPath(ctx: ApiContext, slideId: string): string 
   return resolveSlideEntry(ctx.slidesRoot, slideId);
 }
 
-/** Read a slide entry, or null when it is not on disk. */
 export async function readSlideSource(file: string): Promise<string | null> {
   try {
     return await fs.readFile(file, 'utf8');
-  } catch {
-    return null;
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
+    throw err;
   }
 }

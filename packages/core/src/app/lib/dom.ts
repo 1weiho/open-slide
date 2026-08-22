@@ -32,7 +32,6 @@ export function downloadBlob(blob: Blob, filename: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-/** True when a drag carries files (rather than text, a URL, or an element). */
 export function dragHasFiles(e: { dataTransfer: DataTransfer | null }): boolean {
   const types = e.dataTransfer?.types;
   if (!types) return false;

@@ -2,14 +2,20 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Plugin, ViteDevServer } from 'vite';
 import { type DesignSystem, defaultDesign } from '../app/lib/design.ts';
-import { type AstNode, tryParse } from '../editing/babel-walk.ts';
+import { type AstNode, parseSource, tryParse } from '../editing/babel-walk.ts';
 import { jsString } from '../editing/edit-ops.ts';
 import { resolveSlideEntry } from '../editing/slide-ops.ts';
 import { validateMutationRequest } from '../http/request-guard.ts';
 import { json, readBody } from './routes/context.ts';
 
-function parseSource(source: string): AstNode | null {
+// Reading tolerates a slide mid-edit; writing splices by AST offset, so a
+// best-guess tree recovered from a syntax error must not reach the file.
+function parseLoose(source: string): AstNode | null {
   return tryParse(source) as unknown as AstNode | null;
+}
+
+function parseStrict(source: string): AstNode | null {
+  return parseSource(source) as unknown as AstNode | null;
 }
 
 type DesignDeclLocation = {
@@ -175,7 +181,7 @@ export type ParsedSlideDesign =
   | { ok: false; exists: true; error: string };
 
 export function parseSlideDesign(source: string): ParsedSlideDesign {
-  const ast = parseSource(source);
+  const ast = parseLoose(source);
   if (!ast) return { ok: false, exists: true, error: 'could not parse slide source' };
   const loc = findDesignDecl(ast);
   if (!loc) return { ok: false, exists: false };
@@ -248,17 +254,26 @@ function ensureDesignSystemImport(
     });
     if (hasDesignSystem) return { source, offsetShift: 0 };
 
-    // Insert DesignSystem into the existing import list. Find the closing brace.
     const node = coreImport.node;
+    // `import type { … }` already applies to every specifier, and repeating the
+    // modifier on one of them is a TypeScript error.
+    const typeOnlyDecl = (node as unknown as { importKind?: string }).importKind === 'type';
+    const specifier = typeOnlyDecl ? 'DesignSystem' : 'type DesignSystem';
+
+    const named = coreImport.specifiers.filter((spec) => spec.type === 'ImportSpecifier');
+    const lastNamed = named[named.length - 1];
+    if (lastNamed) {
+      const insertText = `, ${specifier}`;
+      const next = `${source.slice(0, lastNamed.end)}${insertText}${source.slice(lastNamed.end)}`;
+      return { source: next, offsetShift: insertText.length };
+    }
+
     const importText = source.slice(node.start, node.end);
     const braceClose = importText.lastIndexOf('}');
     if (braceClose === -1) return { source, offsetShift: 0 };
     const absoluteBrace = node.start + braceClose;
-    // Detect if last named specifier already typed; we add `type DesignSystem` to keep it type-only.
-    const insertText =
-      coreImport.specifiers.length > 0 ? ', type DesignSystem' : 'type DesignSystem';
-    const next = `${source.slice(0, absoluteBrace)}${insertText}${source.slice(absoluteBrace)}`;
-    return { source: next, offsetShift: insertText.length };
+    const next = `${source.slice(0, absoluteBrace)}${specifier}${source.slice(absoluteBrace)}`;
+    return { source: next, offsetShift: specifier.length };
   }
 
   // No @open-slide/core import — add one after the last import (or at top).
@@ -297,7 +312,7 @@ export function applyDesignWrite(source: string, next: DesignSystem): WriteResul
     return { ok: false, status: 422, error: `serialize failed: ${(err as Error).message}` };
   }
 
-  const ast = parseSource(source);
+  const ast = parseStrict(source);
   if (!ast) return { ok: false, status: 422, error: 'could not parse slide source' };
 
   const loc = findDesignDecl(ast);
@@ -307,7 +322,7 @@ export function applyDesignWrite(source: string, next: DesignSystem): WriteResul
   }
 
   const withImport = ensureDesignSystemImport(source, ast);
-  const ast2 = parseSource(withImport.source);
+  const ast2 = parseStrict(withImport.source);
   if (!ast2) {
     return { ok: false, status: 422, error: 'failed to re-parse after adding import' };
   }

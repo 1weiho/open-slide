@@ -506,12 +506,13 @@ export function Slide() {
     show(opts.initial);
     try {
       await opts.run(show);
+      toast.dismiss(toastId);
     } catch (err) {
       console.error(`[open-slide] ${opts.kind} export failed`, err);
+      // Reuses the progress toast's id, so it must outlive this handler.
       toast.error(opts.failedMessage, { id: toastId, duration: 4000 });
     } finally {
       setExporting(false);
-      toast.dismiss(toastId);
     }
   };
 

@@ -1,12 +1,8 @@
-/** True while the event targets a field the user is typing into. */
 export function isTypingTarget(target: EventTarget | null): boolean {
   return target instanceof HTMLElement && target.matches('input, textarea');
 }
 
-/**
- * True when a modifier is held. Single-letter shortcuts check this so browser
- * combos (⌘P, ⌘F…) are never hijacked.
- */
+// Single-letter shortcuts bail on this so browser combos (⌘P, ⌘F…) still work.
 export function hasModifier(e: KeyboardEvent): boolean {
   return e.altKey || e.ctrlKey || e.metaKey;
 }

@@ -1,8 +1,3 @@
-/**
- * Narrow a text replacement to the span that actually changed, so an edit to
- * one word does not rewrite the whole node. Shared by the browser inspector
- * and the Node editing engine.
- */
 export function textDiff(prevText: string, nextText: string) {
   let start = 0;
   while (

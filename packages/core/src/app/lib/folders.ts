@@ -24,7 +24,7 @@ async function getManifest(): Promise<FoldersManifest> {
   };
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+async function send(method: string, path: string, body?: unknown): Promise<Response> {
   const init: RequestInit = { method };
   if (body !== undefined) {
     init.headers = { 'content-type': 'application/json' };
@@ -32,7 +32,24 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   }
   const res = await fetch(path, init);
   if (!res.ok) throw new Error(`${method} ${path} ${res.status}`);
-  return (await res.json().catch(() => ({}))) as T;
+  return res;
+}
+
+async function request(method: string, path: string, body?: unknown): Promise<void> {
+  await send(method, path, body);
+}
+
+async function requestJson<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const res = await send(method, path, body);
+  return (await res.json()) as T;
+}
+
+function asFolder(value: unknown): Folder {
+  const folder = value as Partial<Folder> | null;
+  if (!folder || typeof folder.id !== 'string' || typeof folder.name !== 'string' || !folder.icon) {
+    throw new Error('malformed folder response');
+  }
+  return folder as Folder;
 }
 
 async function patchSlideName(slideId: string, name: string): Promise<void> {
@@ -40,7 +57,7 @@ async function patchSlideName(slideId: string, name: string): Promise<void> {
 }
 
 async function duplicateSlideReq(slideId: string, newId?: string): Promise<string> {
-  const body = await request<{ slideId?: unknown }>(
+  const body = await requestJson<{ slideId?: unknown }>(
     'POST',
     `/__slides/${slideId}/duplicate`,
     newId === undefined ? undefined : { newId },
@@ -54,14 +71,14 @@ async function deleteSlideReq(slideId: string): Promise<void> {
 }
 
 async function postFolder(name: string, icon: FolderIcon): Promise<Folder> {
-  return await request<Folder>('POST', '/__folders', { name, icon });
+  return asFolder(await requestJson('POST', '/__folders', { name, icon }));
 }
 
 async function patchFolder(
   id: string,
   patch: { name?: string; icon?: FolderIcon },
 ): Promise<Folder> {
-  return await request<Folder>('PATCH', `/__folders/${id}`, patch);
+  return asFolder(await requestJson('PATCH', `/__folders/${id}`, patch));
 }
 
 async function deleteFolder(id: string): Promise<void> {
