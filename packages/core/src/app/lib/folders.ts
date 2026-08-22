@@ -108,7 +108,6 @@ export type UseFoldersResult = {
   renameSlide: (slideId: string, name: string) => Promise<void>;
   duplicateSlide: (slideId: string, newId?: string) => Promise<string>;
   deleteSlide: (slideId: string) => Promise<void>;
-  refresh: () => Promise<void>;
 };
 
 export function useFolders(): UseFoldersResult {
@@ -234,6 +233,5 @@ export function useFolders(): UseFoldersResult {
     renameSlide,
     duplicateSlide,
     deleteSlide,
-    refresh,
   };
 }

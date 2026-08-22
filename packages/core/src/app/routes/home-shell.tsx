@@ -85,7 +85,7 @@ export function HomeShell() {
   );
 
   const { assets: globalAssets } = useAssets('@global');
-  const isAssetsRoute = location.pathname === '/assets';
+  const isAssetsRoute = selectedId === ASSETS_ID;
 
   const { draftSlides, slidesByFolder } = useMemo(() => {
     const byFolder: Record<string, string[]> = {};

@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { useHistory } from '@/components/history-provider';
 import { Button } from '@/components/ui/button';
 import { type SlideComment, useComments } from '@/lib/inspector/use-comments';
-import { type Edit, type EditOp, type EditResult, useEditor } from '@/lib/inspector/use-editor';
+import { type Edit, type EditOp, useEditor } from '@/lib/inspector/use-editor';
 import { useLocale } from '@/lib/use-locale';
 import { AssetPickerDialog } from './asset-picker-dialog';
 import { ImageCropDialog, type ImageCropRect } from './image-crop-dialog';
@@ -248,13 +248,11 @@ type InspectorCtx = {
   cancel: () => void;
   comments: SlideComment[];
   error: string | null;
-  refetch: () => Promise<void>;
   add: (line: number, column: number, text: string) => Promise<void>;
   remove: (id: string) => Promise<void>;
   selected: SelectedTarget | null;
   setSelected: (s: SelectedTarget | null) => void;
   applyEdit: (line: number, column: number, ops: EditOp[]) => Promise<void>;
-  applyEdits: (edits: Edit[]) => Promise<EditResult[]>;
   // Mutate the DOM optimistically, snapshot the pre-edit values, and
   // remember the ops. `commitEdits` (manual Save or auto-flush on
   // close) is what actually writes to disk; `cancelEdits` reverts.
@@ -286,7 +284,7 @@ export function InspectorProvider({
 }) {
   const [active, setActive] = useState(false);
   const [selected, setSelected] = useState<SelectedTarget | null>(null);
-  const { comments, error, refetch, add, remove } = useComments(slideId);
+  const { comments, error, add, remove } = useComments(slideId);
   const { applyEdit, applyEdits } = useEditor(slideId);
   const history = useHistory();
 
@@ -977,13 +975,11 @@ export function InspectorProvider({
       cancel,
       comments,
       error,
-      refetch,
       add,
       remove,
       selected,
       setSelected,
       applyEdit,
-      applyEdits,
       bufferOps,
       pendingCount,
       commitEdits,
@@ -999,12 +995,10 @@ export function InspectorProvider({
       cancel,
       comments,
       error,
-      refetch,
       add,
       remove,
       selected,
       applyEdit,
-      applyEdits,
       bufferOps,
       pendingCount,
       commitEdits,

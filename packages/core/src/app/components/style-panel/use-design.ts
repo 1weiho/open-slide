@@ -9,9 +9,7 @@ type FetchedState = {
 };
 
 export type UseDesignReturn = FetchedState & {
-  refresh: () => Promise<void>;
   save: (patch: Partial<DesignSystem>) => Promise<{ ok: boolean; error?: string }>;
-  reset: () => Promise<{ ok: boolean; error?: string }>;
 };
 
 export function useDesign(slideId: string): UseDesignReturn {
@@ -83,30 +81,5 @@ export function useDesign(slideId: string): UseDesignReturn {
     }
   }, []);
 
-  const reset = useCallback(async () => {
-    const id = slideIdRef.current;
-    if (!id) return { ok: false, error: 'no slide id' };
-    try {
-      const res = await fetch(`/__design/reset?slideId=${encodeURIComponent(id)}`, {
-        method: 'POST',
-      });
-      const body = (await res.json()) as { ok?: boolean; error?: string; design?: DesignSystem };
-      if (!res.ok || !body.ok) {
-        return { ok: false, error: body.error ?? `HTTP ${res.status}` };
-      }
-      if (body.design) {
-        setState((s) => ({
-          ...s,
-          design: body.design ?? s.design,
-          exists: true,
-          warning: null,
-        }));
-      }
-      return { ok: true };
-    } catch (err) {
-      return { ok: false, error: String((err as Error).message) };
-    }
-  }, []);
-
-  return { ...state, refresh, save, reset };
+  return { ...state, save };
 }

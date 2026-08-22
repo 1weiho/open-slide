@@ -78,9 +78,6 @@ export function Presenter() {
     if (!channel.available || requestedRef.current) return;
     requestedRef.current = true;
     channel.send({ type: 'request-state' });
-    // If nothing answers within a beat, surface the "no projection" hint.
-    const t = setTimeout(() => setHasProjection((v) => v), 600);
-    return () => clearTimeout(t);
   }, [channel, slideId]);
 
   const navigate = useNavigate();

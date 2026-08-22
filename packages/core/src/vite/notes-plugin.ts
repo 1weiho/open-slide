@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
-import { parse as babelParse } from '@babel/parser';
 import * as t from '@babel/types';
 import type { Plugin, ViteDevServer } from 'vite';
+import { tryParse } from '../editing/babel-walk.ts';
 import { validateMutationRequest } from '../http/request-guard.ts';
 import { hasRecentWrite, recordWrite } from './recent-writes.ts';
 import { json, readBody, resolveSlidePath } from './routes/context.ts';
@@ -15,18 +15,6 @@ type NotesBody = {
 export type ApplyNotesEditResult =
   | { ok: true; source: string }
   | { ok: false; status: number; error: string };
-
-function parseSource(source: string): t.File | null {
-  try {
-    return babelParse(source, {
-      sourceType: 'module',
-      plugins: ['typescript', 'jsx'],
-      errorRecovery: true,
-    });
-  } catch {
-    return null;
-  }
-}
 
 type NotesExport = {
   declStart: number;
@@ -96,7 +84,7 @@ export function applyNotesEdit(source: string, index: number, text: string): App
     return { ok: false, status: 400, error: 'invalid index' };
   }
 
-  const ast = parseSource(source);
+  const ast = tryParse(source);
   if (!ast) return { ok: false, status: 422, error: 'could not parse source' };
 
   const found = findNotesExport(ast);

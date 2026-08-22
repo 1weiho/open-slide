@@ -1,8 +1,7 @@
 import path from 'node:path';
-import { parse as babelParse } from '@babel/parser';
 import * as t from '@babel/types';
 import type { Plugin } from 'vite';
-import { walkJsx } from '../editing/babel-walk.ts';
+import { tryParse, walkJsx } from '../editing/babel-walk.ts';
 
 // Inject `data-slide-loc="<line>:<col>"` onto every host JSX element in
 // slide source files so the inspector can map a click straight to a
@@ -25,16 +24,8 @@ function alreadyTagged(opening: t.JSXOpeningElement): boolean {
 }
 
 export function injectLocTags(code: string): string | null {
-  let ast: t.File;
-  try {
-    ast = babelParse(code, {
-      sourceType: 'module',
-      plugins: ['typescript', 'jsx'],
-      errorRecovery: true,
-    });
-  } catch {
-    return null;
-  }
+  const ast = tryParse(code);
+  if (!ast) return null;
 
   const insertions: { offset: number; text: string }[] = [];
   walkJsx(ast, (node) => {

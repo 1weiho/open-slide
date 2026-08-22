@@ -1,5 +1,5 @@
 import * as t from '@babel/types';
-import { parseSource, walkAll, walkJsx } from './babel-walk.ts';
+import { findJsxAncestors, parseSource, walkAll, walkJsx } from './babel-walk.ts';
 
 export type EditOp =
   | { kind: 'set-style'; key: string; value: string | null; prevText?: string }
@@ -27,6 +27,20 @@ export function jsString(s: string): string {
 
 export function spliceRange(node: t.Node, text: string): Splice {
   return { from: node.start ?? 0, to: node.end ?? 0, text };
+}
+
+// Splices are applied back-to-front so earlier offsets stay valid, then the
+// result is re-parsed — a rewrite that cannot be parsed is rejected whole.
+export function applySplices(source: string, splices: Splice[]): ApplyEditResult {
+  const ordered = [...splices].sort((a, b) => b.from - a.from);
+  let next = source;
+  for (const sp of ordered) {
+    next = next.slice(0, sp.from) + sp.text + next.slice(sp.to);
+  }
+  if (!parseSource(next)) {
+    return { ok: false, status: 422, error: 'edit would produce invalid source' };
+  }
+  return { ok: true, source: next };
 }
 
 // Emit a JSX attribute value: `"foo"` when the value is round-trip-safe
@@ -127,24 +141,6 @@ export function safeAssetIdentifier(filename: string, taken: Set<string>): strin
   return candidate;
 }
 
-type JsxContainer = t.JSXElement | t.JSXFragment;
-
-function findJsxAncestors(ast: t.Node, line: number, column: number): JsxContainer[] {
-  const hits: { node: JsxContainer; size: number }[] = [];
-  walkJsx(ast, (n) => {
-    if (!n.loc || (!t.isJSXElement(n) && !t.isJSXFragment(n))) return;
-    const s = n.loc.start;
-    const e = n.loc.end;
-    const afterStart = line > s.line || (line === s.line && column >= s.column);
-    const beforeEnd = line < e.line || (line === e.line && column < e.column);
-    if (afterStart && beforeEnd) {
-      hits.push({ node: n, size: (n.end ?? 0) - (n.start ?? 0) });
-    }
-  });
-  hits.sort((a, b) => a.size - b.size);
-  return hits.map((h) => h.node);
-}
-
 function findJsxByStart(ast: t.Node, line: number, column: number): t.JSXElement | null {
   let hit: t.JSXElement | null = null;
   walkJsx(ast, (n) => {
@@ -215,11 +211,6 @@ function elementTextMatches(element: t.JSXElement, prevText: string): boolean {
   return textRangeContent(parts) === prevText;
 }
 
-function elementHasTextCandidate(ast: t.File, element: t.JSXElement, prevText: string): boolean {
-  const norm = prevText.trim();
-  return collectElementTextCandidates(ast, element).some((candidate) => candidate.current === norm);
-}
-
 function findElementForEdit(
   ast: t.File,
   line: number,
@@ -232,13 +223,11 @@ function findElementForEdit(
   if (
     hasOnlyTextOps(ops) &&
     element &&
-    (elementTextMatches(element, prevText) || elementHasTextCandidate(ast, element, prevText))
+    (elementTextMatches(element, prevText) || elementTextCandidateMatches(ast, element, prevText))
   ) {
     return element;
   }
-  const textMatch = findUniqueElementByText(ast, prevText);
-  if (element && elementTextMatches(element, prevText)) return textMatch ?? element;
-  return textMatch ?? element;
+  return findUniqueElementByText(ast, prevText) ?? element;
 }
 
 function buildStyleSplice(
@@ -1085,7 +1074,7 @@ type AssetEditPlan = {
   attrSplice: Splice;
 };
 
-export function planAssetImport(
+function planAssetImport(
   ast: t.File,
   assetPath: string,
 ): { identifier: string; importSplice: Splice | null } {
@@ -1255,13 +1244,5 @@ export function applyEdit(
 
   if (splices.length === 0) return { ok: true, source };
 
-  splices.sort((a, b) => b.from - a.from);
-  let next = source;
-  for (const sp of splices) {
-    next = next.slice(0, sp.from) + sp.text + next.slice(sp.to);
-  }
-  if (!parseSource(next)) {
-    return { ok: false, status: 422, error: 'edit would produce invalid source' };
-  }
-  return { ok: true, source: next };
+  return applySplices(source, splices);
 }

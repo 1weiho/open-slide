@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import * as t from '@babel/types';
-import { parseSource, walkJsx } from './babel-walk.ts';
+import { findJsxAncestors, type JsxContainer, parseSource } from './babel-walk.ts';
 
 const MARKER_RE =
   /\{\/\*\s*@slide-comment\s+id="(c-[a-f0-9]+)"\s+ts="([^"]+)"\s+text="([A-Za-z0-9_-]+={0,2})"\s*\*\/\}/g;
@@ -67,24 +67,6 @@ function lineIndent(source: string, lineNumber: number): string {
   const start = lineToOffset(source, lineNumber);
   const m = source.slice(start, start + 200).match(/^[ \t]*/);
   return m?.[0] ?? '';
-}
-
-type JsxContainer = t.JSXElement | t.JSXFragment;
-
-function findJsxAncestors(ast: t.Node, line: number, column: number): JsxContainer[] {
-  const hits: { node: JsxContainer; size: number }[] = [];
-  walkJsx(ast, (n) => {
-    if (!n.loc || (!t.isJSXElement(n) && !t.isJSXFragment(n))) return;
-    const s = n.loc.start;
-    const e = n.loc.end;
-    const afterStart = line > s.line || (line === s.line && column >= s.column);
-    const beforeEnd = line < e.line || (line === e.line && column < e.column);
-    if (afterStart && beforeEnd) {
-      hits.push({ node: n, size: (n.end ?? 0) - (n.start ?? 0) });
-    }
-  });
-  hits.sort((a, b) => a.size - b.size);
-  return hits.map((h) => h.node);
 }
 
 function planInsertion(source: string, target: JsxContainer): InsertionPlan | null {

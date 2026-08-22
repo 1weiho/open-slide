@@ -122,5 +122,3 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
     },
   };
 }
-
-export { APP_ROOT };

@@ -171,7 +171,7 @@ export function InspectorPanel() {
     rangeStylePreview.start === contentRange.start &&
     rangeStylePreview.end === contentRange.end;
   const typographySnapshot = rangePreviewApplies
-    ? withStylePreview(pinSnapshot, rangeStylePreview.values)
+    ? { ...pinSnapshot, ...rangeStylePreview.values }
     : pinSnapshot;
   const applyTextStyle = (ops: EditOp[]) => {
     const styleOps = ops.flatMap((op) => (op.kind === 'set-style' ? [op] : []));
@@ -368,10 +368,6 @@ function stylePreviewFromOps(ops: Array<Extract<EditOp, { kind: 'set-style' }>>)
     }
   }
   return preview;
-}
-
-function withStylePreview(snapshot: ElementSnapshot, preview: StylePreview): ElementSnapshot {
-  return { ...snapshot, ...preview };
 }
 
 function ContentField({
@@ -959,7 +955,7 @@ function CommentsSection({
 
 function readSnapshot(el: HTMLElement): ElementSnapshot {
   const cs = getComputedStyle(el);
-  const text = isSimpleTextElement(el) ? readEditableText(el) : null;
+  const text = hasOnlyInlineTextChildren(el) ? readEditableText(el) : null;
   const imageSrc =
     el.tagName === 'IMG'
       ? (el as HTMLImageElement).currentSrc || (el as HTMLImageElement).src || null
@@ -987,11 +983,6 @@ function readSnapshot(el: HTMLElement): ElementSnapshot {
     imageSrc,
     placeholder,
   };
-}
-
-function isSimpleTextElement(el: HTMLElement): boolean {
-  if (el.childNodes.length === 0) return true;
-  return hasOnlyInlineTextChildren(el);
 }
 
 const INLINE_TEXT_TAGS = new Set([

@@ -1,21 +1,13 @@
 import fs from 'node:fs/promises';
-import { parse as babelParse } from '@babel/parser';
 import type { Plugin, ViteDevServer } from 'vite';
 import { type DesignSystem, defaultDesign } from '../app/lib/design.ts';
-import type { AstNode } from '../editing/babel-walk.ts';
+import { type AstNode, tryParse } from '../editing/babel-walk.ts';
+import { jsString } from '../editing/edit-ops.ts';
 import { validateMutationRequest } from '../http/request-guard.ts';
 import { json, readBody, resolveSlidePath } from './routes/context.ts';
 
 function parseSource(source: string): AstNode | null {
-  try {
-    return babelParse(source, {
-      sourceType: 'module',
-      plugins: ['typescript', 'jsx'],
-      errorRecovery: true,
-    }) as unknown as AstNode;
-  } catch {
-    return null;
-  }
+  return tryParse(source) as unknown as AstNode | null;
 }
 
 type DesignDeclLocation = {
@@ -39,7 +31,7 @@ function findDesignDecl(ast: AstNode): DesignDeclLocation | null {
     const declarations = (varDecl as unknown as { declarations?: AstNode[] }).declarations ?? [];
     for (const d of declarations) {
       const id = (d as unknown as { id?: { type?: string; name?: string } }).id;
-      if (!id || id.type !== 'Identifier' || id.name !== 'design') continue;
+      if (id?.type !== 'Identifier' || id.name !== 'design') continue;
       const init = (d as unknown as { init?: AstNode | null }).init;
       if (!init) return null;
       let inner: AstNode = init;
@@ -141,10 +133,6 @@ function indent(level: number): string {
   return '  '.repeat(level);
 }
 
-function jsString(s: string): string {
-  return `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n')}'`;
-}
-
 function isValidIdentifier(name: string): boolean {
   return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name);
 }
@@ -214,7 +202,7 @@ function findDesignObjectNode(ast: AstNode): AstNode | null {
     const declarations = (varDecl as unknown as { declarations?: AstNode[] }).declarations ?? [];
     for (const d of declarations) {
       const id = (d as unknown as { id?: { type?: string; name?: string } }).id;
-      if (!id || id.type !== 'Identifier' || id.name !== 'design') continue;
+      if (id?.type !== 'Identifier' || id.name !== 'design') continue;
       const init = (d as unknown as { init?: AstNode | null }).init;
       if (!init) return null;
       let inner: AstNode = init;
