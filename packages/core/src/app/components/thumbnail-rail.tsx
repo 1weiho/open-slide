@@ -321,7 +321,7 @@ export function ThumbnailRail({
   return (
     <TooltipProvider delay={200}>
       <div className="relative h-full">
-        <ScrollArea className="h-full border-r border-hairline bg-sidebar [&_[data-slot=scroll-area-scrollbar]]:z-20">
+        <ScrollArea className="h-full bg-sidebar [&_[data-slot=scroll-area-scrollbar]]:z-20">
           {scrollAreaContents}
         </ScrollArea>
         {currentPosition && (
@@ -802,12 +802,6 @@ function ThumbContents({
             <PageComp />
           </SlidePageProvider>
         </SlideCanvas>
-        {active && (
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 left-0 w-[2px] bg-brand"
-          />
-        )}
       </div>
     </>
   );
