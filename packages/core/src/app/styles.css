@@ -233,6 +233,31 @@
 }
 
 /*
+ * Grid entrance — a quiet rise used by card grids. Pair with a small
+ * per-item animation-delay for a capped stagger.
+ */
+@keyframes osd-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise-in {
+  animation: osd-rise-in 350ms var(--ease-swift) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise-in {
+    animation: none;
+  }
+}
+
+/*
  * Comment input cue — kept from the original design but retoned to match
  * the new palette (warm vermillion + amber instead of the AI-classic
  * blue/violet halo). Plays once on first open, then settles.

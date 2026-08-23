@@ -16,7 +16,7 @@ import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import { CommandMenuTrigger } from '../components/command/command-menu';
 import { HomeCommandMenu } from '../components/command/home-command-menu';
-import { FolderIconChip } from '../components/sidebar/folder-item';
+import { SystemViewIcon } from '../components/sidebar/folder-item';
 import { ALL_SLIDES_ID, ASSETS_ID, Sidebar, THEMES_ID } from '../components/sidebar/sidebar';
 import type { FoldersManifest } from '../lib/sdk';
 import { slideIds } from '../lib/slides';
@@ -204,7 +204,7 @@ export function HomeShell() {
                       'bg-muted text-foreground',
                   )}
                 >
-                  <FolderIconChip icon={{ type: 'emoji', value: '🎞️' }} />
+                  <SystemViewIcon kind="all" className="text-muted-foreground" />
                   <span className="flex-1 truncate">{t.home.slides}</span>
                   <span className="folio">{slideIds.length.toString().padStart(2, '0')}</span>
                 </DropdownMenuItem>
@@ -212,7 +212,7 @@ export function HomeShell() {
                   onClick={() => selectFolder(THEMES_ID)}
                   className={cn(selectedId === THEMES_ID && 'bg-muted text-foreground')}
                 >
-                  <FolderIconChip icon={{ type: 'emoji', value: '🎨' }} />
+                  <SystemViewIcon kind="themes" className="text-muted-foreground" />
                   <span className="flex-1 truncate">{t.home.themes}</span>
                   <span className="folio">{themeRegistry.length.toString().padStart(2, '0')}</span>
                 </DropdownMenuItem>
@@ -221,7 +221,7 @@ export function HomeShell() {
                     onClick={() => selectFolder(ASSETS_ID)}
                     className={cn(selectedId === ASSETS_ID && 'bg-muted text-foreground')}
                   >
-                    <FolderIconChip icon={{ type: 'emoji', value: '🗂️' }} />
+                    <SystemViewIcon kind="assets" className="text-muted-foreground" />
                     <span className="flex-1 truncate">{t.home.assets}</span>
                     <span className="folio">{globalAssets.length.toString().padStart(2, '0')}</span>
                   </DropdownMenuItem>

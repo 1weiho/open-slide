@@ -165,9 +165,8 @@ export function Sidebar({
         )}
       </div>
 
-      <div className="mt-5 flex items-center gap-2 px-4 pb-1.5">
+      <div className="mt-5 px-4 pb-1.5">
         <span className="eyebrow">{t.home.folders}</span>
-        <span className="h-px flex-1 bg-hairline" aria-hidden />
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 pb-2">

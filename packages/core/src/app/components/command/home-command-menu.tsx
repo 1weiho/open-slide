@@ -1,4 +1,4 @@
-import { Image as ImageIcon, Palette, Presentation } from 'lucide-react';
+import { Image as ImageIcon, LayoutGrid, Palette, PenLine, Presentation } from 'lucide-react';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLocale } from '@/lib/use-locale';
@@ -39,14 +39,14 @@ export function HomeCommandMenu({
       {
         id: `view-${ALL_SLIDES_ID}`,
         label: t.home.slides,
-        icon: <FolderIconChip icon={{ type: 'emoji', value: '🎞️' }} />,
+        icon: <LayoutGrid />,
         keywords: ['all', 'slides'],
         run: () => onSelectView(ALL_SLIDES_ID),
       },
       {
         id: `view-${DRAFT_ID}`,
         label: t.home.draft,
-        icon: <FolderIconChip icon={{ type: 'emoji', value: '📝' }} />,
+        icon: <PenLine />,
         keywords: ['draft', 'unsorted'],
         run: () => onSelectView(DRAFT_ID),
       },

@@ -85,7 +85,7 @@ export function ThemeDetail({ themeId, onBack }: { themeId: string; onBack: () =
       </div>
 
       <header className="flex flex-wrap items-baseline gap-3">
-        <h2 className="font-heading text-[26px] font-semibold leading-[1.05] tracking-[-0.025em] md:text-[32px]">
+        <h2 className="font-heading text-[19px] font-semibold leading-none tracking-[-0.015em] md:text-[21px]">
           {theme.name}
         </h2>
         {theme.description ? (
@@ -231,7 +231,7 @@ function ThemeSlideCard({ id }: { id: string }) {
     >
       <div className="relative aspect-video overflow-hidden rounded-[6px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] group-hover:shadow-floating group-hover:ring-foreground/20 group-active:scale-[0.99] motion-safe:transition-[box-shadow,--tw-ring-color,scale] motion-safe:duration-200">
         {FirstPage ? (
-          <div className="h-full w-full ease-swift motion-safe:transition-transform motion-safe:duration-200 motion-safe:group-hover:scale-[1.03]">
+          <div className="h-full w-full">
             <SlideCanvas flat freezeMotion design={slide?.design}>
               <SlidePageProvider index={0} total={slide?.default.length ?? 1}>
                 <FirstPage />

@@ -32,11 +32,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
-import { FolderIconChip, SLIDE_DND_MIME } from '../components/sidebar/folder-item';
+import { FolderIconChip, SLIDE_DND_MIME, SystemViewIcon } from '../components/sidebar/folder-item';
 import { ALL_SLIDES_ID, DRAFT_ID } from '../components/sidebar/sidebar';
 import { SlideCanvas } from '../components/slide-canvas';
 import { SlidePageProvider } from '../lib/page-context';
-import type { Folder, FolderIcon, SlideModule } from '../lib/sdk';
+import type { Folder, SlideModule } from '../lib/sdk';
 import { loadSlide, slideCreatedAt, slideIds } from '../lib/slides';
 import type { HomeOutletContext } from './home-shell';
 
@@ -97,10 +97,6 @@ export function Home() {
       : (slidesByFolder[selectedId] ?? []);
 
   const title = selectedFolder?.name ?? (isAll ? t.home.slides : t.home.draft);
-  const headerIcon = selectedFolder?.icon ?? {
-    type: 'emoji' as const,
-    value: isAll ? '🎞️' : '📝',
-  };
 
   const [query, setQuery] = useState('');
   const [sortKey, setSortKey] = useSortPref();
@@ -136,10 +132,14 @@ export function Home() {
 
   return (
     <>
-      <header className="mb-8 md:mb-12">
-        <div className="flex flex-wrap items-center gap-3">
-          <FolderIconChip icon={headerIcon} className="size-7 text-2xl" />
-          <h1 className="font-heading text-[32px] font-semibold leading-[1.05] tracking-[-0.025em] md:text-[44px]">
+      <header className="mb-6 md:mb-8">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {selectedFolder ? (
+            <FolderIconChip icon={selectedFolder.icon} className="size-5 text-[16px]" />
+          ) : (
+            <SystemViewIcon kind={isAll ? 'all' : 'draft'} className="text-muted-foreground" />
+          )}
+          <h1 className="font-heading text-[19px] font-semibold leading-none tracking-[-0.015em] md:text-[21px]">
             {title}
           </h1>
           <DropdownMenu>
@@ -148,7 +148,7 @@ export function Home() {
                 <button
                   type="button"
                   aria-label={t.home.folders}
-                  className="flex size-7 items-center justify-center rounded-[6px] border border-border bg-card text-muted-foreground hover:text-foreground aria-expanded:border-foreground/40 aria-expanded:text-foreground md:hidden"
+                  className="flex size-7 items-center justify-center rounded-[6px] border border-border bg-card text-muted-foreground outline-none transition-[background-color,color,scale] duration-100 hover:bg-muted hover:text-foreground active:scale-95 focus-visible:ring-2 focus-visible:ring-ring/30 aria-expanded:border-foreground/40 aria-expanded:text-foreground md:hidden"
                 >
                   <ChevronDown className="size-4" />
                 </button>
@@ -159,7 +159,7 @@ export function Home() {
                 onClick={() => selectFolder(ALL_SLIDES_ID)}
                 className={cn(isAll && 'bg-muted text-foreground')}
               >
-                <FolderIconChip icon={{ type: 'emoji', value: '🎞️' }} />
+                <SystemViewIcon kind="all" className="text-muted-foreground" />
                 <span className="flex-1 truncate">{t.home.slides}</span>
                 <span className="folio">{slideIds.length.toString().padStart(2, '0')}</span>
               </DropdownMenuItem>
@@ -167,7 +167,7 @@ export function Home() {
                 onClick={() => selectFolder(DRAFT_ID)}
                 className={cn(isDraft && 'bg-muted text-foreground')}
               >
-                <FolderIconChip icon={{ type: 'emoji', value: '📝' }} />
+                <SystemViewIcon kind="draft" className="text-muted-foreground" />
                 <span className="flex-1 truncate">{t.home.draft}</span>
                 <span className="folio">{draftSlides.length.toString().padStart(2, '0')}</span>
               </DropdownMenuItem>
@@ -187,7 +187,7 @@ export function Home() {
             </DropdownMenuContent>
           </DropdownMenu>
           {!loading && (
-            <span className="folio ml-1 self-end pb-2">
+            <span className="folio ml-0.5">
               {(isSearching ? filteredSlides.length : visibleSlides.length)
                 .toString()
                 .padStart(2, '0')}
@@ -213,8 +213,12 @@ export function Home() {
         <NoResultsState query={query} onClear={() => setQuery('')} />
       ) : (
         <ul className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-x-6 gap-y-9 md:grid-cols-[repeat(auto-fill,minmax(300px,1fr))]">
-          {sortedSlides.map((id) => (
-            <li key={id}>
+          {sortedSlides.map((id, i) => (
+            <li
+              key={id}
+              className="rise-in"
+              style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}
+            >
               <SlideCard
                 id={id}
                 folders={manifest.folders}
@@ -343,12 +347,10 @@ function HomeLoading() {
 function NoResultsState({ query, onClear }: { query: string; onClear: () => void }) {
   const t = useLocale();
   return (
-    <div className="rounded-[10px] border border-dashed border-border bg-card/60 px-8 py-20">
+    <div className="rounded-[8px] border border-dashed border-border px-8 py-20">
       <div className="mx-auto flex max-w-md flex-col items-center text-center">
-        <div className="flex size-12 items-center justify-center rounded-full border border-hairline bg-card text-muted-foreground">
-          <Search className="size-5" />
-        </div>
-        <p className="mt-4 font-heading text-[15px] font-semibold tracking-tight">
+        <Search className="size-5 text-muted-foreground/60" aria-hidden />
+        <p className="mt-4 font-heading text-[14px] font-semibold tracking-tight">
           {t.home.noMatches}
         </p>
         <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
@@ -371,14 +373,12 @@ function EmptyState({ isDraft, folderName }: { isDraft: boolean; folderName?: st
     folderName ?? t.home.folderEmptyTitle,
   );
   return (
-    <div className="rounded-[10px] border border-dashed border-border bg-card/60 px-8 py-20">
+    <div className="rounded-[8px] border border-dashed border-border px-8 py-20">
       <div className="mx-auto flex max-w-md flex-col items-center text-center">
-        <div className="flex size-12 items-center justify-center rounded-full border border-hairline bg-card text-muted-foreground">
-          <FolderPlus className="size-5" />
-        </div>
+        <FolderPlus className="size-5 text-muted-foreground/60" aria-hidden />
         {isDraft ? (
           <>
-            <p className="mt-4 font-heading text-[15px] font-semibold tracking-tight">
+            <p className="mt-4 font-heading text-[14px] font-semibold tracking-tight">
               {t.home.noSlidesYet}
             </p>
             <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
@@ -391,7 +391,7 @@ function EmptyState({ isDraft, folderName }: { isDraft: boolean; folderName?: st
           </>
         ) : (
           <>
-            <p className="mt-4 font-heading text-[15px] font-semibold tracking-tight">
+            <p className="mt-4 font-heading text-[14px] font-semibold tracking-tight">
               {folderEmptyTitle}
             </p>
             <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
@@ -517,7 +517,7 @@ function SlideCard({
           {/* Slide thumb — tight border, grey baseboard, no shadcn rounded-xl */}
           <div className="relative aspect-video overflow-hidden rounded-[6px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] group-hover:shadow-floating group-hover:ring-foreground/20 motion-safe:transition-[box-shadow,--tw-ring-color,scale] motion-safe:duration-200 group-active:scale-[0.99]">
             {FirstPage ? (
-              <div className="h-full w-full ease-swift motion-safe:transition-transform motion-safe:duration-200 motion-safe:group-hover:scale-[1.03]">
+              <div className="h-full w-full">
                 <SlideCanvas flat freezeMotion design={slide?.design}>
                   <SlidePageProvider index={0} total={slide?.default.length ?? 1}>
                     <FirstPage />
@@ -549,16 +549,13 @@ function SlideCard({
         </div>
 
         {import.meta.env.DEV && (
-          <div className="absolute right-2 top-2">
+          <div className="absolute right-2 top-2 z-20">
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                    }}
+                    onClick={(e) => e.stopPropagation()}
                     className="flex size-7 items-center justify-center rounded-[5px] bg-card/90 text-foreground shadow-edge ring-1 ring-border opacity-0 outline-none backdrop-blur hover:bg-card group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-ring/40 aria-expanded:opacity-100 motion-safe:transition-opacity motion-safe:duration-150"
                     aria-label={tCard.home.slideActions}
                   >
@@ -752,7 +749,7 @@ function MoveDialog({
         </DialogHeader>
         <div className="max-h-[320px] overflow-y-auto rounded-[6px] border border-border bg-background">
           <FolderOption
-            icon={{ type: 'emoji', value: '📝' }}
+            chip={<SystemViewIcon kind="draft" className="text-muted-foreground" />}
             label={t.home.draft}
             active={selected === null}
             onClick={() => setSelected(null)}
@@ -760,7 +757,7 @@ function MoveDialog({
           {folders.map((f) => (
             <FolderOption
               key={f.id}
-              icon={f.icon}
+              chip={<FolderIconChip icon={f.icon} />}
               label={f.name}
               active={selected === f.id}
               onClick={() => setSelected(f.id)}
@@ -781,12 +778,12 @@ function MoveDialog({
 }
 
 function FolderOption({
-  icon,
+  chip,
   label,
   active,
   onClick,
 }: {
-  icon: FolderIcon;
+  chip: React.ReactNode;
   label: string;
   active: boolean;
   onClick: () => void;
@@ -801,7 +798,7 @@ function FolderOption({
         active ? 'bg-muted text-foreground' : 'hover:bg-muted/60',
       )}
     >
-      <FolderIconChip icon={icon} />
+      {chip}
       <span className="truncate">{label}</span>
       {active && (
         <span className="ml-auto inline-flex items-center gap-1 text-[10.5px] text-brand">

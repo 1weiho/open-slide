@@ -1,3 +1,4 @@
+import { Palette } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { format, useLocale } from '@/lib/use-locale';
 import { SlidePageProvider } from '../../lib/page-context';
@@ -13,8 +14,12 @@ export function ThemesGallery({ onOpen }: { onOpen: (id: string) => void }) {
 
   return (
     <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(240px,100%),1fr))] gap-x-6 gap-y-9 md:grid-cols-[repeat(auto-fill,minmax(340px,1fr))]">
-      {themes.map((theme) => (
-        <li key={theme.id}>
+      {themes.map((theme, i) => (
+        <li
+          key={theme.id}
+          className="rise-in"
+          style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}
+        >
           <ThemeCard
             theme={theme}
             onOpen={() => onOpen(theme.id)}
@@ -77,7 +82,7 @@ function ThemePreview({ theme }: { theme: Theme }) {
   if (!FirstPage) return <NoDemoState />;
 
   return (
-    <div className="h-full w-full ease-swift motion-safe:transition-transform motion-safe:duration-200 motion-safe:group-hover:scale-[1.03]">
+    <div className="h-full w-full">
       <SlideCanvas flat freezeMotion design={demo.design}>
         <SlidePageProvider index={0} total={demo.default.length}>
           <FirstPage />
@@ -110,10 +115,10 @@ function NoDemoState() {
 function ThemesEmptyState() {
   const t = useLocale();
   return (
-    <div className="rounded-[10px] border border-dashed border-border bg-card/60 px-8 py-20">
+    <div className="rounded-[8px] border border-dashed border-border px-8 py-20">
       <div className="mx-auto flex max-w-md flex-col items-center text-center">
-        <div className="text-2xl">🎨</div>
-        <p className="mt-3 font-heading text-[15px] font-semibold tracking-tight">
+        <Palette className="size-5 text-muted-foreground/60" aria-hidden />
+        <p className="mt-4 font-heading text-[14px] font-semibold tracking-tight">
           {t.themes.noThemesTitle}
         </p>
         <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
