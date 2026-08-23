@@ -2,6 +2,8 @@ import config from 'virtual:open-slide/config';
 import { Loader2, RefreshCw, RotateCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { LanguageToggle } from '@/components/language-toggle';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format, useLocale } from '@/lib/use-locale';
@@ -68,7 +70,7 @@ export function SidebarFooter() {
   );
 
   return (
-    <div className="px-4 py-3 text-[11px] text-muted-foreground/70 tabular-nums">
+    <div className="flex items-center justify-between gap-2 py-1.5 pr-2 pl-4 text-[11px] text-muted-foreground/70 tabular-nums">
       {update?.latest ? (
         <TooltipProvider delay={200}>
           <Tooltip
@@ -141,6 +143,10 @@ export function SidebarFooter() {
       ) : (
         versionRow
       )}
+      <div className="flex shrink-0 items-center">
+        <LanguageToggle />
+        <ThemeToggle />
+      </div>
     </div>
   );
 }

@@ -16,7 +16,7 @@ import { format, useLocale } from '@/lib/use-locale';
 import { cn, pad2 } from '@/lib/utils';
 import { CommandMenuTrigger } from '../components/command/command-menu';
 import { HomeCommandMenu } from '../components/command/home-command-menu';
-import { FolderIconChip } from '../components/sidebar/folder-item';
+import { SystemViewIcon } from '../components/sidebar/folder-item';
 import { ALL_SLIDES_ID, ASSETS_ID, Sidebar, THEMES_ID } from '../components/sidebar/sidebar';
 import type { FoldersManifest } from '../lib/sdk';
 import { slideIds } from '../lib/slides';
@@ -140,7 +140,7 @@ export function HomeShell() {
   };
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-background text-foreground">
+    <div className="flex h-dvh overflow-hidden bg-sidebar text-foreground">
       <div className="hidden md:block">
         <Sidebar
           folders={manifest.folders}
@@ -176,69 +176,71 @@ export function HomeShell() {
         />
       </div>
 
-      <div className="relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-canvas">
-        <div className="flex items-center justify-between border-b border-hairline bg-sidebar px-4 py-3 md:hidden">
-          <h1 className="font-heading text-lg font-bold tracking-tight">{t.home.appTitle}</h1>
-          <div className="-mr-1.5 flex items-center gap-0.5">
-            <CommandMenuTrigger onClick={openCommandMenu} />
-            <LanguageToggle />
-            <ThemeToggle />
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <button
-                    type="button"
-                    aria-label={t.home.menu}
-                    className="flex size-8 items-center justify-center rounded-[6px] text-muted-foreground outline-none transition-[background-color,color,scale] duration-100 hover:bg-muted hover:text-foreground active:scale-95 focus-visible:ring-2 focus-visible:ring-ring/30 aria-expanded:bg-muted aria-expanded:text-foreground"
-                  >
-                    <Menu className="size-4" />
-                  </button>
-                }
-              />
-              <DropdownMenuContent align="end" className="min-w-[200px]">
-                <DropdownMenuItem
-                  onClick={() => selectFolder(ALL_SLIDES_ID)}
-                  className={cn(
-                    selectedId !== THEMES_ID &&
-                      selectedId !== ASSETS_ID &&
-                      'bg-muted text-foreground',
-                  )}
-                >
-                  <FolderIconChip icon={{ type: 'emoji', value: '🎞️' }} />
-                  <span className="flex-1 truncate">{t.home.slides}</span>
-                  <span className="folio">{pad2(slideIds.length)}</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => selectFolder(THEMES_ID)}
-                  className={cn(selectedId === THEMES_ID && 'bg-muted text-foreground')}
-                >
-                  <FolderIconChip icon={{ type: 'emoji', value: '🎨' }} />
-                  <span className="flex-1 truncate">{t.home.themes}</span>
-                  <span className="folio">{pad2(themeRegistry.length)}</span>
-                </DropdownMenuItem>
-                {import.meta.env.DEV && (
+      <div className="relative flex min-w-0 flex-1 flex-col md:py-2 md:pr-2">
+        <div className="relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-background md:rounded-[10px] md:shadow-edge md:ring-1 md:ring-foreground/[0.06]">
+          <div className="flex items-center justify-between border-b border-hairline bg-sidebar px-4 py-3 md:hidden">
+            <h1 className="font-heading text-lg font-bold tracking-tight">{t.home.appTitle}</h1>
+            <div className="-mr-1.5 flex items-center gap-0.5">
+              <CommandMenuTrigger onClick={openCommandMenu} />
+              <LanguageToggle />
+              <ThemeToggle />
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <button
+                      type="button"
+                      aria-label={t.home.menu}
+                      className="flex size-8 items-center justify-center rounded-[6px] text-muted-foreground outline-none transition-[background-color,color,scale] duration-100 hover:bg-muted hover:text-foreground active:scale-95 focus-visible:ring-2 focus-visible:ring-ring/30 aria-expanded:bg-muted aria-expanded:text-foreground"
+                    >
+                      <Menu className="size-4" />
+                    </button>
+                  }
+                />
+                <DropdownMenuContent align="end" className="min-w-[200px]">
                   <DropdownMenuItem
-                    onClick={() => selectFolder(ASSETS_ID)}
-                    className={cn(selectedId === ASSETS_ID && 'bg-muted text-foreground')}
+                    onClick={() => selectFolder(ALL_SLIDES_ID)}
+                    className={cn(
+                      selectedId !== THEMES_ID &&
+                        selectedId !== ASSETS_ID &&
+                        'bg-muted text-foreground',
+                    )}
                   >
-                    <FolderIconChip icon={{ type: 'emoji', value: '🗂️' }} />
-                    <span className="flex-1 truncate">{t.home.assets}</span>
-                    <span className="folio">{pad2(globalAssets.length)}</span>
+                    <SystemViewIcon kind="all" className="text-muted-foreground" />
+                    <span className="flex-1 truncate">{t.home.slides}</span>
+                    <span className="folio">{pad2(slideIds.length)}</span>
                   </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <DropdownMenuItem
+                    onClick={() => selectFolder(THEMES_ID)}
+                    className={cn(selectedId === THEMES_ID && 'bg-muted text-foreground')}
+                  >
+                    <SystemViewIcon kind="themes" className="text-muted-foreground" />
+                    <span className="flex-1 truncate">{t.home.themes}</span>
+                    <span className="folio">{pad2(themeRegistry.length)}</span>
+                  </DropdownMenuItem>
+                  {import.meta.env.DEV && (
+                    <DropdownMenuItem
+                      onClick={() => selectFolder(ASSETS_ID)}
+                      className={cn(selectedId === ASSETS_ID && 'bg-muted text-foreground')}
+                    >
+                      <SystemViewIcon kind="assets" className="text-muted-foreground" />
+                      <span className="flex-1 truncate">{t.home.assets}</span>
+                      <span className="folio">{pad2(globalAssets.length)}</span>
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
-        </div>
 
-        <div
-          className={cn(
-            isAssetsRoute
-              ? 'flex min-h-0 flex-1 flex-col'
-              : 'mx-auto w-full max-w-[1180px] px-5 py-8 md:px-10 md:py-12',
-          )}
-        >
-          <Outlet context={ctx} />
+          <div
+            className={cn(
+              isAssetsRoute
+                ? 'flex min-h-0 flex-1 flex-col'
+                : 'mx-auto w-full max-w-[1180px] px-5 py-8 md:px-10 md:py-12',
+            )}
+          >
+            <Outlet context={ctx} />
+          </div>
         </div>
       </div>
 
