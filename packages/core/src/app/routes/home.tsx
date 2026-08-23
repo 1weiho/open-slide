@@ -217,7 +217,7 @@ export function Home() {
             <li
               key={id}
               className="rise-in"
-              style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}
+              style={{ animationDelay: `${Math.min(i, 11) * 30}ms` }}
             >
               <SlideCard
                 id={id}

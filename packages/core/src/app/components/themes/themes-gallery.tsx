@@ -18,7 +18,7 @@ export function ThemesGallery({ onOpen }: { onOpen: (id: string) => void }) {
         <li
           key={theme.id}
           className="rise-in"
-          style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}
+          style={{ animationDelay: `${Math.min(i, 11) * 30}ms` }}
         >
           <ThemeCard
             theme={theme}
