@@ -132,7 +132,7 @@
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.93 0 0);
-  --canvas: oklch(0.125 0 0);
+  --canvas: oklch(0.1 0 0);
 
   --card: oklch(0.19 0 0);
   --card-foreground: oklch(0.93 0 0);
@@ -164,7 +164,7 @@
   --chart-4: oklch(0.7 0.13 160);
   --chart-5: oklch(0.65 0 0);
 
-  --sidebar: oklch(0.125 0 0);
+  --sidebar: oklch(0.1 0 0);
   --sidebar-foreground: oklch(0.93 0 0);
   --sidebar-primary: oklch(0.925 0 0);
   --sidebar-primary-foreground: oklch(0.17 0 0);
