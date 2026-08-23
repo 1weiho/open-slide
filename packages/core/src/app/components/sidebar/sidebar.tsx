@@ -163,7 +163,7 @@ export function Sidebar({
         </button>
       </div>
 
-      <div className="px-2">
+      <div className="space-y-0.5 px-2">
         <FolderItem
           row={{ kind: 'all' }}
           count={allCount}
@@ -209,7 +209,7 @@ export function Sidebar({
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2 pb-2">
+      <div className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-2">
         <FolderItem
           row={{ kind: 'draft' }}
           count={countFor(null)}
