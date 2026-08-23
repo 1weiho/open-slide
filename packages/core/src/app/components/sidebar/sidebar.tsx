@@ -1,6 +1,7 @@
-import { Play, Plus, Search } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import logo from '@/assets/open-slide.png';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { Folder, FolderIcon } from '@/lib/sdk';
 import { format, useLocale } from '@/lib/use-locale';
@@ -129,12 +130,13 @@ export function Sidebar({
   return (
     <aside className="group/side relative flex h-full w-[16.5rem] shrink-0 flex-col border-r border-hairline bg-sidebar text-sidebar-foreground">
       <div className="flex items-center gap-2.5 px-4 pt-4 pb-3">
-        <span
+        <img
+          src={logo}
+          alt=""
           aria-hidden
-          className="flex size-6 shrink-0 items-center justify-center rounded-[6px] bg-brand text-brand-foreground shadow-[inset_0_1px_0_oklch(1_0_0/0.2),0_1px_2px_oklch(0_0_0/0.12)]"
-        >
-          <Play className="size-3 translate-x-px fill-current" />
-        </span>
+          draggable={false}
+          className="size-6 shrink-0 select-none rounded-[6px] ring-1 ring-foreground/10"
+        />
         <h1 className="font-heading text-[13.5px] font-semibold tracking-tight">
           {t.home.appTitle}
         </h1>
