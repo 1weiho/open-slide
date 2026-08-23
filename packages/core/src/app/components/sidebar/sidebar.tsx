@@ -142,7 +142,7 @@ export function Sidebar({
         </h1>
       </div>
 
-      <div className="px-3 pb-3">
+      <div className="px-2 pb-3">
         <button
           type="button"
           onClick={onOpenCommandMenu}
