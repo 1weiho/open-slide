@@ -117,7 +117,9 @@
   /* Tight, considered radius — drops the trendy 10px squish for 6px crisp. */
   --radius: 0.375rem;
 
-  --sidebar: oklch(0.98 0 0);
+  /* Chrome ground — matches --canvas so sidebar, rails, and panels sit on
+     one continuous surface; content floats above it as elevated cards. */
+  --sidebar: oklch(0.975 0 0);
   --sidebar-foreground: oklch(0.185 0 0);
   --sidebar-primary: oklch(0.185 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
@@ -162,7 +164,7 @@
   --chart-4: oklch(0.7 0.13 160);
   --chart-5: oklch(0.65 0 0);
 
-  --sidebar: oklch(0.17 0 0);
+  --sidebar: oklch(0.125 0 0);
   --sidebar-foreground: oklch(0.93 0 0);
   --sidebar-primary: oklch(0.925 0 0);
   --sidebar-primary-foreground: oklch(0.17 0 0);

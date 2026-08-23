@@ -44,10 +44,7 @@ export function NotesDrawer({ slideId, index, total, initial }: Props) {
   })();
 
   return (
-    <aside
-      data-notes-drawer
-      className="hidden shrink-0 border-t border-hairline bg-sidebar/85 backdrop-blur md:block"
-    >
+    <aside data-notes-drawer className="hidden shrink-0 bg-sidebar md:block">
       <button
         type="button"
         onClick={() => {

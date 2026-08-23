@@ -320,7 +320,7 @@ export function ThumbnailRail({
   return (
     <TooltipProvider delay={200}>
       <div className="relative h-full">
-        <ScrollArea className="h-full border-r border-hairline bg-sidebar [&_[data-slot=scroll-area-scrollbar]]:z-20">
+        <ScrollArea className="h-full bg-sidebar [&_[data-slot=scroll-area-scrollbar]]:z-20">
           {scrollAreaContents}
         </ScrollArea>
         {currentPosition && (

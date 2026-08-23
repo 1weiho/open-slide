@@ -128,7 +128,7 @@ export function Sidebar({
   }, [creating]);
 
   return (
-    <aside className="group/side relative flex h-full w-[16.5rem] shrink-0 flex-col border-r border-hairline bg-sidebar text-sidebar-foreground">
+    <aside className="group/side relative flex h-full w-[16.5rem] shrink-0 flex-col bg-sidebar text-sidebar-foreground">
       <div className="flex items-center gap-2.5 px-4 pt-4 pb-3">
         <img
           src={logo}
@@ -323,9 +323,7 @@ export function Sidebar({
         )}
       </div>
 
-      <div className="border-t border-hairline">
-        <SidebarFooter />
-      </div>
+      <SidebarFooter />
     </aside>
   );
 }

@@ -183,7 +183,7 @@ export function FolderItem({
       className={cn(
         'group relative flex items-center gap-2.5 rounded-[5px] px-2 py-[5px] text-[12.5px] transition-[background-color,color,scale] duration-150',
         selected
-          ? 'bg-muted font-medium text-foreground'
+          ? 'bg-background font-medium text-foreground shadow-edge ring-1 ring-foreground/[0.06]'
           : 'text-foreground/70 hover:bg-muted/60 hover:text-foreground',
         slideDragActive && acceptsSlideDrop && !dragOver && 'ring-1 ring-foreground/10',
         dragOver &&
