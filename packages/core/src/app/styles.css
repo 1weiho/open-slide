@@ -130,7 +130,9 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
+  /* Lifted well above the near-black chrome ground (--sidebar 0.1) so the
+     elevated content cards read at a glance on dim displays. */
+  --background: oklch(0.175 0 0);
   --foreground: oklch(0.93 0 0);
   --canvas: oklch(0.1 0 0);
 
