@@ -44,10 +44,7 @@ export function NotesDrawer({ slideId, index, total, initial }: Props) {
   })();
 
   return (
-    <aside
-      data-notes-drawer
-      className="hidden shrink-0 border-t border-hairline bg-sidebar/85 backdrop-blur md:block"
-    >
+    <aside data-notes-drawer className="hidden shrink-0 bg-sidebar md:block">
       <button
         type="button"
         onClick={() => {
@@ -81,7 +78,7 @@ export function NotesDrawer({ slideId, index, total, initial }: Props) {
       </button>
       {mounted && (
         <div
-          className="overflow-hidden border-t border-hairline transition-[height] ease-swift motion-reduce:transition-none"
+          className="overflow-hidden transition-[height] ease-swift motion-reduce:transition-none"
           style={{
             height: animVisible ? DRAWER_CONTENT_H : 0,
             transitionDuration: `${PANEL_TRANSITION_MS}ms`,

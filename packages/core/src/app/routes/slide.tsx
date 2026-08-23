@@ -589,9 +589,9 @@ export function Slide() {
     <HistoryProvider>
       <InspectorProvider slideId={slideId} pageIndex={index}>
         <SelectionReporter />
-        <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
-          {/* Editorial toolbar — three zones, hairline separators, mono-folio center */}
-          <header className="relative flex h-12 shrink-0 items-center gap-2 border-b border-hairline bg-sidebar/85 px-2 backdrop-blur-md md:px-3">
+        <div className="flex h-dvh flex-col overflow-hidden bg-sidebar text-foreground">
+          {/* Toolbar sits directly on the chrome ground — three zones, mono-folio center */}
+          <header className="relative flex h-12 shrink-0 items-center gap-2 px-2 md:px-3">
             <div className="flex flex-1 items-center gap-1.5 md:flex-none md:gap-2">
               {showSlideBrowser && (
                 <Link
@@ -735,9 +735,6 @@ export function Slide() {
                   >
                     <Play className="size-3.5 fill-current" />
                     <span className="hidden md:inline">{t.slide.present}</span>
-                    <kbd className="ml-1 hidden rounded-[3px] bg-brand-foreground/15 px-1 font-mono text-[9.5px] tracking-[0.04em] md:inline">
-                      F
-                    </kbd>
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger
@@ -780,7 +777,7 @@ export function Slide() {
           </header>
 
           {view === 'assets' ? (
-            <div className="min-h-0 flex-1">
+            <div className="min-h-0 flex-1 overflow-hidden md:mx-2 md:mb-2 md:rounded-[10px] md:bg-background md:shadow-edge md:ring-1 md:ring-foreground/[0.06]">
               <AssetView slideId={slideId} />
             </div>
           ) : (
@@ -801,7 +798,7 @@ export function Slide() {
                     ref={slideViewportRef}
                     data-inspector-root
                     data-slide-id={slideId}
-                    className="relative min-h-0 min-w-0 flex-1 bg-canvas p-2 md:p-10"
+                    className="relative min-h-0 min-w-0 flex-1 bg-background p-2 md:mx-2 md:mb-2 md:rounded-[10px] md:p-10 md:shadow-edge md:ring-1 md:ring-foreground/[0.06]"
                   >
                     <SlideViewportNavigation
                       targetRef={slideViewportRef}
