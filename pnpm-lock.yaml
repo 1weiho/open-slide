@@ -206,6 +206,9 @@ importers:
       react-router-dom:
         specifier: ^7.18.1
         version: 7.18.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      shadcn:
+        specifier: ^4.12.0
+        version: 4.12.0(typescript@5.9.3)
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -237,9 +240,6 @@ importers:
       '@types/react-dom':
         specifier: ^18.3.1
         version: 18.3.7(@types/react@18.3.28)
-      shadcn:
-        specifier: ^4.12.0
-        version: 4.12.0(typescript@5.9.3)
       tsdown:
         specifier: ^0.9.9
         version: 0.9.9(typescript@5.9.3)

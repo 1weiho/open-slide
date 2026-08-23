@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import * as t from '@babel/types';
 import type { Plugin, ViteDevServer } from 'vite';
-import { tryParse } from '../editing/babel-walk.ts';
+import { parseSource } from '../editing/babel-walk.ts';
 import { resolveSlideEntry } from '../editing/slide-ops.ts';
 import { validateMutationRequest } from '../http/request-guard.ts';
 import { hasRecentWrite, recordWrite } from './recent-writes.ts';
@@ -86,7 +86,9 @@ export function applyNotesEdit(source: string, index: number, text: string): App
     return { ok: false, status: 400, error: 'invalid index' };
   }
 
-  const ast = tryParse(source);
+  // Notes are spliced in by AST offset, so a tree recovered from a syntax
+  // error must not reach the write.
+  const ast = parseSource(source);
   if (!ast) return { ok: false, status: 422, error: 'could not parse source' };
 
   const found = findNotesExport(ast);
