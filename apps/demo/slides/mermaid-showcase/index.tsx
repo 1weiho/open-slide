@@ -28,7 +28,7 @@ const mermaidConfig = {
   theme: 'dark',
   themeVariables: {
     fontFamily: "'Inter', system-ui, sans-serif",
-    fontSize: '22px',
+    fontSize: '14px',
     primaryColor: '#202b52',
     primaryTextColor: '#f4f7ff',
     primaryBorderColor: '#8b9cff',
@@ -124,8 +124,8 @@ const flowchart = `
 flowchart LR
   A[Intent] --> B[index.tsx]
   B --> C[Chart string]
-  C --> D[Mermaid component]
-  D --> E[SVG on canvas]
+  C --> D[<Mermaid>]
+  D --> E[SVG output]
 `;
 
 const sequence = `
@@ -149,6 +149,53 @@ stateDiagram-v2
   Rendered --> Loading: edit
   Failed --> Loading: fix
   Rendered --> [*]
+`;
+
+const architecture = `
+flowchart TB
+  subgraph Client["Client Layer"]
+    Browser["Browser"]
+    Mobile["Mobile App"]
+  end
+  subgraph Gateway["API Gateway"]
+    LB["Load Balancer"]
+    Auth["Auth Service"]
+    Rate["Rate Limiter"]
+  end
+  subgraph Services["Microservices"]
+    Users["Users"]
+    Content["Content"]
+    Search["Search"]
+    Notify["Notifications"]
+  end
+  subgraph Data["Data Layer"]
+    PG["PostgreSQL"]
+    Redis["Redis Cache"]
+    ES["Elasticsearch"]
+    S3["Object Store"]
+  end
+  subgraph Async["Async Processing"]
+    Queue["Message Queue"]
+    Worker["Workers"]
+    Cron["Scheduler"]
+  end
+  Browser --> LB
+  Mobile --> LB
+  LB --> Auth
+  Auth --> Rate
+  Rate --> Users
+  Rate --> Content
+  Rate --> Search
+  Rate --> Notify
+  Users --> PG
+  Users --> Redis
+  Content --> PG
+  Content --> S3
+  Search --> ES
+  Notify --> Queue
+  Queue --> Worker
+  Worker --> PG
+  Cron --> Queue
 `;
 
 const Cover: Page = () => (
@@ -227,7 +274,7 @@ const Cover: Page = () => (
             textTransform: 'uppercase',
           }}
         >
-          <span>three diagrams</span>
+          <span>four diagrams</span>
           <span style={{ color: mint }}>ready</span>
         </div>
         <div style={{ display: 'grid', gap: 16 }}>
@@ -242,6 +289,10 @@ const Cover: Page = () => (
           <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
             <span style={{ color: warm, fontSize: 28 }}>◌</span>
             <span style={{ fontSize: 30 }}>State · lifecycle</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+            <span style={{ color: 'var(--osd-accent)', fontSize: 28 }}>⊞</span>
+            <span style={{ fontSize: 30 }}>Architecture · lightbox</span>
           </div>
         </div>
         <div
@@ -355,13 +406,72 @@ const FlowchartPage: Page = () => (
 );
 
 const SequencePage: Page = () => (
-  <DiagramPage
-    eyebrow="02 · sequence diagram"
-    title="Watch the handoff."
-    description="Use a sequence diagram when timing matters — who calls whom, and what comes back."
-    chart={sequence}
-    note="The arrows make the runtime contract visible without extra prose."
-  />
+  <div style={{ ...fill, padding: '104px 144px 118px' }}>
+    <div style={grid} aria-hidden="true" />
+    <div
+      style={{
+        position: 'relative',
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 80,
+        alignItems: 'center',
+        height: '100%',
+      }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <Eyebrow>02 · sequence diagram</Eyebrow>
+        <h2
+          style={{
+            margin: 0,
+            fontFamily: 'var(--osd-font-display)',
+            fontSize: 82,
+            fontWeight: 700,
+            lineHeight: 1.02,
+            letterSpacing: '-0.04em',
+          }}
+        >
+          Watch the handoff.
+        </h2>
+        <p style={{ maxWidth: 600, margin: 0, color: muted, fontSize: 28, lineHeight: 1.4 }}>
+          Use a sequence diagram when timing matters — who calls whom, and what comes back.
+        </p>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            marginTop: 12,
+            color: faint,
+            fontFamily: 'var(--osd-font-display)',
+            fontSize: 20,
+            letterSpacing: '0.04em',
+          }}
+        >
+          <span style={{ color: 'var(--osd-accent)', fontSize: 26 }}>✦</span>
+          <span>The arrows make the runtime contract visible without extra prose.</span>
+        </div>
+      </div>
+      <div
+        style={{
+          boxSizing: 'border-box',
+          height: 720,
+          padding: '24px 32px',
+          border: `1px solid ${rule}`,
+          borderRadius: 'var(--osd-radius)',
+          background: surface,
+          boxShadow: '0 24px 80px rgba(0, 0, 0, 0.18)',
+        }}
+      >
+        <Mermaid
+          chart={sequence}
+          config={mermaidConfig}
+          style={{ width: 760, height: 670, display: 'block' }}
+          fallback={diagramFallback}
+        />
+      </div>
+    </div>
+    <Footer label="mermaid showcase" />
+  </div>
 );
 
 const StatePage: Page = () => (
@@ -374,9 +484,49 @@ const StatePage: Page = () => (
   />
 );
 
+const ArchitecturePage: Page = () => (
+  <div style={{ ...fill, padding: 60 }}>
+    <div style={grid} aria-hidden="true" />
+    <div
+      style={{
+        position: 'absolute',
+        top: 60,
+        left: 80,
+        zIndex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 18,
+      }}
+    >
+      <Eyebrow>04 · complex architecture</Eyebrow>
+      <span style={{ color: faint, fontSize: 18, fontFamily: 'var(--osd-font-display)' }}>
+        click diagram to expand
+      </span>
+    </div>
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        display: 'grid',
+        placeItems: 'center',
+      }}
+    >
+      <Mermaid
+        chart={architecture}
+        config={mermaidConfig}
+        lightbox
+        style={{ width: 1800, height: 920 }}
+        fallback={diagramFallback}
+      />
+    </div>
+    <Footer label="mermaid showcase" />
+  </div>
+);
+
 export const meta: SlideMeta = {
   title: 'Mermaid showcase',
   createdAt: '2026-08-19T19:48:54.417Z',
 };
 
-export default [Cover, FlowchartPage, SequencePage, StatePage] satisfies Page[];
+export default [Cover, FlowchartPage, SequencePage, StatePage, ArchitecturePage] satisfies Page[];

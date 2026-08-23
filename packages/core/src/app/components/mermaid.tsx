@@ -1,5 +1,13 @@
 import type { MermaidConfig } from 'mermaid';
-import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react';
+import {
+  type CSSProperties,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import { createPortal } from 'react-dom';
 
 export interface MermaidProps {
   chart: string;
@@ -7,6 +15,7 @@ export interface MermaidProps {
   style?: CSSProperties;
   config?: MermaidConfig;
   fallback?: ReactNode;
+  lightbox?: boolean;
 }
 
 type RenderedDiagram = {
@@ -41,6 +50,13 @@ function normalizeSvg(svg: string): SVGSVGElement {
   template.innerHTML = svg.trim();
   const element = template.content.querySelector('svg');
   if (!element) throw new Error('Mermaid did not return an SVG');
+  const origWidth = element.getAttribute('width') ?? '800';
+  const origHeight = element.getAttribute('height') ?? '600';
+  const w = Number.parseFloat(origWidth);
+  const h = Number.parseFloat(origHeight);
+  if (!element.getAttribute('viewBox') && w > 0 && h > 0) {
+    element.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  }
   element.setAttribute('width', '100%');
   element.setAttribute('height', '100%');
   element.setAttribute('preserveAspectRatio', 'xMidYMid meet');
@@ -51,12 +67,20 @@ function normalizeSvg(svg: string): SVGSVGElement {
   return element;
 }
 
-export function Mermaid({ chart, className, style, config, fallback }: MermaidProps) {
+export function Mermaid({
+  chart,
+  className,
+  style,
+  config,
+  fallback,
+  lightbox = true,
+}: MermaidProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const diagramRef = useRef<HTMLDivElement>(null);
   const renderVersion = useRef(0);
   const [diagram, setDiagram] = useState<RenderedDiagram | null>(null);
   const [error, setError] = useState<unknown>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -89,32 +113,141 @@ export function Mermaid({ chart, className, style, config, fallback }: MermaidPr
     return () => diagram.element.remove();
   }, [diagram]);
 
+  const handleClick = useCallback(() => {
+    if (lightbox && diagram) setLightboxOpen(true);
+  }, [lightbox, diagram]);
+
+  const isExpandable = lightbox && !!diagram;
+
   return (
+    <>
+      <div
+        ref={wrapperRef}
+        data-waitfor="svg"
+        className={className}
+        style={{
+          width: '100%',
+          height: '100%',
+          minWidth: 0,
+          minHeight: 0,
+          position: 'relative',
+          overflow: 'hidden',
+          cursor: isExpandable ? 'zoom-in' : undefined,
+          ...style,
+        }}
+      >
+        {diagram ? (
+          <div ref={diagramRef} data-mermaid-diagram="" style={{ width: '100%', height: '100%' }} />
+        ) : error ? (
+          <>
+            {fallback ?? <DefaultFallback />}
+            <svg aria-hidden="true" width="0" height="0" style={{ position: 'absolute' }} />
+          </>
+        ) : null}
+        {isExpandable && (
+          <button
+            type="button"
+            aria-label="Expand diagram"
+            onClick={handleClick}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              padding: 0,
+              margin: 0,
+              border: 'none',
+              background: 'transparent',
+              cursor: 'zoom-in',
+            }}
+          />
+        )}
+      </div>
+      {lightbox && lightboxOpen && diagram && (
+        <MermaidLightbox chart={chart} config={config} onClose={() => setLightboxOpen(false)} />
+      )}
+    </>
+  );
+}
+
+function MermaidLightbox({
+  chart,
+  config,
+  onClose,
+}: {
+  chart: string;
+  config?: MermaidConfig;
+  onClose: () => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    loadMermaid(config)
+      .then((mermaid) => mermaid.render(nextRenderId(), chart, containerRef.current ?? undefined))
+      .then(({ svg, bindFunctions }) => {
+        if (!containerRef.current) return;
+        const el = normalizeSvg(svg);
+        containerRef.current.replaceChildren(el);
+        bindFunctions?.(containerRef.current);
+      })
+      .catch(() => {});
+  }, [chart, config]);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopImmediatePropagation();
+        onClose();
+      }
+    };
+    const target = (document.fullscreenElement as HTMLElement) ?? document;
+    target.addEventListener('keydown', handleKey);
+    return () => target.removeEventListener('keydown', handleKey);
+  }, [onClose]);
+
+  const portalTarget = (document.fullscreenElement as HTMLElement) ?? document.body;
+
+  return createPortal(
     <div
-      ref={wrapperRef}
-      data-waitfor="svg"
-      className={className}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Mermaid diagram expanded"
+      onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') onClose();
+      }}
       style={{
-        width: '100%',
-        height: '100%',
-        minWidth: 0,
-        minHeight: 0,
+        position: 'fixed',
+        inset: 0,
+        zIndex: 99999,
         display: 'grid',
         placeItems: 'center',
-        position: 'relative',
-        overflow: 'hidden',
-        ...style,
+        padding: '5vh 5vw',
+        background: 'rgba(0, 0, 0, 0.85)',
+        backdropFilter: 'blur(4px)',
+        cursor: 'zoom-out',
+        animation: 'osd-lightbox-in 180ms ease-out',
       }}
     >
-      {diagram ? (
-        <div ref={diagramRef} data-mermaid-diagram="" style={{ width: '100%', height: '100%' }} />
-      ) : error ? (
-        <>
-          {fallback ?? <DefaultFallback />}
-          <svg aria-hidden="true" width="0" height="0" style={{ position: 'absolute' }} />
-        </>
-      ) : null}
-    </div>
+      <style>{`
+        @keyframes osd-lightbox-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      `}</style>
+      <div
+        ref={containerRef}
+        role="presentation"
+        style={{
+          width: '100%',
+          height: '100%',
+          maxWidth: '90vw',
+          maxHeight: '90vh',
+          cursor: 'zoom-out',
+        }}
+      />
+    </div>,
+    portalTarget,
   );
 }
 
