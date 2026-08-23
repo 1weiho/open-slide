@@ -10,6 +10,7 @@ import {
 } from '../../editing/comments.ts';
 import { validateMutationRequest } from '../../http/request-guard.ts';
 import { type ApiContext, json, readBody, resolveSlideEntryPath } from './context.ts';
+import { mountDevRoute } from './mount.ts';
 
 // GET    /__comments        list markers for ?slideId=…
 // POST   /__comments/add    add marker { slideId, line, column?, text, hint? }
@@ -24,7 +25,7 @@ type AddCommentBody = {
 };
 
 export function registerCommentRoutes(server: ViteDevServer, ctx: ApiContext): void {
-  server.middlewares.use('/__comments', async (req, res, next) => {
+  mountDevRoute(server, '/__comments', async (req, res, next) => {
     const url = new URL(req.url ?? '/', 'http://local');
     const method = req.method ?? 'GET';
 

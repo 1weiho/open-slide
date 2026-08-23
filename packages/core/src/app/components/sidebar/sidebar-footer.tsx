@@ -6,6 +6,7 @@ import { LanguageToggle } from '@/components/language-toggle';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { devApiUrl } from '@/lib/dev-api';
 import { format, useLocale } from '@/lib/use-locale';
 import { useRestartServer } from '@/lib/use-restart-server';
 
@@ -25,7 +26,7 @@ export function SidebarFooter() {
   useEffect(() => {
     if (!import.meta.env.DEV) return;
     let cancelled = false;
-    fetch('/__update-check')
+    fetch(devApiUrl('/__update-check'))
       .then((res) => (res.ok ? (res.json() as Promise<UpdateCheck>) : null))
       .then((data) => {
         if (!cancelled && data?.outdated) setUpdate(data);
@@ -45,7 +46,7 @@ export function SidebarFooter() {
     setUpdateStatus('running');
     setOpen(true);
     try {
-      const res = await fetch('/__update-package', { method: 'POST' });
+      const res = await fetch(devApiUrl('/__update-package'), { method: 'POST' });
       if (!res.ok) throw new Error('update failed');
       setUpdateStatus('done');
       toast.success(t.home.updatePackageDone);

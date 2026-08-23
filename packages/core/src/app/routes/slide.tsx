@@ -60,6 +60,7 @@ import { SlideCanvas } from '../components/slide-canvas';
 import { isDeckWarmed, markDeckWarmed, SlidePreloadLayer } from '../components/slide-preload-layer';
 import { SlideTransitionLayer } from '../components/slide-transition-layer';
 import { type ThumbnailActions, ThumbnailRail } from '../components/thumbnail-rail';
+import { devApiUrl } from '../lib/dev-api';
 import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf, isSafari } from '../lib/export-pdf';
 import { exportSlideAsImagePptx } from '../lib/export-pptx';
@@ -178,7 +179,7 @@ export function Slide() {
       if (nextIndex !== index) goTo(nextIndex);
 
       try {
-        const res = await fetch(`/__slides/${encodeURIComponent(slideId)}/reorder`, {
+        const res = await fetch(devApiUrl(`/__slides/${encodeURIComponent(slideId)}/reorder`), {
           method: 'PUT',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ order }),
@@ -207,9 +208,12 @@ export function Slide() {
       if (index > i) goTo(index + 1);
 
       try {
-        const res = await fetch(`/__slides/${encodeURIComponent(slideId)}/pages/${i}/duplicate`, {
-          method: 'POST',
-        });
+        const res = await fetch(
+          devApiUrl(`/__slides/${encodeURIComponent(slideId)}/pages/${i}/duplicate`),
+          {
+            method: 'POST',
+          },
+        );
         if (!res.ok) {
           const detail = await res.json().catch(() => ({ error: res.statusText }));
           throw new Error(detail.error ?? `HTTP ${res.status}`);
@@ -237,7 +241,7 @@ export function Slide() {
       }
 
       try {
-        const res = await fetch(`/__slides/${encodeURIComponent(slideId)}/pages/${i}`, {
+        const res = await fetch(devApiUrl(`/__slides/${encodeURIComponent(slideId)}/pages/${i}`), {
           method: 'DELETE',
         });
         if (!res.ok) {

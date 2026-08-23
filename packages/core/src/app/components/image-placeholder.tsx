@@ -1,6 +1,7 @@
 import { type CSSProperties, type HTMLAttributes, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { uploadWithAutoRename } from '@/lib/assets';
+import { devApiUrl } from '@/lib/dev-api';
 import { useLocale } from '@/lib/use-locale';
 
 export type ImagePlaceholderProps = {
@@ -206,7 +207,7 @@ function pickImageFile(files: FileList): File | null {
 async function handleDrop(slideId: string, file: File, line: number, column: number) {
   const { ok, entry } = await uploadWithAutoRename(slideId, file);
   if (!ok || !entry) throw new Error('upload failed');
-  const res = await fetch('/__edit', {
+  const res = await fetch(devApiUrl('/__edit'), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({

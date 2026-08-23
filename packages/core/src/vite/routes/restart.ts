@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { ViteDevServer } from 'vite';
 import { validateMutationRequest } from '../../http/request-guard.ts';
 import { json } from './context.ts';
+import { mountDevRoute } from './mount.ts';
 
 // GET /__server-status → { executionId, canRestart }
 //   executionId identifies the current dev-server process; a changed value
@@ -20,13 +21,13 @@ function isSupervised(): boolean {
 }
 
 export function registerRestartRoutes(server: ViteDevServer): void {
-  server.middlewares.use('/__server-status', (req, res, next) => {
+  mountDevRoute(server, '/__server-status', (req, res, next) => {
     if ((req.method ?? 'GET') !== 'GET') return next();
     res.setHeader('cache-control', 'no-store');
     json(res, 200, { executionId, canRestart: isSupervised() });
   });
 
-  server.middlewares.use('/__restart-server', (req, res, next) => {
+  mountDevRoute(server, '/__restart-server', (req, res, next) => {
     if ((req.method ?? 'GET') !== 'POST') return next();
 
     const guard = validateMutationRequest(req);

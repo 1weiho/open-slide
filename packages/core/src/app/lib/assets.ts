@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { devApiUrl } from './dev-api';
 
 export type AssetEntry = {
   name: string;
@@ -13,7 +14,7 @@ export type AssetEntry = {
 export type UploadOptions = { overwrite?: boolean };
 
 export async function listAssets(slideId: string): Promise<AssetEntry[]> {
-  const res = await fetch(`/__assets/${slideId}`);
+  const res = await fetch(devApiUrl(`/__assets/${slideId}`));
   if (!res.ok) throw new Error(`GET /__assets/${slideId} ${res.status}`);
   const data = (await res.json()) as { assets?: AssetEntry[] };
   return data.assets ?? [];
@@ -25,7 +26,7 @@ export async function uploadAsset(
   opts: UploadOptions = {},
 ): Promise<Response> {
   const qs = opts.overwrite ? '?overwrite=1' : '';
-  return fetch(`/__assets/${slideId}/${encodeURIComponent(file.name)}${qs}`, {
+  return fetch(devApiUrl(`/__assets/${slideId}/${encodeURIComponent(file.name)}${qs}`), {
     method: 'POST',
     headers: {
       'content-type': file.type || 'application/octet-stream',
@@ -36,7 +37,7 @@ export async function uploadAsset(
 }
 
 async function renameAsset(slideId: string, from: string, to: string): Promise<Response> {
-  return fetch(`/__assets/${slideId}/${encodeURIComponent(from)}`, {
+  return fetch(devApiUrl(`/__assets/${slideId}/${encodeURIComponent(from)}`), {
     method: 'PATCH',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ name: to }),
@@ -44,13 +45,13 @@ async function renameAsset(slideId: string, from: string, to: string): Promise<R
 }
 
 async function deleteAsset(slideId: string, name: string): Promise<Response> {
-  return fetch(`/__assets/${slideId}/${encodeURIComponent(name)}`, { method: 'DELETE' });
+  return fetch(devApiUrl(`/__assets/${slideId}/${encodeURIComponent(name)}`), { method: 'DELETE' });
 }
 
 export type AssetUsage = { slideId: string; count: number };
 
 export async function listAssetUsages(slideId: string, name: string): Promise<AssetUsage[]> {
-  const res = await fetch(`/__assets/${slideId}/${encodeURIComponent(name)}/usages`);
+  const res = await fetch(devApiUrl(`/__assets/${slideId}/${encodeURIComponent(name)}/usages`));
   if (!res.ok) return [];
   const data = (await res.json().catch(() => null)) as { usages?: AssetUsage[] } | null;
   return data?.usages ?? [];
@@ -60,7 +61,7 @@ export async function revertAssetUsage(
   slideId: string,
   assetPath: string,
 ): Promise<{ ok: boolean; status: number }> {
-  const res = await fetch('/__edit/revert-asset', {
+  const res = await fetch(devApiUrl('/__edit/revert-asset'), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ slideId, assetPath }),
@@ -93,7 +94,7 @@ export async function uploadWithAutoRename(
     createdAt: body?.createdAt ?? now,
     mtime: body?.mtime ?? now,
     mime: body?.mime ?? uploaded.type ?? 'application/octet-stream',
-    url: body?.url ?? `/__assets/${slideId}/${encodeURIComponent(uploaded.name)}`,
+    url: body?.url ?? devApiUrl(`/__assets/${slideId}/${encodeURIComponent(uploaded.name)}`),
     unused: body?.unused ?? false,
   };
   return { ok: true, status: res.status, entry };
@@ -137,7 +138,7 @@ export async function searchSvgl(query: string, signal?: AbortSignal): Promise<S
   const params = new URLSearchParams();
   if (q) params.set('q', q);
   else params.set('limit', '24');
-  const res = await fetch(`/__svgl/search?${params.toString()}`, { signal });
+  const res = await fetch(devApiUrl(`/__svgl/search?${params.toString()}`), { signal });
   // svgl returns 404 when a search has no matches — treat it as an empty list,
   // not an error.
   if (res.status === 404) return [];
@@ -146,7 +147,7 @@ export async function searchSvgl(query: string, signal?: AbortSignal): Promise<S
 }
 
 export function svgProxyUrl(routeUrl: string): string {
-  return `/__svgl/svg?u=${encodeURIComponent(routeUrl)}`;
+  return devApiUrl(`/__svgl/svg?u=${encodeURIComponent(routeUrl)}`);
 }
 
 export async function fetchSvgAsFile(routeUrl: string, filename: string): Promise<File> {

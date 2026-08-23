@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { devApiUrl } from '../dev-api';
 
 export type EditOp =
   | { kind: 'set-style'; key: string; value: string | null; prevText?: string }
@@ -30,7 +31,7 @@ export class NoOpEditError extends Error {
 export function useEditor(slideId: string) {
   const applyEdit = useCallback(
     async (line: number, column: number, ops: EditOp[]) => {
-      const res = await fetch('/__edit', {
+      const res = await fetch(devApiUrl('/__edit'), {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ slideId, line, column, ops }),
@@ -52,7 +53,7 @@ export function useEditor(slideId: string) {
   const applyEdits = useCallback(
     async (edits: Edit[]): Promise<EditResult[]> => {
       if (edits.length === 0) return [];
-      const res = await fetch('/__edit/batch', {
+      const res = await fetch(devApiUrl('/__edit/batch'), {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ slideId, edits }),

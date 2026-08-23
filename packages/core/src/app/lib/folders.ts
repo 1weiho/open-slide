@@ -1,5 +1,6 @@
 import buildManifest from 'virtual:open-slide/folders';
 import { useCallback, useEffect, useState } from 'react';
+import { devApiUrl } from './dev-api';
 import type { Folder, FolderIcon, FoldersManifest } from './sdk';
 
 const EMPTY: FoldersManifest = { folders: [], assignments: {} };
@@ -10,7 +11,7 @@ async function getManifest(): Promise<FoldersManifest> {
   // is no server, so fall back to the bundled snapshot from the virtual
   // module (populated at build time from slides/.folders.json).
   if (import.meta.env.DEV) {
-    const res = await fetch('/__folders');
+    const res = await fetch(devApiUrl('/__folders'));
     if (!res.ok) throw new Error(`GET /__folders ${res.status}`);
     const raw = (await res.json()) as Partial<FoldersManifest>;
     return {
@@ -25,7 +26,7 @@ async function getManifest(): Promise<FoldersManifest> {
 }
 
 async function patchSlideName(slideId: string, name: string): Promise<void> {
-  const res = await fetch(`/__slides/${slideId}`, {
+  const res = await fetch(devApiUrl(`/__slides/${slideId}`), {
     method: 'PATCH',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ name }),
@@ -39,7 +40,7 @@ async function duplicateSlideReq(slideId: string, newId?: string): Promise<strin
     init.headers = { 'content-type': 'application/json' };
     init.body = JSON.stringify({ newId });
   }
-  const res = await fetch(`/__slides/${slideId}/duplicate`, init);
+  const res = await fetch(devApiUrl(`/__slides/${slideId}/duplicate`), init);
   if (!res.ok) throw new Error(`POST /__slides/${slideId}/duplicate ${res.status}`);
   const body = (await res.json()) as { slideId?: unknown };
   if (typeof body.slideId !== 'string') throw new Error('duplicate response missing slideId');
@@ -47,12 +48,12 @@ async function duplicateSlideReq(slideId: string, newId?: string): Promise<strin
 }
 
 async function deleteSlideReq(slideId: string): Promise<void> {
-  const res = await fetch(`/__slides/${slideId}`, { method: 'DELETE' });
+  const res = await fetch(devApiUrl(`/__slides/${slideId}`), { method: 'DELETE' });
   if (!res.ok) throw new Error(`DELETE /__slides/${slideId} ${res.status}`);
 }
 
 async function postFolder(name: string, icon: FolderIcon): Promise<Folder> {
-  const res = await fetch('/__folders', {
+  const res = await fetch(devApiUrl('/__folders'), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ name, icon }),
@@ -65,7 +66,7 @@ async function patchFolder(
   id: string,
   patch: { name?: string; icon?: FolderIcon },
 ): Promise<Folder> {
-  const res = await fetch(`/__folders/${id}`, {
+  const res = await fetch(devApiUrl(`/__folders/${id}`), {
     method: 'PATCH',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(patch),
@@ -75,12 +76,12 @@ async function patchFolder(
 }
 
 async function deleteFolder(id: string): Promise<void> {
-  const res = await fetch(`/__folders/${id}`, { method: 'DELETE' });
+  const res = await fetch(devApiUrl(`/__folders/${id}`), { method: 'DELETE' });
   if (!res.ok) throw new Error(`DELETE /__folders/${id} ${res.status}`);
 }
 
 async function putAssign(slideId: string, folderId: string | null): Promise<void> {
-  const res = await fetch('/__folders/assign', {
+  const res = await fetch(devApiUrl('/__folders/assign'), {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ slideId, folderId }),
@@ -89,7 +90,7 @@ async function putAssign(slideId: string, folderId: string | null): Promise<void
 }
 
 async function putReorder(ids: string[]): Promise<void> {
-  const res = await fetch('/__folders/reorder', {
+  const res = await fetch(devApiUrl('/__folders/reorder'), {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ ids }),

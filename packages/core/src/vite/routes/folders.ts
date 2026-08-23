@@ -12,6 +12,7 @@ import {
 } from '../../files/folders.ts';
 import { validateMutationRequest } from '../../http/request-guard.ts';
 import { type ApiContext, json, readBody } from './context.ts';
+import { mountDevRoute } from './mount.ts';
 
 // GET    /__folders            list manifest
 // POST   /__folders            create folder { name, icon }
@@ -26,7 +27,7 @@ type AssignFolderBody = { slideId?: unknown; folderId?: unknown };
 type ReorderFoldersBody = { ids?: unknown };
 
 export function registerFolderRoutes(server: ViteDevServer, ctx: ApiContext): void {
-  server.middlewares.use('/__folders', async (req, res, next) => {
+  mountDevRoute(server, '/__folders', async (req, res, next) => {
     const url = new URL(req.url ?? '/', 'http://local');
     const method = req.method ?? 'GET';
 

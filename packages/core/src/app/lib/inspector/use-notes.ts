@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { devApiUrl } from '../dev-api';
 
 export type NoteSaveStatus =
   | { kind: 'idle' }
@@ -59,7 +60,7 @@ export function useNotes(slideId: string, index: number, initial: string | undef
     inflightRef.current = ctl;
     setStatus({ kind: 'saving' });
     try {
-      const res = await fetch('/__notes', {
+      const res = await fetch(devApiUrl('/__notes'), {
         method: 'PUT',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ slideId: target.slideId, index: target.index, text }),

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
 import { useLocale } from '@/lib/use-locale';
+import { devApiUrl } from './dev-api';
 
 type ServerStatus = { executionId: string; canRestart: boolean };
 
 async function fetchServerStatus(): Promise<ServerStatus | null> {
-  const res = await fetch('/__server-status');
+  const res = await fetch(devApiUrl('/__server-status'));
   if (!res.ok) return null;
   return (await res.json()) as ServerStatus;
 }
@@ -36,7 +37,7 @@ function getSnapshot(): typeof state {
 async function performRestart(): Promise<boolean> {
   const before = await fetchServerStatus();
   if (!before) return false;
-  const res = await fetch('/__restart-server', { method: 'POST' });
+  const res = await fetch(devApiUrl('/__restart-server'), { method: 'POST' });
   if (!res.ok) return false;
   // A different executionId means the replacement process is serving.
   for (let attempt = 0; attempt < 30; attempt++) {
