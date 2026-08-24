@@ -95,6 +95,8 @@ Render relational or sequential information directly in a TSX page:
   Source --> Transform --> Result`} style={{ width: 1200, height: 650 }} />
 ```
 
+Lightbox is enabled by default — click any diagram to expand it near-fullscreen. Pass `lightbox={false}` to disable.
+
 The Vite plugin is exposed under a subpath for advanced setups:
 
 ```ts

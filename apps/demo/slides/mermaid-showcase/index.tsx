@@ -124,7 +124,7 @@ const flowchart = `
 flowchart LR
   A[Intent] --> B[index.tsx]
   B --> C[Chart string]
-  C --> D[<Mermaid>]
+  C --> D["&lt;Mermaid&gt;"]
   D --> E[SVG output]
 `;
 
@@ -465,7 +465,7 @@ const SequencePage: Page = () => (
         <Mermaid
           chart={sequence}
           config={mermaidConfig}
-          style={{ width: 760, height: 670, display: 'block' }}
+          style={{ width: '100%', height: 670, display: 'block' }}
           fallback={diagramFallback}
         />
       </div>

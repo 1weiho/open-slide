@@ -73,7 +73,7 @@ Because of this, you do not need to worry about the diagram being too large. Foc
 
 ### Lightbox
 
-The framework automatically enables a click-to-zoom lightbox on every Mermaid diagram. During presentation, the audience can click any diagram to expand it to near-fullscreen for closer inspection. This means a diagram that appears small on the slide is still fully accessible — the audience can always zoom in.
+Click-to-zoom is enabled by default (`lightbox` prop defaults to `true`). During presentation, the audience can click any diagram to expand it to near-fullscreen for closer inspection. Set `lightbox={false}` to disable the overlay on a specific diagram.
 
 Do not let the lightbox be an excuse for cramming too much into one diagram. If a diagram has so many nodes that it's unreadable even in lightbox, split it across multiple pages.
 
@@ -155,7 +155,7 @@ When the diagram IS the content, give it the entire canvas. A small eyebrow labe
 
 ```tsx
 const Page3: Page = () => (
-  <div style={{ width: '100%', height: '100%', background: 'var(--osd-bg)', padding: 60 }}>
+  <div style={{ width: '100%', height: '100%', background: 'var(--osd-bg)', padding: 60, position: 'relative' }}>
     <div style={{ position: 'absolute', top: 60, left: 80 }}>
       <div style={{ fontSize: 21, color: 'var(--osd-accent)', letterSpacing: '0.2em' }}>ARCHITECTURE</div>
     </div>

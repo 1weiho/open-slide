@@ -26,16 +26,9 @@ type RenderedDiagram = {
 let mermaidPromise: Promise<typeof import('mermaid')['default']> | undefined;
 let renderSequence = 0;
 
-function loadMermaid(config?: MermaidConfig) {
+function loadMermaid() {
   if (!mermaidPromise) {
-    mermaidPromise = import('mermaid').then(({ default: mermaid }) => {
-      mermaid.initialize({
-        ...config,
-        startOnLoad: false,
-        securityLevel: config?.securityLevel ?? 'strict',
-      });
-      return mermaid;
-    });
+    mermaidPromise = import('mermaid').then(({ default: mermaid }) => mermaid);
   }
   return mermaidPromise;
 }
@@ -82,14 +75,30 @@ export function Mermaid({
   const [error, setError] = useState<unknown>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
+  const configRef = useRef(config);
+  const prevConfigKey = useRef('');
+  const currentConfigKey = JSON.stringify(config ?? null);
+  if (currentConfigKey !== prevConfigKey.current) {
+    configRef.current = config;
+    prevConfigKey.current = currentConfigKey;
+  }
+  const stableConfig = configRef.current;
+
   useEffect(() => {
     let active = true;
     const version = ++renderVersion.current;
     setDiagram(null);
     setError(null);
 
-    loadMermaid(config)
-      .then((mermaid) => mermaid.render(nextRenderId(), chart, wrapperRef.current ?? undefined))
+    loadMermaid()
+      .then((mermaid) => {
+        mermaid.initialize({
+          ...stableConfig,
+          startOnLoad: false,
+          securityLevel: stableConfig?.securityLevel ?? 'strict',
+        });
+        return mermaid.render(nextRenderId(), chart, wrapperRef.current ?? undefined);
+      })
       .then(({ svg, bindFunctions }) => {
         if (!active || version !== renderVersion.current) return;
         setDiagram({ element: normalizeSvg(svg), bindFunctions });
@@ -103,7 +112,7 @@ export function Mermaid({
     return () => {
       active = false;
     };
-  }, [chart, config]);
+  }, [chart, stableConfig]);
 
   useEffect(() => {
     if (!diagram || !diagramRef.current) return;
