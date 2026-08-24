@@ -264,7 +264,7 @@ function ActiveInlineEditor({
   showOutline,
 }: {
   target: InlineEditTarget;
-  layerRef: RefObject<HTMLDivElement>;
+  layerRef: RefObject<HTMLDivElement | null>;
   showOutline: boolean;
 }) {
   const { bufferOps, stopInlineEdit } = useInspector();
@@ -424,7 +424,10 @@ function ActiveInlineEditor({
   );
 }
 
-function useAnchorRect(anchor: HTMLElement, layerRef: RefObject<HTMLDivElement>): RelRect | null {
+function useAnchorRect(
+  anchor: HTMLElement,
+  layerRef: RefObject<HTMLDivElement | null>,
+): RelRect | null {
   const [rect, setRect] = useState<RelRect | null>(null);
 
   const measure = useCallback(() => {
@@ -478,7 +481,7 @@ function TextToolbar({
   applyStyle,
 }: {
   anchor: HTMLElement;
-  layerRef: RefObject<HTMLDivElement>;
+  layerRef: RefObject<HTMLDivElement | null>;
   rect: RelRect;
   sel: TextRange | null;
   applyStyle: (key: string, value: string | null) => void;

@@ -7,7 +7,7 @@ const NAV_PASSTHROUGH =
   'a, button, input, textarea, select, label, summary, iframe, video, audio, embed, object, [role="button"], [role="link"], [contenteditable="true"], [data-osd-interactive], [data-osd-chrome]';
 
 type UseClickPageNavigationOptions<T extends HTMLElement> = {
-  ref: RefObject<T>;
+  ref: RefObject<T | null>;
   enabled?: boolean;
   /** Fraction of the width on each side that navigates; the center is inert. */
   edgeRatio?: number;

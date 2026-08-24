@@ -3,6 +3,7 @@
   "pages": [
     "index",
     "getting-started",
+    "migrate-to-v2",
     "---Core feature---",
     "...core-feature",
     "---Primitive---",

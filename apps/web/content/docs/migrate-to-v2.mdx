@@ -1,0 +1,84 @@
+---
+title: Migrate from v1 to v2
+description: Upgrade a v1 workspace to @open-slide/core v2.
+---
+
+v2 moves the whole toolchain forward: the runtime now ships **React 19** and
+builds with **Vite 8** (Rolldown-powered). Slides you wrote for v1 need no
+changes — the migration is confined to `package.json`, your Node version, and
+(optionally) your deploy config.
+
+## Requirements
+
+- **Node.js 20.19+** (or 22.12+). Vite 8 no longer supports Node 18, so
+  `open-slide dev` and `open-slide build` won't start on older runtimes.
+
+## Update your workspace
+
+Point your dependencies at the new majors:
+
+```json title="package.json"
+{
+  "dependencies": {
+    "@open-slide/core": "^2.0.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5"
+  }
+}
+```
+
+Then reinstall and pull the latest agent skills:
+
+```npm
+npm install
+npm run sync:skills
+```
+
+### What if I keep React 18 in package.json?
+
+The app still runs. Core dedupes `react` and `react-dom` to its own React 19
+copy at runtime, so a stale React 18 entry never loads a second copy (two
+copies would crash the production bundle with React error #525). Bump anyway:
+your editor otherwise typechecks slides against React 18 types while the
+runtime is React 19.
+
+## Drop the `vite` devDependency
+
+v1 scaffolds carried `"vite"` in `devDependencies` purely so hosting
+providers would detect a Vite project. v2 scaffolds drop it and declare the
+build settings explicitly instead. To do the same in an existing workspace,
+remove `vite` from `devDependencies` and mirror the new deploy configs:
+
+```json title="vercel.json"
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
+```
+
+```toml title="netlify.toml"
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+```
+
+Keeping the old `vite` devDependency also works — it's unused at runtime
+(core bundles its own Vite 8) — but the explicit config is one less stale
+dependency in your lockfile.
+
+## Slide code
+
+Slides are plain React components, so React 19's removals apply:
+`defaultProps` on function components, string refs, and `propTypes` are gone.
+Typical agent-authored slides use none of these — if yours do, the dev
+server's error overlay will point at the offending page.
