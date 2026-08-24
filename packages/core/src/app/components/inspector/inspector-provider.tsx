@@ -729,7 +729,11 @@ export function InspectorProvider({
     }
     setCommitting(true);
     try {
-      const results = await applyEdits(pending.map((p) => p.edit));
+      const { changed, results } = await applyEdits(pending.map((p) => p.edit));
+      if (changed === false) {
+        toast.error(t.inspector.noOpEdit);
+        return;
+      }
       const failures: string[] = [];
       for (let i = 0; i < results.length; i++) {
         const item = pending[i];

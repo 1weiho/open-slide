@@ -18,6 +18,11 @@ export type Edit = { line: number; column: number; ops: EditOp[] };
 
 export type EditResult = { ok: boolean; error?: string };
 
+export type BatchEditResponse = {
+  changed?: boolean;
+  results?: EditResult[];
+};
+
 export class NoOpEditError extends Error {
   constructor() {
     super(
@@ -50,8 +55,8 @@ export function useEditor(slideId: string) {
   // Returns one result per input edit so callers can keep failed
   // edits buffered while clearing the ones that landed.
   const applyEdits = useCallback(
-    async (edits: Edit[]): Promise<EditResult[]> => {
-      if (edits.length === 0) return [];
+    async (edits: Edit[]): Promise<BatchEditResponse> => {
+      if (edits.length === 0) return { changed: false, results: [] };
       const res = await fetch('/__edit/batch', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -59,12 +64,13 @@ export function useEditor(slideId: string) {
       });
       const body = (await res.json().catch(() => ({}))) as {
         error?: string;
+        changed?: boolean;
         results?: EditResult[];
       };
       if (!res.ok) {
         throw new Error(body.error ?? `POST /__edit/batch → ${res.status}`);
       }
-      return body.results ?? [];
+      return { changed: body.changed, results: body.results ?? [] };
     },
     [slideId],
   );
