@@ -15,7 +15,6 @@ type UseClickPageNavigationOptions<T extends HTMLElement> = {
   canNext: boolean;
   onPrev: () => void;
   onNext: () => void;
-  onCenterClick?: () => void;
   onViewportClick?: (point: { x: number; y: number }) => void;
 };
 
@@ -27,7 +26,6 @@ export function useClickPageNavigation<T extends HTMLElement>({
   canNext,
   onPrev,
   onNext,
-  onCenterClick,
   onViewportClick,
 }: UseClickPageNavigationOptions<T>) {
   useEffect(() => {
@@ -49,12 +47,10 @@ export function useClickPageNavigation<T extends HTMLElement>({
         if (canPrev) onPrev();
       } else if (x > 1 - edgeRatio) {
         if (canNext) onNext();
-      } else {
-        onCenterClick?.();
       }
     };
 
     el.addEventListener('click', onClick);
     return () => el.removeEventListener('click', onClick);
-  }, [ref, enabled, edgeRatio, canPrev, canNext, onPrev, onNext, onCenterClick, onViewportClick]);
+  }, [ref, enabled, edgeRatio, canPrev, canNext, onPrev, onNext, onViewportClick]);
 }

@@ -18,7 +18,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { Folder, FolderIcon } from '@/lib/sdk';
 import { useLocale } from '@/lib/use-locale';
-import { cn } from '@/lib/utils';
+import { cn, pad2 } from '@/lib/utils';
 import { IconPicker } from './icon-picker';
 
 export const SLIDE_DND_MIME = 'application/x-slide-id';
@@ -257,7 +257,7 @@ export function FolderItem({
             'group-hover:opacity-0 group-has-[[aria-expanded=true]]:opacity-0',
         )}
       >
-        {count.toString().padStart(2, '0')}
+        {pad2(count)}
       </span>
 
       {row.kind === 'folder' && import.meta.env.DEV && (

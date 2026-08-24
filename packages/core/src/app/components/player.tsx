@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { hasModifier, isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
 import { useClickPageNavigation } from '@/lib/use-click-page-navigation';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
@@ -271,8 +272,7 @@ export function Player({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const tgt = e.target;
-      if (tgt instanceof HTMLElement && tgt.matches('input, textarea')) return;
+      if (isTypingTarget(e.target)) return;
 
       // While an overlay is open, only Esc and the toggle that owns it
       // should reach the Player. Overview installs its own capture-phase
@@ -300,9 +300,8 @@ export function Player({
         return;
       }
 
-      const isNext =
-        e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown';
-      const isPrev = e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp';
+      const isNext = isForwardKey(e);
+      const isPrev = isBackwardKey(e);
 
       if (isNext || isPrev) {
         if (controls && blackout) setBlackout(null);
@@ -334,7 +333,7 @@ export function Player({
       if (!controls) return;
       // Single-letter shortcuts only fire when no modifier is held — keeps
       // browser shortcuts (Cmd/Ctrl-something) from being hijacked.
-      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      if (hasModifier(e)) return;
 
       if (e.key === 'b' || e.key === 'B') {
         e.preventDefault();

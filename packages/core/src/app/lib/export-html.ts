@@ -1,8 +1,9 @@
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { designToCssVars } from './design';
+import { downloadBlob, nextFrame } from './dom';
 import { SlidePageProvider } from './page-context';
-import type { SlideModule } from './sdk';
+import { CANVAS_HEIGHT, CANVAS_WIDTH, type SlideModule } from './sdk';
 
 type AssetEntry = { name: string; bytes: Uint8Array };
 
@@ -75,8 +76,8 @@ async function renderPagesToHtml(pages: NonNullable<SlideModule['default']>): Pr
     position: 'fixed',
     left: '-99999px',
     top: '0',
-    width: '1920px',
-    height: '1080px',
+    width: `${CANVAS_WIDTH}px`,
+    height: `${CANVAS_HEIGHT}px`,
     pointerEvents: 'none',
   });
   document.body.appendChild(container);
@@ -87,15 +88,15 @@ async function renderPagesToHtml(pages: NonNullable<SlideModule['default']>): Pr
       const Page = pages[i];
       if (!Page) continue;
       const host = document.createElement('div');
-      host.style.width = '1920px';
-      host.style.height = '1080px';
+      host.style.width = `${CANVAS_WIDTH}px`;
+      host.style.height = `${CANVAS_HEIGHT}px`;
       container.appendChild(host);
       const root = createRoot(host);
       root.render(
         createElement(SlidePageProvider, { index: i, total: pages.length }, createElement(Page)),
       );
-      await nextPaint();
-      await nextPaint();
+      await nextFrame();
+      await nextFrame();
       for (const video of host.querySelectorAll('video')) {
         video.defaultMuted = video.muted;
       }
@@ -107,10 +108,6 @@ async function renderPagesToHtml(pages: NonNullable<SlideModule['default']>): Pr
     container.remove();
   }
   return result;
-}
-
-function nextPaint(): Promise<void> {
-  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }
 
 function collectCss(): string {
@@ -263,7 +260,7 @@ ${opts.externalLinks}
 <style>
 html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
 .os-stage { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
-.os-frame { width: 1920px; height: 1080px; flex-shrink: 0; background: #fff; color: #000; transform-origin: center center; overflow: hidden; position: relative; }
+.os-frame { width: ${CANVAS_WIDTH}px; height: ${CANVAS_HEIGHT}px; flex-shrink: 0; background: #fff; color: #000; transform-origin: center center; overflow: hidden; position: relative; }
 .os-page { position: absolute; inset: 0; }
 .os-page[hidden] { display: none !important; }
 .os-counter { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); color: #fff; background: rgba(0,0,0,.5); padding: 2px 10px; border-radius: 999px; font-size: 12px; z-index: 10; font-variant-numeric: tabular-nums; }
@@ -280,7 +277,7 @@ html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-f
   var frame = document.getElementById('os-frame');
   var cur = document.getElementById('os-cur');
   function fit() {
-    var s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    var s = Math.min(window.innerWidth / ${CANVAS_WIDTH}, window.innerHeight / ${CANVAS_HEIGHT});
     frame.style.transform = 'scale(' + s + ')';
   }
   function go(i) {
@@ -324,16 +321,4 @@ function escapeHtml(s: string): string {
 
 function escapeAttr(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-}
-
-function downloadBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.rel = 'noopener';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 0);
 }

@@ -124,6 +124,23 @@ describe('applyNotesEdit / existing export', () => {
   });
 });
 
+describe('applyNotesEdit / unparseable source', () => {
+  it('rejects a source whose syntax error the parser only recovered from', () => {
+    // `notes` itself is well-formed; the damage is elsewhere in the module, so
+    // errorRecovery would still hand back offsets to splice by.
+    const source = [
+      "export const notes = ['first'];",
+      'const a = 1 const b = 2',
+      'export default [];',
+      '',
+    ].join('\n');
+    const r = applyNotesEdit(source, 0, 'second');
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.status).toBe(422);
+  });
+});
+
 describe('recent-writes window', () => {
   it('reports a freshly recorded write as recent for the whole window', () => {
     const file = '/slides/recent-a/index.tsx';

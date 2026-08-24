@@ -1,9 +1,9 @@
-import { randomUUID } from 'node:crypto';
 import * as t from '@babel/types';
-import { parseSource, walkJsx } from './babel-walk.ts';
+import { shortId } from '../files/short-id.ts';
+import { findJsxAncestors, type JsxContainer, parseSource } from './babel-walk.ts';
 
 const MARKER_RE =
-  /\{\/\*\s*@slide-comment\s+id="(c-[a-f0-9]+)"\s+ts="([^"]+)"\s+text="([A-Za-z0-9_-]+={0,2})"\s*\*\/\}/g;
+  /\{\/\*\s*@slide-comment\s+id="(c-[a-f0-9]+)"\s+ts="([^"]+)"\s+text="([A-Za-z0-9_-]+={0,2})"\s*\*\/\}/;
 
 export type Comment = { id: string; line: number; ts: string; note: string; hint?: string };
 
@@ -25,8 +25,7 @@ export function parseMarkers(source: string): Comment[] {
   const lines = source.split('\n');
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    MARKER_RE.lastIndex = 0;
-    const m = MARKER_RE.exec(line);
+    const m = line.match(MARKER_RE);
     if (!m) continue;
     const [, id, ts, textB64] = m;
     try {
@@ -38,7 +37,7 @@ export function parseMarkers(source: string): Comment[] {
 }
 
 export function newCommentId(): string {
-  return `c-${randomUUID().replace(/-/g, '').slice(0, 8)}`;
+  return shortId('c');
 }
 
 export function markerDeleteRegex(id: string): RegExp {
@@ -69,43 +68,13 @@ function lineIndent(source: string, lineNumber: number): string {
   return m?.[0] ?? '';
 }
 
-type JsxContainer = t.JSXElement | t.JSXFragment;
-
-function findJsxAncestors(ast: t.Node, line: number, column: number): JsxContainer[] {
-  const hits: { node: JsxContainer; size: number }[] = [];
-  walkJsx(ast, (n) => {
-    if (!n.loc || (!t.isJSXElement(n) && !t.isJSXFragment(n))) return;
-    const s = n.loc.start;
-    const e = n.loc.end;
-    const afterStart = line > s.line || (line === s.line && column >= s.column);
-    const beforeEnd = line < e.line || (line === e.line && column < e.column);
-    if (afterStart && beforeEnd) {
-      hits.push({ node: n, size: (n.end ?? 0) - (n.start ?? 0) });
-    }
-  });
-  hits.sort((a, b) => a.size - b.size);
-  return hits.map((h) => h.node);
-}
-
 function planInsertion(source: string, target: JsxContainer): InsertionPlan | null {
-  if (t.isJSXFragment(target)) {
-    const opening = target.openingFragment;
-    const startLine = target.loc?.start.line ?? 1;
-    return {
-      offset: opening.end ?? 0,
-      indent: `${lineIndent(source, startLine)}  `,
-    };
-  }
-  if (t.isJSXElement(target)) {
-    const opening = target.openingElement;
-    if (opening.selfClosing) return null;
-    const startLine = target.loc?.start.line ?? 1;
-    return {
-      offset: opening.end ?? 0,
-      indent: `${lineIndent(source, startLine)}  `,
-    };
-  }
-  return null;
+  if (t.isJSXElement(target) && target.openingElement.selfClosing) return null;
+  const opening = t.isJSXFragment(target) ? target.openingFragment : target.openingElement;
+  return {
+    offset: opening.end ?? 0,
+    indent: `${lineIndent(source, target.loc?.start.line ?? 1)}  `,
+  };
 }
 
 // Walk innermost → outermost looking for the first JSX container we
@@ -129,9 +98,5 @@ export function findInsertion(
 }
 
 export function offsetToLine(source: string, offset: number): number {
-  let line = 1;
-  for (let i = 0; i < offset && i < source.length; i++) {
-    if (source[i] === '\n') line++;
-  }
-  return line;
+  return source.slice(0, offset).split('\n').length;
 }

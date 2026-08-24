@@ -17,15 +17,13 @@ export function App() {
           opens, moving along a toolbar shows the rest instantly. */}
       <TooltipProvider delay={200}>
         <Routes>
-          {config.build.showSlideBrowser ? (
+          {config.build.showSlideBrowser && (
             <Route element={<HomeShell />}>
               <Route path="/" element={<Home />} />
               <Route path="/themes" element={<ThemesGalleryPage />} />
               <Route path="/themes/:themeId" element={<ThemeDetailPage />} />
               <Route path="/assets" element={<AssetsPage />} />
             </Route>
-          ) : (
-            <Route path="/" element={<NotFound />} />
           )}
           <Route path="/s/:slideId" element={<Slide />} />
           <Route path="/s/:slideId/presenter" element={<Presenter />} />

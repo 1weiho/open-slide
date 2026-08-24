@@ -1,16 +1,11 @@
-import { cn } from '@/lib/cn';
-
-export function VercelOssBadge({ className }: { className?: string }) {
+export function VercelOssBadge() {
   return (
     <a
       href="https://vercel.com/open-source-program"
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Vercel OSS Program"
-      className={cn(
-        'flex w-fit items-center gap-2.5 opacity-75 transition-opacity hover:opacity-100',
-        className,
-      )}
+      className="flex w-fit items-center gap-2.5 opacity-75 transition-opacity hover:opacity-100"
     >
       <img src="/assets/vercel-light.svg" alt="" className="logo-light h-3.5 w-auto" />
       <img src="/assets/vercel-dark.svg" alt="" className="logo-dark h-3.5 w-auto" />

@@ -10,7 +10,6 @@ type Props = {
   center?: boolean;
   flat?: boolean;
   freezeMotion?: boolean;
-  className?: string;
   design?: DesignSystem;
 };
 
@@ -20,7 +19,6 @@ export function SlideCanvas({
   center = true,
   flat = false,
   freezeMotion = false,
-  className,
   design,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -50,10 +48,7 @@ export function SlideCanvas({
   const designVars = design ? designToCssVars(design) : undefined;
 
   return (
-    <div
-      ref={containerRef}
-      className={cn('relative h-full w-full', flat && 'overflow-hidden', className)}
-    >
+    <div ref={containerRef} className={cn('relative h-full w-full', flat && 'overflow-hidden')}>
       <div
         className={cn(
           'overflow-hidden bg-white text-black',
