@@ -19,8 +19,8 @@ export type Edit = { line: number; column: number; ops: EditOp[] };
 export type EditResult = { ok: boolean; error?: string };
 
 export type BatchEditResponse = {
-  changed?: boolean;
-  results?: EditResult[];
+  changed: boolean;
+  results: EditResult[];
 };
 
 export class NoOpEditError extends Error {
@@ -70,7 +70,7 @@ export function useEditor(slideId: string) {
       if (!res.ok) {
         throw new Error(body.error ?? `POST /__edit/batch → ${res.status}`);
       }
-      return { changed: body.changed, results: body.results ?? [] };
+      return { changed: body.changed ?? false, results: body.results ?? [] };
     },
     [slideId],
   );

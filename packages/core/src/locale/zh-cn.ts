@@ -257,7 +257,7 @@ export const zhCN: Locale = {
     commentsApplyHintSuffix: ' 以应用这些更改。',
     commentDeleteAria: '删除',
     saveFailed: '保存失败：',
-    noOpEdit: '编辑未改变文件——数值可能已经匹配。',
+    noOpEdit: '编辑未改变文件——值可能已经匹配。',
   },
 
   stylePanel: {

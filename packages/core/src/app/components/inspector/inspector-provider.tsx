@@ -730,10 +730,6 @@ export function InspectorProvider({
     setCommitting(true);
     try {
       const { changed, results } = await applyEdits(pending.map((p) => p.edit));
-      if (changed === false) {
-        toast.error(t.inspector.noOpEdit);
-        return;
-      }
       const failures: string[] = [];
       for (let i = 0; i < results.length; i++) {
         const item = pending[i];
@@ -756,7 +752,11 @@ export function InspectorProvider({
         }
       }
       refreshCount();
-      if (failures.length > 0) toast.error(`${t.inspector.saveFailed} ${failures.join('; ')}`);
+      if (failures.length > 0) {
+        toast.error(`${t.inspector.saveFailed} ${failures.join('; ')}`);
+      } else if (changed === false) {
+        toast.error(t.inspector.noOpEdit);
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       toast.error(`${t.inspector.saveFailed} ${msg}`);
