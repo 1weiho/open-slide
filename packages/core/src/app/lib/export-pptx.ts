@@ -2,7 +2,12 @@ import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { designToCssVars } from './design';
 import { SlidePageProvider } from './page-context';
-import { isFrameAnimationSettled, waitForDataWaitfor, waitForFonts } from './print-ready';
+import {
+  isFrameAnimationSettled,
+  waitForDataWaitfor,
+  waitForFonts,
+  waitForImages,
+} from './print-ready';
 import type { SlideModule } from './sdk';
 
 const SLIDE_W = 1920;
@@ -106,17 +111,19 @@ export async function exportSlideAsImagePptx(
       await sleep(POLL_INTERVAL_MS);
     }
     await waitForDataWaitfor(container);
+    await waitForImages(container);
 
     const { toBlob } = await import('html-to-image');
     const images: Uint8Array[] = [];
     for (let i = 0; i < frames.length; i++) {
       freezeForCapture(frames[i]);
+      await inlineFrameImages(frames[i]);
       const blob = await toBlob(frames[i], {
         width: SLIDE_W,
         height: SLIDE_H,
         pixelRatio: CAPTURE_PIXEL_RATIO,
         backgroundColor: '#ffffff',
-        cacheBust: true,
+        cacheBust: false,
       });
       if (!blob) throw new Error(`failed to capture page ${i + 1}`);
       images.push(new Uint8Array(await blob.arrayBuffer()));
@@ -142,6 +149,33 @@ export async function exportSlideAsImagePptx(
     container.remove();
     captureStyle.remove();
   }
+}
+
+async function inlineFrameImages(root: HTMLElement): Promise<void> {
+  const images = Array.from(root.querySelectorAll<HTMLImageElement>('img'));
+  await Promise.all(
+    images.map(async (img) => {
+      const src = img.currentSrc || img.src;
+      if (!src || src.startsWith('data:')) return;
+      if (!img.complete || img.naturalWidth <= 0 || img.naturalHeight <= 0) return;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      try {
+        ctx.drawImage(img, 0, 0);
+        img.removeAttribute('srcset');
+        img.src = canvas.toDataURL('image/png');
+        await img.decode();
+      } catch {
+        // Cross-origin images without CORS cannot be inlined. html-to-image
+        // still gets its normal chance to capture the original source.
+      }
+    }),
+  );
 }
 
 // Pin each element's settled visual state inline and remove its animation so the
