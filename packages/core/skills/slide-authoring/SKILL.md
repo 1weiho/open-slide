@@ -47,6 +47,7 @@ const Body: Page = () => <div>…</div>;
 
 export const meta: SlideMeta = {
   title: 'My slide',
+  summary: 'One line on what the deck covers.',
   createdAt: '2026-05-16T12:00:00Z',
 };
 export default [Cover, Body] satisfies Page[];
@@ -54,6 +55,7 @@ export default [Cover, Body] satisfies Page[];
 
 - `export default` is a **non-empty array of zero-prop React components**, one per page, in order.
 - `meta.title` (optional) shows in the slide header. Default is the folder name.
+- `meta.summary` (optional) is a one-sentence description of what the deck covers. **Always set it on a new slide** — it is what lets an agent tell decks apart in the generated `llms.txt` without opening a 1500-line file. Write it for someone who has not seen the deck, keep it under ~150 characters, and don't restate the title. It is published (it ships in the built site), so treat it as public, like `title`. Must be a plain string literal.
 - The slide id is the kebab-case folder name. Pick something short and descriptive (`q2-roadmap`, `team-offsite-2026`).
 - `meta.theme` (optional) marks the slide as built from a theme under `themes/`. The id must match a `<id>.md` basename. Surfaces a back-link chip on the slide card and lists the slide on `/themes/<id>`. Omit if the slide isn't derived from a registered theme.
 - `meta.createdAt` is an **ISO 8601 string literal** (e.g. `'2026-05-16T12:00:00Z'`) set once when the slide is scaffolded. The home page uses it for the default "newest first" sort. Always include it on new slides — **immediately before writing the file, run `node -e "console.log(new Date().toISOString())"` via Bash and paste the exact output** as the value. Don't type a timestamp from memory — you will get the date or time wrong. Must be a plain string literal (no `new Date(...)` or imports in the slide itself) — the framework reads it via a regex at build time, not by evaluating the module.
@@ -224,6 +226,7 @@ const Content: Page = () => (
 
 export const meta: SlideMeta = {
   title: 'The Big Idea',
+  summary: 'Why the idea matters and what it changes.',
   createdAt: '2026-05-16T12:00:00Z',
 };
 export default [Cover, Content] satisfies Page[];

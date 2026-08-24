@@ -21,12 +21,12 @@ const SLIDES_VMOD = 'virtual:open-slide/slides';
 const CONFIG_VMOD = 'virtual:open-slide/config';
 const FOLDERS_VMOD = 'virtual:open-slide/folders';
 
-type FoldersManifest = {
+export type FoldersManifest = {
   folders: unknown[];
   assignments: Record<string, string>;
 };
 
-async function readFoldersManifest(file: string): Promise<FoldersManifest> {
+export async function readFoldersManifest(file: string): Promise<FoldersManifest> {
   try {
     const raw = await fs.readFile(file, 'utf8');
     const parsed = JSON.parse(raw) as Partial<FoldersManifest>;
@@ -49,7 +49,7 @@ function resolved(id: string): string {
   return `\0${id}`;
 }
 
-async function findSlides(userCwd: string, slidesDir: string): Promise<string[]> {
+export async function findSlides(userCwd: string, slidesDir: string): Promise<string[]> {
   const abs = path.resolve(userCwd, slidesDir);
   if (!existsSync(abs)) return [];
   const hits = await fg('*/index.{tsx,jsx,ts,js}', {
@@ -60,18 +60,88 @@ async function findSlides(userCwd: string, slidesDir: string): Promise<string[]>
   return hits.sort();
 }
 
-function toId(absFile: string, slidesRoot: string): string {
+export function toId(absFile: string, slidesRoot: string): string {
   const rel = path.relative(slidesRoot, absFile);
   return rel.split(path.sep)[0];
 }
 
-const META_THEME_RE = /(?:^|[\s,{])theme\s*:\s*['"]([^'"]+)['"]/;
-const META_CREATED_AT_RE = /(?:^|[\s,{])createdAt\s*:\s*['"]([^'"]+)['"]/;
+// Matches a whole single- or double-quoted literal rather than stopping at the
+// first inner quote, so prose values keep their apostrophes ("Rendering & 'use
+// cache'"). Template literals and expressions stay unsupported by design.
+const STRING_LITERAL_SRC = String.raw`(?:'((?:[^'\\\n]|\\.)*)'|"((?:[^"\\\n]|\\.)*)")`;
 
-type ExtractedMeta = { theme: string | null; createdAt: string | null };
+function metaFieldRe(key: string): RegExp {
+  return new RegExp(String.raw`(?:^|[\s,{])${key}\s*:\s*${STRING_LITERAL_SRC}`);
+}
 
-function extractMeta(src: string): ExtractedMeta {
-  const empty: ExtractedMeta = { theme: null, createdAt: null };
+const META_TITLE_RE = metaFieldRe('title');
+const META_THEME_RE = metaFieldRe('theme');
+const META_SUMMARY_RE = metaFieldRe('summary');
+const META_CREATED_AT_RE = metaFieldRe('createdAt');
+
+const SHORT_ESCAPES: Record<string, string> = {
+  n: '\n',
+  t: '\t',
+  r: '\r',
+  b: '\b',
+  f: '\f',
+  v: '\v',
+  '0': '\0',
+};
+
+const ESCAPE_RE = /\\(u\{[0-9a-fA-F]{1,6}\}|u[0-9a-fA-F]{4}|x[0-9a-fA-F]{2}|[\s\S])/g;
+
+// Resolve escapes the way the JS parser would, so `\n` becomes a newline rather
+// than a literal "n". Anything unrecognised keeps its escaped character, which
+// covers `\'`, `\"` and `\\`.
+function unescapeStringLiteral(raw: string): string {
+  return raw.replace(ESCAPE_RE, (_: string, seq: string) => {
+    if (seq[0] === 'u' || seq[0] === 'x') {
+      const hex = seq[1] === '{' ? seq.slice(2, -1) : seq.slice(1);
+      const code = Number.parseInt(hex, 16);
+      // Out of range would throw in String.fromCodePoint; keep the escape as
+      // written rather than failing a whole build over one odd title.
+      if (code > 0x10ffff) return `\\${seq}`;
+      return String.fromCodePoint(code);
+    }
+    return SHORT_ESCAPES[seq] ?? seq;
+  });
+}
+
+// Index of the literal's closing quote, or -1 if it never closes. Only `` ` ``
+// may span lines; an unterminated quote means the source is unparseable anyway.
+function skipStringLiteral(src: string, start: number): number {
+  const quote = src[start];
+  for (let i = start + 1; i < src.length; i++) {
+    const ch = src[i];
+    if (ch === '\\') {
+      i++;
+      continue;
+    }
+    if (ch === quote) return i;
+    if (ch === '\n' && quote !== '`') return -1;
+  }
+  return -1;
+}
+
+function matchMetaField(body: string, re: RegExp): string | null {
+  const match = body.match(re);
+  if (!match) return null;
+  const raw = match[1] ?? match[2];
+  return raw === undefined ? null : unescapeStringLiteral(raw);
+}
+
+export type ExtractedMeta = {
+  title: string | null;
+  theme: string | null;
+  summary: string | null;
+  createdAt: string | null;
+};
+
+const EMPTY_META: ExtractedMeta = { title: null, theme: null, summary: null, createdAt: null };
+
+export function extractMeta(src: string): ExtractedMeta {
+  const empty = EMPTY_META;
   const metaStart = src.search(/export\s+const\s+meta\b/);
   if (metaStart === -1) return empty;
   const eqIdx = src.indexOf('=', metaStart);
@@ -82,6 +152,14 @@ function extractMeta(src: string): ExtractedMeta {
   let closeBrace = -1;
   for (let i = openBrace; i < src.length; i++) {
     const ch = src[i];
+    if (ch === "'" || ch === '"' || ch === '`') {
+      // Skip the whole literal: a brace inside a value ("the {curly} case")
+      // must not be mistaken for the end of the meta object.
+      const end = skipStringLiteral(src, i);
+      if (end === -1) return empty;
+      i = end;
+      continue;
+    }
     if (ch === '{') depth++;
     else if (ch === '}') {
       depth--;
@@ -93,20 +171,20 @@ function extractMeta(src: string): ExtractedMeta {
   }
   if (closeBrace === -1) return empty;
   const body = src.slice(openBrace + 1, closeBrace);
-  const themeMatch = body.match(META_THEME_RE);
-  const createdAtMatch = body.match(META_CREATED_AT_RE);
   return {
-    theme: themeMatch ? themeMatch[1] : null,
-    createdAt: createdAtMatch ? createdAtMatch[1] : null,
+    title: matchMetaField(body, META_TITLE_RE),
+    theme: matchMetaField(body, META_THEME_RE),
+    summary: matchMetaField(body, META_SUMMARY_RE),
+    createdAt: matchMetaField(body, META_CREATED_AT_RE),
   };
 }
 
-async function readSlideMeta(abs: string): Promise<ExtractedMeta> {
+export async function readSlideMeta(abs: string): Promise<ExtractedMeta> {
   try {
     const src = await fs.readFile(abs, 'utf8');
     return extractMeta(src);
   } catch {
-    return { theme: null, createdAt: null };
+    return EMPTY_META;
   }
 }
 
