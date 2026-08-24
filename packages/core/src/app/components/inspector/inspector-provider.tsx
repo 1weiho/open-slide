@@ -732,31 +732,35 @@ export function InspectorProvider({
       const { changed, results } = await applyEdits(pending.map((p) => p.edit));
       const failures: string[] = [];
       for (let i = 0; i < results.length; i++) {
-        const item = pending[i];
         const r = results[i];
-        const bucket = pendingRef.current.get(item.key);
-        if (r.ok) {
-          if (bucket) {
-            item.onSuccess(bucket);
-            if (
-              bucket.styleOps.size === 0 &&
-              bucket.rangeStyleOps.size === 0 &&
-              bucket.textOps.size === 0 &&
-              bucket.attrOps.size === 0
-            ) {
-              pendingRef.current.delete(item.key);
-            }
-          }
-        } else {
-          failures.push(`line ${item.edit.line}: ${r.error ?? 'edit failed'}`);
+        if (!r.ok) {
+          failures.push(`line ${pending[i].edit.line}: ${r.error ?? 'edit failed'}`);
         }
       }
-      refreshCount();
       if (failures.length > 0) {
         toast.error(`${t.inspector.saveFailed} ${failures.join('; ')}`);
       } else if (changed === false) {
         toast.error(t.inspector.noOpEdit);
+        return;
       }
+      for (let i = 0; i < results.length; i++) {
+        const item = pending[i];
+        const r = results[i];
+        if (!r.ok) continue;
+        const bucket = pendingRef.current.get(item.key);
+        if (bucket) {
+          item.onSuccess(bucket);
+          if (
+            bucket.styleOps.size === 0 &&
+            bucket.rangeStyleOps.size === 0 &&
+            bucket.textOps.size === 0 &&
+            bucket.attrOps.size === 0
+          ) {
+            pendingRef.current.delete(item.key);
+          }
+        }
+      }
+      refreshCount();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       toast.error(`${t.inspector.saveFailed} ${msg}`);
