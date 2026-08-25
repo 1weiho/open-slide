@@ -39,14 +39,40 @@ function pickEditableAnchor(
   return hit;
 }
 
-// Double-click-to-edit lives outside the inspector: it works in the plain
-// slide view, without activating inspect mode or opening the panel.
+// Click-to-edit lives outside the inspector: it works in the plain slide
+// view, without activating inspect mode or opening the panel.
 export function InlineEditLayer() {
   const { slideId, active, inlineEdit, startInlineEdit, stopInlineEdit } = useInspector();
   const layerRef = useRef<HTMLDivElement>(null);
 
+  // Plain view: a single click on a text run starts editing with the caret
+  // at the click point. A double-click's second click lands on the
+  // now-contenteditable element, so native word selection still happens.
   useEffect(() => {
-    if (import.meta.env.PROD) return;
+    if (import.meta.env.PROD || active) return;
+    const onClick = (e: MouseEvent) => {
+      if (inlineEdit?.anchor.contains(e.target as Node)) return;
+      if (!isInspectableEventTarget(e.target)) return;
+      const hit = pickEditableAnchor(e.clientX, e.clientY, slideId);
+      if (!hit) return;
+      e.preventDefault();
+      e.stopPropagation();
+      startInlineEdit({
+        line: hit.line,
+        column: hit.column,
+        anchor: hit.anchor,
+        point: { x: e.clientX, y: e.clientY },
+        selectWord: false,
+      });
+    };
+    window.addEventListener('click', onClick, true);
+    return () => window.removeEventListener('click', onClick, true);
+  }, [active, slideId, inlineEdit, startInlineEdit]);
+
+  // Inspect mode keeps double-click entry — a single click there means
+  // "select the element for the panel".
+  useEffect(() => {
+    if (import.meta.env.PROD || !active) return;
     const onDblClick = (e: MouseEvent) => {
       if (inlineEdit?.anchor.contains(e.target as Node)) return;
       if (!isInspectableEventTarget(e.target)) return;
@@ -64,7 +90,7 @@ export function InlineEditLayer() {
     };
     window.addEventListener('dblclick', onDblClick, true);
     return () => window.removeEventListener('dblclick', onDblClick, true);
-  }, [slideId, inlineEdit, startInlineEdit]);
+  }, [active, slideId, inlineEdit, startInlineEdit]);
 
   useEffect(() => {
     if (!inlineEdit) return;
@@ -104,9 +130,8 @@ export function InlineEditLayer() {
     };
   }, [inlineEdit, active, slideId, startInlineEdit, stopInlineEdit]);
 
-  // Hovering an editable text run in the plain view shows a text cursor —
-  // the discoverability cue for double-click-to-edit (and for the
-  // click-to-switch above while a session is open).
+  // Hovering an editable text run in the plain view shows a text cursor and
+  // a light outline — the discoverability cue for click-to-edit.
   useEffect(() => {
     if (import.meta.env.PROD || active) return;
     const styleEl = document.createElement('style');
@@ -167,7 +192,7 @@ const HOVER_HINT_CSS = `
   cursor: text !important;
 }
 [data-inspector-root] [${TEXT_HOVER_ATTR}] {
-  outline: 2px solid rgba(59, 130, 246, 0.75) !important;
+  outline: 2px solid rgba(59, 130, 246, 0.5) !important;
   outline-offset: 2px !important;
 }
 `;
