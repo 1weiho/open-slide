@@ -30,6 +30,7 @@ import { toast } from 'sonner';
 import { AssetView } from '@/components/asset-view';
 import { HistoryProvider } from '@/components/history-provider';
 import { CommentWidget } from '@/components/inspector/comment-widget';
+import { InlineEditLayer } from '@/components/inspector/inline-text-editor';
 import { InspectOverlay } from '@/components/inspector/inspect-overlay';
 import { InspectorPanel } from '@/components/inspector/inspector-panel';
 import {
@@ -818,6 +819,7 @@ export function Slide() {
                       />
                     </SlideCanvas>
                     <InspectOverlay />
+                    <InlineEditLayer />
                     <SaveBar />
                     {import.meta.env.DEV && <CommentWidget />}
                   </main>
@@ -1084,12 +1086,13 @@ function SlideViewportNavigation({
   canPrev: boolean;
   canNext: boolean;
 }) {
-  const { active } = useInspector();
+  const { active, inlineEdit } = useInspector();
   const isMobile = useIsMobile();
+  const editing = !!inlineEdit;
 
   useWheelPageNavigation({
     ref: targetRef,
-    enabled: !active,
+    enabled: !active && !editing,
     canPrev,
     canNext,
     onPrev,
@@ -1101,7 +1104,7 @@ function SlideViewportNavigation({
   // zones). Interactive slide content keeps its tap via the hook's passthrough.
   useClickPageNavigation({
     ref: targetRef,
-    enabled: isMobile && !active,
+    enabled: isMobile && !active && !editing,
     edgeRatio: 0.18,
     canPrev,
     canNext,

@@ -12,8 +12,7 @@ export type EditOp =
       prevText?: string;
     }
   | { kind: 'set-attr-asset'; attr: string; assetPath: string; previewUrl: string }
-  | { kind: 'replace-placeholder-with-image'; assetPath: string }
-  | { kind: 'move-element'; refLine: number; refColumn: number; position: 'before' | 'after' };
+  | { kind: 'replace-placeholder-with-image'; assetPath: string };
 
 export type Edit = { line: number; column: number; ops: EditOp[] };
 

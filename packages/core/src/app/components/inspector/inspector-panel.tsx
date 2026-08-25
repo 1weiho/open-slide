@@ -354,13 +354,6 @@ const EDITING_FREEZE_CSS = `
   view-transition-name: none !important;
   cursor: pointer !important;
 }
-[data-inspector-editing] [data-slide-editing],
-[data-inspector-editing] [data-slide-editing] * {
-  cursor: text !important;
-  -webkit-user-select: text !important;
-  user-select: text !important;
-  outline: none !important;
-}
 `;
 
 const INLINE_CONTENT_STYLE_KEYS = new Set([

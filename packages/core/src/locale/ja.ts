@@ -261,8 +261,6 @@ export const ja: Locale = {
     commentsApplyHintSuffix: ' を実行して適用してください。',
     commentDeleteAria: '削除',
     saveFailed: '保存に失敗しました:',
-    reorderFailed: '並べ替えに失敗しました:',
-    reorderTargetGone: '並べ替えできません: 要素がこのページに見つかりません。',
     decreaseFontSize: 'フォントサイズを縮小',
     increaseFontSize: 'フォントサイズを拡大',
   },

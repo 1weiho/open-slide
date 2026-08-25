@@ -2,4 +2,4 @@
 '@open-slide/core': minor
 ---
 
-Upgrade the inspector: double-click any text element to edit it inline with a floating toolbar (font size, bold, italic, color, alignment), drag elements to reorder them among their siblings with an insertion guide, and undo/redo edits with ⌘Z / ⇧⌘Z.
+Double-click any text element in the slide view to edit it inline, with a floating toolbar for font size, bold, italic, text color, and alignment.

@@ -66,40 +66,6 @@ function readInstanceId(el: HTMLElement): string | null {
   return el.getAttribute(INSTANCE_ID_ATTR);
 }
 
-export function parseSlideLoc(el: HTMLElement): { line: number; column: number } | null {
-  const loc = el.dataset.slideLoc;
-  if (!loc) return null;
-  const idx = loc.indexOf(':');
-  if (idx <= 0) return null;
-  const line = Number(loc.slice(0, idx));
-  const column = Number(loc.slice(idx + 1));
-  if (!Number.isFinite(line) || !Number.isFinite(column)) return null;
-  return { line, column };
-}
-
-export function slideLocChildren(container: HTMLElement): HTMLElement[] {
-  return Array.from(container.children).filter(
-    (child): child is HTMLElement => child instanceof HTMLElement && !!child.dataset.slideLoc,
-  );
-}
-
-function waitForHmrUpdate(timeoutMs: number): Promise<void> {
-  const hot = import.meta.hot;
-  if (!hot) return Promise.resolve();
-  return new Promise((resolve) => {
-    let done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
-      hot.off('vite:afterUpdate', finish);
-      clearTimeout(timer);
-      resolve();
-    };
-    const timer = setTimeout(finish, timeoutMs);
-    hot.on('vite:afterUpdate', finish);
-  });
-}
-
 export type DomTextPart = { node: Text | HTMLBRElement; current: string };
 
 export function readEditableText(el: HTMLElement): string {
@@ -277,10 +243,6 @@ type InspectorCtx = {
   // Bumped on every buffered-op mutation (including undo/redo restores) so
   // panels can re-read DOM snapshots without polling.
   opsVersion: number;
-  // Reorder `container`'s loc-tagged children: the child at `from` moves to
-  // index `to`. Flushes buffered edits first, then writes through the server
-  // (no optimistic DOM move — React's unkeyed reconcile would scramble one).
-  moveElement: (container: HTMLElement, from: number, to: number) => void;
   applyEdit: (line: number, column: number, ops: EditOp[]) => Promise<void>;
   // Mutate the DOM optimistically, snapshot the pre-edit values, and
   // remember the ops. `commitEdits` (manual Save or auto-flush on
@@ -854,95 +816,6 @@ export function InspectorProvider({
   useEffect(() => {
     if (!active) commitRef.current().catch(() => {});
   }, [active]);
-
-  // Moves write through to the source immediately (after flushing the
-  // buffered edits, whose locs a reorder would invalidate) and wait for the
-  // resulting HMR so the DOM's `data-slide-loc` values are fresh before the
-  // next queued move — which is how undo/redo re-derive their locs.
-  const moveQueueRef = useRef<Promise<void>>(Promise.resolve());
-  const enqueueMoveRef = useRef<
-    (container: HTMLElement, from: number, to: number, record: boolean) => void
-  >(() => {});
-
-  // An HMR remount replaces the captured container node, but a reorder never
-  // shifts the container's own `data-slide-loc`, so the value re-locates the
-  // fresh node — which is what lets undo/redo closures survive remounts.
-  const resolveContainer = useCallback((container: HTMLElement): HTMLElement | null => {
-    if (container.isConnected) return container;
-    const loc = container.dataset.slideLoc;
-    if (!loc) return null;
-    return document.querySelector<HTMLElement>(`[data-inspector-root] [data-slide-loc="${loc}"]`);
-  }, []);
-
-  const performMove = useCallback(
-    async (container: HTMLElement, from: number, to: number): Promise<boolean> => {
-      if (from === to) return false;
-      const live = resolveContainer(container);
-      if (!live) {
-        toast.error(t.inspector.reorderTargetGone);
-        return false;
-      }
-      const kids = slideLocChildren(live);
-      const el = kids[from];
-      const ref = kids[to];
-      const target = el ? parseSlideLoc(el) : null;
-      const refLoc = ref ? parseSlideLoc(ref) : null;
-      if (!target || !refLoc) {
-        toast.error(t.inspector.reorderTargetGone);
-        return false;
-      }
-      await applyEdit(target.line, target.column, [
-        {
-          kind: 'move-element',
-          refLine: refLoc.line,
-          refColumn: refLoc.column,
-          position: to < from ? 'before' : 'after',
-        },
-      ]);
-      await waitForHmrUpdate(1500);
-      const after = resolveContainer(live);
-      const moved = after ? slideLocChildren(after)[to] : null;
-      const movedLoc = moved ? parseSlideLoc(moved) : null;
-      if (moved && movedLoc) {
-        setSelected({ line: movedLoc.line, column: movedLoc.column, anchor: moved });
-      }
-      return true;
-    },
-    [applyEdit, resolveContainer, t],
-  );
-
-  const enqueueMove = useCallback(
-    (container: HTMLElement, from: number, to: number, record: boolean) => {
-      moveQueueRef.current = moveQueueRef.current.then(async () => {
-        try {
-          await commitRef.current();
-        } catch {
-          return;
-        }
-        try {
-          const ok = await performMove(container, from, to);
-          if (ok && record) {
-            history.record({
-              undo: () => enqueueMoveRef.current(container, to, from, false),
-              redo: () => enqueueMoveRef.current(container, from, to, false),
-            });
-          }
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          toast.error(`${t.inspector.reorderFailed} ${msg}`);
-        }
-      });
-    },
-    [performMove, history, t],
-  );
-  enqueueMoveRef.current = enqueueMove;
-
-  const moveElement = useCallback(
-    (container: HTMLElement, from: number, to: number) => {
-      enqueueMove(container, from, to, true);
-    },
-    [enqueueMove],
-  );
   useEffect(() => {
     return () => {
       commitRef.current().catch(() => {});
@@ -1055,10 +928,6 @@ export function InspectorProvider({
     setInlineEdit(null);
   }, []);
 
-  useEffect(() => {
-    if (!active && inlineEdit) setInlineEdit(null);
-  }, [active, inlineEdit]);
-
   // Deselecting, selecting another element, or an HMR anchor swap all end
   // the inline session — the contenteditable node is gone or no longer the
   // selection's anchor.
@@ -1124,7 +993,6 @@ export function InspectorProvider({
       startInlineEdit,
       stopInlineEdit,
       opsVersion,
-      moveElement,
       applyEdit,
       bufferOps,
       pendingCount,
@@ -1148,7 +1016,6 @@ export function InspectorProvider({
       startInlineEdit,
       stopInlineEdit,
       opsVersion,
-      moveElement,
       applyEdit,
       bufferOps,
       pendingCount,

@@ -1,15 +1,21 @@
 import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Minus, Plus } from 'lucide-react';
 import { type RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useHistory } from '@/components/history-provider';
+import { findSlideSource } from '@/lib/inspector/fiber';
+import {
+  isEditableTextContainer,
+  isInspectableEventTarget,
+  pickElement,
+  pickInspectorTarget,
+} from '@/lib/inspector/pick-target';
+import { useLocale } from '@/lib/use-locale';
+import { cn } from '@/lib/utils';
 import {
   collectDomTextParts,
   type DomTextPart,
   type InlineEditTarget,
   readEditableText,
   useInspector,
-} from '@/components/inspector/inspector-provider';
-import { useLocale } from '@/lib/use-locale';
-import { cn } from '@/lib/utils';
+} from './inspector-provider';
 
 type RelRect = { left: number; top: number; width: number; height: number };
 type TextRange = { start: number; end: number };
@@ -18,29 +24,99 @@ const RANGE_STYLE_KEYS = new Set(['fontSize', 'fontWeight', 'fontStyle', 'color'
 const TOOLBAR_GAP = 8;
 const TOOLBAR_HEIGHT = 36;
 
-export function InlineTextLayer({ overlayRef }: { overlayRef: RefObject<HTMLDivElement> }) {
-  const { inlineEdit } = useInspector();
-  if (!inlineEdit) return null;
+// Double-click-to-edit lives outside the inspector: it works in the plain
+// slide view, without activating inspect mode or opening the panel.
+export function InlineEditLayer() {
+  const { slideId, active, inlineEdit, startInlineEdit, stopInlineEdit } = useInspector();
+  const layerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (import.meta.env.PROD) return;
+    const onDblClick = (e: MouseEvent) => {
+      if (inlineEdit?.anchor.contains(e.target as Node)) return;
+      if (!isInspectableEventTarget(e.target)) return;
+      const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
+      if (!el) return;
+      const hit = findSlideSource(el, slideId, { hostOnly: true });
+      if (!hit) return;
+      // Images keep their double-click behavior (crop, in inspect mode).
+      if (hit.anchor instanceof HTMLImageElement) return;
+      if (!isEditableTextContainer(hit.anchor)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      startInlineEdit({
+        line: hit.line,
+        column: hit.column,
+        anchor: hit.anchor,
+        point: { x: e.clientX, y: e.clientY },
+      });
+    };
+    window.addEventListener('dblclick', onDblClick, true);
+    return () => window.removeEventListener('dblclick', onDblClick, true);
+  }, [slideId, inlineEdit, startInlineEdit]);
+
+  useEffect(() => {
+    if (!inlineEdit) return;
+    const { anchor } = inlineEdit;
+    const onPointerDown = (e: PointerEvent) => {
+      if (anchor.contains(e.target as Node)) return;
+      if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) return;
+      stopInlineEdit();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopPropagation();
+      stopInlineEdit();
+    };
+    window.addEventListener('pointerdown', onPointerDown, true);
+    window.addEventListener('keydown', onKey, true);
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown, true);
+      window.removeEventListener('keydown', onKey, true);
+    };
+  }, [inlineEdit, stopInlineEdit]);
+
+  if (import.meta.env.PROD) return null;
   return (
-    <ActiveInlineEditor
-      key={`${inlineEdit.line}:${inlineEdit.column}`}
-      target={inlineEdit}
-      overlayRef={overlayRef}
-    />
+    <div ref={layerRef} data-inspector-ui className="pointer-events-none absolute inset-0 z-30">
+      {inlineEdit && (
+        <ActiveInlineEditor
+          key={`${inlineEdit.line}:${inlineEdit.column}`}
+          target={inlineEdit}
+          layerRef={layerRef}
+          showOutline={!active}
+        />
+      )}
+    </div>
   );
 }
 
+const INLINE_EDITING_CSS = `
+[data-inspector-root] [data-slide-editing][data-slide-editing],
+[data-inspector-root] [data-slide-editing][data-slide-editing] * {
+  cursor: text !important;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+[data-inspector-root] [data-slide-editing][data-slide-editing] {
+  outline: none !important;
+}
+`;
+
 function ActiveInlineEditor({
   target,
-  overlayRef,
+  layerRef,
+  showOutline,
 }: {
   target: InlineEditTarget;
-  overlayRef: RefObject<HTMLDivElement>;
+  layerRef: RefObject<HTMLDivElement>;
+  showOutline: boolean;
 }) {
   const { bufferOps, stopInlineEdit } = useInspector();
-  const history = useHistory();
   const [sel, setSel] = useState<TextRange | null>(null);
   const { anchor } = target;
+  const rect = useAnchorRect(anchor, layerRef);
 
   const commit = useCallback(() => {
     if (!anchor.isConnected) return;
@@ -78,14 +154,17 @@ function ActiveInlineEditor({
   // The setup effect must run exactly once per anchor — re-running it would
   // re-place the caret and clobber the user's live selection — so everything
   // with an unstable identity is reached through latest-refs.
-  const latestRef = useRef({ commit, history, stopInlineEdit, toggleBold, toggleItalic });
-  latestRef.current = { commit, history, stopInlineEdit, toggleBold, toggleItalic };
+  const latestRef = useRef({ commit, toggleBold, toggleItalic });
+  latestRef.current = { commit, toggleBold, toggleItalic };
   const initialPointRef = useRef(target.point);
 
   useEffect(() => {
     anchor.setAttribute('contenteditable', 'true');
     anchor.setAttribute('spellcheck', 'false');
     anchor.setAttribute('data-slide-editing', 'true');
+    const styleEl = document.createElement('style');
+    styleEl.textContent = INLINE_EDITING_CSS;
+    document.head.appendChild(styleEl);
     focusAndPlaceCaret(anchor, initialPointRef.current);
 
     const onBeforeInput = (e: Event) => {
@@ -98,12 +177,6 @@ function ActiveInlineEditor({
         ev.preventDefault();
         const text = ev.dataTransfer?.getData('text/plain') ?? ev.data;
         if (text) document.execCommand('insertText', false, text);
-      } else if (type === 'historyUndo') {
-        ev.preventDefault();
-        latestRef.current.history.undo();
-      } else if (type === 'historyRedo') {
-        ev.preventDefault();
-        latestRef.current.history.redo();
       } else if (type === 'formatBold') {
         ev.preventDefault();
         latestRef.current.toggleBold();
@@ -120,20 +193,9 @@ function ActiveInlineEditor({
     };
     const onCompositionEnd = () => latestRef.current.commit();
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        e.stopPropagation();
-        latestRef.current.stopInlineEdit();
-        return;
-      }
       if ((e.metaKey || e.ctrlKey) && !e.altKey) {
         const key = e.key.toLowerCase();
-        if (key === 'z' || key === 'y') {
-          e.preventDefault();
-          e.stopPropagation();
-          if (key === 'y' || e.shiftKey) latestRef.current.history.redo();
-          else latestRef.current.history.undo();
-        } else if (key === 'b') {
+        if (key === 'b') {
           e.preventDefault();
           latestRef.current.toggleBold();
         } else if (key === 'i') {
@@ -159,6 +221,7 @@ function ActiveInlineEditor({
       anchor.removeEventListener('compositionend', onCompositionEnd);
       anchor.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('selectionchange', onSelectionChange);
+      styleEl.remove();
       if (anchor.isConnected) {
         anchor.removeAttribute('contenteditable');
         anchor.removeAttribute('spellcheck');
@@ -180,32 +243,40 @@ function ActiveInlineEditor({
     return () => observer.disconnect();
   }, [anchor, stopInlineEdit]);
 
+  if (!rect) return null;
   return (
-    <TextToolbar anchor={anchor} overlayRef={overlayRef} sel={sel} applyStyle={applyTextStyle} />
+    <>
+      {showOutline && (
+        <div
+          className="absolute"
+          style={{
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height,
+            outline: '2px solid #3b82f6',
+          }}
+        />
+      )}
+      <TextToolbar
+        anchor={anchor}
+        layerRef={layerRef}
+        rect={rect}
+        sel={sel}
+        applyStyle={applyTextStyle}
+      />
+    </>
   );
 }
 
-function TextToolbar({
-  anchor,
-  overlayRef,
-  sel,
-  applyStyle,
-}: {
-  anchor: HTMLElement;
-  overlayRef: RefObject<HTMLDivElement>;
-  sel: TextRange | null;
-  applyStyle: (key: string, value: string | null) => void;
-}) {
-  const { opsVersion } = useInspector();
-  const t = useLocale();
+function useAnchorRect(anchor: HTMLElement, layerRef: RefObject<HTMLDivElement>): RelRect | null {
   const [rect, setRect] = useState<RelRect | null>(null);
-  const toolbarRef = useRef<HTMLDivElement>(null);
 
   const measure = useCallback(() => {
-    const overlay = overlayRef.current;
-    if (!anchor.isConnected || !overlay) return;
+    const layer = layerRef.current;
+    if (!anchor.isConnected || !layer) return;
     const a = anchor.getBoundingClientRect();
-    const o = overlay.getBoundingClientRect();
+    const o = layer.getBoundingClientRect();
     const next = { left: a.left - o.left, top: a.top - o.top, width: a.width, height: a.height };
     setRect((prev) =>
       prev &&
@@ -216,7 +287,7 @@ function TextToolbar({
         ? prev
         : next,
     );
-  }, [anchor, overlayRef]);
+  }, [anchor, layerRef]);
 
   useLayoutEffect(() => {
     measure();
@@ -230,7 +301,7 @@ function TextToolbar({
     };
     const resizeObserver = new ResizeObserver(scheduleMeasure);
     resizeObserver.observe(anchor);
-    if (overlayRef.current) resizeObserver.observe(overlayRef.current);
+    if (layerRef.current) resizeObserver.observe(layerRef.current);
     window.addEventListener('resize', scheduleMeasure, true);
     window.addEventListener('scroll', scheduleMeasure, true);
     return () => {
@@ -239,7 +310,27 @@ function TextToolbar({
       window.removeEventListener('resize', scheduleMeasure, true);
       window.removeEventListener('scroll', scheduleMeasure, true);
     };
-  }, [measure, anchor, overlayRef]);
+  }, [measure, anchor, layerRef]);
+
+  return rect;
+}
+
+function TextToolbar({
+  anchor,
+  layerRef,
+  rect,
+  sel,
+  applyStyle,
+}: {
+  anchor: HTMLElement;
+  layerRef: RefObject<HTMLDivElement>;
+  rect: RelRect;
+  sel: TextRange | null;
+  applyStyle: (key: string, value: string | null) => void;
+}) {
+  const { opsVersion } = useInspector();
+  const t = useLocale();
+  const toolbarRef = useRef<HTMLDivElement>(null);
 
   void opsVersion;
   const contextEl = styleContext(anchor, sel);
@@ -254,14 +345,12 @@ function TextToolbar({
       ? anchorAlign
       : 'left';
 
-  if (!rect) return null;
-
-  const overlayWidth = overlayRef.current?.clientWidth ?? 0;
+  const layerWidth = layerRef.current?.clientWidth ?? 0;
   const barWidth = toolbarRef.current?.offsetWidth ?? 0;
   const centerX = rect.left + rect.width / 2;
   const clampedX =
-    barWidth > 0 && overlayWidth > 0
-      ? Math.min(Math.max(centerX, barWidth / 2 + 4), overlayWidth - barWidth / 2 - 4)
+    barWidth > 0 && layerWidth > 0
+      ? Math.min(Math.max(centerX, barWidth / 2 + 4), layerWidth - barWidth / 2 - 4)
       : centerX;
   const above = rect.top - TOOLBAR_HEIGHT - TOOLBAR_GAP >= 0;
   const top = above ? rect.top - TOOLBAR_GAP : rect.top + rect.height + TOOLBAR_GAP;
