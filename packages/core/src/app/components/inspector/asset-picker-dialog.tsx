@@ -1,5 +1,4 @@
 import { ArrowDownToLine, Loader2, Upload } from 'lucide-react';
-import type React from 'react';
 import { useCallback, useId, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -10,12 +9,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { type AssetEntry, uploadWithAutoRename, useAssets } from '@/lib/assets';
+import { type AssetEntry, GLOBAL_ASSET_SCOPE, uploadWithAutoRename, useAssets } from '@/lib/assets';
+import { dragHasFiles } from '@/lib/dom';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 
 export type PickerScope = 'slide' | 'global';
-const GLOBAL_PICKER_SLIDE_ID = '@global';
 
 export function AssetPickerDialog({
   slideId,
@@ -27,7 +26,7 @@ export function AssetPickerDialog({
   onPick: (asset: AssetEntry, scope: PickerScope) => void;
 }) {
   const [scope, setScope] = useState<PickerScope>('slide');
-  const effectiveSlideId = scope === 'global' ? GLOBAL_PICKER_SLIDE_ID : slideId;
+  const effectiveSlideId = scope === 'global' ? GLOBAL_ASSET_SCOPE : slideId;
   const { assets, loading, refresh } = useAssets(effectiveSlideId);
   const images = assets.filter((a) => a.mime.startsWith('image/'));
   const t = useLocale();
@@ -83,7 +82,7 @@ export function AssetPickerDialog({
           )}
         >
           {uploading ? (
-            <Loader2 className="size-3.5 animate-spin" />
+            <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />
           ) : (
             <Upload className="size-3.5" />
           )}
@@ -105,13 +104,13 @@ export function AssetPickerDialog({
           aria-label={t.inspector.replaceImageDialogTitle}
           className="relative max-h-[60vh] overflow-y-auto"
           onDragEnter={(e) => {
-            if (uploading || !hasFiles(e)) return;
+            if (uploading || !dragHasFiles(e)) return;
             e.preventDefault();
             dragDepth.current += 1;
             setDragActive(true);
           }}
           onDragOver={(e) => {
-            if (uploading || !hasFiles(e)) return;
+            if (uploading || !dragHasFiles(e)) return;
             e.preventDefault();
             e.dataTransfer.dropEffect = 'copy';
           }}
@@ -120,7 +119,7 @@ export function AssetPickerDialog({
             if (dragDepth.current === 0) setDragActive(false);
           }}
           onDrop={(e) => {
-            if (uploading || !hasFiles(e)) return;
+            if (uploading || !dragHasFiles(e)) return;
             e.preventDefault();
             dragDepth.current = 0;
             setDragActive(false);
@@ -144,8 +143,9 @@ export function AssetPickerDialog({
                   type="button"
                   onClick={() => onPick(asset, scope)}
                   className={cn(
-                    'group flex flex-col overflow-hidden rounded-lg border bg-card text-left shadow-sm transition-all',
-                    'hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none',
+                    'group flex flex-col overflow-hidden rounded-[8px] border bg-card text-left shadow-edge transition-[translate,scale,box-shadow,border-color] duration-150 ease-swift',
+                    'motion-safe:hover:-translate-y-0.5 hover:shadow-floating focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none',
+                    'motion-safe:active:translate-y-0 motion-safe:active:scale-[0.98]',
                   )}
                 >
                   <div className="flex aspect-square w-full items-center justify-center overflow-hidden bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:12px_12px]">
@@ -165,32 +165,24 @@ export function AssetPickerDialog({
               ))}
             </div>
           )}
-          {dragActive && (
-            <div
-              className="pointer-events-none absolute inset-0 z-10 animate-in fade-in-0 duration-200"
-              aria-hidden
-            >
-              <div className="absolute inset-0 bg-brand/5" />
-              <div className="absolute inset-1 rounded-[8px] border border-dashed border-brand/40" />
-              <div className="absolute inset-x-0 bottom-4 flex justify-center">
-                <div className="flex items-center gap-2 rounded-[6px] border border-border bg-card px-3 py-1.5 text-[12px] font-medium shadow-floating">
-                  <ArrowDownToLine className="size-3.5 text-brand" />
-                  <span>{t.asset.dropToUpload}</span>
-                </div>
+          <div
+            className={cn(
+              'pointer-events-none absolute inset-0 z-10 motion-safe:transition-opacity motion-safe:duration-150',
+              dragActive ? 'opacity-100' : 'opacity-0',
+            )}
+            aria-hidden
+          >
+            <div className="absolute inset-0 bg-brand/5" />
+            <div className="absolute inset-1 rounded-[8px] border border-dashed border-brand/40" />
+            <div className="absolute inset-x-0 bottom-4 flex justify-center">
+              <div className="flex items-center gap-2 rounded-[6px] border border-border bg-card px-3 py-1.5 text-[12px] font-medium shadow-floating">
+                <ArrowDownToLine className="size-3.5 text-brand" />
+                <span>{t.asset.dropToUpload}</span>
               </div>
             </div>
-          )}
+          </div>
         </section>
       </DialogContent>
     </Dialog>
   );
-}
-
-function hasFiles(e: React.DragEvent): boolean {
-  const types = e.dataTransfer?.types;
-  if (!types) return false;
-  for (let i = 0; i < types.length; i++) {
-    if (types[i] === 'Files') return true;
-  }
-  return false;
 }

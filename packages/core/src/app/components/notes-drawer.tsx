@@ -44,10 +44,7 @@ export function NotesDrawer({ slideId, index, total, initial }: Props) {
   })();
 
   return (
-    <aside
-      data-notes-drawer
-      className="hidden shrink-0 border-t border-hairline bg-sidebar/85 backdrop-blur md:block"
-    >
+    <aside data-notes-drawer className="hidden shrink-0 bg-sidebar md:block">
       <button
         type="button"
         onClick={() => {
@@ -56,12 +53,12 @@ export function NotesDrawer({ slideId, index, total, initial }: Props) {
             return !o;
           });
         }}
-        className="flex h-9 w-full items-center gap-2 px-3 text-[12px] text-foreground/80 hover:bg-muted/40"
+        className="flex h-9 w-full items-center gap-2 px-3 text-[12px] text-foreground/80 transition-colors duration-150 hover:bg-muted/40 active:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/30"
         aria-expanded={open}
       >
         <NotebookPen className="size-3.5 text-muted-foreground" />
         <span className="font-medium">{t.notesDrawer.toggle}</span>
-        <span className="font-mono text-[11px] text-muted-foreground">
+        <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
           {format(t.notesDrawer.pageLabel, { n: index + 1, total })}
         </span>
         <span
@@ -81,7 +78,7 @@ export function NotesDrawer({ slideId, index, total, initial }: Props) {
       </button>
       {mounted && (
         <div
-          className="overflow-hidden border-t border-hairline transition-[height] ease-out"
+          className="overflow-hidden transition-[height] ease-swift motion-reduce:transition-none"
           style={{
             height: animVisible ? DRAWER_CONTENT_H : 0,
             transitionDuration: `${PANEL_TRANSITION_MS}ms`,

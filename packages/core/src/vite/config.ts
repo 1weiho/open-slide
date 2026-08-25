@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
@@ -34,6 +35,22 @@ function readCoreVersion(): string {
 }
 
 const CORE_VERSION = readCoreVersion();
+
+// styles.css pulls webfonts from core's own dependencies. Their real paths sit
+// outside the app root — and, under pnpm or in a workspace, outside the user's
+// project too — so Vite's fs guard would refuse to serve them.
+const RUNTIME_ASSET_ROOTS = resolveRuntimeAssetRoots();
+
+function resolveRuntimeAssetRoots(): string[] {
+  const require = createRequire(import.meta.url);
+  const roots: string[] = [];
+  for (const pkg of ['@fontsource-variable/geist']) {
+    try {
+      roots.push(path.dirname(require.resolve(`${pkg}/package.json`)));
+    } catch {}
+  }
+  return roots;
+}
 
 export type CreateViteConfigOptions = {
   userCwd: string;
@@ -114,7 +131,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
     server: {
       port: config.port ?? 5173,
       ...(config.allowedHosts !== undefined ? { allowedHosts: config.allowedHosts } : {}),
-      fs: { allow: [APP_ROOT, userCwd, slidesAbs, themesAbs, assetsAbs] },
+      fs: { allow: [APP_ROOT, ...RUNTIME_ASSET_ROOTS, userCwd, slidesAbs, themesAbs, assetsAbs] },
     },
     build: {
       outDir: path.resolve(userCwd, 'dist'),
@@ -122,5 +139,3 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
     },
   };
 }
-
-export { APP_ROOT };

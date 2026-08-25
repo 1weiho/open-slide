@@ -636,7 +636,7 @@ function VisualEditorVisual() {
           <PanelSection label="Color">
             <PanelRow label="Text">
               <PanelSwatch color="var(--color-accent)" />
-              <PanelInput value="#DE3B3D" mono uppercase />
+              <PanelInput value="#DE3B3D" />
             </PanelRow>
           </PanelSection>
         </div>
@@ -731,20 +731,10 @@ function PanelRow({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function PanelInput({
-  value,
-  mono = true,
-  uppercase = false,
-}: {
-  value: string;
-  mono?: boolean;
-  uppercase?: boolean;
-}) {
+function PanelInput({ value }: { value: string }) {
   return (
     <span
-      className={`flex-1 rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] text-[color:var(--color-text)] transition-colors hover:border-[color:var(--color-dim)] ${
-        mono ? 'font-[family-name:var(--font-mono)]' : 'font-[family-name:var(--font-sans)]'
-      } ${uppercase ? 'uppercase' : ''}`}
+      className="flex-1 rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] font-[family-name:var(--font-mono)] uppercase text-[color:var(--color-text)] transition-colors hover:border-[color:var(--color-dim)]"
       style={{ fontSize: '1.05cqw', padding: '0.4cqw 0.6cqw' }}
     >
       {value}

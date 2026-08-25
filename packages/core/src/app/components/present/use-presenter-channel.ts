@@ -15,7 +15,6 @@ export type PresenterCommand =
   | { type: 'next' }
   | { type: 'prev' }
   | { type: 'request-state' }
-  | { type: 'restart-timer' }
   | { type: 'toggle-blackout'; mode: 'black' | 'white' }
   | { type: 'switch-slide'; slideId: string };
 

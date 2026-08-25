@@ -9,7 +9,13 @@ import {
   parseMarkers,
 } from '../../editing/comments.ts';
 import { validateMutationRequest } from '../../http/request-guard.ts';
-import { type ApiContext, json, readBody, resolveSlideEntryPath } from './context.ts';
+import {
+  type ApiContext,
+  json,
+  readBody,
+  readSlideSource,
+  resolveSlideEntryPath,
+} from './context.ts';
 
 // GET    /__comments        list markers for ?slideId=…
 // POST   /__comments/add    add marker { slideId, line, column?, text, hint? }
@@ -33,12 +39,8 @@ export function registerCommentRoutes(server: ViteDevServer, ctx: ApiContext): v
         const slideId = url.searchParams.get('slideId') ?? '';
         const file = resolveSlideEntryPath(ctx, slideId);
         if (!file) return json(res, 400, { error: 'invalid slideId' });
-        let source: string;
-        try {
-          source = await fs.readFile(file, 'utf8');
-        } catch {
-          return json(res, 404, { error: 'slide not found' });
-        }
+        const source = await readSlideSource(file);
+        if (source === null) return json(res, 404, { error: 'slide not found' });
         return json(res, 200, { comments: parseMarkers(source) });
       }
 
@@ -56,12 +58,8 @@ export function registerCommentRoutes(server: ViteDevServer, ctx: ApiContext): v
           return json(res, 400, { error: 'missing text' });
         }
 
-        let source: string;
-        try {
-          source = await fs.readFile(file, 'utf8');
-        } catch {
-          return json(res, 404, { error: 'slide not found' });
-        }
+        const source = await readSlideSource(file);
+        if (source === null) return json(res, 404, { error: 'slide not found' });
 
         const plan = findInsertion(source, body.line, body.column);
         if (!plan) {
@@ -94,12 +92,8 @@ export function registerCommentRoutes(server: ViteDevServer, ctx: ApiContext): v
         const file = resolveSlideEntryPath(ctx, slideId);
         if (!file) return json(res, 400, { error: 'invalid slideId' });
 
-        let source: string;
-        try {
-          source = await fs.readFile(file, 'utf8');
-        } catch {
-          return json(res, 404, { error: 'slide not found' });
-        }
+        const source = await readSlideSource(file);
+        if (source === null) return json(res, 404, { error: 'slide not found' });
 
         const lines = source.split('\n');
         const idRe = markerDeleteRegex(id);

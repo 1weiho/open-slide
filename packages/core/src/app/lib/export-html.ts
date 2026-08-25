@@ -2,6 +2,7 @@ import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from './canvas';
 import { designToCssVars } from './design';
+import { downloadBlob, nextFrame } from './dom';
 import { SlidePageProvider } from './page-context';
 import type { SlideModule } from './sdk';
 
@@ -95,8 +96,11 @@ async function renderPagesToHtml(pages: NonNullable<SlideModule['default']>): Pr
       root.render(
         createElement(SlidePageProvider, { index: i, total: pages.length }, createElement(Page)),
       );
-      await nextPaint();
-      await nextPaint();
+      await nextFrame();
+      await nextFrame();
+      for (const video of host.querySelectorAll('video')) {
+        video.defaultMuted = video.muted;
+      }
       result.push(host.innerHTML);
       root.unmount();
       container.removeChild(host);
@@ -105,10 +109,6 @@ async function renderPagesToHtml(pages: NonNullable<SlideModule['default']>): Pr
     container.remove();
   }
   return result;
-}
-
-function nextPaint(): Promise<void> {
-  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }
 
 function collectCss(): string {
@@ -144,7 +144,7 @@ function collectExternalStylesheetLinks(): string {
 
 function findHtmlAssetUrls(html: string): string[] {
   const out: string[] = [];
-  const attrRe = /\s(?:src|href)="([^"]+)"/g;
+  const attrRe = /\s(?:src|href|poster)="([^"]+)"/g;
   for (const m of html.matchAll(attrRe)) {
     if (looksLikeAsset(m[1])) out.push(m[1]);
   }
@@ -283,7 +283,17 @@ html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-f
   }
   function go(i) {
     idx = Math.max(0, Math.min(pages.length - 1, i));
-    pages.forEach(function (p, n) { p.hidden = n !== idx; });
+    pages.forEach(function (p, n) {
+      p.hidden = n !== idx;
+      p.querySelectorAll('video').forEach(function (video) {
+        if (p.hidden) {
+          video.pause();
+          try { video.currentTime = 0; } catch {}
+        } else if (video.autoplay) {
+          video.play().catch(function () {});
+        }
+      });
+    });
     cur.textContent = String(idx + 1);
   }
   window.addEventListener('resize', fit);
@@ -312,16 +322,4 @@ function escapeHtml(s: string): string {
 
 function escapeAttr(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-}
-
-function downloadBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.rel = 'noopener';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 0);
 }

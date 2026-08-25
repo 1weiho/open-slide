@@ -1,13 +1,12 @@
-import { Plus } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { LanguageToggle } from '@/components/language-toggle';
-import { ThemeToggle } from '@/components/theme-toggle';
+import logo from '@/assets/open-slide.png';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { Folder, FolderIcon } from '@/lib/sdk';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
-import { CommandMenuTrigger } from '../command/command-menu';
+import { COMMAND_MENU_SHORTCUT } from '../command/command-menu';
 import { FolderIconChip, FolderItem } from './folder-item';
 import { IconPicker, PRESET_COLORS } from './icon-picker';
 import { SidebarFooter } from './sidebar-footer';
@@ -129,17 +128,42 @@ export function Sidebar({
   }, [creating]);
 
   return (
-    <aside className="relative flex h-full w-[16.5rem] shrink-0 flex-col border-r border-hairline bg-sidebar text-sidebar-foreground">
-      <div className="flex items-center justify-between px-4 pt-5 pb-4">
-        <h1 className="font-heading text-lg font-bold tracking-tight">{t.home.appTitle}</h1>
-        <div className="-mr-1.5 flex items-center">
-          <CommandMenuTrigger onClick={onOpenCommandMenu} />
-          <LanguageToggle />
-          <ThemeToggle />
-        </div>
+    <aside className="group/side relative flex h-full w-[16.5rem] shrink-0 flex-col bg-sidebar text-sidebar-foreground">
+      <div className="flex items-center gap-2.5 px-4 pt-4 pb-3">
+        <img
+          src={logo}
+          alt=""
+          aria-hidden
+          draggable={false}
+          className="size-6 shrink-0 select-none rounded-[6px] ring-1 ring-foreground/10"
+        />
+        <h1 className="font-heading text-[13.5px] font-semibold tracking-tight">
+          {t.home.appTitle}
+        </h1>
       </div>
 
-      <div className="px-2">
+      <div className="px-2 pb-3">
+        <button
+          type="button"
+          onClick={onOpenCommandMenu}
+          aria-label={t.commandMenu.triggerAria}
+          aria-haspopup="dialog"
+          className={cn(
+            'flex h-8 w-full items-center gap-2 rounded-[6px] border border-border bg-card px-2.5 text-[12.5px] text-muted-foreground shadow-edge outline-none',
+            'transition-[border-color,color,background-color] duration-100',
+            'hover:border-foreground/20 hover:text-foreground',
+            'focus-visible:border-foreground/30 focus-visible:ring-2 focus-visible:ring-ring/30',
+          )}
+        >
+          <Search className="size-3.5 shrink-0" aria-hidden />
+          <span className="flex-1 truncate text-left">{t.commandMenu.triggerTooltip}</span>
+          <kbd className="rounded-[4px] border border-hairline bg-muted/60 px-1 py-px font-mono text-[9.5px] leading-none tracking-[0.04em] text-muted-foreground">
+            {COMMAND_MENU_SHORTCUT}
+          </kbd>
+        </button>
+      </div>
+
+      <div className="space-y-0.5 px-2">
         <FolderItem
           row={{ kind: 'all' }}
           count={allCount}
@@ -165,12 +189,27 @@ export function Sidebar({
         )}
       </div>
 
-      <div className="mt-5 flex items-center gap-2 px-4 pb-1.5">
+      <div className="mt-5 flex h-6 items-center justify-between pr-2.5 pl-4 pb-0.5">
         <span className="eyebrow">{t.home.folders}</span>
-        <span className="h-px flex-1 bg-hairline" aria-hidden />
+        {import.meta.env.DEV && (
+          <button
+            type="button"
+            onClick={startCreating}
+            aria-label={t.home.newFolder}
+            title={t.home.newFolder}
+            className={cn(
+              'flex size-5 items-center justify-center rounded-[4px] text-muted-foreground/70 opacity-0 outline-none',
+              'transition-[opacity,background-color,color,scale] duration-100',
+              'hover:bg-muted hover:text-foreground active:scale-90',
+              'group-hover/side:opacity-100 focus-visible:opacity-100 focus-visible:ring-1 focus-visible:ring-brand',
+            )}
+          >
+            <Plus className="size-3.5" />
+          </button>
+        )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2 pb-2">
+      <div className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-2">
         <FolderItem
           row={{ kind: 'draft' }}
           count={countFor(null)}
@@ -246,57 +285,45 @@ export function Sidebar({
           );
         })}
 
-        {import.meta.env.DEV &&
-          (creating ? (
-            <div
-              data-folder-create
-              className="mt-1 flex items-center gap-2.5 rounded-[5px] border border-dashed border-foreground/30 bg-card px-2 py-[5px]"
-            >
-              <Popover open={iconOpen} onOpenChange={setIconOpen}>
-                <PopoverTrigger
-                  render={
-                    <button
-                      type="button"
-                      className="flex size-5 shrink-0 items-center justify-center rounded transition-transform hover:scale-110"
-                      aria-label={t.home.pickIcon}
-                    >
-                      <FolderIconChip icon={newIcon} />
-                    </button>
-                  }
-                />
-                <PopoverContent side="right" align="start" className="w-auto p-2">
-                  <IconPicker value={newIcon} onChange={setNewIcon} />
-                </PopoverContent>
-              </Popover>
-              <input
-                ref={inputRef}
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.nativeEvent.isComposing) return;
-                  if (e.key === 'Enter') commitCreate();
-                  if (e.key === 'Escape') exitCreate();
-                }}
-                placeholder={t.home.folderName}
-                maxLength={40}
-                className="min-w-0 flex-1 bg-transparent text-[12.5px] outline-none placeholder:text-muted-foreground/60"
+        {import.meta.env.DEV && creating && (
+          <div
+            data-folder-create
+            className="mt-1 flex items-center gap-2.5 rounded-[5px] border border-dashed border-foreground/30 bg-card px-2 py-[5px]"
+          >
+            <Popover open={iconOpen} onOpenChange={setIconOpen}>
+              <PopoverTrigger
+                render={
+                  <button
+                    type="button"
+                    className="flex size-5 shrink-0 items-center justify-center rounded outline-none motion-safe:transition-transform motion-safe:duration-150 hover:scale-110 active:scale-95 focus-visible:ring-1 focus-visible:ring-brand"
+                    aria-label={t.home.pickIcon}
+                  >
+                    <FolderIconChip icon={newIcon} />
+                  </button>
+                }
               />
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={startCreating}
-              className="mt-1 flex w-full items-center gap-2 rounded-[5px] px-2 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-            >
-              <Plus className="size-3.5" />
-              <span>{t.home.newFolder}</span>
-            </button>
-          ))}
+              <PopoverContent side="right" align="start" className="w-auto p-2">
+                <IconPicker value={newIcon} onChange={setNewIcon} />
+              </PopoverContent>
+            </Popover>
+            <input
+              ref={inputRef}
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.nativeEvent.isComposing) return;
+                if (e.key === 'Enter') commitCreate();
+                if (e.key === 'Escape') exitCreate();
+              }}
+              placeholder={t.home.folderName}
+              maxLength={40}
+              className="min-w-0 flex-1 bg-transparent text-[12.5px] outline-none placeholder:text-muted-foreground/60"
+            />
+          </div>
+        )}
       </div>
 
-      <div className="border-t border-hairline">
-        <SidebarFooter />
-      </div>
+      <SidebarFooter />
     </aside>
   );
 }

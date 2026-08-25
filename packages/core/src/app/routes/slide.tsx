@@ -16,7 +16,15 @@ import {
   Presentation,
   Terminal,
 } from 'lucide-react';
-import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type ReactElement,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AssetView } from '@/components/asset-view';
@@ -45,6 +53,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '@/lib/canvas';
 import { useFolders } from '@/lib/folders';
+import { hasModifier, isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
 import { useAgentSocketConnected } from '@/lib/use-agent-socket';
 import { useClickPageNavigation } from '@/lib/use-click-page-navigation';
 import { useIsMobile } from '@/lib/use-is-mobile';
@@ -52,18 +61,17 @@ import { format, useLocale } from '@/lib/use-locale';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
 import { SlideCommandMenu } from '../components/command/slide-command-menu';
+import { PdfProgressToast, PptxProgressToast } from '../components/export-progress-toast';
 import { NotesDrawer } from '../components/notes-drawer';
 import { OverviewGrid } from '../components/overview-grid';
-import { PdfProgressToast } from '../components/pdf-progress-toast';
 import { openPresenterWindow, Player } from '../components/player';
-import { PptxProgressToast } from '../components/pptx-progress-toast';
 import { SlideCanvas } from '../components/slide-canvas';
 import { isDeckWarmed, markDeckWarmed, SlidePreloadLayer } from '../components/slide-preload-layer';
 import { SlideTransitionLayer } from '../components/slide-transition-layer';
 import { type ThumbnailActions, ThumbnailRail } from '../components/thumbnail-rail';
 import { exportSlideAsHtml } from '../lib/export-html';
-import { exportSlideAsPdf, isSafari } from '../lib/export-pdf';
-import { exportSlideAsImagePptx } from '../lib/export-pptx';
+import { exportSlideAsPdf, isSafari, type PdfExportProgress } from '../lib/export-pdf';
+import { exportSlideAsImagePptx, type PptxExportProgress } from '../lib/export-pptx';
 import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
 import type { SlideModule } from '../lib/sdk';
 import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
@@ -273,9 +281,9 @@ export function Slide() {
     // page-nav handler too would race it and skip <Steps> reveals, so bail out.
     if (playMode || !showSlideUi) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLElement && e.target.matches('input, textarea')) return;
+      if (isTypingTarget(e.target)) return;
       // Letter shortcuts only fire bare so browser combos (Cmd/Ctrl-P, ⌘F…) stay intact.
-      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      if (hasModifier(e)) return;
       // Toggle overview from either state — the overview's own capture-phase
       // handler doesn't consume O, so this stays consistent open ↔ closed.
       if (e.key === 'o' || e.key === 'O') {
@@ -286,17 +294,12 @@ export function Slide() {
       // Once overview owns focus, swallow everything else here — its
       // capture-phase listener drives the focused thumbnail.
       if (overviewOpen) return;
-      if (
-        e.key === 'ArrowRight' ||
-        e.key === 'ArrowDown' ||
-        e.key === ' ' ||
-        e.key === 'PageDown'
-      ) {
+      if (isForwardKey(e)) {
         e.preventDefault();
         goTo(index + 1);
         return;
       }
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
+      if (isBackwardKey(e)) {
         e.preventDefault();
         goTo(index - 1);
         return;
@@ -488,58 +491,56 @@ export function Slide() {
     }
   };
 
+  // One toast id drives the whole export: the same id is re-rendered on every
+  // progress tick, swapped for the error toast on failure, then dismissed.
+  const runProgressExport = async <P,>(opts: {
+    kind: string;
+    initial: P;
+    failedMessage: string;
+    renderToast: (progress: P) => ReactElement;
+    run: (onProgress: (progress: P) => void) => Promise<void>;
+  }) => {
+    setExporting(true);
+    const toastId = `${opts.kind}-export-${slideId}`;
+    const show = (progress: P) =>
+      toast.custom(() => opts.renderToast(progress), { id: toastId, duration: Infinity });
+    show(opts.initial);
+    try {
+      await opts.run(show);
+      toast.dismiss(toastId);
+    } catch (err) {
+      console.error(`[open-slide] ${opts.kind} export failed`, err);
+      // Reuses the progress toast's id, so it must outlive this handler.
+      toast.error(opts.failedMessage, { id: toastId, duration: 4000 });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const exportPdf = async () => {
     if (!slide || exporting) return;
     if (isSafari()) {
       toast.error(t.slide.pdfExportSafariUnsupported, { duration: 5000 });
       return;
     }
-    setExporting(true);
-    const toastId = `pdf-export-${slideId}`;
-    toast.custom(
-      () => (
-        <PdfProgressToast
-          progress={{ phase: 'processing', current: 0, total: pages.length, percent: 0 }}
-        />
-      ),
-      { id: toastId, duration: Infinity },
-    );
-    try {
-      await exportSlideAsPdf(slide, slideId, (p) => {
-        toast.custom(() => <PdfProgressToast progress={p} />, { id: toastId, duration: Infinity });
-      });
-    } catch (err) {
-      console.error('[open-slide] pdf export failed', err);
-      toast.error(t.slide.pdfExportFailed, { id: toastId, duration: 4000 });
-    } finally {
-      setExporting(false);
-      toast.dismiss(toastId);
-    }
+    await runProgressExport<PdfExportProgress>({
+      kind: 'pdf',
+      initial: { phase: 'processing', current: 0, total: pages.length, percent: 0 },
+      failedMessage: t.slide.pdfExportFailed,
+      renderToast: (progress) => <PdfProgressToast progress={progress} />,
+      run: (onProgress) => exportSlideAsPdf(slide, slideId, onProgress),
+    });
   };
 
   const exportImagePptx = async () => {
     if (!slide || exporting) return;
-    setExporting(true);
-    const toastId = `pptx-export-${slideId}`;
-    toast.custom(
-      () => (
-        <PptxProgressToast
-          progress={{ phase: 'processing', current: 0, total: pages.length, percent: 0 }}
-        />
-      ),
-      { id: toastId, duration: Infinity },
-    );
-    try {
-      await exportSlideAsImagePptx(slide, slideId, (p) => {
-        toast.custom(() => <PptxProgressToast progress={p} />, { id: toastId, duration: Infinity });
-      });
-    } catch (err) {
-      console.error('[open-slide] image pptx export failed', err);
-      toast.error(t.slide.imagePptxExportFailed, { id: toastId, duration: 4000 });
-    } finally {
-      setExporting(false);
-      toast.dismiss(toastId);
-    }
+    await runProgressExport<PptxExportProgress>({
+      kind: 'pptx',
+      initial: { phase: 'processing', current: 0, total: pages.length, percent: 0 },
+      failedMessage: t.slide.imagePptxExportFailed,
+      renderToast: (progress) => <PptxProgressToast progress={progress} />,
+      run: (onProgress) => exportSlideAsImagePptx(slide, slideId, onProgress),
+    });
   };
 
   const exportMenuItems = (
@@ -601,9 +602,9 @@ export function Slide() {
     <HistoryProvider>
       <InspectorProvider slideId={slideId} pageIndex={index}>
         <SelectionReporter />
-        <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
-          {/* Editorial toolbar — three zones, hairline separators, mono-folio center */}
-          <header className="relative flex h-12 shrink-0 items-center gap-2 border-b border-hairline bg-sidebar/85 px-2 backdrop-blur-md md:px-3">
+        <div className="flex h-dvh flex-col overflow-hidden bg-sidebar text-foreground">
+          {/* Toolbar sits directly on the chrome ground — three zones, mono-folio center */}
+          <header className="relative flex h-12 shrink-0 items-center gap-2 px-2 md:px-3">
             <div className="flex flex-1 items-center gap-1.5 md:flex-none md:gap-2">
               {showSlideBrowser && (
                 <Link
@@ -690,7 +691,7 @@ export function Slide() {
                     )}
                   >
                     {exporting ? (
-                      <Loader2 className="size-4 animate-spin" />
+                      <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
                     ) : (
                       <Download className="size-4" />
                     )}
@@ -713,7 +714,7 @@ export function Slide() {
                     )}
                   >
                     {exporting ? (
-                      <Loader2 className="size-4 animate-spin" />
+                      <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
                     ) : (
                       <MoreHorizontal className="size-4" />
                     )}
@@ -747,9 +748,6 @@ export function Slide() {
                   >
                     <Play className="size-3.5 fill-current" />
                     <span className="hidden md:inline">{t.slide.present}</span>
-                    <kbd className="ml-1 hidden rounded-[3px] bg-brand-foreground/15 px-1 font-mono text-[9.5px] tracking-[0.04em] md:inline">
-                      F
-                    </kbd>
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger
@@ -792,7 +790,7 @@ export function Slide() {
           </header>
 
           {view === 'assets' ? (
-            <div className="min-h-0 flex-1">
+            <div className="min-h-0 flex-1 overflow-hidden md:mx-2 md:mb-2 md:rounded-[10px] md:bg-background md:shadow-edge md:ring-1 md:ring-foreground/[0.06]">
               <AssetView slideId={slideId} />
             </div>
           ) : (
@@ -813,7 +811,7 @@ export function Slide() {
                     ref={slideViewportRef}
                     data-inspector-root
                     data-slide-id={slideId}
-                    className="relative min-h-0 min-w-0 flex-1 bg-canvas p-2 md:p-10"
+                    className="relative min-h-0 min-w-0 flex-1 bg-background p-2 md:mx-2 md:mb-2 md:rounded-[10px] md:p-10 md:shadow-edge md:ring-1 md:ring-foreground/[0.06]"
                   >
                     <SlideViewportNavigation
                       targetRef={slideViewportRef}
@@ -1020,7 +1018,7 @@ function ResizableRail(props: {
         <span
           aria-hidden
           className={cn(
-            'pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-brand opacity-0 transition-opacity',
+            'pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-brand opacity-0 transition-opacity duration-150',
             'group-hover/resize:opacity-100 group-focus-visible/resize:opacity-100',
             resizing && 'opacity-100',
           )}
@@ -1040,12 +1038,12 @@ function AgentConnectedBadge() {
           render={
             <button
               type="button"
-              className="ml-1 flex shrink-0 cursor-help items-center gap-1.5 rounded-[3px] border border-hairline bg-card px-1.5 py-0.5 text-[10.5px] text-foreground/85 outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+              className="ml-1 flex shrink-0 cursor-help items-center gap-1.5 rounded-[3px] border border-hairline bg-card px-1.5 py-0.5 text-[10.5px] text-foreground/85 outline-none transition-colors duration-150 hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/30"
             >
               <span aria-hidden className="relative flex size-1.5 items-center justify-center">
                 {connected ? (
                   <>
-                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+                    <span className="absolute inline-flex size-full rounded-full bg-emerald-500 opacity-60 motion-safe:animate-ping" />
                     <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
                   </>
                 ) : (
@@ -1227,7 +1225,7 @@ function InlineTitleEditor({
         onClick={() => setEditing(true)}
         aria-label={t.slide.renameSlide}
         className={cn(
-          'min-w-0 max-w-full cursor-text rounded-[5px] border border-transparent px-2 py-0.5 transition-colors',
+          'min-w-0 max-w-full cursor-text rounded-[5px] border border-transparent px-2 py-0.5 transition-colors duration-100',
           'hover:border-foreground/30 hover:bg-card focus-visible:border-foreground/30 focus-visible:bg-card focus-visible:outline-none',
         )}
       >

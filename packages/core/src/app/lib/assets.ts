@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
+import { changedSlideIds } from './slides';
+
+export const GLOBAL_ASSET_SCOPE = '@global';
 
 export type AssetEntry = {
   name: string;
@@ -205,13 +208,9 @@ export function useAssets(slideId: string): UseAssetsResult {
         refresh().catch(() => {});
       }
     };
-    const slideHandler = (data: { slideId?: unknown; slideIds?: unknown } | undefined) => {
-      const changedIds = Array.isArray(data?.slideIds)
-        ? data.slideIds
-        : typeof data?.slideId === 'string'
-          ? [data.slideId]
-          : [];
-      if (slideId === '@global' ? changedIds.length > 0 : changedIds.includes(slideId)) {
+    const slideHandler = (data: unknown) => {
+      const changedIds = changedSlideIds(data);
+      if (slideId === GLOBAL_ASSET_SCOPE ? changedIds.length > 0 : changedIds.includes(slideId)) {
         refresh().catch(() => {});
       }
     };

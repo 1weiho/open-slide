@@ -10,7 +10,6 @@ type Props = {
   center?: boolean;
   flat?: boolean;
   freezeMotion?: boolean;
-  className?: string;
   design?: DesignSystem;
 };
 
@@ -20,7 +19,6 @@ export function SlideCanvas({
   center = true,
   flat = false,
   freezeMotion = false,
-  className,
   design,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -50,13 +48,11 @@ export function SlideCanvas({
   const designVars = design ? designToCssVars(design) : undefined;
 
   return (
-    <div ref={containerRef} className={cn('relative h-full w-full overflow-hidden', className)}>
+    <div ref={containerRef} className={cn('relative h-full w-full', flat && 'overflow-hidden')}>
       <div
         className={cn(
           'overflow-hidden bg-white text-black',
-          // Inset shadow keeps the 1px edge inside the canvas box so it
-          // can't be clipped by the parent's overflow-hidden.
-          !flat && 'rounded-[6px] shadow-[inset_0_0_0_1px_oklch(0_0_0/0.08)]',
+          !flat && 'rounded-[6px] shadow-floating',
         )}
         style={
           {

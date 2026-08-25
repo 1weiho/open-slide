@@ -1,7 +1,9 @@
+import fs from 'node:fs/promises';
 import type { ServerResponse } from 'node:http';
 import path from 'node:path';
 import type { Connect } from 'vite';
-import { SLIDE_ID_RE } from '../../editing/slide-ops.ts';
+import { resolveSlideEntry } from '../../editing/slide-ops.ts';
+import { foldersManifestPath } from '../../files/folders.ts';
 
 export type ApiContext = {
   userCwd: string;
@@ -25,7 +27,7 @@ export function makeContext(opts: ApiPluginOptions): ApiContext {
   const assetsDir = opts.assetsDir ?? 'assets';
   const slidesRoot = path.resolve(userCwd, slidesDir);
   const globalAssetsRoot = path.resolve(userCwd, assetsDir);
-  const manifestPath = path.join(slidesRoot, '.folders.json');
+  const manifestPath = foldersManifestPath(slidesRoot);
   return {
     userCwd,
     slidesDir,
@@ -59,18 +61,15 @@ export function json(res: ServerResponse, status: number, body: unknown) {
   res.end(JSON.stringify(body));
 }
 
-export function resolveSlidePath(
-  userCwd: string,
-  slidesDir: string,
-  slideId: string,
-): string | null {
-  if (!SLIDE_ID_RE.test(slideId)) return null;
-  const slidesRoot = path.resolve(userCwd, slidesDir);
-  const full = path.resolve(slidesRoot, slideId, 'index.tsx');
-  if (!full.startsWith(slidesRoot + path.sep)) return null;
-  return full;
+export function resolveSlideEntryPath(ctx: ApiContext, slideId: string): string | null {
+  return resolveSlideEntry(ctx.slidesRoot, slideId);
 }
 
-export function resolveSlideEntryPath(ctx: ApiContext, slideId: string): string | null {
-  return resolveSlidePath(ctx.userCwd, ctx.slidesDir, slideId);
+export async function readSlideSource(file: string): Promise<string | null> {
+  try {
+    return await fs.readFile(file, 'utf8');
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
+    throw err;
+  }
 }

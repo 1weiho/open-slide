@@ -1,3 +1,4 @@
+import { Palette } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { format, useLocale } from '@/lib/use-locale';
 import { SlidePageProvider } from '../../lib/page-context';
@@ -13,8 +14,12 @@ export function ThemesGallery({ onOpen }: { onOpen: (id: string) => void }) {
 
   return (
     <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(240px,100%),1fr))] gap-x-6 gap-y-9 md:grid-cols-[repeat(auto-fill,minmax(340px,1fr))]">
-      {themes.map((theme) => (
-        <li key={theme.id}>
+      {themes.map((theme, i) => (
+        <li
+          key={theme.id}
+          className="rise-in"
+          style={{ animationDelay: `${Math.min(i, 11) * 30}ms` }}
+        >
           <ThemeCard
             theme={theme}
             onOpen={() => onOpen(theme.id)}
@@ -40,9 +45,9 @@ function ThemeCard({
       type="button"
       onClick={onOpen}
       aria-label={ariaLabel}
-      className="group block w-full text-left focus-visible:outline-none"
+      className="group block w-full rounded-[6px] text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
-      <div className="relative aspect-video overflow-hidden rounded-[6px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] group-hover:shadow-floating group-hover:ring-foreground/20 motion-safe:transition-[box-shadow,--tw-ring-color] motion-safe:duration-200">
+      <div className="relative aspect-video overflow-hidden rounded-[6px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] group-hover:shadow-floating group-hover:ring-foreground/20 group-active:scale-[0.99] motion-safe:transition-[box-shadow,--tw-ring-color,scale] motion-safe:duration-200">
         <ThemePreview theme={theme} />
       </div>
       <div className="mt-3">
@@ -77,7 +82,7 @@ function ThemePreview({ theme }: { theme: Theme }) {
   if (!FirstPage) return <NoDemoState />;
 
   return (
-    <div className="h-full w-full motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-[1.03]">
+    <div className="h-full w-full">
       <SlideCanvas flat freezeMotion design={demo.design}>
         <SlidePageProvider index={0} total={demo.default.length}>
           <FirstPage />
@@ -110,10 +115,10 @@ function NoDemoState() {
 function ThemesEmptyState() {
   const t = useLocale();
   return (
-    <div className="rounded-[10px] border border-dashed border-border bg-card/60 px-8 py-20">
+    <div className="rounded-[8px] border border-dashed border-border px-8 py-20">
       <div className="mx-auto flex max-w-md flex-col items-center text-center">
-        <div className="text-2xl">🎨</div>
-        <p className="mt-3 font-heading text-[15px] font-semibold tracking-tight">
+        <Palette className="size-5 text-muted-foreground/60" aria-hidden />
+        <p className="mt-4 font-heading text-[14px] font-semibold tracking-tight">
           {t.themes.noThemesTitle}
         </p>
         <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">

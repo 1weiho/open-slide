@@ -20,8 +20,9 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { hasModifier, isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
 import { format, useLocale } from '@/lib/use-locale';
-import { cn } from '@/lib/utils';
+import { cn, pad2 } from '@/lib/utils';
 import {
   type PresenterState,
   usePresenterChannel,
@@ -79,9 +80,6 @@ export function Presenter() {
     if (!channel.available || requestedRef.current) return;
     requestedRef.current = true;
     channel.send({ type: 'request-state' });
-    // If nothing answers within a beat, surface the "no projection" hint.
-    const t = setTimeout(() => setHasProjection((v) => v), 600);
-    return () => clearTimeout(t);
   }, [channel, slideId]);
 
   const navigate = useNavigate();
@@ -106,17 +104,12 @@ export function Presenter() {
     const onKey = (e: KeyboardEvent) => {
       // The deck-switcher menu owns its own arrow-key navigation.
       if (e.defaultPrevented) return;
-      if (e.target instanceof HTMLElement && e.target.matches('input, textarea')) return;
-      if (e.altKey || e.ctrlKey || e.metaKey) return;
-      if (
-        e.key === 'ArrowRight' ||
-        e.key === 'ArrowDown' ||
-        e.key === ' ' ||
-        e.key === 'PageDown'
-      ) {
+      if (isTypingTarget(e.target)) return;
+      if (hasModifier(e)) return;
+      if (isForwardKey(e)) {
         e.preventDefault();
         goNext();
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
+      } else if (isBackwardKey(e)) {
         e.preventDefault();
         goPrev();
       } else if (e.key === 'b' || e.key === 'B') {
@@ -233,6 +226,7 @@ export function Presenter() {
                 aria-hidden
                 className={cn(
                   'pointer-events-none absolute inset-0 grid place-items-center text-[11px] tracking-[0.08em] uppercase',
+                  'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-150',
                   blackout === 'black' ? 'bg-black text-white/35' : 'bg-white text-black/35',
                 )}
               >
@@ -324,9 +318,9 @@ function PresenterTopBar({
         <Clock />
         <ElapsedClock startedAt={startedAt} />
         <div className="font-mono text-[18px] tabular-nums">
-          <span className="text-foreground">{(index + 1).toString().padStart(2, '0')}</span>
+          <span className="text-foreground">{pad2(index + 1)}</span>
           <span className="text-foreground/30"> / </span>
-          <span className="text-muted-foreground">{total.toString().padStart(2, '0')}</span>
+          <span className="text-muted-foreground">{pad2(total)}</span>
         </div>
       </div>
     </header>
@@ -457,7 +451,7 @@ function DeckSwitcher({
                   onClick={() => select(id)}
                   onMouseMove={() => setActiveIndex(i)}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-[6px] p-2 text-left',
+                    'flex w-full items-center gap-3 rounded-[6px] p-2 text-left outline-none transition-[background-color,scale] duration-100 active:scale-[0.99] focus-visible:ring-1 focus-visible:ring-ring/40',
                     i === active && 'bg-muted',
                   )}
                 >
@@ -479,9 +473,9 @@ function DeckSwitcher({
                     <div className="truncate text-[13px] font-medium text-foreground">
                       {mod?.meta?.title ?? id}
                     </div>
-                    <div className="mt-0.5 truncate font-mono text-[10.5px] text-muted-foreground">
+                    <div className="mt-0.5 truncate font-mono text-[10.5px] tabular-nums text-muted-foreground">
                       {id}
-                      {mod && ` · ${mod.default.length.toString().padStart(2, '0')}`}
+                      {mod && ` · ${pad2(mod.default.length)}`}
                     </div>
                   </div>
                   {id === slideId && <Check className="size-3.5 shrink-0 text-muted-foreground" />}
@@ -648,7 +642,7 @@ function PresenterJumpControl({
         placeholder={(current + 1).toString()}
         className="h-8 w-20 rounded-[5px] border border-border bg-card px-2 font-mono text-[12px] tabular-nums outline-none focus-visible:border-foreground/30"
       />
-      <span className="font-mono text-[11px] text-muted-foreground">/ {total}</span>
+      <span className="font-mono text-[11px] tabular-nums text-muted-foreground">/ {total}</span>
     </form>
   );
 }
@@ -699,10 +693,7 @@ function ElapsedClock({ startedAt }: { startedAt: number }) {
   const h = Math.floor(elapsed / 3600);
   const m = Math.floor((elapsed % 3600) / 60);
   const s = elapsed % 60;
-  const text =
-    h > 0
-      ? `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
-      : `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  const text = h > 0 ? `${h}:${pad2(m)}:${pad2(s)}` : `${pad2(m)}:${pad2(s)}`;
   return (
     <time
       title={t.presenter.elapsed}

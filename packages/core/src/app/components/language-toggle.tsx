@@ -1,5 +1,5 @@
 import { Languages } from 'lucide-react';
-import { IconTooltip } from '@/components/icon-tooltip';
+import { IconTooltip, MenuTooltipTrigger } from '@/components/icon-tooltip';
 import { buttonVariants } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -7,7 +7,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { TooltipTrigger } from '@/components/ui/tooltip';
 import { LOCALE_OPTIONS, setLocale } from '@/lib/locale-store';
 import { useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
@@ -20,7 +19,7 @@ export function LanguageToggle() {
       <IconTooltip label={t.languageToggle.title}>
         <DropdownMenuTrigger
           render={
-            <TooltipTrigger
+            <MenuTooltipTrigger
               type="button"
               aria-label={t.languageToggle.toggleAria}
               className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}

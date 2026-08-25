@@ -1,5 +1,6 @@
 import * as t from '@babel/types';
-import { parseSource, walkAll, walkJsx } from './babel-walk.ts';
+import { textDiff } from '../app/lib/text-diff.ts';
+import { findJsxAncestors, parseSource, walkAll, walkJsx } from './babel-walk.ts';
 
 export type EditOp =
   | { kind: 'set-style'; key: string; value: string | null; prevText?: string }
@@ -27,6 +28,20 @@ export function jsString(s: string): string {
 
 export function spliceRange(node: t.Node, text: string): Splice {
   return { from: node.start ?? 0, to: node.end ?? 0, text };
+}
+
+// Splices are applied back-to-front so earlier offsets stay valid, then the
+// result is re-parsed — a rewrite that cannot be parsed is rejected whole.
+export function applySplices(source: string, splices: Splice[]): ApplyEditResult {
+  const ordered = [...splices].sort((a, b) => b.from - a.from);
+  let next = source;
+  for (const sp of ordered) {
+    next = next.slice(0, sp.from) + sp.text + next.slice(sp.to);
+  }
+  if (!parseSource(next)) {
+    return { ok: false, status: 422, error: 'edit would produce invalid source' };
+  }
+  return { ok: true, source: next };
 }
 
 // Emit a JSX attribute value: `"foo"` when the value is round-trip-safe
@@ -127,24 +142,6 @@ export function safeAssetIdentifier(filename: string, taken: Set<string>): strin
   return candidate;
 }
 
-type JsxContainer = t.JSXElement | t.JSXFragment;
-
-function findJsxAncestors(ast: t.Node, line: number, column: number): JsxContainer[] {
-  const hits: { node: JsxContainer; size: number }[] = [];
-  walkJsx(ast, (n) => {
-    if (!n.loc || (!t.isJSXElement(n) && !t.isJSXFragment(n))) return;
-    const s = n.loc.start;
-    const e = n.loc.end;
-    const afterStart = line > s.line || (line === s.line && column >= s.column);
-    const beforeEnd = line < e.line || (line === e.line && column < e.column);
-    if (afterStart && beforeEnd) {
-      hits.push({ node: n, size: (n.end ?? 0) - (n.start ?? 0) });
-    }
-  });
-  hits.sort((a, b) => a.size - b.size);
-  return hits.map((h) => h.node);
-}
-
 function findJsxByStart(ast: t.Node, line: number, column: number): t.JSXElement | null {
   let hit: t.JSXElement | null = null;
   walkJsx(ast, (n) => {
@@ -177,9 +174,7 @@ function findUniqueElementByText(ast: t.Node, prevText: string): t.JSXElement | 
   const hits: Array<{ node: t.JSXElement; size: number }> = [];
   walkJsx(ast, (n) => {
     if (!t.isJSXElement(n)) return;
-    const parts: TextRangePart[] = [];
-    collectTextRangeParts(n, parts);
-    if (textRangeContent(parts) !== prevText) return;
+    if (textRangeContent(collectTextRangeParts(n)) !== prevText) return;
     hits.push({ node: n, size: (n.end ?? 0) - (n.start ?? 0) });
   });
   if (hits.length === 0) return null;
@@ -210,14 +205,7 @@ function hasOnlyTextOps(ops: EditOp[]): boolean {
 }
 
 function elementTextMatches(element: t.JSXElement, prevText: string): boolean {
-  const parts: TextRangePart[] = [];
-  collectTextRangeParts(element, parts);
-  return textRangeContent(parts) === prevText;
-}
-
-function elementHasTextCandidate(ast: t.File, element: t.JSXElement, prevText: string): boolean {
-  const norm = prevText.trim();
-  return collectElementTextCandidates(ast, element).some((candidate) => candidate.current === norm);
+  return textRangeContent(collectTextRangeParts(element)) === prevText;
 }
 
 function findElementForEdit(
@@ -232,13 +220,11 @@ function findElementForEdit(
   if (
     hasOnlyTextOps(ops) &&
     element &&
-    (elementTextMatches(element, prevText) || elementHasTextCandidate(ast, element, prevText))
+    (elementTextMatches(element, prevText) || elementTextCandidateMatches(ast, element, prevText))
   ) {
     return element;
   }
-  const textMatch = findUniqueElementByText(ast, prevText);
-  if (element && elementTextMatches(element, prevText)) return textMatch ?? element;
-  return textMatch ?? element;
+  return findUniqueElementByText(ast, prevText) ?? element;
 }
 
 function buildStyleSplice(
@@ -485,10 +471,10 @@ function collectTextCandidates(element: JsxParent, out: TextCandidate[]): void {
   }
 }
 
-function collectTextRangeParts(element: JsxParent, out: TextRangePart[]): void {
+function collectTextRangeParts(element: JsxParent): TextRangePart[] {
   const parts: TextRangePart[] = [];
   collectTextRangePartsRaw(element, parts);
-  out.push(...normalizeTextRangeParts(parts));
+  return normalizeTextRangeParts(parts);
 }
 
 function collectTextRangePartsRaw(element: JsxParent, out: TextRangePart[]): void {
@@ -583,28 +569,8 @@ function formatRichText(value: string, formatText = formatJsxText): string {
     .join('<br />');
 }
 
-function formatOptionalText(value: string, formatText = formatJsxText): string {
+function formatOptionalText(value: string, formatText: (v: string) => string): string {
   return value ? formatText(value) : '';
-}
-
-function textDiff(prevText: string, nextText: string) {
-  let start = 0;
-  while (
-    start < prevText.length &&
-    start < nextText.length &&
-    prevText[start] === nextText[start]
-  ) {
-    start += 1;
-  }
-
-  let prevEnd = prevText.length;
-  let nextEnd = nextText.length;
-  while (prevEnd > start && nextEnd > start && prevText[prevEnd - 1] === nextText[nextEnd - 1]) {
-    prevEnd -= 1;
-    nextEnd -= 1;
-  }
-
-  return { start, end: prevEnd, value: nextText.slice(start, nextEnd) };
 }
 
 function textLeafSplice(part: TextRangeLeaf, value: string): Splice {
@@ -693,8 +659,7 @@ function buildTextContentSplices(
   value: string,
   prevText: string,
 ): Splice[] | { error: string } {
-  const parts: TextRangePart[] = [];
-  collectTextRangeParts(element, parts);
+  const parts = collectTextRangeParts(element);
   const current = textRangeContent(parts);
   if (!textMatchesExpected(current, prevText)) {
     return { error: 'no text candidate matches the current value' };
@@ -717,12 +682,11 @@ function buildTextRangeStyleSplices(
     return { error: 'invalid text range' };
   }
 
-  const parts: TextRangePart[] = [];
-  collectTextRangeParts(element, parts);
-  const current = prevText ?? textRangeContent(parts);
+  const parts = collectTextRangeParts(element);
+  const renderedText = textRangeContent(parts);
+  const current = prevText ?? renderedText;
   if (!current) return { error: 'element has no editable text' };
   if (end > current.length) return { error: 'text range is out of bounds' };
-  const renderedText = textRangeContent(parts);
   if (prevText !== undefined && renderedText !== prevText) {
     if (elementTextCandidateMatches(ast, element, prevText)) {
       const result = buildStyleSplice(source, element, [op]);
@@ -1085,7 +1049,7 @@ type AssetEditPlan = {
   attrSplice: Splice;
 };
 
-export function planAssetImport(
+function planAssetImport(
   ast: t.File,
   assetPath: string,
 ): { identifier: string; importSplice: Splice | null } {
@@ -1255,13 +1219,5 @@ export function applyEdit(
 
   if (splices.length === 0) return { ok: true, source };
 
-  splices.sort((a, b) => b.from - a.from);
-  let next = source;
-  for (const sp of splices) {
-    next = next.slice(0, sp.from) + sp.text + next.slice(sp.to);
-  }
-  if (!parseSource(next)) {
-    return { ok: false, status: 422, error: 'edit would produce invalid source' };
-  }
-  return { ok: true, source: next };
+  return applySplices(source, splices);
 }

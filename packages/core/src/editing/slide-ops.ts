@@ -45,13 +45,13 @@ function readMetaTitleInSource(source: string): MetaTitleRead {
   for (const stmt of body) {
     if (stmt.type !== 'ExportNamedDeclaration') continue;
     const decl = stmt.declaration as Record<string, unknown> | undefined;
-    if (!decl || decl.type !== 'VariableDeclaration') continue;
+    if (decl?.type !== 'VariableDeclaration') continue;
     const declarations = (decl.declarations as Array<Record<string, unknown>> | undefined) ?? [];
     for (const d of declarations) {
       const id = d.id as Record<string, unknown> | undefined;
-      if (!id || id.type !== 'Identifier' || id.name !== 'meta') continue;
+      if (id?.type !== 'Identifier' || id.name !== 'meta') continue;
       const init = unwrapExpression(d.init as Record<string, unknown> | undefined);
-      if (!init || init.type !== 'ObjectExpression') return { kind: 'unsupported' };
+      if (init?.type !== 'ObjectExpression') return { kind: 'unsupported' };
       const properties = (init.properties as Array<Record<string, unknown>> | undefined) ?? [];
       for (const property of properties) {
         if (property.type !== 'ObjectProperty' || property.computed) continue;
@@ -276,7 +276,7 @@ function findDefaultExportArray(
     while (inner && (inner.type === 'TSAsExpression' || inner.type === 'TSSatisfiesExpression')) {
       inner = inner.expression as Record<string, unknown> | undefined;
     }
-    if (!inner || inner.type !== 'ArrayExpression') return null;
+    if (inner?.type !== 'ArrayExpression') return null;
     const arrayStart = inner.start as number;
     const arrayEnd = inner.end as number;
     const rawElements = (inner.elements as Array<Record<string, unknown> | null>) ?? [];
@@ -364,13 +364,13 @@ function findNotesArray(source: string): NotesArrayInfo | null | 'invalid' {
   for (const stmt of body) {
     if (stmt.type !== 'ExportNamedDeclaration') continue;
     const decl = stmt.declaration as Record<string, unknown> | undefined;
-    if (!decl || decl.type !== 'VariableDeclaration') continue;
+    if (decl?.type !== 'VariableDeclaration') continue;
     const declarations = (decl.declarations as Array<Record<string, unknown>> | undefined) ?? [];
     for (const d of declarations) {
       const id = d.id as Record<string, unknown> | undefined;
-      if (!id || id.type !== 'Identifier' || id.name !== 'notes') continue;
+      if (id?.type !== 'Identifier' || id.name !== 'notes') continue;
       const init = d.init as Record<string, unknown> | undefined;
-      if (!init || init.type !== 'ArrayExpression') return 'invalid';
+      if (init?.type !== 'ArrayExpression') return 'invalid';
       const arrayStart = init.start as number | undefined;
       const arrayEnd = init.end as number | undefined;
       if (typeof arrayStart !== 'number' || typeof arrayEnd !== 'number') return 'invalid';

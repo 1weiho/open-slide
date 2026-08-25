@@ -29,9 +29,11 @@ import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { findSlideSource } from '@/lib/inspector/fiber';
+import { hasOnlyInlineTextChildren } from '@/lib/inspector/inline-text';
 import type { EditOp } from '@/lib/inspector/use-editor';
 import { useAgentSocketConnected } from '@/lib/use-agent-socket';
 import { useLocale } from '@/lib/use-locale';
+import { cn, round2 } from '@/lib/utils';
 import type { Locale } from '../../../locale/types';
 import { AssetPickerDialog } from './asset-picker-dialog';
 import { type SelectedTarget, useInspector } from './inspector-provider';
@@ -170,7 +172,7 @@ export function InspectorPanel() {
     rangeStylePreview.start === contentRange.start &&
     rangeStylePreview.end === contentRange.end;
   const typographySnapshot = rangePreviewApplies
-    ? withStylePreview(pinSnapshot, rangeStylePreview.values)
+    ? { ...pinSnapshot, ...rangeStylePreview.values }
     : pinSnapshot;
   const applyTextStyle = (ops: EditOp[]) => {
     const styleOps = ops.flatMap((op) => (op.kind === 'set-style' ? [op] : []));
@@ -367,10 +369,6 @@ function stylePreviewFromOps(ops: Array<Extract<EditOp, { kind: 'set-style' }>>)
     }
   }
   return preview;
-}
-
-function withStylePreview(snapshot: ElementSnapshot, preview: StylePreview): ElementSnapshot {
-  return { ...snapshot, ...preview };
 }
 
 function ContentField({
@@ -688,7 +686,7 @@ function ColorField({
 
   return (
     <Field label={label}>
-      <label className="relative inline-flex size-8 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border bg-background shadow-xs">
+      <label className="relative inline-flex size-8 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border bg-background shadow-xs transition-[border-color,scale] duration-150 hover:border-foreground/20 active:scale-[0.96] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring/40">
         <span
           className="size-5 rounded-sm"
           style={{
@@ -717,7 +715,7 @@ function ColorField({
           setDraft(e.target.value);
           commitHex(e.target.value);
         }}
-        className="h-8 flex-1 font-mono text-[11px] uppercase"
+        className="nums h-8 flex-1 font-mono text-[11px] uppercase"
         spellCheck={false}
       />
       {clearable && onClear && (
@@ -851,12 +849,12 @@ function AgentWatchingBadge() {
           render={
             <button
               type="button"
-              className="flex shrink-0 cursor-help items-center gap-1.5 rounded-[3px] border border-hairline bg-card px-1.5 py-px text-[10.5px] text-foreground/85 outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+              className="flex shrink-0 cursor-help items-center gap-1.5 rounded-[3px] border border-hairline bg-card px-1.5 py-px text-[10.5px] text-foreground/85 outline-none transition-colors duration-150 hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/30"
             >
               <span aria-hidden className="relative flex size-1.5 items-center justify-center">
                 {connected ? (
                   <>
-                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+                    <span className="absolute inline-flex size-full rounded-full bg-emerald-500 opacity-60 motion-safe:animate-ping" />
                     <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
                   </>
                 ) : (
@@ -879,6 +877,10 @@ function AgentWatchingBadge() {
   );
 }
 
+// The cue animation re-mounts with every element selection; without this
+// guard it replays each time instead of once per inspector session.
+let commentCuePlayed = false;
+
 function CommentsSection({
   selected,
   onAdd,
@@ -888,8 +890,13 @@ function CommentsSection({
 }) {
   const [draft, setDraft] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showCue] = useState(() => !commentCuePlayed);
   const wrapRef = useRef<HTMLDivElement>(null);
   const t = useLocale();
+
+  useEffect(() => {
+    commentCuePlayed = true;
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -920,7 +927,7 @@ function CommentsSection({
   return (
     <Section title={t.inspector.leaveComment}>
       <div className="flex flex-col gap-2">
-        <div ref={wrapRef} className="comment-cue rounded-[6px]">
+        <div ref={wrapRef} className={cn('rounded-[6px]', showCue && 'comment-cue')}>
           <Textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -949,7 +956,7 @@ function CommentsSection({
 
 function readSnapshot(el: HTMLElement): ElementSnapshot {
   const cs = getComputedStyle(el);
-  const text = isSimpleTextElement(el) ? readEditableText(el) : null;
+  const text = hasOnlyInlineTextChildren(el) ? readEditableText(el) : null;
   const imageSrc =
     el.tagName === 'IMG'
       ? (el as HTMLImageElement).currentSrc || (el as HTMLImageElement).src || null
@@ -977,41 +984,6 @@ function readSnapshot(el: HTMLElement): ElementSnapshot {
     imageSrc,
     placeholder,
   };
-}
-
-function isSimpleTextElement(el: HTMLElement): boolean {
-  if (el.childNodes.length === 0) return true;
-  return hasOnlyInlineTextChildren(el);
-}
-
-const INLINE_TEXT_TAGS = new Set([
-  'B',
-  'CODE',
-  'DEL',
-  'EM',
-  'I',
-  'INS',
-  'MARK',
-  'S',
-  'SMALL',
-  'SPAN',
-  'STRONG',
-  'SUB',
-  'SUP',
-  'U',
-]);
-
-function hasOnlyInlineTextChildren(el: HTMLElement): boolean {
-  for (const child of Array.from(el.childNodes)) {
-    if (child.nodeType === Node.TEXT_NODE) {
-      continue;
-    } else if (child instanceof HTMLElement) {
-      if (child.tagName === 'BR') continue;
-      if (INLINE_TEXT_TAGS.has(child.tagName) && hasOnlyInlineTextChildren(child)) continue;
-    }
-    return false;
-  }
-  return true;
 }
 
 function readEditableText(el: HTMLElement): string {
@@ -1087,10 +1059,6 @@ function parseLetterSpacing(value: string): number {
   if (!value || value === 'normal') return 0;
   const n = parseFloat(value);
   return Number.isFinite(n) ? round2(n) : 0;
-}
-
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
 }
 
 function findElementByLine(slideId: string, line: number, column: number): HTMLElement | null {

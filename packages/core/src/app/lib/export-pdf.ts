@@ -2,6 +2,7 @@ import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from './canvas';
 import { designToCssVars } from './design';
+import { nextPaint, sleep } from './dom';
 import { SlidePageProvider } from './page-context';
 import { isFrameAnimationSettled, waitForDataWaitfor, waitForFonts } from './print-ready';
 import type { SlideModule } from './sdk';
@@ -265,24 +266,6 @@ function splitBackgroundImageLayers(backgroundImage: string): string[] {
 
   layers.push(backgroundImage.slice(layerStart).trim());
   return layers;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function nextPaint(): Promise<void> {
-  // rAF in real tabs; setTimeout fallback for hidden/throttled headless tabs.
-  return new Promise((resolve) => {
-    let settled = false;
-    const settle = () => {
-      if (settled) return;
-      settled = true;
-      resolve();
-    };
-    requestAnimationFrame(settle);
-    setTimeout(settle, 50);
-  });
 }
 
 function waitForAfterPrint(timeoutMs = 60_000): Promise<void> {

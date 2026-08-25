@@ -3,6 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { PANEL_TRANSITION_MS } from '@/components/panel/panel-shell';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { findSlideSource, type SlideSourceHit } from '@/lib/inspector/fiber';
+import { hasOnlyInlineTextChildren, INLINE_TEXT_TAGS } from '@/lib/inspector/inline-text';
 import { useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import { useInspector } from './inspector-provider';
@@ -190,9 +191,10 @@ function Frame({
   }, [visible]);
 
   if (!rect) return null;
+  const morphEase = 'var(--ease-swift)';
   const transition = morph
-    ? `left ${FRAME_MORPH_MS}ms ease-out, top ${FRAME_MORPH_MS}ms ease-out, ` +
-      `width ${FRAME_MORPH_MS}ms ease-out, height ${FRAME_MORPH_MS}ms ease-out, ` +
+    ? `left ${FRAME_MORPH_MS}ms ${morphEase}, top ${FRAME_MORPH_MS}ms ${morphEase}, ` +
+      `width ${FRAME_MORPH_MS}ms ${morphEase}, height ${FRAME_MORPH_MS}ms ${morphEase}, ` +
       `opacity ${FRAME_FADE_MS}ms ease-out`
     : `opacity ${FRAME_FADE_MS}ms ease-out`;
 
@@ -265,7 +267,7 @@ function ImageActionPanel({
                   e.stopPropagation();
                   openReplace(anchor);
                 }}
-                className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-[background-color,color,scale] duration-150 hover:bg-muted hover:text-foreground active:scale-[0.94] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
               >
                 <ImageIcon className="size-3.5" />
               </button>
@@ -285,7 +287,7 @@ function ImageActionPanel({
                   e.stopPropagation();
                   openCrop(anchor as HTMLImageElement);
                 }}
-                className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-[background-color,color,scale] duration-150 hover:bg-muted hover:text-foreground active:scale-[0.94] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
               >
                 <Crop className="size-3.5" />
               </button>
@@ -331,23 +333,6 @@ function pickElement(x: number, y: number): HTMLElement | null {
   return null;
 }
 
-const INLINE_TEXT_TAGS = new Set([
-  'B',
-  'CODE',
-  'DEL',
-  'EM',
-  'I',
-  'INS',
-  'MARK',
-  'S',
-  'SMALL',
-  'SPAN',
-  'STRONG',
-  'SUB',
-  'SUP',
-  'U',
-]);
-
 function pickInspectorTarget(el: HTMLElement | null): HTMLElement | null {
   if (!el) return null;
   const root = el.closest('[data-inspector-root]');
@@ -362,17 +347,4 @@ function pickInspectorTarget(el: HTMLElement | null): HTMLElement | null {
 function isEditableTextContainer(el: HTMLElement): boolean {
   if (!el.textContent?.trim()) return false;
   return hasOnlyInlineTextChildren(el);
-}
-
-function hasOnlyInlineTextChildren(el: HTMLElement): boolean {
-  for (const child of Array.from(el.childNodes)) {
-    if (child.nodeType === Node.TEXT_NODE) {
-      continue;
-    } else if (child instanceof HTMLElement) {
-      if (child.tagName === 'BR') continue;
-      if (INLINE_TEXT_TAGS.has(child.tagName) && hasOnlyInlineTextChildren(child)) continue;
-    }
-    return false;
-  }
-  return true;
 }

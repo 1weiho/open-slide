@@ -2,6 +2,7 @@ import * as t from '@babel/types';
 import { parseSource, walkAll, walkJsx } from './babel-walk.ts';
 import {
   type ApplyEditResult,
+  applySplices,
   findImports,
   findJsxAttr,
   formatJsxAttrValue,
@@ -187,15 +188,5 @@ export function applyRevertAsset(source: string, assetPath: string): ApplyEditRe
   const ensureSplice = planEnsureImagePlaceholderImport(ast);
   if (ensureSplice) splices.push(ensureSplice);
 
-  if (splices.length === 0) return { ok: true, source };
-
-  splices.sort((a, b) => b.from - a.from);
-  let next = source;
-  for (const sp of splices) {
-    next = next.slice(0, sp.from) + sp.text + next.slice(sp.to);
-  }
-  if (!parseSource(next)) {
-    return { ok: false, status: 422, error: 'edit would produce invalid source' };
-  }
-  return { ok: true, source: next };
+  return applySplices(source, splices);
 }
