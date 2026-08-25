@@ -27,7 +27,15 @@ export type SelectedTarget = {
   anchor: HTMLElement;
 };
 
-export type InlineEditTarget = SelectedTarget & { point?: { x: number; y: number } };
+export type InlineEditTarget = SelectedTarget & {
+  point?: { x: number; y: number };
+  // Double-click entry selects the word under the caret; a single-click
+  // switch from another editing session just places the caret.
+  selectWord?: boolean;
+  // Distinguishes sessions on the same source loc (reused components render
+  // several DOM instances of one loc), so each switch remounts the editor.
+  session?: number;
+};
 
 type AssetAttrOp = { assetPath: string; previewUrl: string };
 type Sequenced<T> = T & { seq: number };
@@ -919,9 +927,10 @@ export function InspectorProvider({
     setSelected(null);
   }, []);
 
+  const inlineEditSessionRef = useRef(0);
   const startInlineEdit = useCallback((target: InlineEditTarget) => {
     setSelected({ line: target.line, column: target.column, anchor: target.anchor });
-    setInlineEdit(target);
+    setInlineEdit({ ...target, session: ++inlineEditSessionRef.current });
   }, []);
 
   const stopInlineEdit = useCallback(() => {

@@ -24,6 +24,21 @@ const RANGE_STYLE_KEYS = new Set(['fontSize', 'fontWeight', 'fontStyle', 'color'
 const TOOLBAR_GAP = 8;
 const TOOLBAR_HEIGHT = 36;
 
+function pickEditableAnchor(
+  x: number,
+  y: number,
+  slideId: string,
+): { line: number; column: number; anchor: HTMLElement } | null {
+  const el = pickInspectorTarget(pickElement(x, y));
+  if (!el) return null;
+  const hit = findSlideSource(el, slideId, { hostOnly: true });
+  if (!hit) return null;
+  // Images keep their double-click behavior (crop, in inspect mode).
+  if (hit.anchor instanceof HTMLImageElement) return null;
+  if (!isEditableTextContainer(hit.anchor)) return null;
+  return hit;
+}
+
 // Double-click-to-edit lives outside the inspector: it works in the plain
 // slide view, without activating inspect mode or opening the panel.
 export function InlineEditLayer() {
@@ -35,13 +50,8 @@ export function InlineEditLayer() {
     const onDblClick = (e: MouseEvent) => {
       if (inlineEdit?.anchor.contains(e.target as Node)) return;
       if (!isInspectableEventTarget(e.target)) return;
-      const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
-      if (!el) return;
-      const hit = findSlideSource(el, slideId, { hostOnly: true });
+      const hit = pickEditableAnchor(e.clientX, e.clientY, slideId);
       if (!hit) return;
-      // Images keep their double-click behavior (crop, in inspect mode).
-      if (hit.anchor instanceof HTMLImageElement) return;
-      if (!isEditableTextContainer(hit.anchor)) return;
       e.preventDefault();
       e.stopPropagation();
       startInlineEdit({
@@ -49,6 +59,7 @@ export function InlineEditLayer() {
         column: hit.column,
         anchor: hit.anchor,
         point: { x: e.clientX, y: e.clientY },
+        selectWord: true,
       });
     };
     window.addEventListener('dblclick', onDblClick, true);
@@ -61,6 +72,22 @@ export function InlineEditLayer() {
     const onPointerDown = (e: PointerEvent) => {
       if (anchor.contains(e.target as Node)) return;
       if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) return;
+      // In the plain view a single click on another text run switches the
+      // session to it; in inspect mode a click means "select", so just exit.
+      if (!active && isInspectableEventTarget(e.target)) {
+        const hit = pickEditableAnchor(e.clientX, e.clientY, slideId);
+        if (hit) {
+          e.preventDefault();
+          startInlineEdit({
+            line: hit.line,
+            column: hit.column,
+            anchor: hit.anchor,
+            point: { x: e.clientX, y: e.clientY },
+            selectWord: false,
+          });
+          return;
+        }
+      }
       stopInlineEdit();
     };
     const onKey = (e: KeyboardEvent) => {
@@ -75,14 +102,54 @@ export function InlineEditLayer() {
       window.removeEventListener('pointerdown', onPointerDown, true);
       window.removeEventListener('keydown', onKey, true);
     };
-  }, [inlineEdit, stopInlineEdit]);
+  }, [inlineEdit, active, slideId, startInlineEdit, stopInlineEdit]);
+
+  // Hovering an editable text run in the plain view shows a text cursor —
+  // the discoverability cue for double-click-to-edit (and for the
+  // click-to-switch above while a session is open).
+  useEffect(() => {
+    if (import.meta.env.PROD || active) return;
+    const styleEl = document.createElement('style');
+    styleEl.textContent = HOVER_HINT_CSS;
+    document.head.appendChild(styleEl);
+    let hovered: HTMLElement | null = null;
+    let raf = 0;
+    const clear = () => {
+      hovered?.removeAttribute(TEXT_HOVER_ATTR);
+      hovered = null;
+    };
+    const onMove = (e: PointerEvent) => {
+      const { clientX, clientY, target } = e;
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const hit = isInspectableEventTarget(target)
+          ? pickEditableAnchor(clientX, clientY, slideId)
+          : null;
+        const anchor =
+          hit && hit.anchor.getAttribute('contenteditable') !== 'true' ? hit.anchor : null;
+        if (anchor === hovered) return;
+        clear();
+        if (anchor) {
+          hovered = anchor;
+          anchor.setAttribute(TEXT_HOVER_ATTR, 'true');
+        }
+      });
+    };
+    window.addEventListener('pointermove', onMove, true);
+    return () => {
+      window.removeEventListener('pointermove', onMove, true);
+      cancelAnimationFrame(raf);
+      clear();
+      styleEl.remove();
+    };
+  }, [active, slideId]);
 
   if (import.meta.env.PROD) return null;
   return (
     <div ref={layerRef} data-inspector-ui className="pointer-events-none absolute inset-0 z-30">
       {inlineEdit && (
         <ActiveInlineEditor
-          key={`${inlineEdit.line}:${inlineEdit.column}`}
+          key={inlineEdit.session ?? `${inlineEdit.line}:${inlineEdit.column}`}
           target={inlineEdit}
           layerRef={layerRef}
           showOutline={!active}
@@ -91,6 +158,15 @@ export function InlineEditLayer() {
     </div>
   );
 }
+
+const TEXT_HOVER_ATTR = 'data-slide-text-hover';
+
+const HOVER_HINT_CSS = `
+[data-inspector-root] [${TEXT_HOVER_ATTR}],
+[data-inspector-root] [${TEXT_HOVER_ATTR}] * {
+  cursor: text !important;
+}
+`;
 
 const INLINE_EDITING_CSS = `
 [data-inspector-root] [data-slide-editing][data-slide-editing],
@@ -156,7 +232,7 @@ function ActiveInlineEditor({
   // with an unstable identity is reached through latest-refs.
   const latestRef = useRef({ commit, toggleBold, toggleItalic });
   latestRef.current = { commit, toggleBold, toggleItalic };
-  const initialPointRef = useRef(target.point);
+  const initialCaretRef = useRef({ point: target.point, selectWord: target.selectWord ?? false });
 
   useEffect(() => {
     anchor.setAttribute('contenteditable', 'true');
@@ -165,7 +241,7 @@ function ActiveInlineEditor({
     const styleEl = document.createElement('style');
     styleEl.textContent = INLINE_EDITING_CSS;
     document.head.appendChild(styleEl);
-    focusAndPlaceCaret(anchor, initialPointRef.current);
+    focusAndPlaceCaret(anchor, initialCaretRef.current.point, initialCaretRef.current.selectWord);
 
     const onBeforeInput = (e: Event) => {
       const ev = e as InputEvent;
@@ -520,7 +596,11 @@ function styleContext(anchor: HTMLElement, sel: TextRange | null): HTMLElement {
   return el && anchor.contains(el) ? el : anchor;
 }
 
-function focusAndPlaceCaret(anchor: HTMLElement, point?: { x: number; y: number }) {
+function focusAndPlaceCaret(
+  anchor: HTMLElement,
+  point: { x: number; y: number } | undefined,
+  selectWord: boolean,
+) {
   anchor.focus({ preventScroll: true });
   const selection = window.getSelection();
   if (!selection) return;
@@ -532,7 +612,11 @@ function focusAndPlaceCaret(anchor: HTMLElement, point?: { x: number; y: number 
       const modifiable = selection as Selection & {
         modify?: (alter: string, direction: string, granularity: string) => void;
       };
-      if (typeof modifiable.modify === 'function' && range.startContainer instanceof Text) {
+      if (
+        selectWord &&
+        typeof modifiable.modify === 'function' &&
+        range.startContainer instanceof Text
+      ) {
         modifiable.modify('move', 'backward', 'word');
         modifiable.modify('extend', 'forward', 'word');
       }
