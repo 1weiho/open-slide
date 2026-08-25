@@ -1,18 +1,13 @@
-/** Named aspect ratios a workspace can pick without spelling out pixels. */
 export type CanvasPreset = '16:9' | '4:3' | '4:5' | '1:1' | '9:16';
 
-/** Explicit canvas dimensions, in CSS pixels. */
 export type CanvasSize = {
   width: number;
   height: number;
 };
 
-/** `open-slide.config.ts` accepts a named preset or explicit pixel dimensions. */
 export type CanvasOption = CanvasPreset | CanvasSize;
 
 /**
- * The pixel size each preset resolves to.
- *
  * Landscape presets keep the 1080px height so decks authored at 1920×1080 keep
  * their type scale when narrowed. Portrait and square presets key off a 1080px
  * width instead, which is what the social platforms they target expect
@@ -26,10 +21,8 @@ export const CANVAS_PRESETS: Record<CanvasPreset, CanvasSize> = {
   '9:16': { width: 1080, height: 1920 },
 };
 
-/** Preset used when a workspace sets no `canvas` at all. */
 export const DEFAULT_CANVAS_PRESET: CanvasPreset = '16:9';
 
-/** Dimensions of {@link DEFAULT_CANVAS_PRESET}: 1920 × 1080. */
 export const DEFAULT_CANVAS_SIZE: CanvasSize = CANVAS_PRESETS[DEFAULT_CANVAS_PRESET];
 
 const PRESET_NAMES = Object.keys(CANVAS_PRESETS) as CanvasPreset[];
