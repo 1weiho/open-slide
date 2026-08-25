@@ -166,6 +166,10 @@ const HOVER_HINT_CSS = `
 [data-inspector-root] [${TEXT_HOVER_ATTR}] * {
   cursor: text !important;
 }
+[data-inspector-root] [${TEXT_HOVER_ATTR}] {
+  outline: 2px solid rgba(59, 130, 246, 0.75) !important;
+  outline-offset: 2px !important;
+}
 `;
 
 const INLINE_EDITING_CSS = `
