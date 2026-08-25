@@ -14,7 +14,8 @@ export type EditOp =
       prevText?: string;
     }
   | { kind: 'set-attr-asset'; attr: string; assetPath: string }
-  | { kind: 'replace-placeholder-with-image'; assetPath: string };
+  | { kind: 'replace-placeholder-with-image'; assetPath: string }
+  | { kind: 'move-element'; refLine: number; refColumn: number; position: 'before' | 'after' };
 
 export type ApplyEditResult =
   | { ok: true; source: string }
@@ -1126,6 +1127,171 @@ function planReplacePlaceholder(
   return { importSplice, elementSplice: spliceRange(element, replacement) };
 }
 
+function findJsxParentOf(ast: t.Node, child: t.JSXElement): JsxParent | null {
+  let found: JsxParent | null = null;
+  walkJsx(ast, (n) => {
+    if (!t.isJSXElement(n) && !t.isJSXFragment(n)) return;
+    if ((n.children as t.Node[]).includes(child)) {
+      found = n;
+      return 'stop';
+    }
+  });
+  return found;
+}
+
+// Offset where the whitespace separator preceding `children[index]` starts:
+// the end of the previous non-whitespace child, or of the opening tag. The
+// separator travels with the element so indentation survives the move.
+function separatorStartBefore(
+  source: string,
+  parent: JsxParent,
+  children: t.Node[],
+  index: number,
+): number {
+  for (let i = index - 1; i >= 0; i--) {
+    const node = children[i];
+    if (t.isJSXText(node) && node.value.trim() === '') continue;
+    if (t.isJSXText(node)) {
+      const raw = source.slice(node.start ?? 0, node.end ?? 0);
+      const trailing = raw.length - raw.trimEnd().length;
+      return (node.end ?? 0) - trailing;
+    }
+    return node.end ?? 0;
+  }
+  return t.isJSXElement(parent)
+    ? (parent.openingElement.end ?? 0)
+    : (parent.openingFragment.end ?? 0);
+}
+
+// Name of the innermost in-file component whose body contains `node`, e.g.
+// 'Eyebrow' for JSX inside `const Eyebrow = () => <div/>`.
+function enclosingComponentName(ast: t.File, node: t.JSXElement): string | null {
+  const nodeStart = node.start ?? 0;
+  const nodeEnd = node.end ?? 0;
+  const hits: { name: string; size: number }[] = [];
+  walkAll(ast, (n) => {
+    let name: string | null = null;
+    let body: t.Node | null = null;
+    if (t.isVariableDeclarator(n) && t.isIdentifier(n.id) && n.init) {
+      if (t.isArrowFunctionExpression(n.init) || t.isFunctionExpression(n.init)) {
+        name = n.id.name;
+        body = n.init.body;
+      }
+    } else if (t.isFunctionDeclaration(n) && n.id) {
+      name = n.id.name;
+      body = n.body;
+    }
+    if (!name || !body) return;
+    const start = body.start ?? 0;
+    const end = body.end ?? 0;
+    if (start > nodeStart || end < nodeEnd) return;
+    hits.push({ name, size: end - start });
+  });
+  hits.sort((a, b) => a.size - b.size);
+  return hits[0]?.name ?? null;
+}
+
+function childInvocationNamed(parent: JsxParent, name: string): t.JSXElement | null {
+  const hits = (parent.children as t.Node[]).filter(
+    (child): child is t.JSXElement =>
+      t.isJSXElement(child) &&
+      t.isJSXIdentifier(child.openingElement.name) &&
+      child.openingElement.name.name === name,
+  );
+  return hits.length === 1 ? hits[0] : null;
+}
+
+function uniqueInvocationInFile(
+  ast: t.File,
+  name: string,
+  inside: t.JSXElement,
+): t.JSXElement | null {
+  const hits: t.JSXElement[] = [];
+  walkJsx(ast, (n) => {
+    if (!t.isJSXElement(n)) return;
+    if (!t.isJSXIdentifier(n.openingElement.name) || n.openingElement.name.name !== name) return;
+    if ((n.start ?? 0) <= (inside.start ?? 0) && (n.end ?? 0) >= (inside.end ?? 0)) return;
+    hits.push(n);
+  });
+  return hits.length === 1 ? hits[0] : null;
+}
+
+// DOM siblings whose `data-slide-loc` points inside an in-file component
+// definition (`const Eyebrow = () => <div/>`) are not JSX siblings in the
+// source — the movable unit is the component *invocation*. Widen such a node
+// to the unique `<Name>` invocation, preferring one among the counterpart's
+// siblings so a component reused across pages still resolves.
+function widenToInvocation(
+  ast: t.File,
+  node: t.JSXElement,
+  targetParent: JsxParent | null,
+): t.JSXElement | null {
+  const name = enclosingComponentName(ast, node);
+  if (!name) return null;
+  if (targetParent) {
+    const scoped = childInvocationNamed(targetParent, name);
+    if (scoped) return scoped;
+  }
+  return uniqueInvocationInFile(ast, name, node);
+}
+
+function buildMoveSplices(
+  ast: t.File,
+  source: string,
+  line: number,
+  column: number,
+  op: Extract<EditOp, { kind: 'move-element' }>,
+): Splice[] | { error: string } {
+  // Exact-loc only — the ancestor fallback used for style/text edits could
+  // silently retarget a stale drag onto the wrong element.
+  let dragged = findJsxByStart(ast, line, column);
+  if (!dragged) return { error: 'no JSX element at location' };
+  let ref = findJsxByStart(ast, op.refLine, op.refColumn);
+  if (!ref) return { error: 'no JSX element at reference location' };
+
+  let parent: JsxParent | null = null;
+  for (let i = 0; i < 4; i++) {
+    const parentD = findJsxParentOf(ast, dragged);
+    const parentR = findJsxParentOf(ast, ref);
+    if (parentD && parentD === parentR) {
+      parent = parentD;
+      break;
+    }
+    const widenedD = widenToInvocation(ast, dragged, parentR);
+    if (widenedD && widenedD !== dragged) {
+      dragged = widenedD;
+      continue;
+    }
+    const widenedR = widenToInvocation(ast, ref, parentD);
+    if (widenedR && widenedR !== ref) {
+      ref = widenedR;
+      continue;
+    }
+    break;
+  }
+  if (dragged === ref) return { error: 'cannot move an element relative to itself' };
+  if (!parent) return { error: 'elements are not siblings' };
+
+  const children = parent.children as t.Node[];
+  const draggedIndex = children.indexOf(dragged as t.Node);
+  const refIndex = children.indexOf(ref as t.Node);
+  const removeFrom = separatorStartBefore(source, parent, children, draggedIndex);
+  const removeTo = dragged.end ?? 0;
+  const insertAt =
+    op.position === 'before'
+      ? separatorStartBefore(source, parent, children, refIndex)
+      : (ref.end ?? 0);
+  if (insertAt >= removeFrom && insertAt <= removeTo) {
+    return { error: 'element is already at the target position' };
+  }
+
+  const moved = source.slice(removeFrom, removeTo);
+  return [
+    { from: removeFrom, to: removeTo, text: '' },
+    { from: insertAt, to: insertAt, text: moved },
+  ];
+}
+
 export function applyEdit(
   source: string,
   line: number,
@@ -1136,6 +1302,16 @@ export function applyEdit(
 
   const ast = parseSource(source);
   if (!ast) return { ok: false, status: 422, error: 'could not parse source' };
+
+  const moveOp = ops.find((op) => op.kind === 'move-element');
+  if (moveOp) {
+    if (ops.length !== 1) {
+      return { ok: false, status: 422, error: 'move-element must be the only op in an edit' };
+    }
+    const result = buildMoveSplices(ast, source, line, column, moveOp);
+    if ('error' in result) return { ok: false, status: 422, error: result.error };
+    return applySplices(source, result);
+  }
   const element = findElementForEdit(ast, line, column, ops);
   if (!element) return { ok: false, status: 422, error: 'no JSX element at location' };
 

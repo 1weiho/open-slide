@@ -73,8 +73,17 @@ function resolveSelectedTarget(target: SelectedTarget, slideId: string): Selecte
 }
 
 export function InspectorPanel() {
-  const { active, slideId, selected, setSelected, bufferOps, pendingCount, add, applyEdit } =
-    useInspector();
+  const {
+    active,
+    slideId,
+    selected,
+    setSelected,
+    bufferOps,
+    pendingCount,
+    opsVersion,
+    add,
+    applyEdit,
+  } = useInspector();
   const [snapshot, setSnapshot] = useState<ElementSnapshot | null>(null);
   const [contentSelection, setContentSelection] = useState<ContentSelection | null>(null);
   const [rangeStylePreview, setRangeStylePreview] = useState<RangeStylePreview | null>(null);
@@ -90,6 +99,7 @@ export function InspectorPanel() {
   useEffect(() => {
     void reloadCounter;
     void pendingCount;
+    void opsVersion;
     if (!selected) {
       setSnapshot(null);
       return;
@@ -105,7 +115,7 @@ export function InspectorPanel() {
       }
     }
     setSnapshot(readSnapshot(anchor));
-  }, [selected, setSelected, slideId, reloadCounter, pendingCount]);
+  }, [selected, setSelected, slideId, reloadCounter, pendingCount, opsVersion]);
 
   // Freeze slide animations while editing so commits don't replay motion.
   useEffect(() => {
@@ -343,6 +353,13 @@ const EDITING_FREEZE_CSS = `
   transition: none !important;
   view-transition-name: none !important;
   cursor: pointer !important;
+}
+[data-inspector-editing] [data-slide-editing],
+[data-inspector-editing] [data-slide-editing] * {
+  cursor: text !important;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  outline: none !important;
 }
 `;
 

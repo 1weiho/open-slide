@@ -259,6 +259,10 @@ export const en: Locale = {
     commentsApplyHintSuffix: ' in your agent to apply these.',
     commentDeleteAria: 'Delete',
     saveFailed: "Couldn't save:",
+    reorderFailed: "Couldn't reorder:",
+    reorderTargetGone: "Couldn't reorder: the element is no longer on this page.",
+    decreaseFontSize: 'Decrease font size',
+    increaseFontSize: 'Increase font size',
   },
 
   stylePanel: {

@@ -6,7 +6,8 @@ import { findSlideSource, type SlideSourceHit } from '@/lib/inspector/fiber';
 import { hasOnlyInlineTextChildren, INLINE_TEXT_TAGS } from '@/lib/inspector/inline-text';
 import { useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
-import { useInspector } from './inspector-provider';
+import { InlineTextLayer } from './inline-text-editor';
+import { slideLocChildren, useInspector } from './inspector-provider';
 
 type Highlight = { hit: SlideSourceHit };
 
@@ -16,10 +17,38 @@ const FRAME_FADE_MS = 150;
 const FRAME_MORPH_MS = 180;
 const LAYOUT_TRACK_MS = PANEL_TRANSITION_MS + FRAME_MORPH_MS;
 
+const DRAG_THRESHOLD_PX = 6;
+const DRAG_CROSS_TOLERANCE_PX = 80;
+
+type DragSlot = { to: number; line: RelRect };
+type DragState = {
+  container: HTMLElement;
+  from: number;
+  slots: DragSlot[];
+  horizontal: boolean;
+  activeIndex: number | null;
+};
+
 export function InspectOverlay() {
-  const { active, slideId, selected, setSelected, cancel, openCrop } = useInspector();
+  const {
+    active,
+    slideId,
+    selected,
+    setSelected,
+    cancel,
+    openCrop,
+    inlineEdit,
+    startInlineEdit,
+    stopInlineEdit,
+    moveElement,
+  } = useInspector();
   const overlayRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<Highlight | null>(null);
+  const [drag, setDrag] = useState<DragState | null>(null);
+  const dragRef = useRef<DragState | null>(null);
+  const pendingDragRef = useRef<{ anchor: HTMLElement; x: number; y: number } | null>(null);
+  const draggedDimRef = useRef<{ el: HTMLElement; opacity: string } | null>(null);
+  const suppressClickRef = useRef(false);
 
   useEffect(() => {
     if (!active) {
@@ -27,16 +56,153 @@ export function InspectOverlay() {
       return;
     }
 
+    const endDragVisuals = () => {
+      const dimmed = draggedDimRef.current;
+      if (dimmed) dimmed.el.style.opacity = dimmed.opacity;
+      draggedDimRef.current = null;
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+
+    const cancelDrag = () => {
+      endDragVisuals();
+      dragRef.current = null;
+      setDrag(null);
+    };
+
+    const beginDrag = (anchor: HTMLElement) => {
+      const container = anchor.parentElement;
+      const overlay = overlayRef.current;
+      if (!container || !overlay) return;
+      const kids = slideLocChildren(container);
+      const from = kids.indexOf(anchor);
+      if (from < 0 || kids.length < 2) return;
+
+      const overlayRect = overlay.getBoundingClientRect();
+      const rects = kids.map((kid) => {
+        const r = kid.getBoundingClientRect();
+        return {
+          left: r.left - overlayRect.left,
+          top: r.top - overlayRect.top,
+          width: r.width,
+          height: r.height,
+        };
+      });
+
+      let dx = 0;
+      let dy = 0;
+      for (let i = 1; i < rects.length; i++) {
+        dx += Math.abs(
+          rects[i].left + rects[i].width / 2 - (rects[i - 1].left + rects[i - 1].width / 2),
+        );
+        dy += Math.abs(
+          rects[i].top + rects[i].height / 2 - (rects[i - 1].top + rects[i - 1].height / 2),
+        );
+      }
+      const horizontal = dx > dy;
+
+      const slots: DragSlot[] = [];
+      for (let k = 0; k <= rects.length; k++) {
+        // Boundaries flanking the dragged element are no-ops — skip them.
+        if (k === from || k === from + 1) continue;
+        slots.push({ to: k < from ? k : k - 1, line: slotIndicatorLine(rects, k, horizontal) });
+      }
+      if (slots.length === 0) return;
+
+      draggedDimRef.current = { el: anchor, opacity: anchor.style.opacity };
+      anchor.style.opacity = '0.4';
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'grabbing';
+      const state: DragState = { container, from, slots, horizontal, activeIndex: null };
+      dragRef.current = state;
+      setDrag(state);
+    };
+
+    const updateActiveSlot = (clientX: number, clientY: number) => {
+      const state = dragRef.current;
+      const overlay = overlayRef.current;
+      if (!state || !overlay) return;
+      const overlayRect = overlay.getBoundingClientRect();
+      const px = clientX - overlayRect.left;
+      const py = clientY - overlayRect.top;
+      let best: number | null = null;
+      let bestDist = Infinity;
+      state.slots.forEach((slot, i) => {
+        const { line } = slot;
+        const crossOk = state.horizontal
+          ? py >= line.top - DRAG_CROSS_TOLERANCE_PX &&
+            py <= line.top + line.height + DRAG_CROSS_TOLERANCE_PX
+          : px >= line.left - DRAG_CROSS_TOLERANCE_PX &&
+            px <= line.left + line.width + DRAG_CROSS_TOLERANCE_PX;
+        if (!crossOk) return;
+        const dist = state.horizontal
+          ? Math.abs(px - (line.left + line.width / 2))
+          : Math.abs(py - (line.top + line.height / 2));
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = i;
+        }
+      });
+      if (best !== state.activeIndex) {
+        const next = { ...state, activeIndex: best };
+        dragRef.current = next;
+        setDrag(next);
+      }
+    };
+
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
+        if (dragRef.current) {
+          pendingDragRef.current = null;
+          cancelDrag();
+          return;
+        }
+        if (inlineEdit) {
+          stopInlineEdit();
+          return;
+        }
         cancel();
       }
     };
 
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.button !== 0 || !e.isPrimary) return;
+      if (!isInspectableEventTarget(e.target)) return;
+      if (inlineEdit?.anchor.contains(e.target as Node)) return;
+      const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
+      if (!el) return;
+      const hit = findSlideSource(el, slideId, { hostOnly: true });
+      if (!hit?.anchor.dataset.slideLoc) return;
+      const parent = hit.anchor.parentElement;
+      if (!parent) return;
+      const kids = slideLocChildren(parent);
+      if (kids.length < 2 || !kids.includes(hit.anchor)) return;
+      e.preventDefault();
+      pendingDragRef.current = { anchor: hit.anchor, x: e.clientX, y: e.clientY };
+    };
+
     const onMove = (e: PointerEvent) => {
+      if (dragRef.current) {
+        e.preventDefault();
+        updateActiveSlot(e.clientX, e.clientY);
+        return;
+      }
+      const pending = pendingDragRef.current;
+      if (
+        pending &&
+        (Math.abs(e.clientX - pending.x) > DRAG_THRESHOLD_PX ||
+          Math.abs(e.clientY - pending.y) > DRAG_THRESHOLD_PX)
+      ) {
+        pendingDragRef.current = null;
+        setHover(null);
+        beginDrag(pending.anchor);
+        if (dragRef.current) updateActiveSlot(e.clientX, e.clientY);
+        return;
+      }
       if (!isInspectableEventTarget(e.target)) return setHover(null);
+      if (inlineEdit?.anchor.contains(e.target as Node)) return setHover(null);
       const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
       if (!el) return setHover(null);
       const hit = findSlideSource(el, slideId, { hostOnly: true });
@@ -44,8 +210,43 @@ export function InspectOverlay() {
       setHover({ hit });
     };
 
+    const onPointerUp = () => {
+      pendingDragRef.current = null;
+      const state = dragRef.current;
+      if (!state) return;
+      cancelDrag();
+      suppressClickRef.current = true;
+      setTimeout(() => {
+        suppressClickRef.current = false;
+      }, 0);
+      if (state.activeIndex !== null) {
+        const slot = state.slots[state.activeIndex];
+        moveElement(state.container, state.from, slot.to);
+      }
+    };
+
+    const onPointerCancel = () => {
+      pendingDragRef.current = null;
+      if (dragRef.current) cancelDrag();
+    };
+
+    const onDragStart = (e: DragEvent) => {
+      if (pendingDragRef.current || dragRef.current) e.preventDefault();
+    };
+
     const onClick = (e: MouseEvent) => {
+      if (suppressClickRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
       if (!isInspectableEventTarget(e.target)) return;
+      if (inlineEdit) {
+        // Clicks inside the editing element move the caret natively;
+        // clicks anywhere else end the inline session first.
+        if (inlineEdit.anchor.contains(e.target as Node)) return;
+        stopInlineEdit();
+      }
       const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
       if (!el) return;
       const hit = findSlideSource(el, slideId, { hostOnly: true });
@@ -58,40 +259,114 @@ export function InspectOverlay() {
 
     const onDblClick = (e: MouseEvent) => {
       if (!isInspectableEventTarget(e.target)) return;
+      if (inlineEdit?.anchor.contains(e.target as Node)) return;
       const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
       if (!el) return;
       const hit = findSlideSource(el, slideId, { hostOnly: true });
       if (!hit) return;
-      if (!(hit.anchor instanceof HTMLImageElement)) return;
-      e.preventDefault();
-      e.stopPropagation();
-      setSelected({ line: hit.line, column: hit.column, anchor: hit.anchor });
-      openCrop(hit.anchor);
+      if (hit.anchor instanceof HTMLImageElement) {
+        e.preventDefault();
+        e.stopPropagation();
+        setSelected({ line: hit.line, column: hit.column, anchor: hit.anchor });
+        openCrop(hit.anchor);
+        return;
+      }
+      if (isEditableTextContainer(hit.anchor)) {
+        e.preventDefault();
+        e.stopPropagation();
+        startInlineEdit({
+          line: hit.line,
+          column: hit.column,
+          anchor: hit.anchor,
+          point: { x: e.clientX, y: e.clientY },
+        });
+      }
     };
 
+    window.addEventListener('pointerdown', onPointerDown, true);
     window.addEventListener('pointermove', onMove, true);
+    window.addEventListener('pointerup', onPointerUp, true);
+    window.addEventListener('pointercancel', onPointerCancel, true);
+    window.addEventListener('dragstart', onDragStart, true);
     window.addEventListener('click', onClick, true);
     window.addEventListener('dblclick', onDblClick, true);
     window.addEventListener('keydown', onKey, true);
     return () => {
+      window.removeEventListener('pointerdown', onPointerDown, true);
       window.removeEventListener('pointermove', onMove, true);
+      window.removeEventListener('pointerup', onPointerUp, true);
+      window.removeEventListener('pointercancel', onPointerCancel, true);
+      window.removeEventListener('dragstart', onDragStart, true);
       window.removeEventListener('click', onClick, true);
       window.removeEventListener('dblclick', onDblClick, true);
       window.removeEventListener('keydown', onKey, true);
+      pendingDragRef.current = null;
+      cancelDrag();
     };
-  }, [active, slideId, setSelected, cancel, openCrop]);
+  }, [
+    active,
+    slideId,
+    setSelected,
+    cancel,
+    openCrop,
+    inlineEdit,
+    startInlineEdit,
+    stopInlineEdit,
+    moveElement,
+  ]);
 
   const hoverAnchor = hover?.hit.anchor.isConnected ? hover.hit.anchor : null;
   const selectedAnchor = selected?.anchor.isConnected ? selected.anchor : null;
-  const dedupedHover = hoverAnchor && hoverAnchor !== selectedAnchor ? hoverAnchor : null;
+  const dedupedHover = !drag && hoverAnchor && hoverAnchor !== selectedAnchor ? hoverAnchor : null;
+  const activeSlot = drag && drag.activeIndex !== null ? drag.slots[drag.activeIndex] : null;
 
   if (!active) return null;
   return (
     <div ref={overlayRef} data-inspector-ui className="pointer-events-none absolute inset-0 z-30">
-      <Frame anchor={selectedAnchor} overlayRef={overlayRef} variant="selected" showImageActions />
+      <Frame
+        anchor={selectedAnchor}
+        overlayRef={overlayRef}
+        variant="selected"
+        showImageActions
+        editing={!!inlineEdit && inlineEdit.anchor === selectedAnchor}
+      />
       <Frame anchor={dedupedHover} overlayRef={overlayRef} variant="hover" />
+      {activeSlot && (
+        <div
+          className="absolute rounded-full bg-[#3b82f6] shadow-[0_0_0_1px_rgba(59,130,246,0.4)]"
+          style={activeSlot.line}
+        />
+      )}
+      <InlineTextLayer overlayRef={overlayRef} />
     </div>
   );
+}
+
+function slotIndicatorLine(rects: RelRect[], boundary: number, horizontal: boolean): RelRect {
+  const prev = rects[boundary - 1];
+  const next = rects[boundary];
+  if (horizontal) {
+    const x =
+      prev && next
+        ? (prev.left + prev.width + next.left) / 2
+        : prev
+          ? prev.left + prev.width + 4
+          : next.left - 4;
+    const around = [prev, next].filter(Boolean) as RelRect[];
+    const top = Math.min(...around.map((r) => r.top));
+    const bottom = Math.max(...around.map((r) => r.top + r.height));
+    return { left: x - 1, top, width: 2, height: bottom - top };
+  }
+  const y =
+    prev && next
+      ? (prev.top + prev.height + next.top) / 2
+      : prev
+        ? prev.top + prev.height + 4
+        : next.top - 4;
+  const around = [prev, next].filter(Boolean) as RelRect[];
+  const left = Math.min(...around.map((r) => r.left));
+  const right = Math.max(...around.map((r) => r.left + r.width));
+  return { left, top: y - 1, width: right - left, height: 2 };
 }
 
 type FrameVariant = 'selected' | 'hover';
@@ -106,11 +381,13 @@ function Frame({
   overlayRef,
   variant,
   showImageActions = false,
+  editing = false,
 }: {
   anchor: HTMLElement | null;
   overlayRef: React.RefObject<HTMLDivElement>;
   variant: FrameVariant;
   showImageActions?: boolean;
+  editing?: boolean;
 }) {
   const [rect, setRect] = useState<RelRect | null>(null);
   const [hasTarget, setHasTarget] = useState(false);
@@ -201,6 +478,12 @@ function Frame({
   const imageAnchor = anchor instanceof HTMLImageElement ? anchor : null;
   const actionsVisible = showImageActions && visible && !!imageAnchor;
 
+  // While a text run is being edited inline, drop the tint so the text
+  // underneath stays fully readable.
+  const frameStyle = editing
+    ? { ...FRAME_STYLES[variant], background: 'transparent' }
+    : FRAME_STYLES[variant];
+
   return (
     <>
       <div
@@ -212,7 +495,7 @@ function Frame({
           height: rect.height,
           opacity: visible ? 1 : 0,
           transition,
-          ...FRAME_STYLES[variant],
+          ...frameStyle,
         }}
       />
       {showImageActions && imageAnchor && (

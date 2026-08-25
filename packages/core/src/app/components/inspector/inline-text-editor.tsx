@@ -1,0 +1,543 @@
+import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Minus, Plus } from 'lucide-react';
+import { type RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useHistory } from '@/components/history-provider';
+import {
+  collectDomTextParts,
+  type DomTextPart,
+  type InlineEditTarget,
+  readEditableText,
+  useInspector,
+} from '@/components/inspector/inspector-provider';
+import { useLocale } from '@/lib/use-locale';
+import { cn } from '@/lib/utils';
+
+type RelRect = { left: number; top: number; width: number; height: number };
+type TextRange = { start: number; end: number };
+
+const RANGE_STYLE_KEYS = new Set(['fontSize', 'fontWeight', 'fontStyle', 'color']);
+const TOOLBAR_GAP = 8;
+const TOOLBAR_HEIGHT = 36;
+
+export function InlineTextLayer({ overlayRef }: { overlayRef: RefObject<HTMLDivElement> }) {
+  const { inlineEdit } = useInspector();
+  if (!inlineEdit) return null;
+  return (
+    <ActiveInlineEditor
+      key={`${inlineEdit.line}:${inlineEdit.column}`}
+      target={inlineEdit}
+      overlayRef={overlayRef}
+    />
+  );
+}
+
+function ActiveInlineEditor({
+  target,
+  overlayRef,
+}: {
+  target: InlineEditTarget;
+  overlayRef: RefObject<HTMLDivElement>;
+}) {
+  const { bufferOps, stopInlineEdit } = useInspector();
+  const history = useHistory();
+  const [sel, setSel] = useState<TextRange | null>(null);
+  const { anchor } = target;
+
+  const commit = useCallback(() => {
+    if (!anchor.isConnected) return;
+    bufferOps(target.line, target.column, anchor, [
+      { kind: 'set-text', value: readEditableText(anchor) },
+    ]);
+  }, [anchor, target.line, target.column, bufferOps]);
+
+  const applyTextStyle = useCallback(
+    (key: string, value: string | null) => {
+      if (!anchor.isConnected) return;
+      if (sel && sel.end > sel.start && RANGE_STYLE_KEYS.has(key)) {
+        bufferOps(target.line, target.column, anchor, [
+          { kind: 'set-text-range-style', start: sel.start, end: sel.end, key, value },
+        ]);
+        return;
+      }
+      bufferOps(target.line, target.column, anchor, [
+        { kind: 'set-style', key, value, prevText: readEditableText(anchor) },
+      ]);
+    },
+    [anchor, sel, target.line, target.column, bufferOps],
+  );
+
+  const toggleBold = useCallback(() => {
+    const bold = parseInt(getComputedStyle(styleContext(anchor, sel)).fontWeight, 10) >= 600;
+    applyTextStyle('fontWeight', bold ? null : '700');
+  }, [anchor, sel, applyTextStyle]);
+
+  const toggleItalic = useCallback(() => {
+    const italic = getComputedStyle(styleContext(anchor, sel)).fontStyle === 'italic';
+    applyTextStyle('fontStyle', italic ? null : 'italic');
+  }, [anchor, sel, applyTextStyle]);
+
+  // The setup effect must run exactly once per anchor — re-running it would
+  // re-place the caret and clobber the user's live selection — so everything
+  // with an unstable identity is reached through latest-refs.
+  const latestRef = useRef({ commit, history, stopInlineEdit, toggleBold, toggleItalic });
+  latestRef.current = { commit, history, stopInlineEdit, toggleBold, toggleItalic };
+  const initialPointRef = useRef(target.point);
+
+  useEffect(() => {
+    anchor.setAttribute('contenteditable', 'true');
+    anchor.setAttribute('spellcheck', 'false');
+    anchor.setAttribute('data-slide-editing', 'true');
+    focusAndPlaceCaret(anchor, initialPointRef.current);
+
+    const onBeforeInput = (e: Event) => {
+      const ev = e as InputEvent;
+      const type = ev.inputType;
+      if (type === 'insertParagraph' || type === 'insertLineBreak') {
+        ev.preventDefault();
+        document.execCommand('insertLineBreak');
+      } else if (type === 'insertFromPaste' || type === 'insertFromDrop') {
+        ev.preventDefault();
+        const text = ev.dataTransfer?.getData('text/plain') ?? ev.data;
+        if (text) document.execCommand('insertText', false, text);
+      } else if (type === 'historyUndo') {
+        ev.preventDefault();
+        latestRef.current.history.undo();
+      } else if (type === 'historyRedo') {
+        ev.preventDefault();
+        latestRef.current.history.redo();
+      } else if (type === 'formatBold') {
+        ev.preventDefault();
+        latestRef.current.toggleBold();
+      } else if (type === 'formatItalic') {
+        ev.preventDefault();
+        latestRef.current.toggleItalic();
+      } else if (type.startsWith('format')) {
+        ev.preventDefault();
+      }
+    };
+    const onInput = (e: Event) => {
+      if ((e as InputEvent).isComposing) return;
+      latestRef.current.commit();
+    };
+    const onCompositionEnd = () => latestRef.current.commit();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        latestRef.current.stopInlineEdit();
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && !e.altKey) {
+        const key = e.key.toLowerCase();
+        if (key === 'z' || key === 'y') {
+          e.preventDefault();
+          e.stopPropagation();
+          if (key === 'y' || e.shiftKey) latestRef.current.history.redo();
+          else latestRef.current.history.undo();
+        } else if (key === 'b') {
+          e.preventDefault();
+          latestRef.current.toggleBold();
+        } else if (key === 'i') {
+          e.preventDefault();
+          latestRef.current.toggleItalic();
+        }
+      }
+    };
+    const onSelectionChange = () => {
+      const offsets = selectionTextOffsets(anchor);
+      if (offsets === null) return;
+      setSel(offsets.end > offsets.start ? offsets : null);
+    };
+
+    anchor.addEventListener('beforeinput', onBeforeInput);
+    anchor.addEventListener('input', onInput);
+    anchor.addEventListener('compositionend', onCompositionEnd);
+    anchor.addEventListener('keydown', onKeyDown);
+    document.addEventListener('selectionchange', onSelectionChange);
+    return () => {
+      anchor.removeEventListener('beforeinput', onBeforeInput);
+      anchor.removeEventListener('input', onInput);
+      anchor.removeEventListener('compositionend', onCompositionEnd);
+      anchor.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('selectionchange', onSelectionChange);
+      if (anchor.isConnected) {
+        anchor.removeAttribute('contenteditable');
+        anchor.removeAttribute('spellcheck');
+        anchor.removeAttribute('data-slide-editing');
+      }
+    };
+  }, [anchor]);
+
+  // An HMR remount replaces the anchor node (taking its contenteditable
+  // attribute with it), so a disconnected anchor ends the session.
+  useEffect(() => {
+    const root = document.querySelector<HTMLElement>('[data-inspector-root]');
+    if (!root) return;
+    const check = () => {
+      if (!anchor.isConnected) stopInlineEdit();
+    };
+    const observer = new MutationObserver(check);
+    observer.observe(root, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [anchor, stopInlineEdit]);
+
+  return (
+    <TextToolbar anchor={anchor} overlayRef={overlayRef} sel={sel} applyStyle={applyTextStyle} />
+  );
+}
+
+function TextToolbar({
+  anchor,
+  overlayRef,
+  sel,
+  applyStyle,
+}: {
+  anchor: HTMLElement;
+  overlayRef: RefObject<HTMLDivElement>;
+  sel: TextRange | null;
+  applyStyle: (key: string, value: string | null) => void;
+}) {
+  const { opsVersion } = useInspector();
+  const t = useLocale();
+  const [rect, setRect] = useState<RelRect | null>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+
+  const measure = useCallback(() => {
+    const overlay = overlayRef.current;
+    if (!anchor.isConnected || !overlay) return;
+    const a = anchor.getBoundingClientRect();
+    const o = overlay.getBoundingClientRect();
+    const next = { left: a.left - o.left, top: a.top - o.top, width: a.width, height: a.height };
+    setRect((prev) =>
+      prev &&
+      Math.abs(prev.left - next.left) < 0.5 &&
+      Math.abs(prev.top - next.top) < 0.5 &&
+      Math.abs(prev.width - next.width) < 0.5 &&
+      Math.abs(prev.height - next.height) < 0.5
+        ? prev
+        : next,
+    );
+  }, [anchor, overlayRef]);
+
+  useLayoutEffect(() => {
+    measure();
+  }, [measure]);
+
+  useEffect(() => {
+    let scheduled = 0;
+    const scheduleMeasure = () => {
+      cancelAnimationFrame(scheduled);
+      scheduled = requestAnimationFrame(measure);
+    };
+    const resizeObserver = new ResizeObserver(scheduleMeasure);
+    resizeObserver.observe(anchor);
+    if (overlayRef.current) resizeObserver.observe(overlayRef.current);
+    window.addEventListener('resize', scheduleMeasure, true);
+    window.addEventListener('scroll', scheduleMeasure, true);
+    return () => {
+      resizeObserver.disconnect();
+      cancelAnimationFrame(scheduled);
+      window.removeEventListener('resize', scheduleMeasure, true);
+      window.removeEventListener('scroll', scheduleMeasure, true);
+    };
+  }, [measure, anchor, overlayRef]);
+
+  void opsVersion;
+  const contextEl = styleContext(anchor, sel);
+  const cs = anchor.isConnected ? getComputedStyle(contextEl) : null;
+  const fontSize = cs ? Math.round(parseFloat(cs.fontSize) || 16) : 16;
+  const bold = cs ? parseInt(cs.fontWeight, 10) >= 600 : false;
+  const italic = cs ? cs.fontStyle === 'italic' : false;
+  const color = cs ? (rgbToHex(cs.color) ?? '#000000') : '#000000';
+  const anchorAlign = anchor.isConnected ? getComputedStyle(anchor).textAlign : 'left';
+  const align =
+    anchorAlign === 'center' || anchorAlign === 'right' || anchorAlign === 'justify'
+      ? anchorAlign
+      : 'left';
+
+  if (!rect) return null;
+
+  const overlayWidth = overlayRef.current?.clientWidth ?? 0;
+  const barWidth = toolbarRef.current?.offsetWidth ?? 0;
+  const centerX = rect.left + rect.width / 2;
+  const clampedX =
+    barWidth > 0 && overlayWidth > 0
+      ? Math.min(Math.max(centerX, barWidth / 2 + 4), overlayWidth - barWidth / 2 - 4)
+      : centerX;
+  const above = rect.top - TOOLBAR_HEIGHT - TOOLBAR_GAP >= 0;
+  const top = above ? rect.top - TOOLBAR_GAP : rect.top + rect.height + TOOLBAR_GAP;
+
+  const setFontSize = (px: number) => {
+    if (!Number.isFinite(px)) return;
+    applyStyle('fontSize', `${Math.min(Math.max(Math.round(px), 4), 400)}px`);
+  };
+
+  return (
+    <div
+      ref={toolbarRef}
+      data-inspector-ui
+      className="pointer-events-auto absolute z-10 flex items-center gap-0.5 rounded-[8px] border border-border bg-popover p-1 text-popover-foreground shadow-floating"
+      style={{
+        left: clampedX,
+        top,
+        transform: above ? 'translate(-50%, -100%)' : 'translateX(-50%)',
+      }}
+      onPointerDown={(e) => {
+        // Keep focus (and the text selection) inside the contenteditable.
+        e.preventDefault();
+      }}
+    >
+      <ToolbarIconButton
+        label={t.inspector.decreaseFontSize}
+        onClick={() => setFontSize(fontSize - 1)}
+      >
+        <Minus className="size-3.5" />
+      </ToolbarIconButton>
+      <FontSizeInput value={fontSize} onCommit={setFontSize} label={t.inspector.sizeLabel} />
+      <ToolbarIconButton
+        label={t.inspector.increaseFontSize}
+        onClick={() => setFontSize(fontSize + 1)}
+      >
+        <Plus className="size-3.5" />
+      </ToolbarIconButton>
+      <span aria-hidden className="mx-0.5 h-4 w-px bg-hairline" />
+      <ToolbarIconButton
+        label={t.inspector.boldAria}
+        pressed={bold}
+        onClick={() => applyStyle('fontWeight', bold ? null : '700')}
+      >
+        <Bold className="size-3.5" />
+      </ToolbarIconButton>
+      <ToolbarIconButton
+        label={t.inspector.italicAria}
+        pressed={italic}
+        onClick={() => applyStyle('fontStyle', italic ? null : 'italic')}
+      >
+        <Italic className="size-3.5" />
+      </ToolbarIconButton>
+      <label
+        className="relative ml-0.5 inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-[5px] transition-colors duration-150 hover:bg-muted"
+        aria-label={t.inspector.textColor}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <span
+          className="size-4 rounded-[3px] border border-foreground/15"
+          style={{ backgroundColor: color }}
+        />
+        <input
+          type="color"
+          value={color}
+          onChange={(e) => applyStyle('color', e.target.value)}
+          className="absolute inset-0 size-full cursor-pointer opacity-0"
+        />
+      </label>
+      <span aria-hidden className="mx-0.5 h-4 w-px bg-hairline" />
+      {(
+        [
+          ['left', AlignLeft],
+          ['center', AlignCenter],
+          ['right', AlignRight],
+        ] as const
+      ).map(([value, Icon]) => (
+        <ToolbarIconButton
+          key={value}
+          label={value}
+          pressed={align === value}
+          onClick={() => applyStyle('textAlign', value === 'left' ? null : value)}
+        >
+          <Icon className="size-3.5" />
+        </ToolbarIconButton>
+      ))}
+    </div>
+  );
+}
+
+function ToolbarIconButton({
+  label,
+  pressed,
+  onClick,
+  children,
+}: {
+  label: string;
+  pressed?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-pressed={pressed}
+      title={label}
+      onClick={onClick}
+      className={cn(
+        'inline-flex size-7 items-center justify-center rounded-[5px] transition-[background-color,color,scale] duration-150 active:scale-[0.94] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+        pressed
+          ? 'bg-muted text-foreground'
+          : 'text-foreground/85 hover:bg-muted hover:text-foreground',
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function FontSizeInput({
+  value,
+  onCommit,
+  label,
+}: {
+  value: number;
+  onCommit: (px: number) => void;
+  label: string;
+}) {
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => setDraft(String(value)), [value]);
+  const commit = () => {
+    const n = parseFloat(draft);
+    if (Number.isFinite(n)) onCommit(n);
+    else setDraft(String(value));
+  };
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      value={draft}
+      aria-label={label}
+      onPointerDown={(e) => e.stopPropagation()}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          commit();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          onCommit(value + 1);
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          onCommit(value - 1);
+        }
+        e.stopPropagation();
+      }}
+      className="nums h-7 w-9 rounded-[5px] border border-transparent bg-transparent text-center font-mono text-[11px] text-foreground outline-none transition-colors duration-150 hover:border-hairline focus:border-ring/50"
+    />
+  );
+}
+
+function styleContext(anchor: HTMLElement, sel: TextRange | null): HTMLElement {
+  if (!sel) return anchor;
+  const node = window.getSelection()?.anchorNode;
+  const el = node instanceof HTMLElement ? node : (node?.parentElement ?? null);
+  return el && anchor.contains(el) ? el : anchor;
+}
+
+function focusAndPlaceCaret(anchor: HTMLElement, point?: { x: number; y: number }) {
+  anchor.focus({ preventScroll: true });
+  const selection = window.getSelection();
+  if (!selection) return;
+  if (point) {
+    const range = caretRangeAtPoint(point.x, point.y);
+    if (range && anchor.contains(range.startContainer)) {
+      selection.removeAllRanges();
+      selection.addRange(range);
+      const modifiable = selection as Selection & {
+        modify?: (alter: string, direction: string, granularity: string) => void;
+      };
+      if (typeof modifiable.modify === 'function' && range.startContainer instanceof Text) {
+        modifiable.modify('move', 'backward', 'word');
+        modifiable.modify('extend', 'forward', 'word');
+      }
+      return;
+    }
+  }
+  const range = document.createRange();
+  range.selectNodeContents(anchor);
+  range.collapse(false);
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
+function caretRangeAtPoint(x: number, y: number): Range | null {
+  const doc = document as Document & {
+    caretRangeFromPoint?: (x: number, y: number) => Range | null;
+    caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
+  };
+  if (typeof doc.caretRangeFromPoint === 'function') return doc.caretRangeFromPoint(x, y);
+  const pos = doc.caretPositionFromPoint?.(x, y);
+  if (!pos) return null;
+  const range = document.createRange();
+  try {
+    range.setStart(pos.offsetNode, pos.offset);
+  } catch {
+    return null;
+  }
+  range.collapse(true);
+  return range;
+}
+
+// Map the live DOM selection to offsets in the normalized editable text —
+// the same coordinate space `set-text-range-style` ops use.
+export function selectionTextOffsets(root: HTMLElement): TextRange | null {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return null;
+  const range = selection.getRangeAt(0);
+  if (!root.contains(range.startContainer) || !root.contains(range.endContainer)) return null;
+  const parts: DomTextPart[] = [];
+  collectDomTextParts(root, parts);
+  const start = pointToTextOffset(parts, range.startContainer, range.startOffset);
+  const end = pointToTextOffset(parts, range.endContainer, range.endOffset);
+  if (start === null || end === null) return null;
+  return start <= end ? { start, end } : { start: end, end: start };
+}
+
+function pointToTextOffset(parts: DomTextPart[], container: Node, offset: number): number | null {
+  const probe = document.createRange();
+  try {
+    probe.setStart(container, offset);
+  } catch {
+    return null;
+  }
+  probe.collapse(true);
+  let total = 0;
+  for (const part of parts) {
+    if (part.node === container && part.node instanceof Text) {
+      const full = collapsedTextSlice(part.node, part.node.data);
+      const prefix = collapsedTextSlice(part.node, part.node.data.slice(0, offset));
+      const leading = Math.max(0, full.indexOf(part.current));
+      return total + Math.min(Math.max(prefix.length - leading, 0), part.current.length);
+    }
+    let cmp: number;
+    try {
+      cmp = probe.comparePoint(part.node, 0);
+    } catch {
+      return null;
+    }
+    if (cmp > 0) break;
+    if (cmp < 0) {
+      total += part.current.length;
+      continue;
+    }
+    break;
+  }
+  return total;
+}
+
+function collapsedTextSlice(node: Text, value: string): string {
+  const whiteSpace = node.parentElement ? getComputedStyle(node.parentElement).whiteSpace : '';
+  if (whiteSpace === 'pre' || whiteSpace === 'pre-wrap' || whiteSpace === 'break-spaces') {
+    return value;
+  }
+  return value.replace(/\s+/g, ' ');
+}
+
+function rgbToHex(value: string): string | null {
+  const m = value.match(/^rgba?\(([^)]+)\)$/);
+  if (!m) return null;
+  const parts = m[1].split(',').map((s) => s.trim());
+  if (parts.length < 3) return null;
+  const bytes = parts.slice(0, 3).map((p) => {
+    const n = Math.round(Number(p));
+    return Math.max(0, Math.min(255, Number.isFinite(n) ? n : 0));
+  });
+  return `#${bytes.map((n) => n.toString(16).padStart(2, '0')).join('')}`;
+}

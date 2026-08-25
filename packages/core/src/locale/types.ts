@@ -259,6 +259,11 @@ export type Locale = {
     commentDeleteAria: string;
     /** Prefix for the toast shown when one or more buffered edits fail to write to disk. */
     saveFailed: string;
+    /** Prefix for the toast shown when a drag-to-reorder fails to write to disk. */
+    reorderFailed: string;
+    reorderTargetGone: string;
+    decreaseFontSize: string;
+    increaseFontSize: string;
   };
 
   stylePanel: {

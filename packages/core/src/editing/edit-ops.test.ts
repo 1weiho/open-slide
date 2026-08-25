@@ -1144,3 +1144,200 @@ describe('applyEdit / replace-placeholder-with-image', () => {
     expect(r.error).toMatch(/\.\/assets\//);
   });
 });
+
+describe('applyEdit / move-element', () => {
+  const src = [
+    'export default [() => (',
+    '<section>',
+    '  <h1>Title</h1>',
+    '  <p>Body</p>',
+    '  <img src="a.png" />',
+    '</section>',
+    ')];',
+    '',
+  ].join('\n');
+
+  it('moves an element before an earlier sibling', () => {
+    const r = applyEdit(src, 5, 2, [
+      { kind: 'move-element', refLine: 3, refColumn: 2, position: 'before' },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toBe(
+      [
+        'export default [() => (',
+        '<section>',
+        '  <img src="a.png" />',
+        '  <h1>Title</h1>',
+        '  <p>Body</p>',
+        '</section>',
+        ')];',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('moves an element after a later sibling', () => {
+    const r = applyEdit(src, 3, 2, [
+      { kind: 'move-element', refLine: 5, refColumn: 2, position: 'after' },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toBe(
+      [
+        'export default [() => (',
+        '<section>',
+        '  <p>Body</p>',
+        '  <img src="a.png" />',
+        '  <h1>Title</h1>',
+        '</section>',
+        ')];',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('reorders same-line siblings', () => {
+    const inline = [
+      'export default [() => (',
+      '<ul><li>a</li><li>b</li><li>c</li></ul>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(inline, 2, 24, [
+      { kind: 'move-element', refLine: 2, refColumn: 4, position: 'before' },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('<ul><li>c</li><li>a</li><li>b</li></ul>');
+  });
+
+  it('keeps a mixed text sibling intact and moves only the element', () => {
+    const mixed = [
+      'export default [() => (',
+      '<p>',
+      '  hello <b>bold</b>',
+      '  <span>tail</span>',
+      '</p>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(mixed, 4, 2, [
+      { kind: 'move-element', refLine: 3, refColumn: 8, position: 'before' },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('hello');
+    expect(r.source).toContain('<span>tail</span> <b>bold</b>');
+    expect(r.source.indexOf('hello')).toBeLessThan(r.source.indexOf('<span>'));
+  });
+
+  it('rejects when elements are not siblings', () => {
+    const nested = [
+      'export default [() => (',
+      '<div>',
+      '  <section>',
+      '    <h1>Inner</h1>',
+      '  </section>',
+      '  <p>Outer</p>',
+      '</div>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(nested, 4, 4, [
+      { kind: 'move-element', refLine: 6, refColumn: 2, position: 'before' },
+    ]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.error).toMatch(/siblings/);
+  });
+
+  it('rejects a move to the position the element already occupies', () => {
+    const before = applyEdit(src, 3, 2, [
+      { kind: 'move-element', refLine: 4, refColumn: 2, position: 'before' },
+    ]);
+    expect(before.ok).toBe(false);
+    const after = applyEdit(src, 4, 2, [
+      { kind: 'move-element', refLine: 3, refColumn: 2, position: 'after' },
+    ]);
+    expect(after.ok).toBe(false);
+  });
+
+  it('rejects when combined with other ops', () => {
+    const r = applyEdit(src, 3, 2, [
+      { kind: 'move-element', refLine: 4, refColumn: 2, position: 'after' },
+      { kind: 'set-style', key: 'color', value: '#fff' },
+    ]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.error).toMatch(/only op/);
+  });
+
+  it('widens a component-definition element to its invocation among the ref siblings', () => {
+    const componentSrc = [
+      'const Eyebrow = () => <div>hi</div>;',
+      'export default [() => (',
+      '<section>',
+      '  <Eyebrow />',
+      '  <h1>Title</h1>',
+      '</section>',
+      ')];',
+      '',
+    ].join('\n');
+    // Dragged loc is the <div> inside the Eyebrow definition — the loc its
+    // rendered DOM node carries — but the movable unit is <Eyebrow />.
+    const r = applyEdit(componentSrc, 1, 22, [
+      { kind: 'move-element', refLine: 5, refColumn: 2, position: 'after' },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain(
+      ['<section>', '  <h1>Title</h1>', '  <Eyebrow />', '</section>'].join('\n'),
+    );
+  });
+
+  it('widens the reference element too when dropping next to a component child', () => {
+    const componentSrc = [
+      'const Eyebrow = () => <div>hi</div>;',
+      'export default [() => (',
+      '<section>',
+      '  <h1>Title</h1>',
+      '  <Eyebrow />',
+      '</section>',
+      ')];',
+      '',
+    ].join('\n');
+    // Ref loc is the Eyebrow definition's <div>; dragged is the page <h1>.
+    const r = applyEdit(componentSrc, 4, 2, [
+      { kind: 'move-element', refLine: 1, refColumn: 22, position: 'after' },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain(
+      ['<section>', '  <Eyebrow />', '  <h1>Title</h1>', '</section>'].join('\n'),
+    );
+  });
+
+  it('rejects a component-definition drag when the invocation is ambiguous', () => {
+    const componentSrc = [
+      'const Eyebrow = () => <div>hi</div>;',
+      'export default [() => (',
+      '<section>',
+      '  <Eyebrow />',
+      '  <Eyebrow />',
+      '  <h1>Title</h1>',
+      '</section>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(componentSrc, 1, 22, [
+      { kind: 'move-element', refLine: 6, refColumn: 2, position: 'after' },
+    ]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.error).toMatch(/siblings/);
+  });
+
+  it('rejects a stale location instead of falling back to an ancestor', () => {
+    const r = applyEdit(src, 3, 4, [
+      { kind: 'move-element', refLine: 5, refColumn: 2, position: 'after' },
+    ]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.error).toMatch(/no JSX element at location/);
+  });
+});

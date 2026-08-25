@@ -3,10 +3,12 @@ import {
   type ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
+import { isTypingTarget } from '@/lib/keys';
 
 export type HistoryEntry = {
   undo: () => void;
@@ -99,6 +101,23 @@ export function HistoryProvider({ children }: { children: ReactNode }) {
     setPast([]);
     setFuture([]);
   }, []);
+
+  // Native undo in inputs/textareas/contenteditables stays native; the
+  // inline text editor routes its own ⌘Z here explicitly to keep the
+  // buffered-op state and the DOM in sync.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+      const key = e.key.toLowerCase();
+      if (key !== 'z' && key !== 'y') return;
+      if (isTypingTarget(e.target)) return;
+      e.preventDefault();
+      if (key === 'y' || e.shiftKey) redo();
+      else undo();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [undo, redo]);
 
   const value = useMemo<HistoryCtx>(
     () => ({
