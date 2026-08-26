@@ -24,7 +24,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }}
       style={
         {
-          position: "fixed",
           "--normal-bg": "var(--popover)",
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",

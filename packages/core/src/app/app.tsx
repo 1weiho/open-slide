@@ -1,6 +1,6 @@
 import config from 'virtual:open-slide/config';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { Toaster } from './components/ui/sonner';
+import { AppToaster } from './components/app-toaster';
 import { TooltipProvider } from './components/ui/tooltip';
 import { useLocale } from './lib/use-locale';
 import { AssetsPage } from './routes/assets';
@@ -30,7 +30,7 @@ export function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </TooltipProvider>
-      <Toaster />
+      <AppToaster />
     </BrowserRouter>
   );
 }
