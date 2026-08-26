@@ -1,6 +1,6 @@
 ---
 name: create-slide
-description: Use this skill when the user wants to create, draft, author, or generate new slides / a presentation in this open-slide repo. Triggers on phrases like "make slides about X", "make a deck about X", "create a presentation", "draft slides for", "new slide", or when the user asks to add content under `slides/`. Do NOT use for editing the framework itself — only for authoring content inside `slides/<id>/`.
+description: Use this skill when the user wants to create, draft, author, or generate new slides / a presentation in this open-slide repo. Triggers on phrases like "make slides about X", "make a deck about X", "create a presentation", "draft slides for", "new slide", "a deck with speaker notes / a script", or when the user asks to add content under `slides/`. Do NOT use for editing the framework itself — only for authoring content inside `slides/<id>/`.
 ---
 
 # Create a slide in open-slide
@@ -76,6 +76,8 @@ If the `frontend-design` skill is available, consult it for deeper aesthetic gui
 
 Read the **`slide-authoring`** skill before writing — it covers the file contract, canvas rules, type scale, spacing, and asset imports, and it includes a starter template you can copy. Don't duplicate that knowledge here; use it.
 
+If the user asked for a speech script / speaker notes (in the initial request or at any point after), write it into the slide's `export const notes` array — the framework's built-in speaker-notes feature, shown in the presenter view. See **Speaker notes** in `slide-authoring` for the contract. Never deliver a script as a markdown or text file.
+
 ## Step 7 — Self-review
 
 Run the checklist in `slide-authoring` ("Self-review before finishing"). It covers structural correctness, layout discipline, and asset existence.
@@ -86,6 +88,7 @@ Tell the user:
 
 - The slide id and file path you created.
 - That the dev server will hot-reload — they can open `http://localhost:5173/s/<id>` (or refresh the home page).
+- If you wrote speaker notes: that they live in the slide's `notes` export and show up in the viewer's notes drawer and the presenter view in present mode.
 - If dev isn't running: run the project's `dev` script from the project root with its package manager (`npm run dev`, `pnpm dev`, … — match the lockfile).
 
 Don't run the dev server yourself unless asked.
