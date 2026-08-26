@@ -1,0 +1,105 @@
+{
+  "url": "http://localhost:5173/s/open-slide-on-replit",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "startCursor": {
+    "x": 1580,
+    "y": 900
+  },
+  "steps": [
+    {
+      "action": "wait",
+      "ms": 5200
+    },
+    {
+      "action": "click",
+      "selector": "[data-inspector-root] [data-slide-loc=\"371:10\"]",
+      "zoom": "always",
+      "note": "hero: a single click on slide text opens an inline editing session",
+      "caption": "Click any text on a slide and you are already editing it.",
+      "settleMs": 1900
+    },
+    {
+      "action": "type",
+      "selector": "[data-inspector-root] [data-slide-loc=\"371:10\"]",
+      "clear": true,
+      "value": "Ship slides",
+      "zoom": "always",
+      "note": "real keystrokes into the slide itself",
+      "caption": "Real keystrokes replace the headline, live on the slide.",
+      "settleMs": 1600
+    },
+    {
+      "action": "type",
+      "text": "Size",
+      "clear": true,
+      "value": "200",
+      "zoom": "always",
+      "note": "the floating toolbar's font-size field",
+      "caption": "The floating toolbar carries size, weight, colour and alignment.",
+      "settleMs": 1300
+    },
+    {
+      "action": "press",
+      "keys": "Enter",
+      "selector": "[data-inspector-root] [data-slide-loc=\"371:10\"]",
+      "zoom": "always",
+      "durationMs": 1200,
+      "note": "commit the size — the headline re-lays out",
+      "caption": "Enter commits the size and the slide re-lays out instantly.",
+      "settleMs": 2400
+    },
+    {
+      "action": "click",
+      "text": "center",
+      "zoom": "never",
+      "note": "alignment payoff is relocated from the click — show it full view",
+      "caption": "Alignment lands on the element you are editing, not the deck.",
+      "settleMs": 2400
+    },
+    {
+      "action": "click",
+      "selector": "[data-inspector-root] [data-slide-loc=\"399:8\"]",
+      "zoom": "always",
+      "note": "clicking another text run moves the session to it",
+      "caption": "Click another text run and the session moves with you.",
+      "settleMs": 1900
+    },
+    {
+      "action": "click",
+      "text": "Bold",
+      "zoom": "always",
+      "note": "bold applies to the run being edited",
+      "caption": "Bold applies to the run you are in, nothing else.",
+      "settleMs": 2200
+    },
+    {
+      "action": "press",
+      "keys": "Meta+i",
+      "selector": "[data-inspector-root] [data-slide-loc=\"399:8\"]",
+      "zoom": "always",
+      "durationMs": 1400,
+      "note": "keyboard shortcuts are wired to the same ops",
+      "caption": "Familiar shortcuts work too: Cmd-B for bold, Cmd-I for italic.",
+      "settleMs": 2400
+    },
+    {
+      "action": "press",
+      "keys": "Escape",
+      "durationMs": 1200,
+      "note": "escape ends the session; edits stay staged",
+      "caption": "Escape ends the session; the edits are staged, not saved.",
+      "settleMs": 1900
+    },
+    {
+      "action": "click",
+      "text": "Save",
+      "zoom": "always",
+      "note": "closer: the staged edits are written into the slide source file",
+      "caption": "Save writes every change back into the slide's source file.",
+      "settleMs": 2600
+    }
+  ]
+}

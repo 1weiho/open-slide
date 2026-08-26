@@ -1,0 +1,222 @@
+{
+  "video": {
+    "width": 3660,
+    "height": 2160,
+    "fps": "60/1",
+    "durationS": 35.583333
+  },
+  "viewport": {
+    "w": 1920,
+    "h": 1080
+  },
+  "start": {
+    "x": 1580,
+    "y": 900
+  },
+  "events": [
+    {
+      "kind": "click",
+      "x": 1092,
+      "y": 409,
+      "box": {
+        "x": 426,
+        "y": 345,
+        "w": 1333,
+        "h": 128
+      },
+      "tMs": 6329,
+      "sel": "[data-inspector-root] [data-slide-loc=\"371:10\"]",
+      "note": "hero: a single click on slide text opens an inline editing session",
+      "caption": "Click any text on a slide and you are already editing it.",
+      "zoom": "always",
+      "changeCoverage": 0
+    },
+    {
+      "kind": "type",
+      "x": 1093,
+      "y": 409,
+      "box": {
+        "x": 426,
+        "y": 345,
+        "w": 1333,
+        "h": 128
+      },
+      "tMs": 8434,
+      "sel": "[data-inspector-root] [data-slide-loc=\"371:10\"]",
+      "note": "real keystrokes into the slide itself",
+      "caption": "Real keystrokes replace the headline, live on the slide.",
+      "text": "Ship slides",
+      "durationMs": 1288,
+      "zoom": "always",
+      "changeCoverage": 0.051,
+      "effectBox": {
+        "x": 416,
+        "y": 335,
+        "w": 864,
+        "h": 701
+      }
+    },
+    {
+      "kind": "type",
+      "x": 994,
+      "y": 318,
+      "box": {
+        "x": 976,
+        "y": 304,
+        "w": 36,
+        "h": 28
+      },
+      "tMs": 11356,
+      "sel": "Size",
+      "note": "the floating toolbar's font-size field",
+      "caption": "The floating toolbar carries size, weight, colour and alignment.",
+      "text": "200",
+      "durationMs": 303,
+      "zoom": "always",
+      "changeCoverage": 0.001,
+      "effectBox": {
+        "x": 960,
+        "y": 274,
+        "w": 64,
+        "h": 61
+      }
+    },
+    {
+      "kind": "press",
+      "x": 1093,
+      "y": 409,
+      "box": {
+        "x": 426,
+        "y": 331,
+        "w": 1333,
+        "h": 156
+      },
+      "tMs": 12965,
+      "keys": "Enter",
+      "sel": "[data-inspector-root] [data-slide-loc=\"371:10\"]",
+      "note": "commit the size — the headline re-lays out",
+      "caption": "Enter commits the size and the slide re-lays out instantly.",
+      "durationMs": 1200,
+      "zoom": "always",
+      "changeCoverage": 0.195,
+      "effectBox": {
+        "x": 416,
+        "y": 274,
+        "w": 1344,
+        "h": 488
+      }
+    },
+    {
+      "kind": "click",
+      "x": 1194,
+      "y": 304,
+      "box": {
+        "x": 1180,
+        "y": 290,
+        "w": 28,
+        "h": 28
+      },
+      "tMs": 17110,
+      "sel": "center",
+      "note": "alignment payoff is relocated from the click — show it full view",
+      "caption": "Alignment lands on the element you are editing, not the deck.",
+      "zoom": "never",
+      "changeCoverage": 0
+    },
+    {
+      "kind": "click",
+      "x": 881,
+      "y": 729,
+      "box": {
+        "x": 426,
+        "y": 657,
+        "w": 910,
+        "h": 143
+      },
+      "tMs": 19894,
+      "sel": "[data-inspector-root] [data-slide-loc=\"399:8\"]",
+      "note": "clicking another text run moves the session to it",
+      "caption": "Click another text run and the session moves with you.",
+      "zoom": "always",
+      "changeCoverage": 0
+    },
+    {
+      "kind": "click",
+      "x": 854,
+      "y": 630,
+      "box": {
+        "x": 840,
+        "y": 616,
+        "w": 28,
+        "h": 28
+      },
+      "tMs": 22171,
+      "sel": "Bold",
+      "note": "bold applies to the run being edited",
+      "caption": "Bold applies to the run you are in, nothing else.",
+      "zoom": "always",
+      "changeCoverage": 0
+    },
+    {
+      "kind": "press",
+      "x": 881,
+      "y": 730,
+      "box": {
+        "x": 426,
+        "y": 634,
+        "w": 910,
+        "h": 191
+      },
+      "tMs": 24575,
+      "keys": "Meta+i",
+      "sel": "[data-inspector-root] [data-slide-loc=\"399:8\"]",
+      "note": "keyboard shortcuts are wired to the same ops",
+      "caption": "Familiar shortcuts work too: Cmd-B for bold, Cmd-I for italic.",
+      "durationMs": 1400,
+      "zoom": "always",
+      "changeCoverage": 0.057,
+      "effectBox": {
+        "x": 416,
+        "y": 610,
+        "w": 896,
+        "h": 183
+      }
+    },
+    {
+      "kind": "press",
+      "x": 960,
+      "y": 540,
+      "tMs": 28815,
+      "keys": "Escape",
+      "note": "escape ends the session; edits stay staged",
+      "caption": "Escape ends the session; the edits are staged, not saved.",
+      "durationMs": 1200,
+      "changeCoverage": 0.027,
+      "effectBox": {
+        "x": 416,
+        "y": 549,
+        "w": 928,
+        "h": 244
+      }
+    },
+    {
+      "kind": "click",
+      "x": 1231,
+      "y": 1047,
+      "box": {
+        "x": 1195,
+        "y": 1033,
+        "w": 71,
+        "h": 28
+      },
+      "tMs": 32150,
+      "sel": "Save",
+      "note": "closer: the staged edits are written into the slide source file",
+      "caption": "Save writes every change back into the slide's source file.",
+      "zoom": "always",
+      "changeCoverage": 0
+    }
+  ],
+  "tEndMs": 34954,
+  "url": "http://localhost:5173/s/open-slide-on-replit"
+}

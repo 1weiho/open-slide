@@ -1,0 +1,377 @@
+{
+  "output": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 60
+  },
+  "source": {
+    "videoUrl": "/capture.mp4",
+    "videoWidth": 1920,
+    "videoHeight": 1080,
+    "viewport": {
+      "w": 1920,
+      "h": 1080
+    }
+  },
+  "framing": {
+    "insetFrac": 0.92,
+    "cornerRadius": 28,
+    "shadow": {
+      "color": "rgba(0,0,0,0.55)",
+      "blur": 60,
+      "offset": {
+        "x": 0,
+        "y": 28
+      }
+    },
+    "background": {
+      "from": "#1e1b3a",
+      "to": "#0a0e1c"
+    }
+  },
+  "cursor": {
+    "travelMs": 560,
+    "travelWidthsPerSec": 0.35,
+    "travelMinMs": 300,
+    "travelMaxMs": 850,
+    "scale": 2,
+    "arcFrac": 0.05,
+    "arcMax": 24,
+    "rippleMs": 450,
+    "holdMs": 1100,
+    "zoomOutMs": 1340,
+    "zoomInMs": 730,
+    "zoomSettleFrac": 0.04,
+    "pullOutDwellMs": 800,
+    "dragLagMs": 190,
+    "travelEase": [
+      0.3,
+      0,
+      0.2,
+      1
+    ]
+  },
+  "motionBlur": {
+    "samples": 6,
+    "shutter": 0.7
+  },
+  "start": {
+    "x": 1580,
+    "y": 900
+  },
+  "events": [
+    {
+      "kind": "click",
+      "tMs": 6329,
+      "point": {
+        "x": 1092,
+        "y": 409
+      },
+      "bbox": {
+        "x": 426,
+        "y": 345,
+        "w": 1333,
+        "h": 128
+      },
+      "label": "[data-inspector-root] [data-slide-loc=\"371:10\"]",
+      "zoom": {
+        "enabled": true,
+        "scale": 1.25,
+        "center": {
+          "x": 1092.5,
+          "y": 409
+        },
+        "inAtMs": 5599,
+        "reason": "plan: zoom=always → ROI fit 0.92× is imperceptible — floored to 1.25× (fits ≠ legible: raise zoom.scale if the payoff is fine text)"
+      }
+    },
+    {
+      "kind": "type",
+      "tMs": 8434,
+      "point": {
+        "x": 1093,
+        "y": 409
+      },
+      "bbox": {
+        "x": 426,
+        "y": 345,
+        "w": 1333,
+        "h": 128
+      },
+      "label": "[data-inspector-root] [data-slide-loc=\"371:10\"]",
+      "durationMs": 1288,
+      "text": "Ship slides",
+      "zoom": {
+        "enabled": true,
+        "scale": 1.25,
+        "center": {
+          "x": 1087.5,
+          "y": 571.8
+        },
+        "inAtMs": 7704,
+        "reason": "plan: zoom=always → ROI fit 0.92× is imperceptible — floored to 1.25× (fits ≠ legible: raise zoom.scale if the payoff is fine text)"
+      }
+    },
+    {
+      "kind": "type",
+      "tMs": 11356,
+      "point": {
+        "x": 994,
+        "y": 318
+      },
+      "bbox": {
+        "x": 976,
+        "y": 304,
+        "w": 36,
+        "h": 28
+      },
+      "label": "Size",
+      "durationMs": 303,
+      "text": "200",
+      "zoom": {
+        "enabled": true,
+        "scale": 2.4,
+        "center": {
+          "x": 992,
+          "y": 318
+        },
+        "inAtMs": 10626,
+        "reason": "plan: zoom=always → 2.40× (framing from ROI)"
+      }
+    },
+    {
+      "kind": "press",
+      "tMs": 12965,
+      "point": {
+        "x": 1093,
+        "y": 409
+      },
+      "bbox": {
+        "x": 426,
+        "y": 331,
+        "w": 1333,
+        "h": 156
+      },
+      "label": "[data-inspector-root] [data-slide-loc=\"371:10\"]",
+      "durationMs": 1200,
+      "keys": "Enter",
+      "zoom": {
+        "enabled": true,
+        "scale": 1.25,
+        "center": {
+          "x": 1092.5,
+          "y": 409
+        },
+        "inAtMs": 12965,
+        "reason": "plan: zoom=always → ROI fit 0.92× is imperceptible — floored to 1.25× (fits ≠ legible: raise zoom.scale if the payoff is fine text)"
+      }
+    },
+    {
+      "kind": "click",
+      "tMs": 17110,
+      "point": {
+        "x": 1194,
+        "y": 304
+      },
+      "bbox": {
+        "x": 1180,
+        "y": 290,
+        "w": 28,
+        "h": 28
+      },
+      "label": "center",
+      "zoom": {
+        "enabled": false,
+        "scale": 0.92,
+        "center": {
+          "x": 960,
+          "y": 540
+        },
+        "inAtMs": 16380,
+        "reason": "plan: zoom=never → full view"
+      }
+    },
+    {
+      "kind": "click",
+      "tMs": 19894,
+      "point": {
+        "x": 881,
+        "y": 729
+      },
+      "bbox": {
+        "x": 426,
+        "y": 657,
+        "w": 910,
+        "h": 143
+      },
+      "label": "[data-inspector-root] [data-slide-loc=\"399:8\"]",
+      "zoom": {
+        "enabled": true,
+        "scale": 1.2659340659340659,
+        "center": {
+          "x": 881,
+          "y": 728.5
+        },
+        "inAtMs": 19164,
+        "reason": "plan: zoom=always → 1.27× (framing from ROI)"
+      }
+    },
+    {
+      "kind": "click",
+      "tMs": 22171,
+      "point": {
+        "x": 854,
+        "y": 630
+      },
+      "bbox": {
+        "x": 840,
+        "y": 616,
+        "w": 28,
+        "h": 28
+      },
+      "label": "Bold",
+      "zoom": {
+        "enabled": true,
+        "scale": 2.4,
+        "center": {
+          "x": 854,
+          "y": 630
+        },
+        "inAtMs": 21441,
+        "reason": "plan: zoom=always → 2.40× (framing from ROI)"
+      }
+    },
+    {
+      "kind": "press",
+      "tMs": 24575,
+      "point": {
+        "x": 881,
+        "y": 730
+      },
+      "bbox": {
+        "x": 426,
+        "y": 634,
+        "w": 910,
+        "h": 191
+      },
+      "label": "[data-inspector-root] [data-slide-loc=\"399:8\"]",
+      "durationMs": 1400,
+      "keys": "Meta+i",
+      "zoom": {
+        "enabled": true,
+        "scale": 1.2659340659340659,
+        "center": {
+          "x": 881,
+          "y": 729.5
+        },
+        "inAtMs": 24575,
+        "reason": "plan: zoom=always → 1.27× (framing from ROI)"
+      }
+    },
+    {
+      "kind": "press",
+      "tMs": 28815,
+      "point": {
+        "x": 960,
+        "y": 540
+      },
+      "label": "escape ends the session; edits stay staged",
+      "durationMs": 1200,
+      "keys": "Escape",
+      "zoom": {
+        "enabled": false,
+        "scale": 0.92,
+        "center": {
+          "x": 960,
+          "y": 540
+        },
+        "inAtMs": 28085,
+        "reason": "Escape (dismissal) — full view"
+      }
+    },
+    {
+      "kind": "click",
+      "tMs": 32150,
+      "point": {
+        "x": 1231,
+        "y": 1047
+      },
+      "bbox": {
+        "x": 1195,
+        "y": 1033,
+        "w": 71,
+        "h": 28
+      },
+      "label": "Save",
+      "zoom": {
+        "enabled": true,
+        "scale": 2.4,
+        "center": {
+          "x": 1230.5,
+          "y": 1047
+        },
+        "inAtMs": 31420,
+        "reason": "plan: zoom=always → 2.40× (framing from ROI)"
+      }
+    }
+  ],
+  "durationMs": 34990,
+  "captions": [
+    {
+      "fromMs": 6329,
+      "toMs": 8434,
+      "text": "Click any text on a slide and you are already editing it."
+    },
+    {
+      "fromMs": 8434,
+      "toMs": 11356,
+      "text": "Real keystrokes replace the headline, live on the slide."
+    },
+    {
+      "fromMs": 11356,
+      "toMs": 12965,
+      "text": "The floating toolbar carries size, weight, colour and alignment."
+    },
+    {
+      "fromMs": 12965,
+      "toMs": 17110,
+      "text": "Enter commits the size and the slide re-lays out instantly."
+    },
+    {
+      "fromMs": 17110,
+      "toMs": 19894,
+      "text": "Alignment lands on the element you are editing, not the deck."
+    },
+    {
+      "fromMs": 19894,
+      "toMs": 22171,
+      "text": "Click another text run and the session moves with you."
+    },
+    {
+      "fromMs": 22171,
+      "toMs": 24575,
+      "text": "Bold applies to the run you are in, nothing else."
+    },
+    {
+      "fromMs": 24575,
+      "toMs": 28815,
+      "text": "Familiar shortcuts work too: Cmd-B for bold, Cmd-I for italic."
+    },
+    {
+      "fromMs": 28815,
+      "toMs": 32150,
+      "text": "Escape ends the session; the edits are staged, not saved."
+    },
+    {
+      "fromMs": 32150,
+      "toMs": 34990,
+      "text": "Save writes every change back into the slide's source file."
+    }
+  ],
+  "startMs": 4400,
+  "titleCard": {
+    "title": "Inline text editing",
+    "subtitle": "open-slide · PR #424",
+    "untilMs": 6200
+  }
+}
