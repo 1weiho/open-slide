@@ -140,8 +140,18 @@ export function InlineEditLayer() {
     let hovered: HTMLElement | null = null;
     let raf = 0;
     const clear = () => {
-      hovered?.removeAttribute(TEXT_HOVER_ATTR);
+      const el = hovered;
       hovered = null;
+      if (!el) return;
+      if (el.getAttribute(TEXT_HOVER_ATTR) !== 'true') {
+        el.removeAttribute(TEXT_HOVER_ATTR);
+        return;
+      }
+      el.setAttribute(TEXT_HOVER_ATTR, 'out');
+      window.setTimeout(() => {
+        // Re-entering the element mid-fade flips the value back to 'true'.
+        if (el.getAttribute(TEXT_HOVER_ATTR) === 'out') el.removeAttribute(TEXT_HOVER_ATTR);
+      }, HOVER_FADE_MS + 40);
     };
     const onMove = (e: PointerEvent) => {
       const { clientX, clientY, target } = e;
@@ -156,7 +166,17 @@ export function InlineEditLayer() {
         clear();
         if (anchor) {
           hovered = anchor;
-          anchor.setAttribute(TEXT_HOVER_ATTR, 'true');
+          if (anchor.hasAttribute(TEXT_HOVER_ATTR)) {
+            // Mid-fade-out re-entry: transition straight back to visible.
+            anchor.setAttribute(TEXT_HOVER_ATTR, 'true');
+          } else {
+            anchor.setAttribute(TEXT_HOVER_ATTR, 'in');
+            requestAnimationFrame(() => {
+              if (hovered === anchor && anchor.getAttribute(TEXT_HOVER_ATTR) === 'in') {
+                anchor.setAttribute(TEXT_HOVER_ATTR, 'true');
+              }
+            });
+          }
         }
       });
     };
@@ -164,7 +184,10 @@ export function InlineEditLayer() {
     return () => {
       window.removeEventListener('pointermove', onMove, true);
       cancelAnimationFrame(raf);
-      clear();
+      hovered = null;
+      for (const el of document.querySelectorAll(`[${TEXT_HOVER_ATTR}]`)) {
+        el.removeAttribute(TEXT_HOVER_ATTR);
+      }
       styleEl.remove();
     };
   }, [active, slideId]);
@@ -185,7 +208,11 @@ export function InlineEditLayer() {
 }
 
 const TEXT_HOVER_ATTR = 'data-slide-text-hover';
+const HOVER_FADE_MS = 160;
 
+// The outline fades by transitioning outline-color through transient
+// attribute values: 'in' (transparent) → 'true' (visible) on enter, and
+// 'true' → 'out' (transparent) before removal on leave.
 const HOVER_HINT_CSS = `
 [data-inspector-root] [${TEXT_HOVER_ATTR}],
 [data-inspector-root] [${TEXT_HOVER_ATTR}] * {
@@ -194,6 +221,28 @@ const HOVER_HINT_CSS = `
 [data-inspector-root] [${TEXT_HOVER_ATTR}] {
   outline: 2px solid rgba(59, 130, 246, 0.5) !important;
   outline-offset: 2px !important;
+}
+[data-inspector-root] [${TEXT_HOVER_ATTR}='in'],
+[data-inspector-root] [${TEXT_HOVER_ATTR}='out'] {
+  outline-color: rgba(59, 130, 246, 0) !important;
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-inspector-root] [${TEXT_HOVER_ATTR}] {
+    transition: outline-color ${HOVER_FADE_MS}ms ease !important;
+  }
+  /* The 'in' frame must land on transparent instantly; with the transition
+     active it would itself animate away from the pre-hover outline-color. */
+  [data-inspector-root] [${TEXT_HOVER_ATTR}='in'] {
+    transition: none !important;
+  }
+  @keyframes osd-inline-outline-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
 }
 `;
 
@@ -360,6 +409,7 @@ function ActiveInlineEditor({
             width: rect.width,
             height: rect.height,
             outline: '2px solid #3b82f6',
+            animation: 'osd-inline-outline-in 160ms ease-out',
           }}
         />
       )}
