@@ -59,7 +59,7 @@ body:
     attributes:
       label: Environment
       description: Node version, package manager, OS, browser (if it's a runtime/UI bug).
-      placeholder: "Node 20.11.1, pnpm 10.17.0, macOS 14.5, Chrome 126"
+      placeholder: "Node 24.18.0, pnpm 11.13.1, macOS 14.5, Chrome 126"
     validations:
       required: true
   - type: textarea

@@ -26,8 +26,8 @@ pnpm + Turbo monorepo.
 
 ## Prerequisites
 
-- **Node.js 22+** (matches CI).
-- **pnpm 10.17.0+** — `corepack enable` will pick up the version pinned in `package.json`.
+- **Node.js 24** for local development and release (see `.nvmrc` / `.node-version`). Published packages support **Node.js `>=22.13.0`**; CI covers both 22.13+ and 24.
+- **pnpm 11.13.1** via Corepack — `corepack enable` activates the version pinned in `package.json` (`packageManager`).
 - A Unix-y shell. Windows works via WSL.
 
 ## Getting set up
@@ -35,6 +35,7 @@ pnpm + Turbo monorepo.
 ```bash
 git clone https://github.com/1weiho/open-slide.git
 cd open-slide
+corepack enable
 pnpm install
 ```
 

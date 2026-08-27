@@ -2,7 +2,10 @@
   "name": "open-slide-monorepo",
   "private": true,
   "version": "0.0.0",
-  "packageManager": "pnpm@10.17.0",
+  "packageManager": "pnpm@11.13.1",
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
     "dev": "turbo run dev",
     "dev:web": "turbo run dev --filter=web",

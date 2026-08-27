@@ -39,7 +39,7 @@
     "prepack": "pnpm build"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22.13.0"
   },
   "keywords": [
     "slides",
