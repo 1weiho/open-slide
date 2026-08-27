@@ -140,4 +140,15 @@ test.describe('inspector editing', () => {
     await editorCanvas(page).getByText('Editable headline').click();
     await expect(page.locator('aside[data-inspector-ui]')).toBeVisible();
   });
+
+  test('selecting text inside an Agenda wrapper opens the panel', async ({ page }) => {
+    await openSlide(page, 'agenda-select');
+    await page.getByTitle('Inspect').click();
+    await editorCanvas(page).getByText('What changed?').click();
+
+    const panel = page.locator('aside[data-inspector-ui]');
+    await expect(panel).toBeVisible();
+    await expect(panel.getByText('<span>')).toBeVisible();
+    await expect(panel.getByPlaceholder('Element text')).toHaveValue('What changed?');
+  });
 });

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { PANEL_TRANSITION_MS } from '@/components/panel/panel-shell';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { findSlideSource, type SlideSourceHit } from '@/lib/inspector/fiber';
-import { hasOnlyInlineTextChildren, INLINE_TEXT_TAGS } from '@/lib/inspector/inline-text';
+import { pickInspectorTarget } from '@/lib/inspector/pick-target';
 import { useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import { useInspector } from './inspector-provider';
@@ -331,20 +331,4 @@ function pickElement(x: number, y: number): HTMLElement | null {
     return el;
   }
   return null;
-}
-
-function pickInspectorTarget(el: HTMLElement | null): HTMLElement | null {
-  if (!el) return null;
-  const root = el.closest('[data-inspector-root]');
-  const startedOnInlineText = INLINE_TEXT_TAGS.has(el.tagName);
-  for (let cur: HTMLElement | null = el; cur && root?.contains(cur); cur = cur.parentElement) {
-    if (startedOnInlineText && INLINE_TEXT_TAGS.has(cur.tagName)) continue;
-    if (isEditableTextContainer(cur)) return cur;
-  }
-  return el;
-}
-
-function isEditableTextContainer(el: HTMLElement): boolean {
-  if (!el.textContent?.trim()) return false;
-  return hasOnlyInlineTextChildren(el);
 }
