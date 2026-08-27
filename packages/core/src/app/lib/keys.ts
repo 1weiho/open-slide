@@ -1,5 +1,7 @@
 export function isTypingTarget(target: EventTarget | null): boolean {
-  return target instanceof HTMLElement && target.matches('input, textarea');
+  return (
+    target instanceof HTMLElement && (target.isContentEditable || target.matches('input, textarea'))
+  );
 }
 
 // Single-letter shortcuts bail on this so browser combos (⌘P, ⌘F…) still work.

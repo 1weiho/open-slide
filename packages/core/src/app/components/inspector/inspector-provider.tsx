@@ -27,6 +27,16 @@ export type SelectedTarget = {
   anchor: HTMLElement;
 };
 
+export type InlineEditTarget = SelectedTarget & {
+  point?: { x: number; y: number };
+  // Double-click entry selects the word under the caret; a single-click
+  // switch from another editing session just places the caret.
+  selectWord?: boolean;
+  // Distinguishes sessions on the same source loc (reused components render
+  // several DOM instances of one loc), so each switch remounts the editor.
+  session?: number;
+};
+
 type AssetAttrOp = { assetPath: string; previewUrl: string };
 type Sequenced<T> = T & { seq: number };
 type StyleOp = { value: string | null; prevText?: string };
@@ -64,15 +74,15 @@ function readInstanceId(el: HTMLElement): string | null {
   return el.getAttribute(INSTANCE_ID_ATTR);
 }
 
-type DomTextPart = { node: Text | HTMLBRElement; current: string };
+export type DomTextPart = { node: Text | HTMLBRElement; current: string };
 
-function readEditableText(el: HTMLElement): string {
+export function readEditableText(el: HTMLElement): string {
   const parts: DomTextPart[] = [];
   collectDomTextParts(el, parts);
   return parts.map((part) => part.current).join('');
 }
 
-function collectDomTextParts(node: Node, out: DomTextPart[]): void {
+export function collectDomTextParts(node: Node, out: DomTextPart[]): void {
   const parts: DomTextPart[] = [];
   collectDomTextPartsRaw(node, parts);
   out.push(...normalizeDomTextParts(parts));
@@ -235,6 +245,12 @@ type InspectorCtx = {
   remove: (id: string) => Promise<void>;
   selected: SelectedTarget | null;
   setSelected: (s: SelectedTarget | null) => void;
+  inlineEdit: InlineEditTarget | null;
+  startInlineEdit: (target: InlineEditTarget) => void;
+  stopInlineEdit: () => void;
+  // Bumped on every buffered-op mutation (including undo/redo restores) so
+  // panels can re-read DOM snapshots without polling.
+  opsVersion: number;
   applyEdit: (line: number, column: number, ops: EditOp[]) => Promise<void>;
   // Mutate the DOM optimistically, snapshot the pre-edit values, and
   // remember the ops. `commitEdits` (manual Save or auto-flush on
@@ -267,6 +283,8 @@ export function InspectorProvider({
 }) {
   const [active, setActive] = useState(false);
   const [selected, setSelected] = useState<SelectedTarget | null>(null);
+  const [inlineEdit, setInlineEdit] = useState<InlineEditTarget | null>(null);
+  const [opsVersion, setOpsVersion] = useState(0);
   const { comments, error, add, remove } = useComments(slideId);
   const { applyEdit, applyEdits } = useEditor(slideId);
   const history = useHistory();
@@ -315,6 +333,7 @@ export function InspectorProvider({
       }
     }
     setPendingCount(n);
+    setOpsVersion((v) => v + 1);
   }, []);
 
   // Find the live anchor for a buffered loc. Used by history undo/redo
@@ -908,6 +927,23 @@ export function InspectorProvider({
     setSelected(null);
   }, []);
 
+  const inlineEditSessionRef = useRef(0);
+  const startInlineEdit = useCallback((target: InlineEditTarget) => {
+    setSelected({ line: target.line, column: target.column, anchor: target.anchor });
+    setInlineEdit({ ...target, session: ++inlineEditSessionRef.current });
+  }, []);
+
+  const stopInlineEdit = useCallback(() => {
+    setInlineEdit(null);
+  }, []);
+
+  // Deselecting, selecting another element, or an HMR anchor swap all end
+  // the inline session — the contenteditable node is gone or no longer the
+  // selection's anchor.
+  useEffect(() => {
+    if (inlineEdit && selected?.anchor !== inlineEdit.anchor) setInlineEdit(null);
+  }, [selected, inlineEdit]);
+
   const openReplace = useCallback((anchor: HTMLElement) => {
     const loc = anchor.dataset.slideLoc;
     if (!loc) return;
@@ -962,6 +998,10 @@ export function InspectorProvider({
       remove,
       selected,
       setSelected,
+      inlineEdit,
+      startInlineEdit,
+      stopInlineEdit,
+      opsVersion,
       applyEdit,
       bufferOps,
       pendingCount,
@@ -981,6 +1021,10 @@ export function InspectorProvider({
       add,
       remove,
       selected,
+      inlineEdit,
+      startInlineEdit,
+      stopInlineEdit,
+      opsVersion,
       applyEdit,
       bufferOps,
       pendingCount,

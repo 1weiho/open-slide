@@ -257,6 +257,8 @@ export const zhCN: Locale = {
     commentsApplyHintSuffix: ' 以应用这些更改。',
     commentDeleteAria: '删除',
     saveFailed: '保存失败：',
+    decreaseFontSize: '缩小字号',
+    increaseFontSize: '放大字号',
   },
 
   stylePanel: {

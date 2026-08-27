@@ -257,6 +257,8 @@ export const zhTW: Locale = {
     commentsApplyHintSuffix: ' 以套用這些變更。',
     commentDeleteAria: '刪除',
     saveFailed: '儲存失敗：',
+    decreaseFontSize: '縮小字級',
+    increaseFontSize: '放大字級',
   },
 
   stylePanel: {
