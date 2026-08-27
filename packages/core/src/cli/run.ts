@@ -30,6 +30,7 @@ interface ServerFlags {
 
 interface DevFlags extends ServerFlags {
   skillsCheck?: boolean;
+  preflight?: boolean;
 }
 
 async function runSkillsDriftCheck(skillsDir: string): Promise<void> {
@@ -105,6 +106,7 @@ export async function run(argv: string[]): Promise<void> {
     .addOption(new Option('--host [host]', 'expose on the network (optional host)'))
     .option('--open', 'open the browser on start')
     .option('--no-skills-check', 'skip the built-in skills drift check')
+    .option('--no-preflight', 'skip the deck dependency check')
     .action(async (flags: DevFlags) => {
       if (flags.skillsCheck !== false) {
         await runSkillsDriftCheck(resolveBuiltinSkillsDir());
@@ -131,6 +133,23 @@ export async function run(argv: string[]): Promise<void> {
     .action(async (flags: ServerFlags) => {
       const { preview } = await import('./preview.ts');
       await preview(flags);
+    });
+
+  program
+    .command('preflight')
+    .description("Check and install this workspace's deck dependencies (fonts, assets)")
+    .option('--no-install', 'only report what is missing')
+    .action(async (flags: { install?: boolean }) => {
+      const { runPreflight } = await import('./preflight.ts');
+      const report = await runPreflight(process.cwd(), { install: flags.install !== false });
+      const ok = report.fontsUnresolved.length === 0 && report.assetsMissing.length === 0;
+      process.stdout.write(
+        `${ok ? chalk.green('preflight:') : chalk.yellow('preflight:')} ${report.decks.length} deck(s), ` +
+          `${report.fontsAlreadyPresent.length} font(s) already present, ` +
+          `${report.fontsInstalled.length} installed, ` +
+          `${report.fontsUnresolved.length} pending\n`,
+      );
+      if (!ok) process.exitCode = 1;
     });
 
   program
