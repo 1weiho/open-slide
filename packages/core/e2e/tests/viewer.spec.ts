@@ -86,7 +86,7 @@ test.describe('slide viewer', () => {
   test('back link returns to the home browser', async ({ page }) => {
     await openSlide(page, 'alpha');
     await page.getByRole('link', { name: 'Back to home' }).click();
-    await expect(page.locator('li h3')).toHaveCount(4);
+    await expect(page.locator('li h3')).toHaveCount(5);
   });
 
   test('steps render fully revealed in the editor', async ({ page }) => {
