@@ -1,5 +1,6 @@
 import { type SyntheticEvent, useEffect, useRef, useState } from 'react';
 import ReactCrop, { type Crop, type PercentCrop } from 'react-image-crop';
+import { round2 } from '@/lib/utils';
 import 'react-image-crop/dist/ReactCrop.css';
 import { Button } from '@/components/ui/button';
 import {
@@ -95,7 +96,7 @@ export function ImageCropDialog({
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
-        <div className="flex h-[420px] w-full items-center justify-center overflow-hidden rounded-md border bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:12px_12px]">
+        <div className="flex h-[420px] w-full touch-none select-none items-center justify-center overflow-hidden rounded-md border bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:12px_12px]">
           {fit === 'cover' ? (
             <ReactCrop
               crop={crop}
@@ -108,12 +109,18 @@ export function ImageCropDialog({
                 ref={imgRef}
                 src={src}
                 alt=""
+                draggable={false}
                 style={{ maxHeight: 420, maxWidth: '100%' }}
                 onLoad={onImageLoad}
               />
             </ReactCrop>
           ) : (
-            <img src={src} alt="" className="max-h-full max-w-full object-contain" />
+            <img
+              src={src}
+              alt=""
+              draggable={false}
+              className="max-h-full max-w-full object-contain"
+            />
           )}
         </div>
         <DialogFooter>
@@ -205,8 +212,4 @@ function roundRect(crop: PercentCrop): ImageCropRect {
 
 function clamp(v: number, lo: number, hi: number) {
   return v < lo ? lo : v > hi ? hi : v;
-}
-
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
 }

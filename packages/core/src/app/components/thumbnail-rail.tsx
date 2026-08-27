@@ -37,12 +37,13 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format, useLocale } from '@/lib/use-locale';
-import { cn } from '@/lib/utils';
+import { cn, pad2 } from '@/lib/utils';
 import type { DesignSystem } from '../lib/design';
 import { SlidePageProvider } from '../lib/page-context';
 import type { Page } from '../lib/sdk';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
 import type { SlideTransition } from '../lib/transition';
+import { prefersReducedMotion } from '../lib/use-prefers-reduced-motion';
 import { SlideCanvas } from './slide-canvas';
 import {
   getCenteredThumbnailScrollTop,
@@ -269,7 +270,7 @@ export function ThumbnailRail({
         <div className="flex items-center justify-between gap-2">
           <span className="eyebrow">{t.thumbnailRail.pages}</span>
           <div className="flex items-center gap-1.5">
-            <span className="folio">{pages.length.toString().padStart(2, '0')}</span>
+            <span className="folio">{pad2(pages.length)}</span>
             {onOverview && (
               <Tooltip>
                 <TooltipTrigger
@@ -320,7 +321,7 @@ export function ThumbnailRail({
   return (
     <TooltipProvider delay={200}>
       <div className="relative h-full">
-        <ScrollArea className="h-full border-r border-hairline bg-sidebar [&_[data-slot=scroll-area-scrollbar]]:z-20">
+        <ScrollArea className="h-full bg-sidebar [&_[data-slot=scroll-area-scrollbar]]:z-20">
           {scrollAreaContents}
         </ScrollArea>
         {currentPosition && (
@@ -396,8 +397,8 @@ function CurrentThumbnailButton({
 
 function thumbButtonClass(active: boolean): string {
   return cn(
-    'group/thumb flex w-full items-start gap-2.5 rounded-[6px] p-1.5 text-left outline-none motion-safe:transition-colors',
-    'hover:bg-muted/60',
+    'group/thumb flex w-full items-start gap-2.5 rounded-[6px] p-1.5 text-left outline-none motion-safe:transition-[background-color,scale] motion-safe:duration-100',
+    'hover:bg-muted/60 active:scale-[0.985]',
     'focus-visible:ring-1 focus-visible:ring-brand focus-visible:ring-offset-1 focus-visible:ring-offset-sidebar',
     active && 'bg-muted',
   );
@@ -499,7 +500,10 @@ function HorizontalVirtualThumbList({
         onClick={() => onSelect(i)}
         aria-label={format(t.thumbnailRail.goToPageAria, { n: i + 1 })}
         aria-current={active ? 'page' : undefined}
-        className={cn('group/thumb relative flex shrink-0 flex-col items-center gap-1.5')}
+        className={cn(
+          'group/thumb relative flex shrink-0 flex-col items-center gap-1.5 rounded-[6px] outline-none motion-safe:transition-[scale] motion-safe:duration-100 active:scale-[0.985]',
+          'focus-visible:ring-1 focus-visible:ring-brand focus-visible:ring-offset-1 focus-visible:ring-offset-sidebar',
+        )}
       >
         <span
           className={cn(
@@ -507,7 +511,7 @@ function HorizontalVirtualThumbList({
             active ? 'text-brand' : 'text-muted-foreground/70',
           )}
         >
-          {(i + 1).toString().padStart(2, '0')}
+          {pad2(i + 1)}
         </span>
         <div
           className={cn(
@@ -724,7 +728,7 @@ function getInitialVisibleRange(current: number, count: number): VisibleRange {
 }
 
 function scrollBehavior(): ScrollBehavior {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+  return prefersReducedMotion() ? 'auto' : 'smooth';
 }
 
 function ThumbContents({
@@ -770,7 +774,7 @@ function ThumbContents({
             active ? 'text-brand' : 'text-muted-foreground/70',
           )}
         >
-          {(index + 1).toString().padStart(2, '0')}
+          {pad2(index + 1)}
         </span>
         {(hasTransition || hasSteps) && (
           <div className="flex flex-col items-end gap-0.5">
@@ -798,12 +802,6 @@ function ThumbContents({
             <PageComp />
           </SlidePageProvider>
         </SlideCanvas>
-        {active && (
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 left-0 w-[2px] bg-brand"
-          />
-        )}
       </div>
     </>
   );
@@ -939,6 +937,7 @@ function SortableThumb({
 >) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: index + 1,
+    transition: { duration: 180, easing: 'var(--ease-swift)' },
   });
 
   const setRef = (node: HTMLButtonElement | null) => {

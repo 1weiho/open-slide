@@ -110,7 +110,6 @@ const styles = `
     50%      { box-shadow: 0 0 0 8px ${palette.inspect}22; }
   }
   .es-fadeUp { opacity: 0; animation: es-fadeUp 0.9s cubic-bezier(.2,.7,.2,1) forwards; }
-  .es-fadeIn { opacity: 0; animation: es-fadeIn 1.2s ease forwards; }
   .es-caret::after {
     content: '';
     display: inline-block;

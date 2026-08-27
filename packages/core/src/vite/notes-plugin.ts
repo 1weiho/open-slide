@@ -1,10 +1,12 @@
 import fs from 'node:fs/promises';
-import { parse as babelParse } from '@babel/parser';
+import path from 'node:path';
 import * as t from '@babel/types';
 import type { Plugin, ViteDevServer } from 'vite';
+import { parseSource } from '../editing/babel-walk.ts';
+import { resolveSlideEntry } from '../editing/slide-ops.ts';
 import { validateMutationRequest } from '../http/request-guard.ts';
 import { hasRecentWrite, recordWrite } from './recent-writes.ts';
-import { json, readBody, resolveSlidePath } from './routes/context.ts';
+import { json, readBody, readSlideSource } from './routes/context.ts';
 
 type NotesBody = {
   slideId?: string;
@@ -15,18 +17,6 @@ type NotesBody = {
 export type ApplyNotesEditResult =
   | { ok: true; source: string }
   | { ok: false; status: number; error: string };
-
-function parseSource(source: string): t.File | null {
-  try {
-    return babelParse(source, {
-      sourceType: 'module',
-      plugins: ['typescript', 'jsx'],
-      errorRecovery: true,
-    });
-  } catch {
-    return null;
-  }
-}
 
 type NotesExport = {
   declStart: number;
@@ -96,6 +86,8 @@ export function applyNotesEdit(source: string, index: number, text: string): App
     return { ok: false, status: 400, error: 'invalid index' };
   }
 
+  // Notes are spliced in by AST offset, so a tree recovered from a syntax
+  // error must not reach the write.
   const ast = parseSource(source);
   if (!ast) return { ok: false, status: 422, error: 'could not parse source' };
 
@@ -157,8 +149,7 @@ export type NotesPluginOptions = {
 };
 
 export function notesPlugin(opts: NotesPluginOptions): Plugin {
-  const userCwd = opts.userCwd;
-  const slidesDir = opts.slidesDir ?? 'slides';
+  const slidesRoot = path.resolve(opts.userCwd, opts.slidesDir ?? 'slides');
 
   return {
     name: 'open-slide:notes',
@@ -180,17 +171,13 @@ export function notesPlugin(opts: NotesPluginOptions): Plugin {
         try {
           const body = (await readBody(req)) as NotesBody;
           const slideId = body.slideId ?? '';
-          const file = resolveSlidePath(userCwd, slidesDir, slideId);
+          const file = resolveSlideEntry(slidesRoot, slideId);
           if (!file) return json(res, 400, { error: 'invalid slideId' });
           if (typeof body.index !== 'number') return json(res, 400, { error: 'missing index' });
           if (typeof body.text !== 'string') return json(res, 400, { error: 'missing text' });
 
-          let source: string;
-          try {
-            source = await fs.readFile(file, 'utf8');
-          } catch {
-            return json(res, 404, { error: 'slide not found' });
-          }
+          const source = await readSlideSource(file);
+          if (source === null) return json(res, 404, { error: 'slide not found' });
 
           const result = applyNotesEdit(source, body.index, body.text);
           if (!result.ok) return json(res, result.status, { error: result.error });

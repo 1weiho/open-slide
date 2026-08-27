@@ -1,3 +1,5 @@
+import { nextFrame } from './dom';
+
 const DEFAULT_WAITFOR_TIMEOUT_MS = 10_000;
 
 // `document.fonts.ready` already waits for every in-flight face. Never call
@@ -44,8 +46,4 @@ export function isFrameAnimationSettled(frame: Element): boolean {
     if (anim.playState !== 'finished') return false;
   }
   return true;
-}
-
-function nextFrame(): Promise<void> {
-  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }

@@ -1,6 +1,6 @@
-import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { shortId } from './short-id.ts';
 
 export const FOLDER_ID_RE = /^f-[a-f0-9]{8}$/;
 const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
@@ -17,6 +17,10 @@ export type FoldersManifest = {
   folders: Folder[];
   assignments: Record<string, string>;
 };
+
+export function foldersManifestPath(slidesRoot: string): string {
+  return path.join(slidesRoot, '.folders.json');
+}
 
 function emptyManifest(): FoldersManifest {
   return { folders: [], assignments: {} };
@@ -45,7 +49,7 @@ export async function writeManifest(file: string, manifest: FoldersManifest): Pr
 }
 
 export function newFolderId(): string {
-  return `f-${randomUUID().replace(/-/g, '').slice(0, 8)}`;
+  return shortId('f');
 }
 
 export function validateName(v: unknown): string | null {

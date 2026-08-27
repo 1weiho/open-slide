@@ -2,6 +2,10 @@ import { type RefObject, useEffect, useRef } from 'react';
 
 const MIN_SWIPE_PX = 50;
 const MAX_SWIPE_MS = 600;
+// A fast flick should turn the page even if it travelled a short distance —
+// momentum, not displacement, is what the finger communicated.
+const FLICK_VELOCITY_PX_MS = 0.4;
+const MIN_FLICK_PX = 24;
 
 type Options<T extends HTMLElement> = {
   ref: RefObject<T | null>;
@@ -43,9 +47,12 @@ export function useTouchSwipe<T extends HTMLElement>({
       if (!t) return;
       const dx = t.clientX - s.x;
       const dy = t.clientY - s.y;
-      if (performance.now() - s.t > MAX_SWIPE_MS) return;
-      if (Math.abs(dx) < MIN_SWIPE_PX) return;
       if (Math.abs(dx) <= Math.abs(dy)) return;
+      const dt = performance.now() - s.t;
+      const velocity = Math.abs(dx) / Math.max(dt, 1);
+      const distanceCommit = Math.abs(dx) >= MIN_SWIPE_PX && dt <= MAX_SWIPE_MS;
+      const flickCommit = velocity >= FLICK_VELOCITY_PX_MS && Math.abs(dx) >= MIN_FLICK_PX;
+      if (!distanceCommit && !flickCommit) return;
       if (dx < 0) onNext();
       else onPrev();
     };

@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
-
-type Pos = { x: number; y: number } | null;
+import { useEffect, useRef, useState } from 'react';
+import { cn } from '@/lib/utils';
 
 /**
  * Soft red dot that follows the cursor when the laser tool is active.
@@ -8,27 +7,51 @@ type Pos = { x: number; y: number } | null;
  * applied by the parent.
  */
 export function PresentLaserPointer({ enabled }: { enabled: boolean }) {
-  const [pos, setPos] = useState<Pos>(null);
+  const dotRef = useRef<HTMLDivElement | null>(null);
+  const posRef = useRef<{ x: number; y: number } | null>(null);
+  const rafRef = useRef(0);
+  const [tracking, setTracking] = useState(false);
 
   useEffect(() => {
     if (!enabled) {
-      setPos(null);
+      setTracking(false);
+      posRef.current = null;
       return;
     }
-    const onMove = (e: MouseEvent) => setPos({ x: e.clientX, y: e.clientY });
-    window.addEventListener('mousemove', onMove, { passive: true });
-    return () => window.removeEventListener('mousemove', onMove);
+    // Position is written straight to the element inside rAF — routing it
+    // through React state would re-render at pointer rate and lag the hand.
+    const onMove = (e: PointerEvent) => {
+      posRef.current = { x: e.clientX, y: e.clientY };
+      if (!rafRef.current) {
+        rafRef.current = requestAnimationFrame(() => {
+          rafRef.current = 0;
+          const el = dotRef.current;
+          const p = posRef.current;
+          if (el && p) el.style.transform = `translate3d(${p.x - 9}px, ${p.y - 9}px, 0)`;
+        });
+      }
+      setTracking(true);
+    };
+    window.addEventListener('pointermove', onMove, { passive: true });
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+    };
   }, [enabled]);
 
-  if (!enabled || !pos) return null;
+  if (!enabled) return null;
   return (
     <div
+      ref={dotRef}
       aria-hidden
-      className="pointer-events-none fixed top-0 left-0 z-[60]"
+      className={cn(
+        'pointer-events-none fixed top-0 left-0 z-[60] motion-safe:transition-opacity motion-safe:duration-150',
+        tracking ? 'opacity-100' : 'opacity-0',
+      )}
       style={{
         width: 18,
         height: 18,
-        transform: `translate3d(${pos.x - 9}px, ${pos.y - 9}px, 0)`,
         willChange: 'transform',
         borderRadius: '50%',
         background: 'radial-gradient(circle, oklch(0.66 0.24 28 / 0.95) 30%, transparent 70%)',

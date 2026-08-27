@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { format, useLocale } from '@/lib/use-locale';
-import { cn } from '@/lib/utils';
+import { cn, pad2 } from '@/lib/utils';
 import { SlidePageProvider } from '../../lib/page-context';
 import type { SlideModule } from '../../lib/sdk';
 import { loadSlide, slidesByTheme } from '../../lib/slides';
@@ -101,7 +101,7 @@ export function ThemeDetail({ themeId, onBack }: { themeId: string; onBack: () =
       </div>
 
       <header className="flex flex-wrap items-baseline gap-3">
-        <h2 className="font-heading text-[26px] font-semibold leading-[1.05] tracking-[-0.025em] md:text-[32px]">
+        <h2 className="font-heading text-[19px] font-semibold leading-none tracking-[-0.015em] md:text-[21px]">
           {theme.name}
         </h2>
         {theme.description ? (
@@ -137,7 +137,7 @@ export function ThemeDetail({ themeId, onBack }: { themeId: string; onBack: () =
                   aria-label={t.themes.prevPageAria}
                   disabled={pageIndex === 0}
                   onClick={() => setPageIndex((i) => Math.max(0, i - 1))}
-                  className="flex size-8 items-center justify-center rounded-[6px] border border-border bg-card text-foreground transition-colors hover:bg-muted disabled:opacity-40"
+                  className="flex size-8 items-center justify-center rounded-[6px] border border-border bg-card text-foreground outline-none transition-[background-color,opacity,scale] duration-100 hover:bg-muted active:scale-95 focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-40"
                 >
                   <ChevronLeft className="size-4" />
                 </button>
@@ -149,7 +149,7 @@ export function ThemeDetail({ themeId, onBack }: { themeId: string; onBack: () =
                   aria-label={t.themes.nextPageAria}
                   disabled={pageIndex === totalPages - 1}
                   onClick={() => setPageIndex((i) => Math.min(totalPages - 1, i + 1))}
-                  className="flex size-8 items-center justify-center rounded-[6px] border border-border bg-card text-foreground transition-colors hover:bg-muted disabled:opacity-40"
+                  className="flex size-8 items-center justify-center rounded-[6px] border border-border bg-card text-foreground outline-none transition-[background-color,opacity,scale] duration-100 hover:bg-muted active:scale-95 focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-40"
                 >
                   <ChevronRight className="size-4" />
                 </button>
@@ -199,7 +199,7 @@ export function ThemeDetail({ themeId, onBack }: { themeId: string; onBack: () =
           <div className="flex flex-wrap items-baseline gap-3">
             <span className="eyebrow">{t.themes.usedBy}</span>
             {usedBySlideIds.length > 0 ? (
-              <span className="folio">{usedBySlideIds.length.toString().padStart(2, '0')}</span>
+              <span className="folio">{pad2(usedBySlideIds.length)}</span>
             ) : null}
           </div>
           {usedBySlideIds.length === 0 ? (
@@ -241,10 +241,13 @@ function ThemeSlideCard({ id }: { id: string }) {
   const displayTitle = slide?.meta?.title ?? id;
 
   return (
-    <Link to={`/s/${id}`} className="group block focus-visible:outline-none">
-      <div className="relative aspect-video overflow-hidden rounded-[6px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] group-hover:shadow-floating group-hover:ring-foreground/20 motion-safe:transition-[box-shadow,--tw-ring-color] motion-safe:duration-200">
+    <Link
+      to={`/s/${id}`}
+      className="group block rounded-[6px] outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    >
+      <div className="relative aspect-video overflow-hidden rounded-[6px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] group-hover:shadow-floating group-hover:ring-foreground/20 group-active:scale-[0.99] motion-safe:transition-[box-shadow,--tw-ring-color,scale] motion-safe:duration-200">
         {FirstPage ? (
-          <div className="h-full w-full motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-[1.03]">
+          <div className="h-full w-full">
             <SlideCanvas flat freezeMotion design={slide?.design}>
               <SlidePageProvider index={0} total={slide?.default.length ?? 1}>
                 <FirstPage />

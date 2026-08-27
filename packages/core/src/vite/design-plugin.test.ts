@@ -124,12 +124,35 @@ describe('applyDesignWrite — slide without design', () => {
     if (!r.ok) throw new Error(r.error);
     expect(r.created).toBe(true);
     expect(r.source).toContain('const design: DesignSystem =');
-    expect(r.source).toContain('type DesignSystem');
+    expect(r.source).toContain("import type { Page, DesignSystem } from '@open-slide/core'");
     expect(r.source).toContain('const Cover: Page = ()');
     expect(r.source).toContain('export default [Cover];');
     const parsed = parseSlideDesign(r.source);
     if (!parsed.ok) throw new Error('inserted design is not parseable');
     expect(parsed.design).toEqual(defaultDesign);
+  });
+
+  it('adds a plain specifier to a type-only core import', () => {
+    const slide = `import type { Page } from '@open-slide/core';\n\nexport default [];\n`;
+    const r = applyDesignWrite(slide, defaultDesign);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.source).toContain("import type { Page, DesignSystem } from '@open-slide/core'");
+  });
+
+  it('adds a type-modified specifier to a value core import', () => {
+    const slide = `import { Step } from '@open-slide/core';\n\nexport default [];\n`;
+    const r = applyDesignWrite(slide, defaultDesign);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.source).toContain("import { Step, type DesignSystem } from '@open-slide/core'");
+  });
+
+  it('adds its own type import when the core import has no named list', () => {
+    const slide = `import * as Core from '@open-slide/core';\n\nexport default [];\n`;
+    const r = applyDesignWrite(slide, defaultDesign);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.source).toContain("import * as Core from '@open-slide/core'");
+    expect(r.source).toContain("import type { DesignSystem } from '@open-slide/core'");
+    expect(r.source).toContain('const design: DesignSystem =');
   });
 
   it('adds a fresh @open-slide/core type import when none exists', () => {

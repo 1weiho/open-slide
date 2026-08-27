@@ -2,13 +2,9 @@ import type { Connect } from 'vite';
 
 type MutationRequestValidationResult = { ok: true } | { ok: false; status: number; error: string };
 
-function firstHeaderValue(value: string | string[] | undefined): string | null {
-  if (Array.isArray(value)) return value[0] ?? null;
-  return value ?? null;
-}
-
 function headerValue(req: Connect.IncomingMessage, name: string): string | null {
-  return firstHeaderValue(req.headers[name.toLowerCase()])?.trim() ?? null;
+  const raw = req.headers[name.toLowerCase()];
+  return (Array.isArray(raw) ? raw[0] : raw)?.trim() ?? null;
 }
 
 function firstCommaToken(value: string | null): string | null {
@@ -38,7 +34,7 @@ export function validateMutationRequest(
 ): MutationRequestValidationResult {
   if (opts.requireJsonBody) {
     const contentType = headerValue(req, 'content-type')?.toLowerCase();
-    if (!contentType || !contentType.startsWith('application/json')) {
+    if (!contentType?.startsWith('application/json')) {
       return {
         ok: false,
         status: 415,

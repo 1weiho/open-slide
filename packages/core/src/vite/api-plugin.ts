@@ -11,8 +11,6 @@ import { registerThemeRoutes } from './routes/themes.ts';
 import { registerUpdateRoutes } from './routes/update.ts';
 import { registerWatchers } from './routes/watchers.ts';
 
-export type { ApiPluginOptions };
-
 // All open-slide dev-server endpoints in one plugin. To see the routes
 // owned by a group, open the matching file under `routes/` — each file
 // leads with a comment-block manifest of its endpoints.

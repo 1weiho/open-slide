@@ -44,5 +44,5 @@ export function useSlideModule(slideId: string) {
     };
   }, [slideId, reload]);
 
-  return { slide, error, reload };
+  return { slide, error };
 }
