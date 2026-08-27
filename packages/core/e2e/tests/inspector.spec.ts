@@ -48,6 +48,8 @@ test.describe('inspector editing', () => {
     await content.fill('Editable headline');
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByText('Saved', { exact: true })).toBeVisible();
+    await page.getByTitle('Copy link').click();
+    await expect(page.locator('[data-sonner-toaster]')).toBeAttached();
 
     const metrics = await page.evaluate(() => {
       const root = document.getElementById('root');
