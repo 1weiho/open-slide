@@ -739,7 +739,8 @@ export function InspectorProvider({
       }
       if (failures.length > 0) {
         toast.error(`${t.inspector.saveFailed} ${failures.join('; ')}`);
-      } else if (changed === false) {
+      }
+      if (changed === false && failures.length === 0) {
         toast.error(t.inspector.noOpEdit);
         return;
       }
