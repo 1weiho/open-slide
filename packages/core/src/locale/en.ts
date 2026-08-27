@@ -259,6 +259,7 @@ export const en: Locale = {
     commentsApplyHintSuffix: ' in your agent to apply these.',
     commentDeleteAria: 'Delete',
     saveFailed: "Couldn't save:",
+    noOpEdit: 'Edit did not change the file — the value may already match.',
   },
 
   stylePanel: {

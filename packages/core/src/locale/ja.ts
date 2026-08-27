@@ -261,6 +261,7 @@ export const ja: Locale = {
     commentsApplyHintSuffix: ' を実行して適用してください。',
     commentDeleteAria: '削除',
     saveFailed: '保存に失敗しました:',
+    noOpEdit: '編集はファイルを変更しませんでした——値がすでに一致している可能性があります。',
   },
 
   stylePanel: {

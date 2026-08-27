@@ -259,6 +259,7 @@ export type Locale = {
     commentDeleteAria: string;
     /** Prefix for the toast shown when one or more buffered edits fail to write to disk. */
     saveFailed: string;
+    noOpEdit: string;
   };
 
   stylePanel: {
