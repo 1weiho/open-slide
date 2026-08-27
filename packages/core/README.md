@@ -12,7 +12,7 @@ Most users get this installed automatically by running `npx @open-slide/cli init
 
 ## What's inside
 
-- **Runtime** — home page, slide viewer, thumbnail rail, keyboard navigation, and fullscreen presenter mode. Every slide renders into a fixed **1920×1080** canvas; the framework scales it.
+- **Runtime** — home page, slide viewer, thumbnail rail, keyboard navigation, and fullscreen presenter mode. Every slide is authored and rendered on one configured canvas: **1920×1080** by default, a **4K / 8K** preset, or explicit dimensions.
 - **Vite plugin** — discovers `slides/<id>/index.{tsx,jsx,ts,js}`, exposes them via virtual modules, and reloads when slides are added or removed.
 - **CLI** — `open-slide dev | build | preview` so workspaces never need to touch Vite, React, or tsconfig directly.
 
@@ -36,6 +36,7 @@ import type { OpenSlideConfig } from '@open-slide/core';
 const openSlideConfig: OpenSlideConfig = {
   slidesDir: 'slides',
   port: 5173,
+  canvas: '4k',
 };
 
 export default openSlideConfig;
@@ -72,12 +73,17 @@ export default pages;
 export const meta = { title: 'Hello' };
 ```
 
+Use `canvas: '1080p' | '4k' | '8k' | { width, height }` to choose the
+end-to-end canvas and output target. Source coordinates use those exact pixel
+dimensions. For example, `canvas: { width: 1080, height: 1350 }` creates a
+portrait workspace.
+
 ## Exports
 
 ```ts
 import {
-  CANVAS_WIDTH,   // 1920
-  CANVAS_HEIGHT,  // 1080
+  CANVAS_WIDTH,   // configured width (1920 by default)
+  CANVAS_HEIGHT,  // configured height (1080 by default)
   MorphElement,   // match or fade objects across pages for morph transitions
   type Page,
   type SlideMeta,
@@ -86,6 +92,9 @@ import {
   type OpenSlideConfig,
 } from '@open-slide/core';
 ```
+
+`CANVAS_WIDTH` and `CANVAS_HEIGHT` follow the workspace's configured canvas in
+Vite-powered slide projects.
 
 The Vite plugin is exposed under a subpath for advanced setups:
 

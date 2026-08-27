@@ -51,6 +51,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '@/lib/canvas';
 import { useFolders } from '@/lib/folders';
 import { hasModifier, isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
 import { useAgentSocketConnected } from '@/lib/use-agent-socket';
@@ -544,6 +545,12 @@ export function Slide() {
 
   const exportMenuItems = (
     <>
+      <div className="eyebrow flex items-center justify-between gap-3 px-2 py-1.5 select-none">
+        {t.slide.canvasSize}
+        <span className="rounded-[3px] bg-muted px-1.5 py-0.5 font-mono text-[9.5px] tracking-[0.04em] text-muted-foreground">
+          {CANVAS_WIDTH} × {CANVAS_HEIGHT}
+        </span>
+      </div>
       <DropdownMenuItem disabled={exporting} onClick={exportHtml}>
         <FileCode2 />
         {t.slide.exportAsHtml}

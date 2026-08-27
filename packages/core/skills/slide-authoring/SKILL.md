@@ -1,6 +1,6 @@
 ---
 name: slide-authoring
-description: Technical reference for writing or editing open-slide pages — file contract, 1920×1080 canvas, type scale, layout, palette/visual direction, assets, speaker notes, stepped reveals, page transitions, and morph transitions. Consult this whenever you are about to write or modify any file under `slides/<id>/`, including from inside the `create-slide` or `apply-comments` workflows, or for any ad-hoc slide edit. Triggers on phrases like "edit slide", "tweak this page", "fix the layout", "change the palette", "reveal one by one", "add a transition", "morph transition", "write the speaker notes", "generate the script / talk track", "investigate the slide framework", "how do slides work here".
+description: Technical reference for writing or editing open-slide pages — file contract, configured canvas dimensions, type scale, layout, palette/visual direction, assets, speaker notes, stepped reveals, page transitions, and morph transitions. Consult this whenever you are about to write or modify any file under `slides/<id>/`, including from inside the `create-slide` or `apply-comments` workflows, or for any ad-hoc slide edit. Triggers on phrases like "edit slide", "tweak this page", "fix the layout", "change the palette", "reveal one by one", "add a transition", "morph transition", "write the speaker notes", "generate the script / talk track", "investigate the slide framework", "how do slides work here".
 ---
 
 # Authoring open-slide pages
@@ -91,13 +91,27 @@ This lists every `const Foo: Page = …` declaration with its line number. Read 
 
 ## Canvas
 
-Every page renders into a fixed **1920 × 1080** canvas. The framework scales it; you design as if the viewport is literally 1920×1080.
+Read `open-slide.config.ts` before authoring. Every page uses its `canvas`
+value end to end:
+
+| Canvas value | Dimensions |
+| --- | ---: |
+| `'1080p'` (default) | 1920 × 1080 |
+| `'4k'` | 3840 × 2160 |
+| `'8k'` | 7680 × 4320 |
+| `{ width, height }` | Exact explicit dimensions |
+
+The unscaled canvas and exports use those exact dimensions. Source pixels map
+1:1 to native-size slide images and captures; the viewer may uniformly scale
+the canvas to fit a smaller screen. Author against the exact native width and
+height; do not keep 1920×1080 coordinates in a 4K, 8K, portrait, or square
+project. Projects without a `canvas` setting retain the 1920×1080 contract.
 
 - Use **absolute pixel values** for `font-size`, padding, positioning. No `rem`, no `vw`/`vh`, no `%` for type.
 - The root element of each page should fill the canvas: `width: '100%'; height: '100%'`.
 - Prefer inline `style={{ … }}`. Any CSS you load is global — scope classnames carefully.
 
-### Type scale (start here, adjust to taste)
+### Type scale (1080p starting point, scale with the canvas)
 
 | Element          | Size       |
 | ---------------- | ---------- |
@@ -107,17 +121,29 @@ Every page renders into a fixed **1920 × 1080** canvas. The framework scales it
 | Body text        | 32–44px    |
 | Caption / label  | 22–28px    |
 
+At 4K, multiply these starting sizes and spacing values by 2; at 8K,
+multiply them by 4. For explicit dimensions, use
+`scale = min(canvas_width / 1920, canvas_height / 1080)` as the starting point,
+then adapt the composition to the actual aspect ratio. Keep body text at or
+above `max(28px, 32px × scale)`. Use concrete native pixel values in the slide
+source.
+
 ### Spacing
 
-- Content padding: **100–160px** from canvas edges. Never let text touch the edge.
+- Content padding: **100–160px at 1080p**, scaled to the configured canvas. Never let text touch the edge.
 - Line-height: 1.2 for headings, 1.5–1.7 for body.
 - Breathing room between elements: 32–64px.
 
-### Vertical budget — content MUST fit 1080px
+### Vertical budget — content MUST fit the selected canvas
 
-The canvas does **not** scroll. Anything past the 1080px bottom edge is silently cropped. Before writing JSX, do the math on paper and confirm the page fits. This is the #1 cause of broken slides — assume you will overflow unless you've checked.
+The canvas does **not** scroll. Anything past the selected canvas bottom edge
+is silently cropped. Before writing JSX, do the math on paper and confirm the
+page fits. This is the #1 cause of broken slides — assume you will overflow
+unless you've checked.
 
-**Usable height** = `1080 − top_padding − bottom_padding`. With 120px padding on each side that's **840px**. With 160px each side, **760px**. Pick the padding first, then design within that budget.
+**Usable height** = `canvas_height − top_padding − bottom_padding`. At 1080p,
+with 120px padding on each side that's **840px**. Use the configured height and
+the native padding values, then design within that budget.
 
 **Element height** = `font_size × line_height × number_of_lines`. A bullet that wraps to 2 lines counts as 2 lines. Add the gap below it (32–64px) before summing the next element.
 
@@ -341,7 +367,7 @@ This applies whenever the *visual element* repeats, not whenever the *data* does
 - [ ] `slides/<id>/index.tsx` `export default`s a non-empty `Page[]`.
 - [ ] Every page's root fills `100% × 100%`.
 - [ ] Content lives inside padding (no text kisses the edge).
-- [ ] **For every page, sum (font_size × line_height × lines) + gaps + 2×padding ≤ 1080px.** If close, split the page. No `overflow: auto` escape hatches.
+- [ ] **For every page, sum (font_size × line_height × lines) + gaps + 2×padding ≤ the selected canvas height.** If close, split the page. No `overflow: auto` escape hatches.
 - [ ] No bullet wraps to a second line at the chosen font size.
 - [ ] One coherent visual direction across every page (palette + type scale).
 - [ ] Slide declares a top-level `export const design: DesignSystem = { … }` and references the values via `var(--osd-X)` (use `design.X` only when you need a JS number for arithmetic). Only omit the `design` const for a one-off slide whose palette is intentionally locked.
@@ -358,12 +384,11 @@ This applies whenever the *visual element* repeats, not whenever the *data* does
 ## Anti-patterns
 
 - ❌ Walls of text. If a page has more than ~40 words, split it.
-- ❌ Using the full canvas for body copy. Respect 100–160px padding.
-- ❌ Overflowing 1080px vertically. Cropped content is invisible — split the page.
+- ❌ Using the full canvas for body copy. Respect the scaled 100–160px baseline padding.
+- ❌ Overflowing the selected canvas height vertically. Cropped content is invisible — split the page.
 - ❌ `overflow: auto` / `overflow: scroll` / `overflow: hidden` to "hide" too much content. The canvas doesn't scroll; you've just hidden the bug.
-- ❌ Shrinking type below the scale's lower bound, or padding below 100px, to cram more in. Split instead.
+- ❌ Shrinking type below its scaled table minimum, including body text below `max(28px, 32px × scale)` for explicit dimensions, or padding below the scaled 100px baseline, to cram more in. Split instead.
 - ❌ Bullets that wrap to a second line — either shorten or move to its own page.
-- ❌ Body type under 28px — unreadable on a projector.
 - ❌ Inconsistent palette across pages.
 - ❌ Installing packages. Only `react`, `@open-slide/core`, and standard web APIs are available.
 - ❌ Writing CSS to a shared file. Inline styles or scoped classnames only.

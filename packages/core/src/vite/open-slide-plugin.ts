@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import fg from 'fast-glob';
 import { loadConfigFromFile, normalizePath, type Plugin, type ViteDevServer } from 'vite';
+import { type CanvasSize, resolveCanvasSize } from '../canvas.ts';
 import type { OpenSlideConfig } from '../config.ts';
 import { SLIDE_ID_RE } from '../editing/slide-ops.ts';
 import { foldersManifestPath, readManifest } from '../files/folders.ts';
@@ -21,6 +22,31 @@ const CONFIG_FILE = 'open-slide.config.ts';
 const SLIDES_VMOD = 'virtual:open-slide/slides';
 const CONFIG_VMOD = 'virtual:open-slide/config';
 const FOLDERS_VMOD = 'virtual:open-slide/folders';
+
+export function resolveOpenSlideConfig(
+  config: OpenSlideConfig,
+  isDev: boolean,
+  coreVersion: string,
+): Omit<OpenSlideConfig, 'canvas' | 'build'> & {
+  canvas: CanvasSize;
+  version: string;
+  build: Required<NonNullable<OpenSlideConfig['build']>>;
+} {
+  const userBuild = config.build ?? {};
+  const build = isDev
+    ? { showSlideBrowser: true, showSlideUi: true, allowHtmlDownload: true }
+    : {
+        showSlideBrowser: userBuild.showSlideBrowser ?? true,
+        showSlideUi: userBuild.showSlideUi ?? true,
+        allowHtmlDownload: userBuild.allowHtmlDownload ?? true,
+      };
+  return {
+    ...config,
+    canvas: resolveCanvasSize(config.canvas),
+    build,
+    version: coreVersion,
+  };
+}
 
 function resolved(id: string): string {
   return `\0${id}`;
@@ -226,15 +252,7 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
         return code;
       }
       if (id === resolved(CONFIG_VMOD)) {
-        const userBuild = config.build ?? {};
-        const buildResolved = isDev
-          ? { showSlideBrowser: true, showSlideUi: true, allowHtmlDownload: true }
-          : {
-              showSlideBrowser: userBuild.showSlideBrowser ?? true,
-              showSlideUi: userBuild.showSlideUi ?? true,
-              allowHtmlDownload: userBuild.allowHtmlDownload ?? true,
-            };
-        const resolvedConfig = { ...config, build: buildResolved, version: coreVersion };
+        const resolvedConfig = resolveOpenSlideConfig(config, isDev, coreVersion);
         return `export default ${JSON.stringify(resolvedConfig)};\n`;
       }
       if (id === resolved(FOLDERS_VMOD)) {

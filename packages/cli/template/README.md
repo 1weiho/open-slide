@@ -33,7 +33,10 @@ export const meta: SlideMeta = { title: 'My slide' };
 export default [Cover] satisfies Page[];
 ```
 
-Every page renders into a fixed **1920 × 1080** canvas — design with absolute pixel values. Put images, videos, and fonts under `slides/<id>/assets/` and import them directly.
+Every page is authored and rendered on one configured canvas — **1920 × 1080**
+by default, a **4K / 8K** preset, or explicit dimensions. Use native pixel
+coordinates for that canvas. Put images, videos, and fonts under
+`slides/<id>/assets/` and import them directly.
 
 See [`CLAUDE.md`](./CLAUDE.md) for the full authoring guide.
 
@@ -56,9 +59,13 @@ import type { OpenSlideConfig } from '@open-slide/core';
 
 const openSlideConfig: OpenSlideConfig = {
   port: 5173,
+  canvas: '4k',
 };
 
 export default openSlideConfig;
 ```
 
-Supported fields: `slidesDir`, `port`.
+Supported fields include `slidesDir`, `port`, and `canvas`. Canvas accepts
+`'1080p'`, `'4k'`, `'8k'`, or explicit dimensions such as
+`{ width: 1080, height: 1350 }`. It changes source coordinates and export
+targets together; existing projects that omit it remain 1920 × 1080.

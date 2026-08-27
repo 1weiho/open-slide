@@ -111,6 +111,7 @@ export type Locale = {
     moreActions: string;
     toastCopyLinkSuccess: string;
     toastCopyLinkFailed: string;
+    canvasSize: string;
     exportAsHtml: string;
     exportAsPdf: string;
     exportAsImagePptx: string;

@@ -29,8 +29,9 @@ import {
 } from '../components/present/use-presenter-channel';
 import { SlideCanvas } from '../components/slide-canvas';
 import { isDeckWarmed, markDeckWarmed, SlidePreloadLayer } from '../components/slide-preload-layer';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/canvas';
 import { SlidePageProvider } from '../lib/page-context';
-import { CANVAS_HEIGHT, CANVAS_WIDTH, type SlideModule } from '../lib/sdk';
+import type { SlideModule } from '../lib/sdk';
 import { loadSlide, slideIds } from '../lib/slides';
 import { type StepController, StepHost } from '../lib/step-context';
 import { useSlideModule } from '../lib/use-slide-module';
