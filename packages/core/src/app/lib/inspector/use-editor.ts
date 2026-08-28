@@ -48,10 +48,11 @@ export function useEditor(slideId: string) {
 
   // Batch many element edits into one file write and one HMR tick.
   // Returns one result per input edit so callers can keep failed
-  // edits buffered while clearing the ones that landed.
+  // edits buffered while clearing the ones that landed, plus whether
+  // the source file actually changed (server may skip the write).
   const applyEdits = useCallback(
-    async (edits: Edit[]): Promise<EditResult[]> => {
-      if (edits.length === 0) return [];
+    async (edits: Edit[]): Promise<{ results: EditResult[]; changed: boolean }> => {
+      if (edits.length === 0) return { results: [], changed: false };
       const res = await fetch('/__edit/batch', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -59,12 +60,16 @@ export function useEditor(slideId: string) {
       });
       const body = (await res.json().catch(() => ({}))) as {
         error?: string;
+        changed?: boolean;
         results?: EditResult[];
       };
       if (!res.ok) {
         throw new Error(body.error ?? `POST /__edit/batch → ${res.status}`);
       }
-      return body.results ?? [];
+      return {
+        results: body.results ?? [],
+        changed: body.changed !== false,
+      };
     },
     [slideId],
   );

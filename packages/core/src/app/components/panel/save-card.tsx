@@ -50,8 +50,12 @@ export function SaveCard({
   if (!mounted) return null;
 
   const handleSave = async () => {
-    await onSave();
-    setJustSaved(true);
+    try {
+      await onSave();
+      setJustSaved(true);
+    } catch {
+      // Caller already toasted; keep dirty UI instead of a false success.
+    }
   };
 
   const dataAttrs = uiAttr === 'inspector' ? { 'data-inspector-ui': '' } : { 'data-design-ui': '' };
