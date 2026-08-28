@@ -54,6 +54,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useFolders } from '@/lib/folders';
 import { hasModifier, isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
+import { readLastHomeLocation } from '@/lib/last-home-location';
 import { useAgentSocketConnected } from '@/lib/use-agent-socket';
 import { useClickPageNavigation } from '@/lib/use-click-page-navigation';
 import { useIsMobile } from '@/lib/use-is-mobile';
@@ -85,6 +86,16 @@ export function Slide() {
   const { slideId = '' } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  // react-router records its entry index in history.state; going back is only
+  // safe when we actually pushed an entry, otherwise land on the last home view.
+  const goBack = useCallback(() => {
+    const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+    if (idx > 0) {
+      navigate(-1);
+    } else {
+      navigate(readLastHomeLocation(), { replace: true });
+    }
+  }, [navigate]);
   const { slide, error } = useSlideModule(slideId);
   const [playMode, setPlayMode] = useState<'window' | 'fullscreen' | null>(null);
   // Last deck the Player showed. During a presenter-driven deck switch the
@@ -596,14 +607,15 @@ export function Slide() {
           <header className="relative flex h-12 shrink-0 items-center gap-2 px-2 md:px-3">
             <div className="flex flex-1 items-center gap-1.5 md:flex-none md:gap-2">
               {showSlideBrowser && (
-                <Link
-                  to="/"
+                <button
+                  type="button"
+                  onClick={goBack}
                   aria-label={t.slide.backToHome}
                   title={t.slide.home}
                   className={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
                 >
                   <ChevronLeft className="size-4" />
-                </Link>
+                </button>
               )}
               <span aria-hidden className="mx-0.5 hidden h-5 w-px bg-hairline md:block" />
               {import.meta.env.DEV && (
