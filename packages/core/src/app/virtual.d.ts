@@ -7,6 +7,7 @@ declare module 'virtual:open-slide/slides' {
 }
 
 declare module 'virtual:open-slide/config' {
+  import type { CanvasSize } from '../canvas';
   import type { Locale } from '../locale/types';
 
   const config: {
@@ -15,6 +16,8 @@ declare module 'virtual:open-slide/config' {
     port?: number;
     locale?: Locale;
     version: string;
+    /** Always resolved to explicit pixels by the Vite plugin. */
+    canvas: CanvasSize;
     build: {
       showSlideBrowser: boolean;
       showSlideUi: boolean;

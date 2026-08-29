@@ -1,10 +1,11 @@
 import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from './canvas';
 import { designToCssVars } from './design';
 import { nextPaint, sleep } from './dom';
 import { SlidePageProvider } from './page-context';
 import { isFrameAnimationSettled, waitForDataWaitfor, waitForFonts } from './print-ready';
-import { CANVAS_HEIGHT, CANVAS_WIDTH, type SlideModule } from './sdk';
+import type { SlideModule } from './sdk';
 
 const PRINT_ROOT_ID = 'os-print-root';
 const PRINT_STYLE_ID = 'os-print-style';
@@ -53,10 +54,10 @@ const PRINT_STYLES = `
   }
   /* Supersample: Chrome rasterizes filtered/composited layers (e.g. filter:
      blur, mix-blend-mode) at the layer's CSS-pixel size, so a blurred
-     gradient on a 1920×1080 page bakes in at ~1× DPI and bands when the PDF
-     is viewed scaled up. zoom:2 doubles the layer raster size; scale(0.5)
-     composites it back to 1920×1080. Vector content (text, plain CSS
-     gradients, SVG) stays vector through both transforms. */
+     gradient bakes in at ~1× DPI and bands when the PDF is viewed scaled up.
+     zoom:2 doubles the layer raster size; scale(0.5) composites it back to the
+     canvas size. Vector content (text, plain CSS gradients, SVG) stays vector
+     through both transforms. */
   #${PRINT_ROOT_ID} .os-print-supersample {
     width: ${CANVAS_WIDTH}px !important;
     height: ${CANVAS_HEIGHT}px !important;

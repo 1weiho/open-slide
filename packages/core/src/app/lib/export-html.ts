@@ -1,9 +1,10 @@
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from './canvas';
 import { designToCssVars } from './design';
 import { downloadBlob, nextFrame } from './dom';
 import { SlidePageProvider } from './page-context';
-import { CANVAS_HEIGHT, CANVAS_WIDTH, type SlideModule } from './sdk';
+import type { SlideModule } from './sdk';
 
 type AssetEntry = { name: string; bytes: Uint8Array };
 

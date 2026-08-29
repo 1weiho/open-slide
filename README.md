@@ -14,7 +14,7 @@
 
 **The slide framework built for agents.** Describe your deck in natural language — your coding agent writes the React. open-slide handles the canvas, scaling, navigation, hot reload, and present mode so the agent can focus on content.
 
-Every slide renders into a fixed **1920 × 1080** canvas. Pages are arbitrary React components, not a constrained DSL.
+Every slide renders into a fixed pixel canvas, **1920 × 1080** by default and configurable to any size or aspect. Pages are arbitrary React components, not a constrained DSL.
 
 ```bash
 npx @open-slide/cli init my-slide
