@@ -90,11 +90,14 @@ test.describe('slide viewer', () => {
   });
 
   test('back returns to the previous browser location with its query intact', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?f=draft');
+    await page.waitForFunction(
+      () => sessionStorage.getItem('open-slide:last-home-location') === '/?f=draft',
+    );
     await page.locator('a[href="/s/alpha"]').first().click();
     await expect(page).toHaveURL(/\/s\/alpha/);
     await page.getByRole('button', { name: 'Back to home' }).click();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/[?&]f=draft/);
   });
 
   test('back falls back to the last home location, query included', async ({ page }) => {
