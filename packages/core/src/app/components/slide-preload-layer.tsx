@@ -6,6 +6,7 @@ import { type StepController, StepHost } from '../lib/step-context';
 
 const PAGES_PER_FRAME = 2;
 const SETTLE_TIMEOUT_MS = 15_000;
+const FRAME_FALLBACK_MS = 200;
 
 type Props = {
   pages: Page[];
@@ -28,8 +29,32 @@ export function markDeckWarmed(slideId: string): void {
   warmedDecks.add(slideId);
 }
 
+// Hidden tabs throttle `requestAnimationFrame` to zero, stranding every
+// frame-driven step below until someone looks at the tab again. A timer keeps
+// firing there, and nothing paints while hidden, so it stands in for the tick.
+function onNextFrame(run: (viaFallback: boolean) => void): () => void {
+  let fired = false;
+  let frame = 0;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const cancel = () => {
+    cancelAnimationFrame(frame);
+    if (timer !== undefined) clearTimeout(timer);
+  };
+  const fire = (viaFallback: boolean) => {
+    if (fired) return;
+    fired = true;
+    cancel();
+    run(viaFallback);
+  };
+  frame = requestAnimationFrame(() => fire(false));
+  timer = setTimeout(() => fire(true), FRAME_FALLBACK_MS);
+  return cancel;
+}
+
 function nextFrame(): Promise<void> {
-  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  return new Promise((resolve) => {
+    onNextFrame(() => resolve());
+  });
 }
 
 function waitForImages(root: HTMLElement): Promise<unknown> {
@@ -104,10 +129,14 @@ export function SlidePreloadLayer({ pages, index, design, includeCurrent = false
 
   useEffect(() => {
     if (done || mountedCount >= order.length) return;
-    const raf = requestAnimationFrame(() => {
-      setMountedCount((n) => Math.min(order.length, n + PAGES_PER_FRAME));
+    return onNextFrame((viaFallback) => {
+      // Pacing exists to keep the first paint smooth; a hidden tab has no
+      // paint to protect, so it takes the remaining pages in one go.
+      const takeAll = viaFallback && document.hidden;
+      setMountedCount((n) =>
+        takeAll ? order.length : Math.min(order.length, n + PAGES_PER_FRAME),
+      );
     });
-    return () => cancelAnimationFrame(raf);
   }, [done, mountedCount, order.length]);
 
   useEffect(() => {
