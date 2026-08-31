@@ -17,16 +17,11 @@ export type Locale = {
     loadFailed: string;
     failedToLoadSlide: string;
     home: string;
-    backToHome: string;
-    preview: string;
     add: string;
     done: string;
     tryAgain: string;
     undo: string;
     redo: string;
-    light: string;
-    dark: string;
-    system: string;
     selected: string;
   };
 
@@ -137,7 +132,6 @@ export type Locale = {
     loadingAssetsEyebrow: string;
     emptyEyebrow: string;
     nothingToShow: string;
-    emptyHintPrefix: string;
     emptyHintMust: string;
     emptyHintSuffix: string;
   };
@@ -249,7 +243,6 @@ export type Locale = {
     cropFitCover: string;
     cropFitContain: string;
     cropApply: string;
-    cropResetAria: string;
     leaveComment: string;
     commentPlaceholder: string;
     commentShortcutHint: string;
@@ -266,6 +259,8 @@ export type Locale = {
     commentDeleteAria: string;
     /** Prefix for the toast shown when one or more buffered edits fail to write to disk. */
     saveFailed: string;
+    decreaseFontSize: string;
+    increaseFontSize: string;
   };
 
   stylePanel: {

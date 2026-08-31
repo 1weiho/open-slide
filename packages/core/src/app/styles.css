@@ -13,19 +13,8 @@
     serif;
   --font-mono: ui-monospace, "JetBrains Mono", "SF Mono", "Menlo", "Cascadia Code", monospace;
 
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -108,12 +97,6 @@
   --brand-foreground: oklch(0.985 0 0);
   --brand-soft: oklch(0.6 0.2 25 / 0.1);
 
-  --chart-1: oklch(0.6 0.2 25);
-  --chart-2: oklch(0.55 0.16 250);
-  --chart-3: oklch(0.55 0.15 285);
-  --chart-4: oklch(0.6 0.13 160);
-  --chart-5: oklch(0.5 0 0);
-
   /* Tight, considered radius — drops the trendy 10px squish for 6px crisp. */
   --radius: 0.375rem;
 
@@ -121,12 +104,6 @@
      one continuous surface; content floats above it as elevated cards. */
   --sidebar: oklch(0.975 0 0);
   --sidebar-foreground: oklch(0.185 0 0);
-  --sidebar-primary: oklch(0.185 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.94 0 0);
-  --sidebar-accent-foreground: oklch(0.185 0 0);
-  --sidebar-border: oklch(0.905 0 0);
-  --sidebar-ring: oklch(0.6 0.2 25);
 }
 
 .dark {
@@ -160,20 +137,8 @@
   --brand-foreground: oklch(0.985 0 0);
   --brand-soft: oklch(0.63 0.2 25 / 0.16);
 
-  --chart-1: oklch(0.63 0.2 25);
-  --chart-2: oklch(0.65 0.15 250);
-  --chart-3: oklch(0.65 0.14 285);
-  --chart-4: oklch(0.7 0.13 160);
-  --chart-5: oklch(0.65 0 0);
-
   --sidebar: oklch(0.1 0 0);
   --sidebar-foreground: oklch(0.93 0 0);
-  --sidebar-primary: oklch(0.925 0 0);
-  --sidebar-primary-foreground: oklch(0.17 0 0);
-  --sidebar-accent: oklch(0.26 0 0);
-  --sidebar-accent-foreground: oklch(0.93 0 0);
-  --sidebar-border: oklch(1 0 0 / 0.1);
-  --sidebar-ring: oklch(0.63 0.19 25);
 }
 
 /* Tabular numerics — pages, counts, hex values, slider readouts.
@@ -223,11 +188,6 @@
   .eyebrow {
     @apply font-sans text-[11px] font-medium uppercase text-muted-foreground;
     letter-spacing: 0.08em;
-  }
-
-  /* Hairline divider — 0.5px on retina, snaps to 1px elsewhere. */
-  .hairline {
-    background: var(--hairline);
   }
 
   /* Numeric folio-style page count. */

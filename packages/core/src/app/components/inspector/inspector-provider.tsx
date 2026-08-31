@@ -13,8 +13,11 @@ import { toast } from 'sonner';
 import { useHistory } from '@/components/history-provider';
 import { Button } from '@/components/ui/button';
 import { type SlideComment, useComments } from '@/lib/inspector/use-comments';
-import { type Edit, type EditOp, type EditResult, useEditor } from '@/lib/inspector/use-editor';
+import { type Edit, type EditOp, useEditor } from '@/lib/inspector/use-editor';
+import { isTypingTarget } from '@/lib/keys';
+import { textDiff } from '@/lib/text-diff';
 import { useLocale } from '@/lib/use-locale';
+import { round2 } from '@/lib/utils';
 import { AssetPickerDialog } from './asset-picker-dialog';
 import { ImageCropDialog, type ImageCropRect } from './image-crop-dialog';
 
@@ -22,6 +25,16 @@ export type SelectedTarget = {
   line: number;
   column: number;
   anchor: HTMLElement;
+};
+
+export type InlineEditTarget = SelectedTarget & {
+  point?: { x: number; y: number };
+  // Double-click entry selects the word under the caret; a single-click
+  // switch from another editing session just places the caret.
+  selectWord?: boolean;
+  // Distinguishes sessions on the same source loc (reused components render
+  // several DOM instances of one loc), so each switch remounts the editor.
+  session?: number;
 };
 
 type AssetAttrOp = { assetPath: string; previewUrl: string };
@@ -61,15 +74,15 @@ function readInstanceId(el: HTMLElement): string | null {
   return el.getAttribute(INSTANCE_ID_ATTR);
 }
 
-type DomTextPart = { node: Text | HTMLBRElement; current: string };
+export type DomTextPart = { node: Text | HTMLBRElement; current: string };
 
-function readEditableText(el: HTMLElement): string {
+export function readEditableText(el: HTMLElement): string {
   const parts: DomTextPart[] = [];
   collectDomTextParts(el, parts);
   return parts.map((part) => part.current).join('');
 }
 
-function collectDomTextParts(node: Node, out: DomTextPart[]): void {
+export function collectDomTextParts(node: Node, out: DomTextPart[]): void {
   const parts: DomTextPart[] = [];
   collectDomTextPartsRaw(node, parts);
   out.push(...normalizeDomTextParts(parts));
@@ -104,26 +117,6 @@ function renderedTextNodeValue(node: Text): string {
     return node.data;
   }
   return node.data.replace(/\s+/g, ' ');
-}
-
-function textDiff(prevText: string, nextText: string) {
-  let start = 0;
-  while (
-    start < prevText.length &&
-    start < nextText.length &&
-    prevText[start] === nextText[start]
-  ) {
-    start += 1;
-  }
-
-  let prevEnd = prevText.length;
-  let nextEnd = nextText.length;
-  while (prevEnd > start && nextEnd > start && prevText[prevEnd - 1] === nextText[nextEnd - 1]) {
-    prevEnd -= 1;
-    nextEnd -= 1;
-  }
-
-  return { start, end: prevEnd, value: nextText.slice(start, nextEnd) };
 }
 
 function textFragment(value: string): DocumentFragment {
@@ -248,13 +241,17 @@ type InspectorCtx = {
   cancel: () => void;
   comments: SlideComment[];
   error: string | null;
-  refetch: () => Promise<void>;
   add: (line: number, column: number, text: string) => Promise<void>;
   remove: (id: string) => Promise<void>;
   selected: SelectedTarget | null;
   setSelected: (s: SelectedTarget | null) => void;
+  inlineEdit: InlineEditTarget | null;
+  startInlineEdit: (target: InlineEditTarget) => void;
+  stopInlineEdit: () => void;
+  // Bumped on every buffered-op mutation (including undo/redo restores) so
+  // panels can re-read DOM snapshots without polling.
+  opsVersion: number;
   applyEdit: (line: number, column: number, ops: EditOp[]) => Promise<void>;
-  applyEdits: (edits: Edit[]) => Promise<EditResult[]>;
   // Mutate the DOM optimistically, snapshot the pre-edit values, and
   // remember the ops. `commitEdits` (manual Save or auto-flush on
   // close) is what actually writes to disk; `cancelEdits` reverts.
@@ -286,7 +283,9 @@ export function InspectorProvider({
 }) {
   const [active, setActive] = useState(false);
   const [selected, setSelected] = useState<SelectedTarget | null>(null);
-  const { comments, error, refetch, add, remove } = useComments(slideId);
+  const [inlineEdit, setInlineEdit] = useState<InlineEditTarget | null>(null);
+  const [opsVersion, setOpsVersion] = useState(0);
+  const { comments, error, add, remove } = useComments(slideId);
   const { applyEdit, applyEdits } = useEditor(slideId);
   const history = useHistory();
 
@@ -334,6 +333,7 @@ export function InspectorProvider({
       }
     }
     setPendingCount(n);
+    setOpsVersion((v) => v + 1);
   }, []);
 
   // Find the live anchor for a buffered loc. Used by history undo/redo
@@ -927,6 +927,23 @@ export function InspectorProvider({
     setSelected(null);
   }, []);
 
+  const inlineEditSessionRef = useRef(0);
+  const startInlineEdit = useCallback((target: InlineEditTarget) => {
+    setSelected({ line: target.line, column: target.column, anchor: target.anchor });
+    setInlineEdit({ ...target, session: ++inlineEditSessionRef.current });
+  }, []);
+
+  const stopInlineEdit = useCallback(() => {
+    setInlineEdit(null);
+  }, []);
+
+  // Deselecting, selecting another element, or an HMR anchor swap all end
+  // the inline session — the contenteditable node is gone or no longer the
+  // selection's anchor.
+  useEffect(() => {
+    if (inlineEdit && selected?.anchor !== inlineEdit.anchor) setInlineEdit(null);
+  }, [selected, inlineEdit]);
+
   const openReplace = useCallback((anchor: HTMLElement) => {
     const loc = anchor.dataset.slideLoc;
     if (!loc) return;
@@ -940,7 +957,7 @@ export function InspectorProvider({
   useEffect(() => {
     if (import.meta.env.PROD) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLElement && e.target.matches('input, textarea')) return;
+      if (isTypingTarget(e.target)) return;
       if (e.key !== 'i' && e.key !== 'I') return;
       toggle();
     };
@@ -977,13 +994,15 @@ export function InspectorProvider({
       cancel,
       comments,
       error,
-      refetch,
       add,
       remove,
       selected,
       setSelected,
+      inlineEdit,
+      startInlineEdit,
+      stopInlineEdit,
+      opsVersion,
       applyEdit,
-      applyEdits,
       bufferOps,
       pendingCount,
       commitEdits,
@@ -999,12 +1018,14 @@ export function InspectorProvider({
       cancel,
       comments,
       error,
-      refetch,
       add,
       remove,
       selected,
+      inlineEdit,
+      startInlineEdit,
+      stopInlineEdit,
+      opsVersion,
       applyEdit,
-      applyEdits,
       bufferOps,
       pendingCount,
       commitEdits,
@@ -1087,10 +1108,6 @@ export function InspectorProvider({
       )}
     </Ctx.Provider>
   );
-}
-
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
 }
 
 function parseObjectViewBox(value: string): ImageCropRect | null {

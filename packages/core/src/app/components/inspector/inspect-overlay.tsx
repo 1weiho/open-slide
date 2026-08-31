@@ -3,6 +3,11 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { PANEL_TRANSITION_MS } from '@/components/panel/panel-shell';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { findSlideSource, type SlideSourceHit } from '@/lib/inspector/fiber';
+import {
+  isInspectableEventTarget,
+  pickElement,
+  pickInspectorTarget,
+} from '@/lib/inspector/pick-target';
 import { useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import { useInspector } from './inspector-provider';
@@ -16,7 +21,7 @@ const FRAME_MORPH_MS = 180;
 const LAYOUT_TRACK_MS = PANEL_TRANSITION_MS + FRAME_MORPH_MS;
 
 export function InspectOverlay() {
-  const { active, slideId, selected, setSelected, cancel, openCrop } = useInspector();
+  const { active, slideId, selected, setSelected, cancel, openCrop, inlineEdit } = useInspector();
   const overlayRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<Highlight | null>(null);
 
@@ -28,6 +33,8 @@ export function InspectOverlay() {
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        // The inline edit layer owns Escape while a text run is being edited.
+        if (inlineEdit) return;
         e.preventDefault();
         e.stopPropagation();
         cancel();
@@ -36,6 +43,7 @@ export function InspectOverlay() {
 
     const onMove = (e: PointerEvent) => {
       if (!isInspectableEventTarget(e.target)) return setHover(null);
+      if (inlineEdit?.anchor.contains(e.target as Node)) return setHover(null);
       const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
       if (!el) return setHover(null);
       const hit = findSlideSource(el, slideId, { hostOnly: true });
@@ -45,6 +53,8 @@ export function InspectOverlay() {
 
     const onClick = (e: MouseEvent) => {
       if (!isInspectableEventTarget(e.target)) return;
+      // Clicks inside the inline-editing element move the caret natively.
+      if (inlineEdit?.anchor.contains(e.target as Node)) return;
       const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
       if (!el) return;
       const hit = findSlideSource(el, slideId, { hostOnly: true });
@@ -57,6 +67,7 @@ export function InspectOverlay() {
 
     const onDblClick = (e: MouseEvent) => {
       if (!isInspectableEventTarget(e.target)) return;
+      if (inlineEdit?.anchor.contains(e.target as Node)) return;
       const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
       if (!el) return;
       const hit = findSlideSource(el, slideId, { hostOnly: true });
@@ -78,7 +89,7 @@ export function InspectOverlay() {
       window.removeEventListener('dblclick', onDblClick, true);
       window.removeEventListener('keydown', onKey, true);
     };
-  }, [active, slideId, setSelected, cancel, openCrop]);
+  }, [active, slideId, setSelected, cancel, openCrop, inlineEdit]);
 
   const hoverAnchor = hover?.hit.anchor.isConnected ? hover.hit.anchor : null;
   const selectedAnchor = selected?.anchor.isConnected ? selected.anchor : null;
@@ -87,7 +98,13 @@ export function InspectOverlay() {
   if (!active) return null;
   return (
     <div ref={overlayRef} data-inspector-ui className="pointer-events-none absolute inset-0 z-30">
-      <Frame anchor={selectedAnchor} overlayRef={overlayRef} variant="selected" showImageActions />
+      <Frame
+        anchor={selectedAnchor}
+        overlayRef={overlayRef}
+        variant="selected"
+        showImageActions
+        editing={!!inlineEdit && inlineEdit.anchor === selectedAnchor}
+      />
       <Frame anchor={dedupedHover} overlayRef={overlayRef} variant="hover" />
     </div>
   );
@@ -105,11 +122,13 @@ function Frame({
   overlayRef,
   variant,
   showImageActions = false,
+  editing = false,
 }: {
   anchor: HTMLElement | null;
   overlayRef: React.RefObject<HTMLDivElement>;
   variant: FrameVariant;
   showImageActions?: boolean;
+  editing?: boolean;
 }) {
   const [rect, setRect] = useState<RelRect | null>(null);
   const [hasTarget, setHasTarget] = useState(false);
@@ -200,6 +219,12 @@ function Frame({
   const imageAnchor = anchor instanceof HTMLImageElement ? anchor : null;
   const actionsVisible = showImageActions && visible && !!imageAnchor;
 
+  // While a text run is being edited inline, drop the tint so the text
+  // underneath stays fully readable.
+  const frameStyle = editing
+    ? { ...FRAME_STYLES[variant], background: 'transparent' }
+    : FRAME_STYLES[variant];
+
   return (
     <>
       <div
@@ -211,7 +236,7 @@ function Frame({
           height: rect.height,
           opacity: visible ? 1 : 0,
           transition,
-          ...FRAME_STYLES[variant],
+          ...frameStyle,
         }}
       />
       {showImageActions && imageAnchor && (
@@ -309,71 +334,4 @@ function sameRect(a: RelRect | null, b: RelRect): boolean {
     Math.abs(a.width - b.width) < 0.5 &&
     Math.abs(a.height - b.height) < 0.5
   );
-}
-
-// Only inspect events that originate inside the slide root. Portaled UI
-// (dialogs, tooltips, toasts) mounts on `document.body`, outside the root;
-// without this guard the capture-phase window listeners swallow clicks
-// meant for a dialog and select the slide element behind it instead.
-function isInspectableEventTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof Element)) return false;
-  if (target.closest('[data-inspector-ui]')) return false;
-  return !!target.closest('[data-inspector-root]');
-}
-
-function pickElement(x: number, y: number): HTMLElement | null {
-  const stack = document.elementsFromPoint(x, y);
-  for (const el of stack) {
-    if (!(el instanceof HTMLElement)) continue;
-    if (el.closest('[data-inspector-ui]')) continue;
-    if (!el.closest('[data-inspector-root]')) continue;
-    return el;
-  }
-  return null;
-}
-
-const INLINE_TEXT_TAGS = new Set([
-  'B',
-  'CODE',
-  'DEL',
-  'EM',
-  'I',
-  'INS',
-  'MARK',
-  'S',
-  'SMALL',
-  'SPAN',
-  'STRONG',
-  'SUB',
-  'SUP',
-  'U',
-]);
-
-function pickInspectorTarget(el: HTMLElement | null): HTMLElement | null {
-  if (!el) return null;
-  const root = el.closest('[data-inspector-root]');
-  const startedOnInlineText = INLINE_TEXT_TAGS.has(el.tagName);
-  for (let cur: HTMLElement | null = el; cur && root?.contains(cur); cur = cur.parentElement) {
-    if (startedOnInlineText && INLINE_TEXT_TAGS.has(cur.tagName)) continue;
-    if (isEditableTextContainer(cur)) return cur;
-  }
-  return el;
-}
-
-function isEditableTextContainer(el: HTMLElement): boolean {
-  if (!el.textContent?.trim()) return false;
-  return hasOnlyInlineTextChildren(el);
-}
-
-function hasOnlyInlineTextChildren(el: HTMLElement): boolean {
-  for (const child of Array.from(el.childNodes)) {
-    if (child.nodeType === Node.TEXT_NODE) {
-      continue;
-    } else if (child instanceof HTMLElement) {
-      if (child.tagName === 'BR') continue;
-      if (INLINE_TEXT_TAGS.has(child.tagName) && hasOnlyInlineTextChildren(child)) continue;
-    }
-    return false;
-  }
-  return true;
 }

@@ -31,7 +31,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { format, useLocale } from '@/lib/use-locale';
-import { cn } from '@/lib/utils';
+import { cn, pad2 } from '@/lib/utils';
 import { FolderIconChip, SLIDE_DND_MIME, SystemViewIcon } from '../components/sidebar/folder-item';
 import { ALL_SLIDES_ID, DRAFT_ID } from '../components/sidebar/sidebar';
 import { SlideCanvas } from '../components/slide-canvas';
@@ -161,7 +161,7 @@ export function Home() {
               >
                 <SystemViewIcon kind="all" className="text-muted-foreground" />
                 <span className="flex-1 truncate">{t.home.slides}</span>
-                <span className="folio">{slideIds.length.toString().padStart(2, '0')}</span>
+                <span className="folio">{pad2(slideIds.length)}</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => selectFolder(DRAFT_ID)}
@@ -169,7 +169,7 @@ export function Home() {
               >
                 <SystemViewIcon kind="draft" className="text-muted-foreground" />
                 <span className="flex-1 truncate">{t.home.draft}</span>
-                <span className="folio">{draftSlides.length.toString().padStart(2, '0')}</span>
+                <span className="folio">{pad2(draftSlides.length)}</span>
               </DropdownMenuItem>
               {manifest.folders.map((f) => (
                 <DropdownMenuItem
@@ -179,23 +179,15 @@ export function Home() {
                 >
                   <FolderIconChip icon={f.icon} />
                   <span className="flex-1 truncate">{f.name}</span>
-                  <span className="folio">
-                    {(slidesByFolder[f.id]?.length ?? 0).toString().padStart(2, '0')}
-                  </span>
+                  <span className="folio">{pad2(slidesByFolder[f.id]?.length ?? 0)}</span>
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
           {!loading && (
             <span className="folio ml-0.5">
-              {(isSearching ? filteredSlides.length : visibleSlides.length)
-                .toString()
-                .padStart(2, '0')}
-              {isSearching && (
-                <span className="opacity-40">
-                  /{visibleSlides.length.toString().padStart(2, '0')}
-                </span>
-              )}
+              {pad2(isSearching ? filteredSlides.length : visibleSlides.length)}
+              {isSearching && <span className="opacity-40">/{pad2(visibleSlides.length)}</span>}
             </span>
           )}
           <div className="ml-auto flex w-full items-center gap-2 md:w-auto">

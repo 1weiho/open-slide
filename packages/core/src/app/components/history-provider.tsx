@@ -22,7 +22,6 @@ type HistoryCtx = {
   undo: () => void;
   redo: () => void;
   clear: () => void;
-  isSuppressed: () => boolean;
 };
 
 const COALESCE_WINDOW_MS = 500;
@@ -101,8 +100,6 @@ export function HistoryProvider({ children }: { children: ReactNode }) {
     setFuture([]);
   }, []);
 
-  const isSuppressed = useCallback(() => suppressedRef.current, []);
-
   const value = useMemo<HistoryCtx>(
     () => ({
       canUndo: past.length > 0,
@@ -111,9 +108,8 @@ export function HistoryProvider({ children }: { children: ReactNode }) {
       undo,
       redo,
       clear,
-      isSuppressed,
     }),
-    [past.length, future.length, record, undo, redo, clear, isSuppressed],
+    [past.length, future.length, record, undo, redo, clear],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

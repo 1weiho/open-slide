@@ -1,5 +1,5 @@
 import { Menu } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { LanguageToggle } from '@/components/language-toggle';
@@ -10,10 +10,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useAssets } from '@/lib/assets';
+import { GLOBAL_ASSET_SCOPE, useAssets } from '@/lib/assets';
 import { useFolders } from '@/lib/folders';
+import { rememberHomeLocation } from '@/lib/last-home-location';
 import { format, useLocale } from '@/lib/use-locale';
-import { cn } from '@/lib/utils';
+import { cn, pad2 } from '@/lib/utils';
 import { CommandMenuTrigger } from '../components/command/command-menu';
 import { HomeCommandMenu } from '../components/command/home-command-menu';
 import { SystemViewIcon } from '../components/sidebar/folder-item';
@@ -64,6 +65,10 @@ export function HomeShell() {
 
   const selectedId = pathToSelectedId(location.pathname, searchParams);
 
+  useEffect(() => {
+    rememberHomeLocation(location.pathname, location.search);
+  }, [location.pathname, location.search]);
+
   const [commandOpen, setCommandOpen] = useState(false);
   const openCommandMenu = useCallback(() => setCommandOpen(true), []);
 
@@ -84,8 +89,8 @@ export function HomeShell() {
     [navigate],
   );
 
-  const { assets: globalAssets } = useAssets('@global');
-  const isAssetsRoute = location.pathname === '/assets';
+  const { assets: globalAssets } = useAssets(GLOBAL_ASSET_SCOPE);
+  const isAssetsRoute = selectedId === ASSETS_ID;
 
   const { draftSlides, slidesByFolder } = useMemo(() => {
     const byFolder: Record<string, string[]> = {};
@@ -207,7 +212,7 @@ export function HomeShell() {
                   >
                     <SystemViewIcon kind="all" className="text-muted-foreground" />
                     <span className="flex-1 truncate">{t.home.slides}</span>
-                    <span className="folio">{slideIds.length.toString().padStart(2, '0')}</span>
+                    <span className="folio">{pad2(slideIds.length)}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => selectFolder(THEMES_ID)}
@@ -215,9 +220,7 @@ export function HomeShell() {
                   >
                     <SystemViewIcon kind="themes" className="text-muted-foreground" />
                     <span className="flex-1 truncate">{t.home.themes}</span>
-                    <span className="folio">
-                      {themeRegistry.length.toString().padStart(2, '0')}
-                    </span>
+                    <span className="folio">{pad2(themeRegistry.length)}</span>
                   </DropdownMenuItem>
                   {import.meta.env.DEV && (
                     <DropdownMenuItem
@@ -226,9 +229,7 @@ export function HomeShell() {
                     >
                       <SystemViewIcon kind="assets" className="text-muted-foreground" />
                       <span className="flex-1 truncate">{t.home.assets}</span>
-                      <span className="folio">
-                        {globalAssets.length.toString().padStart(2, '0')}
-                      </span>
+                      <span className="folio">{pad2(globalAssets.length)}</span>
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>

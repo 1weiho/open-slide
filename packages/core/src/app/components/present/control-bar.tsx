@@ -14,7 +14,7 @@ import {
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLocale } from '@/lib/use-locale';
-import { cn } from '@/lib/utils';
+import { cn, pad2 } from '@/lib/utils';
 
 const TooltipContainerCtx = createContext<HTMLElement | null>(null);
 
@@ -107,9 +107,9 @@ export function PresentControlBar({
             <Divider />
 
             <span className="px-2 font-mono text-[11.5px] tracking-[0.08em] tabular-nums uppercase select-none text-white/85">
-              <span className="text-white">{(index + 1).toString().padStart(2, '0')}</span>
+              <span className="text-white">{pad2(index + 1)}</span>
               <span className="text-white/35"> / </span>
-              <span>{total.toString().padStart(2, '0')}</span>
+              <span>{pad2(total)}</span>
             </span>
 
             <Divider />
@@ -320,7 +320,7 @@ function ElapsedClock({ startedAt }: { startedAt: number }) {
       title={t.present.elapsedTime}
       className="px-2 font-mono text-[11.5px] tracking-[0.08em] tabular-nums uppercase select-none text-white/70"
     >
-      {m.toString().padStart(2, '0')}:{s.toString().padStart(2, '0')}
+      {pad2(m)}:{pad2(s)}
     </time>
   );
 }

@@ -1,15 +1,16 @@
 import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { designToCssVars } from './design';
+import { nextPaint, sleep } from './dom';
 import { SlidePageProvider } from './page-context';
 import { isFrameAnimationSettled, waitForDataWaitfor, waitForFonts } from './print-ready';
-import type { SlideModule } from './sdk';
+import { CANVAS_HEIGHT, CANVAS_WIDTH, type SlideModule } from './sdk';
 
 const PRINT_ROOT_ID = 'os-print-root';
 const PRINT_STYLE_ID = 'os-print-style';
 
 const PRINT_STYLES = `
-@page { size: 1920px 1080px; margin: 0; }
+@page { size: ${CANVAS_WIDTH}px ${CANVAS_HEIGHT}px; margin: 0; }
 
 @media screen {
   #${PRINT_ROOT_ID} {
@@ -36,8 +37,8 @@ const PRINT_STYLES = `
     background: #fff !important;
   }
   #${PRINT_ROOT_ID} .os-print-frame {
-    width: 1920px !important;
-    height: 1080px !important;
+    width: ${CANVAS_WIDTH}px !important;
+    height: ${CANVAS_HEIGHT}px !important;
     background: #fff;
     color: #000;
     overflow: hidden;
@@ -57,8 +58,8 @@ const PRINT_STYLES = `
      composites it back to 1920×1080. Vector content (text, plain CSS
      gradients, SVG) stays vector through both transforms. */
   #${PRINT_ROOT_ID} .os-print-supersample {
-    width: 1920px !important;
-    height: 1080px !important;
+    width: ${CANVAS_WIDTH}px !important;
+    height: ${CANVAS_HEIGHT}px !important;
     zoom: 2;
     transform: scale(0.5);
     transform-origin: top left;
@@ -130,15 +131,15 @@ export async function exportSlideAsPdf(
     const host = document.createElement('div');
     host.className = 'os-print-frame';
     host.setAttribute('data-osd-canvas', '');
-    host.style.width = '1920px';
-    host.style.height = '1080px';
+    host.style.width = `${CANVAS_WIDTH}px`;
+    host.style.height = `${CANVAS_HEIGHT}px`;
     if (designVars) {
       for (const [k, v] of Object.entries(designVars)) host.style.setProperty(k, v);
     }
     const inner = document.createElement('div');
     inner.className = 'os-print-supersample';
-    inner.style.width = '1920px';
-    inner.style.height = '1080px';
+    inner.style.width = `${CANVAS_WIDTH}px`;
+    inner.style.height = `${CANVAS_HEIGHT}px`;
     host.appendChild(inner);
     root.appendChild(host);
     frames.push(host);
@@ -264,24 +265,6 @@ function splitBackgroundImageLayers(backgroundImage: string): string[] {
 
   layers.push(backgroundImage.slice(layerStart).trim());
   return layers;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function nextPaint(): Promise<void> {
-  // rAF in real tabs; setTimeout fallback for hidden/throttled headless tabs.
-  return new Promise((resolve) => {
-    let settled = false;
-    const settle = () => {
-      if (settled) return;
-      settled = true;
-      resolve();
-    };
-    requestAnimationFrame(settle);
-    setTimeout(settle, 50);
-  });
 }
 
 function waitForAfterPrint(timeoutMs = 60_000): Promise<void> {

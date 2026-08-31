@@ -2,6 +2,7 @@ import { type CSSProperties, type HTMLAttributes, useRef, useState } from 'react
 import { toast } from 'sonner';
 import { uploadWithAutoRename } from '@/lib/assets';
 import { useLocale } from '@/lib/use-locale';
+import { dragHasFiles } from '../lib/dom';
 
 export type ImagePlaceholderProps = {
   hint: string;
@@ -28,13 +29,13 @@ export function ImagePlaceholder({
   const dndProps = import.meta.env.DEV
     ? {
         onDragEnter: (e: React.DragEvent<HTMLDivElement>) => {
-          if (uploading || !hasImageFile(e)) return;
+          if (uploading || !dragHasFiles(e)) return;
           e.preventDefault();
           dragDepth.current += 1;
           setDragActive(true);
         },
         onDragOver: (e: React.DragEvent<HTMLDivElement>) => {
-          if (uploading || !hasImageFile(e)) return;
+          if (uploading || !dragHasFiles(e)) return;
           e.preventDefault();
           e.dataTransfer.dropEffect = 'copy';
         },
@@ -43,7 +44,7 @@ export function ImagePlaceholder({
           if (dragDepth.current === 0) setDragActive(false);
         },
         onDrop: (e: React.DragEvent<HTMLDivElement>) => {
-          if (uploading || !hasImageFile(e)) return;
+          if (uploading || !dragHasFiles(e)) return;
           e.preventDefault();
           dragDepth.current = 0;
           setDragActive(false);
@@ -184,15 +185,6 @@ function DropOverlay({ label }: { label: string }) {
       </span>
     </div>
   );
-}
-
-function hasImageFile(e: React.DragEvent): boolean {
-  const types = e.dataTransfer?.types;
-  if (!types) return false;
-  for (let i = 0; i < types.length; i++) {
-    if (types[i] === 'Files') return true;
-  }
-  return false;
 }
 
 function pickImageFile(files: FileList): File | null {

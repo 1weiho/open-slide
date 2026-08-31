@@ -1,5 +1,4 @@
 import { ArrowDownToLine, Loader2, Upload } from 'lucide-react';
-import type React from 'react';
 import { useCallback, useId, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -10,12 +9,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { type AssetEntry, uploadWithAutoRename, useAssets } from '@/lib/assets';
+import { type AssetEntry, GLOBAL_ASSET_SCOPE, uploadWithAutoRename, useAssets } from '@/lib/assets';
+import { dragHasFiles } from '@/lib/dom';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 
 export type PickerScope = 'slide' | 'global';
-const GLOBAL_PICKER_SLIDE_ID = '@global';
 
 export function AssetPickerDialog({
   slideId,
@@ -27,7 +26,7 @@ export function AssetPickerDialog({
   onPick: (asset: AssetEntry, scope: PickerScope) => void;
 }) {
   const [scope, setScope] = useState<PickerScope>('slide');
-  const effectiveSlideId = scope === 'global' ? GLOBAL_PICKER_SLIDE_ID : slideId;
+  const effectiveSlideId = scope === 'global' ? GLOBAL_ASSET_SCOPE : slideId;
   const { assets, loading, refresh } = useAssets(effectiveSlideId);
   const images = assets.filter((a) => a.mime.startsWith('image/'));
   const t = useLocale();
@@ -105,13 +104,13 @@ export function AssetPickerDialog({
           aria-label={t.inspector.replaceImageDialogTitle}
           className="relative max-h-[60vh] overflow-y-auto"
           onDragEnter={(e) => {
-            if (uploading || !hasFiles(e)) return;
+            if (uploading || !dragHasFiles(e)) return;
             e.preventDefault();
             dragDepth.current += 1;
             setDragActive(true);
           }}
           onDragOver={(e) => {
-            if (uploading || !hasFiles(e)) return;
+            if (uploading || !dragHasFiles(e)) return;
             e.preventDefault();
             e.dataTransfer.dropEffect = 'copy';
           }}
@@ -120,7 +119,7 @@ export function AssetPickerDialog({
             if (dragDepth.current === 0) setDragActive(false);
           }}
           onDrop={(e) => {
-            if (uploading || !hasFiles(e)) return;
+            if (uploading || !dragHasFiles(e)) return;
             e.preventDefault();
             dragDepth.current = 0;
             setDragActive(false);
@@ -186,13 +185,4 @@ export function AssetPickerDialog({
       </DialogContent>
     </Dialog>
   );
-}
-
-function hasFiles(e: React.DragEvent): boolean {
-  const types = e.dataTransfer?.types;
-  if (!types) return false;
-  for (let i = 0; i < types.length; i++) {
-    if (types[i] === 'Files') return true;
-  }
-  return false;
 }

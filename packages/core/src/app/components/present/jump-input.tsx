@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { hasModifier, isTypingTarget } from '@/lib/keys';
 import { cn } from '@/lib/utils';
 
 const FLUSH_DELAY_MS = 1200;
@@ -45,8 +46,8 @@ export function PresentJumpInput({ pageCount, onJump }: Props) {
     };
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLElement && e.target.matches('input, textarea')) return;
-      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      if (isTypingTarget(e.target)) return;
+      if (hasModifier(e)) return;
 
       if (/^[0-9]$/.test(e.key)) {
         e.preventDefault();

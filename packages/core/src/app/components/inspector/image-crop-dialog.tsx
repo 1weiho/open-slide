@@ -1,5 +1,6 @@
 import { type SyntheticEvent, useEffect, useRef, useState } from 'react';
 import ReactCrop, { type Crop, type PercentCrop } from 'react-image-crop';
+import { round2 } from '@/lib/utils';
 import 'react-image-crop/dist/ReactCrop.css';
 import { Button } from '@/components/ui/button';
 import {
@@ -211,8 +212,4 @@ function roundRect(crop: PercentCrop): ImageCropRect {
 
 function clamp(v: number, lo: number, hi: number) {
   return v < lo ? lo : v > hi ? hi : v;
-}
-
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
 }

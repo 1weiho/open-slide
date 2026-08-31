@@ -3,7 +3,7 @@ import { Fragment, type ReactNode, useEffect, useMemo, useRef, useState } from '
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { format, useLocale } from '@/lib/use-locale';
-import { cn } from '@/lib/utils';
+import { cn, pad2 } from '@/lib/utils';
 import { SlidePageProvider } from '../../lib/page-context';
 import type { SlideModule } from '../../lib/sdk';
 import { loadSlide, slidesByTheme } from '../../lib/slides';
@@ -183,7 +183,7 @@ export function ThemeDetail({ themeId, onBack }: { themeId: string; onBack: () =
           <div className="flex flex-wrap items-baseline gap-3">
             <span className="eyebrow">{t.themes.usedBy}</span>
             {usedBySlideIds.length > 0 ? (
-              <span className="folio">{usedBySlideIds.length.toString().padStart(2, '0')}</span>
+              <span className="folio">{pad2(usedBySlideIds.length)}</span>
             ) : null}
           </div>
           {usedBySlideIds.length === 0 ? (

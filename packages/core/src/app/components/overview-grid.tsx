@@ -1,8 +1,9 @@
 import { ListOrdered, type LucideIcon, Sparkles, X } from 'lucide-react';
 import { type Ref, useEffect, useRef, useState } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { isTypingTarget } from '@/lib/keys';
 import { format, useLocale } from '@/lib/use-locale';
-import { cn } from '@/lib/utils';
+import { cn, pad2 } from '@/lib/utils';
 import type { DesignSystem } from '../lib/design';
 import { SlidePageProvider } from '../lib/page-context';
 import type { Page } from '../lib/sdk';
@@ -60,7 +61,7 @@ export function OverviewGrid({
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLElement && e.target.matches('input, textarea')) return;
+      if (isTypingTarget(e.target)) return;
       const cols = computeCols(gridRef.current);
       if (e.key === 'ArrowRight') {
         e.preventDefault();
@@ -120,7 +121,7 @@ export function OverviewGrid({
         <span className={cn('eyebrow', styles.eyebrow)}>{t.present.overviewEyebrow}</span>
         <div className="flex items-center gap-3">
           <span className={cn('font-mono text-[11px] tabular-nums', styles.eyebrow)}>
-            {(focused + 1).toString().padStart(2, '0')} · {pages.length.toString().padStart(2, '0')}
+            {pad2(focused + 1)} · {pad2(pages.length)}
           </span>
           <button
             type="button"
@@ -262,7 +263,7 @@ function OverviewThumb({
             isFocused || isCurrent ? styles.labelActive : styles.labelMuted,
           )}
         >
-          {(index + 1).toString().padStart(2, '0')}
+          {pad2(index + 1)}
         </span>
         {(hasTransition || hasSteps) && (
           <span className="flex items-center gap-1">

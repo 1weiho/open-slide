@@ -37,12 +37,13 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format, useLocale } from '@/lib/use-locale';
-import { cn } from '@/lib/utils';
+import { cn, pad2 } from '@/lib/utils';
 import type { DesignSystem } from '../lib/design';
 import { SlidePageProvider } from '../lib/page-context';
 import type { Page } from '../lib/sdk';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
 import type { SlideTransition } from '../lib/transition';
+import { prefersReducedMotion } from '../lib/use-prefers-reduced-motion';
 import { SlideCanvas } from './slide-canvas';
 import {
   getCenteredThumbnailScrollTop,
@@ -269,7 +270,7 @@ export function ThumbnailRail({
         <div className="flex items-center justify-between gap-2">
           <span className="eyebrow">{t.thumbnailRail.pages}</span>
           <div className="flex items-center gap-1.5">
-            <span className="folio">{pages.length.toString().padStart(2, '0')}</span>
+            <span className="folio">{pad2(pages.length)}</span>
             {onOverview && (
               <Tooltip>
                 <TooltipTrigger
@@ -510,7 +511,7 @@ function HorizontalVirtualThumbList({
             active ? 'text-brand' : 'text-muted-foreground/70',
           )}
         >
-          {(i + 1).toString().padStart(2, '0')}
+          {pad2(i + 1)}
         </span>
         <div
           className={cn(
@@ -727,7 +728,7 @@ function getInitialVisibleRange(current: number, count: number): VisibleRange {
 }
 
 function scrollBehavior(): ScrollBehavior {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+  return prefersReducedMotion() ? 'auto' : 'smooth';
 }
 
 function ThumbContents({
@@ -773,7 +774,7 @@ function ThumbContents({
             active ? 'text-brand' : 'text-muted-foreground/70',
           )}
         >
-          {(index + 1).toString().padStart(2, '0')}
+          {pad2(index + 1)}
         </span>
         {(hasTransition || hasSteps) && (
           <div className="flex flex-col items-end gap-0.5">
