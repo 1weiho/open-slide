@@ -41,6 +41,48 @@ Your job: read those markers, perform the described edits, and delete the marker
    - The targeted JSX element is the **enclosing** element of the marker — i.e. read upward from the marker line until you reach the unclosed JSX opening tag whose body the marker lives in. That element is the target. (For self-closing elements like `<img />`, the inspector hoists the marker to the nearest non-self-closing ancestor; in that case the comment usually refers to a child of the enclosing element rather than the enclosing element itself — use the `note` text to disambiguate.)
    - Read enough surrounding code (parent element, sibling elements, inline styles) to apply the change faithfully. A comment inside a `<div>` with an inline `background` style usually refers to that element's styling, for example.
    - If the `note` is ambiguous, do the smallest reasonable interpretation and mention the assumption in your summary.
+   - Classify the intent as a **content edit**, **style edit**, **layout edit**, **asset replacement**, or **representation transformation**. Requests such as “這裡改用流程圖呈現”, “改成 sequence diagram”, “這段用架構圖表示”, “把這些步驟視覺化”, “use Mermaid here”, and “show this as a state diagram” are representation transformations, not CSS/style edits.
+
+### Representation transformations
+
+For a representation transformation, the inspector target is a **semantic anchor**, not a strict edit boundary. The requested change may require replacing the target container together with relevant child or sibling JSX.
+
+1. Identify the target from the marker, then read its children, relevant siblings, parent heading, and nearby explanatory text.
+2. Reconstruct the existing factual meaning before choosing a visual representation.
+3. If the user explicitly names a diagram type, honor it unless that type cannot faithfully represent the information.
+4. If the user says only “make this a diagram” or “visualize this,” read `slide-authoring/references/mermaid.md` and infer the most suitable type from the source semantics.
+5. Generate Mermaid DSL using only the existing actors, relationships, steps, states, dependencies, and directions. Shorten labels if needed, but do not invent facts.
+6. Replace the existing representation with `<Mermaid>` and add its `@open-slide/core` import if needed.
+7. Preserve the surrounding page title, layout, and design conventions, then remove the processed marker normally.
+
+Example:
+
+```tsx
+<div>
+  {/* @slide-comment ... "這裡改用流程圖呈現" */}
+  <div>Upload source</div>
+  <div>Parse source</div>
+  <div>Generate slide</div>
+  <div>Render result</div>
+</div>
+```
+
+becomes:
+
+```tsx
+<div>
+  <Mermaid
+    chart={`
+      flowchart LR
+        A[Upload source] --> B[Parse source]
+        B --> C[Generate slide]
+        C --> D[Render result]
+    `}
+  />
+</div>
+```
+
+An explicit “sequence diagram” request uses `sequenceDiagram`; a generic “visualize this” request uses the most faithful inferred type. If no diagram can preserve the available facts, leave the marker and report why instead of fabricating relationships.
 
 4. **Apply edits in reverse line order.**
    - Sort markers by descending `lineIndex` and process one at a time, using the `Edit` tool.

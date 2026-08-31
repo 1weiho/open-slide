@@ -78,6 +78,7 @@ export const meta = { title: 'Hello' };
 import {
   CANVAS_WIDTH,   // 1920
   CANVAS_HEIGHT,  // 1080
+  Mermaid,        // render flow, sequence, state, and other Mermaid diagrams
   MorphElement,   // match or fade objects across pages for morph transitions
   type Page,
   type SlideMeta,
@@ -86,6 +87,15 @@ import {
   type OpenSlideConfig,
 } from '@open-slide/core';
 ```
+
+Render relational or sequential information directly in a TSX page:
+
+```tsx
+<Mermaid chart={`flowchart LR
+  Source --> Transform --> Result`} style={{ width: 1200, height: 650 }} />
+```
+
+Lightbox is enabled by default — click any diagram to expand it near-fullscreen. Pass `lightbox={false}` to disable.
 
 The Vite plugin is exposed under a subpath for advanced setups:
 

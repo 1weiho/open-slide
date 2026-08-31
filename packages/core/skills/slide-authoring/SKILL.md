@@ -1,6 +1,6 @@
 ---
 name: slide-authoring
-description: Technical reference for writing or editing open-slide pages — file contract, 1920×1080 canvas, type scale, layout, palette/visual direction, assets, speaker notes, stepped reveals, page transitions, and morph transitions. Consult this whenever you are about to write or modify any file under `slides/<id>/`, including from inside the `create-slide` or `apply-comments` workflows, or for any ad-hoc slide edit. Triggers on phrases like "edit slide", "tweak this page", "fix the layout", "change the palette", "reveal one by one", "add a transition", "morph transition", "write the speaker notes", "generate the script / talk track", "investigate the slide framework", "how do slides work here".
+description: Technical reference for writing or editing open-slide pages — file contract, 1920×1080 canvas, type scale, layout, palette/visual direction, assets, Mermaid diagrams, speaker notes, stepped reveals, page transitions, and morph transitions. Consult this whenever you are about to write or modify any file under `slides/<id>/`, including from inside the `create-slide` or `apply-comments` workflows, or for any ad-hoc slide edit. Triggers on phrases like "edit slide", "tweak this page", "fix the layout", "change the palette", "diagram", "Mermaid", "reveal one by one", "add a transition", "morph transition", "write the speaker notes", "generate the script / talk track", "investigate the slide framework", "how do slides work here".
 ---
 
 # Authoring open-slide pages
@@ -23,6 +23,7 @@ Each framework primitive has a full reference file under `references/` in this s
 | `design` const + `var(--osd-X)` tokens | writing any new slide (default baseline) | `references/design-system.md` |
 | Assets + `<ImagePlaceholder>` | importing images/videos or leaving a placeholder | `references/assets.md` |
 | Webfonts | loading any non-system font | `references/webfonts.md` |
+| `<Mermaid>` | representing flows, sequences, relationships, states, or dependencies | `references/mermaid.md` |
 | `useSlidePageNumber()` | rendering a page-number footer | `references/page-numbers.md` |
 | `<Steps>` / `<Step>` | staging a page's reveal | `references/steps.md` |
 | `SlideTransition` | declaring any enter/exit animation | `references/transitions.md` |
@@ -266,6 +267,10 @@ When a page genuinely needs a real image **the user has to provide** (product sc
 
 If a footer shows the current page (`03 / 12`), read it from `useSlidePageNumber()` — **never hardcode** `n` / `TOTAL`. See `references/page-numbers.md` for the hook's contract and where it can be called.
 
+## Mermaid diagrams
+
+Use `<Mermaid>` when the source meaning is primarily relational, sequential, state-based, dependency-based, or flow-based—not merely because a diagram would be decorative. Read `references/mermaid.md` before choosing a diagram type or transforming source content; it contains the representation decision guide, semantic-fidelity rules, fixed-canvas layout guidance, and paste-ready examples.
+
 ## Stepped reveals (`<Steps>` / `<Step>`)
 
 Reveal a page one beat at a time: wrap deferred parts in `<Step>`, the group in `<Steps>`; each `→` reveals the next step. Use it when the *order* of ideas is the point — not reflexively on every page. Two rules are load-bearing: `<Step>` must be a **direct child** of `<Steps>` (otherwise it silently renders fully revealed), and a page must still read as complete when jumped to via the overview grid (jumping in shows all steps revealed).
@@ -349,6 +354,7 @@ This applies whenever the *visual element* repeats, not whenever the *data* does
 - [ ] Visually repeated elements (cards, tiles, logo rows) are rendered as explicit `<Component />` instances, not via `array.map` over a data list.
 - [ ] All imported assets exist on disk — slide-local under `slides/<id>/assets/`, or global under `assets/` (imported via `@assets/...`).
 - [ ] Every `<ImagePlaceholder>` corresponds to a real image the user must supply — not decorative filler. If it could be replaced by typography or layout, it should be.
+- [ ] Every `<Mermaid>` represents source relationships, sequences, states, dependencies, or flows faithfully, without invented nodes or links, and has enough fixed-canvas space to remain readable.
 - [ ] If a page uses `<Steps>`/`<Step>`, every `<Step>` is a direct child of a `<Steps>`, and the page still reads as complete when jumped to via the overview grid (entering forward builds up; jumping in shows it fully revealed).
 - [ ] If a `SlideTransition` is declared, every page sits in one family — same duration band (140–280 ms), same easing pair, same out-then-in stagger, magnitude under 12 px / 3%. No six-different-vocabularies decks. When in doubt, omit transitions entirely. (Pages that opt into `morph` may exceed the band to match the morph — see `references/morph.md`.)
 - [ ] If a transition opts into `morph`: every morph `id` is unique per page and stable across the pair, morph geometry is pixel-constant (never measured after mount), no `transform` sits on the morph node, and entrance animations are gated behind `useIsActivePage()`.
@@ -370,4 +376,4 @@ This applies whenever the *visual element* repeats, not whenever the *data* does
 - ❌ Creating `README.md` or other prose files inside the slide folder.
 - ❌ Delivering a speech script as a markdown or text file. The runtime only surfaces the `notes` export — anything else never reaches the presenter view.
 - ❌ Editing `package.json`, `open-slide.config.ts`, or other slides.
-- ❌ Using a primitive without reading its reference file — each `references/*.md` carries the primitive's own anti-pattern list (placeholder misuse, transition vocabulary, `<Step>` nesting, morph geometry).
+- ❌ Using a primitive without reading its reference file — each `references/*.md` carries the primitive's own anti-pattern list (placeholder misuse, Mermaid semantics, transition vocabulary, `<Step>` nesting, morph geometry).
