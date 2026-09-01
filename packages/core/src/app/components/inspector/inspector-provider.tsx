@@ -241,7 +241,7 @@ type InspectorCtx = {
   // close) is what actually writes to disk; `cancelEdits` reverts.
   bufferOps: (line: number, column: number, anchor: HTMLElement, ops: EditOp[]) => void;
   pendingCount: number;
-  commitEdits: () => Promise<void>;
+  commitEdits: () => Promise<boolean>;
   cancelEdits: () => void;
   committing: boolean;
   openCrop: (anchor: HTMLImageElement) => void;
@@ -632,9 +632,9 @@ export function InspectorProvider({
     [applyOpsRaw, snapshotForOps, restoreSnapshot, findAnchor, history, ensureInstanceId],
   );
 
-  const commitEdits = useCallback(async () => {
+  const commitEdits = useCallback(async (): Promise<boolean> => {
     const buckets = pendingRef.current;
-    if (buckets.size === 0) return;
+    if (buckets.size === 0) return false;
     type PendingItem = {
       key: string;
       seq: number;
@@ -725,7 +725,7 @@ export function InspectorProvider({
       pendingRef.current = new Map();
       setPendingCount(0);
       history.clear();
-      return;
+      return false;
     }
     setCommitting(true);
     try {
@@ -742,7 +742,7 @@ export function InspectorProvider({
       }
       if (changed === false && failures.length === 0) {
         toast.error(t.inspector.noOpEdit);
-        return;
+        return false;
       }
       for (let i = 0; i < results.length; i++) {
         const item = pending[i];
@@ -762,10 +762,11 @@ export function InspectorProvider({
         }
       }
       refreshCount();
+      return true;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       toast.error(`${t.inspector.saveFailed} ${msg}`);
-      throw err;
+      return false;
     } finally {
       setCommitting(false);
       history.clear();

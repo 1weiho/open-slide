@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 type SaveCardProps = {
   dirty: boolean;
   committing: boolean;
-  onSave: () => Promise<void> | void;
+  onSave: () => Promise<boolean> | boolean;
   onDiscard: () => void;
   unsavedLabel: React.ReactNode;
   savedLabel?: string;
@@ -50,8 +50,8 @@ export function SaveCard({
   if (!mounted) return null;
 
   const handleSave = async () => {
-    await onSave();
-    setJustSaved(true);
+    const saved = await onSave();
+    if (saved) setJustSaved(true);
   };
 
   const dataAttrs = uiAttr === 'inspector' ? { 'data-inspector-ui': '' } : { 'data-design-ui': '' };

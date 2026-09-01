@@ -17,13 +17,18 @@ export function SaveBar() {
   const dirty = total > 0;
   const committing = insp.committing || design.committing;
 
-  const onSave = async () => {
-    const tasks: Promise<void>[] = [];
+  const onSave = async (): Promise<boolean> => {
+    const tasks: Promise<boolean>[] = [];
     if (inspectorCount > 0) tasks.push(Promise.resolve(insp.commitEdits()));
-    if (designCount > 0) tasks.push(Promise.resolve(design.commit()));
-    // Each provider surfaces its own errors via toast; swallow here so
-    // one failure doesn't reject the combined save.
-    await Promise.all(tasks).catch(() => {});
+    if (designCount > 0)
+      tasks.push(
+        design.commit().then(
+          () => true,
+          () => false,
+        ),
+      );
+    const results = await Promise.all(tasks).catch(() => [false]);
+    return results.some(Boolean);
   };
 
   const onDiscard = () => {
