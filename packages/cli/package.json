@@ -44,13 +44,12 @@
     "access": "public"
   },
   "dependencies": {
+    "@clack/prompts": "^1.7.0",
     "chalk": "^6.0.0",
-    "commander": "^15.0.0",
-    "prompts": "^2.4.2"
+    "commander": "^15.0.0"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
-    "@types/prompts": "^2.4.9",
     "tsdown": "^0.22.14",
     "typescript": "^7.0.2"
   }

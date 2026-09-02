@@ -1,18 +1,10 @@
-import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import * as readline from 'node:readline/promises';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import { Command, Option } from 'commander';
 import { detectSkillsDrift, syncSkills } from './sync.ts';
-
-async function readVersion(): Promise<string> {
-  const here = path.dirname(fileURLToPath(import.meta.url));
-  // dist/cli/bin.js → ../../package.json
-  const pkgPath = path.resolve(here, '..', '..', 'package.json');
-  const raw = await readFile(pkgPath, 'utf8');
-  return (JSON.parse(raw) as { version: string }).version;
-}
+import { glyph, readVersion } from './ui.ts';
 
 export function parsePort(value: string): number {
   const n = Number(value);
@@ -46,27 +38,27 @@ async function runSkillsDriftCheck(skillsDir: string): Promise<void> {
 
   const names = stale.map((d) => d.name).join(', ');
   const interactive = Boolean(process.stdin.isTTY && process.stdout.isTTY);
+  const notice = `${chalk.yellow(glyph.warn)} Built-in skills are out of date: ${chalk.bold(names)}`;
 
   if (!interactive) {
     process.stderr.write(
-      `${chalk.yellow('!')} Skills out of date (${names}). Run \`open-slide sync:skills\` to update.\n`,
+      `\n  ${notice}\n    ${chalk.dim('Run `open-slide sync:skills` to update.')}\n`,
     );
     return;
   }
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   try {
-    const answer = (
-      await rl.question(
-        `${chalk.yellow('!')} Skills out of date: ${chalk.bold(names)}. Sync now? ${chalk.dim('(Y/n) ')}`,
-      )
-    )
+    const answer = (await rl.question(`\n  ${notice}\n    Sync now? ${chalk.dim('(Y/n)')} `))
       .trim()
       .toLowerCase();
     if (answer === '' || answer === 'y' || answer === 'yes') {
+      process.stdout.write('\n');
       await syncSkills(skillsDir);
     } else {
-      process.stdout.write(chalk.dim('Skipped. Run `open-slide sync:skills` later to update.\n'));
+      process.stdout.write(
+        chalk.dim('    Skipped. Run `open-slide sync:skills` later to update.\n'),
+      );
     }
   } finally {
     rl.close();
@@ -88,13 +80,11 @@ function resolveBuiltinSkillsDir(): string {
 }
 
 export async function run(argv: string[]): Promise<void> {
-  const version = await readVersion();
-
   const program = new Command();
   program
     .name('open-slide')
-    .description('Author slides — we handle the Vite/React stack.')
-    .version(version, '-v, --version', 'print version')
+    .description('Author slides in React — open-slide runs the rest.')
+    .version(readVersion(), '-v, --version', 'print version')
     .helpOption('-h, --help', 'show help')
     .showHelpAfterError(chalk.dim('(run `open-slide --help` for usage)'));
 
