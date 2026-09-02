@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { useHistory } from '@/components/history-provider';
 import { Button } from '@/components/ui/button';
 import { type SlideComment, useComments } from '@/lib/inspector/use-comments';
-import { type Edit, type EditOp, useEditor } from '@/lib/inspector/use-editor';
+import { type Edit, type EditOp, NoOpEditError, useEditor } from '@/lib/inspector/use-editor';
 import { isTypingTarget } from '@/lib/keys';
 import { textDiff } from '@/lib/text-diff';
 import { useLocale } from '@/lib/use-locale';
@@ -748,7 +748,12 @@ export function InspectorProvider({
     }
     setCommitting(true);
     try {
-      const results = await applyEdits(pending.map((p) => p.edit));
+      const { results, changed } = await applyEdits(pending.map((p) => p.edit));
+      // Batch route reports per-edit ok even when the file write was
+      // skipped — match the single-edit NoOp path and keep pending.
+      if (!changed) {
+        throw new NoOpEditError();
+      }
       const failures: string[] = [];
       for (let i = 0; i < results.length; i++) {
         const item = pending[i];
@@ -771,6 +776,7 @@ export function InspectorProvider({
         }
       }
       refreshCount();
+      history.clear();
       if (failures.length > 0) toast.error(`${t.inspector.saveFailed} ${failures.join('; ')}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -778,7 +784,6 @@ export function InspectorProvider({
       throw err;
     } finally {
       setCommitting(false);
-      history.clear();
     }
   }, [applyEdits, history, refreshCount, t]);
 
