@@ -3,6 +3,7 @@ import * as readline from 'node:readline/promises';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import { Command, Option } from 'commander';
+import { assertViteResolvesToCore } from './preflight.ts';
 import { detectSkillsDrift, syncSkills } from './sync.ts';
 import { glyph, readVersion } from './ui.ts';
 
@@ -99,6 +100,7 @@ export async function run(argv: string[]): Promise<void> {
       if (flags.skillsCheck !== false) {
         await runSkillsDriftCheck(resolveBuiltinSkillsDir());
       }
+      assertViteResolvesToCore();
       const { dev } = await import('./dev.ts');
       await dev(flags);
     });
@@ -108,6 +110,7 @@ export async function run(argv: string[]): Promise<void> {
     .description('Build a static site')
     .option('--out-dir <dir>', 'output directory (defaults to `dist`)')
     .action(async (flags: BuildFlags) => {
+      assertViteResolvesToCore();
       const { build } = await import('./build.ts');
       await build(flags);
     });
@@ -119,6 +122,7 @@ export async function run(argv: string[]): Promise<void> {
     .addOption(new Option('--host [host]', 'expose on the network (optional host)'))
     .option('--open', 'open the browser on start')
     .action(async (flags: ServerFlags) => {
+      assertViteResolvesToCore();
       const { preview } = await import('./preview.ts');
       await preview(flags);
     });

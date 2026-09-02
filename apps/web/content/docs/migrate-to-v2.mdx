@@ -6,7 +6,7 @@ description: Upgrade a v1 workspace to @open-slide/core v2.
 v2 moves the whole toolchain forward: the runtime now ships **React 19** and
 builds with **Vite 8** (Rolldown-powered). Slides you wrote for v1 need no
 changes — the migration is confined to `package.json`, your Node version, and
-(optionally) your deploy config.
+your deploy config.
 
 ## Requirements
 
@@ -46,12 +46,24 @@ copies would crash the production bundle with React error #525). Bump anyway:
 your editor otherwise typechecks slides against React 18 types while the
 runtime is React 19.
 
-## Drop the `vite` devDependency
+## Remove the `vite` devDependency
 
 v1 scaffolds carried `"vite"` in `devDependencies` purely so hosting
-providers would detect a Vite project. v2 scaffolds drop it and declare the
-build settings explicitly instead. To do the same in an existing workspace,
-remove `vite` from `devDependencies` and mirror the new deploy configs:
+providers would detect a Vite project. In v2 it has to go. Core depends on
+Vite 8, and a stale Vite 5 entry makes package managers that hoist without
+checking peer ranges (bun, yarn classic) place core's Vite plugins next to the
+wrong copy, so `open-slide dev`, `open-slide build`, and `open-slide preview` fail with:
+
+```
+Package subpath './internal' is not defined by "exports" in .../node_modules/vite/package.json
+```
+
+npm and pnpm happen to nest the plugins correctly, but don't rely on it.
+`open-slide` checks for a mismatched `vite` on startup and refuses to run
+until it is removed, pointing back to this page.
+
+Remove `vite` from `devDependencies`, reinstall, and declare the build
+settings explicitly so your host still knows how to build the project:
 
 ```json title="vercel.json"
 {
@@ -71,10 +83,6 @@ remove `vite` from `devDependencies` and mirror the new deploy configs:
   to = "/index.html"
   status = 200
 ```
-
-Keeping the old `vite` devDependency also works — it's unused at runtime
-(core bundles its own Vite 8) — but the explicit config is one less stale
-dependency in your lockfile.
 
 ## Slide code
 
