@@ -8,5 +8,13 @@
     "@open-slide/core": "1.19.1",
     "core-e2e-fixture": "0.0.0"
   },
-  "changesets": []
+  "changesets": [
+    "core-cleanup",
+    "inspector-editing-upgrades",
+    "skill-speaker-notes",
+    "slide-back-browser-history",
+    "ui-redesign",
+    "v2-template",
+    "v2-toolchain"
+  ]
 }

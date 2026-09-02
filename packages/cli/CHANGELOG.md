@@ -1,5 +1,15 @@
 # @open-slide/cli
 
+## 2.0.0-beta.0
+
+### Major Changes
+
+- [#420](https://github.com/1weiho/open-slide/pull/420) [`5ed5ea0`](https://github.com/1weiho/open-slide/commit/5ed5ea02758ebc1cacbd15187d6fe470d03cffdb) Thanks [@1weiho](https://github.com/1weiho)! - Scaffold workspaces on React 19 without a `vite` devDependency — `vercel.json` and `netlify.toml` now declare the build command and output directory instead of relying on framework detection.
+
+### Patch Changes
+
+- [#426](https://github.com/1weiho/open-slide/pull/426) [`ba5af02`](https://github.com/1weiho/open-slide/commit/ba5af021b603805ad542939156ff2caa58c6d6bf) Thanks [@1weiho](https://github.com/1weiho)! - Teach the authoring skills and agent guide to write speech scripts into the built-in `notes` export instead of separate markdown files.
+
 ## 1.4.1
 
 ### Patch Changes

@@ -1,5 +1,25 @@
 # @open-slide/core
 
+## 2.0.0-beta.0
+
+### Major Changes
+
+- [#420](https://github.com/1weiho/open-slide/pull/420) [`5ed5ea0`](https://github.com/1weiho/open-slide/commit/5ed5ea02758ebc1cacbd15187d6fe470d03cffdb) Thanks [@1weiho](https://github.com/1weiho)! - Upgrade the toolchain to React 19, Vite 8, and TypeScript 7, dedupe `react`/`react-dom` so workspaces still on React 18 resolve a single copy, and require Node.js 20.19+. See the v1 → v2 migration guide at https://open-slide.dev/docs/migrate-to-v2.
+
+### Minor Changes
+
+- [#424](https://github.com/1weiho/open-slide/pull/424) [`49a8a12`](https://github.com/1weiho/open-slide/commit/49a8a12a70653895afcbd221ba7bd2ef2a7fdb88) Thanks [@1weiho](https://github.com/1weiho)! - Click any text element in the slide view to edit it inline, with a floating toolbar for font size, bold, italic, text color, and alignment.
+
+### Patch Changes
+
+- [#416](https://github.com/1weiho/open-slide/pull/416) [`663c957`](https://github.com/1weiho/open-slide/commit/663c9578aa00c1107a1b697f79d96ec0a6d471d6) Thanks [@1weiho](https://github.com/1weiho)! - Clean up the runtime: drop unused theme tokens, locale keys, and dead code, consolidate duplicated internal helpers, serve the bundled Geist webfont in dev when the package resolves outside the project directory, and write a valid `DesignSystem` import when saving a design to a slide whose `@open-slide/core` import is type-only.
+
+- [#426](https://github.com/1weiho/open-slide/pull/426) [`ba5af02`](https://github.com/1weiho/open-slide/commit/ba5af021b603805ad542939156ff2caa58c6d6bf) Thanks [@1weiho](https://github.com/1weiho)! - Teach the authoring skills and agent guide to write speech scripts into the built-in `notes` export instead of separate markdown files.
+
+- [#431](https://github.com/1weiho/open-slide/pull/431) [`90bb861`](https://github.com/1weiho/open-slide/commit/90bb86172f7e390c29bbf2f33067c7b05c646b70) Thanks [@benben6515](https://github.com/benben6515)! - Slide toolbar back button returns to the previous browser location and preserves home query state like folder filters.
+
+- [#417](https://github.com/1weiho/open-slide/pull/417) [`329d83c`](https://github.com/1weiho/open-slide/commit/329d83ca43a2f5363788b2e14e8c437d2ec48a1f) Thanks [@1weiho](https://github.com/1weiho)! - Redesign the viewer chrome: an inset shell with elevated content cards replaces structural borders, the sidebar gains a brand mark, command search field, and footer controls, system views use line icons, page headers are compact, micro-interactions are refined, and the slide card actions menu opens when clicked.
+
 ## 1.19.1
 
 ### Patch Changes
