@@ -52,7 +52,7 @@ v1 scaffolds carried `"vite"` in `devDependencies` purely so hosting
 providers would detect a Vite project. In v2 it has to go. Core depends on
 Vite 8, and a stale Vite 5 entry makes package managers that hoist without
 checking peer ranges (bun, yarn classic) place core's Vite plugins next to the
-wrong copy, so `open-slide dev` and `open-slide build` fail with:
+wrong copy, so `open-slide dev`, `open-slide build`, and `open-slide preview` fail with:
 
 ```
 Package subpath './internal' is not defined by "exports" in .../node_modules/vite/package.json
