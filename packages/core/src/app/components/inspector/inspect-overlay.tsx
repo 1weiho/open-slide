@@ -125,7 +125,7 @@ function Frame({
   editing = false,
 }: {
   anchor: HTMLElement | null;
-  overlayRef: React.RefObject<HTMLDivElement>;
+  overlayRef: React.RefObject<HTMLDivElement | null>;
   variant: FrameVariant;
   showImageActions?: boolean;
   editing?: boolean;
