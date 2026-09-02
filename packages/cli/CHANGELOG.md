@@ -1,5 +1,11 @@
 # @open-slide/cli
 
+## 2.0.0-beta.1
+
+### Patch Changes
+
+- [#437](https://github.com/1weiho/open-slide/pull/437) [`edbe17f`](https://github.com/1weiho/open-slide/commit/edbe17ff1bbad21d5bab12a2526cbd585a75f98c) Thanks [@1weiho](https://github.com/1weiho)! - Redesign the `init` flow with guided prompts, a dependency-install spinner, and a next-steps card.
+
 ## 2.0.0-beta.0
 
 ### Major Changes

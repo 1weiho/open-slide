@@ -9,12 +9,15 @@
     "core-e2e-fixture": "0.0.0"
   },
   "changesets": [
+    "cli-init-prompts",
     "core-cleanup",
+    "core-cli-output",
     "inspector-editing-upgrades",
     "skill-speaker-notes",
     "slide-back-browser-history",
     "ui-redesign",
     "v2-template",
-    "v2-toolchain"
+    "v2-toolchain",
+    "vite-preflight"
   ]
 }

@@ -1,5 +1,13 @@
 # @open-slide/core
 
+## 2.0.0-beta.1
+
+### Patch Changes
+
+- [#437](https://github.com/1weiho/open-slide/pull/437) [`edbe17f`](https://github.com/1weiho/open-slide/commit/edbe17ff1bbad21d5bab12a2526cbd585a75f98c) Thanks [@1weiho](https://github.com/1weiho)! - Restyle `dev`, `build`, and `preview` output with an open-slide header and URL block, and stop surfacing Vite branding in server logs.
+
+- [#436](https://github.com/1weiho/open-slide/pull/436) [`654bd97`](https://github.com/1weiho/open-slide/commit/654bd97b906f5b69224ded3c4adbed4d0c3f0d22) Thanks [@1weiho](https://github.com/1weiho)! - Refuse to start when a stale `vite` devDependency shadows the Vite copy core depends on, and point at the v1 → v2 migration guide.
+
 ## 2.0.0-beta.0
 
 ### Major Changes
