@@ -1,0 +1,12 @@
+{
+  "mode": "pre",
+  "tag": "beta",
+  "initialVersions": {
+    "demo": "0.0.0",
+    "web": "0.0.0",
+    "@open-slide/cli": "1.4.1",
+    "@open-slide/core": "1.19.1",
+    "core-e2e-fixture": "0.0.0"
+  },
+  "changesets": []
+}
