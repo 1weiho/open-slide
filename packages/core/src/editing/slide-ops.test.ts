@@ -119,6 +119,9 @@ describe('resolveSlideSourceFile', () => {
     expect(resolveSlideSourceFile(root, 'cover', 'components/Card.tsx')).toBe(
       path.resolve(root, 'cover', 'components', 'Card.tsx'),
     );
+    expect(resolveSlideSourceFile(root, 'cover', 'components/Card.preview.tsx')).toBe(
+      path.resolve(root, 'cover', 'components', 'Card.preview.tsx'),
+    );
   });
 
   it('rejects traversal, other slide ids, and non-tsx names', () => {

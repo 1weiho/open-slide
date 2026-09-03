@@ -4,7 +4,8 @@ export type SlideLoc = {
   column: number;
 };
 
-const SOURCE_REL_RE = /^(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.tsx$/;
+const SOURCE_REL_RE =
+  /^(?:[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*\/)*[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*\.tsx$/;
 
 export function formatSlideLoc(loc: SlideLoc): string {
   const { file, line, column } = loc;
@@ -28,4 +29,8 @@ export function parseSlideLoc(raw: string): SlideLoc | null {
 
 export function slideLocSelector(loc: SlideLoc): string {
   return `[data-slide-loc="${formatSlideLoc(loc)}"]`;
+}
+
+export function sameSlideLoc(a: SlideLoc, b: SlideLoc): boolean {
+  return a.line === b.line && a.column === b.column && (a.file ?? null) === (b.file ?? null);
 }

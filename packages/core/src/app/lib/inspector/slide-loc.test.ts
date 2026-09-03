@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatSlideLoc, parseSlideLoc, slideLocSelector } from './slide-loc.ts';
+import { formatSlideLoc, parseSlideLoc, sameSlideLoc, slideLocSelector } from './slide-loc.ts';
 
 describe('formatSlideLoc', () => {
   it('keeps entry locations as line:column', () => {
@@ -11,6 +11,9 @@ describe('formatSlideLoc', () => {
     expect(formatSlideLoc({ file: 'pages.tsx', line: 12, column: 4 })).toBe('pages.tsx:12:4');
     expect(formatSlideLoc({ file: 'components/Card.tsx', line: 3, column: 4 })).toBe(
       'components/Card.tsx:3:4',
+    );
+    expect(formatSlideLoc({ file: 'components/Card.preview.tsx', line: 3, column: 4 })).toBe(
+      'components/Card.preview.tsx:3:4',
     );
   });
 });
@@ -28,6 +31,11 @@ describe('parseSlideLoc', () => {
       line: 3,
       column: 4,
     });
+    expect(parseSlideLoc('components/Card.preview.tsx:3:4')).toEqual({
+      file: 'components/Card.preview.tsx',
+      line: 3,
+      column: 4,
+    });
   });
 
   it('treats an explicit index.tsx prefix as the entry file', () => {
@@ -38,6 +46,7 @@ describe('parseSlideLoc', () => {
     expect(parseSlideLoc('../other/index.tsx:1:0')).toBeNull();
     expect(parseSlideLoc('/tmp/x.tsx:1:0')).toBeNull();
     expect(parseSlideLoc('pages.ts:1:0')).toBeNull();
+    expect(parseSlideLoc('Card.preview.ts:1:0')).toBeNull();
     expect(parseSlideLoc('not-a-loc')).toBeNull();
     expect(parseSlideLoc('')).toBeNull();
     expect(parseSlideLoc('0:0')).toBeNull();
@@ -50,5 +59,14 @@ describe('slideLocSelector', () => {
     expect(slideLocSelector({ file: 'pages.tsx', line: 2, column: 2 })).toBe(
       '[data-slide-loc="pages.tsx:2:2"]',
     );
+  });
+});
+
+describe('sameSlideLoc', () => {
+  it('requires file, line, and column', () => {
+    const loc = { file: 'pages.tsx', line: 12, column: 4 };
+    expect(sameSlideLoc(loc, loc)).toBe(true);
+    expect(sameSlideLoc(loc, { ...loc, column: 8 })).toBe(false);
+    expect(sameSlideLoc(loc, { ...loc, file: 'other.tsx' })).toBe(false);
   });
 });

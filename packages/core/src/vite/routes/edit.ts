@@ -103,6 +103,7 @@ export function registerEditRoutes(server: ViteDevServer, ctx: ApiContext): void
         const groups = new Map<string, Array<{ index: number; edit: BatchEdit }>>();
         for (let i = 0; i < body.edits.length; i++) {
           const edit = body.edits[i];
+          if (edit == null || typeof edit !== 'object') continue;
           if (!edit.line || edit.line < 1 || !Array.isArray(edit.ops)) continue;
           if (edit.file !== undefined && typeof edit.file !== 'string') {
             results[i] = { ok: false, error: 'invalid file' };

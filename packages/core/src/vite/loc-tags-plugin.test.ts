@@ -53,6 +53,13 @@ describe('injectLocTags', () => {
     expect(out).toContain('<div data-slide-loc="components/Card.tsx:2:2">hello</div>');
   });
 
+  it('prefixes dotted sibling filenames', () => {
+    const src = ['export default [() => (', '  <div>hello</div>', ')];', ''].join('\n');
+    const out = injectLocTags(src, 'components/Card.preview.tsx');
+    if (out === null) throw new Error('expected transform');
+    expect(out).toContain('<div data-slide-loc="components/Card.preview.tsx:2:2">hello</div>');
+  });
+
   it('skips capitalized component invocations', () => {
     const src = ['export default [() => (', '  <MyComp>hi</MyComp>', ')];', ''].join('\n');
     const out = injectLocTags(src);
@@ -168,6 +175,12 @@ describe('locTagsPlugin', () => {
     const out = transformWithLocTags('/repo/slides/cover/components/Card.tsx');
     if (out === null) throw new Error('expected tagged transform result');
     expect(out.code).toContain('data-slide-loc="components/Card.tsx:');
+  });
+
+  it('tags dotted sibling filenames with a path relative to the slide folder', () => {
+    const out = transformWithLocTags('/repo/slides/cover/components/Card.preview.tsx');
+    if (out === null) throw new Error('expected tagged transform result');
+    expect(out.code).toContain('data-slide-loc="components/Card.preview.tsx:');
   });
 
   it('keeps index.tsx tags as a bare line:column', () => {

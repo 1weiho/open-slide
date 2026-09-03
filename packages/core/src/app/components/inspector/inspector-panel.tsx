@@ -30,7 +30,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { findSlideSource } from '@/lib/inspector/fiber';
 import { hasOnlyInlineTextChildren } from '@/lib/inspector/inline-text';
-import { slideLocSelector } from '@/lib/inspector/slide-loc';
+import { sameSlideLoc, slideLocSelector } from '@/lib/inspector/slide-loc';
 import type { EditOp } from '@/lib/inspector/use-editor';
 import { useAgentSocketConnected } from '@/lib/use-agent-socket';
 import { useLocale } from '@/lib/use-locale';
@@ -67,12 +67,7 @@ type RangeStylePreview = {
 function resolveSelectedTarget(target: SelectedTarget, slideId: string): SelectedTarget {
   const hit = findSlideSource(target.anchor, slideId, { hostOnly: true });
   if (!hit) return target;
-  if (
-    hit.line === target.line &&
-    hit.column === target.column &&
-    (hit.file ?? null) === (target.file ?? null) &&
-    hit.anchor === target.anchor
-  ) {
+  if (sameSlideLoc(hit, target) && hit.anchor === target.anchor) {
     return target;
   }
   return { file: hit.file, line: hit.line, column: hit.column, anchor: hit.anchor };
@@ -1102,7 +1097,7 @@ function findElementByLine(
   const candidates = root.querySelectorAll<HTMLElement>('*');
   for (const el of candidates) {
     const hit = findSlideSource(el, slideId, { hostOnly: true });
-    if (hit && hit.line === line && (hit.file ?? null) === (file ?? null)) return hit.anchor;
+    if (hit && sameSlideLoc(hit, { file: file ?? null, line, column })) return hit.anchor;
   }
   return null;
 }
