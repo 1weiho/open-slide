@@ -33,6 +33,19 @@ describe('validateAssetName', () => {
     expect(validateAssetName('foo?.png')).toBeNull();
   });
 
+  it('rejects names Windows cannot create safely', () => {
+    expect(validateAssetName('CON.png')).toBeNull();
+    expect(validateAssetName('aux.txt')).toBeNull();
+    expect(validateAssetName('COM1.svg')).toBeNull();
+    expect(validateAssetName('COM¹.svg')).toBeNull();
+    expect(validateAssetName('LPT².txt')).toBeNull();
+    expect(validateAssetName('LPT9.jpg')).toBeNull();
+    expect(validateAssetName('image. .png')).toBe('image. .png');
+    expect(validateAssetName('image.png.')).toBeNull();
+    expect(validateAssetName(' image.png')).toBeNull();
+    expect(validateAssetName('image.png ')).toBeNull();
+  });
+
   it('rejects empty / non-string / overlong names', () => {
     expect(validateAssetName('')).toBeNull();
     expect(validateAssetName(null)).toBeNull();
