@@ -2,4 +2,4 @@
 "@open-slide/core": patch
 ---
 
-Parse dotted sibling names like `Card.preview.tsx` in `data-slide-loc` instead of dropping the tag.
+Keep inspector loc tags on sibling files with dotted names such as `Card.preview.tsx`.

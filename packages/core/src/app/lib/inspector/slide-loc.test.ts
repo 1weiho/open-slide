@@ -67,6 +67,7 @@ describe('sameSlideLoc', () => {
     const loc = { file: 'pages.tsx', line: 12, column: 4 };
     expect(sameSlideLoc(loc, loc)).toBe(true);
     expect(sameSlideLoc(loc, { ...loc, column: 8 })).toBe(false);
+    expect(sameSlideLoc(loc, { ...loc, line: 13 })).toBe(false);
     expect(sameSlideLoc(loc, { ...loc, file: 'other.tsx' })).toBe(false);
   });
 });
