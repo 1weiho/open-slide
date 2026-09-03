@@ -286,16 +286,24 @@ function ActiveInlineEditor({
     (key: string, value: string | null) => {
       if (!anchor.isConnected) return;
       if (sel && sel.end > sel.start && RANGE_STYLE_KEYS.has(key)) {
-        bufferOps(target.line, target.column, anchor, [
-          { kind: 'set-text-range-style', start: sel.start, end: sel.end, key, value },
-        ]);
+        bufferOps(
+          target.line,
+          target.column,
+          anchor,
+          [{ kind: 'set-text-range-style', start: sel.start, end: sel.end, key, value }],
+          target.file,
+        );
         return;
       }
-      bufferOps(target.line, target.column, anchor, [
-        { kind: 'set-style', key, value, prevText: readEditableText(anchor) },
-      ]);
+      bufferOps(
+        target.line,
+        target.column,
+        anchor,
+        [{ kind: 'set-style', key, value, prevText: readEditableText(anchor) }],
+        target.file,
+      );
     },
-    [anchor, sel, target.line, target.column, bufferOps],
+    [anchor, sel, target.line, target.column, target.file, bufferOps],
   );
 
   const toggleBold = useCallback(() => {

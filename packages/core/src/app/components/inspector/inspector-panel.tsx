@@ -152,7 +152,7 @@ export function InspectorPanel() {
       if (!selected) return;
       const target = resolveSelectedTarget(selected, slideId);
       if (target !== selected) setSelected(target);
-      bufferOps(target.line, target.column, target.anchor, ops);
+      bufferOps(target.line, target.column, target.anchor, ops, target.file);
       if (target.anchor.isConnected) setSnapshot(readSnapshot(target.anchor));
     },
     [selected, setSelected, slideId, bufferOps],
@@ -213,6 +213,7 @@ export function InspectorPanel() {
           value: op.value,
           prevText: pinSnapshot.text ?? undefined,
         })),
+        target.file,
       );
       setRangeStylePreview((current) => ({
         anchor: target.anchor,
@@ -241,6 +242,7 @@ export function InspectorPanel() {
         target.column,
         target.anchor,
         styleOps.map((op) => ({ ...op, prevText: pinSnapshot.text ?? undefined })),
+        target.file,
       );
       if (target.anchor.isConnected) setSnapshot(readSnapshot(target.anchor));
       return;
