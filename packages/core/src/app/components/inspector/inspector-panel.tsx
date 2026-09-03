@@ -30,6 +30,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { findSlideSource } from '@/lib/inspector/fiber';
 import { hasOnlyInlineTextChildren } from '@/lib/inspector/inline-text';
+import { slideLocSelector } from '@/lib/inspector/slide-loc';
 import type { EditOp } from '@/lib/inspector/use-editor';
 import { useAgentSocketConnected } from '@/lib/use-agent-socket';
 import { useLocale } from '@/lib/use-locale';
@@ -66,10 +67,15 @@ type RangeStylePreview = {
 function resolveSelectedTarget(target: SelectedTarget, slideId: string): SelectedTarget {
   const hit = findSlideSource(target.anchor, slideId, { hostOnly: true });
   if (!hit) return target;
-  if (hit.line === target.line && hit.column === target.column && hit.anchor === target.anchor) {
+  if (
+    hit.line === target.line &&
+    hit.column === target.column &&
+    (hit.file ?? null) === (target.file ?? null) &&
+    hit.anchor === target.anchor
+  ) {
     return target;
   }
-  return { line: hit.line, column: hit.column, anchor: hit.anchor };
+  return { file: hit.file, line: hit.line, column: hit.column, anchor: hit.anchor };
 }
 
 export function InspectorPanel() {
@@ -106,7 +112,7 @@ export function InspectorPanel() {
     }
     let anchor = selected.anchor;
     if (!anchor.isConnected) {
-      const next = findElementByLine(slideId, selected.line, selected.column);
+      const next = findElementByLine(slideId, selected.line, selected.column, selected.file);
       if (next) {
         anchor = next;
         setSelected({ ...selected, anchor: next });
@@ -333,6 +339,7 @@ export function InspectorPanel() {
               hint={pinSnapshot.placeholder.hint}
               line={pinSelected.line}
               column={pinSelected.column}
+              file={pinSelected.file}
               applyEdit={applyEdit}
             />
           </Section>
@@ -795,13 +802,15 @@ function PlaceholderField({
   hint,
   line,
   column,
+  file,
   applyEdit,
 }: {
   slideId: string;
   hint: string;
   line: number;
   column: number;
-  applyEdit: (line: number, column: number, ops: EditOp[]) => Promise<void>;
+  file?: string | null;
+  applyEdit: (line: number, column: number, ops: EditOp[], file?: string | null) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -833,12 +842,17 @@ function PlaceholderField({
             try {
               const assetPath =
                 scope === 'global' ? `@assets/${asset.name}` : `./assets/${asset.name}`;
-              await applyEdit(line, column, [
-                {
-                  kind: 'replace-placeholder-with-image',
-                  assetPath,
-                },
-              ]);
+              await applyEdit(
+                line,
+                column,
+                [
+                  {
+                    kind: 'replace-placeholder-with-image',
+                    assetPath,
+                  },
+                ],
+                file,
+              );
             } finally {
               setSubmitting(false);
             }
@@ -1071,15 +1085,22 @@ function parseLetterSpacing(value: string): number {
   return Number.isFinite(n) ? round2(n) : 0;
 }
 
-function findElementByLine(slideId: string, line: number, column: number): HTMLElement | null {
+function findElementByLine(
+  slideId: string,
+  line: number,
+  column: number,
+  file?: string | null,
+): HTMLElement | null {
   const root = document.querySelector('[data-inspector-root]');
   if (!root) return null;
-  const tagged = root.querySelector<HTMLElement>(`[data-slide-loc="${line}:${column}"]`);
+  const tagged = root.querySelector<HTMLElement>(
+    slideLocSelector({ file: file ?? null, line, column }),
+  );
   if (tagged) return tagged;
   const candidates = root.querySelectorAll<HTMLElement>('*');
   for (const el of candidates) {
     const hit = findSlideSource(el, slideId, { hostOnly: true });
-    if (hit && hit.line === line) return hit.anchor;
+    if (hit && hit.line === line && (hit.file ?? null) === (file ?? null)) return hit.anchor;
   }
   return null;
 }

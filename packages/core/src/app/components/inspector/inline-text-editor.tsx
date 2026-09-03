@@ -24,11 +24,7 @@ const RANGE_STYLE_KEYS = new Set(['fontSize', 'fontWeight', 'fontStyle', 'color'
 const TOOLBAR_GAP = 8;
 const TOOLBAR_HEIGHT = 36;
 
-function pickEditableAnchor(
-  x: number,
-  y: number,
-  slideId: string,
-): { line: number; column: number; anchor: HTMLElement } | null {
+function pickEditableAnchor(x: number, y: number, slideId: string) {
   const el = pickInspectorTarget(pickElement(x, y));
   if (!el) return null;
   const hit = findSlideSource(el, slideId, { hostOnly: true });
@@ -58,6 +54,7 @@ export function InlineEditLayer() {
       e.preventDefault();
       e.stopPropagation();
       startInlineEdit({
+        file: hit.file,
         line: hit.line,
         column: hit.column,
         anchor: hit.anchor,
@@ -81,6 +78,7 @@ export function InlineEditLayer() {
       e.preventDefault();
       e.stopPropagation();
       startInlineEdit({
+        file: hit.file,
         line: hit.line,
         column: hit.column,
         anchor: hit.anchor,
@@ -105,6 +103,7 @@ export function InlineEditLayer() {
         if (hit) {
           e.preventDefault();
           startInlineEdit({
+            file: hit.file,
             line: hit.line,
             column: hit.column,
             anchor: hit.anchor,
@@ -274,10 +273,14 @@ function ActiveInlineEditor({
 
   const commit = useCallback(() => {
     if (!anchor.isConnected) return;
-    bufferOps(target.line, target.column, anchor, [
-      { kind: 'set-text', value: readEditableText(anchor) },
-    ]);
-  }, [anchor, target.line, target.column, bufferOps]);
+    bufferOps(
+      target.line,
+      target.column,
+      anchor,
+      [{ kind: 'set-text', value: readEditableText(anchor) }],
+      target.file,
+    );
+  }, [anchor, target.line, target.column, target.file, bufferOps]);
 
   const applyTextStyle = useCallback(
     (key: string, value: string | null) => {

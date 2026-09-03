@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import type { ViteDevServer } from 'vite';
 import { applyEdit, type EditOp } from '../../editing/edit-ops.ts';
 import { applyRevertAsset } from '../../editing/revert-asset.ts';
+import { resolveSlideSourceFile } from '../../editing/slide-ops.ts';
 import { validateMutationRequest } from '../../http/request-guard.ts';
 import {
   type ApiContext,
@@ -11,21 +12,28 @@ import {
   resolveSlideEntryPath,
 } from './context.ts';
 
-// POST /__edit                applyEdit({ slideId, line, column, ops })
+// POST /__edit                applyEdit({ slideId, file?, line, column, ops })
 // POST /__edit/revert-asset   applyRevertAsset({ slideId, assetPath })
-// POST /__edit/batch          applyEdit × N — single FS write per request
+// POST /__edit/batch          applyEdit x N, one FS write per source file
 
 type EditBody = {
   slideId?: string;
+  file?: string;
   line?: number;
   column?: number;
   ops?: EditOp[];
 };
 
+type BatchEdit = { file?: string; line?: number; column?: number; ops?: EditOp[] };
+
 type EditBatchBody = {
   slideId?: string;
-  edits?: Array<{ line?: number; column?: number; ops?: EditOp[] }>;
+  edits?: BatchEdit[];
 };
+
+function resolveEditFile(ctx: ApiContext, slideId: string, rel?: string): string | null {
+  return resolveSlideSourceFile(ctx.slidesRoot, slideId, rel);
+}
 
 export function registerEditRoutes(server: ViteDevServer, ctx: ApiContext): void {
   server.middlewares.use('/__edit', async (req, res, next) => {
@@ -39,8 +47,11 @@ export function registerEditRoutes(server: ViteDevServer, ctx: ApiContext): void
       if (url.pathname === '/') {
         const body = (await readBody(req)) as EditBody;
         const slideId = body.slideId ?? '';
-        const file = resolveSlideEntryPath(ctx, slideId);
-        if (!file) return json(res, 400, { error: 'invalid slideId' });
+        if (body.file !== undefined && typeof body.file !== 'string') {
+          return json(res, 400, { error: 'invalid file' });
+        }
+        const file = resolveEditFile(ctx, slideId, body.file);
+        if (!file) return json(res, 400, { error: body.file ? 'invalid file' : 'invalid slideId' });
         if (!body.line || body.line < 1) return json(res, 400, { error: 'invalid line' });
         if (!Array.isArray(body.ops)) return json(res, 400, { error: 'missing ops' });
 
@@ -83,31 +94,60 @@ export function registerEditRoutes(server: ViteDevServer, ctx: ApiContext): void
       if (url.pathname === '/batch') {
         const body = (await readBody(req)) as EditBatchBody;
         const slideId = body.slideId ?? '';
-        const file = resolveSlideEntryPath(ctx, slideId);
-        if (!file) return json(res, 400, { error: 'invalid slideId' });
         if (!Array.isArray(body.edits)) return json(res, 400, { error: 'missing edits' });
 
-        const source = await readSlideSource(file);
-        if (source === null) return json(res, 404, { error: 'slide not found' });
-
-        let next = source;
-        const original = source;
-        const results: Array<{ ok: boolean; error?: string }> = [];
-        for (const edit of body.edits) {
-          if (!edit.line || edit.line < 1 || !Array.isArray(edit.ops)) {
-            results.push({ ok: false, error: 'invalid edit' });
+        const results: Array<{ ok: boolean; error?: string }> = Array.from(
+          { length: body.edits.length },
+          () => ({ ok: false, error: 'invalid edit' }),
+        );
+        const groups = new Map<string, Array<{ index: number; edit: BatchEdit }>>();
+        for (let i = 0; i < body.edits.length; i++) {
+          const edit = body.edits[i];
+          if (!edit.line || edit.line < 1 || !Array.isArray(edit.ops)) continue;
+          if (edit.file !== undefined && typeof edit.file !== 'string') {
+            results[i] = { ok: false, error: 'invalid file' };
             continue;
           }
-          const r = applyEdit(next, edit.line, edit.column ?? 0, edit.ops);
-          if (r.ok) {
-            next = r.source;
-            results.push({ ok: true });
-          } else {
-            results.push({ ok: false, error: r.error });
+          const abs = resolveEditFile(ctx, slideId, edit.file);
+          if (!abs) {
+            results[i] = { ok: false, error: edit.file ? 'invalid file' : 'invalid slideId' };
+            continue;
+          }
+          const group = groups.get(abs);
+          if (group) group.push({ index: i, edit });
+          else groups.set(abs, [{ index: i, edit }]);
+        }
+
+        if (groups.size === 0) {
+          const slideOk = resolveEditFile(ctx, slideId);
+          if (!slideOk) return json(res, 400, { error: 'invalid slideId' });
+          return json(res, 200, { ok: true, changed: false, results });
+        }
+
+        let changed = false;
+        for (const [file, group] of groups) {
+          const source = await readSlideSource(file);
+          if (source === null) {
+            for (const { index } of group) {
+              results[index] = { ok: false, error: 'slide not found' };
+            }
+            continue;
+          }
+          let next = source;
+          for (const { index, edit } of group) {
+            const r = applyEdit(next, edit.line as number, edit.column ?? 0, edit.ops as EditOp[]);
+            if (r.ok) {
+              next = r.source;
+              results[index] = { ok: true };
+            } else {
+              results[index] = { ok: false, error: r.error };
+            }
+          }
+          if (next !== source) {
+            await fs.writeFile(file, next, 'utf8');
+            changed = true;
           }
         }
-        const changed = next !== original;
-        if (changed) await fs.writeFile(file, next, 'utf8');
         return json(res, 200, { ok: true, changed, results });
       }
 

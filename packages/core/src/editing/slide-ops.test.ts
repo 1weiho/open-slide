@@ -10,6 +10,8 @@ import {
   removePageFromDefaultExportInSource,
   reorderDefaultExportPagesInSource,
   reorderNotesArrayInSource,
+  resolveSlideEntry,
+  resolveSlideSourceFile,
   updateMetaTitleInSource,
   validateSlideName,
 } from './slide-ops.ts';
@@ -102,6 +104,32 @@ describe('validateSlideName', () => {
   it('rejects empty input', () => {
     expect(validateSlideName('')).toBeNull();
     expect(validateSlideName('   ')).toBeNull();
+  });
+});
+
+describe('resolveSlideSourceFile', () => {
+  it('defaults to the slide entry and confines sibling files to the deck folder', () => {
+    const root = path.join(os.tmpdir(), 'open-slide-loc-root');
+    const entry = resolveSlideSourceFile(root, 'cover');
+    expect(entry).toBe(path.resolve(root, 'cover', 'index.tsx'));
+    expect(resolveSlideEntry(root, 'cover')).toBe(entry);
+    expect(resolveSlideSourceFile(root, 'cover', 'pages.tsx')).toBe(
+      path.resolve(root, 'cover', 'pages.tsx'),
+    );
+    expect(resolveSlideSourceFile(root, 'cover', 'components/Card.tsx')).toBe(
+      path.resolve(root, 'cover', 'components', 'Card.tsx'),
+    );
+  });
+
+  it('rejects traversal, other slide ids, and non-tsx names', () => {
+    const root = path.join(os.tmpdir(), 'open-slide-loc-root');
+    expect(resolveSlideSourceFile(root, 'cover', '../other/index.tsx')).toBeNull();
+    expect(
+      resolveSlideSourceFile(root, 'cover', path.resolve(root, 'other', 'index.tsx')),
+    ).toBeNull();
+    expect(resolveSlideSourceFile(root, '../cover', 'index.tsx')).toBeNull();
+    expect(resolveSlideSourceFile(root, 'cover', 'pages.ts')).toBeNull();
+    expect(resolveSlideSourceFile(root, 'cover', 'notes.md')).toBeNull();
   });
 });
 
