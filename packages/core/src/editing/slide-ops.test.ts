@@ -10,6 +10,9 @@ import {
   removePageFromDefaultExportInSource,
   reorderDefaultExportPagesInSource,
   reorderNotesArrayInSource,
+  resolveSlideEntry,
+  rmSlideDir,
+  SLIDE_ID_RE,
   updateMetaTitleInSource,
   validateSlideName,
 } from './slide-ops.ts';
@@ -32,6 +35,35 @@ async function writeSlide(root: string, id: string, title = id): Promise<void> {
   );
   await fs.writeFile(path.join(root, id, 'assets', 'hero.txt'), 'hero', 'utf8');
 }
+
+describe('SLIDE_ID_RE', () => {
+  it('accepts ASCII kebab ids and CJK letter ids', () => {
+    expect(SLIDE_ID_RE.test('cover')).toBe(true);
+    expect(SLIDE_ID_RE.test('intro_2')).toBe(true);
+    expect(SLIDE_ID_RE.test('推薦系統')).toBe(true);
+    expect(SLIDE_ID_RE.test('簡報-v2')).toBe(true);
+  });
+
+  it('rejects spaces, dots, and path separators', () => {
+    expect(SLIDE_ID_RE.test('bad id')).toBe(false);
+    expect(SLIDE_ID_RE.test('has.dot')).toBe(false);
+    expect(SLIDE_ID_RE.test('../escape')).toBe(false);
+    expect(SLIDE_ID_RE.test('a/b')).toBe(false);
+  });
+});
+
+describe('resolveSlideEntry / rmSlideDir with CJK ids', () => {
+  it('resolves and removes a CJK slide directory', async () => {
+    await withSlidesRoot(async (root) => {
+      await writeSlide(root, '推薦系統');
+      expect(resolveSlideEntry(root, '推薦系統')).toBe(path.join(root, '推薦系統', 'index.tsx'));
+      expect(await rmSlideDir(root, '推薦系統')).toBe(true);
+      await expect(fs.access(path.join(root, '推薦系統'))).rejects.toMatchObject({
+        code: 'ENOENT',
+      });
+    });
+  });
+});
 
 describe('duplicateSlideDir', () => {
   it('duplicates a slide directory with an automatic copy id', async () => {
@@ -65,6 +97,25 @@ describe('duplicateSlideDir', () => {
   it('rejects source slide ids with bad characters', async () => {
     await withSlidesRoot(async (root) => {
       expect(await duplicateSlideDir(root, 'bad id')).toMatchObject({ ok: false, status: 400 });
+    });
+  });
+
+  it('duplicates a CJK slide id and accepts a CJK desired id', async () => {
+    await withSlidesRoot(async (root) => {
+      await writeSlide(root, '推薦系統', '推薦系統');
+
+      expect(await duplicateSlideDir(root, '推薦系統')).toEqual({
+        ok: true,
+        slideId: '推薦系統-copy',
+      });
+      expect(await duplicateSlideDir(root, '推薦系統', '複本簡報')).toEqual({
+        ok: true,
+        slideId: '複本簡報',
+      });
+      await expect(
+        fs.access(path.join(root, '推薦系統-copy', 'index.tsx')),
+      ).resolves.toBeUndefined();
+      await expect(fs.access(path.join(root, '複本簡報', 'index.tsx'))).resolves.toBeUndefined();
     });
   });
 

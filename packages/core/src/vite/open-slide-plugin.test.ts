@@ -36,15 +36,27 @@ describe('generateSlidesModule', () => {
     });
   });
 
-  it('excludes folders whose id is not ASCII-safe and reports them as ignored', async () => {
+  it('keeps CJK slide ids and lists them alongside ASCII ids', async () => {
     await withSlidesRoot(async (root) => {
       const files = [await writeSlide(root, 'cover'), await writeSlide(root, '推薦系統')].sort();
 
       const { code, ignored } = await generateSlidesModule(files, root, false);
 
-      expect(ignored).toEqual(['推薦系統']);
+      expect(ignored).toEqual([]);
+      expect(code).toContain('export const slideIds = ["cover","推薦系統"];');
+      expect(code).toContain('推薦系統');
+    });
+  });
+
+  it('excludes folders whose id has spaces or punctuation and reports them as ignored', async () => {
+    await withSlidesRoot(async (root) => {
+      const files = [await writeSlide(root, 'cover'), await writeSlide(root, 'bad id')].sort();
+
+      const { code, ignored } = await generateSlidesModule(files, root, false);
+
+      expect(ignored).toEqual(['bad id']);
       expect(code).toContain('export const slideIds = ["cover"];');
-      expect(code).not.toContain('推薦系統');
+      expect(code).not.toContain('bad id');
     });
   });
 });
