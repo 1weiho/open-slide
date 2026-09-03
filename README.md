@@ -69,7 +69,7 @@ cd my-slide
 pnpm dev
 ```
 
-The scaffolded workspace ships with agent skills preconfigured for Claude Code. From there you drive the deck through your agent — or edit `slides/<id>/index.tsx` directly. See [CLAUDE.md](CLAUDE.md) for the hard rules.
+The scaffolded workspace ships with agent skills preconfigured for any coding agent — an `AGENTS.md` guide plus skills in the standard `.agents/skills/` location (read by Codex, Cursor, and others), mirrored to `.claude/skills/` for Claude Code. From there you drive the deck through your agent — or edit `slides/<id>/index.tsx` directly. See [AGENTS.md](AGENTS.md) for the hard rules.
 
 ## Repo layout
 
