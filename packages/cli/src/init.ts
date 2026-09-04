@@ -6,13 +6,16 @@ import { fileURLToPath } from 'node:url';
 import type { PackageManager } from './package-manager.ts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const TEMPLATE_DIR = resolve(HERE, '..', 'template');
+const TEMPLATES_DIR = resolve(HERE, '..', 'templates');
 const IS_WINDOWS = process.platform === 'win32';
+
+export type Framework = 'react' | 'svelte';
 
 export interface ScaffoldOptions {
   target: string;
   force: boolean;
   name: string | undefined;
+  framework: Framework;
 }
 
 export function sanitizeDirName(value: string): string {
@@ -34,10 +37,15 @@ export async function isDirNonEmpty(target: string): Promise<boolean> {
   return entries.some((e) => !e.startsWith('.'));
 }
 
-declare const __CORE_VERSION_AT_BUILD__: string;
+declare const __REACT_VERSION_AT_BUILD__: string;
+declare const __SVELTE_VERSION_AT_BUILD__: string;
 
-function coreVersionRange(): string {
-  return `^${__CORE_VERSION_AT_BUILD__}`;
+export function runtimePackage(framework: Framework): '@open-slide/react' | '@open-slide/svelte' {
+  return framework === 'react' ? '@open-slide/react' : '@open-slide/svelte';
+}
+
+function runtimeVersionRange(framework: Framework): string {
+  return `^${framework === 'react' ? __REACT_VERSION_AT_BUILD__ : __SVELTE_VERSION_AT_BUILD__}`;
 }
 
 async function linkOrCopy(relSrc: string, dst: string): Promise<void> {
@@ -72,11 +80,12 @@ async function materializeTemplateLinks(target: string): Promise<void> {
 }
 
 export async function scaffold(opts: ScaffoldOptions): Promise<void> {
-  const { target, force, name } = opts;
+  const { target, force, name, framework } = opts;
+  const templateDir = resolve(TEMPLATES_DIR, framework);
 
-  if (!existsSync(TEMPLATE_DIR)) {
+  if (!existsSync(templateDir)) {
     throw new Error(
-      `Template missing at ${TEMPLATE_DIR}. If you are running from source, run \`pnpm --filter @open-slide/cli build\` first.`,
+      `Template missing at ${templateDir}. If you are running from source, run \`pnpm --filter @open-slide/cli build\` first.`,
     );
   }
 
@@ -86,7 +95,7 @@ export async function scaffold(opts: ScaffoldOptions): Promise<void> {
     throw new Error(`Target ${target} is not empty. Pass --force to scaffold into it anyway.`);
   }
 
-  await cp(TEMPLATE_DIR, target, { recursive: true });
+  await cp(templateDir, target, { recursive: true });
   await materializeTemplateLinks(target);
 
   const pkgPath = join(target, 'package.json');
@@ -97,8 +106,9 @@ export async function scaffold(opts: ScaffoldOptions): Promise<void> {
     pkg.name = name ?? basename(target);
     pkg.version = '0.0.0';
     pkg.private = true;
-    if (pkg.dependencies?.['@open-slide/core']) {
-      pkg.dependencies['@open-slide/core'] = coreVersionRange();
+    const packageName = runtimePackage(framework);
+    if (pkg.dependencies?.[packageName]) {
+      pkg.dependencies[packageName] = runtimeVersionRange(framework);
     }
     await writeFile(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
   }

@@ -1,1 +1,1 @@
-export { createViteConfig } from './config.ts';
+export * from '@open-slide/react/vite';

@@ -35,7 +35,7 @@ const CYCLE_MS = 3200;
 
 function buildCode({ accent, word, subtitle }: Variant): string[] {
   return [
-    "import type { Page } from '@open-slide/core';",
+    "import type { Page } from '@open-slide/react';",
     '',
     `const ACCENT = '${accent}';`,
     `const WORD = '${word}';`,

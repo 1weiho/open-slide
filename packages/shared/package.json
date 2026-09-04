@@ -1,0 +1,92 @@
+{
+  "name": "@open-slide/shared",
+  "version": "0.1.0",
+  "description": "Framework-neutral types and utilities for open-slide runtimes.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./locale": {
+      "types": "./dist/locale/index.d.ts",
+      "import": "./dist/locale/index.js"
+    },
+    "./vite": {
+      "types": "./dist/vite/index.d.ts",
+      "import": "./dist/vite/index.js"
+    },
+    "./editing": {
+      "types": "./dist/editing/index.d.ts",
+      "import": "./dist/editing/index.js"
+    },
+    "./cli": {
+      "types": "./dist/cli/index.d.ts",
+      "import": "./dist/cli/index.js"
+    },
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "import": "./dist/client/index.js"
+    },
+    "./files": {
+      "types": "./dist/files/index.d.ts",
+      "import": "./dist/files/index.js"
+    },
+    "./http": {
+      "types": "./dist/http/index.d.ts",
+      "import": "./dist/http/index.js"
+    },
+    "./env": {
+      "types": "./env.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "env.d.ts",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "prepack": "pnpm build"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "keywords": [
+    "slides",
+    "presentation",
+    "framework-agnostic",
+    "typescript"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "1weiho",
+    "url": "https://github.com/1weiho"
+  },
+  "homepage": "https://open-slide.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/1weiho/open-slide.git",
+    "directory": "packages/shared"
+  },
+  "bugs": {
+    "url": "https://github.com/1weiho/open-slide/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.29.2",
+    "@babel/types": "^7.29.0",
+    "fast-glob": "^3.3.2",
+    "fflate": "^0.8.3",
+    "html-to-image": "^1.11.13",
+    "vite": "^8.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "tsdown": "^0.22.14",
+    "typescript": "^7.0.2"
+  }
+}

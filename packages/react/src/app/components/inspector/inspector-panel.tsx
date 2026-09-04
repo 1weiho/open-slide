@@ -1,0 +1,1098 @@
+import type { Locale } from '@open-slide/shared/locale';
+import {
+  AlignCenter,
+  AlignJustify,
+  AlignLeft,
+  AlignRight,
+  Bold,
+  Crop,
+  Crosshair,
+  ImageIcon,
+  Italic,
+  X,
+} from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Field, NumberField, Section } from '@/components/panel/panel-fields';
+import { PANEL_TRANSITION_MS, PanelShell, useAnimatedOpen } from '@/components/panel/panel-shell';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Slider } from '@/components/ui/slider';
+import { Textarea } from '@/components/ui/textarea';
+import { Toggle } from '@/components/ui/toggle';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { findSlideSource } from '@/lib/inspector/fiber';
+import { hasOnlyInlineTextChildren } from '@/lib/inspector/inline-text';
+import type { EditOp } from '@/lib/inspector/use-editor';
+import { useAgentSocketConnected } from '@/lib/use-agent-socket';
+import { useLocale } from '@/lib/use-locale';
+import { cn, round2 } from '@/lib/utils';
+import { AssetPickerDialog } from './asset-picker-dialog';
+import { type SelectedTarget, useInspector } from './inspector-provider';
+
+type ElementSnapshot = {
+  fontSize: number;
+  fontWeight: number;
+  fontStyle: 'normal' | 'italic';
+  color: string;
+  backgroundColor: string | null;
+  textAlign: 'left' | 'center' | 'right' | 'justify';
+  lineHeight: number | null;
+  letterSpacing: number;
+  text: string | null;
+  imageSrc: string | null;
+  placeholder: { hint: string; width?: number; height?: number } | null;
+};
+
+type ContentSelection = { start: number; end: number };
+type StylePreview = Partial<
+  Pick<ElementSnapshot, 'fontSize' | 'fontWeight' | 'fontStyle' | 'color'>
+>;
+type RangeStylePreview = {
+  anchor: HTMLElement;
+  start: number;
+  end: number;
+  values: StylePreview;
+};
+
+function resolveSelectedTarget(target: SelectedTarget, slideId: string): SelectedTarget {
+  const hit = findSlideSource(target.anchor, slideId, { hostOnly: true });
+  if (!hit) return target;
+  if (hit.line === target.line && hit.column === target.column && hit.anchor === target.anchor) {
+    return target;
+  }
+  return { line: hit.line, column: hit.column, anchor: hit.anchor };
+}
+
+export function InspectorPanel() {
+  const {
+    active,
+    slideId,
+    selected,
+    setSelected,
+    bufferOps,
+    pendingCount,
+    opsVersion,
+    add,
+    applyEdit,
+  } = useInspector();
+  const [snapshot, setSnapshot] = useState<ElementSnapshot | null>(null);
+  const [contentSelection, setContentSelection] = useState<ContentSelection | null>(null);
+  const [rangeStylePreview, setRangeStylePreview] = useState<RangeStylePreview | null>(null);
+  const reloadCounter = useReloadCounter();
+  const t = useLocale();
+
+  useEffect(() => {
+    void selected;
+    setContentSelection(null);
+    setRangeStylePreview(null);
+  }, [selected]);
+
+  useEffect(() => {
+    void reloadCounter;
+    void pendingCount;
+    void opsVersion;
+    if (!selected) {
+      setSnapshot(null);
+      return;
+    }
+    let anchor = selected.anchor;
+    if (!anchor.isConnected) {
+      const next = findElementByLine(slideId, selected.line, selected.column);
+      if (next) {
+        anchor = next;
+        setSelected({ ...selected, anchor: next });
+      } else {
+        return;
+      }
+    }
+    setSnapshot(readSnapshot(anchor));
+  }, [selected, setSelected, slideId, reloadCounter, pendingCount, opsVersion]);
+
+  // Freeze slide animations while editing so commits don't replay motion.
+  useEffect(() => {
+    if (!active) return;
+    const root = document.querySelector<HTMLElement>('[data-inspector-root]');
+    if (!root) return;
+    const styleEl = document.createElement('style');
+    styleEl.textContent = EDITING_FREEZE_CSS;
+    document.head.appendChild(styleEl);
+    root.dataset.inspectorEditing = 'true';
+    return () => {
+      let cleaned = false;
+      const finish = () => {
+        if (cleaned) return;
+        cleaned = true;
+        styleEl.remove();
+        delete root.dataset.inspectorEditing;
+        import.meta.hot?.off('vite:afterUpdate', finish);
+        clearTimeout(timer);
+      };
+      const timer = setTimeout(finish, 1500);
+      import.meta.hot?.on('vite:afterUpdate', finish);
+    };
+  }, [active]);
+
+  const apply = useCallback(
+    (ops: EditOp[]) => {
+      if (!selected) return;
+      const target = resolveSelectedTarget(selected, slideId);
+      if (target !== selected) setSelected(target);
+      bufferOps(target.line, target.column, target.anchor, ops);
+      if (target.anchor.isConnected) setSnapshot(readSnapshot(target.anchor));
+    },
+    [selected, setSelected, slideId, bufferOps],
+  );
+
+  // `pinned` keeps the last selection rendered through the close-out
+  // animation so the panel's contents don't blank out before it collapses.
+  const targetOpen = active && !!selected && !!snapshot;
+  const [pinned, setPinned] = useState<{ s: SelectedTarget; n: ElementSnapshot } | null>(null);
+  const animVisible = useAnimatedOpen(targetOpen && !!pinned);
+
+  useEffect(() => {
+    if (selected && snapshot) setPinned({ s: selected, n: snapshot });
+  }, [selected, snapshot]);
+
+  useEffect(() => {
+    if (!targetOpen && pinned) {
+      const t = setTimeout(() => setPinned(null), PANEL_TRANSITION_MS);
+      return () => clearTimeout(t);
+    }
+  }, [targetOpen, pinned]);
+
+  if (!pinned) return null;
+  const { s: pinSelected, n: pinSnapshot } = pinned;
+  const contentRange =
+    pinSnapshot.text !== null && contentSelection && contentSelection.end > contentSelection.start
+      ? contentSelection
+      : null;
+  const rangePreviewApplies =
+    contentRange &&
+    rangeStylePreview &&
+    rangeStylePreview.anchor === pinSelected.anchor &&
+    rangeStylePreview.start === contentRange.start &&
+    rangeStylePreview.end === contentRange.end;
+  const typographySnapshot = rangePreviewApplies
+    ? { ...pinSnapshot, ...rangeStylePreview.values }
+    : pinSnapshot;
+  const applyTextStyle = (ops: EditOp[]) => {
+    const styleOps = ops.flatMap((op) => (op.kind === 'set-style' ? [op] : []));
+    const target = resolveSelectedTarget(pinSelected, slideId);
+    if (target !== pinSelected) setSelected(target);
+    if (
+      contentRange &&
+      pinSnapshot.text !== null &&
+      styleOps.length === 1 &&
+      styleOps.length === ops.length &&
+      styleOps.every((op) => INLINE_CONTENT_STYLE_KEYS.has(op.key))
+    ) {
+      bufferOps(
+        target.line,
+        target.column,
+        target.anchor,
+        styleOps.map((op) => ({
+          kind: 'set-text-range-style',
+          start: contentRange.start,
+          end: contentRange.end,
+          key: op.key,
+          value: op.value,
+          prevText: pinSnapshot.text ?? undefined,
+        })),
+      );
+      setRangeStylePreview((current) => ({
+        anchor: target.anchor,
+        start: contentRange.start,
+        end: contentRange.end,
+        values: {
+          ...(current?.anchor === target.anchor &&
+          current.start === contentRange.start &&
+          current.end === contentRange.end
+            ? current.values
+            : {}),
+          ...stylePreviewFromOps(styleOps),
+        },
+      }));
+      if (target.anchor.isConnected) setSnapshot(readSnapshot(target.anchor));
+      return;
+    }
+    if (
+      pinSnapshot.text !== null &&
+      styleOps.length > 0 &&
+      styleOps.length === ops.length &&
+      styleOps.every((op) => INLINE_CONTENT_STYLE_KEYS.has(op.key))
+    ) {
+      bufferOps(
+        target.line,
+        target.column,
+        target.anchor,
+        styleOps.map((op) => ({ ...op, prevText: pinSnapshot.text ?? undefined })),
+      );
+      if (target.anchor.isConnected) setSnapshot(readSnapshot(target.anchor));
+      return;
+    }
+    apply(ops);
+  };
+
+  return (
+    <PanelShell
+      uiAttr="inspector"
+      animVisible={animVisible}
+      header={
+        <>
+          <div className="flex min-w-0 items-center gap-2">
+            <Crosshair className="size-3.5 text-muted-foreground" />
+            <span className="font-heading text-[12px] font-semibold tracking-tight">
+              {t.inspector.inspect}
+            </span>
+            <span aria-hidden className="h-3 w-px bg-hairline" />
+            <span className="rounded-[3px] border border-hairline bg-card px-1.5 py-px font-mono text-[10.5px] text-foreground/85">
+              &lt;{pinSelected.anchor.tagName.toLowerCase()}&gt;
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <AgentWatchingBadge />
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => setSelected(null)}
+              aria-label={t.inspector.deselect}
+            >
+              <X className="size-3.5" />
+            </Button>
+          </div>
+        </>
+      }
+      footer={<CommentsSection selected={pinSelected} onAdd={add} />}
+    >
+      {pinSnapshot.text !== null && (
+        <>
+          <Section title={t.inspector.contentSection}>
+            <ContentField
+              snapshot={pinSnapshot}
+              apply={apply}
+              onSelectionChange={setContentSelection}
+            />
+          </Section>
+          <Separator />
+        </>
+      )}
+
+      <Section title={t.inspector.typographySection}>
+        <FontSizeField snapshot={typographySnapshot} apply={applyTextStyle} />
+        <FontWeightField snapshot={typographySnapshot} apply={applyTextStyle} />
+        <StyleToggles snapshot={typographySnapshot} apply={applyTextStyle} />
+        <LineHeightField snapshot={pinSnapshot} apply={apply} />
+        <LetterSpacingField snapshot={pinSnapshot} apply={apply} />
+        <TextAlignField snapshot={pinSnapshot} apply={apply} />
+      </Section>
+
+      <Separator />
+
+      <Section title={t.inspector.colorSection}>
+        <ColorField
+          label={t.inspector.textColor}
+          value={typographySnapshot.color}
+          onChange={(v) => applyTextStyle([{ kind: 'set-style', key: 'color', value: v }])}
+          clearable={false}
+        />
+        <ColorField
+          label={t.inspector.backgroundColor}
+          value={pinSnapshot.backgroundColor ?? '#ffffff'}
+          dim={!pinSnapshot.backgroundColor}
+          onChange={(v) => apply([{ kind: 'set-style', key: 'backgroundColor', value: v }])}
+          onClear={() => apply([{ kind: 'set-style', key: 'backgroundColor', value: null }])}
+          clearable
+        />
+      </Section>
+
+      {pinSnapshot.imageSrc !== null && (
+        <>
+          <Separator />
+          <Section title={t.inspector.imageSection}>
+            <ImageField src={pinSnapshot.imageSrc} anchor={pinSelected.anchor} />
+          </Section>
+        </>
+      )}
+
+      {pinSnapshot.placeholder && (
+        <>
+          <Separator />
+          <Section title={t.inspector.imagePlaceholderSection}>
+            <PlaceholderField
+              slideId={slideId}
+              hint={pinSnapshot.placeholder.hint}
+              line={pinSelected.line}
+              column={pinSelected.column}
+              applyEdit={applyEdit}
+            />
+          </Section>
+        </>
+      )}
+    </PanelShell>
+  );
+}
+
+const EDITING_FREEZE_CSS = `
+[data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *),
+[data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *)::before,
+[data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *)::after {
+  animation-duration: 1ms !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  animation-fill-mode: forwards !important;
+  transition: none !important;
+  view-transition-name: none !important;
+  cursor: pointer !important;
+}
+`;
+
+const INLINE_CONTENT_STYLE_KEYS = new Set([
+  'fontSize',
+  'fontWeight',
+  'fontStyle',
+  'fontFamily',
+  'color',
+]);
+
+function stylePreviewFromOps(ops: Array<Extract<EditOp, { kind: 'set-style' }>>): StylePreview {
+  const preview: StylePreview = {};
+  for (const op of ops) {
+    if (op.key === 'fontSize' && op.value) {
+      const n = parseFloat(op.value);
+      if (Number.isFinite(n)) preview.fontSize = n;
+    } else if (op.key === 'fontWeight') {
+      preview.fontWeight = op.value ? Number(op.value) || 400 : 400;
+    } else if (op.key === 'fontStyle') {
+      preview.fontStyle = op.value === 'italic' ? 'italic' : 'normal';
+    } else if (op.key === 'color' && op.value) {
+      preview.color = op.value;
+    }
+  }
+  return preview;
+}
+
+function ContentField({
+  snapshot,
+  apply,
+  onSelectionChange,
+}: {
+  snapshot: ElementSnapshot;
+  apply: (ops: EditOp[]) => void;
+  onSelectionChange?: (selection: ContentSelection | null) => void;
+}) {
+  // Mirror the value locally and skip syncs during IME composition;
+  // a re-render mid-composition would otherwise clobber in-progress
+  // candidates (Bopomofo/Pinyin only commit on candidate selection).
+  const [local, setLocal] = useState(snapshot.text ?? '');
+  const composingRef = useRef(false);
+  const t = useLocale();
+
+  useEffect(() => {
+    if (!composingRef.current) setLocal(snapshot.text ?? '');
+  }, [snapshot.text]);
+
+  const reportSelection = (el: HTMLTextAreaElement) => {
+    const start = el.selectionStart ?? 0;
+    const end = el.selectionEnd ?? start;
+    onSelectionChange?.(end > start ? { start, end } : null);
+  };
+
+  return (
+    <Textarea
+      value={local}
+      onCompositionStart={() => {
+        composingRef.current = true;
+      }}
+      onCompositionEnd={(e) => {
+        composingRef.current = false;
+        const v = e.currentTarget.value;
+        setLocal(v);
+        reportSelection(e.currentTarget);
+        apply([{ kind: 'set-text', value: v }]);
+      }}
+      onChange={(e) => {
+        const v = e.target.value;
+        setLocal(v);
+        reportSelection(e.currentTarget);
+        if (!composingRef.current) {
+          apply([{ kind: 'set-text', value: v }]);
+        }
+      }}
+      onKeyUp={(e) => reportSelection(e.currentTarget)}
+      onMouseUp={(e) => reportSelection(e.currentTarget)}
+      onSelect={(e) => reportSelection(e.currentTarget)}
+      wrap="off"
+      rows={3}
+      className="field-sizing-fixed min-h-16 w-full resize-none overflow-x-auto whitespace-pre text-xs"
+      placeholder={t.inspector.elementTextPlaceholder}
+    />
+  );
+}
+
+function FontSizeField({
+  snapshot,
+  apply,
+}: {
+  snapshot: ElementSnapshot;
+  apply: (ops: EditOp[]) => void;
+}) {
+  const set = (px: number) => {
+    apply([{ kind: 'set-style', key: 'fontSize', value: `${Math.round(px)}px` }]);
+  };
+  const t = useLocale();
+  return (
+    <Field label={t.inspector.sizeLabel}>
+      <Slider
+        min={8}
+        max={200}
+        step={1}
+        value={[snapshot.fontSize]}
+        onValueChange={(v) => set((Array.isArray(v) ? v[0] : v) ?? snapshot.fontSize)}
+        className="flex-1"
+      />
+      <NumberField
+        value={Math.round(snapshot.fontSize)}
+        onChange={set}
+        min={1}
+        max={400}
+        suffix="px"
+      />
+    </Field>
+  );
+}
+
+function getWeightOptions(t: Locale): { value: string; label: string }[] {
+  return [
+    { value: '300', label: t.inspector.weightLight },
+    { value: '400', label: t.inspector.weightRegular },
+    { value: '500', label: t.inspector.weightMedium },
+    { value: '600', label: t.inspector.weightSemibold },
+    { value: '700', label: t.inspector.weightBold },
+    { value: '800', label: t.inspector.weightExtrabold },
+  ];
+}
+
+function FontWeightField({
+  snapshot,
+  apply,
+}: {
+  snapshot: ElementSnapshot;
+  apply: (ops: EditOp[]) => void;
+}) {
+  const t = useLocale();
+  const weightOptions = getWeightOptions(t);
+  return (
+    <Field label={t.inspector.weightLabel}>
+      <Select
+        items={Object.fromEntries(weightOptions.map((opt) => [opt.value, opt.label]))}
+        value={String(snapshot.fontWeight)}
+        onValueChange={(value) => {
+          const n = Number(value);
+          apply([
+            {
+              kind: 'set-style',
+              key: 'fontWeight',
+              value: n === 400 ? null : value,
+            },
+          ]);
+        }}
+      >
+        <SelectTrigger size="sm" className="h-8 flex-1 text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {weightOptions.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value} className="text-xs">
+              {opt.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </Field>
+  );
+}
+
+function StyleToggles({
+  snapshot,
+  apply,
+}: {
+  snapshot: ElementSnapshot;
+  apply: (ops: EditOp[]) => void;
+}) {
+  const t = useLocale();
+  return (
+    <Field label={t.inspector.styleLabel}>
+      <Toggle
+        size="sm"
+        variant="outline"
+        pressed={snapshot.fontWeight >= 600}
+        onPressedChange={(v) =>
+          apply([{ kind: 'set-style', key: 'fontWeight', value: v ? '700' : null }])
+        }
+        aria-label={t.inspector.boldAria}
+      >
+        <Bold className="size-3.5" />
+      </Toggle>
+      <Toggle
+        size="sm"
+        variant="outline"
+        pressed={snapshot.fontStyle === 'italic'}
+        onPressedChange={(v) =>
+          apply([{ kind: 'set-style', key: 'fontStyle', value: v ? 'italic' : null }])
+        }
+        aria-label={t.inspector.italicAria}
+      >
+        <Italic className="size-3.5" />
+      </Toggle>
+    </Field>
+  );
+}
+
+function LineHeightField({
+  snapshot,
+  apply,
+}: {
+  snapshot: ElementSnapshot;
+  apply: (ops: EditOp[]) => void;
+}) {
+  const v = snapshot.lineHeight ?? 1.4;
+  const set = (n: number) => {
+    apply([{ kind: 'set-style', key: 'lineHeight', value: String(round2(n)) }]);
+  };
+  const t = useLocale();
+  return (
+    <Field label={t.inspector.lineHeightLabel}>
+      <Slider
+        min={0.8}
+        max={3}
+        step={0.05}
+        value={[v]}
+        onValueChange={(next) => set((Array.isArray(next) ? next[0] : next) ?? v)}
+        className="flex-1"
+      />
+      <NumberField value={round2(v)} onChange={set} step={0.05} min={0.5} max={5} />
+    </Field>
+  );
+}
+
+function LetterSpacingField({
+  snapshot,
+  apply,
+}: {
+  snapshot: ElementSnapshot;
+  apply: (ops: EditOp[]) => void;
+}) {
+  const set = (n: number) => {
+    apply([
+      {
+        kind: 'set-style',
+        key: 'letterSpacing',
+        value: n === 0 ? null : `${round2(n)}px`,
+      },
+    ]);
+  };
+  const t = useLocale();
+  return (
+    <Field label={t.inspector.trackingLabel}>
+      <Slider
+        min={-5}
+        max={20}
+        step={0.1}
+        value={[snapshot.letterSpacing]}
+        onValueChange={(next) =>
+          set((Array.isArray(next) ? next[0] : next) ?? snapshot.letterSpacing)
+        }
+        className="flex-1"
+      />
+      <NumberField
+        value={round2(snapshot.letterSpacing)}
+        onChange={set}
+        step={0.1}
+        min={-20}
+        max={50}
+        suffix="px"
+      />
+    </Field>
+  );
+}
+
+const ALIGN_OPTIONS = [
+  { v: 'left', icon: AlignLeft },
+  { v: 'center', icon: AlignCenter },
+  { v: 'right', icon: AlignRight },
+  { v: 'justify', icon: AlignJustify },
+] as const;
+
+function TextAlignField({
+  snapshot,
+  apply,
+}: {
+  snapshot: ElementSnapshot;
+  apply: (ops: EditOp[]) => void;
+}) {
+  const t = useLocale();
+  return (
+    <Field label={t.inspector.alignLabel}>
+      <ToggleGroup
+        size="sm"
+        variant="outline"
+        value={[snapshot.textAlign]}
+        onValueChange={(value) => {
+          const next = value[0];
+          if (!next) return;
+          apply([
+            {
+              kind: 'set-style',
+              key: 'textAlign',
+              value: next === 'left' ? null : next,
+            },
+          ]);
+        }}
+      >
+        {ALIGN_OPTIONS.map(({ v, icon: Icon }) => (
+          <ToggleGroupItem key={v} value={v} aria-label={v} className="size-8">
+            <Icon className="size-3.5" />
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+    </Field>
+  );
+}
+
+function ColorField({
+  label,
+  value,
+  dim,
+  onChange,
+  onClear,
+  clearable,
+}: {
+  label: string;
+  value: string;
+  dim?: boolean;
+  onChange: (v: string) => void;
+  onClear?: () => void;
+  clearable: boolean;
+}) {
+  // Buffer the text input so intermediate hex like "#a" doesn't
+  // commit until it parses as a full color.
+  const [draft, setDraft] = useState(value);
+  const tColor = useLocale();
+  useEffect(() => setDraft(value), [value]);
+
+  const commitHex = (hex: string) => {
+    if (/^#[0-9a-fA-F]{6}$/.test(hex)) onChange(hex);
+  };
+
+  return (
+    <Field label={label}>
+      <label className="relative inline-flex size-8 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border bg-background shadow-xs transition-[border-color,scale] duration-150 hover:border-foreground/20 active:scale-[0.96] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring/40">
+        <span
+          className="size-5 rounded-sm"
+          style={{
+            backgroundColor: dim ? 'transparent' : value,
+            backgroundImage: dim
+              ? 'linear-gradient(45deg, #d4d4d4 25%, transparent 25%, transparent 75%, #d4d4d4 75%), linear-gradient(45deg, #d4d4d4 25%, transparent 25%, transparent 75%, #d4d4d4 75%)'
+              : undefined,
+            backgroundSize: dim ? '8px 8px' : undefined,
+            backgroundPosition: dim ? '0 0, 4px 4px' : undefined,
+          }}
+        />
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            onChange(e.target.value);
+          }}
+          className="absolute inset-0 cursor-pointer opacity-0"
+        />
+      </label>
+      <Input
+        type="text"
+        value={draft}
+        onChange={(e) => {
+          setDraft(e.target.value);
+          commitHex(e.target.value);
+        }}
+        className="nums h-8 flex-1 font-mono text-[11px] uppercase"
+        spellCheck={false}
+      />
+      {clearable && onClear && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8 text-muted-foreground hover:text-foreground"
+          onClick={onClear}
+          aria-label={tColor.inspector.clearAria}
+        >
+          <X className="size-3.5" />
+        </Button>
+      )}
+    </Field>
+  );
+}
+
+function ImageField({ src, anchor }: { src: string; anchor: HTMLElement }) {
+  const t = useLocale();
+  const { openCrop, openReplace } = useInspector();
+  const isImage = anchor.tagName === 'IMG';
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-3">
+        <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:8px_8px]">
+          <img
+            src={src}
+            alt=""
+            className="size-full object-contain"
+            draggable={false}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        </div>
+        <div className="flex flex-1 gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={() => openReplace(anchor)}
+          >
+            <ImageIcon className="size-3.5" />
+            {t.inspector.replace}
+          </Button>
+          {isImage && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              onClick={() => openCrop(anchor as HTMLImageElement)}
+            >
+              <Crop className="size-3.5" />
+              {t.inspector.crop}
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PlaceholderField({
+  slideId,
+  hint,
+  line,
+  column,
+  applyEdit,
+}: {
+  slideId: string;
+  hint: string;
+  line: number;
+  column: number;
+  applyEdit: (line: number, column: number, ops: EditOp[]) => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const t = useLocale();
+  return (
+    <div className="space-y-2">
+      <p className="text-[11px] leading-relaxed text-muted-foreground">
+        {t.inspector.placeholderHintLabel}{' '}
+        <span className="font-medium text-foreground">{hint}</span>
+      </p>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="w-full"
+        disabled={submitting}
+        onClick={() => setOpen(true)}
+      >
+        <ImageIcon className="size-3.5" />
+        {t.inspector.replace}
+      </Button>
+      {open && (
+        <AssetPickerDialog
+          slideId={slideId}
+          onClose={() => setOpen(false)}
+          onPick={async (asset, scope) => {
+            setOpen(false);
+            setSubmitting(true);
+            try {
+              const assetPath =
+                scope === 'global' ? `@assets/${asset.name}` : `./assets/${asset.name}`;
+              await applyEdit(line, column, [
+                {
+                  kind: 'replace-placeholder-with-image',
+                  assetPath,
+                },
+              ]);
+            } finally {
+              setSubmitting(false);
+            }
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function AgentWatchingBadge() {
+  const t = useLocale();
+  const connected = useAgentSocketConnected();
+  return (
+    <TooltipProvider delay={200}>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <button
+              type="button"
+              className="flex shrink-0 cursor-help items-center gap-1.5 rounded-[3px] border border-hairline bg-card px-1.5 py-px text-[10.5px] text-foreground/85 outline-none transition-colors duration-150 hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/30"
+            >
+              <span aria-hidden className="relative flex size-1.5 items-center justify-center">
+                {connected ? (
+                  <>
+                    <span className="absolute inline-flex size-full rounded-full bg-emerald-500 opacity-60 motion-safe:animate-ping" />
+                    <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
+                  </>
+                ) : (
+                  <span className="relative inline-flex size-1.5 rounded-full bg-rose-500" />
+                )}
+              </span>
+              {connected ? t.inspector.agentWatching : t.inspector.agentNotWatching}
+            </button>
+          }
+        />
+        <TooltipContent
+          side="bottom"
+          align="end"
+          className="w-max max-w-[min(520px,calc(100vw-2rem))] text-center leading-relaxed"
+        >
+          {connected ? t.inspector.agentWatchingTooltip : t.inspector.agentNotWatchingTooltip}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+// The cue animation re-mounts with every element selection; without this
+// guard it replays each time instead of once per inspector session.
+let commentCuePlayed = false;
+
+function CommentsSection({
+  selected,
+  onAdd,
+}: {
+  selected: { line: number; column: number };
+  onAdd: (line: number, column: number, text: string) => Promise<void>;
+}) {
+  const [draft, setDraft] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [showCue] = useState(() => !commentCuePlayed);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const t = useLocale();
+
+  useEffect(() => {
+    commentCuePlayed = true;
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== '/') return;
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (e.altKey || e.shiftKey) return;
+      const ta = wrapRef.current?.querySelector('textarea');
+      if (!ta) return;
+      e.preventDefault();
+      ta.focus({ preventScroll: true });
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const submit = async () => {
+    const trimmed = draft.trim();
+    if (!trimmed) return;
+    setSubmitting(true);
+    try {
+      await onAdd(selected.line, selected.column, trimmed);
+      setDraft('');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Section title={t.inspector.leaveComment}>
+      <div className="flex flex-col gap-2">
+        <div ref={wrapRef} className={cn('rounded-[6px]', showCue && 'comment-cue')}>
+          <Textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                submit();
+              }
+            }}
+            placeholder={t.inspector.commentPlaceholder}
+            className="min-h-16 resize-none text-[12px]"
+          />
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-mono text-[10.5px] text-muted-foreground/70">
+            {t.inspector.commentShortcutHint}
+          </span>
+          <Button size="sm" variant="brand" disabled={submitting || !draft.trim()} onClick={submit}>
+            {t.inspector.addComment}
+          </Button>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+function readSnapshot(el: HTMLElement): ElementSnapshot {
+  const cs = getComputedStyle(el);
+  const text = hasOnlyInlineTextChildren(el) ? readEditableText(el) : null;
+  const imageSrc =
+    el.tagName === 'IMG'
+      ? (el as HTMLImageElement).currentSrc || (el as HTMLImageElement).src || null
+      : null;
+  const ph = el.dataset.slidePlaceholder ?? null;
+  const placeholder =
+    ph !== null
+      ? {
+          hint: ph,
+          width: el.dataset.placeholderW ? Number(el.dataset.placeholderW) : undefined,
+          height: el.dataset.placeholderH ? Number(el.dataset.placeholderH) : undefined,
+        }
+      : null;
+
+  return {
+    fontSize: parseFloat(cs.fontSize) || 16,
+    fontWeight: parseInt(cs.fontWeight, 10) || 400,
+    fontStyle: cs.fontStyle === 'italic' ? 'italic' : 'normal',
+    color: rgbToHex(cs.color) ?? '#000000',
+    backgroundColor: isTransparent(cs.backgroundColor) ? null : rgbToHex(cs.backgroundColor),
+    textAlign: normalizeTextAlign(cs.textAlign),
+    lineHeight: parseLineHeight(cs.lineHeight, parseFloat(cs.fontSize) || 16),
+    letterSpacing: parseLetterSpacing(cs.letterSpacing),
+    text,
+    imageSrc,
+    placeholder,
+  };
+}
+
+function readEditableText(el: HTMLElement): string {
+  const parts: string[] = [];
+  for (const child of Array.from(el.childNodes)) {
+    if (child.nodeType === Node.TEXT_NODE) {
+      parts.push(renderedTextNodeValue(child as Text));
+    } else if (child instanceof HTMLBRElement) {
+      parts.push('\n');
+    } else if (child instanceof HTMLElement) {
+      parts.push(readEditableText(child));
+    }
+  }
+  return normalizeRenderedText(parts);
+}
+
+function normalizeRenderedText(parts: string[]): string {
+  return parts
+    .map((part, index) => {
+      if (part === '\n') return part;
+      let next = part;
+      if (parts[index - 1] === '\n') next = next.replace(/^\s+/, '');
+      if (parts[index + 1] === '\n') next = next.replace(/\s+$/, '');
+      return next;
+    })
+    .join('');
+}
+
+function renderedTextNodeValue(node: Text): string {
+  const value = node.textContent ?? '';
+  const whiteSpace = node.parentElement ? getComputedStyle(node.parentElement).whiteSpace : '';
+  if (whiteSpace === 'pre' || whiteSpace === 'pre-wrap' || whiteSpace === 'break-spaces') {
+    return value;
+  }
+  return value.replace(/\s+/g, ' ');
+}
+
+function rgbToHex(value: string): string | null {
+  const m = value.match(/^rgba?\(([^)]+)\)$/);
+  if (!m) return null;
+  const parts = m[1].split(',').map((s) => s.trim());
+  if (parts.length < 3) return null;
+  const r = clampByte(Number(parts[0]));
+  const g = clampByte(Number(parts[1]));
+  const b = clampByte(Number(parts[2]));
+  return `#${[r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('')}`;
+}
+
+function clampByte(n: number): number {
+  return Math.max(0, Math.min(255, Math.round(Number.isFinite(n) ? n : 0)));
+}
+
+function isTransparent(value: string): boolean {
+  if (!value) return true;
+  if (value === 'transparent' || value === 'rgba(0, 0, 0, 0)') return true;
+  const m = value.match(/^rgba\([^)]*,\s*0\)$/);
+  return Boolean(m);
+}
+
+function normalizeTextAlign(v: string): ElementSnapshot['textAlign'] {
+  if (v === 'center' || v === 'right' || v === 'justify') return v;
+  return 'left';
+}
+
+function parseLineHeight(value: string, fontSize: number): number | null {
+  if (!value || value === 'normal') return null;
+  const n = parseFloat(value);
+  if (!Number.isFinite(n) || n === 0) return null;
+  return round2(n / fontSize);
+}
+
+function parseLetterSpacing(value: string): number {
+  if (!value || value === 'normal') return 0;
+  const n = parseFloat(value);
+  return Number.isFinite(n) ? round2(n) : 0;
+}
+
+function findElementByLine(slideId: string, line: number, column: number): HTMLElement | null {
+  const root = document.querySelector('[data-inspector-root]');
+  if (!root) return null;
+  const tagged = root.querySelector<HTMLElement>(`[data-slide-loc="${line}:${column}"]`);
+  if (tagged) return tagged;
+  const candidates = root.querySelectorAll<HTMLElement>('*');
+  for (const el of candidates) {
+    const hit = findSlideSource(el, slideId, { hostOnly: true });
+    if (hit && hit.line === line) return hit.anchor;
+  }
+  return null;
+}
+
+function useReloadCounter(): number {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (!import.meta.hot) return;
+    const handler = () => setN((x) => x + 1);
+    import.meta.hot.on('vite:afterUpdate', handler);
+    return () => {
+      import.meta.hot?.off('vite:afterUpdate', handler);
+    };
+  }, []);
+  return n;
+}

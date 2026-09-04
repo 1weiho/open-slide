@@ -1,4 +1,9 @@
-import { type DesignSystem, type Page, type SlideMeta, useSlidePageNumber } from '@open-slide/core';
+import {
+  type DesignSystem,
+  type Page,
+  type SlideMeta,
+  useSlidePageNumber,
+} from '@open-slide/react';
 
 export const design: DesignSystem = {
   palette: { bg: '#f7f5f0', text: '#1a1814', accent: '#6d4cff' },

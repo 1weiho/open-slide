@@ -1,7 +1,7 @@
 /* open-slide landing styles — scoped to .os-landing so they don't bleed
    into the rest of the docs site (which uses fumadocs-ui's defaults).
 
-   Palette mirrors packages/core/src/app/styles.css: a pure zero-chroma
+   Palette mirrors packages/react/src/app/styles.css: a pure zero-chroma
    neutral ramp — clean white surfaces, hairline borders — with vermillion
    as the single accent. Brand consistency is the whole point: same
    identity across the marketing surface, the docs, and the editor. */

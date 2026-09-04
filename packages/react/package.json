@@ -1,0 +1,111 @@
+{
+  "name": "@open-slide/react",
+  "version": "2.0.0-beta.1",
+  "description": "React runtime and CLI for open-slide.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./vite": {
+      "types": "./dist/vite/index.d.ts",
+      "import": "./dist/vite/index.js"
+    },
+    "./locale": {
+      "types": "./dist/locale/index.d.ts",
+      "import": "./dist/locale/index.js"
+    },
+    "./cli": {
+      "types": "./dist/cli/bin.d.ts",
+      "import": "./dist/cli/bin.js"
+    },
+    "./env": {
+      "types": "./env.d.ts"
+    }
+  },
+  "bin": {
+    "open-slide": "./bin.js"
+  },
+  "files": [
+    "bin.js",
+    "dist",
+    "env.d.ts",
+    "src/app",
+    "skills",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "pnpm run build && playwright test",
+    "prepack": "pnpm build"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "keywords": [
+    "slides",
+    "presentation",
+    "react",
+    "vite"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "1weiho",
+    "url": "https://github.com/1weiho"
+  },
+  "homepage": "https://open-slide.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/1weiho/open-slide.git",
+    "directory": "packages/react"
+  },
+  "bugs": {
+    "url": "https://github.com/1weiho/open-slide/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.29.2",
+    "@babel/types": "^7.29.0",
+    "@base-ui/react": "1.6.0",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@fontsource-variable/geist": "^5.2.8",
+    "@open-slide/shared": "workspace:^",
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-react": "^6.1.0",
+    "chalk": "^6.0.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
+    "commander": "^15.0.0",
+    "emoji-picker-react": "^4.19.1",
+    "fast-glob": "^3.3.2",
+    "fflate": "^0.8.3",
+    "lucide-react": "^1.25.0",
+    "next-themes": "^0.4.6",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-image-crop": "^11.0.10",
+    "react-router-dom": "^7.18.1",
+    "shadcn": "^4.12.0",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.3.3",
+    "tw-animate-css": "^1.4.0",
+    "use-sync-external-store": "^1.6.0",
+    "vite": "^8.2.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "~1.62.1",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "tsdown": "^0.22.14",
+    "typescript": "^7.0.2"
+  }
+}

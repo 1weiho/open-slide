@@ -12,7 +12,9 @@
       "!**/node_modules",
       "!**/*.tsbuildinfo",
       "!**/*.svg",
-      "!packages/core/src/app/components/ui"
+      "!**/.claude/skills",
+      "!.agents",
+      "!packages/react/src/app/components/ui"
     ]
   },
   "formatter": {
@@ -53,6 +55,12 @@
             "noShadowRestrictedNames": "off"
           }
         }
+      }
+    },
+    {
+      "includes": ["**/*.svelte"],
+      "linter": {
+        "enabled": false
       }
     }
   ],

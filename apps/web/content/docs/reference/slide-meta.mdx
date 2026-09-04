@@ -4,7 +4,7 @@ description: The shape the runtime expects from each slides/<id>/index.tsx.
 ---
 
 ```tsx title="slides/<id>/index.tsx"
-import type { Page, SlideMeta } from '@open-slide/core';
+import type { Page, SlideMeta } from '@open-slide/react';
 
 const Cover: Page = () => <div>{/* ... */}</div>;
 
@@ -70,7 +70,7 @@ itself. See [SlideTransition](/docs/reference/slide-transitions) for the full
 schema.
 
 ```ts
-import type { SlideTransition } from '@open-slide/core';
+import type { SlideTransition } from '@open-slide/react';
 
 export const transition: SlideTransition = {
   duration: 200,
@@ -79,7 +79,7 @@ export const transition: SlideTransition = {
 };
 ```
 
-## Imports from `@open-slide/core`
+## Imports from `@open-slide/react`
 
 ```ts
 import {
@@ -87,7 +87,7 @@ import {
   CANVAS_HEIGHT,       // 1080
   ImagePlaceholder,    // sized empty placeholder — see /docs/reference/image-placeholder
   MorphElement,        // match an element across pages — see /docs/primitive/morph-element
-} from '@open-slide/core';
+} from '@open-slide/react';
 import type {
   MorphElementProps,
   Page,
@@ -97,5 +97,5 @@ import type {
   MorphTransition,
   TransitionPhase,
   ImagePlaceholderProps,
-} from '@open-slide/core';
+} from '@open-slide/react';
 ```

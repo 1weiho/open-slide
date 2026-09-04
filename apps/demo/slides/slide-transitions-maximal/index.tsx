@@ -1,4 +1,4 @@
-import type { DesignSystem, Page, SlideMeta, SlideTransition } from '@open-slide/core';
+import type { DesignSystem, Page, SlideMeta, SlideTransition } from '@open-slide/react';
 import type { CSSProperties } from 'react';
 
 export const design: DesignSystem = {

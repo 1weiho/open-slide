@@ -1,0 +1,21 @@
+{
+  "name": "svelte-demo",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "open-slide dev",
+    "build": "open-slide build",
+    "preview": "open-slide preview",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json"
+  },
+  "dependencies": {
+    "@open-slide/svelte": "workspace:*",
+    "svelte": "^5.57.0"
+  },
+  "devDependencies": {
+    "svelte-check": "^4.7.6",
+    "typescript": "^6.0.3",
+    "vite": "^8.2.2"
+  }
+}

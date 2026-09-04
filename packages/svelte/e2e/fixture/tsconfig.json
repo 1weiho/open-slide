@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "allowImportingTsExtensions": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "target": "ES2022"
+  },
+  "include": [
+    "slides/**/*.svelte",
+    "slides/**/*.ts",
+    "themes/**/*.svelte",
+    "themes/**/*.ts",
+    "open-slide.config.ts"
+  ]
+}

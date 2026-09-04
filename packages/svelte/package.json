@@ -1,0 +1,88 @@
+{
+  "name": "@open-slide/svelte",
+  "version": "0.1.0",
+  "description": "Native Svelte runtime and CLI for open-slide.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./vite": {
+      "types": "./dist/vite/index.d.ts",
+      "import": "./dist/vite/index.js"
+    },
+    "./locale": {
+      "types": "./dist/locale/index.d.ts",
+      "import": "./dist/locale/index.js"
+    },
+    "./Step.svelte": "./src/components/Step.svelte",
+    "./Steps.svelte": "./src/components/Steps.svelte",
+    "./MorphElement.svelte": "./src/components/MorphElement.svelte",
+    "./ImagePlaceholder.svelte": "./src/components/ImagePlaceholder.svelte",
+    "./env": {
+      "types": "./env.d.ts"
+    }
+  },
+  "bin": {
+    "open-slide": "./bin.js"
+  },
+  "files": [
+    "bin.js",
+    "dist",
+    "env.d.ts",
+    "src/app",
+    "src/components",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "test:e2e": "pnpm run build && playwright test",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json",
+    "prepack": "pnpm build"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "keywords": [
+    "slides",
+    "presentation",
+    "svelte",
+    "vite"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "1weiho",
+    "url": "https://github.com/1weiho"
+  },
+  "homepage": "https://open-slide.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/1weiho/open-slide.git",
+    "directory": "packages/svelte"
+  },
+  "bugs": {
+    "url": "https://github.com/1weiho/open-slide/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "^5.2.8",
+    "@open-slide/shared": "workspace:^",
+    "@sveltejs/vite-plugin-svelte": "^7.3.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "chalk": "^6.0.0",
+    "commander": "^15.0.0",
+    "svelte": "^5.57.0",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.2.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "~1.62.1",
+    "@types/node": "^26.2.0",
+    "svelte-check": "^4.7.6",
+    "tsdown": "^0.22.14",
+    "typescript": "^6.0.3"
+  }
+}
