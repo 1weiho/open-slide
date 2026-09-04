@@ -27,7 +27,7 @@ export function readVersion(): string {
     const pkgPath = path.join(dir, 'package.json');
     if (existsSync(pkgPath)) {
       const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as { name?: string; version?: string };
-      if (pkg.name === '@open-slide/core' && pkg.version) return pkg.version;
+      if (pkg.name === '@open-slide/react' && pkg.version) return pkg.version;
     }
     dir = path.dirname(dir);
   }

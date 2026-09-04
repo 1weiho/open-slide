@@ -4,9 +4,9 @@ import { fileURLToPath } from 'node:url';
 
 const MIGRATION_URL = 'https://open-slide.dev/docs/migrate-to-v2';
 
-// Plugins core passes to Vite that import from `vite` themselves. Each one
-// resolves `vite` from its own install location, which is not necessarily
-// the copy core resolves.
+// Plugins the React runtime passes to Vite that import from `vite` themselves.
+// Each one resolves `vite` from its own install location, which is not
+// necessarily the copy the runtime resolves.
 const VITE_CONSUMERS = ['@vitejs/plugin-react', '@tailwindcss/vite'];
 
 type ResolvedPackage = { dir: string; version: string };
@@ -52,8 +52,8 @@ export function findViteMismatch(coreDir: string): ViteMismatch | null {
 export function formatViteMismatch(mismatch: ViteMismatch, cwd = process.cwd()): string {
   const rel = (dir: string) => path.relative(cwd, dir) || dir;
   return [
-    `${mismatch.consumer} resolves vite@${mismatch.consumerVite.version} (${rel(mismatch.consumerVite.dir)}), but @open-slide/core ships vite@${mismatch.coreVite.version} (${rel(mismatch.coreVite.dir)}).`,
-    'A `vite` entry in your package.json (v1 workspaces had one) shadows the copy core depends on. Remove it and reinstall.',
+    `${mismatch.consumer} resolves vite@${mismatch.consumerVite.version} (${rel(mismatch.consumerVite.dir)}), but @open-slide/react ships vite@${mismatch.coreVite.version} (${rel(mismatch.coreVite.dir)}).`,
+    'A `vite` entry in your package.json (v1 workspaces had one) shadows the copy the React runtime depends on. Remove it and reinstall.',
     `Migration guide: ${MIGRATION_URL}`,
   ].join('\n');
 }

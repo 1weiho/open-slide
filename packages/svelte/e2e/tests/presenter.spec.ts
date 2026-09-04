@@ -43,6 +43,7 @@ test.describe('Svelte presenter', () => {
   }) => {
     await page.goto('/s/steps');
     await page.keyboard.press('Enter');
+    await expect(page.locator('.play-shell')).toBeVisible();
     await page.keyboard.press('ArrowRight');
     await expect(page).toHaveURL(/[?&]p=2/);
 

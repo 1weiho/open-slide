@@ -155,11 +155,11 @@ describe('applyDesignWrite — slide without design', () => {
     expect(r.source).toContain('const design: DesignSystem =');
   });
 
-  it('adds a fresh @open-slide/core type import when none exists', () => {
+  it('adds a fresh runtime type import when none exists', () => {
     const slide = `const Cover = () => <div>Hi</div>;\nexport default [Cover];\n`;
     const r = applyDesignWrite(slide, defaultDesign);
     if (!r.ok) throw new Error(r.error);
-    expect(r.source).toContain("import type { DesignSystem } from '@open-slide/core'");
+    expect(r.source).toContain("import type { DesignSystem } from '@open-slide/react'");
     expect(r.source).toContain('const design: DesignSystem =');
     const parsed = parseSlideDesign(r.source);
     if (!parsed.ok) throw new Error('inserted design is not parseable');
@@ -170,9 +170,7 @@ describe('applyDesignWrite — slide without design', () => {
     const slide = `import type { Page } from '@open-slide/core';\nconst Cover: Page = () => <div>Hi</div>;\nexport default [Cover];\n`;
     const r = applyDesignWrite(slide, defaultDesign);
     if (!r.ok) throw new Error(r.error);
-    expect(r.source).toMatch(
-      /import type \{ Page\s*, type DesignSystem\s*\} from '@open-slide\/core'/,
-    );
+    expect(r.source).toMatch(/import type \{ Page\s*, DesignSystem\s*\} from '@open-slide\/core'/);
     expect(r.source).not.toContain("from '@open-slide/react'");
   });
 });

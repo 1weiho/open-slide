@@ -1,11 +1,13 @@
 import fs from 'node:fs/promises';
-import path from 'node:path';
 import type { Plugin, ViteDevServer } from 'vite';
 import { type DesignSystem, defaultDesign } from '../design.ts';
 import { type AstNode, parseSource, tryParse } from '../editing/babel-walk.ts';
-import { jsString } from '../editing/edit-ops.ts';
 import { validateMutationRequest } from '../http/request-guard.ts';
 import { json, readBody, resolveSlidePath } from './api-context.ts';
+
+function jsString(value: string): string {
+  return `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n')}'`;
+}
 
 // Reading tolerates a slide mid-edit; writing splices by AST offset, so a
 // best-guess tree recovered from a syntax error must not reach the file.
@@ -296,7 +298,7 @@ function ensureDesignSystemImport(
   const braceClose = importText.lastIndexOf('}');
   // A namespace, default-only, or side-effect import has no named list to
   // extend, so `DesignSystem` needs an import statement of its own.
-  if (braceClose === -1) return addDesignSystemImport(source, imports, runtimePackage);
+  if (braceClose === -1) return addDesignSystemImport(source, imports, runtimeImport.source);
   const absoluteBrace = node.start + braceClose;
   const next = `${source.slice(0, absoluteBrace)}${specifier}${source.slice(absoluteBrace)}`;
   return { source: next, offsetShift: specifier.length };

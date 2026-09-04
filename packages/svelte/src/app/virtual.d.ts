@@ -1,6 +1,6 @@
 declare module 'virtual:open-slide/slides' {
-  import type { Page } from '@open-slide/svelte';
   import type { SlideModule } from '@open-slide/shared';
+  import type { Page } from '@open-slide/svelte';
 
   export const slideIds: string[];
   export const slideThemes: Record<string, string>;

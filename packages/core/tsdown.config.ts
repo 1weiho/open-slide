@@ -13,7 +13,7 @@ export default defineConfig({
   target: 'node20',
   platform: 'node',
   clean: true,
-  dts: { resolve: false },
+  dts: true,
   shims: false,
   deps: { neverBundle: [/^@open-slide\/(?:react|shared)(?:\/|$)/] },
 });

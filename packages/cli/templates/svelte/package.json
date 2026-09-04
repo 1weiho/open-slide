@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "@open-slide/svelte": "^0.1.0",
-    "svelte": "^5.56.8"
+    "svelte": "^5.57.0"
   },
   "devDependencies": {
-    "vite": "^5.4.10"
+    "vite": "^8.2.2"
   }
 }

@@ -1161,9 +1161,9 @@ onMount(() => {
           value={appearance}
           onchange={(event) => applyAppearance(event.currentTarget.value as Appearance)}
         >
-          <option value="system">{locale.common.system}</option>
-          <option value="light">{locale.common.light}</option>
-          <option value="dark">{locale.common.dark}</option>
+          <option value="system">{locale.themeToggle.system}</option>
+          <option value="light">{locale.themeToggle.light}</option>
+          <option value="dark">{locale.themeToggle.dark}</option>
         </select>
       </div>
       <p class="version">v{config.version}</p>
@@ -1251,7 +1251,7 @@ onMount(() => {
   <main class="home-shell themes-shell">
     <header class="home-header">
       <div><p class="eyebrow">open-slide</p><h1>{locale.themes.title}</h1></div>
-      <button class="button" onclick={backHome}>{locale.common.backToHome}</button>
+      <button class="button" onclick={backHome}>{locale.slide.backToHome}</button>
     </header>
     <ul class="themes-grid">
       {#each themes as theme}
@@ -1263,7 +1263,7 @@ onMount(() => {
   <main class="home-shell theme-detail-shell">
     <header class="home-header">
       <div><p class="eyebrow">{locale.themes.title}</p><h1>{selectedTheme.name}</h1></div>
-      <a class="button" href="../themes">{locale.common.backToHome}</a>
+      <a class="button" href="../themes">{locale.slide.backToHome}</a>
     </header>
     <p class="theme-description">{selectedTheme.description}</p>
     {#if themePage}
@@ -1285,7 +1285,7 @@ onMount(() => {
   <main class="home-shell assets-shell">
     <header class="home-header">
       <div><p class="eyebrow">open-slide</p><h1>Assets</h1></div>
-      <button class="button" onclick={backHome}>{locale.common.backToHome}</button>
+      <button class="button" onclick={backHome}>{locale.slide.backToHome}</button>
     </header>
     <section class="asset-toolbar">
       <select

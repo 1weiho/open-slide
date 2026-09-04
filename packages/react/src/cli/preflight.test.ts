@@ -90,7 +90,7 @@ describe('formatViteMismatch', () => {
 
     expect(message).toContain('@vitejs/plugin-react resolves vite@5.4.21');
     expect(message).toContain(path.join('node_modules', 'vite'));
-    expect(message).toContain('@open-slide/core ships vite@8.2.2');
+    expect(message).toContain('@open-slide/react ships vite@8.2.2');
     expect(message).toContain('migrate-to-v2');
   });
 });

@@ -138,7 +138,9 @@ function devArgs(opts: DevOptions): string[] {
 function resolveDevEntry(userCwd: string): string {
   // resolved on every spawn so a restart after an in-app update follows the
   // node_modules symlink to the newly installed version
-  const installed = path.join(userCwd, 'node_modules', '@open-slide', 'core', 'bin.js');
-  if (existsSync(installed)) return installed;
+  for (const packageName of ['core', 'react']) {
+    const installed = path.join(userCwd, 'node_modules', '@open-slide', packageName, 'bin.js');
+    if (existsSync(installed)) return installed;
+  }
   return process.argv[1] as string;
 }

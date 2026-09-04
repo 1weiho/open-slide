@@ -1,1 +1,8 @@
-export { type AstNode, parseSource, walkAll, walkJsx } from '@open-slide/shared/editing';
+export {
+  type AstNode,
+  findJsxAncestors,
+  parseSource,
+  tryParse,
+  walkAll,
+  walkJsx,
+} from '@open-slide/shared/editing';

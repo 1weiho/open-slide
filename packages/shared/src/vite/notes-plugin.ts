@@ -2,7 +2,6 @@ import fs from 'node:fs/promises';
 import * as t from '@babel/types';
 import type { Plugin, ViteDevServer } from 'vite';
 import { parseSource } from '../editing/babel-walk.ts';
-import { resolveSlideEntry } from '../editing/slide-ops.ts';
 import { validateMutationRequest } from '../http/request-guard.ts';
 import { json, readBody, readSlideSource, resolveSlidePath } from './api-context.ts';
 import { hasRecentWrite, recordWrite } from './recent-writes.ts';

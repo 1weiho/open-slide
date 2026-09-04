@@ -4,6 +4,7 @@ export {
   json,
   makeContext,
   readBody,
+  readSlideSource,
   resolveSlideEntryPath,
   resolveSlidePath,
 } from './api-context.ts';

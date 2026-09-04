@@ -1,6 +1,8 @@
-import { nextFrame } from './dom';
-
 const DEFAULT_WAITFOR_TIMEOUT_MS = 10_000;
+
+function nextFrame(): Promise<void> {
+  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+}
 
 // `document.fonts.ready` already waits for every in-flight face. Never call
 // `face.load()` on the rest: unloaded faces were never requested by CSS, and

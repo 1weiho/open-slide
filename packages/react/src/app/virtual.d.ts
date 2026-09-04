@@ -7,7 +7,7 @@ declare module 'virtual:open-slide/slides' {
 }
 
 declare module 'virtual:open-slide/config' {
-  import type { Locale } from '../locale/types';
+  import type { Locale } from '@open-slide/shared/locale';
 
   const config: {
     base?: string;
