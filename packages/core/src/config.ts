@@ -6,6 +6,16 @@ export type OpenSlideBuildConfig = {
   allowHtmlDownload?: boolean;
 };
 
+export type OpenSlideThemeImportConfig = {
+  /**
+   * When set, themes may only be imported from these hosts (exact match or a
+   * subdomain of an entry). Leave unset to allow any host — the CLI/UI still
+   * asks for confirmation before importing, since a theme's demo file is
+   * executable code.
+   */
+  allowedHosts?: string[];
+};
+
 export type OpenSlideConfig = {
   base?: string;
   slidesDir?: string;
@@ -13,6 +23,7 @@ export type OpenSlideConfig = {
   assetsDir?: string;
   port?: number;
   allowedHosts?: string[] | true;
+  themeImport?: OpenSlideThemeImportConfig;
   /**
    * @deprecated Pick the UI language from the language switcher in the slide UI
    * instead. When set, this only seeds the initial language until the user

@@ -476,5 +476,28 @@ export const en: Locale = {
     usedByEmpty: 'No slides use this theme yet.',
     expandPromptAria: 'Expand prompt',
     collapsePromptAria: 'Collapse prompt',
+    importFromUrl: 'Import from URL',
+    importDialogTitle: 'Import a theme',
+    importDialogDescription:
+      'Paste a deployed open-slide site URL, a themes/index.json, or a theme .md file.',
+    importUrlPlaceholder: 'https://example.com',
+    importWarning:
+      'A theme’s demo file is code that runs in your dev server and build. Only import from sources you trust.',
+    importAction: 'Import',
+    importing: 'Importing…',
+    importMultipleFound: 'Found {count} themes at this source. Choose which to import.',
+    importSuccess: 'Imported {ids}',
+    importRenamed: 'Renamed to avoid a clash: {renames}',
+    importFailed: 'Import failed: {msg}',
+    copyUrl: 'Copy theme URL',
+    copyUrlSuccess: 'Theme URL copied',
+    copyUrlFailed: 'Failed to copy URL',
+    themeActions: 'Theme actions',
+    deleteEyebrow: 'Destructive',
+    deleteDialogTitle: 'Delete theme?',
+    deleteDialogDescription:
+      'This permanently removes {name} and its files from disk. This cannot be undone.',
+    deleteSuccess: 'Deleted {name}',
+    deleteFailed: 'Failed to delete theme',
   },
 };

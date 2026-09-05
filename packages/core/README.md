@@ -25,6 +25,7 @@ Once installed, the `open-slide` bin is available in the workspace:
 | `open-slide dev` | Start the dev server. Flags: `-p, --port <port>`, `--host [host]`, `--open`. |
 | `open-slide build` | Build a static site. Flags: `--out-dir <dir>` (defaults to `dist`). |
 | `open-slide preview` | Preview the production build. Flags: `-p, --port <port>`, `--host [host]`, `--open`. |
+| `open-slide theme add <url>` | Import a theme from a deployed open-slide site. Flags: `--id <id>`, `--all`, `--force`, `-y, --yes`. |
 
 ## Config
 

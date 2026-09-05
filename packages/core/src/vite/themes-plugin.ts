@@ -1,9 +1,9 @@
 import { existsSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import fg from 'fast-glob';
 import { normalizePath, type Plugin } from 'vite';
 import type { OpenSlideConfig } from '../config.ts';
+import { manifestEntry, type ScannedTheme, scanThemes } from '../themes/scan.ts';
 
 export type ThemesPluginOptions = {
   userCwd: string;
@@ -16,72 +16,7 @@ function resolved(id: string): string {
   return `\0${id}`;
 }
 
-type Frontmatter = {
-  name: string;
-  description: string;
-};
-
-type ParsedTheme = {
-  id: string;
-  frontmatter: Frontmatter;
-  body: string;
-  demoAbs: string | null;
-};
-
-const FM_RE = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/;
-
-function parseFrontmatter(raw: string, themeId: string): { fm: Frontmatter; body: string } {
-  const match = raw.match(FM_RE);
-  const fmText = match ? match[1] : '';
-  const body = match ? match[2] : raw;
-
-  const data: Record<string, string> = {};
-  for (const line of fmText.split(/\r?\n/)) {
-    const m = line.match(/^([A-Za-z0-9_-]+)\s*:\s*(.*)$/);
-    if (!m) continue;
-    let value = m[2].trim();
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-    data[m[1]] = value;
-  }
-
-  return {
-    fm: {
-      name: data.name || themeId,
-      description: data.description || '',
-    },
-    body: body.trim(),
-  };
-}
-
-async function findThemes(userCwd: string, themesDir: string): Promise<string[]> {
-  const abs = path.resolve(userCwd, themesDir);
-  if (!existsSync(abs)) return [];
-  const hits = await fg('*.md', { cwd: abs, absolute: true, onlyFiles: true });
-  return hits.sort();
-}
-
-async function readTheme(mdAbs: string, themesRoot: string): Promise<ParsedTheme> {
-  const id = path.basename(mdAbs, '.md');
-  const raw = await fs.readFile(mdAbs, 'utf8');
-  const { fm, body } = parseFrontmatter(raw, id);
-  const demoCandidates = [`${id}.demo.tsx`, `${id}.demo.jsx`, `${id}.demo.ts`, `${id}.demo.js`];
-  let demoAbs: string | null = null;
-  for (const cand of demoCandidates) {
-    const p = path.join(themesRoot, cand);
-    if (existsSync(p)) {
-      demoAbs = p;
-      break;
-    }
-  }
-  return { id, frontmatter: fm, body, demoAbs };
-}
-
-function generateThemesModule(themes: ParsedTheme[], isDev: boolean): string {
+function generateThemesModule(themes: ScannedTheme[], isDev: boolean): string {
   const meta = themes.map((t) => ({
     id: t.id,
     name: t.frontmatter.name,
@@ -120,6 +55,10 @@ export function themesPlugin(opts: ThemesPluginOptions): Plugin {
   const themesRoot = path.resolve(userCwd, themesDir);
 
   let isDev = false;
+  // During a build, load() and generateBundle() see the same on-disk state, so
+  // the scan is shared. Never cached in dev — the watcher invalidates the
+  // module expecting a fresh scan on the next load().
+  let buildScan: ScannedTheme[] | null = null;
 
   return {
     name: 'open-slide:themes',
@@ -132,9 +71,31 @@ export function themesPlugin(opts: ThemesPluginOptions): Plugin {
     },
     async load(id) {
       if (id !== resolved(THEMES_VMOD)) return null;
-      const files = await findThemes(userCwd, themesDir);
-      const themes = await Promise.all(files.map((f) => readTheme(f, themesRoot)));
+      const themes = await scanThemes(themesRoot);
+      if (!isDev) buildScan = themes;
       return generateThemesModule(themes, isDev);
+    },
+    async generateBundle() {
+      const themes = buildScan ?? (await scanThemes(themesRoot));
+
+      for (const theme of themes) {
+        const mdAbs = path.join(themesRoot, `${theme.id}.md`);
+        const md = await fs.readFile(mdAbs, 'utf8');
+        this.emitFile({ type: 'asset', fileName: `themes/${theme.id}.md`, source: md });
+
+        if (theme.demoAbs) {
+          const demoName = path.basename(theme.demoAbs);
+          const demoSource = await fs.readFile(theme.demoAbs, 'utf8');
+          this.emitFile({ type: 'asset', fileName: `themes/${demoName}`, source: demoSource });
+        }
+      }
+
+      const manifest = themes.map(manifestEntry);
+      this.emitFile({
+        type: 'asset',
+        fileName: 'themes/index.json',
+        source: `${JSON.stringify({ themes: manifest }, null, 2)}\n`,
+      });
     },
     configureServer(server) {
       const isThemeFile = (p: string) => {

@@ -14,6 +14,7 @@ declare module 'virtual:open-slide/config' {
     slidesDir?: string;
     port?: number;
     locale?: Locale;
+    themeImport?: { allowedHosts?: string[] };
     version: string;
     build: {
       showSlideBrowser: boolean;

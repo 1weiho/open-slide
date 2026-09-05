@@ -3,6 +3,7 @@ import { useLocale } from '@/lib/use-locale';
 import { pad2 } from '@/lib/utils';
 import { SystemViewIcon } from '../components/sidebar/folder-item';
 import { ThemeDetail } from '../components/themes/theme-detail';
+import { ThemeImportDialog } from '../components/themes/theme-import-dialog';
 import { ThemesGallery } from '../components/themes/themes-gallery';
 import { themes as themeRegistry } from '../lib/themes';
 
@@ -18,6 +19,11 @@ export function ThemesGalleryPage() {
             {t.themes.title}
           </h1>
           <span className="folio ml-0.5">{pad2(themeRegistry.length)}</span>
+          {import.meta.env.DEV ? (
+            <div className="ml-auto self-center">
+              <ThemeImportDialog />
+            </div>
+          ) : null}
         </div>
       </header>
       <ThemesGallery onOpen={(id) => navigate(`/themes/${encodeURIComponent(id)}`)} />

@@ -191,6 +191,178 @@ function escapeSingleQuoted(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
+const SLIDE_ENTRY_NAMES = ['index.tsx', 'index.jsx', 'index.ts', 'index.js'];
+
+// Tracks string/comment state while walking source text, so structural
+// characters embedded in either (a `}` in a title, a `theme:` in a comment)
+// never count as code.
+function createSyntaxScanner() {
+  let quote: string | null = null;
+  let lineComment = false;
+  let blockComment = false;
+  return {
+    get inCode(): boolean {
+      return quote === null && !lineComment && !blockComment;
+    },
+    get inComment(): boolean {
+      return lineComment || blockComment;
+    },
+    step(text: string, i: number): number {
+      const ch = text[i];
+      const next = text[i + 1];
+      if (lineComment) {
+        if (ch === '\n') lineComment = false;
+        return i + 1;
+      }
+      if (blockComment) {
+        if (ch === '*' && next === '/') {
+          blockComment = false;
+          return i + 2;
+        }
+        return i + 1;
+      }
+      if (quote) {
+        if (ch === '\\') return i + 2;
+        if (ch === quote) quote = null;
+        return i + 1;
+      }
+      if (ch === '/' && next === '/') {
+        lineComment = true;
+        return i + 2;
+      }
+      if (ch === '/' && next === '*') {
+        blockComment = true;
+        return i + 2;
+      }
+      if (ch === "'" || ch === '"' || ch === '`') quote = ch;
+      return i + 1;
+    },
+  };
+}
+
+function syntaxStateAt(body: string, index: number): { depth: number; inComment: boolean } {
+  const scanner = createSyntaxScanner();
+  let depth = 0;
+  for (let i = 0; i < index; ) {
+    const ch = body[i];
+    if (scanner.inCode) {
+      if (ch === '{' || ch === '[' || ch === '(') depth++;
+      else if (ch === '}' || ch === ']' || ch === ')') depth--;
+    }
+    i = scanner.step(body, i);
+  }
+  return { depth, inComment: scanner.inComment };
+}
+
+function findMatchingBrace(source: string, openBrace: number): number {
+  const scanner = createSyntaxScanner();
+  let depth = 0;
+  for (let i = openBrace; i < source.length; ) {
+    const ch = source[i];
+    if (scanner.inCode) {
+      if (ch === '{') depth++;
+      else if (ch === '}' && --depth === 0) return i;
+    }
+    i = scanner.step(source, i);
+  }
+  return -1;
+}
+
+/**
+ * Remove the `theme: '<themeId>'` field from a slide module's `export const meta`,
+ * but only when it names `themeId`. Returns the rewritten source, or `null` when
+ * nothing changed (no meta object, no theme field, or it points at a different
+ * theme). Best-effort: returns `null` rather than guessing when the meta shape is
+ * too surprising to edit safely.
+ */
+export function removeMetaThemeFromSource(source: string, themeId: string): string | null {
+  const metaStart = source.search(/export\s+const\s+meta\b/);
+  if (metaStart === -1) return null;
+  const eqIdx = source.indexOf('=', metaStart);
+  if (eqIdx === -1) return null;
+  const openBrace = source.indexOf('{', eqIdx);
+  if (openBrace === -1) return null;
+
+  const closeBrace = findMatchingBrace(source, openBrace);
+  if (closeBrace === -1) return null;
+
+  const body = source.slice(openBrace + 1, closeBrace);
+  // The leading boundary keeps this from matching inside a longer key (e.g.
+  // `subtheme:`); the trailing lookahead keeps it from matching `theme: '…'`
+  // embedded in a string value, where the quote isn't followed by a separator.
+  // The syntax-state check keeps it from matching a `theme:` nested in a
+  // sub-object or sitting inside a comment — neither is the `meta.theme` the
+  // runtime reads.
+  const propRe = /(^|[\s,{])theme\s*:\s*(['"`])((?:\\.|(?!\2).)*)\2(?=\s*(?:[,}\n]|$))/g;
+  let match: RegExpExecArray | null = null;
+  for (let m = propRe.exec(body); m !== null; m = propRe.exec(body)) {
+    const state = syntaxStateAt(body, m.index + m[1].length);
+    if (state.depth === 0 && !state.inComment) {
+      match = m;
+      break;
+    }
+  }
+  if (!match || match[3] !== themeId) return null;
+
+  let start = match.index + match[1].length;
+  let end = match.index + match[0].length;
+
+  // Consume exactly one separator comma so the object stays well-formed: prefer a
+  // trailing comma, otherwise fall back to a leading one.
+  const trailingComma = body.slice(end).match(/^[ \t]*,[ \t]*/);
+  if (trailingComma) {
+    end += trailingComma[0].length;
+  } else {
+    const leadingComma = body.slice(0, start).match(/,[ \t]*$/);
+    if (leadingComma) start -= leadingComma[0].length;
+  }
+
+  // If the property sat alone on its line, drop the now-empty line entirely.
+  const lineStart = body.lastIndexOf('\n', start - 1);
+  if (/^[ \t]*$/.test(body.slice(lineStart + 1, start))) {
+    start = lineStart === -1 ? 0 : lineStart;
+    const trailingWs = body.slice(end).match(/^[ \t]*(?=\n|$)/);
+    if (trailingWs) end += trailingWs[0].length;
+  }
+
+  const newBody = body.slice(0, start) + body.slice(end);
+  return source.slice(0, openBrace + 1) + newBody + source.slice(closeBrace);
+}
+
+/**
+ * Strip `meta.theme` from every slide that names `themeId`, in place. Returns the
+ * ids of the slides that were edited.
+ */
+export async function clearThemeFromSlides(slidesRoot: string, themeId: string): Promise<string[]> {
+  const dirents = await fs.readdir(slidesRoot, { withFileTypes: true }).catch(() => null);
+  if (!dirents) return [];
+
+  const cleared: string[] = [];
+  for (const dirent of dirents) {
+    if (!dirent.isDirectory() || !SLIDE_ID_RE.test(dirent.name)) continue;
+    for (const name of SLIDE_ENTRY_NAMES) {
+      const entry = path.join(slidesRoot, dirent.name, name);
+      let src: string;
+      try {
+        src = await fs.readFile(entry, 'utf8');
+      } catch {
+        continue;
+      }
+      const next = removeMetaThemeFromSource(src, themeId);
+      if (next !== null) {
+        // One unwritable slide must not abort the sweep mid-way — a dangling
+        // meta.theme is the same state as deleting the theme files by hand.
+        try {
+          await fs.writeFile(entry, next);
+          cleared.push(dirent.name);
+        } catch {}
+      }
+      break;
+    }
+  }
+  return cleared;
+}
+
 /**
  * Rewrite (or insert) the `title` field in the slide module's `export const meta`.
  *
