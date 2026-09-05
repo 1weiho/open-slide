@@ -49,7 +49,7 @@
     "commander": "^15.0.0"
   },
   "devDependencies": {
-    "@types/node": "^26.2.0",
+    "@types/node": "^26.4.1",
     "tsdown": "^0.22.14",
     "typescript": "^7.0.2"
   }
