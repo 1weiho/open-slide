@@ -17,6 +17,8 @@ type SaveCardProps = {
   onRedo?: () => void;
   canUndo?: boolean;
   canRedo?: boolean;
+  undoLabel?: string;
+  redoLabel?: string;
 };
 
 // Optimistic DOM updates make the canvas *look* saved, so without this
@@ -34,8 +36,12 @@ export function SaveCard({
   onRedo,
   canUndo = false,
   canRedo = false,
+  undoLabel,
+  redoLabel,
 }: SaveCardProps) {
   const t = useLocale();
+  const resolvedUndoLabel = undoLabel ?? t.common.undo;
+  const resolvedRedoLabel = redoLabel ?? t.common.redo;
   const [justSaved, setJustSaved] = useState(false);
   const resolvedSavedLabel = savedLabel ?? t.common.saved;
 
@@ -78,8 +84,8 @@ export function SaveCard({
               className="text-muted-foreground hover:text-foreground"
               onClick={onUndo}
               disabled={committing || !canUndo}
-              aria-label={t.common.undo}
-              title={t.common.undo}
+              aria-label={resolvedUndoLabel}
+              title={resolvedUndoLabel}
             >
               <Undo2 className="size-3.5" />
             </Button>
@@ -89,8 +95,8 @@ export function SaveCard({
               className="text-muted-foreground hover:text-foreground"
               onClick={onRedo}
               disabled={committing || !canRedo}
-              aria-label={t.common.redo}
-              title={t.common.redo}
+              aria-label={resolvedRedoLabel}
+              title={resolvedRedoLabel}
             >
               <Redo2 className="size-3.5" />
             </Button>

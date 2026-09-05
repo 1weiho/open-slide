@@ -22,6 +22,8 @@ export const ja: Locale = {
     tryAgain: '再試行',
     undo: '元に戻す',
     redo: 'やり直す',
+    undoOnPage: '元に戻す · {page} ページへ移動',
+    redoOnPage: 'やり直す · {page} ページへ移動',
     selected: '選択中',
   },
 

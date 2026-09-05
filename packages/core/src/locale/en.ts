@@ -22,6 +22,8 @@ export const en: Locale = {
     tryAgain: 'Try again',
     undo: 'Undo',
     redo: 'Redo',
+    undoOnPage: 'Undo · jumps to page {page}',
+    redoOnPage: 'Redo · jumps to page {page}',
     selected: 'Selected',
   },
 

@@ -22,6 +22,8 @@ export type Locale = {
     tryAgain: string;
     undo: string;
     redo: string;
+    undoOnPage: string;
+    redoOnPage: string;
     selected: string;
   };
 

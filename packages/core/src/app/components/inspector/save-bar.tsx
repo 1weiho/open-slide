@@ -43,6 +43,16 @@ export function SaveBar() {
       onRedo={history.redo}
       canUndo={history.canUndo}
       canRedo={history.canRedo}
+      undoLabel={
+        history.undoPage === null
+          ? undefined
+          : format(t.common.undoOnPage, { page: history.undoPage + 1 })
+      }
+      redoLabel={
+        history.redoPage === null
+          ? undefined
+          : format(t.common.redoOnPage, { page: history.redoPage + 1 })
+      }
     />
   );
 }
