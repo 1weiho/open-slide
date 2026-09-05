@@ -258,27 +258,40 @@ function buildHtml(opts: {
 <title>${escapeHtml(opts.title)}</title>
 ${opts.externalLinks}
 <style>
-html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
-.os-stage { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
-.os-frame { width: ${CANVAS_WIDTH}px; height: ${CANVAS_HEIGHT}px; flex-shrink: 0; background: #fff; color: #000; transform-origin: center center; overflow: hidden; position: relative; }
+html, body { margin: 0; height: 100%; background: #000; font-family: system-ui, sans-serif; }
+body { overflow: hidden; }
+.os-stage { position: fixed; inset: 0; overflow: auto; display: flex; justify-content: center; align-items: center; touch-action: pan-y; overscroll-behavior: contain; }
+.os-frame { width: ${CANVAS_WIDTH}px; height: ${CANVAS_HEIGHT}px; flex-shrink: 0; background: #fff; color: #000; overflow: hidden; position: relative; }
+.os-canvas { width: ${CANVAS_WIDTH}px; height: ${CANVAS_HEIGHT}px; position: relative; transform-origin: top left; }
 .os-page { position: absolute; inset: 0; }
 .os-page[hidden] { display: none !important; }
 .os-counter { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); color: #fff; background: rgba(0,0,0,.5); padding: 2px 10px; border-radius: 999px; font-size: 12px; z-index: 10; font-variant-numeric: tabular-nums; }
+.os-hint { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,.7); font-size: 12px; z-index: 10; pointer-events: none; display: none; text-align: center; }
+@media (pointer: coarse) { .os-hint { display: block; } }
 </style>
 <style>${opts.bundledCss}</style>
 </head>
 <body>
-<div class="os-stage"><div class="os-frame" id="os-frame" data-osd-canvas${frameStyle ? ` style="${escapeAttr(frameStyle)}"` : ''}>${pagesMarkup}</div></div>
+<div class="os-stage" id="os-stage"><div class="os-frame" id="os-frame"${frameStyle ? ` style="${escapeAttr(frameStyle)}"` : ''}><div class="os-canvas" id="os-canvas" data-osd-canvas>${pagesMarkup}</div></div></div>
 <div class="os-counter"><span id="os-cur">1</span> / <span id="os-total">${opts.pagesHtml.length}</span></div>
+<div class="os-hint">swipe or tap the edges to turn · scroll to read</div>
 <script>
 (function () {
   var pages = document.querySelectorAll('.os-page');
   var idx = 0;
+  var stage = document.getElementById('os-stage');
   var frame = document.getElementById('os-frame');
+  var canvas = document.getElementById('os-canvas');
   var cur = document.getElementById('os-cur');
   function fit() {
-    var s = Math.min(window.innerWidth / ${CANVAS_WIDTH}, window.innerHeight / ${CANVAS_HEIGHT});
-    frame.style.transform = 'scale(' + s + ')';
+    var w = window.innerWidth, h = window.innerHeight;
+    // Portrait: fit to width and let the slide scroll vertically. Otherwise
+    // letterbox the whole slide to fit on screen.
+    var s = w < h ? w / ${CANVAS_WIDTH} : Math.min(w / ${CANVAS_WIDTH}, h / ${CANVAS_HEIGHT});
+    stage.style.alignItems = w < h ? 'flex-start' : 'center';
+    frame.style.width = Math.round(${CANVAS_WIDTH} * s) + 'px';
+    frame.style.height = Math.round(${CANVAS_HEIGHT} * s) + 'px';
+    canvas.style.transform = 'scale(' + s + ')';
   }
   function go(i) {
     idx = Math.max(0, Math.min(pages.length - 1, i));
@@ -294,8 +307,33 @@ html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-f
       });
     });
     cur.textContent = String(idx + 1);
+    stage.scrollTop = 0;
   }
+  var touchX = null, touchMoved = false;
+  stage.addEventListener('touchstart', function (e) {
+    if (e.touches.length !== 1) return;
+    touchX = e.touches[0].clientX;
+    touchMoved = false;
+  }, { passive: true });
+  stage.addEventListener('touchmove', function (e) {
+    if (touchX === null || e.touches.length !== 1) return;
+    if (Math.abs(e.touches[0].clientX - touchX) > 32) touchMoved = true;
+  }, { passive: true });
+  stage.addEventListener('touchend', function (e) {
+    if (touchX === null) return;
+    var dx = e.changedTouches[0].clientX - touchX;
+    touchX = null;
+    if (Math.abs(dx) > 40 && touchMoved) go(idx + (dx < 0 ? 1 : -1));
+  }, { passive: true });
+  stage.addEventListener('click', function (e) {
+    if (touchMoved) { touchMoved = false; return; }
+    if (e.target && e.target.closest && e.target.closest('a')) return;
+    var x = e.clientX, w = window.innerWidth;
+    if (x < w * 0.34) go(idx - 1);
+    else if (x > w * 0.66) go(idx + 1);
+  });
   window.addEventListener('resize', fit);
+  window.addEventListener('orientationchange', fit);
   window.addEventListener('keydown', function (e) {
     if (['ArrowRight','ArrowDown','PageDown',' '].indexOf(e.key) >= 0) { e.preventDefault(); go(idx + 1); }
     else if (['ArrowLeft','ArrowUp','PageUp'].indexOf(e.key) >= 0) { e.preventDefault(); go(idx - 1); }
