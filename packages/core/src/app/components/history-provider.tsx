@@ -7,24 +7,22 @@ import {
   useRef,
   useState,
 } from 'react';
+import { type HistoryEntry, HistoryStack } from '@/lib/history-stack';
 
-export type HistoryEntry = {
-  undo: () => void;
-  redo: () => void;
-  coalesceKey?: string;
-  ts: number;
-};
+export type { HistoryEntry };
 
 type HistoryCtx = {
   canUndo: boolean;
   canRedo: boolean;
+  // Page the next undo/redo will jump to; null when it applies to the
+  // current page (or is page-agnostic, like a design change).
+  undoPage: number | null;
+  redoPage: number | null;
   record: (entry: Omit<HistoryEntry, 'ts'>) => void;
   undo: () => void;
   redo: () => void;
   clear: () => void;
 };
-
-const COALESCE_WINDOW_MS = 500;
 
 const Ctx = createContext<HistoryCtx | null>(null);
 
@@ -34,83 +32,48 @@ export function useHistory(): HistoryCtx {
   return v;
 }
 
-export function HistoryProvider({ children }: { children: ReactNode }) {
-  const [past, setPast] = useState<HistoryEntry[]>([]);
-  const [future, setFuture] = useState<HistoryEntry[]>([]);
-  // Set while invoking an entry's undo/redo so providers can skip
-  // re-recording the resulting state mutation.
-  const suppressedRef = useRef(false);
+export function HistoryProvider({
+  page,
+  onNavigate,
+  children,
+}: {
+  page?: number;
+  onNavigate?: (page: number) => void;
+  children: ReactNode;
+}) {
+  const pageRef = useRef(page);
+  pageRef.current = page;
+  const navigateRef = useRef(onNavigate);
+  navigateRef.current = onNavigate;
+  const [version, setVersion] = useState(0);
+  const [stack] = useState(
+    () =>
+      new HistoryStack({
+        currentPage: () => pageRef.current,
+        navigate: (p) => navigateRef.current?.(p),
+        onChange: () => setVersion((v) => v + 1),
+      }),
+  );
 
-  const record = useCallback((entry: Omit<HistoryEntry, 'ts'>) => {
-    if (suppressedRef.current) return;
-    const ts = Date.now();
-    setPast((prev) => {
-      const top = prev.at(-1);
-      if (
-        top &&
-        entry.coalesceKey !== undefined &&
-        top.coalesceKey === entry.coalesceKey &&
-        ts - top.ts < COALESCE_WINDOW_MS
-      ) {
-        const merged: HistoryEntry = {
-          undo: top.undo,
-          redo: entry.redo,
-          coalesceKey: entry.coalesceKey,
-          ts,
-        };
-        return [...prev.slice(0, -1), merged];
-      }
-      return [...prev, { ...entry, ts }];
-    });
-    setFuture([]);
-  }, []);
+  const record = useCallback((entry: Omit<HistoryEntry, 'ts'>) => stack.record(entry), [stack]);
+  const undo = useCallback(() => stack.undo(), [stack]);
+  const redo = useCallback(() => stack.redo(), [stack]);
+  const clear = useCallback(() => stack.clear(), [stack]);
 
-  const undo = useCallback(() => {
-    setPast((prev) => {
-      const top = prev.at(-1);
-      if (!top) return prev;
-      suppressedRef.current = true;
-      try {
-        top.undo();
-      } finally {
-        suppressedRef.current = false;
-      }
-      setFuture((f) => [...f, top]);
-      return prev.slice(0, -1);
-    });
-  }, []);
-
-  const redo = useCallback(() => {
-    setFuture((prev) => {
-      const top = prev.at(-1);
-      if (!top) return prev;
-      suppressedRef.current = true;
-      try {
-        top.redo();
-      } finally {
-        suppressedRef.current = false;
-      }
-      setPast((p) => [...p, top]);
-      return prev.slice(0, -1);
-    });
-  }, []);
-
-  const clear = useCallback(() => {
-    setPast([]);
-    setFuture([]);
-  }, []);
-
-  const value = useMemo<HistoryCtx>(
-    () => ({
-      canUndo: past.length > 0,
-      canRedo: future.length > 0,
+  const value = useMemo<HistoryCtx>(() => {
+    void version;
+    const jumpTarget = (p: number | undefined) => (p === undefined || p === page ? null : p);
+    return {
+      canUndo: stack.canUndo,
+      canRedo: stack.canRedo,
+      undoPage: jumpTarget(stack.undoPage),
+      redoPage: jumpTarget(stack.redoPage),
       record,
       undo,
       redo,
       clear,
-    }),
-    [past.length, future.length, record, undo, redo, clear],
-  );
+    };
+  }, [version, page, stack, record, undo, redo, clear]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

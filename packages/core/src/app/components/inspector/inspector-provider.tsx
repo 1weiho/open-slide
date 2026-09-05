@@ -291,6 +291,14 @@ export function InspectorProvider({
 
   const pendingRef = useRef<Map<string, Bucket>>(new Map());
   const instanceCounterRef = useRef(0);
+  // Page + document-order position of each stamped instance. A page's DOM
+  // is torn down on navigation, so the stamp attribute is lost; this lets
+  // `resolveInstance` re-stamp the same call site after a remount.
+  const instanceRefsRef = useRef<Map<string, { loc: string; page: number; ordinal: number }>>(
+    new Map(),
+  );
+  const pageIndexRef = useRef(pageIndex);
+  pageIndexRef.current = pageIndex;
   const pendingSeqRef = useRef(0);
   const [pendingCount, setPendingCount] = useState(0);
   const [committing, setCommitting] = useState(false);
@@ -317,7 +325,32 @@ export function InspectorProvider({
     if (existing) return existing;
     const next = `inst-${++instanceCounterRef.current}`;
     el.setAttribute(INSTANCE_ID_ATTR, next);
+    const loc = el.dataset.slideLoc;
+    const layer = el.closest<HTMLElement>('[data-slide-page]');
+    if (loc) {
+      const scope = layer ?? el.closest<HTMLElement>('[data-inspector-root]') ?? document.body;
+      const siblings = Array.from(scope.querySelectorAll<HTMLElement>(`[data-slide-loc="${loc}"]`));
+      instanceRefsRef.current.set(next, {
+        loc,
+        page: layer ? Number(layer.dataset.slidePage) : pageIndexRef.current,
+        ordinal: siblings.indexOf(el),
+      });
+    }
     return next;
+  }, []);
+
+  const resolveInstance = useCallback((instanceId: string): HTMLElement | null => {
+    const root = document.querySelector<HTMLElement>('[data-inspector-root]');
+    if (!root) return null;
+    const stamped = root.querySelector<HTMLElement>(`[${INSTANCE_ID_ATTR}="${instanceId}"]`);
+    if (stamped) return stamped;
+    const ref = instanceRefsRef.current.get(instanceId);
+    if (!ref) return null;
+    const layer = root.querySelector<HTMLElement>(`[data-slide-page="${ref.page}"]`);
+    const el = layer?.querySelectorAll<HTMLElement>(`[data-slide-loc="${ref.loc}"]`)[ref.ordinal];
+    if (!el || el.hasAttribute(INSTANCE_ID_ATTR)) return null;
+    el.setAttribute(INSTANCE_ID_ATTR, instanceId);
+    return el;
   }, []);
 
   const refreshCount = useCallback(() => {
@@ -340,20 +373,38 @@ export function InspectorProvider({
   // since the original `anchor` reference may have unmounted. With an
   // instance id, prefer the matching DOM node so per-instance text edits
   // round-trip onto the right element.
-  const findAnchor = useCallback((line: number, column: number, instanceId?: string) => {
-    const root = document.querySelector<HTMLElement>('[data-inspector-root]');
-    if (!root) return null;
-    if (instanceId) {
-      const byInstance = root.querySelector<HTMLElement>(`[${INSTANCE_ID_ATTR}="${instanceId}"]`);
-      if (byInstance) return byInstance;
-    }
-    return root.querySelector<HTMLElement>(`[data-slide-loc="${line}:${column}"]`);
-  }, []);
+  const findAnchor = useCallback(
+    (line: number, column: number, instanceId?: string) => {
+      const root = document.querySelector<HTMLElement>('[data-inspector-root]');
+      if (!root) return null;
+      if (instanceId) {
+        const byInstance = resolveInstance(instanceId);
+        if (byInstance) return byInstance;
+      }
+      // Both pages are mounted mid-transition; prefer the one being shown.
+      const selector = `[data-slide-loc="${line}:${column}"]`;
+      return (
+        root.querySelector<HTMLElement>(
+          `[data-slide-page="${pageIndexRef.current}"] ${selector}`,
+        ) ?? root.querySelector<HTMLElement>(selector)
+      );
+    },
+    [resolveInstance],
+  );
 
   // Mutate bucket + DOM without recording history. Shared by `bufferOps`
   // (the public, history-recording entry point) and by `redo` closures.
+  // `fallbackInstanceId` routes per-instance text ops when the page holding
+  // the anchor isn't mounted (redo from another page); the DOM catches up
+  // via the remount replay below.
   const applyOpsRaw = useCallback(
-    (line: number, column: number, anchor: HTMLElement | null, ops: EditOp[]) => {
+    (
+      line: number,
+      column: number,
+      anchor: HTMLElement | null,
+      ops: EditOp[],
+      fallbackInstanceId?: string,
+    ) => {
       const key = `${line}:${column}`;
       let bucket = pendingRef.current.get(key);
       if (!bucket) {
@@ -381,20 +432,22 @@ export function InspectorProvider({
           bucket.styleOps.set(op.key, { value: op.value, prevText: op.prevText, seq });
           if (anchor?.isConnected) style[op.key] = op.value ?? '';
         } else if (op.kind === 'set-text-range-style') {
-          if (!anchor) continue;
-          const instanceId = ensureInstanceId(anchor);
-          if (!bucket.origHtmls.has(instanceId)) bucket.origHtmls.set(instanceId, anchor.innerHTML);
+          const instanceId = anchor ? ensureInstanceId(anchor) : fallbackInstanceId;
+          if (!instanceId) continue;
+          if (anchor && !bucket.origHtmls.has(instanceId)) {
+            bucket.origHtmls.set(instanceId, anchor.innerHTML);
+          }
           const nextOp: Sequenced<TextRangeStyleOp> = {
             instanceId,
             start: op.start,
             end: op.end,
             key: op.key,
             value: op.value,
-            prevText: op.prevText ?? readEditableText(anchor),
+            prevText: op.prevText ?? (anchor ? readEditableText(anchor) : undefined),
             seq,
           };
           bucket.rangeStyleOps.set(rangeStyleKey(instanceId, op), nextOp);
-          if (anchor.isConnected) {
+          if (anchor?.isConnected) {
             replayDomTextRangeStyles(
               anchor,
               bucket.origHtmls.get(instanceId) ?? anchor.innerHTML,
@@ -406,14 +459,14 @@ export function InspectorProvider({
         } else if (op.kind === 'set-text') {
           // Reused JSX renders multiple DOM nodes with the same
           // `data-slide-loc` but distinct call-site literals; without an
-          // anchor we can't tell which instance to route to, so skip.
-          if (!anchor) continue;
-          const instanceId = ensureInstanceId(anchor);
-          if (!bucket.origTexts.has(instanceId)) {
+          // instance we can't tell which call site to route to, so skip.
+          const instanceId = anchor ? ensureInstanceId(anchor) : fallbackInstanceId;
+          if (!instanceId) continue;
+          if (anchor && !bucket.origTexts.has(instanceId)) {
             bucket.origTexts.set(instanceId, { value: readEditableText(anchor) });
           }
           bucket.textOps.set(instanceId, { value: op.value, seq });
-          if (anchor.isConnected) setEditableText(anchor, op.value);
+          if (anchor?.isConnected) setEditableText(anchor, op.value);
         } else if (op.kind === 'set-attr-asset') {
           if (anchor && !bucket.origAttrs.has(op.attr)) {
             bucket.origAttrs.set(
@@ -540,8 +593,9 @@ export function InspectorProvider({
     [ensureInstanceId],
   );
 
-  // Restore the snapshotted values to bucket + DOM. Mirrors the bucket-empty
-  // logic of `cancelEdits` so an undo back to the absolute baseline cleans up.
+  // Restore the snapshotted values to bucket + DOM. A bucket emptied by undo
+  // is kept (not deleted) so its pre-edit snapshots survive for a later redo
+  // that may run while the page is unmounted.
   const restoreSnapshot = useCallback(
     (line: number, column: number, snaps: Snap[]) => {
       const key = `${line}:${column}`;
@@ -567,7 +621,7 @@ export function InspectorProvider({
             if (sharedAnchor?.isConnected) sharedStyle[snap.key] = orig ?? '';
           }
         } else if (snap.kind === 'range-style') {
-          const textAnchor = findAnchor(line, column, snap.instanceId);
+          const textAnchor = resolveInstance(snap.instanceId);
           if (snap.existed && snap.value) {
             bucket.rangeStyleOps.set(snap.id, { ...snap.value, seq: ++pendingSeqRef.current });
           } else {
@@ -584,7 +638,7 @@ export function InspectorProvider({
             );
           }
         } else if (snap.kind === 'text') {
-          const textAnchor = findAnchor(line, column, snap.instanceId);
+          const textAnchor = resolveInstance(snap.instanceId);
           if (snap.existed) {
             bucket.textOps.set(snap.instanceId, {
               value: snap.value ?? '',
@@ -611,17 +665,9 @@ export function InspectorProvider({
           }
         }
       }
-      if (
-        bucket.styleOps.size === 0 &&
-        bucket.rangeStyleOps.size === 0 &&
-        bucket.textOps.size === 0 &&
-        bucket.attrOps.size === 0
-      ) {
-        pendingRef.current.delete(key);
-      }
       refreshCount();
     },
-    [findAnchor, refreshCount],
+    [findAnchor, resolveInstance, refreshCount],
   );
 
   const bufferOps = useCallback(
@@ -631,8 +677,16 @@ export function InspectorProvider({
       )
         ? ensureInstanceId(anchor)
         : undefined;
-      const snaps = snapshotForOps(line, column, anchor, ops);
-      applyOpsRaw(line, column, anchor, ops);
+      // Resolve anchor-derived fields now so the redo closure can replay
+      // without the anchor (page unmounted).
+      const resolvedOps = ops.map((op) =>
+        op.kind === 'set-text-range-style' && op.prevText === undefined
+          ? { ...op, prevText: readEditableText(anchor) }
+          : op,
+      );
+      const snaps = snapshotForOps(line, column, anchor, resolvedOps);
+      applyOpsRaw(line, column, anchor, resolvedOps);
+      const page = pageIndexRef.current;
       const first = ops[0];
       const opKey = first
         ? first.kind === 'set-style'
@@ -644,11 +698,27 @@ export function InspectorProvider({
       const coalesceKey = `inspector:${line}:${column}:${first?.kind ?? 'noop'}:${opKey}`;
       history.record({
         coalesceKey,
+        page,
         undo: () => restoreSnapshot(line, column, snaps),
-        redo: () => applyOpsRaw(line, column, findAnchor(line, column, instanceId), ops),
+        redo: () =>
+          applyOpsRaw(
+            line,
+            column,
+            instanceId ? resolveInstance(instanceId) : findAnchor(line, column),
+            resolvedOps,
+            instanceId,
+          ),
       });
     },
-    [applyOpsRaw, snapshotForOps, restoreSnapshot, findAnchor, history, ensureInstanceId],
+    [
+      applyOpsRaw,
+      snapshotForOps,
+      restoreSnapshot,
+      findAnchor,
+      resolveInstance,
+      history,
+      ensureInstanceId,
+    ],
   );
 
   const commitEdits = useCallback(async () => {
@@ -800,20 +870,18 @@ export function InspectorProvider({
       }
       // Each text edit has its own anchor — locate by instance id.
       for (const [instanceId, html] of b.origHtmls) {
-        const textEl =
-          root?.querySelector<HTMLElement>(`[${INSTANCE_ID_ATTR}="${instanceId}"]`) ?? null;
+        const textEl = resolveInstance(instanceId);
         if (textEl?.isConnected) textEl.innerHTML = html;
       }
       for (const [instanceId, orig] of b.origTexts) {
-        const textEl =
-          root?.querySelector<HTMLElement>(`[${INSTANCE_ID_ATTR}="${instanceId}"]`) ?? null;
+        const textEl = resolveInstance(instanceId);
         if (textEl?.isConnected) setEditableText(textEl, orig.value);
       }
     }
     pendingRef.current = new Map();
     setPendingCount(0);
     history.clear();
-  }, [history]);
+  }, [history, resolveInstance]);
 
   // Auto-flush on inspector close and on route unmount so toggling
   // off or navigating away doesn't drop buffered edits. Failures are
@@ -876,6 +944,12 @@ export function InspectorProvider({
     const replayAll = () => {
       if (pendingRef.current.size === 0) return;
       observer?.disconnect();
+      // Freshly mounted nodes carry no instance stamp; re-associate them
+      // first so the per-instance text replay below can find them.
+      for (const bucket of pendingRef.current.values()) {
+        for (const instanceId of bucket.textOps.keys()) resolveInstance(instanceId);
+        for (const op of bucket.rangeStyleOps.values()) resolveInstance(op.instanceId);
+      }
       root.querySelectorAll<HTMLElement>('[data-slide-loc]').forEach(applyBuffered);
       observer?.observe(root, { childList: true, subtree: true });
     };
@@ -884,7 +958,7 @@ export function InspectorProvider({
     observer = new MutationObserver(replayAll);
     observer.observe(root, { childList: true, subtree: true });
     return () => observer?.disconnect();
-  }, []);
+  }, [resolveInstance]);
 
   useEffect(() => {
     void pageIndex;
@@ -964,6 +1038,27 @@ export function InspectorProvider({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [toggle]);
+
+  const { canUndo, canRedo, undo: historyUndo, redo: historyRedo } = history;
+  useEffect(() => {
+    if (import.meta.env.PROD) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (committing || isTypingTarget(e.target)) return;
+      if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+      const key = e.key.toLowerCase();
+      const wantsRedo = (key === 'z' && e.shiftKey) || (key === 'y' && !e.shiftKey);
+      const wantsUndo = key === 'z' && !e.shiftKey;
+      if (wantsUndo && canUndo) {
+        e.preventDefault();
+        historyUndo();
+      } else if (wantsRedo && canRedo) {
+        e.preventDefault();
+        historyRedo();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [committing, canUndo, canRedo, historyUndo, historyRedo]);
 
   const openCrop = useCallback((anchor: HTMLImageElement) => {
     const loc = anchor.dataset.slideLoc;

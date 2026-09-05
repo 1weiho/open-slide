@@ -22,6 +22,8 @@ export const zhCN: Locale = {
     tryAgain: '重试',
     undo: '撤销',
     redo: '重做',
+    undoOnPage: '撤销 · 跳转到第 {page} 页',
+    redoOnPage: '重做 · 跳转到第 {page} 页',
     selected: '已选中',
   },
 
