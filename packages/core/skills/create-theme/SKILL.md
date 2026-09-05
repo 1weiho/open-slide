@@ -37,6 +37,13 @@ If the user's original message already specifies the inputs unambiguously, skip 
   - Recurring components (TrafficLights, Eyebrow, Footer-style helpers, WindowShell, …) → Fixed components section.
   - `@keyframes` blocks and the shared `styles` string → Motion section.
   - The aesthetic feel implied by the design → Aesthetic paragraph.
+- **Canvas**: read `open-slide.config.ts` and resolve `canvas` to its exact width
+  and height (`1920×1080` when omitted, `3840×2160` for 4K, `7680×4320` for
+  8K, or the explicit dimensions). Every pixel value in the theme markdown and
+  demo must use that native coordinate space. Scale the 1080p examples below by
+  2 for 4K or 4 for 8K; for custom dimensions, use
+  `min(width / 1920, height / 1080)` as a starting point and adapt the layout to
+  the actual aspect ratio.
 
 When inputs disagree (e.g. images use blue but the description says green), ask the user which to honor.
 
@@ -46,7 +53,7 @@ Use **kebab-case**, short, descriptive. Examples: `editorial-noir`, `brutalist-m
 
 ## Step 4 — Write `themes/<id>.md`
 
-Produce a file with this exact section order. Section bodies adapt to the theme; the headings stay consistent across all themes.
+Produce a file with this exact section order. Section bodies adapt to the theme; the headings stay consistent across all themes. The numeric examples below are 1080p baselines: replace every pixel value with a concrete value for the configured canvas before writing either output file.
 
 ````markdown
 ---
@@ -78,7 +85,7 @@ mode: <dark | light — whichever matches the palette's bg>
 
 ## Layout
 
-- Content padding: 120 px from canvas edges (1920 × 1080).
+- Content padding: 120 px from the configured 1920 × 1080 canvas edges.
 - Alignment: left-aligned, single column.
 - Grid notes: optional 12-column overlay at 80 px gutter for content pages.
 
@@ -178,7 +185,7 @@ const Cover: Page = () => (
 
 ## Step 4b — Write `themes/<id>.demo.tsx`
 
-The demo is a normal slide module — same shape as `slides/<id>/index.tsx`, just sitting under `themes/` so the runtime knows it's preview-only. The dev-UI Themes panel imports it and renders it inside `SlideCanvas` (1920×1080).
+The demo is a normal slide module — same shape as `slides/<id>/index.tsx`, just sitting under `themes/` so the runtime knows it's preview-only. The dev-UI Themes panel imports it and renders it inside `SlideCanvas` on the configured canvas.
 
 Contract:
 
@@ -224,6 +231,7 @@ Run this checklist before finishing:
 - [ ] Palette covers `bg` / `text` / `accent` / `muted` at minimum, all as hex.
 - [ ] Frontmatter includes `mode` matching the palette's background.
 - [ ] Type scale specifies hero, heading, body, caption sizes (or explicitly defers to `slide-authoring` defaults).
+- [ ] Every pixel value in the markdown and demo is concrete and native to the configured canvas; no 1080p literals remain in a 4K, 8K, or custom-canvas theme.
 - [ ] At least Title and Footer are defined as paste-ready React with concrete inline styles.
 - [ ] Motion section commits to one of static / subtle / rich.
 - [ ] Aesthetic paragraph names a single coherent direction.

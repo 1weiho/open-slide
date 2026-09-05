@@ -7,6 +7,7 @@ declare module 'virtual:open-slide/slides' {
 }
 
 declare module 'virtual:open-slide/config' {
+  import type { CanvasSize } from '../canvas';
   import type { Locale } from '../locale/types';
 
   const config: {
@@ -14,6 +15,7 @@ declare module 'virtual:open-slide/config' {
     slidesDir?: string;
     port?: number;
     locale?: Locale;
+    canvas: CanvasSize;
     version: string;
     build: {
       showSlideBrowser: boolean;

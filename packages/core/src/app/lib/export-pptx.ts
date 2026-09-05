@@ -1,15 +1,31 @@
 import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { type CanvasSize, getPptxCapturePixelRatio } from '../../canvas.ts';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from './canvas';
 import { designToCssVars } from './design';
 import { downloadBlob, nextPaint, sleep } from './dom';
 import { SlidePageProvider } from './page-context';
 import { isFrameAnimationSettled, waitForDataWaitfor, waitForFonts } from './print-ready';
-import { CANVAS_HEIGHT, CANVAS_WIDTH, type SlideModule } from './sdk';
+import type { SlideModule } from './sdk';
 
-// 16:9 widescreen in English Metric Units (914400 EMU per inch → 13.333in × 7.5in).
-const EMU_W = 12192000;
-const EMU_H = 6858000;
-const CAPTURE_PIXEL_RATIO = 2;
+const EMU_PER_PIXEL = 914400 / 144;
+const MAX_PPTX_SLIDE_EMU = 56 * 914400;
+
+export function getPptxSlideSize(canvas: CanvasSize): { width: number; height: number } {
+  const nativeWidth = canvas.width * EMU_PER_PIXEL;
+  const nativeHeight = canvas.height * EMU_PER_PIXEL;
+  const scale = Math.min(1, MAX_PPTX_SLIDE_EMU / nativeWidth, MAX_PPTX_SLIDE_EMU / nativeHeight);
+
+  return {
+    width: Math.round(nativeWidth * scale),
+    height: Math.round(nativeHeight * scale),
+  };
+}
+
+const { width: EMU_W, height: EMU_H } = getPptxSlideSize({
+  width: CANVAS_WIDTH,
+  height: CANVAS_HEIGHT,
+});
 
 const ANIMATION_TIMEOUT_MS = 15_000;
 const POLL_INTERVAL_MS = 100;
@@ -39,6 +55,10 @@ export async function exportSlideAsImagePptx(
   if (pages.length === 0) return;
 
   const total = pages.length;
+  const capturePixelRatio = getPptxCapturePixelRatio({
+    width: CANVAS_WIDTH,
+    height: CANVAS_HEIGHT,
+  });
   onProgress?.({ phase: 'processing', current: 0, total, percent: 0 });
 
   const container = document.createElement('div');
@@ -113,7 +133,7 @@ export async function exportSlideAsImagePptx(
       const blob = await toBlob(frames[i], {
         width: CANVAS_WIDTH,
         height: CANVAS_HEIGHT,
-        pixelRatio: CAPTURE_PIXEL_RATIO,
+        pixelRatio: capturePixelRatio,
         backgroundColor: '#ffffff',
         cacheBust: true,
       });
