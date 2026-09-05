@@ -61,7 +61,7 @@ export function InspectOverlay() {
       if (!hit) return;
       e.preventDefault();
       e.stopPropagation();
-      setSelected({ line: hit.line, column: hit.column, anchor: hit.anchor });
+      setSelected({ file: hit.file, line: hit.line, column: hit.column, anchor: hit.anchor });
       setHover({ hit });
     };
 
@@ -75,7 +75,7 @@ export function InspectOverlay() {
       if (!(hit.anchor instanceof HTMLImageElement)) return;
       e.preventDefault();
       e.stopPropagation();
-      setSelected({ line: hit.line, column: hit.column, anchor: hit.anchor });
+      setSelected({ file: hit.file, line: hit.line, column: hit.column, anchor: hit.anchor });
       openCrop(hit.anchor);
     };
 

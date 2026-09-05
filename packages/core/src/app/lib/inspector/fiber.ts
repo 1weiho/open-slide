@@ -1,4 +1,7 @@
+import { parseSlideLoc } from './slide-loc.ts';
+
 export type SlideSourceHit = {
+  file: string | null;
   line: number;
   column: number;
   anchor: HTMLElement;
@@ -34,6 +37,17 @@ function normalizeDebugFileName(fileName: string): string {
   return fileName.split(/[?#]/)[0].replace(/\\/g, '/');
 }
 
+function relUnderSlide(fileName: string, slideId: string): string | null {
+  const norm = normalizeDebugFileName(fileName);
+  const marker = `/slides/${slideId}/`;
+  const idx = norm.lastIndexOf(marker);
+  if (idx === -1) return null;
+  const rel = norm.slice(idx + marker.length);
+  if (!rel.endsWith('.tsx') || rel.endsWith('.d.ts') || rel.endsWith('.test.tsx')) return null;
+  if (rel.includes('..') || rel.startsWith('/')) return null;
+  return rel;
+}
+
 export function findSlideSource(
   el: HTMLElement,
   slideId: string,
@@ -45,32 +59,22 @@ export function findSlideSource(
   if (tagged) {
     const loc = tagged.dataset.slideLoc;
     if (loc) {
-      const idx = loc.indexOf(':');
-      if (idx > 0) {
-        const line = Number(loc.slice(0, idx));
-        const column = Number(loc.slice(idx + 1));
-        if (Number.isFinite(line) && Number.isFinite(column)) {
-          return { line, column, anchor: tagged };
-        }
-      }
+      const parsed = parseSlideLoc(loc);
+      if (parsed) return { ...parsed, anchor: tagged };
     }
   }
 
-  // Fallback for JSX rendered from imported component files (which the
-  // loc-tags plugin doesn't transform).
-  const needle = `/slides/${slideId}/index.tsx`;
+  // Fallback for JSX rendered from files the loc-tags plugin didn't
+  // transform (library components, or a sibling the tag missed).
   let fiber = getFiber(el);
   let anchor: HTMLElement = el;
   while (fiber) {
     const src = getSource(fiber);
     const isHost = fiber.stateNode instanceof HTMLElement;
-    if (
-      src?.fileName &&
-      normalizeDebugFileName(src.fileName).endsWith(needle) &&
-      src.lineNumber &&
-      (!opts?.hostOnly || isHost)
-    ) {
+    const rel = src?.fileName ? relUnderSlide(src.fileName, slideId) : null;
+    if (rel && src?.lineNumber && (!opts?.hostOnly || isHost)) {
       return {
+        file: rel === 'index.tsx' ? null : rel,
         line: src.lineNumber,
         column: src.columnNumber ?? 0,
         anchor: isHost ? (fiber.stateNode as HTMLElement) : anchor,
