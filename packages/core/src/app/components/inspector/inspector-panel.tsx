@@ -9,6 +9,7 @@ import {
   ImageIcon,
   Italic,
   MousePointer2,
+  Move,
   Paintbrush,
   PencilLine,
   Shapes,
@@ -150,6 +151,12 @@ export function InspectorPanel() {
         ? t.inspector.elementImage
         : t.inspector.elementShape;
   const ElementIcon = textSelected ? Type : imageSelected ? ImageIcon : Shapes;
+  const FormatIcon = textSelected ? Type : imageSelected ? ImageIcon : Paintbrush;
+  const formatLabel = textSelected
+    ? t.inspector.elementText
+    : imageSelected
+      ? t.inspector.elementImage
+      : t.inspector.styleLabel;
   const selectedInlineRange =
     inlineEdit?.anchor === selected?.anchor && inlineSelection ? inlineSelection : null;
   const contentRange =
@@ -276,20 +283,32 @@ export function InspectorPanel() {
         }
         banner={
           selected && snapshot ? (
-            <div className="flex shrink-0 flex-col gap-3 border-b border-hairline px-3.5 py-3">
-              <div className="flex items-center gap-2 text-[12px] font-medium">
-                <ElementIcon aria-hidden className="size-4 text-muted-foreground" />
-                <span>{elementLabel}</span>
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-hairline px-3.5 py-3">
+              <div className="flex min-w-0 items-center gap-2 text-[12px] font-medium">
+                <ElementIcon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+                <span className="truncate">{elementLabel}</span>
               </div>
-              <TabsList className="w-full" aria-label={t.inspector.format}>
-                <TabsTrigger value="format" disabled={multiple}>
-                  {textSelected
-                    ? t.inspector.elementText
-                    : imageSelected
-                      ? t.inspector.elementImage
-                      : t.inspector.styleLabel}
+              <TabsList
+                className="shrink-0 rounded-lg group-data-[orientation=horizontal]/tabs:h-8"
+                aria-label={t.inspector.format}
+              >
+                <TabsTrigger
+                  value="format"
+                  disabled={multiple}
+                  title={formatLabel}
+                  className="w-8 flex-none rounded-md px-0"
+                >
+                  <FormatIcon aria-hidden />
+                  <span className="sr-only">{formatLabel}</span>
                 </TabsTrigger>
-                <TabsTrigger value="arrange">{t.inspector.arrangeSection}</TabsTrigger>
+                <TabsTrigger
+                  value="arrange"
+                  title={t.inspector.arrangeSection}
+                  className="w-8 flex-none rounded-md px-0"
+                >
+                  <Move aria-hidden />
+                  <span className="sr-only">{t.inspector.arrangeSection}</span>
+                </TabsTrigger>
               </TabsList>
             </div>
           ) : undefined
