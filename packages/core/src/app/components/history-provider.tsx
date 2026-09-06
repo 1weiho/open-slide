@@ -35,17 +35,31 @@ export function useHistory(): HistoryCtx {
 }
 
 export function HistoryProvider({ children }: { children: ReactNode }) {
-  const [past, setPast] = useState<HistoryEntry[]>([]);
-  const [future, setFuture] = useState<HistoryEntry[]>([]);
+  const stacksRef = useRef<{ past: HistoryEntry[]; future: HistoryEntry[] }>({
+    past: [],
+    future: [],
+  });
+  const [availability, setAvailability] = useState({ canUndo: false, canRedo: false });
   // Set while invoking an entry's undo/redo so providers can skip
   // re-recording the resulting state mutation.
   const suppressedRef = useRef(false);
 
-  const record = useCallback((entry: Omit<HistoryEntry, 'ts'>) => {
-    if (suppressedRef.current) return;
-    const ts = Date.now();
-    setPast((prev) => {
-      const top = prev.at(-1);
+  const syncAvailability = useCallback(() => {
+    const canUndo = stacksRef.current.past.length > 0;
+    const canRedo = stacksRef.current.future.length > 0;
+    setAvailability((previous) =>
+      previous.canUndo === canUndo && previous.canRedo === canRedo
+        ? previous
+        : { canUndo, canRedo },
+    );
+  }, []);
+
+  const record = useCallback(
+    (entry: Omit<HistoryEntry, 'ts'>) => {
+      if (suppressedRef.current) return;
+      const ts = Date.now();
+      const { past } = stacksRef.current;
+      const top = past.at(-1);
       if (
         top &&
         entry.coalesceKey !== undefined &&
@@ -58,58 +72,68 @@ export function HistoryProvider({ children }: { children: ReactNode }) {
           coalesceKey: entry.coalesceKey,
           ts,
         };
-        return [...prev.slice(0, -1), merged];
+        stacksRef.current = { past: [...past.slice(0, -1), merged], future: [] };
+      } else {
+        stacksRef.current = { past: [...past, { ...entry, ts }], future: [] };
       }
-      return [...prev, { ...entry, ts }];
-    });
-    setFuture([]);
-  }, []);
+      syncAvailability();
+    },
+    [syncAvailability],
+  );
 
   const undo = useCallback(() => {
-    setPast((prev) => {
-      const top = prev.at(-1);
-      if (!top) return prev;
-      suppressedRef.current = true;
-      try {
-        top.undo();
-      } finally {
-        suppressedRef.current = false;
-      }
-      setFuture((f) => [...f, top]);
-      return prev.slice(0, -1);
-    });
-  }, []);
+    if (suppressedRef.current) return;
+    const previous = stacksRef.current;
+    const top = previous.past.at(-1);
+    if (!top) return;
+    const next = { past: previous.past.slice(0, -1), future: [...previous.future, top] };
+    stacksRef.current = next;
+    suppressedRef.current = true;
+    try {
+      top.undo();
+    } catch (error) {
+      if (stacksRef.current === next) stacksRef.current = previous;
+      throw error;
+    } finally {
+      suppressedRef.current = false;
+      syncAvailability();
+    }
+  }, [syncAvailability]);
 
   const redo = useCallback(() => {
-    setFuture((prev) => {
-      const top = prev.at(-1);
-      if (!top) return prev;
-      suppressedRef.current = true;
-      try {
-        top.redo();
-      } finally {
-        suppressedRef.current = false;
-      }
-      setPast((p) => [...p, top]);
-      return prev.slice(0, -1);
-    });
-  }, []);
+    if (suppressedRef.current) return;
+    const previous = stacksRef.current;
+    const top = previous.future.at(-1);
+    if (!top) return;
+    const next = { past: [...previous.past, top], future: previous.future.slice(0, -1) };
+    stacksRef.current = next;
+    suppressedRef.current = true;
+    try {
+      top.redo();
+    } catch (error) {
+      if (stacksRef.current === next) stacksRef.current = previous;
+      throw error;
+    } finally {
+      suppressedRef.current = false;
+      syncAvailability();
+    }
+  }, [syncAvailability]);
 
   const clear = useCallback(() => {
-    setPast([]);
-    setFuture([]);
-  }, []);
+    stacksRef.current = { past: [], future: [] };
+    syncAvailability();
+  }, [syncAvailability]);
 
   const value = useMemo<HistoryCtx>(
     () => ({
-      canUndo: past.length > 0,
-      canRedo: future.length > 0,
+      canUndo: availability.canUndo,
+      canRedo: availability.canRedo,
       record,
       undo,
       redo,
       clear,
     }),
-    [past.length, future.length, record, undo, redo, clear],
+    [availability.canUndo, availability.canRedo, record, undo, redo, clear],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

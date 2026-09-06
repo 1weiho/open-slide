@@ -35,7 +35,6 @@ export function usePanelMount(open: boolean): { mounted: boolean; animVisible: b
 }
 
 type PanelShellProps = {
-  animVisible: boolean;
   uiAttr: 'inspector' | 'design';
   header: React.ReactNode;
   banner?: React.ReactNode;
@@ -43,24 +42,10 @@ type PanelShellProps = {
   children: React.ReactNode;
 };
 
-export function PanelShell({
-  animVisible,
-  uiAttr,
-  header,
-  banner,
-  footer,
-  children,
-}: PanelShellProps) {
+export function PanelShell({ uiAttr, header, banner, footer, children }: PanelShellProps) {
   const dataAttrs = uiAttr === 'inspector' ? { 'data-inspector-ui': '' } : { 'data-design-ui': '' };
   return (
-    <aside
-      {...dataAttrs}
-      className="flex h-full shrink-0 justify-end overflow-hidden bg-sidebar transition-[width] ease-swift motion-reduce:transition-none"
-      style={{
-        width: animVisible ? PANEL_W : 0,
-        transitionDuration: `${PANEL_TRANSITION_MS}ms`,
-      }}
-    >
+    <aside {...dataAttrs} className="flex h-full shrink-0 bg-sidebar" style={{ width: PANEL_W }}>
       <div style={{ width: PANEL_W }} className="flex h-full shrink-0 flex-col">
         <header className="flex h-9 shrink-0 items-center justify-between gap-2 border-b border-hairline px-3">
           {header}

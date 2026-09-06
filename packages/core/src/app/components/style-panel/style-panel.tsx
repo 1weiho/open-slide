@@ -1,7 +1,7 @@
 import { Palette, Shuffle, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Field, NumberField, Section } from '@/components/panel/panel-fields';
-import { PanelShell, usePanelMount } from '@/components/panel/panel-shell';
+import { PanelShell } from '@/components/panel/panel-shell';
 import { useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
@@ -24,25 +24,19 @@ const FONT_PRESETS: Array<{ label: string; value: string }> = [
 ];
 
 type DesignPanelProps = {
-  open: boolean;
   onClose: () => void;
 };
 
-export function DesignPanel({ open, onClose }: DesignPanelProps) {
+export function DesignPanel({ onClose }: DesignPanelProps) {
   const { draft, exists, warning, loaded, dirty, update, shuffle } = useDesignPanelState();
-  // Gate the mount on data readiness so the first open still slides in
-  // instead of popping fully expanded once loading finishes.
   const ready = loaded && draft != null;
-  const { mounted, animVisible } = usePanelMount(open && ready);
   const t = useLocale();
 
   if (!ready) return null;
-  if (!mounted) return null;
 
   return (
     <PanelShell
       uiAttr="design"
-      animVisible={animVisible}
       header={
         <>
           <div className="flex min-w-0 items-center gap-2">

@@ -10,7 +10,8 @@ import {
 test.describe('inspector editing', () => {
   const createdSlides: string[] = [];
 
-  test.afterEach(async ({ request }) => {
+  test.afterEach(async ({ page, request }) => {
+    await page.close();
     for (const id of createdSlides.splice(0)) {
       await deleteSlide(request, id);
     }
@@ -24,24 +25,35 @@ test.describe('inspector editing', () => {
     createdSlides.push(slideId);
     await duplicateSlide(request, 'edit-target', slideId);
     await openSlide(page, slideId);
+    await expect(page.locator('[data-inspector-ready]')).toBeVisible();
   }
 
-  test('selecting an element opens the panel with its tag and text', async ({ page, request }) => {
+  test('selecting text opens its formatting controls with optional content editing', async ({
+    page,
+    request,
+  }) => {
     await openEditable(page, request, 'insp-select');
-    await page.getByTitle('Inspect').click();
     await editorCanvas(page).getByText('Editable headline').click();
 
     const panel = page.locator('aside[data-inspector-ui]');
     await expect(panel).toBeVisible();
-    await expect(panel.getByText('<h1>')).toBeVisible();
+    await expect(panel.getByRole('tab', { name: 'Text', exact: true })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await panel.locator('summary').filter({ hasText: 'Content' }).click();
     await expect(panel.getByPlaceholder('Element text')).toHaveValue('Editable headline');
   });
 
   test('saving a text edit rewrites the slide source on disk', async ({ page, request }) => {
     await openEditable(page, request, 'insp-save');
-    await page.getByTitle('Inspect').click();
     await editorCanvas(page).getByText('Editable headline').click();
 
+    await page
+      .locator('aside[data-inspector-ui]')
+      .locator('summary')
+      .filter({ hasText: 'Content' })
+      .click();
     await page
       .locator('aside[data-inspector-ui]')
       .getByPlaceholder('Element text')
@@ -59,9 +71,13 @@ test.describe('inspector editing', () => {
 
   test('discard reverts the edit without touching the file', async ({ page, request }) => {
     await openEditable(page, request, 'insp-discard');
-    await page.getByTitle('Inspect').click();
     await editorCanvas(page).getByText('Editable headline').click();
 
+    await page
+      .locator('aside[data-inspector-ui]')
+      .locator('summary')
+      .filter({ hasText: 'Content' })
+      .click();
     await page
       .locator('aside[data-inspector-ui]')
       .getByPlaceholder('Element text')
@@ -73,11 +89,15 @@ test.describe('inspector editing', () => {
     expect(await readSlideSource('insp-discard')).not.toContain('Discarded text');
   });
 
-  test('toggling the inspector off commits pending edits', async ({ page, request }) => {
+  test('switching to preview commits pending edits', async ({ page, request }) => {
     await openEditable(page, request, 'insp-commit');
-    await page.getByTitle('Inspect').click();
     await editorCanvas(page).getByText('Editable body copy').click();
 
+    await page
+      .locator('aside[data-inspector-ui]')
+      .locator('summary')
+      .filter({ hasText: 'Content' })
+      .click();
     await page
       .locator('aside[data-inspector-ui]')
       .getByPlaceholder('Element text')
@@ -86,14 +106,13 @@ test.describe('inspector editing', () => {
     const saved = page.waitForResponse(
       (res) => res.url().includes('/__edit') && res.request().method() === 'POST',
     );
-    await page.getByTitle('Inspect').click();
+    await page.getByTitle('Preview', { exact: true }).click();
     expect((await saved).status()).toBe(200);
     await expect.poll(() => readSlideSource('insp-commit')).toContain('Committed body copy');
   });
 
   test('style toggles restyle the element live and save to disk', async ({ page, request }) => {
     await openEditable(page, request, 'insp-style');
-    await page.getByTitle('Inspect').click();
     const headline = editorCanvas(page).getByText('Editable headline');
     await headline.click();
 
@@ -122,8 +141,12 @@ test.describe('inspector editing', () => {
 
   test('undo and redo step through an inspector edit', async ({ page, request }) => {
     await openEditable(page, request, 'insp-undo');
-    await page.getByTitle('Inspect').click();
     await editorCanvas(page).getByText('Editable headline').click();
+    await page
+      .locator('aside[data-inspector-ui]')
+      .locator('summary')
+      .filter({ hasText: 'Content' })
+      .click();
     await page.locator('aside[data-inspector-ui]').getByPlaceholder('Element text').fill('Undo me');
     await expect(editorCanvas(page).getByText('Undo me')).toBeVisible();
 
@@ -134,10 +157,19 @@ test.describe('inspector editing', () => {
     await expect(editorCanvas(page).getByText('Undo me')).toBeVisible();
   });
 
-  test('the i shortcut toggles inspect mode', async ({ page, request }) => {
+  test('the i shortcut toggles Format without leaving edit mode', async ({ page, request }) => {
     await openEditable(page, request, 'insp-key');
+    const panel = page.locator('aside[data-inspector-ui]');
+    await expect(panel).toBeVisible();
     await page.keyboard.press('i');
+    await expect(panel).toHaveCount(0);
     await editorCanvas(page).getByText('Editable headline').click();
-    await expect(page.locator('aside[data-inspector-ui]')).toBeVisible();
+    await expect(page.locator('[data-selection-frame]')).toHaveCount(1);
+    await page.keyboard.press('i');
+    await expect(panel).toBeVisible();
+    await expect(panel.getByRole('tab', { name: 'Text', exact: true })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   });
 });
