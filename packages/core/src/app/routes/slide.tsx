@@ -32,15 +32,15 @@ import { HistoryProvider } from '@/components/history-provider';
 import { CommentWidget } from '@/components/inspector/comment-widget';
 import { InlineEditLayer } from '@/components/inspector/inline-text-editor';
 import { InspectOverlay } from '@/components/inspector/inspect-overlay';
-import { InspectorPanel } from '@/components/inspector/inspector-panel';
 import {
   InspectorProvider,
   InspectToggleButton,
   useInspector,
 } from '@/components/inspector/inspector-provider';
 import { SaveBar } from '@/components/inspector/save-bar';
+import { EditorSidebar } from '@/components/panel/editor-sidebar';
 import { DesignProvider } from '@/components/style-panel/design-provider';
-import { DesignPanel, DesignToggleButton } from '@/components/style-panel/style-panel';
+import { DesignToggleButton } from '@/components/style-panel/style-panel';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -868,8 +868,10 @@ export function Slide() {
                       actions={thumbnailActions}
                     />
                   </div>
-                  {!designOpen && <InspectorPanel />}
-                  <DesignPanel open={designOpen} onClose={() => setDesignOpen(false)} />
+                  <EditorSidebar
+                    designOpen={designOpen}
+                    onCloseDesign={() => setDesignOpen(false)}
+                  />
                 </div>
                 {import.meta.env.DEV && (
                   <NotesDrawer
