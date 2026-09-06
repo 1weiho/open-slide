@@ -271,12 +271,15 @@ function ActiveInlineEditor({
   const [sel, setSel] = useState<TextRange | null>(null);
   const { anchor } = target;
   const rect = useAnchorRect(anchor, layerRef);
+  const previousTextRef = useRef(readEditableText(anchor));
 
   const commit = useCallback(() => {
     if (!anchor.isConnected) return;
-    bufferOps(target.line, target.column, anchor, [
-      { kind: 'set-text', value: readEditableText(anchor) },
-    ]);
+    const value = readEditableText(anchor);
+    const prevText = previousTextRef.current;
+    if (value === prevText) return;
+    previousTextRef.current = value;
+    bufferOps(target.line, target.column, anchor, [{ kind: 'set-text', value, prevText }]);
   }, [anchor, target.line, target.column, bufferOps]);
 
   const applyTextStyle = useCallback(

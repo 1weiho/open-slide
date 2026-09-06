@@ -12,8 +12,10 @@ import {
 import { toast } from 'sonner';
 import { useHistory } from '@/components/history-provider';
 import { Button } from '@/components/ui/button';
+import { findSlideSource } from '@/lib/inspector/fiber';
 import { type SlideComment, useComments } from '@/lib/inspector/use-comments';
 import { type Edit, type EditOp, useEditor } from '@/lib/inspector/use-editor';
+import { useVisualEditor, type VisualEdit } from '@/lib/inspector/use-visual-editor';
 import { isTypingTarget } from '@/lib/keys';
 import { textDiff } from '@/lib/text-diff';
 import { useLocale } from '@/lib/use-locale';
@@ -25,7 +27,27 @@ export type SelectedTarget = {
   line: number;
   column: number;
   anchor: HTMLElement;
+  canvasPath?: number[];
 };
+
+function rememberTarget(target: SelectedTarget): SelectedTarget {
+  const root = target.anchor.closest('[data-osd-canvas]');
+  if (!root) return target;
+  const path: number[] = [];
+  for (let node: Element | null = target.anchor; node && node !== root; node = node.parentElement) {
+    const parent: Element | null = node.parentElement;
+    if (!parent) return target;
+    path.unshift(Array.from(parent.children).indexOf(node));
+  }
+  return { ...target, canvasPath: path };
+}
+
+function findRememberedTarget(root: HTMLElement, path?: number[]): HTMLElement | null {
+  let node = root.querySelector('[data-osd-canvas]');
+  if (!path) return null;
+  for (const index of path) node = node?.children[index] ?? null;
+  return node instanceof HTMLElement ? node : null;
+}
 
 export type InlineEditTarget = SelectedTarget & {
   point?: { x: number; y: number };
@@ -243,6 +265,10 @@ type InspectorCtx = {
   error: string | null;
   add: (line: number, column: number, text: string) => Promise<void>;
   remove: (id: string) => Promise<void>;
+  selection: SelectedTarget[];
+  setSelection: (targets: SelectedTarget[]) => void;
+  bufferBatch: (edits: VisualEdit[], coalesceKey?: string) => void;
+  visual: ReturnType<typeof useVisualEditor>;
   selected: SelectedTarget | null;
   setSelected: (s: SelectedTarget | null) => void;
   inlineEdit: InlineEditTarget | null;
@@ -282,7 +308,30 @@ export function InspectorProvider({
   children: ReactNode;
 }) {
   const [active, setActive] = useState(false);
-  const [selected, setSelected] = useState<SelectedTarget | null>(null);
+  const [selection, setSelectionState] = useState<SelectedTarget[]>([]);
+  const selected = selection.at(-1) ?? null;
+  const setSelection = useCallback((targets: SelectedTarget[]) => {
+    setSelectionState(targets.map(rememberTarget));
+  }, []);
+  const setSelected = useCallback((target: SelectedTarget | null) => {
+    setSelectionState((previous) => {
+      if (!target) return [];
+      const primary = previous.at(-1);
+      if (
+        primary?.anchor === target.anchor &&
+        primary.line === target.line &&
+        primary.column === target.column
+      )
+        return previous;
+      if (
+        primary?.anchor === target.anchor ||
+        (primary?.line === target.line && primary.column === target.column)
+      ) {
+        return [...previous.slice(0, -1), rememberTarget(target)];
+      }
+      return [rememberTarget(target)];
+    });
+  }, []);
   const [inlineEdit, setInlineEdit] = useState<InlineEditTarget | null>(null);
   const [opsVersion, setOpsVersion] = useState(0);
   const { comments, error, add, remove } = useComments(slideId);
@@ -410,7 +459,7 @@ export function InspectorProvider({
           if (!anchor) continue;
           const instanceId = ensureInstanceId(anchor);
           if (!bucket.origTexts.has(instanceId)) {
-            bucket.origTexts.set(instanceId, { value: readEditableText(anchor) });
+            bucket.origTexts.set(instanceId, { value: op.prevText ?? readEditableText(anchor) });
           }
           bucket.textOps.set(instanceId, { value: op.value, seq });
           if (anchor.isConnected) setEditableText(anchor, op.value);
@@ -626,13 +675,18 @@ export function InspectorProvider({
 
   const bufferOps = useCallback(
     (line: number, column: number, anchor: HTMLElement, ops: EditOp[]) => {
+      const target = findSlideSource(anchor, slideId, { hostOnly: true }) ?? {
+        line,
+        column,
+        anchor,
+      };
       const instanceId = ops.some(
         (op) => op.kind === 'set-text' || op.kind === 'set-text-range-style',
       )
         ? ensureInstanceId(anchor)
         : undefined;
-      const snaps = snapshotForOps(line, column, anchor, ops);
-      applyOpsRaw(line, column, anchor, ops);
+      const snaps = snapshotForOps(target.line, target.column, target.anchor, ops);
+      applyOpsRaw(target.line, target.column, target.anchor, ops);
       const first = ops[0];
       const opKey = first
         ? first.kind === 'set-style'
@@ -641,15 +695,59 @@ export function InspectorProvider({
             ? first.attr
             : 'text'
         : 'noop';
-      const coalesceKey = `inspector:${line}:${column}:${first?.kind ?? 'noop'}:${opKey}`;
+      const coalesceKey = `inspector:${target.line}:${target.column}:${first?.kind ?? 'noop'}:${opKey}`;
       history.record({
         coalesceKey,
-        undo: () => restoreSnapshot(line, column, snaps),
-        redo: () => applyOpsRaw(line, column, findAnchor(line, column, instanceId), ops),
+        undo: () => restoreSnapshot(target.line, target.column, snaps),
+        redo: () =>
+          applyOpsRaw(
+            target.line,
+            target.column,
+            findAnchor(target.line, target.column, instanceId),
+            ops,
+          ),
       });
     },
-    [applyOpsRaw, snapshotForOps, restoreSnapshot, findAnchor, history, ensureInstanceId],
+    [applyOpsRaw, snapshotForOps, restoreSnapshot, findAnchor, history, ensureInstanceId, slideId],
   );
+
+  const bufferBatch = useCallback(
+    (input: VisualEdit[], coalesceKey?: string) => {
+      if (input.length === 0 || committing) return;
+      const edits = input.map((edit) => ({
+        ...edit,
+        ...findSlideSource(edit.anchor, slideId, { hostOnly: true }),
+      }));
+      const snapshots = edits.map((edit) =>
+        snapshotForOps(edit.line, edit.column, edit.anchor, edit.ops),
+      );
+      for (const edit of edits) applyOpsRaw(edit.line, edit.column, edit.anchor, edit.ops);
+      history.record({
+        coalesceKey,
+        undo: () => {
+          for (let index = edits.length - 1; index >= 0; index--) {
+            const edit = edits[index];
+            restoreSnapshot(edit.line, edit.column, snapshots[index]);
+          }
+        },
+        redo: () => {
+          for (const edit of edits)
+            applyOpsRaw(edit.line, edit.column, findAnchor(edit.line, edit.column), edit.ops);
+        },
+      });
+    },
+    [applyOpsRaw, snapshotForOps, restoreSnapshot, findAnchor, history, committing, slideId],
+  );
+
+  const visual = useVisualEditor({
+    active,
+    inlineEditing: !!inlineEdit,
+    committing,
+    slideId,
+    selection,
+    setSelection,
+    bufferBatch,
+  });
 
   const commitEdits = useCallback(async () => {
     const buckets = pendingRef.current;
@@ -812,6 +910,7 @@ export function InspectorProvider({
     }
     pendingRef.current = new Map();
     setPendingCount(0);
+    setOpsVersion((version) => version + 1);
     history.clear();
   }, [history]);
 
@@ -889,49 +988,62 @@ export function InspectorProvider({
   useEffect(() => {
     void pageIndex;
     setSelected(null);
-  }, [pageIndex]);
+  }, [pageIndex, setSelected]);
 
-  // Never clear `selected` on a miss: the observer can fire between an
-  // "old removed" and "new added" mutation batch, and clearing then would
-  // drop a selection that's about to reattach on the next fire.
   useEffect(() => {
-    if (!selected) return;
+    if (!selection.length) return;
     const root = document.querySelector<HTMLElement>('[data-inspector-root]');
     if (!root) return;
-
     const revalidate = () => {
-      if (selected.anchor.isConnected) return;
-      const next = root.querySelector<HTMLElement>(
-        `[data-slide-loc="${selected.line}:${selected.column}"]`,
-      );
-      if (next && next !== selected.anchor) {
-        setSelected({ ...selected, anchor: next });
-      }
+      let changed = false;
+      const next = selection.map((target) => {
+        const anchor = target.anchor.isConnected
+          ? target.anchor
+          : (findRememberedTarget(root, target.canvasPath) ??
+            root.querySelector<HTMLElement>(`[data-slide-loc="${target.line}:${target.column}"]`));
+        if (!anchor) return target;
+        const hit = findSlideSource(anchor, slideId, { hostOnly: true });
+        if (
+          !hit ||
+          (hit.anchor === target.anchor && hit.line === target.line && hit.column === target.column)
+        )
+          return target;
+        changed = true;
+        return rememberTarget(hit);
+      });
+      if (changed) setSelection(next);
     };
-
     revalidate();
     const observer = new MutationObserver(revalidate);
-    observer.observe(root, { childList: true, subtree: true });
+    observer.observe(root, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-slide-loc'],
+    });
     return () => observer.disconnect();
-  }, [selected]);
+  }, [selection, setSelection, slideId]);
 
   const toggle = useCallback(() => {
     setActive((a) => {
       if (a) setSelected(null);
       return !a;
     });
-  }, []);
+  }, [setSelected]);
 
   const cancel = useCallback(() => {
     setActive(false);
     setSelected(null);
-  }, []);
+  }, [setSelected]);
 
   const inlineEditSessionRef = useRef(0);
-  const startInlineEdit = useCallback((target: InlineEditTarget) => {
-    setSelected({ line: target.line, column: target.column, anchor: target.anchor });
-    setInlineEdit({ ...target, session: ++inlineEditSessionRef.current });
-  }, []);
+  const startInlineEdit = useCallback(
+    (target: InlineEditTarget) => {
+      setSelection([{ line: target.line, column: target.column, anchor: target.anchor }]);
+      setInlineEdit({ ...target, session: ++inlineEditSessionRef.current });
+    },
+    [setSelection],
+  );
 
   const stopInlineEdit = useCallback(() => {
     setInlineEdit(null);
@@ -996,6 +1108,10 @@ export function InspectorProvider({
       error,
       add,
       remove,
+      selection,
+      setSelection,
+      bufferBatch,
+      visual,
       selected,
       setSelected,
       inlineEdit,
@@ -1020,6 +1136,11 @@ export function InspectorProvider({
       error,
       add,
       remove,
+      selection,
+      setSelection,
+      setSelected,
+      bufferBatch,
+      visual,
       selected,
       inlineEdit,
       startInlineEdit,
