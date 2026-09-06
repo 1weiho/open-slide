@@ -683,7 +683,7 @@ export function InspectorProvider({
       const instanceId = ops.some(
         (op) => op.kind === 'set-text' || op.kind === 'set-text-range-style',
       )
-        ? ensureInstanceId(anchor)
+        ? ensureInstanceId(target.anchor)
         : undefined;
       const snaps = snapshotForOps(target.line, target.column, target.anchor, ops);
       applyOpsRaw(target.line, target.column, target.anchor, ops);
