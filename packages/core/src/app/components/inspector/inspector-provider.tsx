@@ -1,4 +1,4 @@
-import { CodeXml, Eye, PanelRight } from 'lucide-react';
+import { Eye, PanelRight, Pencil } from 'lucide-react';
 import {
   createContext,
   type ReactNode,
@@ -1427,7 +1427,7 @@ export function InspectToggleButton() {
           }}
           className="h-full w-8 rounded-md px-0 text-muted-foreground hover:bg-transparent data-pressed:bg-card data-pressed:text-foreground data-pressed:shadow-edge"
         >
-          <CodeXml />
+          <Pencil />
         </ToggleGroupItem>
       </ToggleGroup>
       <Button
