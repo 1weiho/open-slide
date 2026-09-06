@@ -159,6 +159,39 @@ export async function fetchSvgAsFile(routeUrl: string, filename: string): Promis
   return new File([blob], filename, { type: 'image/svg+xml' });
 }
 
+export type GoogleFontItem = {
+  family: string;
+  category: string;
+  // Weight keys from the Google Fonts catalog, e.g. ['400', '400i', '700'].
+  variants: string[];
+};
+
+export async function searchGoogleFonts(
+  query: string,
+  signal?: AbortSignal,
+): Promise<GoogleFontItem[]> {
+  const q = query.trim();
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  else params.set('limit', '30');
+  const res = await fetch(`/__gfonts/search?${params.toString()}`, { signal });
+  if (!res.ok) throw new Error(`gfonts ${res.status}`);
+  return (await res.json()) as GoogleFontItem[];
+}
+
+export async function fetchFontAsFile(
+  family: string,
+  variant: string,
+  filenameBase: string,
+): Promise<File> {
+  const params = new URLSearchParams({ family, variant });
+  const res = await fetch(`/__gfonts/download?${params.toString()}`);
+  if (!res.ok) throw new Error(`gfonts download ${res.status}`);
+  const ext = res.headers.get('x-font-ext') || 'ttf';
+  const blob = await res.blob();
+  return new File([blob], `${filenameBase}.${ext}`, { type: blob.type || 'font/ttf' });
+}
+
 export type UseAssetsResult = {
   assets: AssetEntry[];
   loading: boolean;
