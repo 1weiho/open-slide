@@ -594,7 +594,7 @@ export function InspectOverlay() {
           <div
             key={`${guide.axis}:${guide.position}`}
             data-alignment-guide={guide.axis}
-            className="absolute bg-fuchsia-500"
+            className="absolute bg-cyan-500"
             style={
               guide.axis === 'x'
                 ? {
