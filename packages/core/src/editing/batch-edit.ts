@@ -7,10 +7,20 @@ import {
   type Splice,
 } from './edit-ops.ts';
 
-export type BatchEdit = { line?: number; column?: number; ops?: EditOp[] };
+export type BatchEdit = {
+  line?: number;
+  column?: number;
+  ops?: EditOp[];
+  dependsOn?: number;
+};
 export type BatchEditResult = { ok: boolean; error?: string };
 
-type TrackedEdit = { offset: number | null; ops: EditOp[]; error?: string };
+type TrackedEdit = {
+  offset: number | null;
+  ops: EditOp[];
+  dependsOn?: number;
+  error?: string;
+};
 
 function rebaseOffset(offset: number, splices: Splice[], target: number): number | null {
   let shift = 0;
@@ -32,29 +42,36 @@ export function applyEditBatch(
   edits: BatchEdit[],
 ): { source: string; results: BatchEditResult[] } {
   const ast = parseSource(source);
-  const tracked: TrackedEdit[] = edits.map((edit) => {
+  const tracked: TrackedEdit[] = edits.map((edit, index) => {
     if (
       !edit ||
       !Number.isInteger(edit.line) ||
       (edit.line ?? 0) < 1 ||
       !Number.isInteger(edit.column ?? 0) ||
       (edit.column ?? 0) < 0 ||
-      !Array.isArray(edit.ops)
+      !Array.isArray(edit.ops) ||
+      (edit.dependsOn !== undefined &&
+        (!Number.isInteger(edit.dependsOn) || edit.dependsOn < 0 || edit.dependsOn >= index))
     ) {
       return { offset: null, ops: [], error: 'invalid edit' };
     }
-    if (!edit.ops.length) return { offset: null, ops: [] };
+    if (!edit.ops.length) return { offset: null, ops: [], dependsOn: edit.dependsOn };
     if (!ast) return { offset: null, ops: edit.ops, error: 'could not parse source' };
     const element = findElementForEdit(ast, edit.line ?? 0, edit.column ?? 0, edit.ops);
     return {
       offset: element?.start ?? null,
       ops: edit.ops,
+      dependsOn: edit.dependsOn,
       ...(!element ? { error: 'no JSX element at location' } : {}),
     };
   });
   let next = source;
   const results: BatchEditResult[] = [];
   for (const edit of tracked) {
+    if (edit.dependsOn !== undefined && !results[edit.dependsOn]?.ok) {
+      results.push({ ok: false, error: 'an earlier edit for this text failed' });
+      continue;
+    }
     if (edit.error) {
       results.push({ ok: false, error: edit.error });
       continue;

@@ -229,6 +229,40 @@ export default [Only] satisfies Page[];
     await subscriptions.dispose();
   });
 
+  test('active move, resize, and rotation cursors reach the canvas and its content', async ({
+    page,
+    request,
+  }) => {
+    const headline = await openEditable(page, request, 'visual-gesture-cursors');
+    await headline.evaluate((element) => {
+      element.style.cursor = 'text';
+    });
+    const canvas = page.locator('[data-inspector-root] [data-osd-canvas]');
+    const gestures = [
+      { target: headline, cursor: 'grabbing' },
+      { target: page.locator('[data-resize-handle="se"]'), cursor: 'se-resize' },
+      { target: page.locator('[data-rotate-handle]'), cursor: 'crosshair' },
+    ];
+    for (const { target, cursor } of gestures) {
+      await expect(headline).toHaveCSS('cursor', 'default');
+      await startDrag(page, target, 24, 18);
+      await expect(canvas).toHaveAttribute('data-visual-gesture', 'true');
+      await expect(canvas).toHaveCSS('cursor', cursor);
+      await expect(headline).toHaveCSS('cursor', cursor);
+      await page.keyboard.press('Escape');
+      await page.mouse.up();
+      await expect(canvas).not.toHaveAttribute('data-visual-gesture');
+      await expect(headline).toHaveCSS('cursor', 'default');
+      await expect
+        .poll(() =>
+          page.evaluate(() =>
+            document.documentElement.style.getPropertyValue('--osd-gesture-cursor'),
+          ),
+        )
+        .toBe('');
+    }
+  });
+
   test('Escape cancels the current drag while preserving the previous nudge', async ({
     page,
     request,

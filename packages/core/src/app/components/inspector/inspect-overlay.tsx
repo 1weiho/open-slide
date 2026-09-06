@@ -189,6 +189,7 @@ export function InspectOverlay() {
       setMarquee(null);
       measureRef.current?.();
       document.documentElement.style.removeProperty('cursor');
+      document.documentElement.style.removeProperty('--osd-gesture-cursor');
     };
     const targetAt = (event: PointerEvent): SelectedTarget | null => {
       const element = pickInspectorTarget(pickElement(event.clientX, event.clientY));
@@ -317,12 +318,14 @@ export function InspectOverlay() {
         return;
       }
       if (!gesture.bounds || !gesture.snapshots.length) return;
-      document.documentElement.style.cursor =
+      const cursor =
         gesture.mode === 'move'
           ? 'grabbing'
           : gesture.mode === 'rotate'
             ? 'crosshair'
             : `${gesture.mode}-resize`;
+      document.documentElement.style.cursor = cursor;
+      document.documentElement.style.setProperty('--osd-gesture-cursor', cursor);
       let nextGuides: Guide[] = [];
       if (gesture.mode === 'move') {
         const horizontal = event.shiftKey && Math.abs(delta.x) >= Math.abs(delta.y);
@@ -506,6 +509,7 @@ export function InspectOverlay() {
       if (gestureRef.current) delete gestureRef.current.canvas.root.dataset.visualGesture;
       gestureRef.current = null;
       document.documentElement.style.removeProperty('cursor');
+      document.documentElement.style.removeProperty('--osd-gesture-cursor');
     };
     if (!active) {
       reset();
@@ -655,7 +659,17 @@ const EDITING_FREEZE_CSS = `
   animation-fill-mode: forwards !important;
   transition: none !important;
   view-transition-name: none !important;
-  cursor: default !important;
   user-select: none;
+}
+[data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *, [data-visual-gesture], [data-visual-gesture] *),
+[data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *, [data-visual-gesture], [data-visual-gesture] *)::before,
+[data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *, [data-visual-gesture], [data-visual-gesture] *)::after {
+  cursor: default !important;
+}
+[data-inspector-editing] [data-visual-gesture],
+[data-inspector-editing] [data-visual-gesture] *,
+[data-inspector-editing] [data-visual-gesture] *::before,
+[data-inspector-editing] [data-visual-gesture] *::after {
+  cursor: var(--osd-gesture-cursor, default) !important;
 }
 `;

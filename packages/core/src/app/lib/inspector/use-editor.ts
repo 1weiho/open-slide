@@ -14,7 +14,7 @@ export type EditOp =
   | { kind: 'set-attr-asset'; attr: string; assetPath: string; previewUrl: string }
   | { kind: 'replace-placeholder-with-image'; assetPath: string };
 
-export type Edit = { line: number; column: number; ops: EditOp[] };
+export type Edit = { line: number; column: number; ops: EditOp[]; dependsOn?: number };
 
 export type EditResult = { ok: boolean; error?: string };
 

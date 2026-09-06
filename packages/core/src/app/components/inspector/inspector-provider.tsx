@@ -80,12 +80,13 @@ type Bucket = {
   // `data-slide-loc`, but each call site's prop literal is independent.
   // Style/attr ops stay shared because they edit the JSX definition.
   textEdits: Map<string, TextEditStep[]>;
+  textTargets: Map<string, SelectedTarget & { pageIndex: number }>;
   attrOps: Map<string, Sequenced<AssetAttrOp>>;
   // Pre-edit snapshot of the DOM, captured the first time we touch
   // each style key / text / attribute. Used by `cancelEdits` to revert.
   origStyle: Map<string, string>;
   origTexts: Map<string /* instanceId */, { value: string }>;
-  origHtmls: Map<string /* instanceId */, string>;
+  origHtmls: Map<string /* instanceId */, TextDomSnapshot>;
   origAttrs: Map<string, string | null>;
 };
 
@@ -95,6 +96,7 @@ function createBucket(line: number, column: number): Bucket {
     column,
     styleOps: new Map(),
     textEdits: new Map(),
+    textTargets: new Map(),
     attrOps: new Map(),
     origStyle: new Map(),
     origTexts: new Map(),
@@ -105,11 +107,19 @@ function createBucket(line: number, column: number): Bucket {
 
 const INSTANCE_ID_ATTR = 'data-slide-instance-id';
 
-function readInstanceId(el: HTMLElement): string | null {
-  return el.getAttribute(INSTANCE_ID_ATTR);
-}
+export type DomTextPart = {
+  node: Text | HTMLBRElement;
+  current: string;
+  preserveWhitespace?: boolean;
+};
+type WhiteSpaceResolver = (element: HTMLElement) => string;
+type TextDomSnapshot = { html: string; whiteSpaces: string[] };
 
-export type DomTextPart = { node: Text | HTMLBRElement; current: string };
+const computedWhiteSpace: WhiteSpaceResolver = (element) => getComputedStyle(element).whiteSpace;
+
+function preservesWhitespace(whiteSpace: string): boolean {
+  return whiteSpace === 'pre' || whiteSpace === 'pre-wrap' || whiteSpace === 'break-spaces';
+}
 
 export function readEditableText(el: HTMLElement): string {
   const parts: DomTextPart[] = [];
@@ -117,41 +127,44 @@ export function readEditableText(el: HTMLElement): string {
   return parts.map((part) => part.current).join('');
 }
 
-export function collectDomTextParts(node: Node, out: DomTextPart[]): void {
+export function collectDomTextParts(
+  node: Node,
+  out: DomTextPart[],
+  whiteSpace: WhiteSpaceResolver = computedWhiteSpace,
+): void {
   const parts: DomTextPart[] = [];
-  collectDomTextPartsRaw(node, parts);
+  collectDomTextPartsRaw(node, parts, whiteSpace);
   out.push(...normalizeDomTextParts(parts));
 }
 
-function collectDomTextPartsRaw(node: Node, out: DomTextPart[]): void {
+function collectDomTextPartsRaw(
+  node: Node,
+  out: DomTextPart[],
+  whiteSpace: WhiteSpaceResolver,
+): void {
   for (const child of Array.from(node.childNodes)) {
     if (child instanceof Text) {
-      const current = renderedTextNodeValue(child);
-      if (current) out.push({ node: child, current });
+      const preserveWhitespace = preservesWhitespace(
+        child.parentElement ? whiteSpace(child.parentElement) : '',
+      );
+      const current = preserveWhitespace ? child.data : child.data.replace(/\s+/g, ' ');
+      if (current) out.push({ node: child, current, preserveWhitespace });
     } else if (child instanceof HTMLBRElement) {
       out.push({ node: child, current: '\n' });
     } else if (child instanceof HTMLElement) {
-      collectDomTextPartsRaw(child, out);
+      collectDomTextPartsRaw(child, out, whiteSpace);
     }
   }
 }
 
 function normalizeDomTextParts(parts: DomTextPart[]): DomTextPart[] {
   return parts.flatMap((part, index) => {
-    if (part.current === '\n') return [part];
+    if (part.preserveWhitespace || part.current === '\n') return [part];
     let current = part.current;
     if (parts[index - 1]?.current === '\n') current = current.replace(/^\s+/, '');
     if (parts[index + 1]?.current === '\n') current = current.replace(/\s+$/, '');
     return current ? [{ ...part, current }] : [];
   });
-}
-
-function renderedTextNodeValue(node: Text): string {
-  const whiteSpace = node.parentElement ? getComputedStyle(node.parentElement).whiteSpace : '';
-  if (whiteSpace === 'pre' || whiteSpace === 'pre-wrap' || whiteSpace === 'break-spaces') {
-    return node.data;
-  }
-  return node.data.replace(/\s+/g, ' ');
 }
 
 function textFragment(value: string): DocumentFragment {
@@ -173,9 +186,13 @@ function replaceDomTextPart(part: DomTextPart, value: string) {
   part.node.replaceWith(fragment);
 }
 
-function setEditableText(el: HTMLElement, value: string) {
+function setEditableText(
+  el: HTMLElement,
+  value: string,
+  whiteSpace: WhiteSpaceResolver = computedWhiteSpace,
+) {
   const parts: DomTextPart[] = [];
-  collectDomTextParts(el, parts);
+  collectDomTextParts(el, parts, whiteSpace);
   const current = parts.map((part) => part.current).join('');
   if (current === value) return;
   if (parts.length === 0) {
@@ -222,11 +239,12 @@ function setEditableText(el: HTMLElement, value: string) {
 function applyDomTextRangeStyle(
   el: HTMLElement,
   op: Extract<TextEditOp, { kind: 'set-text-range-style' }>,
+  whiteSpace: WhiteSpaceResolver,
 ) {
   const value = op.value ?? resetValueForRangeStyle(op.key);
   if (value === null) return;
   const parts: DomTextPart[] = [];
-  collectDomTextParts(el, parts);
+  collectDomTextParts(el, parts, whiteSpace);
   let offset = 0;
   for (const part of parts) {
     const partStart = offset;
@@ -255,18 +273,42 @@ function resetValueForRangeStyle(key: string): string | null {
   return null;
 }
 
-function textEditHtml(html: string, steps: TextEditStep[]): string {
-  const preview = document.createElement('span');
-  preview.innerHTML = html;
-  for (const { op } of steps) {
-    if (op.kind === 'set-text') setEditableText(preview, op.value);
-    else applyDomTextRangeStyle(preview, op);
-  }
-  return preview.innerHTML;
+function textSnapshotElements(el: HTMLElement): HTMLElement[] {
+  return [
+    el,
+    ...Array.from(el.querySelectorAll('*')).filter((node) => node instanceof HTMLElement),
+  ];
 }
 
-function replayDomTextEdits(el: HTMLElement, html: string, steps: TextEditStep[]) {
-  const next = textEditHtml(html, steps);
+function captureTextDom(
+  el: HTMLElement,
+  whiteSpace: WhiteSpaceResolver = computedWhiteSpace,
+): TextDomSnapshot {
+  return { html: el.innerHTML, whiteSpaces: textSnapshotElements(el).map(whiteSpace) };
+}
+
+function textEditHtml(snapshot: TextDomSnapshot, steps: TextEditStep[]): TextDomSnapshot {
+  const preview = document.createElement('span');
+  preview.innerHTML = snapshot.html;
+  const contexts = new Map(
+    textSnapshotElements(preview).map((element, index) => [element, snapshot.whiteSpaces[index]]),
+  );
+  const whiteSpace: WhiteSpaceResolver = (element) => {
+    for (let node: HTMLElement | null = element; node; node = node.parentElement) {
+      const value = contexts.get(node);
+      if (value !== undefined) return value;
+    }
+    return 'normal';
+  };
+  for (const { op } of steps) {
+    if (op.kind === 'set-text') setEditableText(preview, op.value, whiteSpace);
+    else applyDomTextRangeStyle(preview, op, whiteSpace);
+  }
+  return captureTextDom(preview, whiteSpace);
+}
+
+function replayDomTextEdits(el: HTMLElement, snapshot: TextDomSnapshot, steps: TextEditStep[]) {
+  const next = textEditHtml(snapshot, steps).html;
   if (el.innerHTML !== next) el.innerHTML = next;
 }
 
@@ -379,7 +421,9 @@ export function InspectorProvider({
   const history = useHistory();
 
   const pendingRef = useRef<Map<string, Bucket>>(new Map());
-  const inlineBaselinesRef = useRef(new WeakMap<HTMLElement, { text: string; html: string }>());
+  const inlineBaselinesRef = useRef(
+    new WeakMap<HTMLElement, { text: string; html: TextDomSnapshot }>(),
+  );
   const instanceCounterRef = useRef(0);
   const pendingSeqRef = useRef(0);
   const [pendingCount, setPendingCount] = useState(0);
@@ -457,6 +501,10 @@ export function InspectorProvider({
         } else if (op.kind === 'set-text-range-style' || op.kind === 'set-text') {
           if (!anchor) continue;
           const instanceId = ensureInstanceId(anchor);
+          bucket.textTargets.set(instanceId, {
+            ...rememberTarget({ line, column, anchor }),
+            pageIndex,
+          });
           const prevText = op.prevText ?? readEditableText(anchor);
           if (!bucket.origTexts.has(instanceId)) {
             bucket.origTexts.set(instanceId, { value: prevText });
@@ -467,7 +515,7 @@ export function InspectorProvider({
               instanceId,
               baseline?.text === prevText
                 ? baseline.html
-                : textEditHtml(anchor.innerHTML, [
+                : textEditHtml(captureTextDom(anchor), [
                     { seq, op: { kind: 'set-text', value: prevText } },
                   ]),
             );
@@ -480,7 +528,12 @@ export function InspectorProvider({
           bucket.textEdits.set(instanceId, steps);
           if (anchor.isConnected) {
             if (op.kind === 'set-text') setEditableText(anchor, op.value);
-            else replayDomTextEdits(anchor, bucket.origHtmls.get(instanceId) ?? '', steps);
+            else
+              replayDomTextEdits(
+                anchor,
+                bucket.origHtmls.get(instanceId) ?? captureTextDom(anchor),
+                steps,
+              );
           }
         } else if (op.kind === 'set-attr-asset') {
           if (anchor && !bucket.origAttrs.has(op.attr)) {
@@ -499,7 +552,7 @@ export function InspectorProvider({
       }
       refreshCount();
     },
-    [refreshCount, ensureInstanceId],
+    [refreshCount, ensureInstanceId, pageIndex],
   );
 
   // Pre-edit snapshot for history: capture the *currently effective* value of
@@ -508,14 +561,13 @@ export function InspectorProvider({
   type StyleSnap = {
     kind: 'style';
     key: string;
-    value: Sequenced<StyleOp> | string | null;
-    existed: boolean;
-  };
+  } & ({ value: Sequenced<StyleOp>; existed: true } | { value: string | null; existed: false });
   type TextSnap = {
     kind: 'text';
     instanceId: string;
+    target?: SelectedTarget & { pageIndex: number };
     steps: TextEditStep[];
-    html?: string;
+    html?: TextDomSnapshot;
     text?: string;
   };
   type AttrSnap = {
@@ -555,6 +607,7 @@ export function InspectorProvider({
           snaps.push({
             kind: 'text',
             instanceId,
+            target: bucket?.textTargets.get(instanceId),
             steps: bucket?.textEdits.get(instanceId) ?? [],
             html: bucket?.origHtmls.get(instanceId),
             text: bucket?.origTexts.get(instanceId)?.value,
@@ -605,12 +658,10 @@ export function InspectorProvider({
       for (const snap of snaps) {
         if (snap.kind === 'style') {
           if (snap.existed) {
-            const prev =
-              typeof snap.value === 'object' && snap.value !== null
-                ? snap.value
-                : { value: snap.value };
+            const prev = snap.value;
             const v = prev.value ?? '';
-            bucket.styleOps.set(snap.key, { seq: ++pendingSeqRef.current, ...prev });
+            // Undo restores the edit's original position in the text timeline.
+            bucket.styleOps.set(snap.key, { ...prev });
             if (sharedAnchor?.isConnected) sharedStyle[snap.key] = v;
           } else {
             bucket.styleOps.delete(snap.key);
@@ -619,6 +670,7 @@ export function InspectorProvider({
           }
         } else if (snap.kind === 'text') {
           const textAnchor = findAnchor(line, column, snap.instanceId);
+          if (snap.target) bucket.textTargets.set(snap.instanceId, snap.target);
           if (snap.html !== undefined) bucket.origHtmls.set(snap.instanceId, snap.html);
           if (snap.text !== undefined) bucket.origTexts.set(snap.instanceId, { value: snap.text });
           if (snap.steps.length) bucket.textEdits.set(snap.instanceId, snap.steps);
@@ -740,17 +792,18 @@ export function InspectorProvider({
     const buckets = pendingRef.current;
     if (buckets.size === 0) return;
     type PendingItem = {
-      key: string;
+      bucket: Bucket;
       seq: number;
+      instanceId?: string;
       edit: Edit;
       onSuccess: (bucket: Bucket) => void;
     };
     const pending: PendingItem[] = [];
-    for (const [key, bucket] of buckets) {
+    for (const bucket of buckets.values()) {
       const { line, column, styleOps, textEdits, attrOps } = bucket;
       for (const [k, op] of styleOps) {
         pending.push({
-          key,
+          bucket,
           seq: op.seq,
           edit: {
             line,
@@ -759,12 +812,13 @@ export function InspectorProvider({
           },
           onSuccess: (b) => {
             b.styleOps.delete(k);
+            b.origStyle.delete(k);
           },
         });
       }
       for (const [attr, op] of attrOps) {
         pending.push({
-          key,
+          bucket,
           seq: op.seq,
           edit: {
             line,
@@ -780,15 +834,22 @@ export function InspectorProvider({
           },
           onSuccess: (b) => {
             b.attrOps.delete(attr);
+            b.origAttrs.delete(attr);
           },
         });
       }
       for (const [instanceId, steps] of textEdits) {
+        const target = bucket.textTargets.get(instanceId);
         for (const step of steps) {
           pending.push({
-            key,
+            bucket,
             seq: step.seq,
-            edit: { line, column, ops: [step.op] },
+            instanceId,
+            edit: {
+              line: target?.line ?? line,
+              column: target?.column ?? column,
+              ops: [step.op],
+            },
             onSuccess: (b) => {
               const html = b.origHtmls.get(instanceId);
               if (html !== undefined) b.origHtmls.set(instanceId, textEditHtml(html, [step]));
@@ -805,6 +866,12 @@ export function InspectorProvider({
       }
     }
     pending.sort((a, b) => a.seq - b.seq);
+    const lastTextEdit = new Map<string, number>();
+    for (const [index, item] of pending.entries()) {
+      if (!item.instanceId) continue;
+      item.edit.dependsOn = lastTextEdit.get(item.instanceId);
+      lastTextEdit.set(item.instanceId, index);
+    }
     if (pending.length === 0) {
       pendingRef.current = new Map();
       setPendingCount(0);
@@ -818,16 +885,16 @@ export function InspectorProvider({
       for (let i = 0; i < results.length; i++) {
         const item = pending[i];
         const r = results[i];
-        const bucket = pendingRef.current.get(item.key);
+        const bucket = item.bucket;
         if (r.ok) {
-          if (bucket) {
-            item.onSuccess(bucket);
-            if (
-              bucket.styleOps.size === 0 &&
-              bucket.textEdits.size === 0 &&
-              bucket.attrOps.size === 0
-            ) {
-              pendingRef.current.delete(item.key);
+          item.onSuccess(bucket);
+          if (
+            bucket.styleOps.size === 0 &&
+            bucket.textEdits.size === 0 &&
+            bucket.attrOps.size === 0
+          ) {
+            for (const [key, pendingBucket] of pendingRef.current) {
+              if (pendingBucket === bucket) pendingRef.current.delete(key);
             }
           }
         } else {
@@ -866,7 +933,7 @@ export function InspectorProvider({
       for (const [instanceId, html] of b.origHtmls) {
         const textEl =
           root?.querySelector<HTMLElement>(`[${INSTANCE_ID_ATTR}="${instanceId}"]`) ?? null;
-        if (textEl?.isConnected) textEl.innerHTML = html;
+        if (textEl?.isConnected) textEl.innerHTML = html.html;
       }
       for (const [instanceId, orig] of b.origTexts) {
         const textEl =
@@ -914,16 +981,6 @@ export function InspectorProvider({
         const v = op.value ?? '';
         if (style[key] !== v) style[key] = v;
       }
-      // Text replays per-instance: only the originally clicked DOM node
-      // (stamped with its `data-slide-instance-id`) gets the buffered
-      // value, so siblings of a reused component aren't clobbered.
-      const instanceId = readInstanceId(el);
-      if (instanceId) {
-        const html = bucket.origHtmls.get(instanceId);
-        if (html !== undefined) {
-          replayDomTextEdits(el, html, bucket.textEdits.get(instanceId) ?? []);
-        }
-      }
       for (const [attr, op] of bucket.attrOps) {
         if (el.getAttribute(attr) !== op.previewUrl) el.setAttribute(attr, op.previewUrl);
       }
@@ -933,15 +990,67 @@ export function InspectorProvider({
     const replayAll = () => {
       if (pendingRef.current.size === 0) return;
       observer?.disconnect();
+      const relocations: { key: string; nextKey: string; bucket: Bucket }[] = [];
+      for (const [key, bucket] of pendingRef.current) {
+        for (const [instanceId, target] of bucket.textTargets) {
+          if (target.pageIndex !== pageIndex) continue;
+          const stamped = root.querySelector<HTMLElement>(`[${INSTANCE_ID_ATTR}="${instanceId}"]`);
+          const anchor = stamped ?? findRememberedTarget(root, target.canvasPath);
+          if (!anchor || anchor.tagName !== target.anchor.tagName) continue;
+          const steps = bucket.textEdits.get(instanceId) ?? [];
+          const html = bucket.origHtmls.get(instanceId);
+          if (!html) continue;
+          if (!stamped) {
+            const text = readEditableText(anchor);
+            const matchesBaseline = bucket.origTexts.get(instanceId)?.value === text;
+            if (
+              !matchesBaseline &&
+              !steps.some((step) => step.op.kind === 'set-text' && step.op.value === text)
+            )
+              continue;
+          }
+          const hit = findSlideSource(anchor, slideId, { hostOnly: true });
+          if (!hit || hit.anchor !== anchor) continue;
+          anchor.setAttribute(INSTANCE_ID_ATTR, instanceId);
+          bucket.textTargets.set(instanceId, { ...rememberTarget(hit), pageIndex });
+          bucket.line = hit.line;
+          bucket.column = hit.column;
+          replayDomTextEdits(anchor, html, steps);
+        }
+        const nextKey = `${bucket.line}:${bucket.column}`;
+        if (nextKey !== key) relocations.push({ key, nextKey, bucket });
+      }
+      let moved = true;
+      while (moved) {
+        moved = false;
+        for (let index = relocations.length - 1; index >= 0; index--) {
+          const { key, nextKey, bucket } = relocations[index];
+          if (pendingRef.current.has(nextKey)) continue;
+          pendingRef.current.delete(key);
+          pendingRef.current.set(nextKey, bucket);
+          relocations.splice(index, 1);
+          moved = true;
+        }
+      }
       root.querySelectorAll<HTMLElement>('[data-slide-loc]').forEach(applyBuffered);
-      observer?.observe(root, { childList: true, subtree: true });
+      observer?.observe(root, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['data-slide-loc'],
+      });
     };
 
     replayAll();
     observer = new MutationObserver(replayAll);
-    observer.observe(root, { childList: true, subtree: true });
+    observer.observe(root, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-slide-loc'],
+    });
     return () => observer?.disconnect();
-  }, []);
+  }, [pageIndex, slideId]);
 
   useEffect(() => {
     void pageIndex;
@@ -1005,7 +1114,7 @@ export function InspectorProvider({
     (target: InlineEditTarget) => {
       inlineBaselinesRef.current.set(target.anchor, {
         text: readEditableText(target.anchor),
-        html: target.anchor.innerHTML,
+        html: captureTextDom(target.anchor),
       });
       setInlineSelection(null);
       setSelection([{ line: target.line, column: target.column, anchor: target.anchor }]);
