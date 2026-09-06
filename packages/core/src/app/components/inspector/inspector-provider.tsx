@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { toast } from 'sonner';
 import { useHistory } from '@/components/history-provider';
+import { IconSwitcherIndicator } from '@/components/icon-switcher-indicator';
 import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { findSlideSource } from '@/lib/inspector/fiber';
@@ -1405,8 +1406,9 @@ export function InspectToggleButton() {
           if (next && (next === 'edit') !== active) toggle();
         }}
         aria-label={`${t.inspector.previewMode} / ${t.inspector.editMode}`}
-        className="h-8 gap-0 rounded-lg border border-border/70 bg-muted/70 p-0.5"
+        className="relative isolate h-8 gap-0 rounded-lg border border-border/70 bg-muted/70 p-0.5"
       >
+        <IconSwitcherIndicator index={active ? 1 : 0} />
         <ToggleGroupItem
           value="preview"
           title={t.inspector.previewMode}
@@ -1414,7 +1416,7 @@ export function InspectToggleButton() {
           onClick={(event) => {
             if (event.detail > 0) event.currentTarget.blur();
           }}
-          className="h-full w-8 rounded-md px-0 text-muted-foreground hover:bg-transparent data-pressed:bg-card data-pressed:text-foreground data-pressed:shadow-edge"
+          className="relative z-10 h-full w-8 rounded-md px-0 text-muted-foreground hover:bg-transparent data-pressed:bg-transparent data-pressed:text-foreground data-pressed:shadow-none"
         >
           <Eye />
         </ToggleGroupItem>
@@ -1425,7 +1427,7 @@ export function InspectToggleButton() {
           onClick={(event) => {
             if (event.detail > 0) event.currentTarget.blur();
           }}
-          className="h-full w-8 rounded-md px-0 text-muted-foreground hover:bg-transparent data-pressed:bg-card data-pressed:text-foreground data-pressed:shadow-edge"
+          className="relative z-10 h-full w-8 rounded-md px-0 text-muted-foreground hover:bg-transparent data-pressed:bg-transparent data-pressed:text-foreground data-pressed:shadow-none"
         >
           <Pencil />
         </ToggleGroupItem>

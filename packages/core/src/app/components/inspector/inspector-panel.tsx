@@ -17,6 +17,7 @@ import {
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { IconSwitcherIndicator } from '@/components/icon-switcher-indicator';
 import { Field, NumberField, Section } from '@/components/panel/panel-fields';
 import { PanelShell } from '@/components/panel/panel-shell';
 import { Button } from '@/components/ui/button';
@@ -289,14 +290,15 @@ export function InspectorPanel({
                 <span className="truncate">{elementLabel}</span>
               </div>
               <TabsList
-                className="shrink-0 rounded-lg group-data-[orientation=horizontal]/tabs:h-8"
+                className="relative isolate shrink-0 rounded-lg group-data-[orientation=horizontal]/tabs:h-8"
                 aria-label={t.inspector.format}
               >
+                <IconSwitcherIndicator index={tab === 'arrange' ? 1 : 0} />
                 <TabsTrigger
                   value="format"
                   disabled={multiple}
                   title={formatLabel}
-                  className="w-8 flex-none rounded-md px-0"
+                  className="z-10 h-full w-8 flex-none rounded-md px-0 data-active:bg-transparent data-active:shadow-none dark:data-active:bg-transparent"
                 >
                   <FormatIcon aria-hidden />
                   <span className="sr-only">{formatLabel}</span>
@@ -304,7 +306,7 @@ export function InspectorPanel({
                 <TabsTrigger
                   value="arrange"
                   title={t.inspector.arrangeSection}
-                  className="w-8 flex-none rounded-md px-0"
+                  className="z-10 h-full w-8 flex-none rounded-md px-0 data-active:bg-transparent data-active:shadow-none dark:data-active:bg-transparent"
                 >
                   <Move aria-hidden />
                   <span className="sr-only">{t.inspector.arrangeSection}</span>
