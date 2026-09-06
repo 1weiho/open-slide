@@ -282,6 +282,8 @@ export function useVisualEditor({
     const onKey = (event: KeyboardEvent) => {
       if (
         event.defaultPrevented ||
+        event.isComposing ||
+        event.keyCode === 229 ||
         isTypingTarget(event.target) ||
         document.querySelector('[data-visual-gesture]')
       )

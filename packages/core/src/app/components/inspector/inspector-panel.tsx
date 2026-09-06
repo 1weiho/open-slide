@@ -4,35 +4,43 @@ import {
   AlignLeft,
   AlignRight,
   Bold,
+  ChevronRight,
   Crop,
-  Crosshair,
   ImageIcon,
   Italic,
+  MousePointer2,
+  Paintbrush,
+  PencilLine,
+  Shapes,
+  Type,
   X,
 } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Field, NumberField, Section } from '@/components/panel/panel-fields';
-import { PANEL_TRANSITION_MS, PanelShell, useAnimatedOpen } from '@/components/panel/panel-shell';
+import { PanelShell } from '@/components/panel/panel-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Slider } from '@/components/ui/slider';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { findSlideSource } from '@/lib/inspector/fiber';
 import { hasOnlyInlineTextChildren } from '@/lib/inspector/inline-text';
+import { styleContext } from '@/lib/inspector/text-selection';
 import type { EditOp } from '@/lib/inspector/use-editor';
 import { useAgentSocketConnected } from '@/lib/use-agent-socket';
-import { useLocale } from '@/lib/use-locale';
+import { format, useLocale } from '@/lib/use-locale';
 import { cn, round2 } from '@/lib/utils';
 import type { Locale } from '../../../locale/types';
 import { ArrangePanel } from './arrange-panel';
@@ -76,6 +84,13 @@ function resolveSelectedTarget(target: SelectedTarget, slideId: string): Selecte
 export function InspectorPanel() {
   const {
     active,
+    panelOpen,
+    togglePanel,
+    inlineEdit,
+    inlineSelection,
+    startInlineEdit,
+    stopInlineEdit,
+    applyInlineStyle,
     slideId,
     selected,
     selection,
@@ -89,6 +104,7 @@ export function InspectorPanel() {
   const [snapshot, setSnapshot] = useState<ElementSnapshot | null>(null);
   const [contentSelection, setContentSelection] = useState<ContentSelection | null>(null);
   const [rangeStylePreview, setRangeStylePreview] = useState<RangeStylePreview | null>(null);
+  const [preferredTab, setPreferredTab] = useState<'format' | 'arrange'>('format');
   const reloadCounter = useReloadCounter();
   const t = useLocale();
 
@@ -98,7 +114,7 @@ export function InspectorPanel() {
     setRangeStylePreview(null);
   }, [selected]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     void reloadCounter;
     void pendingCount;
     void opsVersion;
@@ -111,30 +127,6 @@ export function InspectorPanel() {
     setSnapshot(readSnapshot(anchor));
   }, [selected, reloadCounter, pendingCount, opsVersion]);
 
-  // Freeze slide animations while editing so commits don't replay motion.
-  useEffect(() => {
-    if (!active) return;
-    const root = document.querySelector<HTMLElement>('[data-inspector-root]');
-    if (!root) return;
-    const styleEl = document.createElement('style');
-    styleEl.textContent = EDITING_FREEZE_CSS;
-    document.head.appendChild(styleEl);
-    root.dataset.inspectorEditing = 'true';
-    return () => {
-      let cleaned = false;
-      const finish = () => {
-        if (cleaned) return;
-        cleaned = true;
-        styleEl.remove();
-        delete root.dataset.inspectorEditing;
-        import.meta.hot?.off('vite:afterUpdate', finish);
-        clearTimeout(timer);
-      };
-      const timer = setTimeout(finish, 1500);
-      import.meta.hot?.on('vite:afterUpdate', finish);
-    };
-  }, [active]);
-
   const apply = useCallback(
     (ops: EditOp[]) => {
       if (!selected) return;
@@ -146,45 +138,54 @@ export function InspectorPanel() {
     [selected, setSelected, slideId, bufferOps],
   );
 
-  // `pinned` keeps the last selection rendered through the close-out
-  // animation so the panel's contents don't blank out before it collapses.
-  const targetOpen = active && !!selected && !!snapshot;
-  const [pinned, setPinned] = useState<{ s: SelectedTarget; n: ElementSnapshot } | null>(null);
-  const animVisible = useAnimatedOpen(targetOpen && !!pinned);
-
-  useEffect(() => {
-    if (selected && snapshot) setPinned({ s: selected, n: snapshot });
-  }, [selected, snapshot]);
-
-  useEffect(() => {
-    if (!targetOpen && pinned) {
-      const t = setTimeout(() => setPinned(null), PANEL_TRANSITION_MS);
-      return () => clearTimeout(t);
-    }
-  }, [targetOpen, pinned]);
-
-  if (!pinned) return null;
-  const { s: pinSelected, n: pinSnapshot } = pinned;
+  const multiple = selection.length > 1;
+  const tab = multiple ? 'arrange' : inlineEdit ? 'format' : preferredTab;
+  const textSelected = selected && snapshot?.text !== null && snapshot?.text !== undefined;
+  const imageSelected = Boolean(snapshot?.imageSrc || snapshot?.placeholder);
+  const elementLabel = multiple
+    ? format(t.inspector.selectionCount, { count: selection.length })
+    : textSelected
+      ? t.inspector.elementText
+      : imageSelected
+        ? t.inspector.elementImage
+        : t.inspector.elementShape;
+  const ElementIcon = textSelected ? Type : imageSelected ? ImageIcon : Shapes;
+  const selectedInlineRange =
+    inlineEdit?.anchor === selected?.anchor && inlineSelection ? inlineSelection : null;
   const contentRange =
-    pinSnapshot.text !== null && contentSelection && contentSelection.end > contentSelection.start
+    !inlineEdit &&
+    snapshot &&
+    snapshot.text !== null &&
+    contentSelection &&
+    contentSelection.end > contentSelection.start
       ? contentSelection
       : null;
   const rangePreviewApplies =
     contentRange &&
     rangeStylePreview &&
-    rangeStylePreview.anchor === pinSelected.anchor &&
+    rangeStylePreview.anchor === selected?.anchor &&
     rangeStylePreview.start === contentRange.start &&
     rangeStylePreview.end === contentRange.end;
-  const typographySnapshot = rangePreviewApplies
-    ? { ...pinSnapshot, ...rangeStylePreview.values }
-    : pinSnapshot;
+  const rangeSnapshot =
+    selected && selectedInlineRange && snapshot
+      ? { ...snapshot, ...readTypography(styleContext(selected.anchor, selectedInlineRange)) }
+      : snapshot;
+  const typographySnapshot =
+    rangePreviewApplies && rangeSnapshot
+      ? { ...rangeSnapshot, ...rangeStylePreview.values }
+      : rangeSnapshot;
   const applyTextStyle = (ops: EditOp[]) => {
+    if (!selected || !snapshot) return;
+    if (applyInlineStyle(ops)) {
+      if (selected.anchor.isConnected) setSnapshot(readSnapshot(selected.anchor));
+      return;
+    }
     const styleOps = ops.flatMap((op) => (op.kind === 'set-style' ? [op] : []));
-    const target = resolveSelectedTarget(pinSelected, slideId);
-    if (target !== pinSelected) setSelected(target);
+    const target = resolveSelectedTarget(selected, slideId);
+    if (target !== selected) setSelected(target);
     if (
       contentRange &&
-      pinSnapshot.text !== null &&
+      snapshot.text !== null &&
       styleOps.length === 1 &&
       styleOps.length === ops.length &&
       styleOps.every((op) => INLINE_CONTENT_STYLE_KEYS.has(op.key))
@@ -199,7 +200,7 @@ export function InspectorPanel() {
           end: contentRange.end,
           key: op.key,
           value: op.value,
-          prevText: pinSnapshot.text ?? undefined,
+          prevText: snapshot.text ?? undefined,
         })),
       );
       setRangeStylePreview((current) => ({
@@ -219,7 +220,7 @@ export function InspectorPanel() {
       return;
     }
     if (
-      pinSnapshot.text !== null &&
+      snapshot.text !== null &&
       styleOps.length > 0 &&
       styleOps.length === ops.length &&
       styleOps.every((op) => INLINE_CONTENT_STYLE_KEYS.has(op.key))
@@ -228,7 +229,7 @@ export function InspectorPanel() {
         target.line,
         target.column,
         target.anchor,
-        styleOps.map((op) => ({ ...op, prevText: pinSnapshot.text ?? undefined })),
+        styleOps.map((op) => ({ ...op, prevText: snapshot.text ?? undefined })),
       );
       if (target.anchor.isConnected) setSnapshot(readSnapshot(target.anchor));
       return;
@@ -236,128 +237,210 @@ export function InspectorPanel() {
     apply(ops);
   };
 
+  if (!active || !panelOpen) return null;
+
   return (
-    <PanelShell
-      uiAttr="inspector"
-      animVisible={animVisible}
-      header={
-        <>
-          <div className="flex min-w-0 items-center gap-2">
-            <Crosshair className="size-3.5 text-muted-foreground" />
-            <span className="font-heading text-[12px] font-semibold tracking-tight">
-              {t.inspector.inspect}
-            </span>
-            <span aria-hidden className="h-3 w-px bg-hairline" />
-            <span className="rounded-[3px] border border-hairline bg-card px-1.5 py-px font-mono text-[10.5px] text-foreground/85">
-              &lt;{pinSelected.anchor.tagName.toLowerCase()}&gt;
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <AgentWatchingBadge />
+    <Tabs
+      value={tab}
+      onValueChange={(value) => {
+        if (value === 'arrange') stopInlineEdit();
+        if (value === 'format' || value === 'arrange') setPreferredTab(value);
+      }}
+      className="h-full shrink-0 gap-0"
+      onPointerDownCapture={(event) => {
+        if (!inlineEdit || !(event.target instanceof Element)) return;
+        const button = event.target.closest('button');
+        if (button && !button.matches('[aria-haspopup], [role="tab"]')) event.preventDefault();
+      }}
+    >
+      <PanelShell
+        uiAttr="inspector"
+        animVisible
+        header={
+          <>
+            <div className="flex min-w-0 items-center gap-2">
+              <Paintbrush className="size-3.5 text-muted-foreground" />
+              <span className="font-heading text-[12px] font-semibold tracking-tight">
+                {t.inspector.format}
+              </span>
+            </div>
             <Button
               variant="ghost"
               size="icon-sm"
-              className="text-muted-foreground hover:text-foreground"
-              onClick={() => setSelected(null)}
-              aria-label={t.inspector.deselect}
+              onClick={togglePanel}
+              aria-label={t.inspector.closeFormatPanel}
             >
-              <X className="size-3.5" />
+              <X />
             </Button>
+          </>
+        }
+        banner={
+          selected && snapshot ? (
+            <div className="flex shrink-0 flex-col gap-3 border-b border-hairline px-3.5 py-3">
+              <div className="flex items-center gap-2 text-[12px] font-medium">
+                <ElementIcon aria-hidden className="size-4 text-muted-foreground" />
+                <span>{elementLabel}</span>
+              </div>
+              <TabsList className="w-full" aria-label={t.inspector.format}>
+                <TabsTrigger value="format" disabled={multiple}>
+                  {textSelected
+                    ? t.inspector.elementText
+                    : imageSelected
+                      ? t.inspector.elementImage
+                      : t.inspector.styleLabel}
+                </TabsTrigger>
+                <TabsTrigger value="arrange">{t.inspector.arrangeSection}</TabsTrigger>
+              </TabsList>
+            </div>
+          ) : undefined
+        }
+      >
+        {selected && snapshot && typographySnapshot ? (
+          <>
+            <TabsContent value="format">
+              {textSelected && (
+                <>
+                  <div className="flex flex-col gap-2 px-3.5 pt-3.5">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => startInlineEdit(selected)}
+                    >
+                      <PencilLine data-icon="inline-start" />
+                      {t.inspector.editText}
+                    </Button>
+                    {selectedInlineRange && selectedInlineRange.end > selectedInlineRange.start && (
+                      <p className="text-[11px] leading-relaxed text-muted-foreground">
+                        {t.inspector.textSelectionHint}
+                      </p>
+                    )}
+                  </div>
+                  <Section title={t.inspector.typographySection}>
+                    <FontSizeField snapshot={typographySnapshot} apply={applyTextStyle} />
+                    <FontWeightField snapshot={typographySnapshot} apply={applyTextStyle} />
+                    <StyleToggles snapshot={typographySnapshot} apply={applyTextStyle} />
+                    <ColorField
+                      label={t.inspector.textColor}
+                      value={typographySnapshot.color}
+                      onChange={(value) =>
+                        applyTextStyle([{ kind: 'set-style', key: 'color', value }])
+                      }
+                      clearable={false}
+                    />
+                    <TextAlignField snapshot={snapshot} apply={apply} />
+                  </Section>
+                  <Separator />
+                  <Disclosure title={t.inspector.spacingSection}>
+                    <div className="flex flex-col gap-2.5 px-3.5 pb-3.5">
+                      <LineHeightField snapshot={snapshot} apply={apply} />
+                      <LetterSpacingField snapshot={snapshot} apply={apply} />
+                    </div>
+                  </Disclosure>
+                  <Separator />
+                </>
+              )}
+              {snapshot.imageSrc !== null && (
+                <>
+                  <Section title={t.inspector.imageSection}>
+                    <ImageField src={snapshot.imageSrc} anchor={selected.anchor} />
+                  </Section>
+                  <Separator />
+                </>
+              )}
+              {snapshot.placeholder && (
+                <>
+                  <Section title={t.inspector.imagePlaceholderSection}>
+                    <PlaceholderField
+                      slideId={slideId}
+                      hint={snapshot.placeholder.hint}
+                      line={selected.line}
+                      column={selected.column}
+                      applyEdit={applyEdit}
+                    />
+                  </Section>
+                  <Separator />
+                </>
+              )}
+              <Section title={t.inspector.appearanceSection}>
+                <ColorField
+                  label={t.inspector.backgroundColor}
+                  value={snapshot.backgroundColor ?? '#ffffff'}
+                  dim={!snapshot.backgroundColor}
+                  onChange={(value) =>
+                    apply([{ kind: 'set-style', key: 'backgroundColor', value }])
+                  }
+                  onClear={() =>
+                    apply([{ kind: 'set-style', key: 'backgroundColor', value: null }])
+                  }
+                  clearable
+                />
+              </Section>
+              {textSelected && (
+                <>
+                  <Separator />
+                  <Disclosure title={t.inspector.contentSection}>
+                    <div className="px-3.5 pb-3.5">
+                      <ContentField
+                        snapshot={snapshot}
+                        apply={apply}
+                        onFocus={stopInlineEdit}
+                        onSelectionChange={setContentSelection}
+                      />
+                    </div>
+                  </Disclosure>
+                </>
+              )}
+            </TabsContent>
+            <TabsContent value="arrange">
+              <ArrangePanel />
+            </TabsContent>
+            {!multiple && (
+              <div className="mt-auto">
+                <Separator />
+                <Disclosure title={t.inspector.leaveComment}>
+                  <CommentsSection selected={selected} onAdd={add} />
+                </Disclosure>
+                <Separator />
+                <Disclosure title={t.inspector.sourceSection}>
+                  <div className="flex items-center justify-between gap-2 px-3.5 pb-3.5">
+                    <span className="font-mono text-[10.5px] text-muted-foreground">
+                      &lt;{selected.anchor.tagName.toLowerCase()}&gt; · {selected.line}:
+                      {selected.column}
+                    </span>
+                    <AgentWatchingBadge />
+                  </div>
+                </Disclosure>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="flex flex-col items-center gap-3 px-7 py-16 text-center">
+            <MousePointer2 aria-hidden className="size-8 text-muted-foreground/50" />
+            <div className="flex flex-col gap-1.5">
+              <h2 className="text-[13px] font-medium">{t.inspector.emptySelectionTitle}</h2>
+              <p className="text-[12px] leading-relaxed text-muted-foreground">
+                {t.inspector.emptySelectionHint}
+              </p>
+            </div>
           </div>
-        </>
-      }
-      footer={
-        selection.length > 1 ? undefined : <CommentsSection selected={pinSelected} onAdd={add} />
-      }
-    >
-      <ArrangePanel />
-      {selection.length <= 1 && (
-        <>
-          <Separator />
-          {pinSnapshot.text !== null && (
-            <>
-              <Section title={t.inspector.contentSection}>
-                <ContentField
-                  snapshot={pinSnapshot}
-                  apply={apply}
-                  onSelectionChange={setContentSelection}
-                />
-              </Section>
-              <Separator />
-            </>
-          )}
-
-          <Section title={t.inspector.typographySection}>
-            <FontSizeField snapshot={typographySnapshot} apply={applyTextStyle} />
-            <FontWeightField snapshot={typographySnapshot} apply={applyTextStyle} />
-            <StyleToggles snapshot={typographySnapshot} apply={applyTextStyle} />
-            <LineHeightField snapshot={pinSnapshot} apply={apply} />
-            <LetterSpacingField snapshot={pinSnapshot} apply={apply} />
-            <TextAlignField snapshot={pinSnapshot} apply={apply} />
-          </Section>
-
-          <Separator />
-
-          <Section title={t.inspector.colorSection}>
-            <ColorField
-              label={t.inspector.textColor}
-              value={typographySnapshot.color}
-              onChange={(v) => applyTextStyle([{ kind: 'set-style', key: 'color', value: v }])}
-              clearable={false}
-            />
-            <ColorField
-              label={t.inspector.backgroundColor}
-              value={pinSnapshot.backgroundColor ?? '#ffffff'}
-              dim={!pinSnapshot.backgroundColor}
-              onChange={(v) => apply([{ kind: 'set-style', key: 'backgroundColor', value: v }])}
-              onClear={() => apply([{ kind: 'set-style', key: 'backgroundColor', value: null }])}
-              clearable
-            />
-          </Section>
-
-          {pinSnapshot.imageSrc !== null && (
-            <>
-              <Separator />
-              <Section title={t.inspector.imageSection}>
-                <ImageField src={pinSnapshot.imageSrc} anchor={pinSelected.anchor} />
-              </Section>
-            </>
-          )}
-
-          {pinSnapshot.placeholder && (
-            <>
-              <Separator />
-              <Section title={t.inspector.imagePlaceholderSection}>
-                <PlaceholderField
-                  slideId={slideId}
-                  hint={pinSnapshot.placeholder.hint}
-                  line={pinSelected.line}
-                  column={pinSelected.column}
-                  applyEdit={applyEdit}
-                />
-              </Section>
-            </>
-          )}
-        </>
-      )}
-    </PanelShell>
+        )}
+      </PanelShell>
+    </Tabs>
   );
 }
 
-const EDITING_FREEZE_CSS = `
-[data-inspector-editing] { touch-action: none; }
-[data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *),
-[data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *)::before,
-[data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *)::after {
-  animation-duration: 1ms !important;
-  animation-delay: 0s !important;
-  animation-iteration-count: 1 !important;
-  animation-fill-mode: forwards !important;
-  transition: none !important;
-  view-transition-name: none !important;
-  cursor: pointer !important;
+function Disclosure({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <details className="group/disclosure">
+      <summary className="flex cursor-pointer list-none items-center gap-2 px-3.5 py-3 text-[11px] font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/40 [&::-webkit-details-marker]:hidden">
+        <ChevronRight aria-hidden className="size-3 group-open/disclosure:rotate-90" />
+        {title}
+      </summary>
+      {children}
+    </details>
+  );
 }
-`;
 
 const INLINE_CONTENT_STYLE_KEYS = new Set([
   'fontSize',
@@ -387,10 +470,12 @@ function stylePreviewFromOps(ops: Array<Extract<EditOp, { kind: 'set-style' }>>)
 function ContentField({
   snapshot,
   apply,
+  onFocus,
   onSelectionChange,
 }: {
   snapshot: ElementSnapshot;
   apply: (ops: EditOp[]) => void;
+  onFocus: () => void;
   onSelectionChange?: (selection: ContentSelection | null) => void;
 }) {
   // Mirror the value locally and skip syncs during IME composition;
@@ -412,6 +497,8 @@ function ContentField({
 
   return (
     <Textarea
+      aria-label={t.inspector.elementTextPlaceholder}
+      onFocus={onFocus}
       value={local}
       onCompositionStart={() => {
         composingRef.current = true;
@@ -505,7 +592,7 @@ function FontWeightField({
             {
               kind: 'set-style',
               key: 'fontWeight',
-              value: n === 400 ? null : value,
+              value: String(n),
             },
           ]);
         }}
@@ -514,11 +601,13 @@ function FontWeightField({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {weightOptions.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value} className="text-xs">
-              {opt.label}
-            </SelectItem>
-          ))}
+          <SelectGroup>
+            {weightOptions.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
         </SelectContent>
       </Select>
     </Field>
@@ -540,7 +629,7 @@ function StyleToggles({
         variant="outline"
         pressed={snapshot.fontWeight >= 600}
         onPressedChange={(v) =>
-          apply([{ kind: 'set-style', key: 'fontWeight', value: v ? '700' : null }])
+          apply([{ kind: 'set-style', key: 'fontWeight', value: v ? '700' : '400' }])
         }
         aria-label={t.inspector.boldAria}
       >
@@ -551,7 +640,7 @@ function StyleToggles({
         variant="outline"
         pressed={snapshot.fontStyle === 'italic'}
         onPressedChange={(v) =>
-          apply([{ kind: 'set-style', key: 'fontStyle', value: v ? 'italic' : null }])
+          apply([{ kind: 'set-style', key: 'fontStyle', value: v ? 'italic' : 'normal' }])
         }
         aria-label={t.inspector.italicAria}
       >
@@ -713,6 +802,7 @@ function ColorField({
         />
         <input
           type="color"
+          aria-label={label}
           value={value}
           onChange={(e) => {
             setDraft(e.target.value);
@@ -723,6 +813,7 @@ function ColorField({
       </label>
       <Input
         type="text"
+        aria-label={label}
         value={draft}
         onChange={(e) => {
           setDraft(e.target.value);
@@ -751,7 +842,7 @@ function ImageField({ src, anchor }: { src: string; anchor: HTMLElement }) {
   const { openCrop, openReplace } = useInspector();
   const isImage = anchor.tagName === 'IMG';
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-2">
       <div className="flex items-center gap-3">
         <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:8px_8px]">
           <img
@@ -810,7 +901,7 @@ function PlaceholderField({
   const [submitting, setSubmitting] = useState(false);
   const t = useLocale();
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-2">
       <p className="text-[11px] leading-relaxed text-muted-foreground">
         {t.inspector.placeholderHintLabel}{' '}
         <span className="font-medium text-foreground">{hint}</span>
@@ -919,6 +1010,8 @@ function CommentsSection({
       const ta = wrapRef.current?.querySelector('textarea');
       if (!ta) return;
       e.preventDefault();
+      const details = ta.closest('details');
+      if (details) details.open = true;
       ta.focus({ preventScroll: true });
     };
     window.addEventListener('keydown', onKey);
@@ -938,7 +1031,7 @@ function CommentsSection({
   };
 
   return (
-    <Section title={t.inspector.leaveComment}>
+    <div className="px-3.5 pb-3.5">
       <div className="flex flex-col gap-2">
         <div ref={wrapRef} className={cn('rounded-[6px]', showCue && 'comment-cue')}>
           <Textarea
@@ -963,13 +1056,19 @@ function CommentsSection({
           </Button>
         </div>
       </div>
-    </Section>
+    </div>
   );
 }
 
 function readSnapshot(el: HTMLElement): ElementSnapshot {
   const cs = getComputedStyle(el);
-  const text = hasOnlyInlineTextChildren(el) ? readEditableText(el) : null;
+  const text =
+    el.tagName !== 'IMG' &&
+    el.dataset.slidePlaceholder === undefined &&
+    hasOnlyInlineTextChildren(el) &&
+    (el.textContent?.trim() || /^(H[1-6]|P|SPAN|LABEL|BLOCKQUOTE|LI|PRE|CODE)$/.test(el.tagName))
+      ? readEditableText(el)
+      : null;
   const imageSrc =
     el.tagName === 'IMG'
       ? (el as HTMLImageElement).currentSrc || (el as HTMLImageElement).src || null
@@ -985,10 +1084,7 @@ function readSnapshot(el: HTMLElement): ElementSnapshot {
       : null;
 
   return {
-    fontSize: parseFloat(cs.fontSize) || 16,
-    fontWeight: parseInt(cs.fontWeight, 10) || 400,
-    fontStyle: cs.fontStyle === 'italic' ? 'italic' : 'normal',
-    color: rgbToHex(cs.color) ?? '#000000',
+    ...readTypography(el),
     backgroundColor: isTransparent(cs.backgroundColor) ? null : rgbToHex(cs.backgroundColor),
     textAlign: normalizeTextAlign(cs.textAlign),
     lineHeight: parseLineHeight(cs.lineHeight, parseFloat(cs.fontSize) || 16),
@@ -996,6 +1092,16 @@ function readSnapshot(el: HTMLElement): ElementSnapshot {
     text,
     imageSrc,
     placeholder,
+  };
+}
+
+function readTypography(el: HTMLElement) {
+  const cs = getComputedStyle(el);
+  return {
+    fontSize: parseFloat(cs.fontSize) || 16,
+    fontWeight: parseInt(cs.fontWeight, 10) || 400,
+    fontStyle: cs.fontStyle === 'italic' ? ('italic' as const) : ('normal' as const),
+    color: rgbToHex(cs.color) ?? '#000000',
   };
 }
 

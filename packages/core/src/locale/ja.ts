@@ -199,6 +199,21 @@ export const ja: Locale = {
   },
 
   inspector: {
+    format: 'フォーマット',
+    editMode: '編集',
+    previewMode: 'プレビュー',
+    closeFormatPanel: 'フォーマットパネルを閉じる',
+    editText: 'スライド上でテキストを編集',
+    emptySelectionTitle: 'オブジェクトを選択',
+    emptySelectionHint:
+      'オブジェクトをクリックして書式を設定します。テキストをダブルクリックして編集します。',
+    textSelectionHint: '選択したテキストに書式を適用します。',
+    elementText: 'テキスト',
+    elementImage: '画像',
+    elementShape: '図形',
+    appearanceSection: '外観',
+    spacingSection: '間隔',
+    sourceSection: 'ソースとエージェント',
     rotateHandle: '要素を回転',
     resizeHandle: 'サイズ変更（{handle}）',
     arrangeSection: '配置',

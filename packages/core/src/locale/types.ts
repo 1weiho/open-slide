@@ -201,6 +201,20 @@ export type Locale = {
   };
 
   inspector: {
+    format: string;
+    editMode: string;
+    previewMode: string;
+    closeFormatPanel: string;
+    editText: string;
+    emptySelectionTitle: string;
+    emptySelectionHint: string;
+    textSelectionHint: string;
+    elementText: string;
+    elementImage: string;
+    elementShape: string;
+    appearanceSection: string;
+    spacingSection: string;
+    sourceSection: string;
     rotateHandle: string;
     resizeHandle: string;
     arrangeSection: string;

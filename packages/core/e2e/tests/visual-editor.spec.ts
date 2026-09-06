@@ -32,7 +32,15 @@ async function expectGeometry(element: Locator, expected: Partial<Geometry>, tol
   await expect
     .poll(
       async () => {
-        const current = await geometry(element);
+        const current = await geometry(element).catch((error: unknown) => {
+          if (
+            error instanceof Error &&
+            error.message.includes('Element is outside the slide canvas')
+          )
+            return null;
+          throw error;
+        });
+        if (!current) return Infinity;
         return Math.max(
           0,
           ...Object.entries(expected).map(([key, value]) =>
@@ -69,7 +77,7 @@ test.describe('visual editor', () => {
     await duplicateSlide(request, 'edit-target', slideId);
     await openSlide(page, slideId);
     await page.waitForLoadState('networkidle');
-    await page.getByTitle('Inspect').click();
+    await expect(page.locator('[data-inspector-ready]')).toBeVisible();
     const headline = editorCanvas(page).getByText('Editable headline', { exact: true });
     await headline.click();
     await expect(page.locator('aside[data-inspector-ui]')).toBeVisible();
@@ -110,7 +118,6 @@ export default [Only] satisfies Page[];
     await openSlide(page, slideId);
     await expect(editorCanvas(page).getByText('First block', { exact: true })).toBeVisible();
     await page.waitForLoadState('networkidle');
-    await page.getByTitle('Inspect').click();
     await expect(page.locator('[data-inspector-ready]')).toBeVisible();
     return {
       first: editorCanvas(page).getByText('First block', { exact: true }),
@@ -343,6 +350,7 @@ export default [Only] satisfies Page[];
     const headline = await openEditable(page, request, 'visual-position');
     const before = await geometry(headline);
     const panel = page.locator('aside[data-inspector-ui]');
+    await panel.getByRole('tab', { name: 'Arrange', exact: true }).click();
     const horizontal = panel.getByLabel('Horizontal position', { exact: true });
     const vertical = panel.getByLabel('Vertical position', { exact: true });
     await horizontal.fill('230');
@@ -374,7 +382,11 @@ export default [Only] satisfies Page[];
     await page.mouse.down();
     await page.mouse.move(box.x + 800 * scale, box.y + 550 * scale, { steps: 8 });
     await page.mouse.up();
-    await expect(page.getByText('2 elements selected', { exact: true })).toBeVisible();
+    await expect(
+      page
+        .getByRole('tabpanel', { name: 'Arrange', exact: true })
+        .getByText('2 elements selected', { exact: true }),
+    ).toBeVisible();
     await first.click({ trial: true });
     const beforeFirst = await geometry(first);
     const beforeSecond = await geometry(second);
@@ -396,7 +408,8 @@ export default [Only] satisfies Page[];
     await expectGeometry(first, { x: beforeFirst.x, y: beforeFirst.y });
     await expectGeometry(second, { x: beforeSecond.x, y: beforeSecond.y });
     await page.keyboard.press('Escape');
-    await expect(page.locator('aside[data-inspector-ui]')).toHaveCount(0);
+    await expect(page.locator('aside[data-inspector-ui]')).toBeVisible();
+    await expect(page.getByText('Select an object', { exact: true })).toBeVisible();
     const fullCanvas = await canvas.boundingBox();
     if (!fullCanvas) throw new Error('Slide canvas has no bounding box');
     await page.mouse.move(fullCanvas.x - 5, fullCanvas.y - 5);
@@ -407,7 +420,11 @@ export default [Only] satisfies Page[];
       { steps: 8 },
     );
     await page.mouse.up();
-    await expect(page.getByText('3 elements selected', { exact: true })).toBeVisible();
+    await expect(
+      page
+        .getByRole('tabpanel', { name: 'Arrange', exact: true })
+        .getByText('3 elements selected', { exact: true }),
+    ).toBeVisible();
   });
 
   test('aligning a selection to the slide moves every selected element to the slide edge', async ({
@@ -436,8 +453,13 @@ export default [Only] satisfies Page[];
     const { first, second, third } = await openBlocks(page, request, 'visual-distribute');
     await first.click();
     const panel = page.locator('aside[data-inspector-ui]');
+    await panel.getByRole('tab', { name: 'Arrange', exact: true }).click();
     await panel.getByRole('button', { name: 'Select all', exact: true }).click();
-    await expect(page.getByText('3 elements selected', { exact: true })).toBeVisible();
+    await expect(
+      page
+        .getByRole('tabpanel', { name: 'Arrange', exact: true })
+        .getByText('3 elements selected', { exact: true }),
+    ).toBeVisible();
     await panel.getByRole('button', { name: 'Distribute horizontally', exact: true }).click();
     await expectGeometry(second, { x: 620, y: 360 });
     await panel.getByRole('button', { name: 'Distribute vertically', exact: true }).click();
@@ -457,6 +479,7 @@ export default [Only] satisfies Page[];
     const { first } = await openBlocks(page, request, 'visual-layers', true);
     await first.click({ position: { x: 10, y: 10 } });
     const panel = page.locator('aside[data-inspector-ui]');
+    await panel.getByRole('tab', { name: 'Arrange', exact: true }).click();
     const topmost = async () => {
       const box = await first.boundingBox();
       if (!box) throw new Error('Layer target has no bounding box');
@@ -507,6 +530,10 @@ export default [Only] satisfies Page[];
     );
     await page.mouse.up();
     await page.keyboard.up('Shift');
+    await page
+      .locator('aside[data-inspector-ui]')
+      .getByRole('tab', { name: 'Arrange', exact: true })
+      .click();
     await expect(
       page.locator('aside[data-inspector-ui]').getByLabel('Rotation', { exact: true }),
     ).toHaveValue('45');
@@ -624,7 +651,7 @@ export default [Only] satisfies Page[];
     await openSlide(page, slideId);
     await expect(editorCanvas(page).getByText('Nested block', { exact: true })).toBeVisible();
     await page.waitForLoadState('networkidle');
-    await page.getByTitle('Inspect').click();
+    await expect(page.locator('[data-inspector-ready]')).toBeVisible();
     const child = editorCanvas(page).getByText('Nested block', { exact: true });
     const parent = editorCanvas(page).getByTestId('transformed-parent');
     await child.click();

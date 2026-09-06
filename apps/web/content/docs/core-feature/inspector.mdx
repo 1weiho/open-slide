@@ -5,21 +5,26 @@ description: Move, resize, align, and edit slide elements directly on the canvas
 
 ![Open-slide inspector with the property panel docked beside the canvas, editing a selected element's typography and colour](/assets/screenshots/inspector.webp)
 
-The inspector is a dev-only overlay built into the open-slide runtime. Toggle
-it from the toolbar (or press `i`), then click any element on the slide.
+The visual editor is available during development. Slides open in edit mode:
+click an object to select it, drag to move it, and double-click text to edit it.
+Press `Enter` to edit a selected text object. Press `Escape` to return to object
+selection, then again to clear the selection.
 
-## Two surfaces
+The **Format** toolbar button (or `i`) shows and hides the property panel.
+On desktop, the panel stays open while you select different objects or clear
+the selection, keeping the canvas in the same position.
 
-The inspector exposes two ways to edit a slide:
+Choose **Preview** to interact with the slide and play its animations, then
+**Edit** to resume editing. **Present** opens presentation mode.
 
-### Visual editor
+## Arrange objects
 
 Click an element to select it. Drag the selection to move it, use its handles
 to resize it, or drag the rotation handle. Smart guides appear when an edge
 or center lines up with another element or the slide. Positions and sizes
 use slide pixels, so the same movement works at any canvas zoom.
 
-The **Arrange** section provides exact position, size, and rotation inputs,
+The **Arrange** tab provides exact position, size, and rotation inputs,
 plus alignment and layer controls:
 
 - **Align** — align left, center, right, top, middle, or bottom. Choose the
@@ -41,6 +46,10 @@ Width, height, and rotation inputs apply to one element at a time.
 
 | Shortcut | Action |
 | --- | --- |
+| `Enter` with a text object selected | Edit its text |
+| `Escape` while editing text | Return to object selection |
+| `Escape` with an object selected | Clear the selection |
+| `I` | Show or hide the Format panel |
 | Arrow keys | Move the selection by 1 slide pixel |
 | `Shift` + arrow keys | Move by 10 slide pixels |
 | `Shift` while dragging | Constrain movement to one axis |
@@ -59,22 +68,37 @@ definition also share source styles; select a unique parent container to
 arrange an instance independently. The panel explains when a selected element
 cannot be transformed.
 
-The property panel also includes editable inputs for:
+## Format text and images
 
-- **Text** — replace inline.
-- **Typography** — font family, weight, size, letter-spacing.
-- **Colour** — text colour, background colour.
-- **Image src** — swap to any file in the deck's or the global assets
-  folder; see the [assets manager](/docs/core-feature/assets-manager) for
-  how the two scopes work.
+The Format panel shows controls for the selected object. Use the **Text** tab
+for typography, text colour, and paragraph alignment; the **Image** tab for
+replacement and cropping; and **Style** for a shape's appearance. Switch to
+**Arrange** for geometry, alignment, and layers.
 
-All edits buffer in memory until you press **Save** in the SaveBar. One save
-lands as a single HMR write to disk.
+Select a word or phrase directly on the canvas, then change its size, weight,
+style, or colour in the panel. The selection stays active so you can continue
+typing or apply another format. `Cmd` / `Ctrl` + `B` and `Cmd` / `Ctrl` + `I`
+toggle bold and italic while editing text. When the panel is hidden, a compact
+toolbar provides the same text controls beside the selection.
 
-### Comments
+Additional controls are available in expandable sections:
+
+- **Content** — edit the object's complete text in a text area.
+- **Spacing** — adjust line height and letter spacing.
+- **Source and agent** — inspect the element tag and agent connection.
+
+Image replacement lets you choose any file in the deck's or the global assets
+folder; see the [assets manager](/docs/core-feature/assets-manager) for how the
+two scopes work.
+
+Edits buffer in memory. Press **Save** or `Cmd` / `Ctrl` + `S` to write them to
+source. Switching to Preview or leaving the deck also saves pending edits.
+Use **Undo**, **Redo**, or **Discard** to revise changes before saving.
+
+## Comments
 
 Sometimes the change is easier to describe than to perform. Click an element,
-pick **Comment**, type a note:
+expand **Leave a comment** in the Format panel, and type a note:
 
 > use the accent colour on this title
 

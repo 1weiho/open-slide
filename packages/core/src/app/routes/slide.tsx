@@ -53,7 +53,13 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useFolders } from '@/lib/folders';
-import { hasModifier, isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
+import {
+  hasModifier,
+  isBackwardKey,
+  isForwardKey,
+  isShortcutControlTarget,
+  isTypingTarget,
+} from '@/lib/keys';
 import { readLastHomeLocation } from '@/lib/last-home-location';
 import { useAgentSocketConnected } from '@/lib/use-agent-socket';
 import { useClickPageNavigation } from '@/lib/use-click-page-navigation';
@@ -292,7 +298,14 @@ export function Slide() {
     // page-nav handler too would race it and skip <Steps> reveals, so bail out.
     if (playMode || !showSlideUi) return;
     const onKey = (e: KeyboardEvent) => {
-      if (isTypingTarget(e.target)) return;
+      if (
+        isTypingTarget(e.target) ||
+        isShortcutControlTarget(e.target) ||
+        e.isComposing ||
+        e.keyCode === 229 ||
+        e.defaultPrevented
+      )
+        return;
       // Letter shortcuts only fire bare so browser combos (Cmd/Ctrl-P, ⌘F…) stay intact.
       if (hasModifier(e)) return;
       // Toggle overview from either state — the overview's own capture-phase
@@ -600,7 +613,12 @@ export function Slide() {
 
   return (
     <HistoryProvider>
-      <InspectorProvider slideId={slideId} pageIndex={index}>
+      <InspectorProvider
+        slideId={slideId}
+        pageIndex={index}
+        panelHidden={designOpen}
+        onPanelOpen={() => setDesignOpen(false)}
+      >
         <SelectionReporter />
         <div className="flex h-dvh flex-col overflow-hidden bg-sidebar text-foreground">
           {/* Toolbar sits directly on the chrome ground — three zones, mono-folio center */}
@@ -850,7 +868,7 @@ export function Slide() {
                       actions={thumbnailActions}
                     />
                   </div>
-                  <InspectorPanel />
+                  {!designOpen && <InspectorPanel />}
                   <DesignPanel open={designOpen} onClose={() => setDesignOpen(false)} />
                 </div>
                 {import.meta.env.DEV && (
