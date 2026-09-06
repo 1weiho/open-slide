@@ -1,4 +1,4 @@
-import { Eye, MousePointer2, PanelRight } from 'lucide-react';
+import { CodeXml, Eye, PanelRight } from 'lucide-react';
 import {
   createContext,
   type ReactNode,
@@ -12,6 +12,7 @@ import {
 import { toast } from 'sonner';
 import { useHistory } from '@/components/history-provider';
 import { Button } from '@/components/ui/button';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { findSlideSource } from '@/lib/inspector/fiber';
 import {
   appendTextEdit,
@@ -1395,21 +1396,40 @@ export function InspectToggleButton() {
   if (import.meta.env.PROD) return null;
   return (
     <div className="flex items-center gap-1" data-inspector-ui>
-      <Button
+      <ToggleGroup
         size="sm"
-        variant="ghost"
-        onClick={(event) => {
-          if (event.detail > 0) event.currentTarget.blur();
-          toggle();
+        spacing={1}
+        value={[active ? 'edit' : 'preview']}
+        onValueChange={(value) => {
+          const next = value[0];
+          if (next && (next === 'edit') !== active) toggle();
         }}
-        title={active ? t.inspector.previewMode : t.inspector.editMode}
-        aria-label={active ? t.inspector.previewMode : t.inspector.editMode}
+        aria-label={`${t.inspector.previewMode} / ${t.inspector.editMode}`}
+        className="h-8 gap-0 rounded-lg border border-border/70 bg-muted/70 p-0.5"
       >
-        {active ? <Eye className="size-3.5" /> : <MousePointer2 className="size-3.5" />}
-        <span className="hidden lg:inline">
-          {active ? t.inspector.previewMode : t.inspector.editMode}
-        </span>
-      </Button>
+        <ToggleGroupItem
+          value="preview"
+          title={t.inspector.previewMode}
+          aria-label={t.inspector.previewMode}
+          onClick={(event) => {
+            if (event.detail > 0) event.currentTarget.blur();
+          }}
+          className="h-full w-8 rounded-md px-0 text-muted-foreground hover:bg-transparent data-pressed:bg-card data-pressed:text-foreground data-pressed:shadow-edge"
+        >
+          <Eye />
+        </ToggleGroupItem>
+        <ToggleGroupItem
+          value="edit"
+          title={t.inspector.editMode}
+          aria-label={t.inspector.editMode}
+          onClick={(event) => {
+            if (event.detail > 0) event.currentTarget.blur();
+          }}
+          className="h-full w-8 rounded-md px-0 text-muted-foreground hover:bg-transparent data-pressed:bg-card data-pressed:text-foreground data-pressed:shadow-edge"
+        >
+          <CodeXml />
+        </ToggleGroupItem>
+      </ToggleGroup>
       <Button
         size="sm"
         variant={active && panelOpen && !panelHidden ? 'secondary' : 'ghost'}
