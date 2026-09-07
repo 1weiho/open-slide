@@ -2,4 +2,4 @@
 '@open-slide/core': minor
 ---
 
-Arrange slide elements with dragging, resizing, rotation, multi-selection, smart guides, alignment, distribution, and layer controls.
+Add visual slide editing with snapping, alignment, inline text formatting, animated inspector controls, and reliable undo and save recovery.
