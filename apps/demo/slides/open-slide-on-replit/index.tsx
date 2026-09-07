@@ -1,4 +1,4 @@
-import type { DesignSystem, Page, SlideMeta, SlideTransition } from '@open-slide/core';
+import type { DesignSystem, Page, SlideMeta, SlideTransition } from '@open-slide/react';
 import createSlideSkill from './assets/create-slide-skill.webp';
 import initCommand from './assets/init-command.webp';
 import openslideHome from './assets/openslide-home.webp';

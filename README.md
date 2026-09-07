@@ -12,12 +12,13 @@
 [![GitHub forks](https://img.shields.io/github/forks/1weiho/open-slide?style=for-the-badge)](https://github.com/1weiho/open-slide/network/members)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-**The slide framework built for agents.** Describe your deck in natural language — your coding agent writes the React. open-slide handles the canvas, scaling, navigation, hot reload, and present mode so the agent can focus on content.
+**The slide framework built for agents.** Describe your deck in natural language — your coding agent writes React or Svelte. open-slide handles the canvas, scaling, navigation, hot reload, and present mode so the agent can focus on content.
 
-Every slide renders into a fixed **1920 × 1080** canvas. Pages are arbitrary React components, not a constrained DSL.
+Every slide renders into a fixed **1920 × 1080** canvas. Pages are arbitrary framework components, not a constrained DSL.
 
 ```bash
 npx @open-slide/cli init my-slide
+# or: npx @open-slide/cli init my-slide --framework svelte
 ```
 
 ## Why open-slide
@@ -69,7 +70,7 @@ cd my-slide
 pnpm dev
 ```
 
-The scaffolded workspace ships with agent skills preconfigured for Claude Code. From there you drive the deck through your agent — or edit `slides/<id>/index.tsx` directly. See [CLAUDE.md](CLAUDE.md) for the hard rules.
+The React scaffold ships with agent skills preconfigured for Claude Code. From there you drive the deck through your agent, or edit `slides/<id>/index.tsx` directly. Svelte workspaces use an `index.ts` deck manifest and one `.svelte` component per page.
 
 ## Repo layout
 
@@ -77,18 +78,23 @@ This repo is a pnpm + Turbo monorepo.
 
 | Path | Description |
 | --- | --- |
-| [packages/core](packages/core) | `@open-slide/core` — runtime (home page, slide viewer, present mode, inspector), Vite plugin, and the `open-slide` dev/build/preview CLI. |
-| [packages/cli](packages/cli) | `@open-slide/cli` — `npx @open-slide/cli init` scaffolder. Generates a minimal workspace where Vite/React/tsconfig stay hidden inside core. |
-| [apps/demo](apps/demo) | Example workspace that consumes `@open-slide/core` via `workspace:*`. Used for local development of the framework. |
+| [packages/core](packages/core) | `@open-slide/core` — compatibility package that automatically routes existing installations to the React runtime. |
+| [packages/shared](packages/shared) | `@open-slide/shared` — framework-neutral config, types, slide discovery, virtual modules, filesystem helpers, and shared runtime utilities. |
+| [packages/react](packages/react) | `@open-slide/react` — the existing React viewer, presenter, inspector, Vite integration, and runtime CLI. |
+| [packages/svelte](packages/svelte) | `@open-slide/svelte` — native Svelte viewer, presenter, inspector, Vite integration, and runtime CLI. |
+| [packages/cli](packages/cli) | `@open-slide/cli` — framework-selecting workspace scaffolder. |
+| [apps/demo](apps/demo) | React dogfood workspace that consumes `@open-slide/react` via `workspace:*`. |
+| [apps/svelte-demo](apps/svelte-demo) | Svelte dogfood workspace that validates the native runtime in the Turbo graph. |
 
 ## Development
 
 ```bash
 pnpm install
-pnpm dev      # runs the demo against the local @open-slide/core
-pnpm build    # builds all packages
-pnpm check    # type-checks all packages
-pnpm lint     # lints via biome
+pnpm dev                # runs both framework demos
+pnpm dev:svelte-demo    # runs only the Svelte demo
+pnpm build              # builds all packages and apps
+pnpm typecheck          # type-checks the workspace graph
+pnpm check              # formats and lints with Biome
 ```
 
 ## Support

@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@open-slide/core": "workspace:*",
+    "@open-slide/react": "workspace:*",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

@@ -1,4 +1,4 @@
-import type { DesignSystem, Page, SlideMeta } from '@open-slide/core';
+import type { DesignSystem, Page, SlideMeta } from '@open-slide/react';
 import type { ReactNode } from 'react';
 
 // ─── Panel-tweakable design tokens ────────────────────────────────────────────

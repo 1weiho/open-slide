@@ -1,11 +1,12 @@
 # @open-slide/cli
 
-Scaffold a workspace for [open-slide](https://github.com/1weiho/open-slide) — a React-based slide framework with Claude Code skills preconfigured.
+Scaffold a React or Svelte workspace for [open-slide](https://github.com/1weiho/open-slide).
 
 ## Usage
 
 ```bash
 npx @open-slide/cli init my-slide
+npx @open-slide/cli init my-svelte-slide --framework svelte
 cd my-slide
 pnpm install
 pnpm dev
@@ -14,12 +15,12 @@ pnpm dev
 This creates a workspace containing:
 
 - `slides/getting-started/` — a starter slide you can edit or delete.
-- `package.json` — depends on `@open-slide/core`, which provides the runtime (home page, slide viewer, fullscreen mode) and the `open-slide` CLI.
+- `package.json` — depends on the selected `@open-slide/react` or `@open-slide/svelte` runtime.
 - `open-slide.config.ts` — optional typed config (slidesDir, port).
-- `.claude/skills/` and `.agents/skills/` — Claude Code skills (`create-slide`, `apply-comments`, …).
-- `CLAUDE.md` — agent guide for authoring slides.
+- React workspaces include `.claude/skills/`, `.agents/skills/`, and the existing agent authoring guide.
+- Svelte workspaces include a Svelte-specific `AGENTS.md` and component-per-page starter deck.
 
-You won't see any Vite, React, or tsconfig files in the workspace. They live inside `@open-slide/core` and you never touch them.
+The selected runtime owns the Vite application shell. Your workspace contains only deck components, assets, config, and framework dependencies.
 
 ## Commands
 
@@ -28,11 +29,12 @@ You won't see any Vite, React, or tsconfig files in the workspace. They live ins
 | `open-slide init [dir]` | Scaffold a new workspace in `dir` (defaults to current dir). |
 | `open-slide init --force` | Scaffold into a non-empty directory. |
 | `open-slide init --name <name>` | Override the generated `package.json` name. |
+| `open-slide init --framework svelte` | Scaffold the native Svelte runtime instead of the default React runtime. |
 
-(Once installed in the workspace, `@open-slide/core` provides `open-slide dev`, `open-slide build`, and `open-slide preview` via its own bin.)
+(Once installed, the selected runtime provides `open-slide dev`, `open-slide build`, and `open-slide preview`.)
 
 ## Authoring
 
-Inside the scaffolded workspace, slides live under `slides/<kebab-case-id>/index.tsx` and default-export an array of `Page` components. Each page renders into a fixed 1920×1080 canvas; the framework handles scaling.
+React decks live at `slides/<kebab-case-id>/index.tsx`. Svelte decks use `index.ts` plus `.svelte` page components. Both default-export an ordered array of pages rendered on a fixed 1920×1080 canvas.
 
-Ask Claude Code to "make slides about X" and the `create-slide` skill will take it from there.
+The existing `create-slide` skill remains available in React workspaces. Svelte workspaces expose the same file convention directly for any coding agent.

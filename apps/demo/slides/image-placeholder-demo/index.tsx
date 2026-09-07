@@ -1,4 +1,4 @@
-import { ImagePlaceholder, type Page, type SlideMeta } from '@open-slide/core';
+import { ImagePlaceholder, type Page, type SlideMeta } from '@open-slide/react';
 
 const fill = {
   width: '100%',

@@ -3,9 +3,10 @@ import { defineConfig } from 'tsdown';
 export default defineConfig({
   entry: {
     index: 'src/index.ts',
-    'cli/bin': 'src/cli/bin.ts',
-    'vite/index': 'src/vite/index.ts',
+    'files/index': 'src/files/index.ts',
+    'http/index': 'src/http/index.ts',
     'locale/index': 'src/locale/index.ts',
+    'vite/index': 'src/vite/index.ts',
   },
   format: 'esm',
   fixedExtension: false,
@@ -14,5 +15,5 @@ export default defineConfig({
   clean: true,
   dts: true,
   shims: false,
-  deps: { neverBundle: ['vite', 'react', 'react-dom', 'react-router-dom'] },
+  deps: { neverBundle: [/^@open-slide\/(?:react|shared)(?:\/|$)/] },
 });

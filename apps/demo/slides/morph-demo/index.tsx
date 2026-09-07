@@ -4,7 +4,7 @@ import {
   type Page,
   type SlideMeta,
   type SlideTransition,
-} from '@open-slide/core';
+} from '@open-slide/react';
 import type { CSSProperties, ReactNode } from 'react';
 
 export const design: DesignSystem = {

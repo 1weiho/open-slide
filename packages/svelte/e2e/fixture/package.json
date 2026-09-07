@@ -1,0 +1,10 @@
+{
+  "name": "svelte-e2e-fixture",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "dependencies": {
+    "@open-slide/svelte": "workspace:*",
+    "svelte": "^5.56.8"
+  }
+}

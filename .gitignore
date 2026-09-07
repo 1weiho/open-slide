@@ -5,7 +5,8 @@ dist
 .vite
 *.tsbuildinfo
 .turbo
-packages/cli/template/.agents/skills
-packages/core/e2e/.scratch
+packages/cli/templates/react/.agents/skills
+packages/cli/templates/svelte/.agents/skills
+packages/react/e2e/.scratch
 playwright-report
 test-results

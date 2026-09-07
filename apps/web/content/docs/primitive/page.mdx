@@ -8,7 +8,7 @@ zero-prop React components, and each component is one page in the runtime,
 presenter view, overview grid, thumbnails, and exports.
 
 ```tsx title="slides/q2-launch/index.tsx"
-import { type Page, type SlideMeta, useSlidePageNumber } from '@open-slide/core';
+import { type Page, type SlideMeta, useSlidePageNumber } from '@open-slide/react';
 
 const Cover: Page = () => {
   const { current, total } = useSlidePageNumber();
@@ -66,7 +66,7 @@ guard browser-only side effects when a page also needs to export cleanly.
 different animation than the module-level default.
 
 ```tsx
-import type { Page, SlideTransition } from '@open-slide/core';
+import type { Page, SlideTransition } from '@open-slide/react';
 
 const Cover: Page = () => <section>…</section>;
 

@@ -157,7 +157,7 @@ const Title = ({ children }: { children: React.ReactNode }) => (
 Pull the page number from `useSlidePageNumber()` — never hardcode `pageNum` / `total` props.
 
 ```tsx
-import { useSlidePageNumber } from '@open-slide/core';
+import { useSlidePageNumber } from '@open-slide/react';
 
 const Footer = () => {
   const { current, total } = useSlidePageNumber();

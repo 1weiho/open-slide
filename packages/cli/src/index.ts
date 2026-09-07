@@ -5,7 +5,13 @@ import * as p from '@clack/prompts';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import { gitInitAndCommit } from './git.ts';
-import { installDependencies, isDirNonEmpty, sanitizeDirName, scaffold } from './init.ts';
+import {
+  type Framework,
+  installDependencies,
+  isDirNonEmpty,
+  sanitizeDirName,
+  scaffold,
+} from './init.ts';
 import { detectPackageManager, PACKAGE_MANAGERS, type PackageManager } from './package-manager.ts';
 
 async function readVersion(): Promise<string> {
@@ -25,6 +31,12 @@ interface InitCliFlags {
   useBun?: boolean;
   install?: boolean;
   git?: boolean;
+  framework?: string;
+}
+
+function parseFramework(value: string): Framework {
+  if (value === 'react' || value === 'svelte') return value;
+  throw new Error(`Unsupported framework "${value}". Use react or svelte.`);
 }
 
 function unwrap<T>(value: T | symbol): T {
@@ -86,6 +98,7 @@ async function runInit(dirArg: string | undefined, flags: InitCliFlags): Promise
   let force = flags.force ?? false;
   const install = flags.install !== false;
   const git = flags.git !== false;
+  let framework = flags.framework ? parseFramework(flags.framework) : undefined;
 
   if (isTTY && dir === undefined) {
     dir = unwrap(
@@ -116,6 +129,19 @@ async function runInit(dirArg: string | undefined, flags: InitCliFlags): Promise
         ),
       );
     }
+  }
+
+  if (isTTY && framework === undefined) {
+    framework = unwrap(
+      await p.select({
+        message: 'Framework',
+        options: [
+          { value: 'react' as const, label: 'React' },
+          { value: 'svelte' as const, label: 'Svelte' },
+        ],
+        initialValue: 'react',
+      }),
+    );
   }
 
   if (isTTY && packageManager === undefined && install) {
@@ -155,7 +181,7 @@ async function runInit(dirArg: string | undefined, flags: InitCliFlags): Promise
 
   const pm = packageManager ?? detectPackageManager();
 
-  await scaffold({ target, force, name: flags.name });
+  await scaffold({ target, force, name: flags.name, framework: framework ?? 'react' });
   p.log.step(`Created workspace ${chalk.dim(`in ${displayPath(target)}`)}`);
 
   let installed = false;
@@ -208,6 +234,7 @@ export async function run(argv: string[]): Promise<void> {
     .argument('[dir]', 'target directory', undefined)
     .option('-f, --force', 'overwrite non-empty target directory', false)
     .option('-n, --name <name>', 'override package name (defaults to folder name)')
+    .option('--framework <framework>', 'runtime framework: react or svelte')
     .option('--use-npm', 'use npm to install dependencies')
     .option('--use-pnpm', 'use pnpm to install dependencies')
     .option('--use-yarn', 'use yarn to install dependencies')

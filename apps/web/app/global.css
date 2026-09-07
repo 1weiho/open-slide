@@ -3,10 +3,10 @@
 @import "fumadocs-ui/css/preset.css";
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Brand override — align Fumadocs UI with packages/core's design language.
+   Brand override — align Fumadocs UI with packages/react's design language.
    Pure zero-chroma neutral ramp on clean white, hairline borders, and
    vermillion as the single accent. Matches the tokens defined in
-   packages/core/src/app/styles.css so the marketing site, the docs, and
+   packages/react/src/app/styles.css so the marketing site, the docs, and
    the editor share one visual identity.
    ───────────────────────────────────────────────────────────────────── */
 

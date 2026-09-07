@@ -1,4 +1,4 @@
-import type { DesignSystem, Page, SlideMeta } from '@open-slide/core';
+import type { DesignSystem, Page, SlideMeta } from '@open-slide/react';
 
 export const design: DesignSystem = {
   palette: {

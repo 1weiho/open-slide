@@ -1,2 +1,2 @@
 #!/usr/bin/env node
-import './dist/cli/bin.js';
+import '@open-slide/react/cli';

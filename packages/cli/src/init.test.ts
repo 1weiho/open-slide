@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { sanitizeDirName } from './init.ts';
+import { runtimePackage, sanitizeDirName } from './init.ts';
+
+describe('runtimePackage', () => {
+  it('maps framework choices to their runtime packages', () => {
+    expect(runtimePackage('react')).toBe('@open-slide/react');
+    expect(runtimePackage('svelte')).toBe('@open-slide/svelte');
+  });
+});
 
 describe('sanitizeDirName', () => {
   it('leaves safe names untouched', () => {
