@@ -410,7 +410,7 @@ export function InspectorProvider({
           if (!anchor) continue;
           const instanceId = ensureInstanceId(anchor);
           if (!bucket.origTexts.has(instanceId)) {
-            bucket.origTexts.set(instanceId, { value: readEditableText(anchor) });
+            bucket.origTexts.set(instanceId, { value: op.prevText ?? readEditableText(anchor) });
           }
           bucket.textOps.set(instanceId, { value: op.value, seq });
           if (anchor.isConnected) setEditableText(anchor, op.value);
@@ -508,7 +508,7 @@ export function InspectorProvider({
             snaps.push({
               kind: 'text',
               instanceId,
-              value: readEditableText(anchor),
+              value: op.prevText ?? readEditableText(anchor),
               existed: false,
             });
           }
