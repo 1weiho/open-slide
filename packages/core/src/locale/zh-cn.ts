@@ -234,6 +234,7 @@ export const zhCN: Locale = {
     cropFitCover: '填满',
     cropFitContain: '完整显示',
     cropApply: '应用',
+    cropSharedConsent: '我了解，裁剪共用组件中的图片，也会影响其他页面使用该组件的图片。',
     agentWatching: 'Agent 正在关注',
     agentWatchingTooltip: '选取的元素会即时同步给 agent。',
     agentNotWatching: 'Agent 没在关注',

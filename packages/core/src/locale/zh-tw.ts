@@ -234,6 +234,7 @@ export const zhTW: Locale = {
     cropFitCover: '填滿',
     cropFitContain: '完整顯示',
     cropApply: '套用',
+    cropSharedConsent: '我了解，裁切共用元件中的圖片，也會影響其他頁面使用該元件的圖片。',
     agentWatching: 'Agent 正在關注',
     agentWatchingTooltip: '選取的元素會即時同步給 agent。',
     agentNotWatching: 'Agent 沒在關注',
