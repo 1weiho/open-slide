@@ -33,11 +33,15 @@ fallback.
     },
     exit: {
       type: 'TransitionPhase',
-      description: 'Plays on the outgoing page.',
+      description: 'Plays on the outgoing page. Its opacity keyframes are ignored unless throughBackground is set.',
     },
     morph: {
       type: 'boolean | MorphTransition',
       description: 'Matches MorphElement pairs and fades unmatched morph elements.',
+    },
+    throughBackground: {
+      type: 'boolean',
+      description: 'Let exit fade the outgoing page out so the deck background shows through between pages.',
     },
   }}
 />
@@ -61,7 +65,7 @@ fallback.
     },
     delay: {
       type: 'number',
-      description: 'Delay in ms before the phase starts. Use on enter to overlap with the outgoing exit.',
+      description: 'Delay in ms before the phase starts.',
     },
   }}
 />
@@ -84,6 +88,40 @@ fallback.
     },
   }}
 />
+
+## Background
+
+The outgoing and incoming pages are stacked in one container painted with the
+deck background (`--osd-bg`), incoming on top. Every page paints its own
+background, so while the outgoing page stays opaque the incoming page fades in
+over it and the container colour is never visible.
+
+An exit that fades to `opacity: 0` would expose the container before the enter
+has covered it — a dip to black on any page whose background differs from
+`--osd-bg`. The runtime therefore drops `opacity` from `exit` keyframes;
+`transform` and `filter` still apply. Write the fade on `enter` and keep the
+exit as a hold:
+
+```ts
+export const transition: SlideTransition = {
+  duration: 260,
+  exit: { keyframes: [{ opacity: 1 }, { opacity: 1 }] },
+  enter: { keyframes: [{ opacity: 0 }, { opacity: 1 }] },
+};
+```
+
+Set `throughBackground: true` when the dip is the point — a section break that
+goes to black between two pages that share the deck background. Exit keyframes
+then run exactly as written.
+
+```ts
+const breath: SlideTransition = {
+  duration: 460,
+  throughBackground: true,
+  exit: { duration: 180, keyframes: [{ opacity: 1 }, { opacity: 0 }] },
+  enter: { duration: 240, delay: 300, keyframes: [{ opacity: 0 }, { opacity: 1 }] },
+};
+```
 
 ## Direction hook
 
@@ -118,8 +156,8 @@ Use the object form when the morph needs its own timing:
 ```ts
 export const transition: SlideTransition = {
   duration: 900,
-  enter: { keyframes: [{ opacity: 0.35 }, { opacity: 1 }] },
-  exit: { keyframes: [{ opacity: 1 }, { opacity: 0.35 }] },
+  enter: { keyframes: [{ opacity: 0 }, { opacity: 1 }] },
+  exit: { keyframes: [{ opacity: 1 }, { opacity: 1 }] },
   morph: {
     duration: 900,
     easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
