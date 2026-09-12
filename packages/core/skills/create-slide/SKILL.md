@@ -58,9 +58,12 @@ Sketch the slide as a list of page roles before writing code. Common page types:
 | Big number       | One statistic the size of the canvas          |
 | Quote            | Pull-quote with attribution                   |
 | Comparison       | Two-column before/after or A vs B             |
+| Code             | Heading + one `<CodeBlock>` (≤ 14 lines)      |
 | Closing          | CTA, thanks, contact                          |
 
 **Rule of thumb**: one idea per page. If you're tempted to put two, split them.
+
+For code pages, render the source with `<CodeBlock>` from `@open-slide/core` — see `references/code-block.md` in `slide-authoring` for the supported languages and the sizing limits before writing one.
 
 If the deck topic naturally calls for specific real images the user must supply (product screenshots, team photos, customer dashboards), plan where those go and use `<ImagePlaceholder>` from `@open-slide/core` — see the **Image placeholders** section in `slide-authoring`. Default is **no placeholders**: only insert one when a real image is genuinely required.
 
