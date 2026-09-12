@@ -86,7 +86,7 @@ test.describe('slide viewer', () => {
   test('back button returns to the home browser', async ({ page }) => {
     await openSlide(page, 'alpha');
     await page.getByRole('button', { name: 'Back to home' }).click();
-    await expect(page.locator('li h3')).toHaveCount(4);
+    await expect(page.locator('li h3')).toHaveCount(5);
   });
 
   test('back returns to the previous browser location with its query intact', async ({ page }) => {

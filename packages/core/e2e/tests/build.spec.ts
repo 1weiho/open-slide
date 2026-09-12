@@ -54,10 +54,22 @@ test.describe('static build and preview', () => {
     // chunk per slide plus the entry chunk. The exact chunk filenames depend on
     // the bundler (Rollup names them after the module basename, `index-*.js`),
     // so assert the split happened rather than pinning a naming convention.
-    const slideCount = 4;
+    const slideCount = 5;
     const assets = await fs.readdir(path.join(dist, 'assets'));
     const jsChunks = assets.filter((name) => name.endsWith('.js'));
     expect(jsChunks.length).toBeGreaterThanOrEqual(slideCount + 1);
+  });
+
+  test('code-splits the syntax highlighter and grammars away from the entry chunk', async () => {
+    const assetsDir = path.join(projectDir, 'dist', 'assets');
+    const assets = await fs.readdir(assetsDir);
+    const entry = assets.find((name) => /^index-.*\.js$/.test(name));
+    const grammar = assets.find((name) => /^python-.*\.js$/.test(name));
+    expect(entry).toBeDefined();
+    expect(grammar).toBeDefined();
+    if (!entry || !grammar) return;
+    expect(await fs.readFile(path.join(assetsDir, grammar), 'utf8')).toContain('source.python');
+    expect(await fs.readFile(path.join(assetsDir, entry), 'utf8')).not.toContain('source.python');
   });
 
   test('serves the slide browser from the static bundle', async ({ page }) => {

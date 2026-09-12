@@ -9,7 +9,7 @@ import { tryParse, walkJsx } from '../editing/babel-walk.ts';
 
 // Capitalized components that explicitly forward `data-slide-loc` to a
 // host root, so the inspector can target them like a host element.
-const FORWARDING_COMPONENTS = new Set(['ImagePlaceholder']);
+const FORWARDING_COMPONENTS = new Set(['ImagePlaceholder', 'CodeBlock']);
 
 function isTaggableJsxName(name: t.JSXOpeningElement['name']): name is t.JSXIdentifier {
   if (!t.isJSXIdentifier(name)) return false;

@@ -211,3 +211,17 @@ describe('locTagsPlugin on Windows-style paths', () => {
     expectTagged('/repo/slides', '/repo/slides/cover/index.tsx');
   });
 });
+
+describe('injectLocTags forwarding components', () => {
+  it('tags CodeBlock so the inspector can target the rendered <pre>', () => {
+    const src = [
+      'export default [() => (',
+      '  <CodeBlock lang="python">{`print(1)`}</CodeBlock>',
+      ')];',
+      '',
+    ].join('\n');
+    const out = injectLocTags(src);
+    if (out === null) throw new Error('expected transform');
+    expect(out).toContain('<CodeBlock data-slide-loc="2:2" lang="python">');
+  });
+});
