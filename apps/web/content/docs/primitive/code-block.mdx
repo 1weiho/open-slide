@@ -1,0 +1,101 @@
+---
+title: CodeBlock
+description: Syntax-highlighted source code that fits the canvas.
+---
+
+`CodeBlock` renders source code, terminal output, or config on a page with
+syntax highlighting, optional line numbers, and highlighted lines. Pass the
+source as one template-literal child; the block strips the first line break
+and the indentation shared by every line, so the literal can follow the
+surrounding JSX indentation.
+
+```tsx title="slides/attention/index.tsx"
+import { CodeBlock, type Page } from '@open-slide/core';
+
+const Attention: Page = () => (
+  <section style={{ width: '100%', height: '100%', padding: 120 }}>
+    <h2 style={{ fontSize: 72, margin: '0 0 48px' }}>Scaled dot-product attention</h2>
+    <CodeBlock lang="python" lineNumbers highlightLines={[3, 4]} style={{ fontSize: 30 }}>
+      {`
+      def attention(q, k, v):
+          scores = q @ k.T / math.sqrt(k.shape[-1])
+          weights = softmax(scores, axis=-1)
+          return weights @ v
+      `}
+    </CodeBlock>
+  </section>
+);
+```
+
+## Props
+
+| Prop | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `lang` | `CodeBlockLang \| string` | — | Omit for plain monospace text. Unsupported values render plain text and warn in dev. |
+| `lineNumbers` | `boolean` | `false` | Adds a right-aligned gutter. |
+| `highlightLines` | `number[]` | — | 1-based line numbers to emphasise, e.g. `[3, 4]`. |
+| `style`, `className` | — | — | `style` merges last, so it overrides any default. |
+| `...rest` | `HTMLAttributes<HTMLPreElement>` | — | Forwarded to the root `<pre>`. |
+
+Children must be a single string.
+
+## Languages
+
+`python`, `javascript`, `typescript`, `jsx`, `tsx`, `bash`, `json`, `c`,
+`cpp`, `java`, `go`, `rust`, `sql`, `html`, `css`, `yaml`, plus the aliases
+`js`, `ts`, `py`, `sh`, `shell`, and `yml`.
+
+Grammars load on demand: a deck without code ships no highlighter, and a
+deck with Python loads only the Python grammar. The first paint shows plain
+text and colors fill in without layout shift; exports wait for the highlighted
+state.
+
+## Sizing
+
+The default is 28px with a 1.5 line-height. Long lines are cropped at the
+block's edge rather than wrapped, so keep code within the canvas:
+
+| `fontSize` | Characters per line | Lines per block |
+| --- | --- | --- |
+| 24px | ~100 | ~16 |
+| 28px | ~90 | ~14 |
+| 32px | ~78 | ~12 |
+
+Show an excerpt, or split long code across pages with a different
+`highlightLines` focus on each.
+
+## Styling
+
+Colors come from CSS variables with built-in defaults. Set them on the
+block's `style` or on the page root; there is no theme prop and no stylesheet
+to import.
+
+| Variable | Role |
+| --- | --- |
+| `--osd-code-bg`, `--osd-code-text` | surface and default text |
+| `--osd-code-keyword`, `--osd-code-string`, `--osd-code-comment`, `--osd-code-function`, `--osd-code-number`, `--osd-code-type`, `--osd-code-variable`, `--osd-code-punctuation` | token colors |
+| `--osd-code-highlight`, `--osd-code-highlight-bar` | highlighted-line background and left bar (the bar follows `--osd-accent`) |
+| `--osd-code-line-number` | gutter numbers |
+| `--osd-code-pad` | horizontal padding (`36px`) |
+| `--osd-font-mono` | code font |
+
+```tsx
+<CodeBlock
+  lang="bash"
+  style={{
+    background: '#f5f5f4',
+    color: '#1c1917',
+    ['--osd-code-keyword' as string]: '#7c3aed',
+    ['--osd-code-string' as string]: '#15803d',
+    ['--osd-code-comment' as string]: '#78716c',
+  }}
+>
+  {`npx @open-slide/cli init my-slide`}
+</CodeBlock>
+```
+
+## Inspector
+
+A code block is one inspector target. It can be selected, commented on, and
+restyled from the panel, but its text is not edited inline — change the
+source string in `index.tsx` instead.
