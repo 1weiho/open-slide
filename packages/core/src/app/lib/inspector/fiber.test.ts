@@ -63,9 +63,19 @@ describe('findSlideSource primary path', () => {
     const el = makeEl({ slideLoc: '42:7' });
     const hit = findSlideSource(el as unknown as HTMLElement, 'cover');
     expect(hit).not.toBeNull();
+    expect(hit?.file).toBeNull();
     expect(hit?.line).toBe(42);
     expect(hit?.column).toBe(7);
     expect(hit?.anchor).toBe(el as unknown as HTMLElement);
+  });
+
+  it('reads a sibling file from a prefixed loc', () => {
+    const el = makeEl({ slideLoc: 'pages.tsx:12:4' });
+    const hit = findSlideSource(el as unknown as HTMLElement, 'cover');
+    expect(hit).not.toBeNull();
+    expect(hit?.file).toBe('pages.tsx');
+    expect(hit?.line).toBe(12);
+    expect(hit?.column).toBe(4);
   });
 });
 
@@ -123,6 +133,21 @@ describe('findSlideSource fallback', () => {
     expect(hit).not.toBeNull();
     expect(hit?.line).toBe(13);
     expect(hit?.column).toBe(1);
+  });
+
+  it('matches a sibling file under the same slide folder', () => {
+    const fiber = makeFiber({
+      fileName: '/repo/slides/cover/pages.tsx',
+      line: 14,
+      column: 2,
+      host: true,
+    });
+    const el = makeEl({ fiber });
+    const hit = findSlideSource(el as unknown as HTMLElement, 'cover');
+    expect(hit).not.toBeNull();
+    expect(hit?.file).toBe('pages.tsx');
+    expect(hit?.line).toBe(14);
+    expect(hit?.column).toBe(2);
   });
 
   it('returns null when the fiber fileName points at a different slideId', () => {
