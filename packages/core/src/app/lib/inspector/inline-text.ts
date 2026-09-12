@@ -17,7 +17,13 @@ export const INLINE_TEXT_TAGS = new Set([
   'U',
 ]);
 
+export const NO_INLINE_EDIT_ATTR = 'data-osd-no-inline-edit';
+
+// Primitives whose text comes from a single source string (a code block's
+// template literal) opt out: the inspector can still select, comment on, and
+// restyle them, but editing their text in place would not map back to source.
 export function hasOnlyInlineTextChildren(el: HTMLElement): boolean {
+  if (el.hasAttribute(NO_INLINE_EDIT_ATTR)) return false;
   for (const child of Array.from(el.childNodes)) {
     if (child.nodeType === Node.TEXT_NODE) {
       continue;

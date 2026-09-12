@@ -1,4 +1,8 @@
-import { hasOnlyInlineTextChildren, INLINE_TEXT_TAGS } from '@/lib/inspector/inline-text';
+import {
+  hasOnlyInlineTextChildren,
+  INLINE_TEXT_TAGS,
+  NO_INLINE_EDIT_ATTR,
+} from '@/lib/inspector/inline-text';
 
 // Only handle events that originate inside the slide root. Portaled UI
 // (dialogs, tooltips, toasts) mounts on `document.body`, outside the root;
@@ -24,6 +28,8 @@ export function pickElement(x: number, y: number): HTMLElement | null {
 export function pickInspectorTarget(el: HTMLElement | null): HTMLElement | null {
   if (!el) return null;
   const root = el.closest('[data-inspector-root]');
+  const optedOut = el.closest<HTMLElement>(`[${NO_INLINE_EDIT_ATTR}]`);
+  if (optedOut && root?.contains(optedOut)) return optedOut;
   const startedOnInlineText = INLINE_TEXT_TAGS.has(el.tagName);
   for (let cur: HTMLElement | null = el; cur && root?.contains(cur); cur = cur.parentElement) {
     if (startedOnInlineText && INLINE_TEXT_TAGS.has(cur.tagName)) continue;

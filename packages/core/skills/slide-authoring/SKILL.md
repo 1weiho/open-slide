@@ -25,6 +25,7 @@ Each framework primitive has a full reference file under `references/` in this s
 | Webfonts | loading any non-system font | `references/webfonts.md` |
 | `useSlidePageNumber()` | rendering a page-number footer | `references/page-numbers.md` |
 | `<Steps>` / `<Step>` | staging a page's reveal | `references/steps.md` |
+| `<CodeBlock>` | putting source code, terminal output, or config on a page | `references/code-block.md` |
 | `SlideTransition` | declaring any enter/exit animation | `references/transitions.md` |
 | `MorphElement` + `morph` | morphing a shared element across pages | `references/morph.md` |
 
@@ -272,6 +273,12 @@ Reveal a page one beat at a time: wrap deferred parts in `<Step>`, the group in 
 
 Read `references/steps.md` before authoring a stepped page — it covers composition order across multiple `<Steps>` blocks, the "headline always, body in turn" pattern, and entry-direction behavior. If `slides/build-on-reveal/` exists in this project, it is the canonical worked example.
 
+## Code blocks (`<CodeBlock>`)
+
+Any source code, shell session, or config on a page goes through `<CodeBlock>` from `@open-slide/core`: pass `lang`, the source as one template-literal child, and optionally `lineNumbers` / `highlightLines`. Highlighting, sizing defaults, and the `--osd-code-*` styling variables are built in — never hand-roll a `<pre>` with per-token colored spans. Code is 24–32px (28px default), at most ~90 characters per line and ~14 lines per block; longer code is excerpted or split across pages.
+
+Read `references/code-block.md` before authoring a code page — it has the supported languages, the sizing table, the variable list, and the light-variant recipe.
+
 ## Page transitions
 
 The framework can run an enter/exit animation between slide changes, declared as a `SlideTransition` (module-level default, per-page override; the **incoming page wins**). There's **no default** — pages snap unless you opt in, and snap-swap is a perfectly tasteful default. If you do opt in: one motion DNA per deck, 140–280 ms, magnitude under 12 px / 3% scale, opacity always part of it.
@@ -349,6 +356,7 @@ This applies whenever the *visual element* repeats, not whenever the *data* does
 - [ ] Visually repeated elements (cards, tiles, logo rows) are rendered as explicit `<Component />` instances, not via `array.map` over a data list.
 - [ ] All imported assets exist on disk — slide-local under `slides/<id>/assets/`, or global under `assets/` (imported via `@assets/...`).
 - [ ] Every `<ImagePlaceholder>` corresponds to a real image the user must supply — not decorative filler. If it could be replaced by typography or layout, it should be.
+- [ ] Source code on a page is rendered with `<CodeBlock>` (never a hand-rolled `<pre>` with per-token spans), `lang` is from the supported list, and each block stays within 24–32px, ~90 characters per line, and ~14 lines.
 - [ ] If a page uses `<Steps>`/`<Step>`, every `<Step>` is a direct child of a `<Steps>`, and the page still reads as complete when jumped to via the overview grid (entering forward builds up; jumping in shows it fully revealed).
 - [ ] If a `SlideTransition` is declared, every page sits in one family — same duration band (140–280 ms), same easing pair, same out-then-in stagger, magnitude under 12 px / 3%. No six-different-vocabularies decks. When in doubt, omit transitions entirely. (Pages that opt into `morph` may exceed the band to match the morph — see `references/morph.md`.)
 - [ ] If a transition opts into `morph`: every morph `id` is unique per page and stable across the pair, morph geometry is pixel-constant (never measured after mount), no `transform` sits on the morph node, and entrance animations are gated behind `useIsActivePage()`.
@@ -365,6 +373,7 @@ This applies whenever the *visual element* repeats, not whenever the *data* does
 - ❌ Bullets that wrap to a second line — either shorten or move to its own page.
 - ❌ Body type under 28px — unreadable on a projector.
 - ❌ Inconsistent palette across pages.
+- ❌ Hand-rolling syntax highlighting with a `<pre>` and per-token `<span style={{ color }}>` helpers. Use `<CodeBlock>`.
 - ❌ Installing packages. Only `react`, `@open-slide/core`, and standard web APIs are available.
 - ❌ Writing CSS to a shared file. Inline styles or scoped classnames only.
 - ❌ Creating `README.md` or other prose files inside the slide folder.
