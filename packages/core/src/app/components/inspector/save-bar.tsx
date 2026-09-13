@@ -21,9 +21,12 @@ export function SaveBar() {
     const tasks: Promise<void>[] = [];
     if (inspectorCount > 0) tasks.push(Promise.resolve(insp.commitEdits()));
     if (designCount > 0) tasks.push(Promise.resolve(design.commit()));
-    // Each provider surfaces its own errors via toast; swallow here so
-    // one failure doesn't reject the combined save.
-    await Promise.all(tasks).catch(() => {});
+    // Providers toast their own errors; still reject if any failed so
+    // the Save bar does not flash success for a no-op or failed write.
+    const settled = await Promise.allSettled(tasks);
+    if (settled.some((r) => r.status === 'rejected')) {
+      throw new Error('save failed');
+    }
   };
 
   const onDiscard = () => {

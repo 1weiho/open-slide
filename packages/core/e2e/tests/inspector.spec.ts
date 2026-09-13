@@ -57,6 +57,39 @@ test.describe('inspector editing', () => {
     await expect.poll(() => readSlideSource('insp-save')).toContain('Edited via inspector');
   });
 
+  test('a no-op batch save keeps pending edits and does not show success', async ({
+    page,
+    request,
+  }) => {
+    await openEditable(page, request, 'insp-noop');
+    await page.getByTitle('Inspect').click();
+    await editorCanvas(page).getByText('Editable headline').click();
+
+    const textField = page.locator('aside[data-inspector-ui]').getByPlaceholder('Element text');
+    await textField.fill('No-op target');
+    const firstSave = page.waitForResponse(
+      (res) => res.url().includes('/__edit/batch') && res.request().method() === 'POST',
+    );
+    await page.getByRole('button', { name: 'Save' }).click();
+    expect((await firstSave).status()).toBe(200);
+    await expect.poll(() => readSlideSource('insp-noop')).toContain('No-op target');
+
+    await editorCanvas(page).getByText('No-op target').click();
+    await textField.fill('No-op target');
+    await expect(page.getByText('1 unsaved change')).toBeVisible();
+
+    const noopSave = page.waitForResponse(
+      (res) => res.url().includes('/__edit/batch') && res.request().method() === 'POST',
+    );
+    await page.getByRole('button', { name: 'Save' }).click();
+    const body = (await (await noopSave).json()) as { changed?: boolean };
+    expect(body.changed).toBe(false);
+
+    await expect(page.getByText('1 unsaved change')).toBeVisible();
+    await expect(page.getByText('Saved', { exact: true })).toHaveCount(0);
+    await expect(page.getByText(/source file did not change/i)).toBeVisible();
+  });
+
   test('discard reverts the edit without touching the file', async ({ page, request }) => {
     await openEditable(page, request, 'insp-discard');
     await page.getByTitle('Inspect').click();
