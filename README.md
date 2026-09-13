@@ -14,7 +14,9 @@
 
 **The slide framework built for agents.** Describe your deck in natural language — your coding agent writes the React. open-slide handles the canvas, scaling, navigation, hot reload, and present mode so the agent can focus on content.
 
-Every slide renders into a fixed **1920 × 1080** canvas. Pages are arbitrary React components, not a constrained DSL.
+Every slide is authored and rendered on one workspace canvas: 1920 × 1080 by
+default, a 4K / 8K preset, or explicit width and height. Pages are arbitrary
+React components, not a constrained DSL.
 
 ```bash
 npx @open-slide/cli init my-slide
@@ -31,7 +33,7 @@ Slides are visual code. Agents are great at writing code. open-slide is the miss
 Works with any coding agent (Claude Code, Codex, Cursor, …). The scaffolder ships with built-in skills:
 
 - **`/create-slide`** — drafts a deck end-to-end. Asks four scoping questions (topic & aesthetic, page count, text density, motion vs. static), picks an id, plans the structure, and writes the pages.
-- **`/slide-authoring`** — the technical reference for the 1920 × 1080 canvas, type scale, palette, and layout rules. The agent reads this before writing.
+- **`/slide-authoring`** — the technical reference for the configured canvas, type scale, palette, and layout rules. The agent reads this before writing.
 
 From a one-line prompt to a polished deck, no boilerplate.
 

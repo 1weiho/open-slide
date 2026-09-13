@@ -5,7 +5,7 @@ description: Use this skill when the user wants to create, draft, author, or gen
 
 # Create a slide in open-slide
 
-This skill owns the **workflow** for drafting a new deck. The technical reference — file contract, 1920×1080 canvas, type scale, palette, layout, assets — lives in the **`slide-authoring`** skill. Read that skill whenever you need details on *how* a page is structured. This skill assumes you'll consult it before writing code.
+This skill owns the **workflow** for drafting a new deck. The technical reference — file contract, configured canvas dimensions, type scale, palette, layout, assets — lives in the **`slide-authoring`** skill. Read that skill whenever you need details on *how* a page is structured. This skill assumes you'll consult it before writing code.
 
 You only write files under `slides/<id>/`. Never modify `package.json`, `open-slide.config.ts`, or existing slides.
 

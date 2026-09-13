@@ -45,7 +45,7 @@ export default [Start, End] satisfies Page[];
 
 The `id` is the contract. When the outgoing and incoming pages both contain a
 `MorphElement` with the same `id`, the runtime measures both DOM nodes, hides
-the originals, animates a clone across the 1920 × 1080 canvas, then restores
+the originals, animates a clone across the configured canvas, then restores
 the incoming element.
 
 If a marked element exists only on the outgoing page, it fades out. If it

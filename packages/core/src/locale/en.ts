@@ -109,6 +109,7 @@ export const en: Locale = {
     moreActions: 'More actions',
     toastCopyLinkSuccess: 'Link copied to clipboard',
     toastCopyLinkFailed: 'Failed to copy link',
+    canvasSize: 'Canvas',
     exportAsHtml: 'Export as HTML',
     exportAsPdf: 'Export as PDF',
     exportAsImagePptx: 'Export as image PPTX',

@@ -4,9 +4,9 @@ description: The technical reference the agent reads before writing a slide.
 ---
 
 `/slide-authoring` is the canonical spec for everything inside
-`slides/<id>/` — the file contract, the 1920×1080 canvas, type scale,
-spacing, palette rules, and per-primitive references. `/create-slide` and
-`/apply-comments` defer to it for the *how*.
+`slides/<id>/` — the file contract, configured canvas dimensions,
+type scale, spacing, palette rules, and per-primitive references. `/create-slide`
+and `/apply-comments` defer to it for the *how*.
 
 You don't usually invoke `slide-authoring` directly. Other skills do.
 
@@ -18,7 +18,7 @@ in a [theme](/docs/core-feature/themes).
 
 ### Type scale
 
-A 1920×1080 stage pairs well with bigger type than the web is used to:
+The 1080p starting scale pairs well with bigger type than the web is used to:
 
 | Role            | Size (px) |
 | --------------- | --------- |
@@ -33,8 +33,11 @@ A 1920×1080 stage pairs well with bigger type than the web is used to:
 - Content padding: 100–160 px from the canvas edges.
 - Line-height: 1.2 for headings, 1.5–1.7 for body.
 - The canvas doesn't scroll — the skill makes the agent budget every page's
-  vertical space against the 1080 px height before writing JSX, and split
-  into two pages rather than shrink type to fit.
+  vertical space against the selected height before writing JSX, and split
+  into two pages rather than shrink type to fit. Scale the starting sizes and
+  spacing by 2 for 4K or 4 for 8K so source pixels map directly to the target.
+  For explicit dimensions, the agent reads the exact width and height first and
+  designs natively for that aspect ratio.
 
 ### Visual direction
 

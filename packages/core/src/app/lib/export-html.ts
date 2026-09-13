@@ -1,9 +1,10 @@
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from './canvas';
 import { designToCssVars } from './design';
 import { downloadBlob, nextFrame } from './dom';
 import { SlidePageProvider } from './page-context';
-import { CANVAS_HEIGHT, CANVAS_WIDTH, type SlideModule } from './sdk';
+import type { SlideModule } from './sdk';
 
 type AssetEntry = { name: string; bytes: Uint8Array };
 
@@ -48,6 +49,7 @@ export async function exportSlideAsHtml(slide: SlideModule, slideId: string): Pr
     bundledCss: rewrittenCss,
     externalLinks,
     design: slide.design,
+    canvas: { width: CANVAS_WIDTH, height: CANVAS_HEIGHT },
   });
 
   const htmlBytes = new TextEncoder().encode(html);
@@ -231,13 +233,15 @@ function rewriteUrls(
   return out;
 }
 
-function buildHtml(opts: {
+export function buildHtml(opts: {
   title: string;
   pagesHtml: string[];
   bundledCss: string;
   externalLinks: string;
   design: SlideModule['design'];
+  canvas: { width: number; height: number };
 }): string {
+  const target = opts.canvas;
   const pagesMarkup = opts.pagesHtml
     .map(
       (page, i) => `<div class="os-page" data-idx="${i}"${i === 0 ? '' : ' hidden'}>${page}</div>`,
@@ -260,7 +264,7 @@ ${opts.externalLinks}
 <style>
 html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
 .os-stage { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
-.os-frame { width: ${CANVAS_WIDTH}px; height: ${CANVAS_HEIGHT}px; flex-shrink: 0; background: #fff; color: #000; transform-origin: center center; overflow: hidden; position: relative; }
+.os-frame { width: ${target.width}px; height: ${target.height}px; flex-shrink: 0; background: #fff; color: #000; transform-origin: center center; overflow: hidden; position: relative; }
 .os-page { position: absolute; inset: 0; }
 .os-page[hidden] { display: none !important; }
 .os-counter { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); color: #fff; background: rgba(0,0,0,.5); padding: 2px 10px; border-radius: 999px; font-size: 12px; z-index: 10; font-variant-numeric: tabular-nums; }
@@ -277,7 +281,7 @@ html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-f
   var frame = document.getElementById('os-frame');
   var cur = document.getElementById('os-cur');
   function fit() {
-    var s = Math.min(window.innerWidth / ${CANVAS_WIDTH}, window.innerHeight / ${CANVAS_HEIGHT});
+    var s = Math.min(window.innerWidth / ${target.width}, window.innerHeight / ${target.height});
     frame.style.transform = 'scale(' + s + ')';
   }
   function go(i) {

@@ -108,6 +108,7 @@ export const zhTW: Locale = {
     moreActions: '更多動作',
     toastCopyLinkSuccess: '已複製連結到剪貼簿',
     toastCopyLinkFailed: '複製連結失敗',
+    canvasSize: '畫布',
     exportAsHtml: '匯出為 HTML',
     exportAsPdf: '匯出為 PDF',
     exportAsImagePptx: '匯出圖片 PPTX',

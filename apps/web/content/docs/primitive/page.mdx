@@ -1,6 +1,6 @@
 ---
 title: Page
-description: The component contract for one 1920 × 1080 slide page.
+description: The component contract for one configured-canvas slide page.
 ---
 
 `Page` is the base primitive in open-slide. A deck is just an ordered array of
@@ -45,15 +45,16 @@ export default [Cover] satisfies Page[];
   Body] satisfies Page[]`.
 - The root element should fill the canvas with `width: '100%'` and
   `height: '100%'`.
-- Every page renders into a fixed `1920 × 1080` canvas. The runtime scales the
-  whole canvas uniformly for preview, present mode, and export.
+- Every page renders into the configured canvas: `1920 × 1080` by default,
+  a 4K / 8K preset, or explicit dimensions. The runtime scales the whole canvas
+  uniformly for preview and present mode; exports retain the configured size.
 
 ## Layout model
 
 Write pages as fixed-format compositions, not responsive web pages. Pixel
-coordinates are stable because the canvas size never changes. Use absolute
-positioning when exact placement matters, and use flex/grid when a section
-needs internal rhythm.
+coordinates are stable within the configured canvas. Use absolute positioning
+when exact placement matters, and use flex/grid when a section needs internal
+rhythm.
 
 The runtime may mount a page in more than one surface at the same time:
 current canvas, thumbnail rail, overview grid, theme preview, or export. Keep
