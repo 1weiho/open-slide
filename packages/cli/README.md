@@ -1,6 +1,6 @@
 # @open-slide/cli
 
-Scaffold a workspace for [open-slide](https://github.com/1weiho/open-slide) — a React-based slide framework with Claude Code skills preconfigured.
+Scaffold a workspace for [open-slide](https://github.com/1weiho/open-slide) — a React-based slide framework with agent skills preconfigured for Claude Code, Codex, Cursor, and any agent that follows the `AGENTS.md` / `.agents/skills/` convention.
 
 ## Usage
 
@@ -16,8 +16,8 @@ This creates a workspace containing:
 - `slides/getting-started/` — a starter slide you can edit or delete.
 - `package.json` — depends on `@open-slide/core`, which provides the runtime (home page, slide viewer, fullscreen mode) and the `open-slide` CLI.
 - `open-slide.config.ts` — optional typed config (slidesDir, port).
-- `.claude/skills/` and `.agents/skills/` — Claude Code skills (`create-slide`, `apply-comments`, …).
-- `CLAUDE.md` — agent guide for authoring slides.
+- `.agents/skills/` — agent skills (`create-slide`, `apply-comments`, …) in the standard location read by Codex, Cursor, and others, mirrored to `.claude/skills/` for Claude Code.
+- `AGENTS.md` (aliased as `CLAUDE.md`) — agent guide for authoring slides.
 
 You won't see any Vite, React, or tsconfig files in the workspace. They live inside `@open-slide/core` and you never touch them.
 
@@ -35,4 +35,4 @@ You won't see any Vite, React, or tsconfig files in the workspace. They live ins
 
 Inside the scaffolded workspace, slides live under `slides/<kebab-case-id>/index.tsx` and default-export an array of `Page` components. Each page renders into a fixed 1920×1080 canvas; the framework handles scaling.
 
-Ask Claude Code to "make slides about X" and the `create-slide` skill will take it from there.
+Ask your coding agent to "make slides about X" and the `create-slide` skill will take it from there.
