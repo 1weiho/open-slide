@@ -141,7 +141,7 @@ function collectExternalStylesheetLinks(): string {
   return links.join('\n');
 }
 
-function findHtmlAssetUrls(html: string): string[] {
+export function findHtmlAssetUrls(html: string): string[] {
   const out: string[] = [];
   const attrRe = /\s(?:src|href|poster)="([^"]+)"/g;
   for (const m of html.matchAll(attrRe)) {
@@ -154,7 +154,27 @@ function findHtmlAssetUrls(html: string): string[] {
       if (url && looksLikeAsset(url)) out.push(url);
     }
   }
+  out.push(...findInlineStyleAssetUrls(html));
   return out;
+}
+
+// Inline `style="background-image:url(...)"` survives DOM serialization with its
+// quotes encoded as HTML entities (e.g. url(&quot;/assets/x.png&quot;)), so the
+// plain CSS scanner misses them.
+function findInlineStyleAssetUrls(html: string): string[] {
+  const out: string[] = [];
+  const re = /url\(([^)]*)\)/gi;
+  for (const m of html.matchAll(re)) {
+    const url = stripCssUrlQuotes(m[1]);
+    if (url && looksLikeAsset(url)) out.push(url);
+  }
+  return out;
+}
+
+function stripCssUrlQuotes(raw: string): string {
+  const quote =
+    /^(?:&quot;|&#34;|&#039;|&#39;|&apos;|['"])|(?:&quot;|&#34;|&#039;|&#39;|&apos;|['"])$/g;
+  return raw.trim().replace(quote, '').trim();
 }
 
 function findCssAssetUrls(css: string): string[] {
