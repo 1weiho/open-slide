@@ -232,4 +232,34 @@ describe('applyRevertAsset', () => {
     if (r.ok) throw new Error('expected failure');
     expect(r.error).toMatch(/outside <img/);
   });
+
+  it('adds a separate value import when the @open-slide/core import is a side-effect import', () => {
+    const src = [
+      "import '@open-slide/core';",
+      "import hero from './assets/hero.png';",
+      'export default [() => (',
+      "  <img src={hero} alt='x' style={{ objectFit: 'cover' }} />",
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyRevertAsset(src, './assets/hero.png');
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("import { ImagePlaceholder } from '@open-slide/core';");
+    expect(r.source).toContain("import '@open-slide/core';");
+  });
+
+  it('adds a separate value import when the @open-slide/core import is a namespace import', () => {
+    const src = [
+      "import * as OpenSlide from '@open-slide/core';",
+      "import hero from './assets/hero.png';",
+      'export default [() => (',
+      "  <img src={hero} alt='x' style={{ objectFit: 'cover' }} />",
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyRevertAsset(src, './assets/hero.png');
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("import { ImagePlaceholder } from '@open-slide/core';");
+    expect(r.source).toContain("import * as OpenSlide from '@open-slide/core';");
+  });
 });
