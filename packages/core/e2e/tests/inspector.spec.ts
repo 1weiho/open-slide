@@ -37,6 +37,40 @@ test.describe('inspector editing', () => {
     await expect(panel.getByPlaceholder('Element text')).toHaveValue('Editable headline');
   });
 
+  test('keeps the editor shell within the viewport', async ({ page, request }) => {
+    await openEditable(page, request, 'insp-viewport');
+
+    await page.getByTitle('Inspect').click();
+    await editorCanvas(page).getByText('Editable headline').click();
+    const content = page.getByPlaceholder('Element text');
+    await expect(content).toHaveValue('Editable headline');
+    await content.fill('Temporary headline');
+    await content.fill('Editable headline');
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByText('Saved', { exact: true })).toBeVisible();
+    await page.getByTitle('Copy link').click();
+    await expect(page.locator('[data-sonner-toaster]')).toBeAttached();
+
+    const metrics = await page.evaluate(() => {
+      const root = document.getElementById('root');
+      const sonner = document.querySelector<HTMLElement>('[data-sonner-toaster]');
+      return {
+        documentHeight: document.documentElement.scrollHeight,
+        viewportHeight: window.innerHeight,
+        htmlOverflow: getComputedStyle(document.documentElement).overflow,
+        bodyOverflow: getComputedStyle(document.body).overflow,
+        rootOverflow: root ? getComputedStyle(root).overflow : null,
+        sonnerPosition: sonner ? getComputedStyle(sonner).position : null,
+      };
+    });
+
+    expect(metrics.documentHeight).toBe(metrics.viewportHeight);
+    expect(metrics.htmlOverflow).toBe('hidden');
+    expect(metrics.bodyOverflow).toBe('hidden');
+    expect(metrics.rootOverflow).toBe('hidden');
+    expect(metrics.sonnerPosition).toBe('fixed');
+  });
+
   test('saving a text edit rewrites the slide source on disk', async ({ page, request }) => {
     await openEditable(page, request, 'insp-save');
     await page.getByTitle('Inspect').click();
