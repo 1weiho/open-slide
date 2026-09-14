@@ -39,6 +39,7 @@ export function ImageCropDialog({
 }) {
   const t = useLocale();
   const [fit, setFit] = useState<'cover' | 'contain'>(initialFit);
+  const [sharedCropConfirmed, setSharedCropConfirmed] = useState(false);
   const aspect = targetWidth > 0 && targetHeight > 0 ? targetWidth / targetHeight : 1;
   const [crop, setCrop] = useState<Crop | undefined>(undefined);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -60,6 +61,7 @@ export function ImageCropDialog({
   }, [aspect, initialPosition, initialRect]);
 
   const onApplyClick = () => {
+    if (!sharedCropConfirmed) return;
     if (fit === 'contain') {
       onApply({ fit });
       return;
@@ -123,11 +125,22 @@ export function ImageCropDialog({
             />
           )}
         </div>
+        <label className="flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={sharedCropConfirmed}
+            onChange={(event) => setSharedCropConfirmed(event.target.checked)}
+            className="mt-0.5 size-4 shrink-0 accent-primary"
+          />
+          <span>{t.inspector.cropSharedConsent}</span>
+        </label>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             {t.common.cancel}
           </Button>
-          <Button onClick={onApplyClick}>{t.inspector.cropApply}</Button>
+          <Button onClick={onApplyClick} disabled={!sharedCropConfirmed}>
+            {t.inspector.cropApply}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
