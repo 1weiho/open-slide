@@ -599,7 +599,7 @@ export function Slide() {
   );
 
   return (
-    <HistoryProvider>
+    <HistoryProvider page={index} onNavigate={goTo}>
       <InspectorProvider slideId={slideId} pageIndex={index}>
         <SelectionReporter />
         <div className="flex h-dvh flex-col overflow-hidden bg-sidebar text-foreground">

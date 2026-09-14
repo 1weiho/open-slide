@@ -789,7 +789,7 @@ export function SlideTransitionLayer({
       style={{ background: 'var(--osd-bg)' }}
     >
       {OutgoingPage && outgoing !== null ? (
-        <div ref={outgoingLayerRef} className="absolute inset-0">
+        <div ref={outgoingLayerRef} data-slide-page={outgoing} className="absolute inset-0">
           <SlidePageProvider index={outgoing} total={total}>
             <StepHost
               isActivePage={false}
@@ -802,7 +802,7 @@ export function SlideTransitionLayer({
         </div>
       ) : null}
       {CurrentPage ? (
-        <div ref={incomingLayerRef} className="absolute inset-0">
+        <div ref={incomingLayerRef} data-slide-page={current} className="absolute inset-0">
           <SlidePageProvider index={current} total={total}>
             <StepHost
               isActivePage

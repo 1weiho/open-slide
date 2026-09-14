@@ -22,6 +22,8 @@ export const zhTW: Locale = {
     tryAgain: '重試',
     undo: '復原',
     redo: '重做',
+    undoOnPage: '復原 · 跳至第 {page} 頁',
+    redoOnPage: '重做 · 跳至第 {page} 頁',
     selected: '已選取',
   },
 
