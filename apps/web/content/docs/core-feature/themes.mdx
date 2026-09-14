@@ -88,3 +88,25 @@ and writes pages that match.
 Already have a deck whose look you like? Use
 [`/create-theme`](/docs/skills/create-theme) to extract its design tokens
 into a reusable theme file.
+
+## Sharing themes
+
+Themes travel between workspaces by URL. `open-slide build` emits the raw
+`<id>.md` and `<id>.demo.*` files to `dist/themes/`, and the dev server
+serves the same paths — so any deployed open-slide site (or a running dev
+server) doubles as a theme source.
+
+- **Copy theme URL** — each theme page in the **Themes** panel has a button
+  that copies a link others can import from.
+- **Import from URL** — paste a deployed site URL, a `themes/index.json`, or a
+  single `<id>.md` to pull the theme into your local `themes/` folder. The
+  same import runs on the command line via
+  [`open-slide theme add <url>`](/docs/cli/theme-add).
+- **Delete** — the per-theme menu removes a theme's files and clears
+  `meta.theme` from any slides that referenced it.
+
+<Callout type="warn">
+A theme's `.demo` file is code that runs in your dev server and build. Only
+import from sources you trust — or restrict imports with
+[`themeImport.allowedHosts`](/docs/cli/theme-add#restricting-sources).
+</Callout>

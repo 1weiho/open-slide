@@ -53,6 +53,11 @@ export default config;
       default: 'all toggles on',
       description: 'Build-time UI toggles (see below).',
     },
+    themeImport: {
+      type: 'OpenSlideThemeImportConfig',
+      default: 'any host allowed',
+      description: 'Restrict where themes may be imported from (see below).',
+    },
     locale: {
       type: 'Locale',
       deprecated: true,
@@ -82,6 +87,19 @@ dev server always shows the full UI.
       type: 'boolean',
       default: 'true',
       description: 'Show the export menu (HTML, PDF, image PPTX) in the static build.',
+    },
+  }}
+/>
+
+### `themeImport`
+
+<TypeTable
+  type={{
+    allowedHosts: {
+      type: 'string[]',
+      default: 'unset — any host',
+      description:
+        "Hosts themes may be imported from (exact match or a subdomain of an entry). Leave unset to allow any host — import still warns first, since a theme's demo file is executable code.",
     },
   }}
 />
