@@ -811,6 +811,45 @@ describe('applyEdit / set-text', () => {
     expect(r.source).toContain('<Card title="Edited" />');
   });
 
+  it.each(['  Alpha   Beta  ', 'Alpha\u3000Beta', 'Alpha\tBeta'])(
+    'matches collapsed whitespace in a reused prop: %j',
+    (title) => {
+      const src = [
+        'const Card = ({ title }: { title: string }) => (',
+        '  <h2>{title}</h2>',
+        ');',
+        'export default [() => (',
+        '  <section>',
+        `    <Card title={${JSON.stringify(title)}} />`,
+        '    <Card title="Other" />',
+        '  </section>',
+        ')];',
+      ].join('\n');
+      const r = applyEdit(src, 2, 2, [
+        { kind: 'set-text', value: 'Edited', prevText: 'Alpha Beta' },
+      ]);
+      if (!r.ok) throw new Error(r.error);
+      expect(r.source).toContain('<Card title="Edited" />');
+      expect(r.source).toContain('<Card title="Other" />');
+      expect(r.source).toContain('<h2>{title}</h2>');
+    },
+  );
+
+  it('rejects reused props that become ambiguous after whitespace normalization', () => {
+    const src = [
+      'const Card = ({ title }: { title: string }) => (',
+      '  <h2>{title}</h2>',
+      ');',
+      'export default [() => (',
+      '  <section><Card title="Alpha Beta" /><Card title="Alpha  Beta" /></section>',
+      ')];',
+    ].join('\n');
+    const r = applyEdit(src, 2, 2, [{ kind: 'set-text', value: 'Edited', prevText: 'Alpha Beta' }]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.error).toMatch(/cannot disambiguate/);
+  });
+
   it('escapes a prop value that needs an expression container', () => {
     const src = [
       'const Card = ({ label }: { label: string }) => (',

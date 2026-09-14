@@ -271,12 +271,16 @@ function ActiveInlineEditor({
   const [sel, setSel] = useState<TextRange | null>(null);
   const { anchor } = target;
   const rect = useAnchorRect(anchor, layerRef);
+  const previousTextRef = useRef(readEditableText(anchor));
 
   const commit = useCallback(() => {
     if (!anchor.isConnected) return;
+    const value = readEditableText(anchor);
+    if (value === previousTextRef.current) return;
     bufferOps(target.line, target.column, anchor, [
-      { kind: 'set-text', value: readEditableText(anchor) },
+      { kind: 'set-text', value, prevText: previousTextRef.current },
     ]);
+    previousTextRef.current = value;
   }, [anchor, target.line, target.column, bufferOps]);
 
   const applyTextStyle = useCallback(
@@ -323,6 +327,7 @@ function ActiveInlineEditor({
 
     const onBeforeInput = (e: Event) => {
       const ev = e as InputEvent;
+      if (!ev.isComposing) previousTextRef.current = readEditableText(anchor);
       const type = ev.inputType;
       if (type === 'insertParagraph' || type === 'insertLineBreak') {
         ev.preventDefault();
@@ -345,6 +350,9 @@ function ActiveInlineEditor({
       if ((e as InputEvent).isComposing) return;
       latestRef.current.commit();
     };
+    const onCompositionStart = () => {
+      previousTextRef.current = readEditableText(anchor);
+    };
     const onCompositionEnd = () => latestRef.current.commit();
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && !e.altKey) {
@@ -366,12 +374,14 @@ function ActiveInlineEditor({
 
     anchor.addEventListener('beforeinput', onBeforeInput);
     anchor.addEventListener('input', onInput);
+    anchor.addEventListener('compositionstart', onCompositionStart);
     anchor.addEventListener('compositionend', onCompositionEnd);
     anchor.addEventListener('keydown', onKeyDown);
     document.addEventListener('selectionchange', onSelectionChange);
     return () => {
       anchor.removeEventListener('beforeinput', onBeforeInput);
       anchor.removeEventListener('input', onInput);
+      anchor.removeEventListener('compositionstart', onCompositionStart);
       anchor.removeEventListener('compositionend', onCompositionEnd);
       anchor.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('selectionchange', onSelectionChange);
