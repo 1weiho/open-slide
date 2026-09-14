@@ -274,7 +274,7 @@ Read `references/steps.md` before authoring a stepped page — it covers composi
 
 ## Page transitions
 
-The framework can run an enter/exit animation between slide changes, declared as a `SlideTransition` (module-level default, per-page override; the **incoming page wins**). There's **no default** — pages snap unless you opt in, and snap-swap is a perfectly tasteful default. If you do opt in: one motion DNA per deck, 140–280 ms, magnitude under 12 px / 3% scale, opacity always part of it.
+The framework can run an enter/exit animation between slide changes, declared as a `SlideTransition` (module-level default, per-page override; the **incoming page wins**). There's **no default** — pages snap unless you opt in, and snap-swap is a perfectly tasteful default. If you do opt in: one motion DNA per deck, 200–280 ms, magnitude under 12 px / 3% scale, the outgoing page holds while the incoming page fades in on top (the framework ignores exit opacity unless `throughBackground: true`).
 
 Read `references/transitions.md` before declaring one — it has the full type contract, design principles, a six-member "tasteful family" of ready-to-use transitions sharing one DNA, direction-aware keyframes, and the anti-pattern list.
 
@@ -282,7 +282,7 @@ Read `references/transitions.md` before declaring one — it has the full type c
 
 When the *same visual object* exists on two adjacent pages, wrap it on both pages in `MorphElement` with the same `id` and enable `morph` on the incoming page's transition — position, size, radius, and colors interpolate in one continuous move (Keynote's "Magic Move"). Morph is for **state continuity** (a toggle sliding, a card expanding, a box joining a row); don't morph decoration.
 
-Read `references/morph.md` before writing one — the seven rules there (opacity-only enter/exit, deterministic geometry, no `transform` on the morph node, `useIsActivePage()` gating, …) were each earned on a real deck, and violating any of them produces a visibly broken morph.
+Read `references/morph.md` before writing one — the seven rules there (held exit + opacity-only enter, deterministic geometry, no `transform` on the morph node, `useIsActivePage()` gating, …) were each earned on a real deck, and violating any of them produces a visibly broken morph.
 
 ## Repeated elements: component, not `map`
 
@@ -350,7 +350,7 @@ This applies whenever the *visual element* repeats, not whenever the *data* does
 - [ ] All imported assets exist on disk — slide-local under `slides/<id>/assets/`, or global under `assets/` (imported via `@assets/...`).
 - [ ] Every `<ImagePlaceholder>` corresponds to a real image the user must supply — not decorative filler. If it could be replaced by typography or layout, it should be.
 - [ ] If a page uses `<Steps>`/`<Step>`, every `<Step>` is a direct child of a `<Steps>`, and the page still reads as complete when jumped to via the overview grid (entering forward builds up; jumping in shows it fully revealed).
-- [ ] If a `SlideTransition` is declared, every page sits in one family — same duration band (140–280 ms), same easing pair, same out-then-in stagger, magnitude under 12 px / 3%. No six-different-vocabularies decks. When in doubt, omit transitions entirely. (Pages that opt into `morph` may exceed the band to match the morph — see `references/morph.md`.)
+- [ ] If a `SlideTransition` is declared, every page sits in one family — same duration band (200–280 ms), same easing pair, same hold-then-fade-in shape (no enter delay, no `throughBackground` outside a deliberate section break), magnitude under 12 px / 3%. No six-different-vocabularies decks. When in doubt, omit transitions entirely. (Pages that opt into `morph` may exceed the band to match the morph — see `references/morph.md`.)
 - [ ] If a transition opts into `morph`: every morph `id` is unique per page and stable across the pair, morph geometry is pixel-constant (never measured after mount), no `transform` sits on the morph node, and entrance animations are gated behind `useIsActivePage()`.
 - [ ] If the user asked for a speech script / speaker notes, it lives in `export const notes` (index-aligned with the page array) — not in a markdown or text file.
 - [ ] Nothing outside `slides/<id>/` was edited.
