@@ -57,6 +57,7 @@ import { hasModifier, isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/
 import { readLastHomeLocation } from '@/lib/last-home-location';
 import { useAgentSocketConnected } from '@/lib/use-agent-socket';
 import { useClickPageNavigation } from '@/lib/use-click-page-navigation';
+import { useDocumentTitle } from '@/lib/use-document-title';
 import { useIsMobile } from '@/lib/use-is-mobile';
 import { format, useLocale } from '@/lib/use-locale';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
@@ -97,6 +98,7 @@ export function Slide() {
     }
   }, [navigate]);
   const { slide, error } = useSlideModule(slideId);
+  useDocumentTitle(slide?.meta?.title);
   const [playMode, setPlayMode] = useState<'window' | 'fullscreen' | null>(null);
   // Last deck the Player showed. During a presenter-driven deck switch the
   // route's slideId changes while the new module loads and warms; rendering

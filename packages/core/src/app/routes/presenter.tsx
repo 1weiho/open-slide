@@ -21,6 +21,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { hasModifier, isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
+import { useDocumentTitle } from '@/lib/use-document-title';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn, pad2 } from '@/lib/utils';
 import {
@@ -38,6 +39,7 @@ import { useSlideModule } from '../lib/use-slide-module';
 export function Presenter() {
   const { slideId = '' } = useParams();
   const { slide, error } = useSlideModule(slideId);
+  useDocumentTitle(slide?.meta?.title);
 
   // Presenter view is a passive mirror of the projection window. It only
   // tracks the index it last heard about; navigation buttons send commands
