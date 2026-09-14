@@ -1,5 +1,67 @@
-import { describe, expect, it } from 'vitest';
-import { sanitizeDirName } from './init.ts';
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { isDirNonEmpty, sanitizeDirName, scaffold } from './init.ts';
+
+describe('scaffold overwrite protection', () => {
+  let target: string;
+
+  beforeEach(async () => {
+    target = await mkdtemp(join(tmpdir(), 'open-slide-init-'));
+    vi.stubGlobal('__CORE_VERSION_AT_BUILD__', '2.0.0-beta.1');
+  });
+
+  afterEach(async () => {
+    vi.unstubAllGlobals();
+    await rm(target, { recursive: true, force: true });
+  });
+
+  it.each(['.gitignore', '.claude/settings.json', '.agents/skills/custom/SKILL.md', 'keep.txt'])(
+    'rejects a target containing %s without changing its contents',
+    async (relativePath) => {
+      const file = join(target, relativePath);
+      await mkdir(dirname(file), { recursive: true });
+      await writeFile(file, 'existing contents\n');
+      const entries = await readdir(target);
+
+      expect(await isDirNonEmpty(target)).toBe(true);
+      await expect(scaffold({ target, force: false, name: undefined })).rejects.toThrow(
+        'not empty',
+      );
+      expect(await readFile(file, 'utf8')).toBe('existing contents\n');
+      expect(await readdir(target)).toEqual(entries);
+    },
+  );
+
+  it('initializes an empty directory', async () => {
+    await scaffold({ target, force: false, name: 'test-slides' });
+
+    const pkg = JSON.parse(await readFile(join(target, 'package.json'), 'utf8'));
+    expect(pkg.name).toBe('test-slides');
+  });
+
+  it('initializes a directory containing only Git metadata', async () => {
+    await mkdir(join(target, '.git'));
+    await writeFile(join(target, '.git', 'config'), 'existing git config\n');
+
+    expect(await isDirNonEmpty(target)).toBe(false);
+    await scaffold({ target, force: false, name: 'test-slides' });
+
+    expect(await readFile(join(target, '.git', 'config'), 'utf8')).toBe('existing git config\n');
+    expect(await readdir(target)).toContain('package.json');
+  });
+
+  it('overwrites existing files when force is explicit', async () => {
+    await writeFile(join(target, '.gitignore'), 'custom-cache/\n');
+
+    await scaffold({ target, force: true, name: 'test-slides' });
+
+    expect(await readFile(join(target, '.gitignore'), 'utf8')).toBe(
+      'node_modules\ndist\n.DS_Store\n',
+    );
+  });
+});
 
 describe('sanitizeDirName', () => {
   it('leaves safe names untouched', () => {
