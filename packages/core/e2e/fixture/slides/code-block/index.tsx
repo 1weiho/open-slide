@@ -1,4 +1,5 @@
 import { CodeBlock, type Page, type SlideMeta } from '@open-slide/core';
+import { useEffect, useState } from 'react';
 
 export const meta: SlideMeta = {
   title: 'Code Block Deck',
@@ -26,4 +27,26 @@ const One: Page = () => (
   </div>
 );
 
-export default [One] satisfies Page[];
+const PYTHON = `def greet(name):
+    return "hi " + name`;
+const TYPESCRIPT = `function greet(name) {
+  return "hi " + name;
+}`;
+
+const Swap: Page = () => {
+  const [ts, setTs] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setTs(true), 2_000);
+    return () => clearTimeout(timer);
+  }, []);
+  return (
+    <div style={fill}>
+      <h1 style={{ fontSize: 96, margin: 0 }}>Code block swap</h1>
+      <CodeBlock lang={ts ? 'typescript' : 'python'} style={{ marginTop: 48 }}>
+        {ts ? TYPESCRIPT : PYTHON}
+      </CodeBlock>
+    </div>
+  );
+};
+
+export default [One, Swap] satisfies Page[];

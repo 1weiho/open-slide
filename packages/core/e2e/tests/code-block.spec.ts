@@ -32,4 +32,27 @@ test.describe('CodeBlock', () => {
     await expect(block.locator('[contenteditable="true"]')).toHaveCount(0);
     await expect(block).not.toHaveAttribute('contenteditable', 'true');
   });
+
+  test('swapping language in place shows plain text until the new grammar arrives', async ({
+    page,
+  }) => {
+    await openSlide(page, 'code-block', '?p=2');
+    const block = editorCanvas(page).locator('pre[data-waitfor]');
+    await expect(block.locator('code[data-osd-code-ready]')).toBeAttached({ timeout: 15_000 });
+    await expect(block).toContainText('def greet');
+
+    await page.route(/typescript/, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 4_000));
+      await route.continue();
+    });
+
+    await expect(block).toContainText('function greet', { timeout: 10_000 });
+    await expect(block.locator('code[data-osd-code-ready]')).toHaveCount(0);
+
+    await expect(block.locator('code[data-osd-code-ready]')).toBeAttached({ timeout: 15_000 });
+    await expect(block.locator('span', { hasText: /^function$/ })).toHaveAttribute(
+      'style',
+      /--osd-code-keyword/,
+    );
+  });
 });

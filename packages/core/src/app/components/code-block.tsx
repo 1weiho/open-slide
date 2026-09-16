@@ -53,29 +53,36 @@ function warnUnsupportedLang(lang: string) {
   );
 }
 
+type Highlighted = { key: string; lines: CodeLine[] };
+
 function useHighlightedLines(lang: CodeLang | null, code: string) {
-  const [lines, setLines] = useState<CodeLine[] | null>(() =>
-    lang ? (getCachedLines(lang, code) ?? null) : null,
-  );
+  const key = `${lang}\0${code}`;
+  const [state, setState] = useState<Highlighted | null>(() => {
+    const cached = lang ? getCachedLines(lang, code) : undefined;
+    return cached ? { key, lines: cached } : null;
+  });
 
   useEffect(() => {
     if (!lang) return;
     const cached = getCachedLines(lang, code);
     if (cached) {
-      setLines(cached);
+      setState({ key, lines: cached });
       return;
     }
     let alive = true;
     highlight(lang, code)
-      .then((result) => alive && setLines(result))
-      .catch(() => alive && setLines(plainLines(code)));
+      .then((lines) => alive && setState({ key, lines }))
+      .catch(() => alive && setState({ key, lines: plainLines(code) }));
     return () => {
       alive = false;
     };
-  }, [lang, code]);
+  }, [lang, code, key]);
 
   if (!lang) return { lines: plainLines(code), ready: true };
-  return { lines: lines ?? plainLines(code), ready: lines !== null };
+  // A result for a previous (lang, code) must not stand in for the current
+  // one: exports would capture stale tokens behind an already-set ready flag.
+  const current = state?.key === key ? state.lines : null;
+  return { lines: current ?? plainLines(code), ready: current !== null };
 }
 
 function childrenToSource(children: ReactNode): string {
@@ -118,6 +125,7 @@ export function CodeBlock({
         key={n}
         style={{
           display: 'block',
+          minHeight: '1lh',
           marginInline: `calc(-1 * ${PAD})`,
           paddingInline: PAD,
           background: isHighlighted
@@ -143,7 +151,7 @@ export function CodeBlock({
             {n}
           </span>
         )}
-        {isEmpty ? ' ' : tokens}
+        {isEmpty ? null : tokens}
       </span>,
     );
   }
