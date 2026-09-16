@@ -243,7 +243,7 @@ const LogoMark = ({ size = 36 }: { size?: number }) => (
 ```
 
 - Stagger delays: `0.05s`, `0.12s`, `0.22s`, `0.32s`, `0.40s` — never exceed `0.5s` on any element.
-- Slide transition: short Y-drift exit (150ms ease-in) + enter (220ms ease-out, 80ms delay).
+- Slide transition: exit holds (opacity 1 → 1, 220ms) while the incoming page rises 7px and fades in (220ms ease-out, no delay).
 
 ## Aesthetic
 

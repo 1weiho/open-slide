@@ -11,11 +11,11 @@ When the *same visual object* exists on two adjacent pages, the runtime can morp
 import { MorphElement, type Page, type SlideTransition } from '@open-slide/core';
 import type { CSSProperties } from 'react';
 
-// Morph transition — opacity-only enter/exit keeps all the motion on the clones (see rules).
+// Morph transition — a held exit and an opacity-only enter keep all the motion on the clones (see rules).
 const morphTransition: SlideTransition = {
   duration: 280,
-  exit:  { duration: 224, easing: 'cubic-bezier(0.4, 0, 1, 1)', keyframes: [{ opacity: 1 }, { opacity: 0 }] },
-  enter: { duration: 308, delay: 112, easing: 'cubic-bezier(0, 0, 0.2, 1)', keyframes: [{ opacity: 0 }, { opacity: 1 }] },
+  exit:  { duration: 308, easing: 'cubic-bezier(0.4, 0, 1, 1)', keyframes: [{ opacity: 1 }, { opacity: 1 }] },
+  enter: { duration: 308, easing: 'cubic-bezier(0, 0, 0.2, 1)', keyframes: [{ opacity: 0 }, { opacity: 1 }] },
   morph: { duration: 868, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' },
 };
 
@@ -38,7 +38,7 @@ Narrow.transition = morphTransition; // backward: Wide → Narrow morphs it back
 
 ## Contract
 
-- `morph: true` inherits the transition's top-level `duration`/`easing`; pass `{ duration?, easing?, delay? }` to time the morph independently of the page cross-fade. Morphs usually read best 2–4× longer than the fade (e.g. 280 ms fade, 868 ms morph). Fade phases on morphing pages may run past the 140–280 ms band in `transitions.md` — they're timed against the longer morph, not the standard cut; the band still binds non-morph pages.
+- `morph: true` inherits the transition's top-level `duration`/`easing`; pass `{ duration?, easing?, delay? }` to time the morph independently of the page cross-fade. Morphs usually read best 2–4× longer than the fade (e.g. 280 ms fade, 868 ms morph). Fade phases on morphing pages may run past the 200–280 ms band in `transitions.md` — they're timed against the longer morph, not the standard cut; the band still binds non-morph pages.
 - Elements pair by `id` across the cut. A matched pair FLIP-morphs: the runtime measures both rects, clones the outgoing element into an overlay above both pages, hides the originals, and animates transform + border-radius + colors (border widths ride a separate frame so they don't stretch with the box). Keep each `id` unique within a page; don't nest one `MorphElement` inside another.
 - An `id` present on only one side fades in/out **in place**. This is how "a third box joins the row" reads: carried boxes glide to their new slots, the new one materializes.
 - Colors on the morph node *and its descendants* interpolate too — a label that flips black → white mid-glide just works.
@@ -46,7 +46,7 @@ Narrow.transition = morphTransition; // backward: Wide → Narrow morphs it back
 
 ## Rules — each one earned on a real deck
 
-1. **Prefer opacity-only enter/exit on morphing pages.** Any transition family composes correctly with the morph (shared rects are measured before the phases start), but while clones glide, a transform-bearing enter also slides the rest of the page — two competing motions. Giving the clones all the motion and fading everything else is what makes a morph read as one confident gesture.
+1. **Prefer a held exit and an opacity-only enter on morphing pages.** Any transition family composes correctly with the morph (shared rects are measured before the phases start), but while clones glide, a transform-bearing enter also slides the rest of the page — two competing motions. Giving the clones all the motion and fading the incoming page in over the held outgoing page is what makes a morph read as one confident gesture. (Exit opacity is held by the framework anyway — see `transitions.md`; morph originals are hidden with `visibility`, so the held outgoing page never shows a duplicate.)
 2. **Morph geometry must be deterministic at mount.** Rects are snapshotted once at the cut. Position morph elements with pixel constants — never with a value measured in an effect after mount (the re-render shifts the target mid-morph and the move jumps). If text inside a morph box grows over time (typewriter etc.), render a hidden full-width spacer so the measured box never changes size.
 3. **No `transform` on the morph node itself.** A percentage translate (`translate(-50%, -50%)`) gets mis-scaled by the morph and lands the clone tens of px off. Put centering/positioning transforms on a plain wrapper `<div>` *around* the `MorphElement`.
 4. **`MorphElement` merges `className`/`style` onto its single host child** (it adds no wrapper when the child is a lone DOM element). A crop box (`overflow: hidden` + fixed width) therefore needs an explicit nested `<div>` — otherwise the box collapses onto the `<img>` inside and squishes it.
