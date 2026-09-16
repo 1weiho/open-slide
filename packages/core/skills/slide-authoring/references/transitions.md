@@ -163,7 +163,7 @@ If you find yourself reaching for this on every transition, you're probably over
 
 ## Anti-patterns
 
-- ❌ Fading the exit to `opacity: 0` and delaying the enter — the container background shows through the gap. The framework holds exit opacity for you, but the delay still leaves a dead beat; write a hold instead.
+- ❌ Fading the exit to `opacity: 0` and delaying the enter — the framework ignores the exit fade, so the outgoing page just sits there for the delay (a dead beat); with `throughBackground: true` the same shape becomes a flash of the container background. Write a hold instead.
 - ❌ `throughBackground: true` on the house transition, or between pages with different backgrounds — every cut dips to black.
 - ❌ Six different transitions across six pages — the single loudest "made in PowerPoint" tell.
 - ❌ `translateX(100%)` slide-from-side — iOS modal / PowerPoint Push; not a slide change.
