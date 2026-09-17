@@ -150,7 +150,15 @@ test.describe('dev server http api', () => {
     expect(added.ok()).toBe(true);
     const comment = (await added.json()) as { id: string };
     expect(comment.id).toMatch(/^c-[a-f0-9]+$/);
-    expect(await readSlideSource('api-comments')).toContain('@slide-comment');
+
+    // The marker lands as the first child right after `<h1 ...>`, so it shares
+    // its source line with the headline text that used to follow that `>`
+    // directly. Deleting the marker must not take that text with it — the
+    // production incident this guards against deleted `{children}</div>` the
+    // same way because the delete route removed the whole physical line.
+    const withMarker = await readSlideSource('api-comments');
+    expect(withMarker).toContain('@slide-comment');
+    expect(withMarker).toContain('Editable headline</h1>');
 
     const list = (await (await request.get('/__comments/?slideId=api-comments')).json()) as {
       comments: { id: string; note: string }[];
@@ -160,7 +168,14 @@ test.describe('dev server http api', () => {
 
     const removed = await request.delete(`/__comments/${comment.id}?slideId=api-comments`);
     expect(removed.ok()).toBe(true);
-    expect(await readSlideSource('api-comments')).not.toContain('@slide-comment');
+    const afterDelete = await readSlideSource('api-comments');
+    expect(afterDelete).not.toContain('@slide-comment');
+    expect(afterDelete).toContain('Editable headline</h1>');
+    expect(afterDelete).toContain('Editable body copy');
+
+    const unknown = await request.delete('/__comments/c-00000000?slideId=api-comments');
+    expect(unknown.status()).toBe(404);
+    expect(await readSlideSource('api-comments')).toBe(afterDelete);
   });
 
   test('slide assets can be uploaded, listed, served, renamed, and deleted', async ({

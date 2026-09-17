@@ -47,7 +47,8 @@ Your job: read those markers, perform the described edits, and delete the marker
    - Processing top-down would invalidate line numbers for later markers as the file shrinks/grows.
 
 5. **Remove each marker after applying its edit.**
-   - Delete the entire marker line including its trailing `\n`.
+   - Delete only the exact marker token matched by the detection regex above — **never the whole physical line**. A marker is dropped in with a leading newline but no trailing one, so it can end up sharing a source line with real content that follows it (e.g. `{/* @slide-comment ... */}{children}</div>` — deleting that whole line deletes `{children}</div>` too). Cut just the `{/* @slide-comment ... */}` span; leave anything before or after it on that line exactly as it was.
+   - If removing the marker leaves the line empty (whitespace only), delete that now-empty line so no stray blank line remains.
    - Never leave a marker behind for an edit you applied — that signals a failure. Markers deliberately skipped per the edge cases below stay in place.
 
 6. **Verify.**

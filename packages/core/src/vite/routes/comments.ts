@@ -2,8 +2,8 @@ import fs from 'node:fs/promises';
 import type { ViteDevServer } from 'vite';
 import {
   b64urlEncode,
+  deleteMarker,
   findInsertion,
-  markerDeleteRegex,
   newCommentId,
   offsetToLine,
   parseMarkers,
@@ -91,16 +91,12 @@ export function registerCommentRoutes(server: ViteDevServer, ctx: ApiContext): v
         const slideId = url.searchParams.get('slideId') ?? '';
         const file = resolveSlideEntryPath(ctx, slideId);
         if (!file) return json(res, 400, { error: 'invalid slideId' });
-
         const source = await readSlideSource(file);
         if (source === null) return json(res, 404, { error: 'slide not found' });
 
-        const lines = source.split('\n');
-        const idRe = markerDeleteRegex(id);
-        const hit = lines.findIndex((l) => idRe.test(l));
-        if (hit === -1) return json(res, 404, { error: 'marker not found' });
-        lines.splice(hit, 1);
-        await fs.writeFile(file, lines.join('\n'), 'utf8');
+        const next = deleteMarker(source, id);
+        if (next === null) return json(res, 404, { error: 'marker not found' });
+        await fs.writeFile(file, next, 'utf8');
         return json(res, 200, { ok: true });
       }
 
