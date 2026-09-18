@@ -2,4 +2,4 @@
 "@open-slide/core": patch
 ---
 
-Update static build checks for Autono branding.
+Remove the language switcher and align static build checks with Autono branding.

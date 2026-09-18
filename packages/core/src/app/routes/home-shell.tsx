@@ -2,7 +2,6 @@ import { Menu } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { LanguageToggle } from '@/components/language-toggle';
 import { ThemeToggle } from '@/components/theme-toggle';
 import {
   DropdownMenu,
@@ -187,7 +186,6 @@ export function HomeShell() {
             <h1 className="font-heading text-lg font-bold tracking-tight">{t.home.appTitle}</h1>
             <div className="-mr-1.5 flex items-center gap-0.5">
               <CommandMenuTrigger onClick={openCommandMenu} />
-              <LanguageToggle />
               <ThemeToggle />
               <DropdownMenu>
                 <DropdownMenuTrigger

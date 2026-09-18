@@ -2,7 +2,6 @@ import config from 'virtual:open-slide/config';
 import { Loader2, RefreshCw, RotateCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { LanguageToggle } from '@/components/language-toggle';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -144,7 +143,6 @@ export function SidebarFooter() {
         versionRow
       )}
       <div className="flex shrink-0 items-center">
-        <LanguageToggle />
         <ThemeToggle />
       </div>
     </div>
