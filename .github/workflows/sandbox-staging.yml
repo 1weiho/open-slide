@@ -1,0 +1,42 @@
+name: Deploy Sandbox staging
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sandbox-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm test
+      - run: pnpm --filter @autono/sandbox-host typecheck
+      - name: Deploy the exact commit to staging
+        run: node hosting/sandbox/scripts/release.mjs
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Verify restored app revision
+        run: node hosting/sandbox/scripts/verify.mjs
+        env:
+          SANDBOX_URL: https://autono-slides-sandbox-staging.bobak-emamian.workers.dev
+          SANDBOX_USERNAME: pilot
+          SANDBOX_PASSWORD: ${{ secrets.SANDBOX_PASSWORD }}
+          EXPECTED_REVISION: ${{ github.sha }}

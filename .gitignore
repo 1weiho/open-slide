@@ -9,3 +9,8 @@ packages/cli/template/.agents/skills
 packages/core/e2e/.scratch
 playwright-report
 test-results
+
+**/.wrangler
+**/.dev.vars*
+hosting/sandbox/worker-configuration.d.ts
+hosting/sandbox/wrangler.release.json

@@ -1,0 +1,11 @@
+.git
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/.wrangler
+**/.dev.vars*
+**/.env*
+**/*secrets*
+**/playwright-report
+**/test-results
