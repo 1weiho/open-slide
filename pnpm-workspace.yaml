@@ -2,4 +2,3 @@ packages:
   - "apps/*"
   - "packages/*"
   - "packages/core/e2e/fixture"
-  - "hosting/*"
