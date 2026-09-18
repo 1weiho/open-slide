@@ -1,7 +1,7 @@
 import { Plus, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import logo from '@/assets/open-slide.png';
+import logo from '@/assets/autono.svg';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { Folder, FolderIcon } from '@/lib/sdk';
 import { format, useLocale } from '@/lib/use-locale';
