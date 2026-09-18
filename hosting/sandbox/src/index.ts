@@ -3,6 +3,7 @@ import { getSandbox, type SandboxCommand, type SandboxEnv } from '@cloudflare/sa
 import { Hono } from 'hono';
 import { basicAuth } from 'hono/basic-auth';
 import { bodyLimit } from 'hono/body-limit';
+import { HTTPException } from 'hono/http-exception';
 import { isMutation, SerialQueue, validContentPath } from './policy';
 
 export { Sandbox } from '@cloudflare/sandbox';
@@ -24,6 +25,7 @@ app.all('*', (c) =>
   c.env.Workspaces.get(c.env.Workspaces.idFromName(c.env.WORKSPACE_ID)).fetch(c.req.raw),
 );
 app.onError((error, c) => {
+  if (error instanceof HTTPException) return error.getResponse();
   console.error({ event: 'sandbox_request_failed', name: error.name });
   return c.json({ error: 'Sandbox request failed. No automatic retry was attempted.' }, 502);
 });

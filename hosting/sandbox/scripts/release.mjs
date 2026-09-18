@@ -3,6 +3,11 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const dir = fileURLToPath(new URL('..', import.meta.url));
+const dirty = execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' });
+if (dirty.trim())
+  throw new Error(
+    'Commit the release before deploying; image revisions must identify the exact source',
+  );
 const revision = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 if (!/^[a-f0-9]{40}$/.test(revision)) throw new Error('A full commit SHA is required');
 const config = JSON.parse(readFileSync(`${dir}/wrangler.jsonc`, 'utf8'));

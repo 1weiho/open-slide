@@ -13,7 +13,8 @@ are serialized and never cancel an in-progress deployment. Production is not
 changed by this workflow. A rollout can outlast deployment; the verification
 fails visibly if it still sees the preceding image rather than retrying silently.
 
-GitHub environment `staging` needs `CLOUDFLARE_API_TOKEN`,
+The deployment token needs Containers Edit, Workers Scripts Edit, and Artifacts Edit
+scoped to the Autono account. GitHub environment `staging` needs `CLOUDFLARE_API_TOKEN`,
 `CLOUDFLARE_ACCOUNT_ID`, and `SANDBOX_PASSWORD`. The deployed Worker needs the
 matching `AUTH_PASSWORD` secret. Tokens and passwords never enter the image.
 
@@ -56,7 +57,9 @@ hosting contract. Platform identity, per-agent routing, and admin template
 provisioning remain the next integration layer.
 
 To prepare another workspace, create/fork its Artifacts repo with a `main` branch
-from the approved template before configuring `WORKSPACE_ID`. App releases never
+from the approved template before configuring `WORKSPACE_ID` and its returned
+`ARTIFACTS_REMOTE`. The current beta repo handle does not expose the remote URL
+over RPC, despite the generated type. App releases never
 seed over existing files. The demo content inside the image is not the live data
 store.
 

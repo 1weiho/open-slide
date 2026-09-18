@@ -26,6 +26,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
+      - run: pnpm core typecheck
       - run: pnpm test
       - run: pnpm --filter @autono/sandbox-host typecheck
       - name: Deploy the exact commit to staging
