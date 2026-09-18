@@ -452,6 +452,7 @@ const EASE_IN = 'cubic-bezier(0.7, 0, 0.84, 0)';
 // blur, resolving back to clarity. The page arrives bleached-out and settles in.
 Intro.transition = {
   duration: 820,
+  throughBackground: true,
   exit: {
     duration: 340,
     easing: EASE_IN,
@@ -505,6 +506,7 @@ Cover.transition = {
 // 2 · FLIP — perspective + rotateY. Genuine 3D, not a sprite sheet.
 Flip.transition = {
   duration: 760,
+  throughBackground: true,
   exit: {
     duration: 380,
     easing: EASE_IN,
@@ -544,6 +546,7 @@ Flip.transition = {
 // fakes a dropped framerate. The kind of motion a binary slide format can't even describe.
 Glitch.transition = {
   duration: 560,
+  throughBackground: true,
   exit: {
     duration: 260,
     easing: 'steps(5, end)',
@@ -608,6 +611,7 @@ Glitch.transition = {
 // Module default; anything not overridden inherits this.
 export const transition: SlideTransition = {
   duration: 700,
+  throughBackground: true,
   exit: {
     duration: 300,
     easing: 'cubic-bezier(0.55, 0, 1, 0.45)',
@@ -641,6 +645,7 @@ Warp.transition = transition;
 // at a tilt; the new one arrives from the other side, also tilted, then squares up.
 Sweep.transition = {
   duration: 760,
+  throughBackground: true,
   exit: {
     duration: 360,
     easing: EASE_IN,
@@ -664,6 +669,7 @@ Sweep.transition = {
 // spirals into a point; the inbound unfurls back out from the other direction.
 Closing.transition = {
   duration: 820,
+  throughBackground: true,
   exit: {
     duration: 400,
     easing: EASE_IN,
@@ -688,6 +694,7 @@ Closing.transition = {
 // and squares up. Real 3D, no sprite sheet — far more aggressive than flip.
 Cli.transition = {
   duration: 880,
+  throughBackground: true,
   exit: {
     duration: 440,
     easing: EASE_IN,

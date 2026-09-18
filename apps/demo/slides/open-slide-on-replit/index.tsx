@@ -1050,16 +1050,12 @@ const EASE_IN = 'cubic-bezier(0.4, 0, 1, 1)';
 export const transition: SlideTransition = {
   duration: 220,
   exit: {
-    duration: 150,
+    duration: 220,
     easing: EASE_IN,
-    keyframes: [
-      { opacity: 1, transform: 'translateY(0)' },
-      { opacity: 0, transform: 'translateY(-5px)' },
-    ],
+    keyframes: [{ opacity: 1 }, { opacity: 1 }],
   },
   enter: {
     duration: 220,
-    delay: 80,
     easing: EASE_OUT,
     keyframes: [
       { opacity: 0, transform: 'translateY(7px)' },
