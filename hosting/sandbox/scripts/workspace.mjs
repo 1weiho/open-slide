@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { mkdir, readFile, realpath, rename, stat, symlink } from 'node:fs/promises';
+import { lstat, mkdir, readFile, realpath, rename, symlink } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
@@ -14,7 +14,7 @@ async function git(args, cwd = root) {
 }
 async function exists(file) {
   try {
-    await stat(file);
+    await lstat(file);
     return true;
   } catch (error) {
     if (error.code === 'ENOENT') return false;

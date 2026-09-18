@@ -41,7 +41,7 @@ export class Workspace extends DurableObject<HostEnv> {
     const token = await repo.createToken('write', 3600);
     return {
       CONTENT_PATHS: this.env.CONTENT_PATHS,
-      ARTIFACTS_REMOTE: await repo.remote,
+      ARTIFACTS_REMOTE: this.env.ARTIFACTS_REMOTE,
       GIT_CONFIG_COUNT: '1',
       GIT_CONFIG_KEY_0: 'http.extraHeader',
       GIT_CONFIG_VALUE_0: `Authorization: Bearer ${token.plaintext}`,
@@ -50,7 +50,7 @@ export class Workspace extends DurableObject<HostEnv> {
 
   private async command(action: string, env: Record<string, string>, ...args: string[]) {
     const p = await this.sandbox().exec(['node', '/opt/host/workspace.mjs', action, ...args], {
-      env,
+      env: { CONTENT_PATHS: this.env.CONTENT_PATHS, ...env },
     });
     const output = await p.output({ encoding: 'utf8' });
     if (output.exitCode !== 0)
@@ -124,7 +124,9 @@ export class Workspace extends DurableObject<HostEnv> {
           error: error instanceof Error ? error.message : 'Unknown failure',
         });
         return Response.json(
-          { error: 'Workspace operation failed; changes are not confirmed saved.' },
+          {
+            error: 'Workspace operation failed; changes are not confirmed saved.',
+          },
           { status: 502 },
         );
       });
