@@ -40,4 +40,5 @@ jobs:
           SANDBOX_URL: https://autono-slides-sandbox-staging.bobak-emamian.workers.dev
           SANDBOX_USERNAME: pilot
           SANDBOX_PASSWORD: ${{ secrets.SANDBOX_PASSWORD }}
+          RESTART_FOR_RELEASE: '1'
           EXPECTED_REVISION: ${{ github.sha }}

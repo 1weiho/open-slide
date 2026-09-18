@@ -5,6 +5,10 @@ if (!url || !password || !expected) throw new Error('Missing verification config
 const headers = {
   authorization: `Basic ${Buffer.from(`${process.env.SANDBOX_USERNAME ?? 'pilot'}:${password}`).toString('base64')}`,
 };
+if (process.env.RESTART_FOR_RELEASE === '1') {
+  const stopped = await fetch(`${url}/__host/restart`, { method: 'POST', headers });
+  if (!stopped.ok) throw new Error(`Staging checkpoint/restart failed: HTTP ${stopped.status}`);
+}
 const response = await fetch(`${url}/__host/release`, { headers });
 if (!response.ok) throw new Error(`Sandbox startup failed: HTTP ${response.status}`);
 const release = await response.json();

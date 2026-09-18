@@ -1,38 +1,16 @@
 import { DurableObject } from 'cloudflare:workers';
 import { getSandbox, type SandboxCommand, type SandboxEnv } from '@cloudflare/sandbox';
-import { Hono } from 'hono';
-import { basicAuth } from 'hono/basic-auth';
-import { bodyLimit } from 'hono/body-limit';
-import { HTTPException } from 'hono/http-exception';
 import { isMutation, SerialQueue, validContentPath } from './policy';
 
 export { Sandbox } from '@cloudflare/sandbox';
+export { default } from './http';
 
 type HostEnv = Env & SandboxEnv & { AUTH_PASSWORD: string };
 const root = '/workspace/project';
-const app = new Hono<{ Bindings: HostEnv }>();
-app.use('*', (c, next) =>
-  basicAuth({ username: c.env.AUTH_USERNAME, password: c.env.AUTH_PASSWORD })(c, next),
-);
-app.use('*', async (c, next) => {
-  const origin = c.req.header('origin');
-  if (origin && origin !== new URL(c.req.url).origin)
-    return c.json({ error: 'Origin rejected' }, 403);
-  return next();
-});
-app.use('*', bodyLimit({ maxSize: 10 * 1024 * 1024 }));
-app.all('*', (c) =>
-  c.env.Workspaces.get(c.env.Workspaces.idFromName(c.env.WORKSPACE_ID)).fetch(c.req.raw),
-);
-app.onError((error, c) => {
-  if (error instanceof HTTPException) return error.getResponse();
-  console.error({ event: 'sandbox_request_failed', name: error.name });
-  return c.json({ error: 'Sandbox request failed. No automatic retry was attempted.' }, 502);
-});
-export default app;
 
 export class Workspace extends DurableObject<HostEnv> {
   private queue = new SerialQueue();
+  private starting?: ReturnType<Workspace['start']>;
 
   private sandbox() {
     return getSandbox(this.env.Sandbox, this.env.WORKSPACE_ID);
@@ -60,7 +38,14 @@ export class Workspace extends DurableObject<HostEnv> {
     return JSON.parse(output.stdout) as Record<string, string>;
   }
 
-  private async ready() {
+  private ready() {
+    this.starting ??= this.start().finally(() => {
+      this.starting = undefined;
+    });
+    return this.starting;
+  }
+
+  private async start() {
     const s = this.sandbox();
     const command = JSON.parse(this.env.APP_COMMAND) as SandboxCommand;
     const process = (await s.listProcesses()).find(
@@ -75,52 +60,50 @@ export class Workspace extends DurableObject<HostEnv> {
   }
 
   override async fetch(request: Request): Promise<Response> {
-    return this.queue
-      .run(async () => {
-        const url = new URL(request.url);
-        if (['/__update-package', '/__restart-server'].includes(url.pathname)) {
-          return Response.json(
-            { error: 'App versions are managed by deployment.' },
-            { status: 409 },
-          );
-        }
-        const s = await this.ready();
-        if (url.pathname === '/__host/release')
-          return Response.json(await this.command('version', {}));
-        if (url.pathname === '/__host/files') {
-          const file = url.searchParams.get('path') ?? '';
-          const roots = JSON.parse(this.env.CONTENT_PATHS) as string[];
-          if (!validContentPath(file, roots))
-            return Response.json({ error: 'Invalid content path' }, { status: 400 });
-          const env = await this.credentials();
-          const resolved = await this.command('resolve', env, file);
-          if (request.method === 'GET') return Response.json(await s.readFile(resolved.path));
-          if (request.method !== 'PUT') return new Response(null, { status: 405 });
-          await s.writeFile(resolved.path, await request.text());
-          const saved = await this.command('save', env);
-          return Response.json(saved);
-        }
-        if (url.pathname === '/__host/checkpoint' && request.method === 'POST')
-          return Response.json(await this.command('save', await this.credentials()));
-        if (url.pathname === '/__host/restart' && request.method === 'POST') {
-          await this.command('save', await this.credentials());
-          await s.destroy();
-          return Response.json({ stopped: true });
-        }
-        if (url.pathname.startsWith('/__host/')) return new Response(null, { status: 404 });
-        if (request.headers.get('upgrade')?.toLowerCase() === 'websocket')
-          return s.wsConnect(request, 8080);
-        const forwarded = new Request(request);
-        forwarded.headers.set('x-forwarded-host', url.host);
-        forwarded.headers.set('x-forwarded-proto', url.protocol.slice(0, -1));
-        const response = await s.containerFetch(forwarded, 8080);
-        if (!isMutation(request.method)) return response;
-        const body = await response.arrayBuffer();
-        // A browser save is successful only after the content is durable.
+    const operation = async () => {
+      const url = new URL(request.url);
+      if (['/__update-package', '/__restart-server'].includes(url.pathname)) {
+        return Response.json({ error: 'App versions are managed by deployment.' }, { status: 409 });
+      }
+      const s = await this.ready();
+      if (url.pathname === '/__host/release')
+        return Response.json(await this.command('version', {}));
+      if (url.pathname === '/__host/files') {
+        const file = url.searchParams.get('path') ?? '';
+        const roots = JSON.parse(this.env.CONTENT_PATHS) as string[];
+        if (!validContentPath(file, roots))
+          return Response.json({ error: 'Invalid content path' }, { status: 400 });
+        const env = await this.credentials();
+        const resolved = await this.command('resolve', env, file);
+        if (request.method === 'GET') return Response.json(await s.readFile(resolved.path));
+        if (request.method !== 'PUT') return new Response(null, { status: 405 });
+        await s.writeFile(resolved.path, await request.text());
+        const saved = await this.command('save', env);
+        return Response.json(saved);
+      }
+      if (url.pathname === '/__host/checkpoint' && request.method === 'POST')
+        return Response.json(await this.command('save', await this.credentials()));
+      if (url.pathname === '/__host/restart' && request.method === 'POST') {
         await this.command('save', await this.credentials());
-        return new Response(body, response);
-      })
-      .catch((error: unknown) => {
+        await s.destroy();
+        return Response.json({ stopped: true });
+      }
+      if (url.pathname.startsWith('/__host/')) return new Response(null, { status: 404 });
+      if (request.headers.get('upgrade')?.toLowerCase() === 'websocket')
+        return s.wsConnect(request, 8080);
+      const forwarded = new Request(request);
+      forwarded.headers.set('x-forwarded-host', url.host);
+      forwarded.headers.set('x-forwarded-proto', url.protocol.slice(0, -1));
+      const response = await s.containerFetch(forwarded, 8080);
+      if (!isMutation(request.method)) return response;
+      const body = await response.arrayBuffer();
+      // A browser save is successful only after the content is durable.
+      await this.command('save', await this.credentials());
+      return new Response(body, response);
+    };
+    // Asset requests must stay concurrent; only writes require ordered persistence.
+    return (isMutation(request.method) ? this.queue.run(operation) : operation()).catch(
+      (error: unknown) => {
         console.error({
           event: 'workspace_operation_failed',
           error: error instanceof Error ? error.message : 'Unknown failure',
@@ -131,6 +114,7 @@ export class Workspace extends DurableObject<HostEnv> {
           },
           { status: 502 },
         );
-      });
+      },
+    );
   }
 }

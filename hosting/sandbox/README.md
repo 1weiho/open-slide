@@ -8,7 +8,8 @@ Artifacts contains the editable workspace. Nothing checks GitHub on a timer.
 
 `.github/workflows/sandbox-staging.yml` validates, runs
 `node hosting/sandbox/scripts/release.mjs`, then verifies the running revision and
-app HTML. Wrangler builds the custom Dockerfile and rolls it out. Workflow runs
+app HTML. Verification checkpoints the dedicated staging workspace and restarts
+it on the deployed image before checking its revision. Wrangler builds the custom Dockerfile and rolls it out. Workflow runs
 are serialized and never cancel an in-progress deployment. Production is not
 changed by this workflow. A rollout can outlast deployment; the verification
 fails visibly if it still sees the preceding image rather than retrying silently.
