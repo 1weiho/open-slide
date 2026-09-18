@@ -31,7 +31,7 @@ export const en: Locale = {
   },
 
   home: {
-    appTitle: 'open-slide',
+    appTitle: 'Autono',
     draft: 'Draft',
     duplicate: 'Duplicate',
     themes: 'Themes',
@@ -41,7 +41,7 @@ export const en: Locale = {
     menu: 'Menu',
     newFolder: 'New folder',
     folderName: 'Folder name',
-    updateAvailable: 'open-slide {version} is available',
+    updateAvailable: 'Autono {version} is available',
     updatePackage: 'Update',
     updatingPackage: 'Updating',
     updatePackageDone: 'Updated. Restart the dev server to use the new version.',

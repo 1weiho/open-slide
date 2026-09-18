@@ -194,7 +194,7 @@ function SlidePreview({ variant, index }: { variant: Variant; index: number }) {
             className="inline-block rounded-full transition-colors duration-500"
             style={{ width: '0.9cqw', height: '0.9cqw', background: accent }}
           />
-          <span>open-slide · {label}</span>
+          <span>Autono · {label}</span>
         </span>
         <span>2026</span>
       </div>

@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: appName,
   keywords: [
-    'open-slide',
+    'Autono',
     'slides',
     'presentation framework',
     'React slides',
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     locale: 'en_US',
     images: [
       {
-        url: '/opengraph-image.png',
+        url: '/opengraph-image',
         width: 1200,
         height: 630,
         alt: `${appName} — React-first slide framework for AI agents`,
@@ -62,8 +62,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title,
     description,
-    creator: '@1weiho',
-    images: ['/opengraph-image.png'],
+    images: ['/opengraph-image'],
   },
   robots: {
     index: true,
@@ -77,8 +76,8 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
+    icon: '/autono.svg',
+    shortcut: '/autono.svg',
   },
 };
 

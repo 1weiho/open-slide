@@ -1,6 +1,6 @@
 # @open-slide/core
 
-Runtime and CLI for [open-slide](https://github.com/1weiho/open-slide) — a React-based slide framework where you write slides and the framework handles the Vite/React stack, layout, navigation, hot reload, and fullscreen play mode.
+Runtime and CLI for [Autono](https://github.com/autonoco/open-slide) — a React-based slide framework where you write slides and the framework handles the Vite/React stack, layout, navigation, hot reload, and fullscreen play mode.
 
 ## Install
 
@@ -62,7 +62,7 @@ import type { Page } from '@open-slide/core';
 
 const Cover: Page = () => (
   <div className="flex h-full w-full items-center justify-center">
-    <h1 className="text-[120px] font-bold">Hello, open-slide</h1>
+    <h1 className="text-[120px] font-bold">Hello, Autono</h1>
   </div>
 );
 

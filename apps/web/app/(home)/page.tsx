@@ -33,7 +33,7 @@ const jsonLd = [
     '@type': 'Organization',
     name: appName,
     url: siteUrl,
-    logo: `${siteUrl}/open-slide.png`,
+    logo: `${siteUrl}/autono.svg`,
     sameAs: [
       repoUrl,
       'https://www.npmjs.com/package/@open-slide/core',
@@ -69,9 +69,9 @@ const jsonLd = [
   {
     '@context': 'https://schema.org',
     '@type': 'HowTo',
-    name: 'Author a slide deck with open-slide',
+    name: 'Author a slide deck with Autono',
     description:
-      'Scaffold an open-slide workspace, ask an AI agent to draft slides, then iterate visually in the browser.',
+      'Scaffold an Autono workspace, ask an AI agent to draft slides, then iterate visually in the browser.',
     totalTime: 'PT2M',
     supply: [
       { '@type': 'HowToSupply', name: 'Node.js 18+' },

@@ -405,7 +405,7 @@ const Cover: Page = () => (
         }}
       >
         <Eyebrow className="es-fadeUp" style={{ animationDelay: '0.05s' }}>
-          open-slide · getting started
+          Autono · getting started
         </Eyebrow>
         <div
           className="es-fadeUp"
@@ -498,7 +498,7 @@ const Cover: Page = () => (
 const Init: Page = () => {
   const stream = [
     '',
-    'Created open-slide workspace in /Users/you/my-slide',
+    'Created Autono workspace in /Users/you/my-slide',
     '',
     'Next steps:',
     '  cd my-slide',
@@ -2441,7 +2441,7 @@ const Recap: Page = () => {
             edit <span style={{ color: palette.text }}>slides/&lt;your-slide&gt;/index.tsx</span> —
             HMR does the rest
           </span>
-          <span>open-slide</span>
+          <span>Autono</span>
         </div>
       </div>
     </div>
@@ -2471,7 +2471,7 @@ const AgentAgnostic: Page = () => {
         }}
       >
         <div className="es-fadeUp">
-          <Eyebrow>why open-slide · 01</Eyebrow>
+          <Eyebrow>why Autono · 01</Eyebrow>
           <h2
             style={{
               marginTop: 24,
@@ -2504,8 +2504,8 @@ const AgentAgnostic: Page = () => {
               letterSpacing: '-0.01em',
             }}
           >
-            open-slide speaks plain React and a file-convention protocol. Any agent can author and
-            edit slides — no lock-in, no bespoke SDK.
+            Autono speaks plain React and a file-convention protocol. Any agent can author and edit
+            slides — no lock-in, no bespoke SDK.
           </p>
         </div>
 
@@ -2795,7 +2795,7 @@ const FreeLayout: Page = () => {
         }}
       >
         <div className="es-fadeUp">
-          <Eyebrow>why open-slide · 02</Eyebrow>
+          <Eyebrow>why Autono · 02</Eyebrow>
           <h2
             style={{
               marginTop: 24,
@@ -2895,7 +2895,7 @@ const GitTracked: Page = () => {
         }}
       >
         <div className="es-fadeUp">
-          <Eyebrow>why open-slide · 03</Eyebrow>
+          <Eyebrow>why Autono · 03</Eyebrow>
           <h2
             style={{
               marginTop: 20,
@@ -3082,7 +3082,7 @@ const DeployAnywhere: Page = () => {
         }}
       >
         <div className="es-fadeUp">
-          <Eyebrow>why open-slide · 04</Eyebrow>
+          <Eyebrow>why Autono · 04</Eyebrow>
           <h2
             style={{
               marginTop: 24,
@@ -3115,8 +3115,8 @@ const DeployAnywhere: Page = () => {
               letterSpacing: '-0.01em',
             }}
           >
-            open-slide builds to plain static assets. Drop them on Vercel, Cloudflare, Zeabur — or
-            any server that serves HTML.
+            Autono builds to plain static assets. Drop them on Vercel, Cloudflare, Zeabur — or any
+            server that serves HTML.
           </p>
         </div>
 
@@ -3167,7 +3167,7 @@ const DeployAnywhere: Page = () => {
 
 // ─── Slide export ────────────────────────────────────────────────────────────
 export const meta: SlideMeta = {
-  title: 'Getting started with open-slide',
+  title: 'Getting started with Autono',
   theme: 'dark',
 };
 

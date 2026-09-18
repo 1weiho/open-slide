@@ -1,4 +1,4 @@
-<img width="1280" height="640" alt="open-slide github cover" src="https://github.com/user-attachments/assets/02f5e6d7-12a7-4a8e-88e7-ae8770a96584" />
+<img width="1200" height="630" alt="Autono" src="packages/core/src/app/assets/autono-social.png" />
 
 <br />
 <br />
@@ -6,13 +6,15 @@
   <img alt="Vercel OSS Program" src="https://vercel.com/oss/program-badge-2026.svg" />
 </a>
 
-# open-slide
+# Autono
 
-[![GitHub stars](https://img.shields.io/github/stars/1weiho/open-slide?style=for-the-badge)](https://github.com/1weiho/open-slide/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/1weiho/open-slide?style=for-the-badge)](https://github.com/1weiho/open-slide/network/members)
+Autono’s fork of [1weiho/open-slide](https://github.com/1weiho/open-slide). Upstream license and attribution are preserved.
+
+[![GitHub stars](https://img.shields.io/github/stars/autonoco/open-slide?style=for-the-badge)](https://github.com/autonoco/open-slide/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/autonoco/open-slide?style=for-the-badge)](https://github.com/autonoco/open-slide/network/members)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-**The slide framework built for agents.** Describe your deck in natural language — your coding agent writes the React. open-slide handles the canvas, scaling, navigation, hot reload, and present mode so the agent can focus on content.
+**The slide framework built for agents.** Describe your deck in natural language — your coding agent writes the React. Autono handles the canvas, scaling, navigation, hot reload, and present mode so the agent can focus on content.
 
 Every slide renders into a fixed **1920 × 1080** canvas. Pages are arbitrary React components, not a constrained DSL.
 
@@ -20,9 +22,9 @@ Every slide renders into a fixed **1920 × 1080** canvas. Pages are arbitrary Re
 npx @open-slide/cli init my-slide
 ```
 
-## Why open-slide
+## Why Autono
 
-Slides are visual code. Agents are great at writing code. open-slide is the missing runtime that turns "make slides about X" into a polished, presentable deck — without you ever leaving the chat.
+Slides are visual code. Agents are great at writing code. Autono is the missing runtime that turns "make slides about X" into a polished, presentable deck — without you ever leaving the chat.
 
 ## Highlights
 
@@ -93,7 +95,7 @@ pnpm lint     # lints via biome
 
 ## Support
 
-If open-slide has been useful to you, consider supporting development:
+If this Autono fork has been useful to you, consider supporting development:
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/D1D11YPUP1)
 

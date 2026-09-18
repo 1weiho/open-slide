@@ -24,7 +24,7 @@ const thread: Tweet[] = [
     name: 'Sam Lambert',
     handle: '@samlambert',
     avatar: '/assets/avatar/samlambert.png',
-    body: 'open-slide + cursor',
+    body: 'Autono + cursor',
   },
 ];
 

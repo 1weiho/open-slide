@@ -101,7 +101,7 @@ const Cover: Page = () => (
     }}
   >
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-      <div style={EYEBROW}>open-slide · field notes · vol. ii</div>
+      <div style={EYEBROW}>Autono · field notes · vol. ii</div>
       <div style={{ ...EYEBROW, color: muted }}>showcase</div>
     </div>
     <div style={{ alignSelf: 'center' }}>
@@ -440,7 +440,7 @@ const Cli: Page = () => (
     </div>
     <div style={{ ...FOOT, display: 'flex', justifyContent: 'space-between' }}>
       <span>07 · cube</span>
-      <span>open-slide.dev</span>
+      <span>autono.co</span>
     </div>
   </div>
 );

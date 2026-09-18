@@ -1,6 +1,6 @@
 # @open-slide/cli
 
-Scaffold a workspace for [open-slide](https://github.com/1weiho/open-slide) — a React-based slide framework with Claude Code skills preconfigured.
+Scaffold a workspace for [Autono](https://github.com/autonoco/open-slide) — a React-based slide framework with Claude Code skills preconfigured.
 
 ## Usage
 

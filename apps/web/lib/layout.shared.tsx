@@ -8,7 +8,7 @@ export function baseOptions(): BaseLayoutProps {
       title: (
         <>
           <Image
-            src="/open-slide.png"
+            src="/autono.svg"
             alt=""
             aria-hidden
             width={24}

@@ -47,7 +47,7 @@ const Cover: Page = () => (
       padding: '120px 144px',
     }}
   >
-    <div style={EYEBROW}>open-slide · primitives</div>
+    <div style={EYEBROW}>Autono · primitives</div>
     <div style={{ alignSelf: 'center' }}>
       <h1
         style={{

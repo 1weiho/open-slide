@@ -47,7 +47,7 @@ const Cover: Page = () => (
       padding: '120px 144px',
     }}
   >
-    <div style={EYEBROW}>open-slide · field notes</div>
+    <div style={EYEBROW}>Autono · field notes</div>
     <div style={{ alignSelf: 'center' }}>
       <h1
         style={{

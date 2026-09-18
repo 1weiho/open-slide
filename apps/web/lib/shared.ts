@@ -1,11 +1,11 @@
-export const appName = 'open-slide';
-export const siteUrl = 'https://open-slide.dev';
+export const appName = 'Autono';
+export const siteUrl = 'https://autono.co';
 export const docsRoute = '/docs';
 export const docsImageRoute = '/og/docs';
 export const docsContentRoute = '/llms.mdx/docs';
 
 export const gitConfig = {
-  user: '1weiho',
+  user: 'autonoco',
   repo: 'open-slide',
   branch: 'main',
 };
