@@ -41,7 +41,7 @@ export class Workspace extends DurableObject<HostEnv> {
     const token = await repo.createToken('write', 3600);
     return {
       CONTENT_PATHS: this.env.CONTENT_PATHS,
-      ARTIFACTS_REMOTE: repo.remote,
+      ARTIFACTS_REMOTE: await repo.remote,
       GIT_CONFIG_COUNT: '1',
       GIT_CONFIG_KEY_0: 'http.extraHeader',
       GIT_CONFIG_VALUE_0: `Authorization: Bearer ${token.plaintext}`,
