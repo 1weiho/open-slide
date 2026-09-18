@@ -36,6 +36,10 @@ export async function openSlide(page: Page, slideId: string, query = ''): Promis
   for (let attempt = 0; ; attempt++) {
     try {
       await expect(editorCanvas(page)).toBeVisible({ timeout: 15_000 });
+      // Fixture writes can queue a full reload after the first canvas renders.
+      // Let that navigation and its modules settle before issuing edits/exports.
+      await page.waitForLoadState('networkidle');
+      await expect(editorCanvas(page)).toBeVisible({ timeout: 15_000 });
       return;
     } catch (err) {
       if (attempt >= 2) throw err;

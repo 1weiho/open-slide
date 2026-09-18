@@ -115,8 +115,6 @@ export type Locale = {
     exportAsPdf: string;
     exportAsImagePptx: string;
     exportAsPptx: string;
-    comingSoon: string;
-    pptxComingSoonTooltip: string;
     pdfExportFailed: string;
     imagePptxExportFailed: string;
     pdfExportSafariUnsupported: string;
@@ -429,6 +427,67 @@ export type Locale = {
     processing: string;
     generating: string;
     done: string;
+  };
+
+  editablePptxToast: {
+    title: string;
+    /** template: "Preparing editable PPTX ({current} of {total} pages)" */
+    preparing: string;
+    /** template: "Converting page {current} of {total}" */
+    processing: string;
+    /** template: "Generating file ({current} of {total} pages)" */
+    generating: string;
+    generated: string;
+    cancelled: string;
+    failed: string;
+    showDiagnostics: string;
+    hideDiagnostics: string;
+    downloadDiagnostics: string;
+    errors: Plural;
+    warnings: Plural;
+    errorLabel: string;
+    warningLabel: string;
+    qualitySummary: string;
+    pages: Plural;
+    text: Plural;
+    tables: Plural;
+    sourceImages: Plural;
+    shapes: Plural;
+    groups: Plural;
+    fontSubstitutions: Plural;
+    vectorApproximations: Plural;
+    skippedGroups: Plural;
+    showQualityDetails: string;
+    hideQualityDetails: string;
+    qualityDetailHeading: string;
+    recipientFontsUnknown: string;
+    windowsNotVerified: string;
+    sourceItems: string;
+    sourceObjects: string;
+    editableObjects: string;
+    generatedParts: string;
+    groupContainers: string;
+    vectorApproximationSources: string;
+    fontSubstitutionSources: string;
+    fontDetails: string;
+    requestedFont: string;
+    resolvedFont: string;
+    fontSubstitutionImpact: string;
+    fontUnsafeImpact: string;
+    fontPreservedImpact: string;
+    fontSubstitutionSuggestion: string;
+    reason: string;
+    impact: string;
+    diagnosticErrorImpact: string;
+    diagnosticWarningImpact: string;
+    groupSkippedImpact: string;
+    vectorApproximationImpact: string;
+    /** template: "Page {page}" */
+    page: string;
+    deck: string;
+    code: string;
+    source: string;
+    suggestion: string;
   };
 
   commandMenu: {

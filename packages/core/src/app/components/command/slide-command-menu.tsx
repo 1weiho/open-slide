@@ -10,6 +10,7 @@ import {
   MonitorSpeaker,
   Palette,
   Play,
+  Presentation,
   RectangleHorizontal,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -28,6 +29,7 @@ export type SlideCommandHandlers = {
   onExportHtml: () => void;
   onExportPdf: () => void;
   onExportImagePptx: () => void;
+  onExportEditablePptx: () => void;
   onGoToPage: (index: number) => void;
 };
 
@@ -139,6 +141,14 @@ export function SlideCommandMenu({
             keywords: ['export', 'pptx', 'powerpoint', 'download'],
             disabled: exporting,
             run: handlers.onExportImagePptx,
+          },
+          {
+            id: 'export-editable-pptx',
+            label: t.slide.exportAsPptx,
+            icon: <Presentation />,
+            keywords: ['export', 'editable', 'pptx', 'powerpoint', 'download'],
+            disabled: exporting,
+            run: handlers.onExportEditablePptx,
           },
         ]
       : [];

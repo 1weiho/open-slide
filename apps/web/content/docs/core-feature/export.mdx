@@ -1,6 +1,6 @@
 ---
 title: Export
-description: One command to a self-contained static HTML site or PDF.
+description: Export a deck as a self-contained HTML site, PDF, or editable PowerPoint file.
 ---
 
 `open-slide build` produces a plain static site under `dist/` — everything
@@ -24,8 +24,202 @@ The **Export** menu in the slide toolbar exports the active deck directly:
   assets download as a zip (HTML file + assets folder).
 - **PDF** — one 1920 × 1080 landscape PDF page per deck page. Not supported
   in Safari.
-- **PPTX (images)** — each page rendered as an image on a PowerPoint slide.
-  Native editable PPTX export is not available yet.
+- **PPTX (images)** — each page is rendered as one image on a PowerPoint slide.
+  This preserves the page as a picture; its text and graphics are not individual
+  editable objects.
+- **PPTX (editable)** — the shared exporter analyzes every deck and writes
+  supported text, lists, shapes, lines, tables, and imported images as native
+  PowerPoint objects. Speaker notes and supported links are included.
+
+## Editable PowerPoint
+
+The editable PPTX command is enabled for every deck. Ordinary headings,
+paragraphs, lists, basic shapes, native HTML tables, and imported images are
+detected automatically; authors do not need markers, a `foreignObject` wrapper,
+or deck-specific registration for this content. The output is a native
+PowerPoint object model, so supported text, shapes, table cells, links, images,
+and speaker notes can be edited after download.
+
+### Native groups
+
+Editable export uses IR schema v2 for group metadata. The exporter automatically
+groups multiple native parts emitted from the same source object, such as a
+shape and its editable vector shadow layers. Authors can declare a reusable
+semantic group on a DOM container with the private `data-osd-pptx-group`
+marker:
+
+```tsx
+<div data-osd-pptx-group="pricing-card">
+  <div className="card-background" />
+  <h2>Usage based pricing</h2>
+  <span>$12 / seat</span>
+</div>
+```
+
+The marker value is a diagnostic label; the exporter creates internal group
+IDs. It does not replace the existing `data-osd-pptx` table and diagram marker
+contract, and there is no public React helper for it. A group becomes a native
+PowerPoint group only when its members have valid bounds, form one contiguous
+paint-order range, and contain no native table. An unsafe or interleaved group
+stays as separate native child objects and adds a warning. The exporter keeps
+those children editable and does not rasterize them to make grouping succeed.
+
+PowerPoint group resizing changes the group geometry, but the exporter does not
+promise proportional font-size scaling or identical text reflow after a group
+is resized. Validate text layout in the target PowerPoint environment.
+
+CSS grid layouts whose table semantics cannot be inferred from their layout can
+use the private `data-osd-pptx` marker contract v1. There is no public React
+helper API for these markers: add them to the existing DOM and data only when a
+layout needs explicit table semantics. Marked tables need marked rows and cells
+with contiguous zero-based indices. The shipped `data-osd-pptx` values are
+`table`, `row`, `cell`, `node`, `arrow`, and `line`; diagram markers can also
+use the associated `data-osd-pptx-id`, `data-osd-pptx-direction`,
+`data-osd-pptx-from`, `data-osd-pptx-to`, and `data-osd-pptx-connection`
+attributes. The same content remains the source of the exported objects:
+
+```tsx
+<div data-osd-pptx="table" style={{ display: 'grid', gap: 0 }}>
+  <div
+    data-osd-pptx="row"
+    data-osd-pptx-row="0"
+    style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}
+  >
+    <div data-osd-pptx="cell" data-osd-pptx-row="0" data-osd-pptx-col="0">Name</div>
+    <div data-osd-pptx="cell" data-osd-pptx-row="0" data-osd-pptx-col="1">Status</div>
+  </div>
+  <div
+    data-osd-pptx="row"
+    data-osd-pptx-row="1"
+    style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}
+  >
+    <div data-osd-pptx="cell" data-osd-pptx-row="1" data-osd-pptx-col="0">Build</div>
+    <div data-osd-pptx="cell" data-osd-pptx-row="1" data-osd-pptx-col="1">Ready</div>
+  </div>
+</div>
+```
+
+Native HTML tables are detected without markers. Marked tables must be
+rectangular; merged cells, nested tables, missing or duplicate indices, and
+orphan row/cell markers are reported as blocking diagnostics. Decorated cells
+remain in the native table, while their supported decorative text and shapes
+are emitted as separate editable overlays; this is retained as a warning in
+the export report.
+
+Native tables remain native PowerPoint table objects (`a:tbl` inside a table
+graphic frame). A proposed group that contains a table is kept flat with its
+table and child objects intact; the
+exporter does not replace table cells with text boxes and rectangles to satisfy
+grouping.
+
+### Font resolution and mixed scripts
+
+The exporter starts with the author CSS `font-family` stack and the nearest
+valid author `lang` on the text element or its ancestors. An absent author
+language remains unknown (`und` in the IR, with no invented OOXML language); UI locale and the export
+machine locale do not stand in for an author language. Latin and East Asian
+text are resolved separately, with the author stack tried first and
+language-aware fallback candidates used only when needed. The resulting faces
+are written to the corresponding PowerPoint `a:latin` and `a:ea` slots while
+the run retains its requested stack, language, and resolution evidence.
+
+The browser checks candidate glyph coverage with two generated sentinel fonts
+and a raster pixel comparison that distinguishes a candidate glyph from a
+fallback glyph. Single characters and emoji with a text/emoji presentation
+selector have bounded probes; unproven combining or joined sequences remain
+`unknown`. Missing or unknown coverage, or a
+replacement whose measured bounds are unsafe, blocks the editable download.
+A replacement that passes coverage, advance, ink-bound, and spacing checks is
+reported as a warning with its requested family, resolved family, script,
+language, reason, and layout status. Latin and East Asian spans receive separate
+spacing corrections. If a replacement introduces collisions at the source size,
+the exporter tries 98%, 95%, and 90% of that size, repeating all safety checks
+before trying another font. Any accepted size adjustment is recorded as
+`font-size-adjusted` in the resolution reasons. The author family is tried first. The same bounded size adjustment may also
+be needed when native glyph features differ from the source, such as ligatures.
+Every adjustment remains visible in the report. Fonts are never embedded: recipient font
+availability remains unknown, and PowerPoint can substitute a different face.
+
+Source advances are measured in the DOM with the author's language, numeric
+variants, and tracking. The app's stylistic switches (`ss01`, `cv11`, `calt`)
+and tabular numerals are normalized to native default glyphs only when those
+advances, source and target ink bounds, and a no-added-collision check pass. The report records
+`font-features-normalized`; alternate glyph shapes may differ. Other explicit
+OpenType switches, variable-font axes, caps variants, and size-adjust settings
+remain blocking until their outlines can be verified. These browser checks do
+not replace PowerPoint display and edit/save/reopen acceptance.
+
+Text wrapping is measured in the browser. Ordinary text boxes use disabled
+native wrapping with observed line breaks preserved as editable soft breaks,
+including explicit `<br>` breaks. For clipped single-line text with CSS ellipsis,
+the export preserves the visible ellipsis and retains the original text in its
+diagnostic report. The browser and PowerPoint text engines can
+produce different glyph metrics, line positions, and wrapping. Editing a font
+can change glyph widths and appearance; lists and table cells may still wrap
+according to PowerPoint. Fonts are not embedded. An unavailable named CSS
+family falls back where possible (a `monospace` fallback uses `Courier New`),
+and PowerPoint may substitute fonts.
+
+Supported content stays native across the whole deck. Circles and supported
+inline SVG `path`, `line`, `polyline`, `polygon`, `rect`, `circle`, and `ellipse`
+primitives become editable native path shapes at their measured positions. CSS
+linear gradients, including linear gradient text fills, use native PowerPoint
+gradient fills. Radial decorations use editable vector layers to preserve the
+CSS centre and radius; radial gradient text and radial fills combined with
+native shape shadows are reported as unsupported. Radial blur remains an editable
+vector approximation.
+Opacity, supported blur, arrows, and rounded geometry use native PowerPoint
+properties. Box-shadow blur is approximated with up to 128 native vector layers
+with the border-box interior excluded, so its edge can differ between engines.
+Imported source images remain separate editable image objects. PNG, JPEG, and
+GIF assets retain their original data when possible; an original SVG asset is
+packaged with a PNG fallback when it has no CSS image filter. Filtered source
+images use the filtered PNG representation. The internal writer accepts only
+the extractor's validated IR and decoded, sanitized assets; it is not a public
+API for importing arbitrary IR or SVG data. `<Steps>` content and finite CSS animations are
+captured in a static final state; the PowerPoint animation timeline is not
+exported, and looping animations may use their first static frame with a
+diagnostic warning.
+
+Unsupported visible content—such as canvas, video, unsupported inline SVG
+filters, masks, clipping paths or paint servers, unsupported CSS filters,
+clipping paths, blend modes, 3D transforms, custom list markers, or ambiguous
+table structures—blocks the editable download. Diagnostics identify the page
+and source object and include an actionable suggestion. A translucent panel
+with `backdrop-filter` is preserved as a panel fill, while the backdrop blur is
+reported as a warning because it is not available as a native PowerPoint
+effect. Fonts are not embedded: the resolved family is retained where
+possible. Safe fallback and vector approximation are reported as warnings;
+unknown or unsafe font evidence remains blocking. Warnings remain in the
+report after a successful export; arbitrary CSS is not guaranteed to be
+pixel-perfect.
+
+The export uses a strict policy for visible content. Unsupported effects or
+ambiguous structures are reported with a page number and a suggested fix, and
+the incomplete file is not downloaded. Font substitutions and supported visual
+approximations are retained as warnings after a successful export. The export
+menu reports progress, supports cancellation, and can download the diagnostics
+report as JSON.
+
+### Quality report
+
+The existing `EditablePptxReport` keeps its page and diagnostic fields and adds
+an additive `quality` object with version `1`. Per-page and total counts keep
+logical sources, IR leaf objects, native leaf objects, writer-generated extra
+objects, group containers, source images, and vector-approximation sources in
+separate fields. Text, tables, shapes, skipped groups, and font-substitution
+sources are also counted. These are structural counts, not a fidelity or
+editability percentage.
+
+The `quality.fonts` entries preserve the requested and resolved faces, author
+language, script, coverage result, substitution reason, and measured layout
+status. `recipientFonts: "unknown"` and `windows: "not-verified"` remain
+explicit report fields. The detailed JSON report is downloaded only when the
+user activates **Download JSON** from the export result; the deck and report
+are not uploaded automatically.
+
+The minimal macOS PowerPoint group edit/save/reopen check has passed. Full
+13-deck regression is still in progress, and Windows remains unverified.
 
 ## What gets shipped
 

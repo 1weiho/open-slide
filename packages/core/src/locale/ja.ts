@@ -112,10 +112,7 @@ export const ja: Locale = {
     exportAsHtml: 'HTML として書き出し',
     exportAsPdf: 'PDF として書き出し',
     exportAsImagePptx: '画像 PPTX として書き出し',
-    exportAsPptx: 'PPTX として書き出し',
-    comingSoon: '近日公開',
-    pptxComingSoonTooltip:
-      '編集可能な PPTX の書き出しはまだ対応していません。それまでは「画像 PPTX として書き出し」をご利用ください。',
+    exportAsPptx: '編集可能な PPTX として書き出し',
     pdfExportFailed: 'PDF の書き出しに失敗しました',
     imagePptxExportFailed: 'PPTX の書き出しに失敗しました',
     pdfExportSafariUnsupported:
@@ -406,6 +403,100 @@ export const ja: Locale = {
     processing: 'ページ {current} / {total} を描画中',
     generating: 'プレゼンテーションを構築中…',
     done: '完了',
+  },
+
+  editablePptxToast: {
+    title: '編集可能な PPTX を書き出し中',
+    preparing: '編集可能な PPTX を準備中（{current} / {total} ページ）',
+    processing: 'ページ {current} / {total} を変換中',
+    generating: 'ファイルを生成中（{current} / {total} ページ）',
+    generated: 'ファイルを生成し、ダウンロードを開始しました',
+    cancelled: '書き出しをキャンセルしました。ファイルはダウンロードされていません。',
+    failed: '書き出しに失敗しました。ファイルはダウンロードされていません。',
+    showDiagnostics: '診断情報を表示',
+    hideDiagnostics: '診断情報を隠す',
+    downloadDiagnostics: 'JSON をダウンロード',
+    errors: {
+      one: '{count} 件のエラー',
+      other: '{count} 件のエラー',
+    },
+    warnings: {
+      one: '{count} 件の警告',
+      other: '{count} 件の警告',
+    },
+    errorLabel: 'エラー',
+    warningLabel: '警告',
+    qualitySummary: '編集可能な構成',
+    pages: {
+      one: '{count} ページ',
+      other: '{count} ページ',
+    },
+    text: {
+      one: '{count} 個のテキスト',
+      other: '{count} 個のテキスト',
+    },
+    tables: {
+      one: '{count} 個の表',
+      other: '{count} 個の表',
+    },
+    sourceImages: {
+      one: '{count} 個の元画像',
+      other: '{count} 個の元画像',
+    },
+    shapes: {
+      one: '{count} 個の図形',
+      other: '{count} 個の図形',
+    },
+    groups: {
+      one: '{count} 個のグループ',
+      other: '{count} 個のグループ',
+    },
+    fontSubstitutions: {
+      one: '{count} 件のソースでフォントを置き換え',
+      other: '{count} 件のソースでフォントを置き換え',
+    },
+    vectorApproximations: {
+      one: '{count} 件のソースでベクター近似を使用',
+      other: '{count} 件のソースでベクター近似を使用',
+    },
+    skippedGroups: {
+      one: '{count} 個のグループを個別のまま保持',
+      other: '{count} 個のグループを個別のまま保持',
+    },
+    showQualityDetails: '書き出しの詳細を表示',
+    hideQualityDetails: '書き出しの詳細を隠す',
+    qualityDetailHeading: 'ページごとの詳細',
+    recipientFontsUnknown: '受け取り側のフォント環境は不明です。',
+    windowsNotVerified: 'Windows では未検証です。',
+    sourceItems: '元の項目',
+    sourceObjects: '元オブジェクト',
+    editableObjects: '編集可能なオブジェクト',
+    generatedParts: '生成された部品',
+    groupContainers: 'グループコンテナー',
+    vectorApproximationSources: 'ベクター近似のソース',
+    fontSubstitutionSources: 'フォント置換のソース',
+    fontDetails: 'フォントの解決',
+    requestedFont: '指定',
+    resolvedFont: '解決後',
+    fontSubstitutionImpact: '解決後のフォントにより、テキストの折り返しが変わる場合があります。',
+    fontUnsafeImpact:
+      'このフォントでは、テキストが折り返されたり、はみ出したりする場合があります。',
+    fontPreservedImpact: 'このソースでは指定されたフォントを保持しました。',
+    fontSubstitutionSuggestion:
+      'レイアウトを正確に保つには、受け取り側の端末に指定フォントをインストールしてください。',
+    reason: '理由',
+    impact: '影響',
+    diagnosticErrorImpact:
+      '書き出しを停止しました。PowerPoint ファイルはダウンロードされていません。',
+    diagnosticWarningImpact: '書き出しは続行しましたが、この部分は確認が必要です。',
+    groupSkippedImpact: 'ソースは編集できますが、グループ全体を 1 つの単位として操作できません。',
+    vectorApproximationImpact:
+      '編集可能なベクター部品で外観を保持しますが、PowerPoint では柔らかな境界や色の段階が異なる場合があります。',
+    page: '{page} ページ目',
+    deck: 'デッキ',
+    code: 'コード',
+    source: 'ソース',
+    suggestion: '提案',
   },
 
   commandMenu: {
