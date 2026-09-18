@@ -1,4 +1,4 @@
-# open-slide workspace
+# Autono workspace
 
 Slides as React components. Each slide lives under `slides/<id>/index.tsx` and default-exports an array of page components. The `@open-slide/core` runtime handles layout, scaling, navigation, thumbnails, and fullscreen play mode — you just write the pages.
 

@@ -362,7 +362,7 @@ const Cover: Page = () => (
             letterSpacing: '0.04em',
           }}
         >
-          open-slide × Replit — Setup Guide
+          Autono × Replit — Setup Guide
         </span>
       </div>
 
@@ -408,8 +408,8 @@ const Cover: Page = () => (
             lineHeight: 1.4,
           }}
         >
-          A hands-on guide to running open-slide in the Replit Agent — install it, preview the
-          examples, and author your own deck without leaving the browser.
+          A hands-on guide to running Autono in the Replit Agent — install it, preview the examples,
+          and author your own deck without leaving the browser.
         </p>
       </div>
 
@@ -640,7 +640,7 @@ const SetUp: Page = () => (
             color: p.cream,
           }}
         >
-          Add open-slide, then run it.
+          Add Autono, then run it.
         </h2>
       </div>
 
@@ -677,7 +677,7 @@ const SetUp: Page = () => (
             </code>
           </Step>
           <Step n="02" title="Open &amp; explore">
-            open-slide boots in the webview. Click any example slide to view it in the deck.
+            Autono boots in the webview. Click any example slide to view it in the deck.
           </Step>
         </div>
 
@@ -697,9 +697,9 @@ const SetUp: Page = () => (
             <Shot
               src={openslideHome}
               ratio={3818 / 1780}
-              alt="open-slide home page running inside Replit with an example slide"
+              alt="Autono home page running inside Replit with an example slide"
             />
-            <Caption>open-slide running in your Repl — examples ready to open.</Caption>
+            <Caption>Autono running in your Repl — examples ready to open.</Caption>
           </div>
         </div>
       </div>
@@ -827,7 +827,7 @@ const AuthorResult: Page = () => (
           <Shot
             src={replitFeaturesResult}
             ratio={3815 / 1783}
-            alt="A finished Replit features slide deck rendered in open-slide inside Replit"
+            alt="A finished Replit features slide deck rendered in Autono inside Replit"
           />
           <Caption>Here: a Replit features overview, generated end to end.</Caption>
         </div>
@@ -931,7 +931,7 @@ const Deploy: Page = () => (
           <Shot
             src={replitDeploy}
             ratio={2950 / 1158}
-            alt="Replit Publishing panel showing the open-slide deck deploying to a live replit.app URL"
+            alt="Replit Publishing panel showing the Autono deck deploying to a live replit.app URL"
           />
           <Caption>Replit builds, bundles, and publishes your deck in seconds.</Caption>
         </div>
@@ -1065,7 +1065,7 @@ export const transition: SlideTransition = {
 };
 
 export const meta: SlideMeta = {
-  title: 'Using open-slide in Replit',
+  title: 'Using Autono in Replit',
   theme: 'replit',
   createdAt: '2026-05-28T12:31:07.896Z',
 };

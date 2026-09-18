@@ -117,7 +117,7 @@ const Footer = ({ section }: { section: string }) => {
         <span style={{ color: 'var(--osd-accent)', marginRight: 12 }}>●</span>
         {section}
         <span style={{ color: rule, margin: '0 18px' }}>·</span>
-        <span style={{ color: text2 }}>open-slide</span>
+        <span style={{ color: text2 }}>Autono</span>
       </span>
       <span style={{ fontVariantNumeric: 'tabular-nums' }}>
         {String(current).padStart(2, '0')} / {String(total).padStart(2, '0')}
@@ -175,7 +175,7 @@ const Cover: Page = () => (
         <span
           style={{ display: 'inline-block', animation: 'osa-typeIn 900ms steps(28, end) both' }}
         >
-          Inside open-slide
+          Inside Autono
         </span>
         <span
           aria-hidden
@@ -1455,7 +1455,7 @@ const Inspector: Page = () => {
             </span>
             {'\n'}
             <span style={{ color: muted }}>&gt;</span>
-            {'\n  '}Inside open-slide
+            {'\n  '}Inside Autono
             {'\n'}
             <span style={{ color: muted }}>&lt;/</span>
             <span style={{ color: violet }}>h1</span>
@@ -1765,7 +1765,7 @@ const Closing: Page = () => {
   );
 };
 
-export const meta: SlideMeta = { title: 'Inside open-slide', createdAt: '2026-05-05T17:45:52Z' };
+export const meta: SlideMeta = { title: 'Inside Autono', createdAt: '2026-05-05T17:45:52Z' };
 
 export default [
   Cover,

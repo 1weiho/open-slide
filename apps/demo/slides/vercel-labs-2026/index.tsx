@@ -218,7 +218,7 @@ const FooterRule = ({ note }: { note?: string }) => (
       }}
     />
     <span className="vl-fade" style={{ animationDelay: '600ms' }}>
-      open-slide · vercel labs
+      Autono · vercel labs
     </span>
     <span className="vl-fade" style={{ animationDelay: '700ms' }}>
       {note ?? '▲ github.com/vercel-labs'}

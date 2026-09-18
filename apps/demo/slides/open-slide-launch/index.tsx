@@ -1,6 +1,6 @@
 import type { DesignSystem, Page, SlideMeta } from '@open-slide/core';
 import type { CSSProperties } from 'react';
-import openSlide from './assets/open-slide.png';
+import openSlide from './assets/autono.svg';
 
 export const design: DesignSystem = {
   palette: { bg: '#f6f3ec', text: '#0a0a0a', accent: '#ff4f1a' },
@@ -203,7 +203,7 @@ const Cover: Page = () => (
       >
         <img
           src={openSlide}
-          alt="open-slide square logo mark"
+          alt="Autono square logo mark"
           style={{ width: 260, height: 260, objectFit: 'cover' }}
         />
       </div>
@@ -221,7 +221,7 @@ const Cover: Page = () => (
           paddingRight: 24,
         }}
       >
-        <Letters text="open-slide" delay={780} step={42} duration={720} />
+        <Letters text="Autono" delay={780} step={42} duration={720} />
       </div>
     </div>
 
@@ -1090,13 +1090,13 @@ const Cli: Page = () => (
         animation: 'mFade 700ms ease 3000ms both',
       }}
     >
-      <span>open-slide.dev</span>
+      <span>autono.co</span>
     </div>
   </div>
 );
 
 export const meta: SlideMeta = {
-  title: 'open-slide — Launch Motion',
+  title: 'Autono — Launch Motion',
   createdAt: '2026-05-02T22:45:01+08:00',
 };
 export default [Cover, Skill, Inspect, Visual, DesignPanel, Assets, Cli] satisfies Page[];

@@ -379,7 +379,7 @@ const Answer: Page = () => (
         color="#ffffff"
         background="var(--osd-accent)"
       >
-        Use the new Morph Transition primitive from open-slide
+        Use the new Morph Transition primitive from Autono
       </DebutLine>
     </div>
   </section>

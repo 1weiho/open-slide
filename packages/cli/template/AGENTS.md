@@ -1,4 +1,4 @@
-# open-slide — Agent Guide
+# Autono — Agent Guide
 
 You are authoring **slides** in this repo. Every slide is arbitrary React code that you write.
 

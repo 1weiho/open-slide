@@ -27,14 +27,14 @@ export function Nav({ githubStars }: { githubStars?: string | null }) {
           className="flex items-center gap-2.5 text-[14px] font-medium tracking-[-0.01em]"
         >
           <Image
-            src="/open-slide.png"
-            alt="open-slide logo"
+            src="/autono.svg"
+            alt="Autono logo"
             width={24}
             height={24}
             priority
             className="block h-6 w-6 rounded-[4px]"
           />
-          <span className="text-[color:var(--color-text)]">open-slide</span>
+          <span className="text-[color:var(--color-text)]">Autono</span>
         </Link>
 
         <nav className="flex items-center gap-6 text-[13.5px] font-medium">
@@ -54,7 +54,7 @@ export function Nav({ githubStars }: { githubStars?: string | null }) {
             Demo
           </a>
           <a
-            href="https://github.com/1weiho/open-slide"
+            href="https://github.com/autonoco/open-slide"
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => posthog.capture('nav_external_link_clicked', { label: 'github' })}

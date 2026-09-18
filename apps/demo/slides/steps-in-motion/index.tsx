@@ -162,7 +162,7 @@ const Footer = ({ note }: { note: string }) => {
 const Cover: Page = () => (
   <div style={fill}>
     <Style />
-    <Eyebrow>open-slide · steps × motion</Eyebrow>
+    <Eyebrow>Autono · steps × motion</Eyebrow>
     <div style={{ alignSelf: 'center' }}>
       <div style={{ ...EYEBROW, color: muted, marginBottom: 28 }}>
         one arrow press · one beat of motion
