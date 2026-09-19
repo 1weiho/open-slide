@@ -38,6 +38,7 @@ const jsonLd = [
       repoUrl,
       'https://www.npmjs.com/package/@open-slide/core',
       'https://www.npmjs.com/package/@open-slide/cli',
+      'https://www.raycast.com/ridemountainpig/open-slide',
     ],
   },
   {

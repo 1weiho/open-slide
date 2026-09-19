@@ -25,6 +25,10 @@ export const faqs: QA[] = [
     a: 'Run `npx @open-slide/cli init` to scaffold a workspace. The CLI sets up the @open-slide/core runtime, the dev server, and example slides. Open the dev server in your browser, ask your agent to draft a deck, and iterate with the visual inspector or by leaving @slide-comment markers in the source.',
   },
   {
+    q: 'Can I search across decks I have already deployed?',
+    a: 'Yes. The Open Slide extension for Raycast searches titles, themes, speaker notes, and page copy across every deployed site you add, then opens the deck at the page that matched. Paste a deployed URL and the extension scans it — nothing to add to your deck repo. Install it at raycast.com/ridemountainpig/open-slide.',
+  },
+  {
     q: 'Is open-slide open source?',
     a: 'Yes. open-slide is MIT-licensed. The runtime ships as @open-slide/core on npm and the scaffolder as @open-slide/cli. Source lives at github.com/1weiho/open-slide.',
   },
