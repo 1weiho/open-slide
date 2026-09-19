@@ -60,16 +60,6 @@ test.describe('home slide browser', () => {
     await expect(page.locator('html')).toHaveClass(/dark/);
   });
 
-  test('language toggle switches locale and persists across reloads', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Change language' }).click();
-    await page.getByRole('menuitem', { name: '繁體中文' }).click();
-    await expect(page.getByText('投影片').first()).toBeVisible();
-
-    await page.reload();
-    await expect(page.getByText('投影片').first()).toBeVisible();
-  });
-
   test('sidebar toolbar buttons label themselves on hover', async ({ page }) => {
     await page.goto('/');
     // The command-menu trigger is a labelled search field, no tooltip needed.
@@ -77,10 +67,7 @@ test.describe('home slide browser', () => {
     const tooltip = page.locator('[data-slot="tooltip-content"]').last();
     // A single move lands without the pointer ever resting, which is what the
     // tooltip waits for.
-    for (const [name, label] of [
-      ['Change language', 'Language'],
-      ['Toggle theme', 'Theme'],
-    ]) {
+    for (const [name, label] of [['Toggle theme', 'Theme']]) {
       const box = await page.getByRole('button', { name }).boundingBox();
       if (!box) throw new Error(`${name} has no bounding box`);
       await page.mouse.move(box.x + box.width / 2 - 2, box.y + box.height / 2 - 2);

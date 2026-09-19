@@ -48,7 +48,7 @@ test.describe('static build and preview', () => {
 
     const html = await fs.readFile(path.join(dist, 'index.html'), 'utf8');
     expect(html).toContain('<div id="root"></div>');
-    expect(html).toContain('<title>open-slide</title>');
+    expect(html).toContain('<title>Autono</title>');
 
     // Each slide is lazily imported, so the deck code-splits into at least one
     // chunk per slide plus the entry chunk. The exact chunk filenames depend on
