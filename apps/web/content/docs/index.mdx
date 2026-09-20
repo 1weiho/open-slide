@@ -10,8 +10,9 @@ natural language; your coding agent writes the React. open-slide handles the
 canvas, scaling, navigation, hot reload, present mode, and export so the agent
 can focus on content.
 
-Every page renders into a fixed **1920 × 1080** canvas. Slides are arbitrary
-React components — not a constrained DSL.
+Every page renders onto one end-to-end canvas selected by the workspace:
+**1920 × 1080** by default, a native **4K / 8K** preset, or explicit width
+and height. Slides are arbitrary React components — not a constrained DSL.
 
 ```npm
 npx @open-slide/cli init
@@ -53,12 +54,14 @@ export default [Cover] satisfies Page[];
 Two rules: the default export is an array of components (one per page), and
 each component fills its container (`width: '100%'` / `height: '100%'`).
 
-## The 1920 × 1080 canvas
+## The configured canvas
 
-The runtime scales the canvas uniformly to fit the viewport, so the same
-slide looks identical on a phone, a 4K monitor, and a beamer — every pixel
-coordinate you write is the coordinate that ships, in preview, present mode,
-and export.
+The runtime scales the selected canvas uniformly to fit the viewport, so the
+same slide looks identical on a phone, a 4K monitor, and a beamer. Set
+`canvas: '4k'`, `canvas: '8k'`, or explicit `{ width, height }` dimensions in
+`open-slide.config.ts`. Source coordinates and exports use that exact canvas;
+native-size captures map 1:1, while previews on smaller screens are uniformly
+downscaled. Projects without the setting use 1920 × 1080.
 
 ## What's next
 

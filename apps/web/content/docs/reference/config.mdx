@@ -43,6 +43,11 @@ export default config;
       default: 'first free port from 5173 upward',
       description: 'Dev server port.',
     },
+    canvas: {
+      type: "'1080p' | '4k' | '8k' | { width: number; height: number }",
+      default: "'1080p'",
+      description: 'Exact source, runtime, and export dimensions.',
+    },
     allowedHosts: {
       type: 'string[] | true',
       default: "Vite's default host check",
@@ -60,6 +65,27 @@ export default config;
     },
   }}
 />
+
+`canvas` selects the same dimensions for authoring, the viewer, and exports:
+
+| Preset | Canvas and output dimensions |
+| --- | ---: |
+| `'1080p'` (default) | 1920 × 1080 |
+| `'4k'` | 3840 × 2160 |
+| `'8k'` | 7680 × 4320 |
+
+Pass explicit dimensions for other aspect ratios:
+
+```ts
+const config: OpenSlideConfig = {
+  canvas: { width: 1080, height: 1350 },
+};
+```
+
+Dimensions must be positive integers no larger than 8192 on either axis, with
+a total area no larger than 8192 × 4320. The default preserves existing
+projects. Source pixel coordinates should be written against the configured
+canvas exactly.
 
 ### `build`
 

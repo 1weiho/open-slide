@@ -22,10 +22,23 @@ The **Export** menu in the slide toolbar exports the active deck directly:
 
 - **HTML** — a static HTML snapshot of the deck. Decks that reference
   assets download as a zip (HTML file + assets folder).
-- **PDF** — one 1920 × 1080 landscape PDF page per deck page. Not supported
-  in Safari.
+- **PDF** — one page per deck page at the configured canvas dimensions and
+  aspect ratio. Not supported in Safari.
 - **PPTX (images)** — each page rendered as an image on a PowerPoint slide.
-  Native editable PPTX export is not available yet.
+  The slide and image capture use the configured canvas dimensions and aspect
+  ratio. Native editable PPTX export is not available yet.
+
+The output target is set in `open-slide.config.ts`:
+
+```ts
+const config: OpenSlideConfig = {
+  canvas: '4k',
+};
+```
+
+This changes the source canvas and output together. Presets can be replaced
+with explicit dimensions such as `canvas: { width: 1080, height: 1350 }`.
+Slide source should use the configured canvas's native pixel coordinates.
 
 ## What gets shipped
 

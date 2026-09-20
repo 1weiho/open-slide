@@ -109,6 +109,7 @@ export const ja: Locale = {
     moreActions: 'その他の操作',
     toastCopyLinkSuccess: 'リンクをクリップボードにコピーしました',
     toastCopyLinkFailed: 'リンクのコピーに失敗しました',
+    canvasSize: 'キャンバス',
     exportAsHtml: 'HTML として書き出し',
     exportAsPdf: 'PDF として書き出し',
     exportAsImagePptx: '画像 PPTX として書き出し',

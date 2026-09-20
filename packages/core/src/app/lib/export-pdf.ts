@@ -1,16 +1,20 @@
 import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { type CanvasSize, getPrintSupersample } from '../../canvas.ts';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from './canvas';
 import { designToCssVars } from './design';
 import { nextPaint, sleep } from './dom';
 import { SlidePageProvider } from './page-context';
 import { isFrameAnimationSettled, waitForDataWaitfor, waitForFonts } from './print-ready';
-import { CANVAS_HEIGHT, CANVAS_WIDTH, type SlideModule } from './sdk';
+import type { SlideModule } from './sdk';
 
 const PRINT_ROOT_ID = 'os-print-root';
 const PRINT_STYLE_ID = 'os-print-style';
 
-const PRINT_STYLES = `
-@page { size: ${CANVAS_WIDTH}px ${CANVAS_HEIGHT}px; margin: 0; }
+export function getPrintStyles(target: CanvasSize): string {
+  const supersample = getPrintSupersample(target);
+  return `
+@page { size: ${target.width}px ${target.height}px; margin: 0; }
 
 @media screen {
   #${PRINT_ROOT_ID} {
@@ -37,8 +41,8 @@ const PRINT_STYLES = `
     background: #fff !important;
   }
   #${PRINT_ROOT_ID} .os-print-frame {
-    width: ${CANVAS_WIDTH}px !important;
-    height: ${CANVAS_HEIGHT}px !important;
+    width: ${target.width}px !important;
+    height: ${target.height}px !important;
     background: #fff;
     color: #000;
     overflow: hidden;
@@ -51,17 +55,14 @@ const PRINT_STYLES = `
     page-break-after: auto;
     break-after: auto;
   }
-  /* Supersample: Chrome rasterizes filtered/composited layers (e.g. filter:
-     blur, mix-blend-mode) at the layer's CSS-pixel size, so a blurred
-     gradient on a 1920×1080 page bakes in at ~1× DPI and bands when the PDF
-     is viewed scaled up. zoom:2 doubles the layer raster size; scale(0.5)
-     composites it back to 1920×1080. Vector content (text, plain CSS
-     gradients, SVG) stays vector through both transforms. */
+  /* Chrome rasterizes filtered/composited layers at their CSS-pixel size. The
+     legacy 1920×1080 canvas keeps its 2× workaround; non-default canvases are
+     authored at target density and stay 1× to avoid oversized intermediates. */
   #${PRINT_ROOT_ID} .os-print-supersample {
-    width: ${CANVAS_WIDTH}px !important;
-    height: ${CANVAS_HEIGHT}px !important;
-    zoom: 2;
-    transform: scale(0.5);
+    width: ${target.width}px !important;
+    height: ${target.height}px !important;
+    zoom: ${supersample.zoom};
+    transform: scale(${supersample.inverseScale});
     transform-origin: top left;
   }
   /* Chromium serializes box-shadow and CSS gradients as PDF transparency
@@ -80,6 +81,7 @@ const PRINT_STYLES = `
   }
 }
 `;
+}
 
 export function isSafari(): boolean {
   if (typeof navigator === 'undefined') return false;
@@ -108,10 +110,9 @@ export async function exportSlideAsPdf(
   if (pages.length === 0) return;
 
   const total = pages.length;
-
   const style = document.createElement('style');
   style.id = PRINT_STYLE_ID;
-  style.textContent = PRINT_STYLES;
+  style.textContent = getPrintStyles({ width: CANVAS_WIDTH, height: CANVAS_HEIGHT });
   document.head.appendChild(style);
 
   const root = document.createElement('div');

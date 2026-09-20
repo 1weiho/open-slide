@@ -4,10 +4,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { isTypingTarget } from '@/lib/keys';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn, pad2 } from '@/lib/utils';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/canvas';
 import type { DesignSystem } from '../lib/design';
 import { SlidePageProvider } from '../lib/page-context';
 import type { Page } from '../lib/sdk';
-import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../lib/sdk';
 import type { SlideTransition } from '../lib/transition';
 import { SlideCanvas } from './slide-canvas';
 
