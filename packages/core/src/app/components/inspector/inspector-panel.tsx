@@ -35,6 +35,7 @@ import { useAgentSocketConnected } from '@/lib/use-agent-socket';
 import { useLocale } from '@/lib/use-locale';
 import { cn, round2 } from '@/lib/utils';
 import type { Locale } from '../../../locale/types';
+import { ArrangePanel } from './arrange-panel';
 import { AssetPickerDialog } from './asset-picker-dialog';
 import { type SelectedTarget, useInspector } from './inspector-provider';
 
@@ -77,6 +78,7 @@ export function InspectorPanel() {
     active,
     slideId,
     selected,
+    selection,
     setSelected,
     bufferOps,
     pendingCount,
@@ -104,18 +106,10 @@ export function InspectorPanel() {
       setSnapshot(null);
       return;
     }
-    let anchor = selected.anchor;
-    if (!anchor.isConnected) {
-      const next = findElementByLine(slideId, selected.line, selected.column);
-      if (next) {
-        anchor = next;
-        setSelected({ ...selected, anchor: next });
-      } else {
-        return;
-      }
-    }
+    const anchor = selected.anchor;
+    if (!anchor.isConnected) return;
     setSnapshot(readSnapshot(anchor));
-  }, [selected, setSelected, slideId, reloadCounter, pendingCount, opsVersion]);
+  }, [selected, reloadCounter, pendingCount, opsVersion]);
 
   // Freeze slide animations while editing so commits don't replay motion.
   useEffect(() => {
@@ -272,70 +266,78 @@ export function InspectorPanel() {
           </div>
         </>
       }
-      footer={<CommentsSection selected={pinSelected} onAdd={add} />}
+      footer={
+        selection.length > 1 ? undefined : <CommentsSection selected={pinSelected} onAdd={add} />
+      }
     >
-      {pinSnapshot.text !== null && (
+      <ArrangePanel />
+      {selection.length <= 1 && (
         <>
-          <Section title={t.inspector.contentSection}>
-            <ContentField
-              snapshot={pinSnapshot}
-              apply={apply}
-              onSelectionChange={setContentSelection}
+          <Separator />
+          {pinSnapshot.text !== null && (
+            <>
+              <Section title={t.inspector.contentSection}>
+                <ContentField
+                  snapshot={pinSnapshot}
+                  apply={apply}
+                  onSelectionChange={setContentSelection}
+                />
+              </Section>
+              <Separator />
+            </>
+          )}
+
+          <Section title={t.inspector.typographySection}>
+            <FontSizeField snapshot={typographySnapshot} apply={applyTextStyle} />
+            <FontWeightField snapshot={typographySnapshot} apply={applyTextStyle} />
+            <StyleToggles snapshot={typographySnapshot} apply={applyTextStyle} />
+            <LineHeightField snapshot={pinSnapshot} apply={apply} />
+            <LetterSpacingField snapshot={pinSnapshot} apply={apply} />
+            <TextAlignField snapshot={pinSnapshot} apply={apply} />
+          </Section>
+
+          <Separator />
+
+          <Section title={t.inspector.colorSection}>
+            <ColorField
+              label={t.inspector.textColor}
+              value={typographySnapshot.color}
+              onChange={(v) => applyTextStyle([{ kind: 'set-style', key: 'color', value: v }])}
+              clearable={false}
+            />
+            <ColorField
+              label={t.inspector.backgroundColor}
+              value={pinSnapshot.backgroundColor ?? '#ffffff'}
+              dim={!pinSnapshot.backgroundColor}
+              onChange={(v) => apply([{ kind: 'set-style', key: 'backgroundColor', value: v }])}
+              onClear={() => apply([{ kind: 'set-style', key: 'backgroundColor', value: null }])}
+              clearable
             />
           </Section>
-          <Separator />
-        </>
-      )}
 
-      <Section title={t.inspector.typographySection}>
-        <FontSizeField snapshot={typographySnapshot} apply={applyTextStyle} />
-        <FontWeightField snapshot={typographySnapshot} apply={applyTextStyle} />
-        <StyleToggles snapshot={typographySnapshot} apply={applyTextStyle} />
-        <LineHeightField snapshot={pinSnapshot} apply={apply} />
-        <LetterSpacingField snapshot={pinSnapshot} apply={apply} />
-        <TextAlignField snapshot={pinSnapshot} apply={apply} />
-      </Section>
+          {pinSnapshot.imageSrc !== null && (
+            <>
+              <Separator />
+              <Section title={t.inspector.imageSection}>
+                <ImageField src={pinSnapshot.imageSrc} anchor={pinSelected.anchor} />
+              </Section>
+            </>
+          )}
 
-      <Separator />
-
-      <Section title={t.inspector.colorSection}>
-        <ColorField
-          label={t.inspector.textColor}
-          value={typographySnapshot.color}
-          onChange={(v) => applyTextStyle([{ kind: 'set-style', key: 'color', value: v }])}
-          clearable={false}
-        />
-        <ColorField
-          label={t.inspector.backgroundColor}
-          value={pinSnapshot.backgroundColor ?? '#ffffff'}
-          dim={!pinSnapshot.backgroundColor}
-          onChange={(v) => apply([{ kind: 'set-style', key: 'backgroundColor', value: v }])}
-          onClear={() => apply([{ kind: 'set-style', key: 'backgroundColor', value: null }])}
-          clearable
-        />
-      </Section>
-
-      {pinSnapshot.imageSrc !== null && (
-        <>
-          <Separator />
-          <Section title={t.inspector.imageSection}>
-            <ImageField src={pinSnapshot.imageSrc} anchor={pinSelected.anchor} />
-          </Section>
-        </>
-      )}
-
-      {pinSnapshot.placeholder && (
-        <>
-          <Separator />
-          <Section title={t.inspector.imagePlaceholderSection}>
-            <PlaceholderField
-              slideId={slideId}
-              hint={pinSnapshot.placeholder.hint}
-              line={pinSelected.line}
-              column={pinSelected.column}
-              applyEdit={applyEdit}
-            />
-          </Section>
+          {pinSnapshot.placeholder && (
+            <>
+              <Separator />
+              <Section title={t.inspector.imagePlaceholderSection}>
+                <PlaceholderField
+                  slideId={slideId}
+                  hint={pinSnapshot.placeholder.hint}
+                  line={pinSelected.line}
+                  column={pinSelected.column}
+                  applyEdit={applyEdit}
+                />
+              </Section>
+            </>
+          )}
         </>
       )}
     </PanelShell>
@@ -343,6 +345,7 @@ export function InspectorPanel() {
 }
 
 const EDITING_FREEZE_CSS = `
+[data-inspector-editing] { touch-action: none; }
 [data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *),
 [data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *)::before,
 [data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *)::after {
@@ -1069,19 +1072,6 @@ function parseLetterSpacing(value: string): number {
   if (!value || value === 'normal') return 0;
   const n = parseFloat(value);
   return Number.isFinite(n) ? round2(n) : 0;
-}
-
-function findElementByLine(slideId: string, line: number, column: number): HTMLElement | null {
-  const root = document.querySelector('[data-inspector-root]');
-  if (!root) return null;
-  const tagged = root.querySelector<HTMLElement>(`[data-slide-loc="${line}:${column}"]`);
-  if (tagged) return tagged;
-  const candidates = root.querySelectorAll<HTMLElement>('*');
-  for (const el of candidates) {
-    const hit = findSlideSource(el, slideId, { hostOnly: true });
-    if (hit && hit.line === line) return hit.anchor;
-  }
-  return null;
 }
 
 function useReloadCounter(): number {

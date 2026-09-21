@@ -1,6 +1,6 @@
 ---
 title: Inspector
-description: Click any element on the canvas to tweak it visually.
+description: Move, resize, align, and edit slide elements directly on the canvas.
 ---
 
 ![Open-slide inspector with the property panel docked beside the canvas, editing a selected element's typography and colour](/assets/screenshots/inspector.webp)
@@ -14,7 +14,52 @@ The inspector exposes two ways to edit a slide:
 
 ### Visual editor
 
-Click an element. A property panel opens with editable inputs:
+Click an element to select it. Drag the selection to move it, use its handles
+to resize it, or drag the rotation handle. Smart guides appear when an edge
+or center lines up with another element or the slide. Positions and sizes
+use slide pixels, so the same movement works at any canvas zoom.
+
+The **Arrange** section provides exact position, size, and rotation inputs,
+plus alignment and layer controls:
+
+- **Align** — align left, center, right, top, middle, or bottom. Choose the
+  slide or the combined selection as the reference.
+- **Distribute** — select at least three elements to give them equal gaps
+  horizontally or vertically.
+- **Layer** — bring forward, send backward, bring to front, or send to back
+  within the element's CSS stacking context.
+- **Smart guides** — toggle snapping, or hold `Alt` to bypass it temporarily.
+- **Select parent** — move up to the containing element to arrange a whole
+  component, card, or text block. Hold `Cmd` / `Ctrl` while clicking to select a child
+  inside an already selected container.
+
+Hold `Shift` while clicking to add or remove elements from the selection.
+Drag the combined selection to move all selected elements together. Drag on
+empty canvas to select elements with a marquee. **Select all** selects the
+slide's editable elements without selecting both parents and their children.
+Width, height, and rotation inputs apply to one element at a time.
+
+| Shortcut | Action |
+| --- | --- |
+| Arrow keys | Move the selection by 1 slide pixel |
+| `Shift` + arrow keys | Move by 10 slide pixels |
+| `Shift` while dragging | Constrain movement to one axis |
+| `Shift` while resizing | Preserve the aspect ratio |
+| `Alt` while dragging | Temporarily bypass smart guides |
+| `Shift` while rotating | Snap to 15-degree increments |
+| `Escape` during a drag | Cancel the current gesture |
+| `Cmd` / `Ctrl` + `A` | Select all editable objects |
+| `Cmd` / `Ctrl` + `Z` | Undo |
+| `Cmd` / `Ctrl` + `Shift` + `Z` | Redo |
+| `Cmd` / `Ctrl` + `S` | Save pending edits |
+
+Inline text spans inherit their containing block's layout. Use **Select
+parent** to move that block. Elements rendered repeatedly from the same JSX
+definition also share source styles; select a unique parent container to
+arrange an instance independently. The panel explains when a selected element
+cannot be transformed.
+
+The property panel also includes editable inputs for:
 
 - **Text** — replace inline.
 - **Typography** — font family, weight, size, letter-spacing.
