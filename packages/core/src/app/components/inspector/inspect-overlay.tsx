@@ -96,6 +96,20 @@ export function InspectOverlay() {
   const [scale, setScale] = useState(1);
   const displayed = localTargets ?? selection;
 
+  useEffect(() => {
+    if (!active) return;
+    const root = document.querySelector<HTMLElement>('[data-inspector-root]');
+    if (!root) return;
+    const style = document.createElement('style');
+    style.textContent = EDITING_FREEZE_CSS;
+    document.head.appendChild(style);
+    root.dataset.inspectorEditing = 'true';
+    return () => {
+      style.remove();
+      delete root.dataset.inspectorEditing;
+    };
+  }, [active]);
+
   useLayoutEffect(() => {
     if (!active) return;
     void opsVersion;
@@ -427,7 +441,14 @@ export function InspectOverlay() {
       openCrop(hit.anchor);
     };
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || inlineEdit || isTypingTarget(event.target)) return;
+      if (
+        event.key !== 'Escape' ||
+        event.isComposing ||
+        event.keyCode === 229 ||
+        inlineEdit ||
+        isTypingTarget(event.target)
+      )
+        return;
       if (
         event.target instanceof Element &&
         event.target.closest('[role="dialog"], [role="menu"], [role="listbox"]')
@@ -622,3 +643,19 @@ export function InspectOverlay() {
     </div>
   );
 }
+
+const EDITING_FREEZE_CSS = `
+[data-inspector-editing] { touch-action: none; }
+[data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *),
+[data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *)::before,
+[data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *)::after {
+  animation-duration: 1ms !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  animation-fill-mode: forwards !important;
+  transition: none !important;
+  view-transition-name: none !important;
+  cursor: default !important;
+  user-select: none;
+}
+`;

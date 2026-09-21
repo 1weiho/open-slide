@@ -1,5 +1,6 @@
 import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Minus, Plus } from 'lucide-react';
 import { type RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useHistory } from '@/components/history-provider';
 import { findSlideSource } from '@/lib/inspector/fiber';
 import {
   isEditableTextContainer,
@@ -7,20 +8,21 @@ import {
   pickElement,
   pickInspectorTarget,
 } from '@/lib/inspector/pick-target';
+import {
+  restoreTextSelection,
+  selectionTextOffsets,
+  styleContext,
+} from '@/lib/inspector/text-selection';
+import type { EditOp } from '@/lib/inspector/use-editor';
+import { isTypingTarget } from '@/lib/keys';
 import { useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
-import {
-  collectDomTextParts,
-  type DomTextPart,
-  type InlineEditTarget,
-  readEditableText,
-  useInspector,
-} from './inspector-provider';
+import { type InlineEditTarget, readEditableText, useInspector } from './inspector-provider';
 
 type RelRect = { left: number; top: number; width: number; height: number };
 type TextRange = { start: number; end: number };
 
-const RANGE_STYLE_KEYS = new Set(['fontSize', 'fontWeight', 'fontStyle', 'color']);
+const RANGE_STYLE_KEYS = new Set(['fontSize', 'fontWeight', 'fontStyle', 'fontFamily', 'color']);
 const TOOLBAR_GAP = 8;
 const TOOLBAR_HEIGHT = 36;
 
@@ -39,87 +41,78 @@ function pickEditableAnchor(
   return hit;
 }
 
-// Click-to-edit lives outside the inspector: it works in the plain slide
-// view, without activating inspect mode or opening the panel.
 export function InlineEditLayer() {
-  const { slideId, active, inlineEdit, startInlineEdit, stopInlineEdit } = useInspector();
+  const { slideId, active, inlineEdit, selected, selection, startInlineEdit, stopInlineEdit } =
+    useInspector();
   const layerRef = useRef<HTMLDivElement>(null);
 
-  // Plain view: a single click on a text run starts editing with the caret
-  // at the click point. A double-click's second click lands on the
-  // now-contenteditable element, so native word selection still happens.
   useEffect(() => {
-    if (import.meta.env.PROD || active) return;
-    const onClick = (e: MouseEvent) => {
-      if (inlineEdit?.anchor.contains(e.target as Node)) return;
-      if (!isInspectableEventTarget(e.target)) return;
-      const hit = pickEditableAnchor(e.clientX, e.clientY, slideId);
+    if (!active) return;
+    const onDblClick = (event: MouseEvent) => {
+      if (inlineEdit?.anchor.contains(event.target as Node)) return;
+      if (!isInspectableEventTarget(event.target)) return;
+      const hit = pickEditableAnchor(event.clientX, event.clientY, slideId);
       if (!hit) return;
-      e.preventDefault();
-      e.stopPropagation();
-      startInlineEdit({
-        line: hit.line,
-        column: hit.column,
-        anchor: hit.anchor,
-        point: { x: e.clientX, y: e.clientY },
-        selectWord: false,
-      });
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      startInlineEdit({ ...hit, point: { x: event.clientX, y: event.clientY }, selectWord: true });
     };
-    window.addEventListener('click', onClick, true);
-    return () => window.removeEventListener('click', onClick, true);
-  }, [active, slideId, inlineEdit, startInlineEdit]);
-
-  // Inspect mode keeps double-click entry — a single click there means
-  // "select the element for the panel".
-  useEffect(() => {
-    if (import.meta.env.PROD || !active) return;
-    const onDblClick = (e: MouseEvent) => {
-      if (inlineEdit?.anchor.contains(e.target as Node)) return;
-      if (!isInspectableEventTarget(e.target)) return;
-      const hit = pickEditableAnchor(e.clientX, e.clientY, slideId);
-      if (!hit) return;
-      e.preventDefault();
-      e.stopPropagation();
-      startInlineEdit({
-        line: hit.line,
-        column: hit.column,
-        anchor: hit.anchor,
-        point: { x: e.clientX, y: e.clientY },
-        selectWord: true,
-      });
+    const onKey = (event: KeyboardEvent) => {
+      if (
+        event.key !== 'Enter' ||
+        event.isComposing ||
+        event.keyCode === 229 ||
+        inlineEdit ||
+        !selected ||
+        selection.length !== 1
+      )
+        return;
+      if (
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        event.shiftKey ||
+        isTypingTarget(event.target)
+      )
+        return;
+      if (
+        event.target instanceof Element &&
+        event.target.closest(
+          '[data-inspector-ui], [role="dialog"], [role="menu"], [role="listbox"], button, a',
+        )
+      )
+        return;
+      if (!isEditableTextContainer(selected.anchor)) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      startInlineEdit(selected);
     };
     window.addEventListener('dblclick', onDblClick, true);
-    return () => window.removeEventListener('dblclick', onDblClick, true);
-  }, [active, slideId, inlineEdit, startInlineEdit]);
+    window.addEventListener('keydown', onKey, true);
+    return () => {
+      window.removeEventListener('dblclick', onDblClick, true);
+      window.removeEventListener('keydown', onKey, true);
+    };
+  }, [active, slideId, inlineEdit, selected, selection.length, startInlineEdit]);
 
   useEffect(() => {
     if (!inlineEdit) return;
     const { anchor } = inlineEdit;
-    const onPointerDown = (e: PointerEvent) => {
-      if (anchor.contains(e.target as Node)) return;
-      if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) return;
-      // In the plain view a single click on another text run switches the
-      // session to it; in inspect mode a click means "select", so just exit.
-      if (!active && isInspectableEventTarget(e.target)) {
-        const hit = pickEditableAnchor(e.clientX, e.clientY, slideId);
-        if (hit) {
-          e.preventDefault();
-          startInlineEdit({
-            line: hit.line,
-            column: hit.column,
-            anchor: hit.anchor,
-            point: { x: e.clientX, y: e.clientY },
-            selectWord: false,
-          });
-          return;
-        }
-      }
+    const onPointerDown = (event: PointerEvent) => {
+      if (anchor.contains(event.target as Node) || !isInspectableEventTarget(event.target)) return;
       stopInlineEdit();
     };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      e.preventDefault();
-      e.stopPropagation();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.isComposing || event.keyCode === 229) return;
+      if (
+        event.target instanceof Element &&
+        event.target.closest(
+          '[data-inspector-ui], [role="dialog"], [role="menu"], [role="listbox"]',
+        )
+      )
+        return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
       stopInlineEdit();
     };
     window.addEventListener('pointerdown', onPointerDown, true);
@@ -128,69 +121,7 @@ export function InlineEditLayer() {
       window.removeEventListener('pointerdown', onPointerDown, true);
       window.removeEventListener('keydown', onKey, true);
     };
-  }, [inlineEdit, active, slideId, startInlineEdit, stopInlineEdit]);
-
-  // Hovering an editable text run in the plain view shows a text cursor and
-  // a light outline — the discoverability cue for click-to-edit.
-  useEffect(() => {
-    if (import.meta.env.PROD || active) return;
-    const styleEl = document.createElement('style');
-    styleEl.textContent = HOVER_HINT_CSS;
-    document.head.appendChild(styleEl);
-    let hovered: HTMLElement | null = null;
-    let raf = 0;
-    const clear = () => {
-      const el = hovered;
-      hovered = null;
-      if (!el) return;
-      if (el.getAttribute(TEXT_HOVER_ATTR) !== 'true') {
-        el.removeAttribute(TEXT_HOVER_ATTR);
-        return;
-      }
-      el.setAttribute(TEXT_HOVER_ATTR, 'out');
-      window.setTimeout(() => {
-        // Re-entering the element mid-fade flips the value back to 'true'.
-        if (el.getAttribute(TEXT_HOVER_ATTR) === 'out') el.removeAttribute(TEXT_HOVER_ATTR);
-      }, HOVER_FADE_MS + 40);
-    };
-    const onMove = (e: PointerEvent) => {
-      const { clientX, clientY, target } = e;
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const hit = isInspectableEventTarget(target)
-          ? pickEditableAnchor(clientX, clientY, slideId)
-          : null;
-        const anchor =
-          hit && hit.anchor.getAttribute('contenteditable') !== 'true' ? hit.anchor : null;
-        if (anchor === hovered) return;
-        clear();
-        if (anchor) {
-          hovered = anchor;
-          if (anchor.hasAttribute(TEXT_HOVER_ATTR)) {
-            // Mid-fade-out re-entry: transition straight back to visible.
-            anchor.setAttribute(TEXT_HOVER_ATTR, 'true');
-          } else {
-            anchor.setAttribute(TEXT_HOVER_ATTR, 'in');
-            requestAnimationFrame(() => {
-              if (hovered === anchor && anchor.getAttribute(TEXT_HOVER_ATTR) === 'in') {
-                anchor.setAttribute(TEXT_HOVER_ATTR, 'true');
-              }
-            });
-          }
-        }
-      });
-    };
-    window.addEventListener('pointermove', onMove, true);
-    return () => {
-      window.removeEventListener('pointermove', onMove, true);
-      cancelAnimationFrame(raf);
-      hovered = null;
-      for (const el of document.querySelectorAll(`[${TEXT_HOVER_ATTR}]`)) {
-        el.removeAttribute(TEXT_HOVER_ATTR);
-      }
-      styleEl.remove();
-    };
-  }, [active, slideId]);
+  }, [inlineEdit, stopInlineEdit]);
 
   if (import.meta.env.PROD) return null;
   return (
@@ -200,51 +131,11 @@ export function InlineEditLayer() {
           key={inlineEdit.session ?? `${inlineEdit.line}:${inlineEdit.column}`}
           target={inlineEdit}
           layerRef={layerRef}
-          showOutline={!active}
         />
       )}
     </div>
   );
 }
-
-const TEXT_HOVER_ATTR = 'data-slide-text-hover';
-const HOVER_FADE_MS = 160;
-
-// The outline fades by transitioning outline-color through transient
-// attribute values: 'in' (transparent) → 'true' (visible) on enter, and
-// 'true' → 'out' (transparent) before removal on leave.
-const HOVER_HINT_CSS = `
-[data-inspector-root] [${TEXT_HOVER_ATTR}],
-[data-inspector-root] [${TEXT_HOVER_ATTR}] * {
-  cursor: text !important;
-}
-[data-inspector-root] [${TEXT_HOVER_ATTR}] {
-  outline: 2px solid rgba(59, 130, 246, 0.5) !important;
-  outline-offset: 2px !important;
-}
-[data-inspector-root] [${TEXT_HOVER_ATTR}='in'],
-[data-inspector-root] [${TEXT_HOVER_ATTR}='out'] {
-  outline-color: rgba(59, 130, 246, 0) !important;
-}
-@media (prefers-reduced-motion: no-preference) {
-  [data-inspector-root] [${TEXT_HOVER_ATTR}] {
-    transition: outline-color ${HOVER_FADE_MS}ms ease !important;
-  }
-  /* The 'in' frame must land on transparent instantly; with the transition
-     active it would itself animate away from the pre-hover outline-color. */
-  [data-inspector-root] [${TEXT_HOVER_ATTR}='in'] {
-    transition: none !important;
-  }
-  @keyframes osd-inline-outline-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-}
-`;
 
 const INLINE_EDITING_CSS = `
 [data-inspector-root] [data-slide-editing][data-slide-editing],
@@ -261,14 +152,23 @@ const INLINE_EDITING_CSS = `
 function ActiveInlineEditor({
   target,
   layerRef,
-  showOutline,
 }: {
   target: InlineEditTarget;
   layerRef: RefObject<HTMLDivElement | null>;
-  showOutline: boolean;
 }) {
-  const { bufferOps, stopInlineEdit } = useInspector();
+  const {
+    bufferOps,
+    stopInlineEdit,
+    setInlineSelection,
+    registerInlineStyle,
+    panelOpen,
+    panelHidden,
+    opsVersion,
+    committing,
+  } = useInspector();
+  const history = useHistory();
   const [sel, setSel] = useState<TextRange | null>(null);
+  const selectionRef = useRef<TextRange | null>(null);
   const { anchor } = target;
   const rect = useAnchorRect(anchor, layerRef);
   const previousTextRef = useRef(readEditableText(anchor));
@@ -282,37 +182,78 @@ function ActiveInlineEditor({
     bufferOps(target.line, target.column, anchor, [{ kind: 'set-text', value, prevText }]);
   }, [anchor, target.line, target.column, bufferOps]);
 
+  const applyStyleOps = useCallback(
+    (ops: EditOp[]) => {
+      if (!anchor.isConnected || ops.some((op) => op.kind !== 'set-style')) return false;
+      commit();
+      const range = selectionTextOffsets(anchor) ?? selectionRef.current;
+      const focused = document.activeElement;
+      const prevText = readEditableText(anchor);
+      bufferOps(
+        target.line,
+        target.column,
+        anchor,
+        ops.map((op): EditOp => {
+          if (op.kind !== 'set-style') return op;
+          return range && range.end > range.start && RANGE_STYLE_KEYS.has(op.key)
+            ? { ...op, kind: 'set-text-range-style', ...range, prevText }
+            : { ...op, prevText };
+        }),
+      );
+      if (range) restoreTextSelection(anchor, range);
+      if (
+        focused instanceof HTMLElement &&
+        focused !== document.body &&
+        !anchor.contains(focused)
+      ) {
+        focused.focus({ preventScroll: true });
+      }
+      return true;
+    },
+    [anchor, target.line, target.column, bufferOps, commit],
+  );
+
+  useEffect(() => registerInlineStyle(applyStyleOps), [registerInlineStyle, applyStyleOps]);
+  useEffect(() => {
+    void opsVersion;
+    previousTextRef.current = readEditableText(anchor);
+  }, [anchor, opsVersion]);
+
   const applyTextStyle = useCallback(
     (key: string, value: string | null) => {
-      if (!anchor.isConnected) return;
-      if (sel && sel.end > sel.start && RANGE_STYLE_KEYS.has(key)) {
-        bufferOps(target.line, target.column, anchor, [
-          { kind: 'set-text-range-style', start: sel.start, end: sel.end, key, value },
-        ]);
-        return;
-      }
-      bufferOps(target.line, target.column, anchor, [
-        { kind: 'set-style', key, value, prevText: readEditableText(anchor) },
-      ]);
+      applyStyleOps([{ kind: 'set-style', key, value }]);
     },
-    [anchor, sel, target.line, target.column, bufferOps],
+    [applyStyleOps],
   );
 
   const toggleBold = useCallback(() => {
     const bold = parseInt(getComputedStyle(styleContext(anchor, sel)).fontWeight, 10) >= 600;
-    applyTextStyle('fontWeight', bold ? null : '700');
+    applyTextStyle('fontWeight', bold ? '400' : '700');
   }, [anchor, sel, applyTextStyle]);
 
   const toggleItalic = useCallback(() => {
     const italic = getComputedStyle(styleContext(anchor, sel)).fontStyle === 'italic';
-    applyTextStyle('fontStyle', italic ? null : 'italic');
+    applyTextStyle('fontStyle', italic ? 'normal' : 'italic');
   }, [anchor, sel, applyTextStyle]);
+
+  const applyHistory = useCallback(
+    (redo: boolean) => {
+      if (committing) return;
+      commit();
+      const range = selectionTextOffsets(anchor) ?? selectionRef.current;
+      if (redo) history.redo();
+      else history.undo();
+      previousTextRef.current = readEditableText(anchor);
+      if (range) restoreTextSelection(anchor, range);
+    },
+    [anchor, commit, committing, history.undo, history.redo],
+  );
 
   // The setup effect must run exactly once per anchor — re-running it would
   // re-place the caret and clobber the user's live selection — so everything
   // with an unstable identity is reached through latest-refs.
-  const latestRef = useRef({ commit, toggleBold, toggleItalic });
-  latestRef.current = { commit, toggleBold, toggleItalic };
+  const latestRef = useRef({ commit, toggleBold, toggleItalic, applyHistory });
+  latestRef.current = { commit, toggleBold, toggleItalic, applyHistory };
   const initialCaretRef = useRef({ point: target.point, selectWord: target.selectWord ?? false });
 
   useEffect(() => {
@@ -326,8 +267,12 @@ function ActiveInlineEditor({
 
     const onBeforeInput = (e: Event) => {
       const ev = e as InputEvent;
+      if (ev.isComposing) return;
       const type = ev.inputType;
-      if (type === 'insertParagraph' || type === 'insertLineBreak') {
+      if (type === 'historyUndo' || type === 'historyRedo') {
+        ev.preventDefault();
+        latestRef.current.applyHistory(type === 'historyRedo');
+      } else if (type === 'insertParagraph' || type === 'insertLineBreak') {
         ev.preventDefault();
         document.execCommand('insertLineBreak');
       } else if (type === 'insertFromPaste' || type === 'insertFromDrop') {
@@ -350,6 +295,7 @@ function ActiveInlineEditor({
     };
     const onCompositionEnd = () => latestRef.current.commit();
     const onKeyDown = (e: KeyboardEvent) => {
+      if (e.isComposing || e.keyCode === 229) return;
       if ((e.metaKey || e.ctrlKey) && !e.altKey) {
         const key = e.key.toLowerCase();
         if (key === 'b') {
@@ -358,13 +304,21 @@ function ActiveInlineEditor({
         } else if (key === 'i') {
           e.preventDefault();
           latestRef.current.toggleItalic();
+        } else if (key === 'z' || (key === 'y' && e.ctrlKey)) {
+          e.preventDefault();
+          latestRef.current.applyHistory(e.shiftKey || key === 'y');
         }
       }
     };
     const onSelectionChange = () => {
       const offsets = selectionTextOffsets(anchor);
       if (offsets === null) return;
-      setSel(offsets.end > offsets.start ? offsets : null);
+      if (selectionRef.current?.start === offsets.start && selectionRef.current.end === offsets.end)
+        return;
+      selectionRef.current = offsets;
+      const range = offsets.end > offsets.start ? offsets : null;
+      setSel(range);
+      setInlineSelection(range);
     };
 
     anchor.addEventListener('beforeinput', onBeforeInput);
@@ -372,6 +326,7 @@ function ActiveInlineEditor({
     anchor.addEventListener('compositionend', onCompositionEnd);
     anchor.addEventListener('keydown', onKeyDown);
     document.addEventListener('selectionchange', onSelectionChange);
+    onSelectionChange();
     return () => {
       anchor.removeEventListener('beforeinput', onBeforeInput);
       anchor.removeEventListener('input', onInput);
@@ -380,12 +335,13 @@ function ActiveInlineEditor({
       document.removeEventListener('selectionchange', onSelectionChange);
       styleEl.remove();
       if (anchor.isConnected) {
+        if (document.activeElement === anchor) anchor.blur();
         anchor.removeAttribute('contenteditable');
         anchor.removeAttribute('spellcheck');
         anchor.removeAttribute('data-slide-editing');
       }
     };
-  }, [anchor]);
+  }, [anchor, setInlineSelection]);
 
   // An HMR remount replaces the anchor node (taking its contenteditable
   // attribute with it), so a disconnected anchor ends the session.
@@ -403,26 +359,15 @@ function ActiveInlineEditor({
   if (!rect) return null;
   return (
     <>
-      {showOutline && (
-        <div
-          className="absolute"
-          style={{
-            left: rect.left,
-            top: rect.top,
-            width: rect.width,
-            height: rect.height,
-            outline: '2px solid #3b82f6',
-            animation: 'osd-inline-outline-in 160ms ease-out',
-          }}
+      {(!panelOpen || panelHidden) && (
+        <TextToolbar
+          anchor={anchor}
+          layerRef={layerRef}
+          rect={rect}
+          sel={sel}
+          applyStyle={applyTextStyle}
         />
       )}
-      <TextToolbar
-        anchor={anchor}
-        layerRef={layerRef}
-        rect={rect}
-        sel={sel}
-        applyStyle={applyTextStyle}
-      />
     </>
   );
 }
@@ -553,14 +498,14 @@ function TextToolbar({
       <ToolbarIconButton
         label={t.inspector.boldAria}
         pressed={bold}
-        onClick={() => applyStyle('fontWeight', bold ? null : '700')}
+        onClick={() => applyStyle('fontWeight', bold ? '400' : '700')}
       >
         <Bold className="size-3.5" />
       </ToolbarIconButton>
       <ToolbarIconButton
         label={t.inspector.italicAria}
         pressed={italic}
-        onClick={() => applyStyle('fontStyle', italic ? null : 'italic')}
+        onClick={() => applyStyle('fontStyle', italic ? 'normal' : 'italic')}
       >
         <Italic className="size-3.5" />
       </ToolbarIconButton>
@@ -674,13 +619,6 @@ function FontSizeInput({
   );
 }
 
-function styleContext(anchor: HTMLElement, sel: TextRange | null): HTMLElement {
-  if (!sel) return anchor;
-  const node = window.getSelection()?.anchorNode;
-  const el = node instanceof HTMLElement ? node : (node?.parentElement ?? null);
-  return el && anchor.contains(el) ? el : anchor;
-}
-
 function focusAndPlaceCaret(
   anchor: HTMLElement,
   point: { x: number; y: number } | undefined,
@@ -731,61 +669,6 @@ function caretRangeAtPoint(x: number, y: number): Range | null {
   }
   range.collapse(true);
   return range;
-}
-
-// Map the live DOM selection to offsets in the normalized editable text —
-// the same coordinate space `set-text-range-style` ops use.
-export function selectionTextOffsets(root: HTMLElement): TextRange | null {
-  const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) return null;
-  const range = selection.getRangeAt(0);
-  if (!root.contains(range.startContainer) || !root.contains(range.endContainer)) return null;
-  const parts: DomTextPart[] = [];
-  collectDomTextParts(root, parts);
-  const start = pointToTextOffset(parts, range.startContainer, range.startOffset);
-  const end = pointToTextOffset(parts, range.endContainer, range.endOffset);
-  if (start === null || end === null) return null;
-  return start <= end ? { start, end } : { start: end, end: start };
-}
-
-function pointToTextOffset(parts: DomTextPart[], container: Node, offset: number): number | null {
-  const probe = document.createRange();
-  try {
-    probe.setStart(container, offset);
-  } catch {
-    return null;
-  }
-  probe.collapse(true);
-  let total = 0;
-  for (const part of parts) {
-    if (part.node === container && part.node instanceof Text) {
-      const full = collapsedTextSlice(part.node, part.node.data);
-      const prefix = collapsedTextSlice(part.node, part.node.data.slice(0, offset));
-      const leading = Math.max(0, full.indexOf(part.current));
-      return total + Math.min(Math.max(prefix.length - leading, 0), part.current.length);
-    }
-    let cmp: number;
-    try {
-      cmp = probe.comparePoint(part.node, 0);
-    } catch {
-      return null;
-    }
-    if (cmp > 0) break;
-    if (cmp < 0) {
-      total += part.current.length;
-      continue;
-    }
-    break;
-  }
-  return total;
-}
-
-function collapsedTextSlice(node: Text, value: string): string {
-  const whiteSpace = node.parentElement ? getComputedStyle(node.parentElement).whiteSpace : '';
-  if (whiteSpace === 'pre' || whiteSpace === 'pre-wrap' || whiteSpace === 'break-spaces') {
-    return value;
-  }
-  return value.replace(/\s+/g, ' ');
 }
 
 function rgbToHex(value: string): string | null {

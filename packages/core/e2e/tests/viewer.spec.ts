@@ -71,8 +71,10 @@ test.describe('slide viewer', () => {
     await expect(overview).toBeHidden();
   });
 
-  test('wheel scrolling navigates pages', async ({ page }) => {
+  test('wheel scrolling navigates pages in Preview', async ({ page }) => {
     await openSlide(page, 'alpha');
+    await page.getByTitle('Preview', { exact: true }).click();
+    await expect(page.locator('aside[data-inspector-ui]')).toHaveCount(0);
     await editorCanvas(page).hover();
     await page.mouse.wheel(0, 120);
     await expect(page).toHaveURL(/[?&]p=2/);
