@@ -2,4 +2,4 @@
 '@open-slide/core': patch
 ---
 
-Show Preview and Edit as an icon switcher with a clear active mode.
+Use eye and pencil icons to switch between Preview and Edit with a clear active mode.
