@@ -42,12 +42,7 @@ export function Agents() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2.5 text-[15px] font-medium text-[color:var(--color-text-soft)] transition-colors hover:text-[color:var(--color-text)]"
               >
-                <img
-                  src={`/assets/${agent.file}${agent.variants ? '-light' : ''}.svg`}
-                  alt=""
-                  aria-hidden
-                  className="agent-mono h-[18px] w-auto shrink-0 object-contain"
-                />
+                <AgentLogo agent={agent} />
                 {agent.name}
               </a>
             </li>
@@ -55,5 +50,29 @@ export function Agents() {
         </ul>
       </Container>
     </section>
+  );
+}
+
+function AgentLogo({ agent }: { agent: Agent }) {
+  const cls = 'h-[18px] w-auto shrink-0 object-contain';
+
+  if (!agent.variants) {
+    return <img src={`/assets/${agent.file}.svg`} alt="" aria-hidden className={cls} />;
+  }
+  return (
+    <>
+      <img
+        src={`/assets/${agent.file}-light.svg`}
+        alt=""
+        aria-hidden
+        className={`${cls} logo-light`}
+      />
+      <img
+        src={`/assets/${agent.file}-dark.svg`}
+        alt=""
+        aria-hidden
+        className={`${cls} logo-dark`}
+      />
+    </>
   );
 }
