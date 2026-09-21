@@ -1,5 +1,35 @@
 # @open-slide/core
 
+## 2.0.0-beta.2
+
+### Major Changes
+
+- Upgrade the toolchain to React 19, Vite 8, and TypeScript 7, dedupe `react`/`react-dom` so workspaces still on React 18 resolve a single copy, and require Node.js 20.19+. See the v1 → v2 migration guide at https://open-slide.dev/docs/migrate-to-v2.
+
+### Minor Changes
+
+- Click any text element in the slide view to edit it inline, with a floating toolbar for font size, bold, italic, text color, and alignment.
+
+- [#481](https://github.com/1weiho/open-slide/pull/481) [`66ab298`](https://github.com/1weiho/open-slide/commit/66ab298a5e11fa3038020ac2d088131a2d499a7e) Thanks [@1weiho](https://github.com/1weiho)! - Add "Export as PPTX": converts every page into native, editable PowerPoint text boxes, shapes, and images directly in the browser.
+
+- [#457](https://github.com/1weiho/open-slide/pull/457) [`7df6d47`](https://github.com/1weiho/open-slide/commit/7df6d476ab9defb8f918ab6e84b749581e8eeceb) Thanks [@1weiho](https://github.com/1weiho)! - Keep the outgoing page opaque during a page transition so cuts no longer dip through the deck background; set `throughBackground: true` on a transition to let its exit fade out.
+
+### Patch Changes
+
+- Clean up the runtime: drop unused theme tokens, locale keys, and dead code, consolidate duplicated internal helpers, serve the bundled Geist webfont in dev when the package resolves outside the project directory, and write a valid `DesignSystem` import when saving a design to a slide whose `@open-slide/core` import is type-only.
+
+- Restyle `dev`, `build`, and `preview` output with an open-slide header and URL block, and stop surfacing Vite branding in server logs.
+
+- Teach the authoring skills and agent guide to write speech scripts into the built-in `notes` export instead of separate markdown files.
+
+- [#457](https://github.com/1weiho/open-slide/pull/457) [`7df6d47`](https://github.com/1weiho/open-slide/commit/7df6d476ab9defb8f918ab6e84b749581e8eeceb) Thanks [@1weiho](https://github.com/1weiho)! - Rewrite the transition family around a held exit and a fade-in enter, and make the webfont/style injection snippet update on HMR instead of skipping.
+
+- Slide toolbar back button returns to the previous browser location and preserves home query state like folder filters.
+
+- Redesign the viewer chrome: an inset shell with elevated content cards replaces structural borders, the sidebar gains a brand mark, command search field, and footer controls, system views use line icons, page headers are compact, micro-interactions are refined, and the slide card actions menu opens when clicked.
+
+- Refuse to start when a stale `vite` devDependency shadows the Vite copy core depends on, and point at the v1 → v2 migration guide.
+
 ## 2.0.0-beta.1
 
 ### Patch Changes

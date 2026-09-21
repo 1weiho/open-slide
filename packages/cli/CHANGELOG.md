@@ -1,5 +1,19 @@
 # @open-slide/cli
 
+## 2.0.0-beta.2
+
+### Major Changes
+
+- Scaffold workspaces on React 19 without a `vite` devDependency — `vercel.json` and `netlify.toml` now declare the build command and output directory instead of relying on framework detection.
+
+### Patch Changes
+
+- Redesign the `init` flow with guided prompts, a dependency-install spinner, and a next-steps card.
+
+- Teach the authoring skills and agent guide to write speech scripts into the built-in `notes` export instead of separate markdown files.
+
+- [#457](https://github.com/1weiho/open-slide/pull/457) [`7df6d47`](https://github.com/1weiho/open-slide/commit/7df6d476ab9defb8f918ab6e84b749581e8eeceb) Thanks [@1weiho](https://github.com/1weiho)! - Rewrite the transition family around a held exit and a fade-in enter, and make the webfont/style injection snippet update on HMR instead of skipping.
+
 ## 2.0.0-beta.1
 
 ### Patch Changes
