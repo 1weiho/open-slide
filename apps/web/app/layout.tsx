@@ -1,7 +1,6 @@
 import { RootProvider } from 'fumadocs-ui/provider/next';
 import './global.css';
 import { GeistMono } from 'geist/font/mono';
-import { GeistPixelSquare } from 'geist/font/pixel';
 import { GeistSans } from 'geist/font/sans';
 import type { Metadata, Viewport } from 'next';
 import { appName, gitConfig, siteUrl } from '@/lib/shared';
@@ -84,7 +83,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#FCFCFC' },
+    { media: '(prefers-color-scheme: light)', color: '#FFFFFF' },
     { media: '(prefers-color-scheme: dark)', color: '#0A0A0A' },
   ],
 };
@@ -94,7 +93,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${GeistSans.className} ${GeistSans.variable} ${GeistMono.variable} ${GeistPixelSquare.variable}`}
+      className={`${GeistSans.className} ${GeistSans.variable} ${GeistMono.variable}`}
     >
       <body className="flex flex-col min-h-screen">
         <RootProvider>{children}</RootProvider>

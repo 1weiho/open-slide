@@ -1,6 +1,7 @@
+import { Container } from './frame';
+
 type Agent = {
   name: string;
-  /** asset file stem; if no theme variants, `variants: false` */
   file: string;
   variants: boolean;
   url: string;
@@ -22,67 +23,37 @@ const agents: Agent[] = [
 ];
 
 export function Agents() {
-  // double the list so the marquee loops seamlessly
-  const track = [...agents, ...agents];
-
   return (
-    <section id="agents" className="relative overflow-hidden">
-      <div className="border-t border-[color:var(--color-rule)] bg-[color:var(--color-panel)]">
-        <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-10 sm:py-12">
-          <h2
-            data-reveal
-            className="font-[family-name:var(--font-sans)] text-[18px] sm:text-[20px] text-[color:var(--color-text-soft)] font-normal"
-          >
-            Bring your own agent. Anything that edits React works.
-          </h2>
-        </div>
-
-        <div
-          className="relative"
-          style={{
-            WebkitMaskImage: 'linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)',
-            maskImage: 'linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)',
-          }}
+    <section id="agents" className="border-t border-[color:var(--color-rule-soft)]">
+      <Container className="flex flex-col gap-8 py-16 sm:py-20">
+        <h2
+          data-reveal
+          className="max-w-[40ch] text-[17px] leading-[1.5] text-[color:var(--color-text-soft)] sm:text-[18px]"
         >
-          <div className="marquee-track py-10 will-change-transform">
-            {track.map((agent, i) => (
+          Bring your own agent. Anything that edits React works.
+        </h2>
+
+        <ul data-reveal className="flex flex-wrap items-center gap-x-8 gap-y-4 sm:gap-x-10">
+          {agents.map((agent) => (
+            <li key={agent.file}>
               <a
-                key={`${agent.file}-${i}`}
                 href={agent.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label={agent.name}
-                className="inline-flex items-center gap-4 transition-opacity hover:opacity-70"
+                className="inline-flex items-center gap-2.5 text-[15px] font-medium text-[color:var(--color-text-soft)] transition-colors hover:text-[color:var(--color-text)]"
               >
-                <AgentLogo agent={agent} />
-                <span className="font-[family-name:var(--font-sans)] text-[color:var(--color-text)] text-[22px] sm:text-[28px] lg:text-[36px] tracking-[-0.02em]">
-                  {agent.name}
-                </span>
+                <img
+                  src={`/assets/${agent.file}${agent.variants ? '-light' : ''}.svg`}
+                  alt=""
+                  aria-hidden
+                  className="agent-mono h-[18px] w-auto shrink-0 object-contain"
+                />
+                {agent.name}
               </a>
-            ))}
-          </div>
-        </div>
-      </div>
+            </li>
+          ))}
+        </ul>
+      </Container>
     </section>
-  );
-}
-
-function AgentLogo({ agent }: { agent: Agent }) {
-  const alt = agent.name;
-  const cls = 'h-[18px] sm:h-[22px] lg:h-[28px] w-auto object-contain shrink-0';
-
-  if (!agent.variants) {
-    return <img src={`/assets/${agent.file}.svg`} alt={alt} className={cls} />;
-  }
-  return (
-    <>
-      <img src={`/assets/${agent.file}-dark.svg`} alt={alt} className={`${cls} logo-dark`} />
-      <img
-        src={`/assets/${agent.file}-light.svg`}
-        alt=""
-        aria-hidden
-        className={`${cls} logo-light`}
-      />
-    </>
   );
 }

@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { AgentIconList } from './agent-icon-list';
+import { Container, SectionHeading } from './frame';
 
 type Step = {
   num: string;
@@ -72,58 +73,49 @@ function renderLine(line: string) {
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="relative">
-      <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-20 sm:py-32 lg:py-40">
-        <h2
-          data-reveal="blur"
-          className="text-[32px] sm:text-[44px] lg:text-[60px] leading-[1.1] sm:leading-[1.05] tracking-[-0.035em] font-medium max-w-[820px] mb-14 sm:mb-20"
-        >
-          Slides as code.
-          <br />
-          <span className="font-[family-name:var(--font-pixel)] text-[color:var(--color-muted)]">
-            Crafted by agents.
-          </span>
-        </h2>
+    <section id="how-it-works" className="border-t border-[color:var(--color-rule-soft)]">
+      <Container className="py-20 sm:py-28">
+        <SectionHeading
+          title="Slides as code, crafted by agents."
+          lead="Three steps from an empty folder to a live, editable deck."
+        />
 
-        <ol
-          data-reveal
-          className="floating grid grid-cols-1 md:grid-cols-3 gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[8px] overflow-hidden"
-        >
+        <ol className="grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-8">
           {steps.map((s, i) => (
             <li
               key={s.num}
-              data-reveal="fade"
-              style={{ '--reveal-delay': `${i * 90}ms` } as CSSProperties}
-              className="group relative p-8 sm:p-10 lg:p-12 bg-[color:var(--color-panel)] flex flex-col gap-7"
+              data-reveal
+              style={{ '--reveal-delay': `${i * 80}ms` } as CSSProperties}
+              className="flex flex-col gap-5 border-t border-[color:var(--color-rule)] pt-6"
             >
-              <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.08em] uppercase text-[color:var(--color-muted)]">
+              <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.08em] text-[color:var(--color-muted)]">
                 {s.num} · {s.kicker}
               </span>
 
               <div>
-                <h3 className="text-[22px] sm:text-[26px] lg:text-[30px] font-medium tracking-[-0.025em] leading-[1.15]">
+                <h3 className="text-[18px] font-medium leading-[1.3] tracking-[-0.02em] sm:text-[20px]">
                   {s.title}
                 </h3>
-                <p className="mt-4 text-[15px] leading-[1.65] text-[color:var(--color-text-soft)] max-w-[36ch]">
+                <p className="mt-2 max-w-[36ch] text-[15px] leading-[1.6] text-[color:var(--color-text-soft)]">
                   {s.body}
                 </p>
               </div>
 
-              <div className="rounded-[6px] border border-[color:var(--color-rule-soft)] bg-[color:var(--color-panel-hi)] p-4 font-[family-name:var(--font-mono)] text-[13px]">
+              <div className="rounded-lg border border-[color:var(--color-rule-soft)] bg-[color:var(--color-panel-hi)] px-4 py-3.5 font-[family-name:var(--font-mono)] text-[13px]">
                 <div className="flex items-center gap-2">
                   <span className="text-[color:var(--color-accent)]">{s.code.prompt}</span>
-                  <span className="text-[color:var(--color-text)] truncate">
+                  <span className="truncate text-[color:var(--color-text)]">
                     {renderLine(s.code.line)}
                   </span>
                 </div>
-                <div className="mt-3 text-[11px] tracking-[0.08em] uppercase text-[color:var(--color-muted)]">
+                <div className="mt-3 text-[11px] uppercase tracking-[0.08em] text-[color:var(--color-muted)]">
                   {s.code.tail}
                 </div>
               </div>
             </li>
           ))}
         </ol>
-      </div>
+      </Container>
     </section>
   );
 }

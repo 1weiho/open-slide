@@ -1,7 +1,7 @@
 'use client';
 
 import { type CSSProperties, useEffect, useState } from 'react';
-import { SectionRule } from './frame';
+import { Container, SectionHeading } from './frame';
 
 type Variant = {
   word: string;
@@ -67,24 +67,17 @@ export function Anatomy() {
   const lines = buildCode(v);
 
   return (
-    <section id="anatomy" className="relative">
-      <SectionRule />
-      <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-20 sm:py-32 lg:py-40">
-        <h2
-          data-reveal="blur"
-          className="text-[32px] sm:text-[44px] lg:text-[60px] leading-[1.1] sm:leading-[1.05] tracking-[-0.035em] font-medium max-w-[820px] mb-14 sm:mb-20"
-        >
-          A slide is a file.
-          <br />
-          <span className="font-[family-name:var(--font-pixel)] text-[color:var(--color-muted)]">
-            Just React, nothing else.
-          </span>
-        </h2>
+    <section id="anatomy" className="border-t border-[color:var(--color-rule-soft)]">
+      <Container className="py-20 sm:py-28">
+        <SectionHeading
+          title="A slide is a file. Just React, nothing else."
+          lead="No DSL, no template language. Each page is a React component on a fixed 1920×1080 canvas, so anything you can write in code, you can put on a slide."
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* code pane */}
           <div data-reveal className="lg:col-span-7">
-            <div className="floating relative rounded-[8px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden">
+            <div className="relative overflow-hidden rounded-xl border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]">
               <div className="flex items-center justify-between px-4 sm:px-5 h-10 sm:h-11 border-b border-[color:var(--color-rule-soft)] font-[family-name:var(--font-mono)] text-[12px] text-[color:var(--color-muted)]">
                 <div className="flex items-center gap-3">
                   <span
@@ -121,7 +114,7 @@ export function Anatomy() {
             style={{ '--reveal-delay': '120ms' } as CSSProperties}
             className="lg:col-span-5"
           >
-            <div className="floating relative rounded-[8px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-4 sm:p-5">
+            <div className="relative rounded-xl border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-4 sm:p-5">
               <div className="flex items-center justify-between font-[family-name:var(--font-mono)] text-[11px] tracking-[0.08em] uppercase text-[color:var(--color-muted)] mb-4">
                 <span>rendered output</span>
                 <span className="flex items-center gap-2">
@@ -142,7 +135,7 @@ export function Anatomy() {
             </div>
           </div>
         </div>
-      </div>
+      </Container>
     </section>
   );
 }

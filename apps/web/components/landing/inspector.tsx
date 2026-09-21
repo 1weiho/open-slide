@@ -10,27 +10,20 @@ import {
   useTransform,
 } from 'motion/react';
 import { type CSSProperties, type ReactNode, useEffect, useRef } from 'react';
-import { SectionRule } from './frame';
+import { Container, SectionHeading } from './frame';
 
 export function Inspector() {
   return (
-    <section id="inspector" className="relative">
-      <SectionRule />
-      <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-20 sm:py-32 lg:py-40">
-        <h2
-          data-reveal="blur"
-          className="text-[32px] sm:text-[44px] lg:text-[60px] leading-[1.1] sm:leading-[1.05] tracking-[-0.035em] font-medium max-w-[860px] mb-14 sm:mb-20"
-        >
-          Talk to the agent.
-          <br />
-          <span className="font-[family-name:var(--font-pixel)] text-[color:var(--color-muted)]">
-            Or just tap the canvas.
-          </span>
-        </h2>
+    <section id="inspector" className="border-t border-[color:var(--color-rule-soft)]">
+      <Container className="py-20 sm:py-28">
+        <SectionHeading
+          title="Talk to the agent. Or just tap the canvas."
+          lead="Leave a comment for the agent to apply, or click any element and edit it in place. Both paths write back to the same source file."
+        />
 
         <div
           data-reveal
-          className="floating grid grid-cols-1 lg:grid-cols-2 gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[8px] overflow-hidden"
+          className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-[color:var(--color-rule)] bg-[color:var(--color-rule)] lg:grid-cols-2"
         >
           <FeatureCell
             num="01"
@@ -59,7 +52,7 @@ export function Inspector() {
             visual={<VisualEditorVisual />}
           />
         </div>
-      </div>
+      </Container>
     </section>
   );
 }
@@ -82,17 +75,17 @@ function FeatureCell({
     <div
       data-reveal="fade"
       style={{ '--reveal-delay': delay } as CSSProperties}
-      className="group relative bg-[color:var(--color-panel)] flex flex-col gap-10 p-8 sm:p-10 lg:p-12"
+      className="group relative flex flex-col gap-8 bg-[color:var(--color-panel)] p-7 sm:p-8 lg:p-10"
     >
       <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.08em] uppercase text-[color:var(--color-muted)]">
         {num} · {kicker}
       </span>
 
       <div>
-        <h3 className="text-[22px] sm:text-[26px] lg:text-[30px] font-medium tracking-[-0.025em] leading-[1.15] max-w-[28ch]">
+        <h3 className="max-w-[28ch] text-[20px] font-medium leading-[1.25] tracking-[-0.02em] sm:text-[22px]">
           {title}
         </h3>
-        <p className="mt-4 text-[15px] leading-[1.65] text-[color:var(--color-text-soft)] max-w-[44ch]">
+        <p className="mt-3 max-w-[44ch] text-[15px] leading-[1.6] text-[color:var(--color-text-soft)]">
           {body}
         </p>
       </div>
@@ -145,7 +138,7 @@ function AgentApplyVisual() {
   return (
     <div
       ref={ref}
-      className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden select-none [box-shadow:var(--shadow-edge)] transition-shadow duration-300 hover:[box-shadow:var(--shadow-floating)]"
+      className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden select-none"
     >
       <div
         className="relative aspect-[16/9] grid grid-cols-[1fr_42%]"
@@ -486,7 +479,7 @@ function VisualEditorVisual() {
   return (
     <div
       ref={ref}
-      className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden select-none [box-shadow:var(--shadow-edge)] transition-shadow duration-300 hover:[box-shadow:var(--shadow-floating)]"
+      className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden select-none"
     >
       <div
         className="relative aspect-[16/9] grid grid-cols-[1fr_42%]"

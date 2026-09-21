@@ -3,25 +3,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import posthog from 'posthog-js';
-import { useEffect, useState } from 'react';
 import { ThemeToggle } from './theme-toggle';
 
 export function Nav({ githubStars }: { githubStars?: string | null }) {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
   return (
-    <header
-      data-scrolled={scrolled ? '' : undefined}
-      className="site-nav sticky top-0 z-40 bg-[color:var(--color-ink)]/85 backdrop-blur-md border-b border-[color:var(--color-rule-soft)]"
-    >
-      <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 h-14 flex items-center justify-between">
+    <header className="sticky top-0 z-40 border-b border-[color:var(--color-rule-soft)] bg-[color:var(--color-ink)]/80 backdrop-blur-md">
+      <div className="mx-auto flex h-14 w-full max-w-[1200px] items-center justify-between px-6 sm:px-8">
         <Link
           href="/"
           className="flex items-center gap-2.5 text-[14px] font-medium tracking-[-0.01em]"
@@ -37,10 +24,10 @@ export function Nav({ githubStars }: { githubStars?: string | null }) {
           <span className="text-[color:var(--color-text)]">open-slide</span>
         </Link>
 
-        <nav className="flex items-center gap-6 text-[13.5px] font-medium">
+        <nav className="flex items-center gap-5 text-[14px] font-medium">
           <Link
             href="/docs"
-            className="hidden md:inline text-[color:var(--color-muted)] hover:text-[color:var(--color-text)] transition-colors"
+            className="hidden text-[color:var(--color-muted)] transition-colors hover:text-[color:var(--color-text)] md:inline"
           >
             Docs
           </Link>
@@ -49,7 +36,7 @@ export function Nav({ githubStars }: { githubStars?: string | null }) {
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => posthog.capture('nav_external_link_clicked', { label: 'demo' })}
-            className="hidden md:inline text-[color:var(--color-muted)] hover:text-[color:var(--color-text)] transition-colors"
+            className="hidden text-[color:var(--color-muted)] transition-colors hover:text-[color:var(--color-text)] md:inline"
           >
             Demo
           </a>
@@ -58,23 +45,22 @@ export function Nav({ githubStars }: { githubStars?: string | null }) {
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => posthog.capture('nav_external_link_clicked', { label: 'github' })}
-            className="hidden md:inline-flex items-center gap-2 text-[color:var(--color-muted)] hover:text-[color:var(--color-text)] transition-colors"
+            className="hidden items-center gap-1.5 text-[color:var(--color-muted)] transition-colors hover:text-[color:var(--color-text)] md:inline-flex"
           >
             <span>GitHub</span>
             {githubStars ? (
               <span
                 aria-label={`${githubStars} GitHub stars`}
-                className="inline-flex items-center gap-1 rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] px-2 py-[2px] font-[family-name:var(--font-mono)] text-[10.5px] text-[color:var(--color-text)]"
+                className="font-[family-name:var(--font-mono)] text-[11px] text-[color:var(--color-dim)]"
               >
-                <span aria-hidden>★</span>
-                {githubStars}
+                ★ {githubStars}
               </span>
             ) : null}
           </a>
           <ThemeToggle />
           <Link
             href="/docs"
-            className="pressable hidden sm:inline-flex h-8 items-center rounded-full bg-[color:var(--color-text)] px-3.5 text-[13px] font-medium text-[color:var(--color-ink)] hover:opacity-80"
+            className="pressable hidden h-8 items-center rounded-full bg-[color:var(--color-text)] px-3.5 text-[13px] font-medium text-[color:var(--color-ink)] hover:opacity-80 sm:inline-flex"
           >
             Get started
           </Link>
