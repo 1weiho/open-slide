@@ -4,7 +4,7 @@ import {
   applyToPoint,
   type ColorParser,
   decompose,
-  hasRadius,
+  geometryFor,
   IDENTITY,
   isIdentity,
   isVisibleColor,
@@ -603,24 +603,6 @@ function radiiOf(cs: CSSStyleDeclaration, w: number, h: number): Radii {
     w,
     h,
   );
-}
-
-function geometryFor(radii: Radii, w: number, h: number): Geometry {
-  if (!hasRadius(radii)) return { kind: 'rect' };
-  const [tl, tr, br, bl] = radii;
-  const same =
-    Math.abs(tl.x - tr.x) < 0.5 &&
-    Math.abs(tl.x - br.x) < 0.5 &&
-    Math.abs(tl.x - bl.x) < 0.5 &&
-    Math.abs(tl.y - tr.y) < 0.5 &&
-    Math.abs(tl.y - br.y) < 0.5 &&
-    Math.abs(tl.y - bl.y) < 0.5;
-  if (same && Math.abs(tl.x - tl.y) < 0.5) {
-    if (tl.x >= Math.min(w, h) / 2 - 0.5) return { kind: 'ellipse' };
-    return { kind: 'roundRect', radius: tl.x };
-  }
-  if (same && tl.x >= w / 2 - 0.5 && tl.y >= h / 2 - 0.5) return { kind: 'ellipse' };
-  return { kind: 'custom', radii };
 }
 
 function shrinkRadii(radii: Radii, by: number): Radii {

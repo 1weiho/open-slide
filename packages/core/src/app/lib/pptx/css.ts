@@ -1,3 +1,5 @@
+import type { Geometry } from './scene';
+
 export type Rgba = { r: number; g: number; b: number; a: number };
 export type ColorParser = (value: string) => Rgba | null;
 
@@ -428,6 +430,16 @@ export function normalizeRadii(radii: Radii, w: number, h: number): Radii {
 
 export function hasRadius(radii: Radii): boolean {
   return radii.some((c) => c.x > 0.01 && c.y > 0.01);
+}
+
+export function geometryFor(radii: Radii, w: number, h: number): Geometry {
+  if (!hasRadius(radii)) return { kind: 'rect' };
+  const [tl, ...rest] = radii;
+  const uniform = rest.every((c) => Math.abs(c.x - tl.x) < 0.5 && Math.abs(c.y - tl.y) < 0.5);
+  if (!uniform) return { kind: 'custom', radii };
+  if (tl.x >= w / 2 - 0.5 && tl.y >= h / 2 - 0.5) return { kind: 'ellipse' };
+  if (Math.abs(tl.x - tl.y) < 0.5) return { kind: 'roundRect', radius: tl.x };
+  return { kind: 'custom', radii };
 }
 
 export function parseBlurPx(filter: string): number {

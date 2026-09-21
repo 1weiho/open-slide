@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   applyTextTransform,
   decompose,
+  geometryFor,
   gradientLineLength,
   multiply,
   normalizeRadii,
@@ -168,5 +169,37 @@ describe('misc', () => {
     expect(applyTextTransform('hello world', 'uppercase')).toBe('HELLO WORLD');
     expect(applyTextTransform('hello world', 'capitalize')).toBe('Hello World');
     expect(applyTextTransform('Hello', 'none')).toBe('Hello');
+  });
+});
+
+describe('geometryFor', () => {
+  const uniform = (x: number, y = x): Parameters<typeof geometryFor>[0] => [
+    { x, y },
+    { x, y },
+    { x, y },
+    { x, y },
+  ];
+  it('keeps a pill as a rounded rectangle', () => {
+    const radii = normalizeRadii(uniform(9999), 540, 56);
+    expect(geometryFor(radii, 540, 56)).toEqual({ kind: 'roundRect', radius: 28 });
+  });
+  it('treats a fully rounded square as an ellipse', () => {
+    const radii = normalizeRadii(uniform(9999), 64, 64);
+    expect(geometryFor(radii, 64, 64)).toEqual({ kind: 'ellipse' });
+  });
+  it('treats 50% corners on a wide box as an ellipse', () => {
+    expect(geometryFor(uniform(100, 30), 200, 60)).toEqual({ kind: 'ellipse' });
+  });
+  it('maps small uniform corners to a rounded rectangle', () => {
+    expect(geometryFor(uniform(12), 300, 80)).toEqual({ kind: 'roundRect', radius: 12 });
+  });
+  it('falls back to a custom path for mixed or elliptical corners', () => {
+    const mixed = uniform(12);
+    mixed[2] = { x: 0, y: 0 };
+    expect(geometryFor(mixed, 300, 80).kind).toBe('custom');
+    expect(geometryFor(uniform(40, 10), 300, 80).kind).toBe('custom');
+  });
+  it('maps no radius to a plain rectangle', () => {
+    expect(geometryFor(uniform(0), 300, 80)).toEqual({ kind: 'rect' });
   });
 });
