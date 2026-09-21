@@ -162,4 +162,64 @@ export default () => (
     expect(result.source).toContain("<p style={{ color: 'blue' }}>Body</p>");
     expect(result.source).not.toContain("color: 'red'");
   });
+
+  it('stops a failed text sequence while saving its successful prefix and independent edits', () => {
+    const source = '<section><h1>Title</h1><p>Body</p></section>';
+    const result = applyEditBatch(source, [
+      edit(source, '<p', [{ kind: 'set-text', value: 'Body first', prevText: 'Body' }]),
+      {
+        ...edit(source, '<p', [
+          {
+            kind: 'set-text-range-style',
+            start: -1,
+            end: 4,
+            key: 'fontWeight',
+            value: '700',
+            prevText: 'Body first',
+          },
+        ]),
+        dependsOn: 0,
+      },
+      {
+        ...edit(source, '<p', [{ kind: 'set-text', value: 'Body final', prevText: 'Body first' }]),
+        dependsOn: 1,
+      },
+      edit(source, '<h1', [style('color', 'blue')]),
+      {
+        ...edit(source, '<p', [{ kind: 'set-text', value: 'Body last', prevText: 'Body final' }]),
+        dependsOn: 2,
+      },
+    ]);
+    expect(result.results).toEqual([
+      { ok: true },
+      { ok: false, error: 'invalid text range' },
+      { ok: false, error: 'an earlier edit for this text failed' },
+      { ok: true },
+      { ok: false, error: 'an earlier edit for this text failed' },
+    ]);
+    expect(result.source).toContain('<p>Body first</p>');
+    expect(result.source).toContain("<h1 style={{ color: 'blue' }}>Title</h1>");
+    expect(result.source).not.toContain('fontWeight');
+  });
+
+  it('rejects dependencies that do not refer to an earlier edit', () => {
+    const source = '<p>Body</p>';
+    const result = applyEditBatch(source, [
+      { ...edit(source, '<p', [style('color', 'red')]), dependsOn: 0 },
+      { ...edit(source, '<p', [style('color', 'red')]), dependsOn: -1 },
+      { ...edit(source, '<p', [style('color', 'red')]), dependsOn: 1.5 },
+      { ...edit(source, '<p', [style('color', 'red')]), dependsOn: 4 },
+      { ...edit(source, '<p', []), dependsOn: 0 },
+      edit(source, '<p', [style('color', 'blue')]),
+    ]);
+    expect(result.results).toEqual([
+      { ok: false, error: 'invalid edit' },
+      { ok: false, error: 'invalid edit' },
+      { ok: false, error: 'invalid edit' },
+      { ok: false, error: 'invalid edit' },
+      { ok: false, error: 'an earlier edit for this text failed' },
+      { ok: true },
+    ]);
+    expect(result.source).toBe("<p style={{ color: 'blue' }}>Body</p>");
+  });
 });
