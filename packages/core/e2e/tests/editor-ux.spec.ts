@@ -341,8 +341,21 @@ test.describe('editor interaction flow', () => {
     request,
   }) => {
     const { panel, headline, body } = await openEditor(page, request, 'ux-preview');
+    const preview = page.getByTitle('Preview', { exact: true });
+    const edit = page.getByTitle('Edit', { exact: true });
+    await expect(preview).toBeVisible();
+    await expect(edit).toBeVisible();
+    await expect(preview).toHaveAttribute('aria-pressed', 'false');
+    await expect(edit).toHaveAttribute('aria-pressed', 'true');
     await headline.click();
-    await page.getByTitle('Preview', { exact: true }).click();
+    await edit.click();
+    await expect(edit).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('[data-selection-frame]')).toHaveCount(1);
+    await preview.click();
+    await expect(preview).toHaveAttribute('aria-pressed', 'true');
+    await expect(edit).toHaveAttribute('aria-pressed', 'false');
+    await preview.click();
+    await expect(preview).toHaveAttribute('aria-pressed', 'true');
     await expect(panel).toHaveCount(0);
     await expect(page.locator('[data-selection-frame]')).toHaveCount(0);
     await body.click();
@@ -350,7 +363,9 @@ test.describe('editor interaction flow', () => {
     await expect(body).not.toHaveAttribute('contenteditable', 'true');
     await expect(page.locator('[data-selection-frame]')).toHaveCount(0);
 
-    await page.getByTitle('Edit', { exact: true }).click();
+    await edit.click();
+    await expect(edit).toHaveAttribute('aria-pressed', 'true');
+    await expect(preview).toHaveAttribute('aria-pressed', 'false');
     await expect(panel).toBeVisible();
     await body.click();
     await expect(page.locator('[data-selection-frame]')).toHaveCount(1);
