@@ -72,7 +72,11 @@ import { SlideTransitionLayer } from '../components/slide-transition-layer';
 import { type ThumbnailActions, ThumbnailRail } from '../components/thumbnail-rail';
 import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf, isSafari, type PdfExportProgress } from '../lib/export-pdf';
-import { exportSlideAsImagePptx, type PptxExportProgress } from '../lib/export-pptx';
+import {
+  exportSlideAsImagePptx,
+  exportSlideAsPptx,
+  type PptxExportProgress,
+} from '../lib/export-pptx';
 import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
 import type { SlideModule } from '../lib/sdk';
 import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
@@ -543,6 +547,17 @@ export function Slide() {
     });
   };
 
+  const exportPptx = async () => {
+    if (!slide || exporting) return;
+    await runProgressExport<PptxExportProgress>({
+      kind: 'pptx',
+      initial: { phase: 'processing', current: 0, total: pages.length, percent: 0 },
+      failedMessage: t.slide.pptxExportFailed,
+      renderToast: (progress) => <PptxProgressToast progress={progress} />,
+      run: (onProgress) => exportSlideAsPptx(slide, slideId, onProgress),
+    });
+  };
+
   const exportImagePptx = async () => {
     if (!slide || exporting) return;
     await runProgressExport<PptxExportProgress>({
@@ -565,36 +580,14 @@ export function Slide() {
         {t.slide.exportAsPdf}
       </DropdownMenuItem>
       <DropdownMenuSeparator />
+      <DropdownMenuItem disabled={exporting} onClick={exportPptx}>
+        <Presentation />
+        {t.slide.exportAsPptx}
+      </DropdownMenuItem>
       <DropdownMenuItem disabled={exporting} onClick={exportImagePptx}>
         <FileImage />
         {t.slide.exportAsImagePptx}
       </DropdownMenuItem>
-      <TooltipProvider delay={200}>
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <div
-                aria-disabled
-                className="relative flex cursor-help items-center justify-between gap-2 rounded-[5px] px-2 py-1.5 text-[12.5px] opacity-45 select-none [&_svg]:size-3.5 [&_svg]:shrink-0 [&_svg]:opacity-80"
-              >
-                <span className="flex items-center gap-2">
-                  <Presentation />
-                  {t.slide.exportAsPptx}
-                </span>
-                <span className="rounded-[3px] bg-muted px-1.5 py-0.5 font-mono text-[9.5px] tracking-[0.04em] text-muted-foreground">
-                  {t.slide.comingSoon}
-                </span>
-              </div>
-            }
-          />
-          <TooltipContent
-            side="left"
-            className="w-max max-w-[min(520px,calc(100vw-2rem))] text-center leading-relaxed"
-          >
-            {t.slide.pptxComingSoonTooltip}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
     </>
   );
 
@@ -894,6 +887,7 @@ export function Slide() {
                 onToggleDesignPanel: () => setDesignOpen((v) => !v),
                 onExportHtml: exportHtml,
                 onExportPdf: exportPdf,
+                onExportPptx: exportPptx,
                 onExportImagePptx: exportImagePptx,
                 onGoToPage: goTo,
               }}
