@@ -82,10 +82,14 @@ function resolveSelectedTarget(target: SelectedTarget, slideId: string): Selecte
   return { line: hit.line, column: hit.column, anchor: hit.anchor };
 }
 
-export function InspectorPanel() {
+export function InspectorPanel({
+  preferredTab,
+  onTabChange,
+}: {
+  preferredTab: 'format' | 'arrange';
+  onTabChange: (tab: 'format' | 'arrange') => void;
+}) {
   const {
-    active,
-    panelOpen,
     togglePanel,
     inlineEdit,
     inlineSelection,
@@ -105,7 +109,6 @@ export function InspectorPanel() {
   const [snapshot, setSnapshot] = useState<ElementSnapshot | null>(null);
   const [contentSelection, setContentSelection] = useState<ContentSelection | null>(null);
   const [rangeStylePreview, setRangeStylePreview] = useState<RangeStylePreview | null>(null);
-  const [preferredTab, setPreferredTab] = useState<'format' | 'arrange'>('format');
   const reloadCounter = useReloadCounter();
   const t = useLocale();
 
@@ -244,14 +247,12 @@ export function InspectorPanel() {
     apply(ops);
   };
 
-  if (!active || !panelOpen) return null;
-
   return (
     <Tabs
       value={tab}
       onValueChange={(value) => {
         if (value === 'arrange') stopInlineEdit();
-        if (value === 'format' || value === 'arrange') setPreferredTab(value);
+        if (value === 'format' || value === 'arrange') onTabChange(value);
       }}
       className="h-full shrink-0 gap-0"
       onPointerDownCapture={(event) => {
@@ -262,7 +263,6 @@ export function InspectorPanel() {
     >
       <PanelShell
         uiAttr="inspector"
-        animVisible
         header={
           <>
             <div className="flex min-w-0 items-center gap-2">
