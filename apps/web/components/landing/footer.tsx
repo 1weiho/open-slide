@@ -43,6 +43,7 @@ export function Footer() {
           links={[
             ['GitHub', 'https://github.com/1weiho/open-slide'],
             ['npm', 'https://www.npmjs.com/package/@open-slide/core'],
+            ['Raycast extension', 'https://www.raycast.com/ridemountainpig/open-slide'],
             ['Issues', 'https://github.com/1weiho/open-slide/issues'],
           ]}
         />

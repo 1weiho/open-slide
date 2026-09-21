@@ -6,6 +6,26 @@ import type { QA } from './faq';
 
 const EASE_OUT_STRONG: [number, number, number, number] = [0.23, 1, 0.32, 1];
 
+const URL_PATTERN = /\b((?:https?:\/\/)?[a-z0-9-]+(?:\.[a-z0-9-]+)+\/[^\s,]*[^\s.,])/gi;
+
+function linkify(text: string) {
+  return text.split(URL_PATTERN).map((part, idx) =>
+    idx % 2 === 1 ? (
+      <a
+        key={idx}
+        href={part.startsWith('http') ? part : `https://${part}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-[color:var(--color-accent-soft)] underline-offset-4 hover:underline"
+      >
+        {part}
+      </a>
+    ) : (
+      part
+    ),
+  );
+}
+
 export function FaqItem({ item, index }: { item: QA; index: number }) {
   const [open, setOpen] = useState(false);
   const reduceMotion = useReducedMotion();
@@ -69,7 +89,7 @@ export function FaqItem({ item, index }: { item: QA; index: number }) {
             className="overflow-hidden"
           >
             <p className="pb-5 text-[15px] leading-[1.65] text-[color:var(--color-text-soft)] max-w-[60ch]">
-              {item.a}
+              {linkify(item.a)}
             </p>
           </motion.dd>
         )}
