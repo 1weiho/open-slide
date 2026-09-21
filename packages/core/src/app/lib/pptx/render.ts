@@ -52,31 +52,6 @@ export async function mountDeckOffscreen(
   const designVars = slide.design ? designToCssVars(slide.design) : null;
   const roots: Root[] = [];
   const frames: HTMLElement[] = [];
-  for (let i = 0; i < pages.length; i++) {
-    const Page = pages[i];
-    if (!Page) continue;
-    const host = document.createElement('div');
-    host.setAttribute('data-osd-canvas', '');
-    host.style.width = `${CANVAS_WIDTH}px`;
-    host.style.height = `${CANVAS_HEIGHT}px`;
-    host.style.overflow = 'hidden';
-    host.style.background = designVars?.['--osd-bg'] ?? '#fff';
-    if (designVars) {
-      for (const [k, v] of Object.entries(designVars)) host.style.setProperty(k, v);
-    }
-    container.appendChild(host);
-    frames.push(host);
-    const root = createRoot(host);
-    // Commit synchronously: measurement starts right after mounting, and a
-    // concurrent render could otherwise leave later pages empty at that point.
-    flushSync(() => {
-      root.render(
-        createElement(SlidePageProvider, { index: i, total: pages.length }, createElement(Page)),
-      );
-    });
-    roots.push(root);
-  }
-
   const dispose = () => {
     for (const root of roots) root.unmount();
     container.remove();
@@ -84,6 +59,31 @@ export async function mountDeckOffscreen(
   };
 
   try {
+    for (let i = 0; i < pages.length; i++) {
+      const Page = pages[i];
+      if (!Page) continue;
+      const host = document.createElement('div');
+      host.setAttribute('data-osd-canvas', '');
+      host.style.width = `${CANVAS_WIDTH}px`;
+      host.style.height = `${CANVAS_HEIGHT}px`;
+      host.style.overflow = 'hidden';
+      host.style.background = designVars?.['--osd-bg'] ?? '#fff';
+      if (designVars) {
+        for (const [k, v] of Object.entries(designVars)) host.style.setProperty(k, v);
+      }
+      container.appendChild(host);
+      frames.push(host);
+      const root = createRoot(host);
+      roots.push(root);
+      // Commit synchronously: measurement starts right after mounting, and a
+      // concurrent render could otherwise leave later pages empty at that point.
+      flushSync(() => {
+        root.render(
+          createElement(SlidePageProvider, { index: i, total: pages.length }, createElement(Page)),
+        );
+      });
+    }
+
     await nextPaint();
     await waitForFonts();
     const deadline = performance.now() + ANIMATION_TIMEOUT_MS;
