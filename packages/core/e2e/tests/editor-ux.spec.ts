@@ -274,6 +274,53 @@ test.describe('editor interaction flow', () => {
     await expect(paragraph).toHaveCSS('font-weight', '400');
   });
 
+  for (const mutation of ['replacement', 'deletion', 'line break'] as const) {
+    test(`native ${mutation} preserves inline edits and the caret after formatting`, async ({
+      page,
+      request,
+    }) => {
+      const { panel, body } = await openEditor(
+        page,
+        request,
+        `ux-native-${mutation.replace(' ', '-')}`,
+      );
+      const paragraph = editorCanvas(page).locator('p');
+      await body.dblclick();
+      await body.press('Home');
+      for (let i = 0; i < 'Editable'.length; i++) await page.keyboard.press('Shift+ArrowRight');
+      await panel.getByRole('button', { name: 'Bold', exact: true }).click();
+      await expect.poll(() => textStyle(paragraph, 'Editable', 'fontWeight')).toEqual(['700']);
+
+      if (mutation === 'replacement') {
+        await paragraph.press('ControlOrMeta+a');
+        await page.keyboard.type('Hello');
+        await expect(paragraph).toHaveText('Hello');
+        await expect.poll(() => textStyle(paragraph, 'Hello', 'fontWeight')).toEqual(['700']);
+      } else if (mutation === 'deletion') {
+        await paragraph.press('Home');
+        for (let i = 0; i < 'Editable b'.length; i++) await page.keyboard.press('Shift+ArrowRight');
+        await page.keyboard.press('Backspace');
+        await expect(paragraph).toHaveText('ody copy');
+        await page.keyboard.press('ControlOrMeta+z');
+        await expect(paragraph).toHaveText('Editable body copy');
+        await expect.poll(() => textStyle(paragraph, 'Editable', 'fontWeight')).toEqual(['700']);
+        await page.keyboard.press('ControlOrMeta+Shift+z');
+        await expect(paragraph).toHaveText('ody copy');
+        await page.keyboard.type('new');
+        await expect(paragraph).toHaveText('newody copy');
+      } else {
+        await paragraph.press('End');
+        await page.keyboard.press('Enter');
+        await page.keyboard.type('World');
+        await expect.poll(() => paragraph.innerText()).toBe('Editable body copy\nWorld');
+        await expect.poll(() => textStyle(paragraph, 'Editable', 'fontWeight')).toEqual(['700']);
+        await expect.poll(() => textStyle(paragraph, 'World', 'fontWeight')).toEqual(['400']);
+      }
+      await expect(paragraph).toBeFocused();
+      await expect(paragraph).toHaveAttribute('contenteditable', 'true');
+    });
+  }
+
   test('formatting after inserted text uses current word positions through undo and save', async ({
     page,
     request,

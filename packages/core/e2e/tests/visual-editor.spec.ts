@@ -317,6 +317,49 @@ export default [Only] satisfies Page[];
     await expectGeometry(body, { x: beforeBody.x - 60 });
   });
 
+  test('holding Shift before dragging preserves selection and constrains the group', async ({
+    page,
+    request,
+  }) => {
+    const { first, second } = await openBlocks(page, request, 'visual-shift-drag');
+    await first.click();
+    const beforeFirst = await geometry(first);
+    const beforeSecond = await geometry(second);
+    await page.keyboard.down('Shift');
+    await page.keyboard.down('Alt');
+    await startDrag(page, first, 30, 10);
+    await page.mouse.up();
+    await page.keyboard.up('Alt');
+    await page.keyboard.up('Shift');
+    await expectGeometry(first, {
+      x: beforeFirst.x + 30 / beforeFirst.scale,
+      y: beforeFirst.y,
+    });
+    await expect(page.locator('[data-selection-frame]')).toHaveCount(1);
+    await page.getByRole('button', { name: 'Undo', exact: true }).click();
+    await expectGeometry(first, beforeFirst);
+
+    await second.click({ modifiers: ['Shift'] });
+    await page.keyboard.down('Shift');
+    await page.keyboard.down('Alt');
+    await startDrag(page, first, 10, 30);
+    await page.mouse.up();
+    await page.keyboard.up('Alt');
+    await page.keyboard.up('Shift');
+    await expectGeometry(first, { x: beforeFirst.x, y: beforeFirst.y + 30 / beforeFirst.scale });
+    await expectGeometry(second, {
+      x: beforeSecond.x,
+      y: beforeSecond.y + 30 / beforeSecond.scale,
+    });
+    await page.getByRole('button', { name: 'Undo', exact: true }).click();
+    await expectGeometry(first, beforeFirst);
+    await expectGeometry(second, beforeSecond);
+    await first.click({ modifiers: ['Shift'] });
+    await page.keyboard.press('ArrowRight');
+    await expectGeometry(first, beforeFirst);
+    await expectGeometry(second, { x: beforeSecond.x + 1 });
+  });
+
   test('resize handles change slide dimensions and undo restores the original box', async ({
     page,
     request,
@@ -531,6 +574,109 @@ export default [Only] satisfies Page[];
     await expect.poll(topmost).toBe('First block');
     await page.getByRole('button', { name: 'Undo', exact: true }).click();
     await expect.poll(topmost).toBe('Second block');
+  });
+
+  test('layer changes preserve nested absolute geometry through history and save', async ({
+    page,
+    request,
+  }) => {
+    const slideId = 'visual-layer-layout';
+    createdSlides.push(slideId);
+    await duplicateSlide(request, 'edit-target', slideId);
+    await writeFile(
+      slideSourcePath(slideId),
+      `import type { Page } from '@open-slide/core';
+const Only: Page = () => (
+  <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div data-testid="static-first" style={{ marginLeft: 100, width: 250, height: 200, background: 'red', left: 80, insetInlineStart: 40, inset: 50 }}>
+      <div data-testid="absolute-child" style={{ position: 'absolute', left: '2%', top: 280, width: '30%', height: 1, background: 'blue' }} />
+    </div>
+    <div data-testid="static-second" style={{ marginLeft: 120, width: 250, height: 200, background: 'green' }}>
+      <div data-testid="other-child" style={{ position: 'absolute', left: 650, top: 500, width: 80, height: 60 }}>Other child</div>
+    </div>
+  </div>
+);
+export default [Only] satisfies Page[];
+`,
+    );
+    await openSlide(page, slideId);
+    await expect(page.locator('[data-inspector-ready]')).toBeVisible();
+    const first = editorCanvas(page).getByTestId('static-first');
+    const second = editorCanvas(page).getByTestId('static-second');
+    const child = editorCanvas(page).getByTestId('absolute-child');
+    const other = editorCanvas(page).getByTestId('other-child');
+    await first.click({ position: { x: 20, y: 20 } });
+    const before = await Promise.all([first, second, child, other].map(geometry));
+    const secondStyle = await second.getAttribute('style');
+    const panel = page.locator('aside[data-inspector-ui]');
+    await panel.getByRole('tab', { name: 'Arrange', exact: true }).click();
+    await panel.getByRole('button', { name: 'Bring to front', exact: true }).click();
+    const expectUnmoved = async () => {
+      for (const [index, element] of [first, second, child, other].entries()) {
+        await expectGeometry(element, before[index]);
+      }
+    };
+    await expectUnmoved();
+    await expect(first).toHaveCSS('z-index', '1');
+    await expect(second).toHaveAttribute('style', secondStyle ?? '');
+    await page.getByRole('button', { name: 'Undo', exact: true }).click();
+    await expectUnmoved();
+    await expect(first).toHaveCSS('position', 'static');
+    await page.getByRole('button', { name: 'Redo', exact: true }).click();
+    await expectUnmoved();
+    await panel.getByRole('button', { name: 'Send to back', exact: true }).click();
+    await expectUnmoved();
+    await expect(first).toHaveCSS('z-index', '0');
+    await expect(second).toHaveCSS('z-index', '1');
+    const saved = page.waitForResponse(
+      (response) => response.url().includes('/__edit') && response.request().method() === 'POST',
+    );
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    expect((await saved).ok()).toBe(true);
+    await page.reload();
+    await expect(first).toBeVisible();
+    await expectUnmoved();
+  });
+
+  test('layer changes leave shared absolute descendants untouched when compensation cannot be saved', async ({
+    page,
+    request,
+  }) => {
+    const slideId = 'visual-layer-shared-content';
+    createdSlides.push(slideId);
+    await duplicateSlide(request, 'edit-target', slideId);
+    await writeFile(
+      slideSourcePath(slideId),
+      `import type { Page } from '@open-slide/core';
+const Only: Page = () => (
+  <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div data-testid="container" style={{ marginLeft: 100, width: 250, height: 200, background: 'red' }}>
+      {[1, 2].map((n) => <div key={n} style={{ position: 'absolute', left: n * 100, top: 300, width: 80, height: 60 }}>Shared {n}</div>)}
+    </div>
+    <div style={{ width: 250, height: 200, background: 'green' }}>Sibling</div>
+  </div>
+);
+export default [Only] satisfies Page[];
+`,
+    );
+    await openSlide(page, slideId);
+    await expect(page.locator('[data-inspector-ready]')).toBeVisible();
+    const container = editorCanvas(page).getByTestId('container');
+    await container.click({ position: { x: 20, y: 20 } });
+    const source = await readSlideSource(slideId);
+    const original = await container.getAttribute('style');
+    const panel = page.locator('aside[data-inspector-ui]');
+    await panel.getByRole('tab', { name: 'Arrange', exact: true }).click();
+    await panel.getByRole('button', { name: 'Bring to front', exact: true }).click();
+    await expect(
+      page.getByText(
+        'Some nested content cannot be positioned independently. Select a positioned parent to change layers.',
+        { exact: true },
+      ),
+    ).toBeVisible();
+    await expect(container).toHaveAttribute('style', original ?? '');
+    expect(await readSlideSource(slideId)).toBe(source);
+    await expect(page.getByRole('button', { name: 'Save', exact: true })).toHaveCount(0);
   });
 
   test('the rotation handle turns an element around its center and supports undo', async ({

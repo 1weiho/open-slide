@@ -5,6 +5,7 @@ import {
   type Rect,
   resizeRect,
   snapMove,
+  solveResizeDimensions,
   unionRects,
 } from './geometry.ts';
 
@@ -243,5 +244,61 @@ describe('resizeRect', () => {
       width: 60,
       height: 40,
     });
+  });
+});
+
+describe('solveResizeDimensions', () => {
+  const size = { width: 200, height: 100 };
+  const rotatedBasis = (degrees: number, scale = 1) => {
+    const angle = (degrees * Math.PI) / 180;
+    return {
+      a: Math.cos(angle) * scale,
+      b: Math.sin(angle) * scale,
+      c: Math.sin(angle) * scale,
+      d: Math.cos(angle) * scale,
+    };
+  };
+
+  it('resizes independent axes exactly for an unrotated element', () => {
+    expect(solveResizeDimensions(size, { a: 1, b: 0, c: 0, d: 1 }, { x: 50, y: -20 })).toEqual({
+      width: 250,
+      height: 80,
+    });
+  });
+
+  it('solves feasible rotated sizes without forcing an aspect lock', () => {
+    const basis = rotatedBasis(30);
+    const result = solveResizeDimensions(size, basis, {
+      x: 40 * basis.a - 20 * basis.c,
+      y: 40 * basis.b - 20 * basis.d,
+    });
+    expect(result.width).toBeCloseTo(240);
+    expect(result.height).toBeCloseTo(80);
+  });
+
+  it.each([44, 45, 46])('preserves proportions instead of distorting at %s degrees', (angle) => {
+    const result = solveResizeDimensions(size, rotatedBasis(angle), { x: 50, y: 0 });
+    expect(result.width).toBeGreaterThan(200);
+    expect(result.width).toBeLessThan(250);
+    expect(result.height).toBeGreaterThan(100);
+    expect(result.width / result.height).toBeCloseTo(2);
+  });
+
+  it('uses the same safe result under a scaled parent', () => {
+    const normal = solveResizeDimensions(size, rotatedBasis(44), { x: 50, y: 0 });
+    const scaled = solveResizeDimensions(size, rotatedBasis(44, 0.2), { x: 10, y: 0 });
+    expect(scaled.width).toBeCloseTo(normal.width);
+    expect(scaled.height).toBeCloseTo(normal.height);
+  });
+
+  it('preserves proportions when the requested bounds require a negative local size', () => {
+    const result = solveResizeDimensions(size, rotatedBasis(30), { x: 200, y: 0 });
+    expect(result.width).toBeLessThan(400);
+    expect(result.width / result.height).toBeCloseTo(2);
+  });
+
+  it('keeps both local dimensions above the minimum when fitting a smaller box', () => {
+    const result = solveResizeDimensions(size, rotatedBasis(45), { x: -1000, y: -1000 });
+    expect(result).toEqual({ width: 16, height: 8 });
   });
 });

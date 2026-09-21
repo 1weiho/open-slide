@@ -48,6 +48,7 @@ type Gesture = {
   moved: boolean;
   edits: VisualEdit[];
   previousSelection: SelectedTarget[];
+  clickSelection: SelectedTarget[];
   additive: boolean;
 };
 
@@ -222,9 +223,11 @@ export function InspectOverlay() {
         if (background && !selection.some((target) => target.anchor === hit?.anchor)) hit = null;
       }
       let targets = selection;
+      let clickSelection = selection;
       if (hit && !handle) {
         if (event.shiftKey) {
-          targets = selection.some((target) => target.anchor === hit.anchor)
+          const alreadySelected = selection.some((target) => target.anchor === hit.anchor);
+          clickSelection = alreadySelected
             ? selection.filter((target) => target.anchor !== hit.anchor)
             : [
                 ...selection.filter(
@@ -233,8 +236,10 @@ export function InspectOverlay() {
                 ),
                 hit,
               ];
+          targets = alreadySelected ? selection : clickSelection;
         } else if (!selection.some((target) => target.anchor === hit.anchor)) targets = [hit];
       } else if (!hit) targets = event.shiftKey ? selection : [];
+      if (!event.shiftKey || !hit || handle) clickSelection = targets;
       const mode = handle?.hasAttribute('data-rotate-handle')
         ? 'rotate'
         : (handle?.dataset.resizeHandle as ResizeHandle | undefined);
@@ -268,6 +273,7 @@ export function InspectOverlay() {
         moved: false,
         edits: [],
         previousSelection: selection,
+        clickSelection,
         additive: event.shiftKey,
       };
       canvas.root.dataset.visualGesture = 'true';
@@ -362,7 +368,15 @@ export function InspectOverlay() {
       } else {
         const snapshot = gesture.snapshots[0];
         const frame = resizeRect(snapshot.frame, gesture.mode, delta, event.shiftKey);
-        gesture.edits = [{ ...snapshot.target, ops: sizeOps(snapshot, frame, gesture.canvas) }];
+        gesture.edits = [
+          {
+            ...snapshot.target,
+            ops: sizeOps(snapshot, frame, gesture.canvas, {
+              x: gesture.mode.includes('w') ? 1 : gesture.mode.includes('e') ? 0 : 0.5,
+              y: gesture.mode.includes('n') ? 1 : gesture.mode.includes('s') ? 0 : 0.5,
+            }),
+          },
+        ];
       }
       for (const edit of gesture.edits) previewOps(edit.anchor, edit.ops);
       setGuides(nextGuides);
@@ -401,7 +415,7 @@ export function InspectOverlay() {
       update(event);
       for (const snapshot of gesture.snapshots) restoreTransform(snapshot);
       if (gesture.moved && gesture.edits.length) bufferBatch(gesture.edits);
-      setSelection(gesture.targets);
+      setSelection(gesture.moved ? gesture.targets : gesture.clickSelection);
       clearGesture(false);
     };
     const onCancel = (event: Event) => {

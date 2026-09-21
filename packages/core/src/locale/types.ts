@@ -249,6 +249,7 @@ export type Locale = {
     visualEditorHint: string;
     sharedLayoutHint: string;
     inlineLayoutHint: string;
+    layerLayoutHint: string;
     inspect: string;
     deselect: string;
     agentWatching: string;

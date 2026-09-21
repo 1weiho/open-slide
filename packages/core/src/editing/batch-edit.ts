@@ -42,6 +42,8 @@ export function applyEditBatch(
   edits: BatchEdit[],
 ): { source: string; results: BatchEditResult[] } {
   const ast = parseSource(source);
+  const targets = new Map<number, number>();
+  const textTargets = new Map<string, number>();
   const tracked: TrackedEdit[] = edits.map((edit, index) => {
     if (
       !edit ||
@@ -57,12 +59,25 @@ export function applyEditBatch(
     }
     if (!edit.ops.length) return { offset: null, ops: [], dependsOn: edit.dependsOn };
     if (!ast) return { offset: null, ops: edit.ops, error: 'could not parse source' };
-    const element = findElementForEdit(ast, edit.line ?? 0, edit.column ?? 0, edit.ops);
+    const location = `${edit.line}:${edit.column ?? 0}:`;
+    const textOp = edit.ops.find((op) => 'prevText' in op && op.prevText !== undefined);
+    const prevText = textOp && 'prevText' in textOp ? textOp.prevText : undefined;
+    const offset =
+      (edit.dependsOn === undefined ? undefined : targets.get(edit.dependsOn)) ??
+      (prevText === undefined ? undefined : textTargets.get(`${location}${prevText}`)) ??
+      findElementForEdit(ast, edit.line ?? 0, edit.column ?? 0, edit.ops)?.start ??
+      null;
+    if (offset !== null) {
+      targets.set(index, offset);
+      for (const op of edit.ops) {
+        if (op.kind === 'set-text') textTargets.set(`${location}${op.value}`, offset);
+      }
+    }
     return {
-      offset: element?.start ?? null,
+      offset,
       ops: edit.ops,
       dependsOn: edit.dependsOn,
-      ...(!element ? { error: 'no JSX element at location' } : {}),
+      ...(offset === null ? { error: 'no JSX element at location' } : {}),
     };
   });
   let next = source;

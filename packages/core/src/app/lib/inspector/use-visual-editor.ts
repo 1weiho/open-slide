@@ -1,14 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import type { SelectedTarget } from '@/components/inspector/inspector-provider';
 import { isTypingTarget } from '@/lib/keys';
+import { useLocale } from '@/lib/use-locale';
 import { type Alignment, alignRects, distributeRects, unionRects } from './geometry';
 import type { EditOp } from './use-editor';
 import {
+  type Canvas,
   canTransform,
   captureTransform,
   editableTargets,
   independentTargets,
   moveOps,
+  previewOps,
   readCanvas,
   readFrame,
   restoreTransform,
@@ -39,11 +43,91 @@ function stackLevel(node: HTMLElement): number {
 }
 
 function layerOps(node: HTMLElement, level: number): EditOp[] {
+  if (stackLevel(node) === level) return [];
   const position = getComputedStyle(node).position;
   return [
-    ...(position === 'static' && !isFlexOrGridItem(node) ? [styleOp('position', 'relative')] : []),
+    ...(position === 'static' && !isFlexOrGridItem(node)
+      ? [
+          styleOp('position', 'relative'),
+          ...[
+            'inset',
+            'insetInline',
+            'insetBlock',
+            'insetInlineStart',
+            'insetInlineEnd',
+            'insetBlockStart',
+            'insetBlockEnd',
+            'top',
+            'right',
+            'bottom',
+            'left',
+          ].map((key) => styleOp(key, 'auto')),
+        ]
+      : []),
     styleOp('zIndex', String(level)),
   ];
+}
+
+function preserveLayerLayout(
+  edits: VisualEdit[],
+  sourceTargets: Map<HTMLElement, SelectedTarget>,
+  canvas: Canvas,
+): VisualEdit[] | null {
+  const descendants = new Set<HTMLElement>();
+  for (const edit of edits) {
+    if (!edit.ops.some((op) => op.kind === 'set-style' && op.key === 'position')) continue;
+    for (const node of edit.anchor.querySelectorAll<HTMLElement>('*')) {
+      if (getComputedStyle(node).position !== 'absolute') continue;
+      if (node.offsetParent && edit.anchor.contains(node.offsetParent)) continue;
+      if (!sourceTargets.has(node)) return null;
+      descendants.add(node);
+    }
+  }
+  if (!descendants.size) return edits;
+  const snapshots = [...descendants].map((node) =>
+    captureTransform(sourceTargets.get(node) as SelectedTarget, canvas),
+  );
+  const originals = edits.map((edit) => captureTransform(edit, canvas));
+  try {
+    for (const edit of edits) previewOps(edit.anchor, edit.ops);
+    const compensated = snapshots.flatMap((original) => {
+      const current = captureTransform(original.target, canvas);
+      const dx = original.frame.x - current.frame.x;
+      const dy = original.frame.y - current.frame.y;
+      const resized =
+        Math.abs(original.frame.width - current.frame.width) > 0.01 ||
+        Math.abs(original.frame.height - current.frame.height) > 0.01;
+      if (!resized && Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) return [];
+      const dimensions = resized
+        ? [
+            styleOp('minWidth', '0px'),
+            styleOp('minHeight', '0px'),
+            styleOp('maxWidth', 'none'),
+            styleOp('maxHeight', 'none'),
+            styleOp('width', `${original.width}px`),
+            styleOp('height', `${original.height}px`),
+          ]
+        : [];
+      previewOps(original.target.anchor, dimensions);
+      const positioned = resized ? captureTransform(original.target, canvas) : current;
+      const ops = [
+        ...dimensions,
+        ...moveOps(
+          positioned,
+          {
+            x: original.frame.x - positioned.frame.x,
+            y: original.frame.y - positioned.frame.y,
+          },
+          canvas,
+        ),
+      ];
+      previewOps(original.target.anchor, ops);
+      return [{ ...original.target, ops }];
+    });
+    return [...edits, ...compensated];
+  } finally {
+    for (const snapshot of [...snapshots, ...originals]) restoreTransform(snapshot);
+  }
 }
 
 type Options = {
@@ -66,6 +150,7 @@ export function useVisualEditor({
   bufferBatch,
 }: Options) {
   const [snapping, setSnapping] = useState(true);
+  const t = useLocale();
   const move = useCallback(
     (deltas: { x: number; y: number }[], coalesceKey?: string) => {
       const canvas = readCanvas();
@@ -240,9 +325,15 @@ export function useVisualEditor({
           }
         }
       }
-      bufferBatch(edits);
+      const preserved = preserveLayerLayout(
+        edits.filter((edit) => edit.ops.length > 0),
+        sourceTargets,
+        canvas,
+      );
+      if (preserved) bufferBatch(preserved);
+      else toast.error(t.inspector.layerLayoutHint);
     },
-    [selection, committing, bufferBatch, slideId],
+    [selection, committing, bufferBatch, slideId, t.inspector.layerLayoutHint],
   );
 
   const selectParent = useCallback(() => {

@@ -1,6 +1,6 @@
 import type { SelectedTarget } from '@/components/inspector/inspector-provider';
 import { findSlideSource } from './fiber';
-import type { Point, Rect } from './geometry';
+import { type Point, type Rect, solveResizeDimensions } from './geometry';
 import type { EditOp } from './use-editor';
 
 export type Canvas = {
@@ -150,7 +150,12 @@ export function moveOps(snapshot: TransformSnapshot, delta: Point, canvas: Canva
   ];
 }
 
-export function sizeOps(snapshot: TransformSnapshot, frame: Rect, canvas: Canvas): EditOp[] {
+export function sizeOps(
+  snapshot: TransformSnapshot,
+  frame: Rect,
+  canvas: Canvas,
+  fixedPoint: Point = { x: 0, y: 0 },
+): EditOp[] {
   const anchor = snapshot.target.anchor;
   restoreTransform(snapshot);
   const constraints = [
@@ -183,25 +188,21 @@ export function sizeOps(snapshot: TransformSnapshot, frame: Rect, canvas: Canvas
     c: (taller.width - base.width) / 100,
     d: (taller.height - base.height) / 100,
   };
-  const determinant = basis.a * basis.d - basis.b * basis.c;
-  const change = localDelta(basis, {
+  const size = solveResizeDimensions(snapshot, basis, {
     x: frame.width - base.width,
     y: frame.height - base.height,
   });
-  const scale =
-    (base.width * frame.width + base.height * frame.height) /
-    (base.width * base.width + base.height * base.height);
-  // A 45-degree rotation makes both bounding-box dimensions depend on the same local sum.
-  const ops = [
-    ...constraints,
-    ...dimensions(
-      Math.abs(determinant) < 0.001 ? snapshot.width * scale : snapshot.width + change.x,
-      Math.abs(determinant) < 0.001 ? snapshot.height * scale : snapshot.height + change.y,
-    ),
-  ];
+  const ops = [...constraints, ...dimensions(size.width, size.height)];
   previewOps(anchor, ops);
   const measured = readFrame(anchor, canvas);
-  const position = moveOps(snapshot, { x: frame.x - measured.x, y: frame.y - measured.y }, canvas);
+  const position = moveOps(
+    snapshot,
+    {
+      x: frame.x + (frame.width - measured.width) * fixedPoint.x - measured.x,
+      y: frame.y + (frame.height - measured.height) * fixedPoint.y - measured.y,
+    },
+    canvas,
+  );
   restoreTransform(snapshot);
   return [...ops, ...position];
 }

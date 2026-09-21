@@ -246,6 +246,7 @@ export const zhTW: Locale = {
       'Shift 點選可複選。方向鍵移動 1 px，按住 Shift 移動 10 px。Alt 暫停吸附。Shift 限制拖曳方向或等比例縮放。',
     sharedLayoutHint: '此元素與其他實例共用 JSX 定義。請選取獨立的父層容器，以單獨調整排列。',
     inlineLayoutHint: '請選取父層容器，以移動行內內容或調整尺寸。',
+    layerLayoutHint: '部分內部內容無法獨立定位。請選取已設定定位的父層容器，以調整圖層。',
     inspect: '檢視',
     deselect: '取消選取',
     contentSection: '內容',

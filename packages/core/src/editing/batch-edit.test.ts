@@ -16,6 +16,80 @@ function edit(source: string, marker: string, ops: EditOp[]): BatchEdit {
 const style = (key: string, value: string): EditOp => ({ kind: 'set-style', key, value });
 
 describe('applyEditBatch', () => {
+  it('keeps dependent formatting and typing on text that now matches a sibling', () => {
+    const source = '<section><h1>Title</h1><p>Body</p></section>';
+    const result = applyEditBatch(source, [
+      edit(source, '<h1', [{ kind: 'set-text', value: 'Body', prevText: 'Title' }]),
+      {
+        ...edit(source, '<h1', [
+          {
+            kind: 'set-text-range-style',
+            start: 0,
+            end: 4,
+            key: 'fontWeight',
+            value: '700',
+            prevText: 'Body',
+          },
+        ]),
+        dependsOn: 0,
+      },
+      {
+        ...edit(source, '<h1', [{ kind: 'set-text', value: 'Final', prevText: 'Body' }]),
+        dependsOn: 1,
+      },
+    ]);
+    expect(result.results).toEqual([{ ok: true }, { ok: true }, { ok: true }]);
+    expect(result.source).toBe(
+      "<section><h1><span style={{ fontWeight: '700' }}>Final</span></h1><p>Body</p></section>",
+    );
+  });
+
+  it('keeps whole-element styling on a target after its text matches a sibling', () => {
+    const source = '<section><h1>Title</h1><p>Body</p></section>';
+    const result = applyEditBatch(source, [
+      edit(source, '<h1', [{ kind: 'set-text', value: 'Body', prevText: 'Title' }]),
+      edit(source, '<h1', [{ kind: 'set-style', key: 'color', value: 'red', prevText: 'Body' }]),
+      edit(source, '<p', [style('fontSize', '20px')]),
+    ]);
+    expect(result.results).toEqual([{ ok: true }, { ok: true }, { ok: true }]);
+    expect(result.source).toBe(
+      "<section><h1 style={{ color: 'red' }}>Body</h1><p style={{ fontSize: '20px' }}>Body</p></section>",
+    );
+  });
+
+  it('preserves independent reused-component edits alongside a dependent text sequence', () => {
+    const source = `function Heading({ title }) { return <h2>{title}</h2>; }
+export default () => <section><Heading title="First" /><Heading title="Second" /><p>Body</p></section>;`;
+    const result = applyEditBatch(source, [
+      edit(source, '<h2', [{ kind: 'set-text', value: 'Body', prevText: 'First' }]),
+      edit(source, '<h2', [{ kind: 'set-text', value: 'Second updated', prevText: 'Second' }]),
+      {
+        ...edit(source, '<h2', [{ kind: 'set-text', value: 'Final', prevText: 'Body' }]),
+        dependsOn: 0,
+      },
+    ]);
+    expect(result.results).toEqual([{ ok: true }, { ok: true }, { ok: true }]);
+    expect(result.source).toContain('<Heading title="Final" />');
+    expect(result.source).toContain('<Heading title="Second updated" />');
+    expect(result.source).toContain('<p>Body</p>');
+  });
+
+  it('resolves independent text fallbacks separately at the same stale location', () => {
+    const source = '<section><h1>Title</h1><p>Body</p></section>';
+    const result = applyEditBatch(source, [
+      edit(source, '<section', [
+        { kind: 'set-style', key: 'color', value: 'red', prevText: 'Title' },
+      ]),
+      edit(source, '<section', [
+        { kind: 'set-style', key: 'fontSize', value: '20px', prevText: 'Body' },
+      ]),
+    ]);
+    expect(result.results).toEqual([{ ok: true }, { ok: true }]);
+    expect(result.source).toBe(
+      "<section><h1 style={{ color: 'red' }}>Title</h1><p style={{ fontSize: '20px' }}>Body</p></section>",
+    );
+  });
+
   it('preserves sibling targets when earlier multiline styles collapse', () => {
     const source = `export default () => (
   <section>

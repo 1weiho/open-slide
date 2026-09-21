@@ -23,6 +23,8 @@ Click an element to select it. Drag the selection to move it, use its handles
 to resize it, or drag the rotation handle. Smart guides appear when an edge
 or center lines up with another element or the slide. Positions and sizes
 use slide pixels, so the same movement works at any canvas zoom.
+Rotated elements scale proportionally when their width and height cannot be
+adjusted independently without distorting the shape.
 
 The **Arrange** tab provides exact position, size, and rotation inputs,
 plus alignment and layer controls:
@@ -67,6 +69,8 @@ parent** to move that block. Elements rendered repeatedly from the same JSX
 definition also share source styles; select a unique parent container to
 arrange an instance independently. The panel explains when a selected element
 cannot be transformed.
+Layer changes preserve nested content's position and size. If shared nested
+content prevents this, select a positioned parent container to change layers.
 
 ## Format text and images
 

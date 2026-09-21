@@ -248,6 +248,8 @@ export const en: Locale = {
     sharedLayoutHint:
       'This element shares its JSX definition with other instances. Select a unique parent container to arrange it independently.',
     inlineLayoutHint: 'Select the parent container to move or resize inline content.',
+    layerLayoutHint:
+      'Some nested content cannot be positioned independently. Select a positioned parent to change layers.',
     inspect: 'Inspect',
     deselect: 'Deselect',
     agentWatching: 'Agent is watching',

@@ -1017,7 +1017,8 @@ export function InspectorProvider({
           bucket.textTargets.set(instanceId, { ...rememberTarget(hit), pageIndex });
           bucket.line = hit.line;
           bucket.column = hit.column;
-          replayDomTextEdits(anchor, html, steps);
+          // Native editing can mutate child nodes before its input event updates the buffer.
+          if (!anchor.isContentEditable) replayDomTextEdits(anchor, html, steps);
         }
         const nextKey = `${bucket.line}:${bucket.column}`;
         if (nextKey !== key) relocations.push({ key, nextKey, bucket });

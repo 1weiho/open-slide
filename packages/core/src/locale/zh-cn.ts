@@ -246,6 +246,7 @@ export const zhCN: Locale = {
       '按住 Shift 点击可多选。方向键移动 1 px，按住 Shift 移动 10 px。Alt 暂停吸附。Shift 限制拖动方向或等比例缩放。',
     sharedLayoutHint: '此元素与其他实例共用 JSX 定义。请选择独立的父级容器，以单独调整排列。',
     inlineLayoutHint: '请选择父级容器，以移动行内内容或调整尺寸。',
+    layerLayoutHint: '部分内部内容无法独立定位。请选择已设置定位的父级容器，以调整图层。',
     inspect: '检查',
     deselect: '取消选择',
     contentSection: '内容',

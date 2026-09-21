@@ -126,6 +126,32 @@ export function distributeRects(rects: Rect[], axis: 'x' | 'y'): Point[] {
   return deltas;
 }
 
+export function solveResizeDimensions(
+  size: Pick<Rect, 'width' | 'height'>,
+  basis: { a: number; b: number; c: number; d: number },
+  delta: Point,
+): Pick<Rect, 'width' | 'height'> {
+  const { a, b, c, d } = basis;
+  const determinant = a * d - b * c;
+  const magnitude = Math.hypot(a, b) * Math.hypot(c, d);
+  // Nearly parallel dimension vectors amplify small pointer deltas into large distortions.
+  if (Math.abs(determinant) > magnitude * 0.1) {
+    const width = size.width + (d * delta.x - c * delta.y) / determinant;
+    const height = size.height + (a * delta.y - b * delta.x) / determinant;
+    if (Number.isFinite(width) && Number.isFinite(height) && width >= 8 && height >= 8)
+      return { width, height };
+  }
+  const direction = {
+    x: a * size.width + c * size.height,
+    y: b * size.width + d * size.height,
+  };
+  const lengthSquared = direction.x ** 2 + direction.y ** 2;
+  const requestedScale =
+    lengthSquared > 0 ? 1 + (direction.x * delta.x + direction.y * delta.y) / lengthSquared : 1;
+  const scale = Math.max(8 / size.width, 8 / size.height, requestedScale);
+  return { width: size.width * scale, height: size.height * scale };
+}
+
 export function resizeRect(
   rect: Rect,
   handle: ResizeHandle,
