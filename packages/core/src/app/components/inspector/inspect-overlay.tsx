@@ -81,13 +81,13 @@ export function InspectOverlay() {
   } = useInspector();
   const t = useLocale();
   const overlayRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<(() => void) | null>(null);
   const gestureRef = useRef<Gesture | null>(null);
   const suppressClick = useRef(false);
   const [hover, setHover] = useState<HTMLElement | null>(null);
   const [localTargets, setLocalTargets] = useState<SelectedTarget[] | null>(null);
   const [guides, setGuides] = useState<Guide[]>([]);
   const [marquee, setMarquee] = useState<Rect | null>(null);
-  const [version, setVersion] = useState(0);
   const frameIds = useRef(new WeakMap<HTMLElement, number>());
   const nextFrameId = useRef(0);
   const [frames, setFrames] = useState<(ScreenRect & { id: number })[]>([]);
@@ -98,7 +98,6 @@ export function InspectOverlay() {
 
   useLayoutEffect(() => {
     if (!active) return;
-    void version;
     void opsVersion;
     let raf = 0;
     const stopAt = performance.now() + 420;
@@ -141,21 +140,26 @@ export function InspectOverlay() {
         JSON.stringify(previous) === JSON.stringify(nextCanvas) ? previous : nextCanvas,
       );
       setScale(canvas.scale);
-      if (performance.now() < stopAt) raf = requestAnimationFrame(measure);
     };
-    measure();
+    const track = () => {
+      measure();
+      if (performance.now() < stopAt) raf = requestAnimationFrame(track);
+    };
+    measureRef.current = measure;
+    track();
     const observer = new ResizeObserver(measure);
     if (overlayRef.current) observer.observe(overlayRef.current);
     for (const target of displayed) if (target.anchor.isConnected) observer.observe(target.anchor);
     window.addEventListener('resize', measure);
     window.addEventListener('scroll', measure, true);
     return () => {
+      measureRef.current = null;
       cancelAnimationFrame(raf);
       observer.disconnect();
       window.removeEventListener('resize', measure);
       window.removeEventListener('scroll', measure, true);
     };
-  }, [active, displayed, hover, version, opsVersion]);
+  }, [active, displayed, hover, opsVersion]);
 
   useEffect(() => {
     if (!active) return;
@@ -169,7 +173,7 @@ export function InspectOverlay() {
       setLocalTargets(null);
       setGuides([]);
       setMarquee(null);
-      setVersion((value) => value + 1);
+      measureRef.current?.();
       document.documentElement.style.removeProperty('cursor');
     };
     const targetAt = (event: PointerEvent): SelectedTarget | null => {
@@ -345,7 +349,7 @@ export function InspectOverlay() {
       }
       for (const edit of gesture.edits) previewOps(edit.anchor, edit.ops);
       setGuides(nextGuides);
-      setVersion((value) => value + 1);
+      measureRef.current?.();
     };
     const onMove = (event: PointerEvent) => {
       if (gestureRef.current) {
@@ -447,7 +451,10 @@ export function InspectOverlay() {
     window.addEventListener('click', onClick, true);
     window.addEventListener('dblclick', onDoubleClick, true);
     window.addEventListener('keydown', onKey, true);
+    const overlay = overlayRef.current;
+    overlay?.setAttribute('data-inspector-ready', 'true');
     return () => {
+      overlay?.removeAttribute('data-inspector-ready');
       cancelAnimationFrame(raf);
       window.removeEventListener('pointerdown', onDown, true);
       window.removeEventListener('pointermove', onMove, true);

@@ -111,6 +111,7 @@ export default [Only] satisfies Page[];
     await expect(editorCanvas(page).getByText('First block', { exact: true })).toBeVisible();
     await page.waitForLoadState('networkidle');
     await page.getByTitle('Inspect').click();
+    await expect(page.locator('[data-inspector-ready]')).toBeVisible();
     return {
       first: editorCanvas(page).getByText('First block', { exact: true }),
       second: editorCanvas(page).getByText('Second block', { exact: true }),
@@ -151,6 +152,74 @@ export default [Only] satisfies Page[];
     await page.reload();
     await expect(headline).toBeVisible();
     await expectGeometry(headline, expected);
+  });
+
+  test('a sustained drag keeps its selection frame current without resubscribing', async ({
+    page,
+    request,
+  }) => {
+    const headline = await openEditable(page, request, 'visual-sustained-drag');
+    const before = await geometry(headline);
+    const box = await headline.boundingBox();
+    if (!box) throw new Error('Drag target has no bounding box');
+    const subscriptions = await headline.evaluateHandle((node) => {
+      const counts = { observed: 0, disconnected: 0 };
+      const Observer = window.ResizeObserver;
+      window.ResizeObserver = class extends Observer {
+        tracksTarget = false;
+        observe(target: Element, options?: ResizeObserverOptions) {
+          if (target === node) {
+            this.tracksTarget = true;
+            counts.observed++;
+          }
+          super.observe(target, options);
+        }
+        disconnect() {
+          if (this.tracksTarget) counts.disconnected++;
+          super.disconnect();
+        }
+      };
+      return counts;
+    });
+    const expectFrame = async () => {
+      await expect
+        .poll(async () => {
+          const [frame, target] = await Promise.all([
+            page.locator('[data-selection-frame]').boundingBox(),
+            headline.boundingBox(),
+          ]);
+          if (!frame || !target) return Infinity;
+          return Math.max(
+            ...(['x', 'y', 'width', 'height'] as const).map((key) =>
+              Math.abs(frame[key] - target[key]),
+            ),
+          );
+        })
+        .toBeLessThan(1.5);
+    };
+
+    await page.keyboard.down('Alt');
+    await startDrag(page, headline, 10, 10);
+    await expectFrame();
+    // Continue after the initial 420 ms animation-tracking window has ended.
+    await page.waitForTimeout(500);
+    const baseline = await subscriptions.jsonValue();
+    expect(baseline.observed).toBeGreaterThan(0);
+    for (const delta of [30, 60, 90]) {
+      await page.mouse.move(box.x + box.width / 2 + delta, box.y + box.height / 2 + delta);
+      await expectGeometry(headline, {
+        x: before.x + delta / before.scale,
+        y: before.y + delta / before.scale,
+      });
+      await expectFrame();
+      expect(await subscriptions.jsonValue()).toEqual(baseline);
+    }
+    await page.keyboard.press('Escape');
+    await page.mouse.up();
+    await page.keyboard.up('Alt');
+    await expectGeometry(headline, before);
+    await expectFrame();
+    await subscriptions.dispose();
   });
 
   test('Escape cancels the current drag while preserving the previous nudge', async ({
