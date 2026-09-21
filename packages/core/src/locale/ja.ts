@@ -235,6 +235,8 @@ export const ja: Locale = {
     cropFitCover: '塗りつぶす',
     cropFitContain: '全体表示',
     cropApply: '適用',
+    cropSharedConsent:
+      '共有コンポーネント内の画像をトリミングすると、他のページを含むそのコンポーネントの他の画像にも変更が適用されることを理解しました。',
     agentWatching: 'エージェント監視中',
     agentWatchingTooltip: '選択中の要素はエージェントにリアルタイムで同期されています。',
     agentNotWatching: 'エージェント未接続',

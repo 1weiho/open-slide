@@ -239,6 +239,8 @@ export const en: Locale = {
     cropFitCover: 'Fill',
     cropFitContain: 'Fit',
     cropApply: 'Apply',
+    cropSharedConsent:
+      'I understand that cropping an image in a shared component also changes its other instances, including on other pages.',
     leaveComment: 'Leave a comment',
     commentPlaceholder: 'Describe a change for the agent…',
     commentShortcutHint: '⌘/ to focus · ⌘↵ to add',

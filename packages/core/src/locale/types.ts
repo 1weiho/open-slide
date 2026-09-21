@@ -242,6 +242,7 @@ export type Locale = {
     cropFitCover: string;
     cropFitContain: string;
     cropApply: string;
+    cropSharedConsent: string;
     leaveComment: string;
     commentPlaceholder: string;
     commentShortcutHint: string;
