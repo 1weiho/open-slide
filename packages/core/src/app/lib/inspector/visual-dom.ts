@@ -9,6 +9,89 @@ import {
 } from './geometry';
 import type { EditOp } from './use-editor';
 
+export const TRANSLATE_STYLE_KEY = 'translate';
+export const ROTATE_STYLE_KEY = 'rotate';
+export const TRANSFORM_STYLE_KEYS = [TRANSLATE_STYLE_KEY, ROTATE_STYLE_KEY] as const;
+export const SIZE_STYLE_KEYS = ['width', 'height'] as const;
+export const SIZE_BOUNDS_STYLES = {
+  minWidth: '0px',
+  minHeight: '0px',
+  maxWidth: 'none',
+  maxHeight: 'none',
+} as const;
+export const FLEX_SIZE_STYLES = { flexShrink: '0', flexGrow: '0', flexBasis: 'auto' } as const;
+export const SIZE_CONSTRAINT_STYLES = { ...SIZE_BOUNDS_STYLES, ...FLEX_SIZE_STYLES } as const;
+export const LAYER_POSITION_STYLE = { position: 'relative' } as const;
+export const LAYER_INSET_KEYS = [
+  'inset',
+  'insetInline',
+  'insetBlock',
+  'insetInlineStart',
+  'insetInlineEnd',
+  'insetBlockStart',
+  'insetBlockEnd',
+  'top',
+  'right',
+  'bottom',
+  'left',
+] as const;
+export const LAYER_INSET_VALUE = 'auto';
+export const Z_INDEX_KEY = 'zIndex';
+
+export const GESTURE_STYLE_KEYS: readonly string[] = [
+  ...TRANSFORM_STYLE_KEYS,
+  ...SIZE_STYLE_KEYS,
+  ...Object.keys(SIZE_CONSTRAINT_STYLES),
+  ...Object.keys(LAYER_POSITION_STYLE),
+  ...LAYER_INSET_KEYS,
+  Z_INDEX_KEY,
+];
+
+export type ClearLayoutScope = 'transform' | 'all';
+
+type InlineLayout = Readonly<Record<string, string | undefined>>;
+
+const inlineValue = (inline: InlineLayout, key: string) => inline[key]?.trim() ?? '';
+
+// Size and layer keys are cleared only alongside the signature the editor writes with them, so an
+// authored `width: 240`, `flexShrink: 0` or `position: 'relative'` is not mistaken for a gesture.
+function holds(inline: InlineLayout, styles: Readonly<Record<string, string>>): boolean {
+  return Object.entries(styles).every(([key, value]) => inlineValue(inline, key) === value);
+}
+
+const LAYER_GROUP_SIGNATURE = {
+  ...LAYER_POSITION_STYLE,
+  ...Object.fromEntries(['top', 'right', 'bottom', 'left'].map((key) => [key, LAYER_INSET_VALUE])),
+};
+
+export function clearLayoutOps(inline: InlineLayout, scope: ClearLayoutScope): EditOp[] {
+  const keys: string[] = [...TRANSFORM_STYLE_KEYS];
+  if (scope === 'all') {
+    if (holds(inline, SIZE_BOUNDS_STYLES))
+      keys.push(
+        ...SIZE_STYLE_KEYS,
+        ...Object.keys(SIZE_BOUNDS_STYLES),
+        ...Object.entries(FLEX_SIZE_STYLES)
+          .filter(([key, value]) => inlineValue(inline, key) === value)
+          .map(([key]) => key),
+      );
+    if (holds(inline, LAYER_GROUP_SIGNATURE))
+      keys.push(
+        ...Object.keys(LAYER_POSITION_STYLE),
+        ...LAYER_INSET_KEYS.filter((key) => inlineValue(inline, key) === LAYER_INSET_VALUE),
+      );
+    keys.push(Z_INDEX_KEY);
+  }
+  return keys
+    .filter((key) => inlineValue(inline, key))
+    .map((key) => ({ kind: 'set-style', key, value: null }));
+}
+
+export function readInlineLayout(anchor: HTMLElement): Record<string, string> {
+  const style = anchor.style as unknown as Record<string, string>;
+  return Object.fromEntries(GESTURE_STYLE_KEYS.map((key) => [key, style[key] ?? '']));
+}
+
 export type Canvas = {
   root: HTMLElement;
   rect: DOMRect;
@@ -169,7 +252,7 @@ export function moveOps(snapshot: TransformSnapshot, delta: Point, canvas: Canva
   });
   return [
     styleOp(
-      'translate',
+      TRANSLATE_STYLE_KEY,
       `${round(snapshot.translate.x + local.x)}px ${round(snapshot.translate.y + local.y)}px`,
     ),
   ];
@@ -183,15 +266,9 @@ export function sizeOps(
 ): EditOp[] {
   const anchor = snapshot.target.anchor;
   restoreTransform(snapshot);
-  const constraints = [
-    styleOp('minWidth', '0px'),
-    styleOp('minHeight', '0px'),
-    styleOp('maxWidth', 'none'),
-    styleOp('maxHeight', 'none'),
-    styleOp('flexShrink', '0'),
-    styleOp('flexGrow', '0'),
-    styleOp('flexBasis', 'auto'),
-  ];
+  const constraints = Object.entries(SIZE_CONSTRAINT_STYLES).map(([key, value]) =>
+    styleOp(key, value),
+  );
   const dimensions = (width: number, height: number) => [
     styleOp('width', `${round(Math.max(8, width))}px`),
     styleOp('height', `${round(Math.max(8, height))}px`),

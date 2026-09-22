@@ -238,6 +238,18 @@ export const ja: Locale = {
     sendBackward: '背面へ移動',
     sendToBack: '最背面へ移動',
     smartGuides: 'スマートガイド',
+    clearLayout: 'レイアウトをクリア',
+    clearLayoutTransform: '位置と回転をクリア',
+    clearLayoutAll: 'すべてのレイアウトをクリア',
+    clearLayoutHint:
+      'ドラッグによるオフセットと回転を削除します。Alt キーを押しながらクリックすると、エディターが設定したサイズと重なり順も削除します。',
+    clearLayoutAltOnly:
+      'クリアするオフセットや回転はありません。メニューからエディターが設定したサイズと重なり順をクリアできます。',
+    clearLayoutNothing:
+      'クリアする項目はありません。エディターが設定したオフセット、回転、サイズ、重なり順がありません。',
+    clearLayoutOptions: 'レイアウトのクリアオプション',
+    clearLayoutKeptPosition:
+      '内側の要素がこの要素を基準に配置されているため、position: relative を残しました。',
     selectParent: '親要素を選択',
     visualEditorHint:
       'Shift クリックで複数選択、⌘A で全選択。矢印キーで 1 px、Shift を押すと 10 px 移動。Alt でスナップを無効化。Shift で移動方向や縦横比を固定。',

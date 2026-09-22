@@ -25,6 +25,7 @@ import {
   marqueeTargets,
   moveOps,
   previewOps,
+  ROTATE_STYLE_KEY,
   readCanvas,
   readFrame,
   restoreTransform,
@@ -359,7 +360,9 @@ export function InspectOverlay() {
         const snapshot = gesture.snapshots[0];
         let rotation = snapshot.rotation + ((angle - startAngle) * 180) / Math.PI;
         if (event.shiftKey) rotation = Math.round(rotation / 15) * 15;
-        gesture.edits = [{ ...snapshot.target, ops: [styleOp('rotate', `${round(rotation)}deg`)] }];
+        gesture.edits = [
+          { ...snapshot.target, ops: [styleOp(ROTATE_STYLE_KEY, `${round(rotation)}deg`)] },
+        ];
       } else {
         const snapshot = gesture.snapshots[0];
         const frame = resizeRect(snapshot.frame, gesture.mode, delta, event.shiftKey);

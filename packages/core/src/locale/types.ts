@@ -240,6 +240,14 @@ export type Locale = {
     sendBackward: string;
     sendToBack: string;
     smartGuides: string;
+    clearLayout: string;
+    clearLayoutTransform: string;
+    clearLayoutAll: string;
+    clearLayoutHint: string;
+    clearLayoutAltOnly: string;
+    clearLayoutNothing: string;
+    clearLayoutOptions: string;
+    clearLayoutKeptPosition: string;
     selectParent: string;
     visualEditorHint: string;
     sharedLayoutHint: string;

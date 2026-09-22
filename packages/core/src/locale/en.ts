@@ -237,6 +237,18 @@ export const en: Locale = {
     sendBackward: 'Send backward',
     sendToBack: 'Send to back',
     smartGuides: 'Smart guides',
+    clearLayout: 'Clear layout',
+    clearLayoutTransform: 'Clear position and rotation',
+    clearLayoutAll: 'Clear all layout',
+    clearLayoutHint:
+      "Removes the offset and rotation from dragging. Alt-click to also remove the editor's size and layering.",
+    clearLayoutAltOnly:
+      "No offset or rotation to clear. Use the menu to clear the editor's size and layering.",
+    clearLayoutNothing:
+      'Nothing to clear: no offset, rotation, size or layering set by the editor.',
+    clearLayoutOptions: 'Clear layout options',
+    clearLayoutKeptPosition:
+      'Kept position: relative because nested elements are positioned against it.',
     selectParent: 'Select parent',
     visualEditorHint:
       'Shift-click to select more. ⌘A selects all. Arrows move 1 px; Shift moves 10 px. Alt ignores guides. Shift constrains drag or keeps resize proportions.',
