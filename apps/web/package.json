@@ -14,7 +14,7 @@
   "dependencies": {
     "fumadocs-core": "16.8.5",
     "fumadocs-mdx": "14.3.2",
-    "fumadocs-ui": "16.8.5",
+    "fumadocs-ui": "16.15.11",
     "geist": "^1.7.2",
     "lucide-react": "^1.25.0",
     "motion": "^12.38.0",
