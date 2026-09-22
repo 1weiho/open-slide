@@ -210,6 +210,17 @@ export const ja: Locale = {
     elementImage: '画像',
     elementShape: '図形',
     sourceSection: 'ソース',
+    copySourceLocation: 'ソースの場所をコピー',
+    copyForAgent: 'エージェント用にコピー',
+    sourceLocationCopied: 'ソースの場所をコピーしました',
+    agentSnippetCopied: 'エージェント用に場所と要素をコピーしました',
+    clipboardFailed: 'クリップボードにコピーできませんでした',
+    sourceLocationMore: '+{count}',
+    untracedTitle: 'このスライドのソースにありません',
+    untracedHint:
+      'この <{tag}> は {file} ではなく、レイアウトまたはインポートしたコンポーネントから来ています。このファイルに書かれた要素を選択してください。',
+    sharedInstancesHint:
+      'この行から {count} 回レンダリングされています。スタイルの変更はすべてのコピーに適用されます。',
     rotateHandle: '要素を回転',
     resizeHandle: 'サイズ変更（{handle}）',
     arrangeSection: '配置',

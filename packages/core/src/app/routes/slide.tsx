@@ -54,6 +54,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useFolders } from '@/lib/folders';
+import { summarizeElement } from '@/lib/inspector/source-location';
 import {
   hasModifier,
   isBackwardKey,
@@ -1094,12 +1095,7 @@ function SelectionReporter() {
   useEffect(() => {
     if (!import.meta.hot) return;
     const selection = selected
-      ? {
-          line: selected.line,
-          column: selected.column,
-          tagName: selected.anchor.tagName.toLowerCase(),
-          text: (selected.anchor.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 120),
-        }
+      ? { line: selected.line, column: selected.column, ...summarizeElement(selected.anchor) }
       : null;
     import.meta.hot.send('open-slide:current', { selection });
   }, [selected]);
