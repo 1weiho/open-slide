@@ -137,16 +137,23 @@ describe('locTagsPlugin', () => {
     expectTaggedTransform('/repo/slides/cover/index.tsx');
   });
 
-  it('tags shared slide source files', () => {
-    expectTaggedTransform('/repo/slides/cover/shared.tsx');
+  it('strips query and hash suffixes before matching', () => {
+    expectTaggedTransform('/repo/slides/cover/index.tsx?t=1700000000000');
+    expectTaggedTransform('/repo/slides/cover/index.tsx#hmr');
+    expect(transformWithLocTags('/repo/slides/cover/shared.tsx?t=1700000000000')).toBeNull();
   });
 
-  it('tags numbered slide source files', () => {
-    expectTaggedTransform('/repo/slides/cover/01-Cover.tsx');
+  // `/__edit` only writes the deck entry, so tags outside it would target the wrong file.
+  it('skips sibling slide source files, which /__edit cannot write to', () => {
+    expect(transformWithLocTags('/repo/slides/cover/shared.tsx')).toBeNull();
   });
 
-  it('tags slide source files in nested folders', () => {
-    expectTaggedTransform('/repo/slides/cover/components/Card.tsx');
+  it('skips numbered slide source files', () => {
+    expect(transformWithLocTags('/repo/slides/cover/01-Cover.tsx')).toBeNull();
+  });
+
+  it('skips slide source files in nested folders', () => {
+    expect(transformWithLocTags('/repo/slides/cover/components/Card.tsx')).toBeNull();
   });
 
   it('skips tsx files directly under the slides directory', () => {
@@ -159,6 +166,11 @@ describe('locTagsPlugin', () => {
 
   it('skips colocated test files', () => {
     expect(transformWithLocTags('/repo/slides/cover/index.test.tsx')).toBeNull();
+  });
+
+  it('skips a file that merely ends in index.tsx', () => {
+    // `deep/index.tsx` is not the entry either, and a suffix check would take it.
+    expect(transformWithLocTags('/repo/slides/cover/deep/index.tsx')).toBeNull();
   });
 });
 
@@ -189,8 +201,10 @@ describe('locTagsPlugin on Windows-style paths', () => {
     expectTagged('C:\\repo\\slides', 'C:/repo/slides/cover/index.tsx?t=1700000000000');
   });
 
-  it('tags nested slide source files under a Windows slidesRoot', () => {
-    expectTagged('C:\\repo\\slides', 'C:/repo/slides/cover/components/Card.tsx');
+  it('skips nested slide source files under a Windows slidesRoot', () => {
+    expect(
+      transformWithMockedResolve('C:\\repo\\slides', 'C:/repo/slides/cover/components/Card.tsx'),
+    ).toBeNull();
   });
 
   it('skips tsx files directly under the Windows slides directory', () => {
