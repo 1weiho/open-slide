@@ -34,6 +34,10 @@ export function designToCssVars(d: DesignSystem): Record<string, string> {
   };
 }
 
+export function paletteTokenVar(token: keyof DesignPalette): string {
+  return `var(--osd-${token})`;
+}
+
 export function cssVarsToString(vars: Record<string, string>): string {
   return Object.entries(vars)
     .map(([k, v]) => `  ${k}: ${v};`)

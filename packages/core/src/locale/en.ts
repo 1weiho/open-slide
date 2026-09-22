@@ -275,6 +275,7 @@ export const en: Locale = {
     trackingLabel: 'Tracking',
     alignLabel: 'Align',
     clearAria: 'Clear',
+    designTokenSwatchAria: 'Use design color: {name}',
     replace: 'Replace…',
     replaceImageDialogTitle: 'Replace image',
     replaceImageDescription: 'Pick an asset from {path}.',

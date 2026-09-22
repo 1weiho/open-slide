@@ -272,6 +272,7 @@ export const ja: Locale = {
     trackingLabel: '字間',
     alignLabel: '配置',
     clearAria: 'クリア',
+    designTokenSwatchAria: 'デザインカラーを使用：{name}',
     replace: '置き換え…',
     replaceImageDialogTitle: '画像を置き換え',
     replaceImageDescription: '{path} からアセットを選択してください。',

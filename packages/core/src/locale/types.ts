@@ -274,6 +274,8 @@ export type Locale = {
     trackingLabel: string;
     alignLabel: string;
     clearAria: string;
+    /** template: "Use design color: {name}" */
+    designTokenSwatchAria: string;
     replace: string;
     replaceImageDialogTitle: string;
     /** template: "Pick an asset from {path}." */

@@ -267,6 +267,7 @@ export const zhTW: Locale = {
     trackingLabel: '字距',
     alignLabel: '對齊',
     clearAria: '清除',
+    designTokenSwatchAria: '使用設計色：{name}',
     replace: '替換…',
     replaceImageDialogTitle: '替換圖片',
     replaceImageDescription: '從 {path} 選擇素材。',

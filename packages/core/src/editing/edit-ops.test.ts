@@ -24,6 +24,21 @@ describe('applyEdit / set-style', () => {
     expect(r.source).toContain("style={{ color: '#00ff00' }}");
   });
 
+  it('writes a design-token var() value verbatim', () => {
+    const src = [
+      'export default [() => (',
+      "<h1 style={{ color: '#ff0000' }}>Hi</h1>",
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 0, [
+      { kind: 'set-style', key: 'color', value: 'var(--osd-accent)' },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("style={{ color: 'var(--osd-accent)' }}");
+    expect(r.source).not.toContain('#ff0000');
+  });
+
   it('adds a new key alongside existing keys', () => {
     const src = ['export default [() => (', "<h1 style={{ color: 'red' }}>Hi</h1>", ')];', ''].join(
       '\n',
