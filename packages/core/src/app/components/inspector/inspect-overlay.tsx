@@ -46,7 +46,7 @@ export function InspectOverlay() {
       if (inlineEdit?.anchor.contains(e.target as Node)) return setHover(null);
       const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
       if (!el) return setHover(null);
-      const hit = findSlideSource(el, slideId, { hostOnly: true });
+      const hit = findSlideSource(el, slideId);
       if (!hit) return setHover(null);
       setHover({ hit });
     };
@@ -57,7 +57,7 @@ export function InspectOverlay() {
       if (inlineEdit?.anchor.contains(e.target as Node)) return;
       const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
       if (!el) return;
-      const hit = findSlideSource(el, slideId, { hostOnly: true });
+      const hit = findSlideSource(el, slideId);
       if (!hit) return;
       e.preventDefault();
       e.stopPropagation();
@@ -70,7 +70,7 @@ export function InspectOverlay() {
       if (inlineEdit?.anchor.contains(e.target as Node)) return;
       const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
       if (!el) return;
-      const hit = findSlideSource(el, slideId, { hostOnly: true });
+      const hit = findSlideSource(el, slideId);
       if (!hit) return;
       if (!(hit.anchor instanceof HTMLImageElement)) return;
       e.preventDefault();
