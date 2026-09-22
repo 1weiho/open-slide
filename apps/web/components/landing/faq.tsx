@@ -26,7 +26,7 @@ export const faqs: QA[] = [
   },
   {
     q: 'Is open-slide open source?',
-    a: 'Yes. open-slide is MIT-licensed. The runtime ships as @open-slide/core on npm and the scaffolder as @open-slide/cli. Source lives at github.com/1weiho/open-slide.',
+    a: 'Yes. open-slide is MIT-licensed. The runtime ships as @open-slide/core on npm and the scaffolder as @open-slide/cli. Source lives at github.com/open-slide/open-slide.',
   },
 ];
 

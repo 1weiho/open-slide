@@ -42,9 +42,9 @@ export function Footer() {
         <FooterCol
           title="Elsewhere"
           links={[
-            ['GitHub', 'https://github.com/1weiho/open-slide'],
+            ['GitHub', 'https://github.com/open-slide/open-slide'],
             ['npm', 'https://www.npmjs.com/package/@open-slide/core'],
-            ['Issues', 'https://github.com/1weiho/open-slide/issues'],
+            ['Issues', 'https://github.com/open-slide/open-slide/issues'],
           ]}
         />
       </Container>

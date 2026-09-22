@@ -41,7 +41,7 @@ export function Nav({ githubStars }: { githubStars?: string | null }) {
             Demo
           </a>
           <a
-            href="https://github.com/1weiho/open-slide"
+            href="https://github.com/open-slide/open-slide"
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => posthog.capture('nav_external_link_clicked', { label: 'github' })}

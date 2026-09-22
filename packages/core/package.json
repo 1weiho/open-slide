@@ -55,11 +55,11 @@
   "homepage": "https://open-slide.dev",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/1weiho/open-slide.git",
+    "url": "git+https://github.com/open-slide/open-slide.git",
     "directory": "packages/core"
   },
   "bugs": {
-    "url": "https://github.com/1weiho/open-slide/issues"
+    "url": "https://github.com/open-slide/open-slide/issues"
   },
   "publishConfig": {
     "access": "public"
