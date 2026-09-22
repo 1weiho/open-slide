@@ -178,13 +178,36 @@ export async function duplicateSlideDir(
   }
 }
 
-export function resolveSlideEntry(slidesRoot: string, slideId: string): string | null {
+function isInsideDir(dir: string, file: string): boolean {
+  const rel = path.relative(dir, file);
+  return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel);
+}
+
+export function resolveSlideSourceFile(
+  slidesRoot: string,
+  slideId: string,
+  relPath?: string | null,
+): string | null {
   if (!SLIDE_ID_RE.test(slideId)) return null;
-  const dir = path.resolve(slidesRoot, slideId);
-  if (!dir.startsWith(slidesRoot + path.sep)) return null;
-  // The SlideMeta contract says every slide has slides/<id>/index.tsx; we only
-  // edit that file to keep the write surface tiny and predictable.
-  return path.join(dir, 'index.tsx');
+  const root = path.resolve(slidesRoot);
+  const dir = path.resolve(root, slideId);
+  if (!isInsideDir(root, dir)) return null;
+
+  const raw = relPath == null || relPath === '' ? 'index.tsx' : relPath;
+  const posix = raw.replace(/\\/g, '/');
+  if (path.isAbsolute(raw) || path.isAbsolute(posix) || /^[a-zA-Z]:/.test(posix)) return null;
+  if (!posix.endsWith('.tsx') || posix.includes('\0')) return null;
+  const parts = posix.split('/');
+  if (parts.some((part) => part === '' || part === '.' || part === '..')) return null;
+
+  const file = path.resolve(dir, ...parts);
+  if (!isInsideDir(dir, file)) return null;
+  return file;
+}
+
+export function resolveSlideEntry(slidesRoot: string, slideId: string): string | null {
+  // Notes/assets/meta stay on the entry. Inspector writes use resolveSlideSourceFile.
+  return resolveSlideSourceFile(slidesRoot, slideId, 'index.tsx');
 }
 
 function escapeSingleQuoted(s: string): string {
