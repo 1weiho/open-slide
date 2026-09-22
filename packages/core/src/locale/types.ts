@@ -325,6 +325,7 @@ export type Locale = {
     noMatchingAssetsHint: string;
     clearFilters: string;
     searchLogos: string;
+    searchFonts: string;
     upload: string;
     dropToUpload: string;
     loading: string;
@@ -370,6 +371,19 @@ export type Locale = {
     logoSearchEmptyHintSuffix: string;
     logoVariantLight: string;
     logoVariantDark: string;
+    fontSearchTitle: string;
+    fontSearchPoweredByPrefix: string;
+    fontSearchPlaceholder: string;
+    fontSearchPreviewPlaceholder: string;
+    fontSearchErrorTitle: string;
+    fontSearchErrorBody: string;
+    /** template: 'No fonts for "{query}"' */
+    fontSearchNoResults: string;
+    fontSearchEmpty: string;
+    fontSearchEmptyHintPrefix: string;
+    fontSearchEmptyHintSuffix: string;
+    fontWeightLabel: string;
+    fontPreviewSample: string;
     /** template: "Upload failed ({status})" */
     toastUploadFailed: string;
     /** template: "Replaced {name}" */
@@ -387,6 +401,7 @@ export type Locale = {
     /** template: "Deleted {name}" */
     toastDeleted: string;
     toastDownloadFailed: string;
+    toastFontDownloadFailed: string;
     toastSearchFailed: string;
   };
 
