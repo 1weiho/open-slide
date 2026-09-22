@@ -136,6 +136,41 @@ test.describe('slide viewer', () => {
     }
   });
 
+  test('thumbnail rail adds blank pages that persist after reload', async ({ page, request }) => {
+    try {
+      await duplicateSlide(request, 'alpha', 'add-page-ui');
+      await openSlide(page, 'add-page-ui');
+      const thumbs = page.getByRole('button', { name: /^Go to page \d+$/ });
+      await expect(thumbs).toHaveCount(3);
+
+      await page.getByRole('button', { name: 'Go to page 1' }).click({ button: 'right' });
+      await page.getByRole('menuitem', { name: 'Add page after' }).click();
+      await expect(thumbs).toHaveCount(4);
+      await expect(page).toHaveURL(/[?&]p=2\b/);
+      await expect
+        .poll(() => readSlideSource('add-page-ui'))
+        .toContain('export default [One, Page2, Two, Three] satisfies Page[];');
+      const source = await readSlideSource('add-page-ui');
+      expect(source).toContain(
+        "const Page2: Page = () => <div style={{ width: '100%', height: '100%' }} />;",
+      );
+      expect(source).toContain("['Alpha speaker note', undefined, undefined, 'Alpha final note']");
+
+      await page.getByRole('button', { name: 'Add page', exact: true }).click();
+      await expect(thumbs).toHaveCount(5);
+      await expect(page).toHaveURL(/[?&]p=5\b/);
+      await expect
+        .poll(() => readSlideSource('add-page-ui'))
+        .toContain('export default [One, Page2, Two, Three, Page5] satisfies Page[];');
+
+      await page.reload();
+      await expect(thumbs).toHaveCount(5);
+      await expect(page).toHaveURL(/[?&]p=5\b/);
+    } finally {
+      await deleteSlide(request, 'add-page-ui');
+    }
+  });
+
   test('toolbar title editor renames the deck and saves to disk', async ({ page, request }) => {
     try {
       await duplicateSlide(request, 'edit-target', 'rename-ui');

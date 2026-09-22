@@ -442,6 +442,10 @@ export const ja: Locale = {
   thumbnailRail: {
     pages: 'ページ',
     goToPageAria: 'ページ {n} へ移動',
+    addPage: 'ページを追加',
+    addPageAfter: '後にページを追加',
+    toastAdded: 'ページ {n} を追加しました',
+    toastAddFailed: 'ページを追加できませんでした',
     duplicatePage: '複製',
     deletePage: '削除',
     pageActionsAria: 'ページ {n} の操作',

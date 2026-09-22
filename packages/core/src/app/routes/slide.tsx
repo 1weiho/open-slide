@@ -86,13 +86,17 @@ import {
   type PptxExportProgress,
 } from '../lib/export-pptx';
 import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
-import type { SlideModule } from '../lib/sdk';
+import type { Page, SlideModule } from '../lib/sdk';
 import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
 import { useSlideModule } from '../lib/use-slide-module';
 
 const { showSlideUi, showSlideBrowser, allowHtmlDownload } = config.build;
 
 const noop = () => {};
+
+// Stands in for the new page until the dev server's HMR update delivers the
+// real component written to index.tsx.
+const BlankPage: Page = () => <div style={{ width: '100%', height: '100%' }} />;
 
 export function Slide() {
   const { slideId = '' } = useParams();
@@ -230,6 +234,64 @@ export function Slide() {
     [pages, index, slideId, goTo],
   );
 
+  const addingPageRef = useRef(false);
+  const addPage = useCallback(
+    async (afterIndex: number) => {
+      const before = pages;
+      if (addingPageRef.current || afterIndex < -1 || afterIndex >= before.length) return;
+      addingPageRef.current = true;
+      const at = afterIndex + 1;
+      const nextPages = [...before];
+      nextPages.splice(at, 0, BlankPage);
+      setPages(nextPages);
+      const restore = [...before.map((_, i) => (i < at ? i : i + 1)), -1];
+      remapNotesSessionCacheAfterReorder(
+        slideId,
+        nextPages.map((_, i) => (i < at ? i : i === at ? -1 : i - 1)),
+      );
+      const showPage = (i: number) =>
+        setSearchParams(
+          (prev) => {
+            const next = new URLSearchParams(prev);
+            next.set('p', String(i + 1));
+            return next;
+          },
+          { replace: true },
+        );
+      showPage(at);
+
+      try {
+        const res = await fetch(`/__slides/${encodeURIComponent(slideId)}/pages`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ afterIndex }),
+        });
+        if (!res.ok) {
+          const detail = await res.json().catch(() => ({ error: res.statusText }));
+          throw new Error(detail.error ?? `HTTP ${res.status}`);
+        }
+        toast.success(format(t.thumbnailRail.toastAdded, { n: at + 1 }));
+      } catch (err) {
+        setPages(before);
+        remapNotesSessionCacheAfterReorder(slideId, restore);
+        setSearchParams(
+          (prev) => {
+            const shown = Number(prev.get('p') ?? '1') - 1;
+            if (!Number.isFinite(shown) || shown < at) return prev;
+            const next = new URLSearchParams(prev);
+            next.set('p', String(Math.max(1, shown)));
+            return next;
+          },
+          { replace: true },
+        );
+        toast.error(`${t.thumbnailRail.toastAddFailed}: ${String((err as Error).message ?? err)}`);
+      } finally {
+        addingPageRef.current = false;
+      }
+    },
+    [pages, slideId, setSearchParams, t.thumbnailRail],
+  );
+
   const duplicatePage = useCallback(
     async (i: number) => {
       const before = pages;
@@ -292,11 +354,12 @@ export function Slide() {
     () =>
       import.meta.env.DEV
         ? {
+            onAddAfter: addPage,
             onDuplicate: duplicatePage,
             onDelete: deletePage,
           }
         : undefined,
-    [duplicatePage, deletePage],
+    [addPage, duplicatePage, deletePage],
   );
 
   useEffect(() => {

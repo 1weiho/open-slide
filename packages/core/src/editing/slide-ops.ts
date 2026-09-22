@@ -1,6 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { parse as babelParse } from '@babel/parser';
+import * as t from '@babel/types';
+import { parseSource, walkAll } from './babel-walk.ts';
+import { applySplices, type Splice } from './edit-ops.ts';
 
 export const SLIDE_ID_RE = /^[a-z0-9_-]+$/i;
 
@@ -583,4 +586,229 @@ export function duplicatePageInDefaultExportInSource(source: string, index: numb
   rebuilt += suffix;
 
   return source.slice(0, arrayStart) + rebuilt + source.slice(arrayEnd);
+}
+
+export type AddPageResult =
+  | { ok: true; source: string; index: number; name: string }
+  | { ok: false; status: number; error: string };
+
+const BLANK_PAGE_BODY = "() => <div style={{ width: '100%', height: '100%' }} />";
+
+function refuse(error: string): AddPageResult {
+  return { ok: false, status: 422, error };
+}
+
+function unwrapTsExpression(node: t.Node | null | undefined): t.Node | null | undefined {
+  let current = node;
+  while (current && (t.isTSAsExpression(current) || t.isTSSatisfiesExpression(current))) {
+    current = current.expression;
+  }
+  return current;
+}
+
+function declaredNames(stmt: t.Statement): string[] {
+  const decl = t.isExportNamedDeclaration(stmt) ? stmt.declaration : stmt;
+  if (t.isFunctionDeclaration(decl) && decl.id) return [decl.id.name];
+  if (t.isVariableDeclaration(decl)) {
+    return decl.declarations.flatMap((d) => (t.isIdentifier(d.id) ? [d.id.name] : []));
+  }
+  return [];
+}
+
+function findNotesArrayNode(body: t.Statement[]): t.ArrayExpression | null | 'invalid' {
+  for (const stmt of body) {
+    if (!t.isExportNamedDeclaration(stmt) || !t.isVariableDeclaration(stmt.declaration)) continue;
+    for (const d of stmt.declaration.declarations) {
+      if (!t.isIdentifier(d.id) || d.id.name !== 'notes') continue;
+      const init = unwrapTsExpression(d.init);
+      return t.isArrayExpression(init) ? init : 'invalid';
+    }
+  }
+  return null;
+}
+
+function separatorsBetween(source: string, nodes: t.Node[]): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < nodes.length - 1; i++) {
+    out.push(source.slice(nodes[i].end ?? 0, nodes[i + 1].start ?? 0));
+  }
+  return out;
+}
+
+// Existing gaps can hold section comments (`A,\n  // Part two\n  B`); the
+// new separator keeps only their line break and indentation so no comment is
+// duplicated onto the inserted entry.
+function commentFreeSeparator(sample: string): string {
+  const lastBreak = sample.lastIndexOf('\n');
+  if (lastBreak === -1) return ', ';
+  const eol = sample[lastBreak - 1] === '\r' ? '\r\n' : '\n';
+  const indent = sample.slice(lastBreak + 1).match(/^[ \t]*/)?.[0] ?? '';
+  return `,${eol}${indent}`;
+}
+
+// Splice `text` into an array literal so it lands at position `index`, reusing
+// the array's own separator style. Returns null for an empty array whose
+// brackets hold anything but whitespace (a comment we would have to straddle).
+function insertIntoArraySplice(
+  source: string,
+  array: t.ArrayExpression,
+  elements: t.Node[],
+  index: number,
+  text: string,
+): Splice | null {
+  const arrayStart = array.start ?? 0;
+  const arrayEnd = array.end ?? 0;
+  if (elements.length === 0) {
+    if (source.slice(arrayStart + 1, arrayEnd - 1).trim() !== '') return null;
+    return { from: arrayStart, to: arrayEnd, text: `[${text}]` };
+  }
+  const prefix = source.slice(arrayStart, elements[0].start ?? 0);
+  const sep = commentFreeSeparator(
+    chooseInsertSeparator(prefix, separatorsBetween(source, elements)),
+  );
+  if (index < elements.length) {
+    const at = elements[index].start ?? 0;
+    return { from: at, to: at, text: `${text}${sep}` };
+  }
+  const at = elements[elements.length - 1].end ?? 0;
+  return { from: at, to: at, text: `${sep}${text}` };
+}
+
+// Follow the deck's own numbering when its page identifiers share a
+// `<prefix><n>` shape (Page1, Slide02…); otherwise fall back to `Page<n>`.
+function choosePageName(pageNames: string[], used: Set<string>, position: number): string {
+  const groups = new Map<string, { max: number; width: number; count: number }>();
+  for (const name of pageNames) {
+    const m = name.match(/^([A-Za-z_$][\w$]*?)(\d+)$/);
+    if (!m) continue;
+    const [, prefix, digits] = m;
+    const g = groups.get(prefix) ?? { max: 0, width: 0, count: 0 };
+    g.max = Math.max(g.max, Number(digits));
+    if (digits.length > 1 && digits.startsWith('0')) g.width = Math.max(g.width, digits.length);
+    g.count++;
+    groups.set(prefix, g);
+  }
+  let best: [string, { max: number; width: number; count: number }] | null = null;
+  for (const entry of groups) {
+    if (!best || entry[1].count > best[1].count) best = entry;
+  }
+  const [prefix, width, start] =
+    best && (best[1].count >= 2 || best[1].count === pageNames.length)
+      ? [best[0], best[1].width, best[1].max + 1]
+      : ['Page', 0, position + 1];
+  for (let n = start; ; n++) {
+    const candidate = `${prefix}${String(n).padStart(width, '0')}`;
+    if (!used.has(candidate)) return candidate;
+  }
+}
+
+function lineEndAfter(source: string, pos: number): number {
+  const nl = source.indexOf('\n', pos);
+  const lineEnd = nl === -1 ? source.length : nl;
+  const rest = source.slice(pos, lineEnd).replace(/\r$/, '');
+  return /^[ \t]*(\/\/.*)?$/.test(rest) ? lineEnd - (source[lineEnd - 1] === '\r' ? 1 : 0) : pos;
+}
+
+// Babel also lists the previous statement's same-line trailing comment as a
+// leading comment here; only comments that open their own line belong to it.
+function statementStart(source: string, stmt: t.Statement): number {
+  const own = stmt.leadingComments?.find((c) => {
+    const lineStart = source.lastIndexOf('\n', (c.start ?? 0) - 1) + 1;
+    return source.slice(lineStart, c.start ?? 0).trim() === '';
+  });
+  return own?.start ?? stmt.start ?? 0;
+}
+
+/**
+ * Insert a blank page after the page at `afterIndex` (`-1` inserts at the
+ * front): a new top-level `const <Name>: Page = () => <div … />;` next to its
+ * neighbour's declaration, its identifier in `export default [...]`, and an
+ * `undefined` slot in `export const notes` when the notes reach past the
+ * insertion point. Every change is a byte splice on the original source; the
+ * result is reparsed before it is returned.
+ */
+export function addPageToDefaultExportInSource(source: string, afterIndex: number): AddPageResult {
+  const ast = parseSource(source);
+  if (!ast) return refuse('could not add page — index.tsx does not parse');
+  const body = ast.program.body;
+
+  const exportIdx = body.findIndex((s) => t.isExportDefaultDeclaration(s));
+  if (exportIdx === -1) return refuse('could not add page — no `export default` in index.tsx');
+  const exportStmt = body[exportIdx] as t.ExportDefaultDeclaration;
+  const array = unwrapTsExpression(exportStmt.declaration);
+  if (!t.isArrayExpression(array)) {
+    return refuse('could not add page — `export default` is not an array literal');
+  }
+  const elements: t.Node[] = [];
+  for (const el of array.elements) {
+    if (!el || t.isSpreadElement(el)) {
+      return refuse('could not add page — `export default` array has holes or spreads');
+    }
+    elements.push(el);
+  }
+  const n = elements.length;
+  if (!Number.isInteger(afterIndex) || afterIndex < -1 || afterIndex >= n) {
+    return refuse('could not add page — index out of range');
+  }
+  const index = afterIndex + 1;
+
+  const used = new Set<string>();
+  walkAll(ast, (node) => {
+    if (t.isIdentifier(node) || t.isJSXIdentifier(node)) used.add(node.name);
+  });
+  const pageNames = elements.flatMap((el) => (t.isIdentifier(el) ? [el.name] : []));
+  const name = choosePageName(pageNames, used, index);
+
+  const pageType = body.some(
+    (s) =>
+      t.isImportDeclaration(s) &&
+      s.source.value === '@open-slide/core' &&
+      s.specifiers.some((sp) => t.isImportSpecifier(sp) && sp.local.name === 'Page'),
+  )
+    ? ': Page'
+    : '';
+  const eol = source.includes('\r\n') ? '\r\n' : '\n';
+  const declText = `const ${name}${pageType} = ${BLANK_PAGE_BODY};`;
+
+  const declaringStatement = (el: t.Node | undefined): t.Statement | undefined => {
+    if (!t.isIdentifier(el)) return undefined;
+    const i = body.findIndex((s, k) => k < exportIdx && declaredNames(s).includes(el.name));
+    return i === -1 ? undefined : body[i];
+  };
+  const splices: Splice[] = [];
+  const prevDecl = declaringStatement(elements[afterIndex]);
+  const nextDecl = declaringStatement(elements[index]);
+  if (prevDecl) {
+    const at = lineEndAfter(source, prevDecl.end ?? 0);
+    splices.push({ from: at, to: at, text: `${eol}${eol}${declText}` });
+  } else {
+    const at = statementStart(source, nextDecl ?? exportStmt);
+    splices.push({ from: at, to: at, text: `${declText}${eol}${eol}` });
+  }
+
+  const arraySplice = insertIntoArraySplice(source, array, elements, index, name);
+  if (!arraySplice) {
+    return refuse('could not add page — `export default` array contains only a comment');
+  }
+  splices.push(arraySplice);
+
+  const notes = findNotesArrayNode(body);
+  if (notes === 'invalid') {
+    return refuse('could not add page — `notes` export is not an array literal');
+  }
+  if (notes && index < notes.elements.length) {
+    const noteElements: t.Node[] = [];
+    for (const el of notes.elements) {
+      if (!el || t.isSpreadElement(el)) {
+        return refuse('could not add page — `notes` array has holes or spreads');
+      }
+      noteElements.push(el);
+    }
+    const notesSplice = insertIntoArraySplice(source, notes, noteElements, index, 'undefined');
+    if (notesSplice) splices.push(notesSplice);
+  }
+
+  const applied = applySplices(source, splices);
+  if (!applied.ok) return applied;
+  return { ok: true, source: applied.source, index, name };
 }
