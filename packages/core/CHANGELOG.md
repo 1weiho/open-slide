@@ -1,5 +1,11 @@
 # @open-slide/core
 
+## 2.0.0-beta.5
+
+### Patch Changes
+
+- [#490](https://github.com/open-slide/open-slide/pull/490) [`a47edb0`](https://github.com/open-slide/open-slide/commit/a47edb00919f5c85017add6035d1a653228f8266) Thanks [@1weiho](https://github.com/1weiho)! - Point repository and issue URLs at the open-slide/open-slide GitHub org.
+
 ## 2.0.0-beta.4
 
 ### Minor Changes
