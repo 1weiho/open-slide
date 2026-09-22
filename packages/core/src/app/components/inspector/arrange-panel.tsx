@@ -10,20 +10,21 @@ import {
   ArrowDown,
   ArrowUp,
   BringToFront,
+  CircleHelp,
   CornerLeftUp,
   type LucideIcon,
   Magnet,
+  RotateCw,
   SendToBack,
 } from 'lucide-react';
-import { useEffect, useId, useRef, useState } from 'react';
-import { Field, Section } from '@/components/panel/panel-fields';
+import { useEffect, useRef, useState } from 'react';
+import { NumberInput, NumberShell, Section } from '@/components/panel/panel-fields';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { canTransform, readCanvas, readFrame, readRotation } from '@/lib/inspector/visual-dom';
-import { format, useLocale } from '@/lib/use-locale';
+import { useLocale } from '@/lib/use-locale';
 import { round2 } from '@/lib/utils';
 import { useInspector } from './inspector-provider';
 
@@ -87,132 +88,190 @@ export function ArrangePanel() {
   const blocked = !frame.editable || committing;
 
   return (
-    <Section title={t.arrangeSection}>
-      <TooltipProvider delay={350}>
-        {multiple && (
-          <p className="text-[11px] text-muted-foreground">
-            {format(t.selectionCount, { count: selection.length })}
-          </p>
-        )}
+    <TooltipProvider delay={350}>
+      <Section
+        title={t.positionLabel}
+        action={
+          <div className="flex items-center gap-0.5">
+            <HeaderButton
+              label={t.selectParent}
+              icon={CornerLeftUp}
+              disabled={multiple || committing}
+              onClick={visual.selectParent}
+            />
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    className="cursor-help text-muted-foreground hover:text-foreground"
+                    aria-label={t.visualEditorHint}
+                  />
+                }
+              >
+                <CircleHelp />
+              </TooltipTrigger>
+              <TooltipContent side="bottom" align="end" className="max-w-64 leading-relaxed">
+                {t.visualEditorHint}
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        }
+      >
         {!frame.editable && (
           <p className="text-[11px] leading-relaxed text-muted-foreground">
             {frame.shared ? t.sharedLayoutHint : t.inlineLayoutHint}
           </p>
         )}
-        <Field label={t.positionLabel}>
+        <div className="grid grid-cols-2 gap-1.5">
           <FrameInput
-            label="X"
-            ariaLabel={t.positionX}
+            prefix="X"
+            label={t.positionX}
             value={frame.x}
             disabled={blocked}
             onChange={(x) => visual.setFrame({ x })}
           />
           <FrameInput
-            label="Y"
-            ariaLabel={t.positionY}
+            prefix="Y"
+            label={t.positionY}
             value={frame.y}
             disabled={blocked}
             onChange={(y) => visual.setFrame({ y })}
           />
-        </Field>
-        <Field label={t.dimensionsLabel}>
           <FrameInput
-            label="W"
-            ariaLabel={t.widthLabel}
+            prefix="W"
+            label={t.widthLabel}
             value={frame.width}
             min={8}
             disabled={multiple || blocked}
             onChange={(width) => visual.setFrame({ width })}
           />
           <FrameInput
-            label="H"
-            ariaLabel={t.heightLabel}
+            prefix="H"
+            label={t.heightLabel}
             value={frame.height}
             min={8}
             disabled={multiple || blocked}
             onChange={(height) => visual.setFrame({ height })}
           />
-        </Field>
-        <Field label={t.rotationLabel}>
           <FrameInput
-            label="°"
-            ariaLabel={t.rotationLabel}
+            icon={RotateCw}
+            suffix="°"
+            label={t.rotationLabel}
             value={frame.rotation}
             disabled={multiple || blocked}
             onChange={(rotation) => visual.setFrame({ rotation })}
           />
-        </Field>
-        <Field label={t.alignToLabel}>
+        </div>
+      </Section>
+
+      <Section
+        title={t.alignLabel}
+        action={
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Toggle
+                  size="sm"
+                  disabled={committing}
+                  pressed={visual.snapping}
+                  onPressedChange={visual.setSnapping}
+                  aria-label={t.smartGuides}
+                  className="size-6 min-w-6 rounded-[5px] px-0 text-muted-foreground/60 hover:bg-transparent hover:text-foreground data-pressed:bg-muted data-pressed:text-foreground"
+                />
+              }
+            >
+              <Magnet />
+            </TooltipTrigger>
+            <TooltipContent side="bottom" align="end">
+              {t.smartGuides}
+            </TooltipContent>
+          </Tooltip>
+        }
+      >
+        {multiple && (
           <ToggleGroup
-            variant="outline"
             size="sm"
+            variant="outline"
             disabled={committing}
             value={[alignToSlide ? 'slide' : 'selection']}
             onValueChange={(value) => {
               if (value.length > 0) setToSlide(value[0] === 'slide');
             }}
             aria-label={t.alignToLabel}
+            className="w-full"
           >
-            <ToggleGroupItem value="selection" disabled={!multiple}>
+            <ToggleGroupItem value="selection" className="flex-1">
               {t.alignToSelection}
             </ToggleGroupItem>
-            <ToggleGroupItem value="slide">{t.alignToSlide}</ToggleGroupItem>
+            <ToggleGroupItem value="slide" className="flex-1">
+              {t.alignToSlide}
+            </ToggleGroupItem>
           </ToggleGroup>
-        </Field>
-        <fieldset className="grid grid-cols-6 gap-1">
-          <legend className="sr-only">{t.alignLabel}</legend>
-          <ArrangeButton
-            label={t.alignLeft}
-            icon={AlignHorizontalJustifyStart}
-            disabled={blocked}
-            onClick={() => visual.align('left', alignToSlide)}
-          />
-          <ArrangeButton
-            label={t.alignCenter}
-            icon={AlignHorizontalJustifyCenter}
-            disabled={blocked}
-            onClick={() => visual.align('center', alignToSlide)}
-          />
-          <ArrangeButton
-            label={t.alignRight}
-            icon={AlignHorizontalJustifyEnd}
-            disabled={blocked}
-            onClick={() => visual.align('right', alignToSlide)}
-          />
-          <ArrangeButton
-            label={t.alignTop}
-            icon={AlignVerticalJustifyStart}
-            disabled={blocked}
-            onClick={() => visual.align('top', alignToSlide)}
-          />
-          <ArrangeButton
-            label={t.alignMiddle}
-            icon={AlignVerticalJustifyCenter}
-            disabled={blocked}
-            onClick={() => visual.align('middle', alignToSlide)}
-          />
-          <ArrangeButton
-            label={t.alignBottom}
-            icon={AlignVerticalJustifyEnd}
-            disabled={blocked}
-            onClick={() => visual.align('bottom', alignToSlide)}
-          />
-        </fieldset>
-        <Field label={t.distributeLabel}>
-          <ArrangeButton
-            label={t.distributeHorizontal}
-            icon={AlignHorizontalDistributeCenter}
-            disabled={blocked || selection.length < 3}
-            onClick={() => visual.distribute('x')}
-          />
-          <ArrangeButton
-            label={t.distributeVertical}
-            icon={AlignVerticalDistributeCenter}
-            disabled={blocked || selection.length < 3}
-            onClick={() => visual.distribute('y')}
-          />
-        </Field>
-        <Field label={t.layerLabel}>
+        )}
+        <div className="flex items-center gap-2">
+          <ButtonGroup label={t.alignLabel}>
+            <ArrangeButton
+              label={t.alignLeft}
+              icon={AlignHorizontalJustifyStart}
+              disabled={blocked}
+              onClick={() => visual.align('left', alignToSlide)}
+            />
+            <ArrangeButton
+              label={t.alignCenter}
+              icon={AlignHorizontalJustifyCenter}
+              disabled={blocked}
+              onClick={() => visual.align('center', alignToSlide)}
+            />
+            <ArrangeButton
+              label={t.alignRight}
+              icon={AlignHorizontalJustifyEnd}
+              disabled={blocked}
+              onClick={() => visual.align('right', alignToSlide)}
+            />
+          </ButtonGroup>
+          <ButtonGroup label={t.alignLabel}>
+            <ArrangeButton
+              label={t.alignTop}
+              icon={AlignVerticalJustifyStart}
+              disabled={blocked}
+              onClick={() => visual.align('top', alignToSlide)}
+            />
+            <ArrangeButton
+              label={t.alignMiddle}
+              icon={AlignVerticalJustifyCenter}
+              disabled={blocked}
+              onClick={() => visual.align('middle', alignToSlide)}
+            />
+            <ArrangeButton
+              label={t.alignBottom}
+              icon={AlignVerticalJustifyEnd}
+              disabled={blocked}
+              onClick={() => visual.align('bottom', alignToSlide)}
+            />
+          </ButtonGroup>
+          {multiple && (
+            <ButtonGroup label={t.distributeLabel}>
+              <ArrangeButton
+                label={t.distributeHorizontal}
+                icon={AlignHorizontalDistributeCenter}
+                disabled={blocked || selection.length < 3}
+                onClick={() => visual.distribute('x')}
+              />
+              <ArrangeButton
+                label={t.distributeVertical}
+                icon={AlignVerticalDistributeCenter}
+                disabled={blocked || selection.length < 3}
+                onClick={() => visual.distribute('y')}
+              />
+            </ButtonGroup>
+          )}
+        </div>
+      </Section>
+
+      <Section title={t.layerLabel}>
+        <ButtonGroup label={t.layerLabel}>
           <ArrangeButton
             label={t.bringToFront}
             icon={BringToFront}
@@ -237,37 +296,20 @@ export function ArrangePanel() {
             disabled={blocked}
             onClick={() => visual.arrange('back')}
           />
-        </Field>
-        <Field label={t.snappingLabel}>
-          <Toggle
-            size="sm"
-            variant="outline"
-            disabled={committing}
-            pressed={visual.snapping}
-            onPressedChange={visual.setSnapping}
-            aria-label={t.smartGuides}
-          >
-            <Magnet data-icon="inline-start" />
-            {t.smartGuides}
-          </Toggle>
-        </Field>
-        <div className="flex items-center gap-1.5">
-          <Button
-            variant="ghost"
-            size="xs"
-            disabled={multiple || committing}
-            onClick={visual.selectParent}
-          >
-            <CornerLeftUp data-icon="inline-start" />
-            {t.selectParent}
-          </Button>
-          <Button variant="ghost" size="xs" disabled={committing} onClick={visual.selectAll}>
-            {t.selectAll}
-          </Button>
-        </div>
-        <p className="text-[10px] leading-relaxed text-muted-foreground">{t.visualEditorHint}</p>
-      </TooltipProvider>
-    </Section>
+        </ButtonGroup>
+      </Section>
+    </TooltipProvider>
+  );
+}
+
+function ButtonGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <fieldset
+      aria-label={label}
+      className="flex min-w-0 [&>button]:relative [&>button]:rounded-none [&>button+button]:-ml-px [&>button:first-child]:rounded-l-[5px] [&>button:last-child]:rounded-r-[5px] [&>button:focus-visible]:z-10 [&>button:hover]:z-10"
+    >
+      {children}
+    </fieldset>
   );
 }
 
@@ -289,37 +331,73 @@ function ArrangeButton({
           <Button
             variant="outline"
             size="icon-sm"
-            className="w-auto min-w-0 flex-1"
             aria-label={label}
             disabled={disabled}
             onClick={onClick}
           />
         }
       >
-        <Icon data-icon="inline-start" />
+        <Icon />
       </TooltipTrigger>
       <TooltipContent>{label}</TooltipContent>
     </Tooltip>
   );
 }
 
-function FrameInput({
+function HeaderButton({
   label,
-  ariaLabel,
+  icon: Icon,
+  onClick,
+  disabled = false,
+}: {
+  label: string;
+  icon: LucideIcon;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            className="text-muted-foreground hover:text-foreground"
+            aria-label={label}
+            disabled={disabled}
+            onClick={onClick}
+          />
+        }
+      >
+        <Icon />
+      </TooltipTrigger>
+      <TooltipContent side="bottom" align="end">
+        {label}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function FrameInput({
+  prefix,
+  icon,
+  suffix,
+  label,
   value,
   onChange,
   min,
   disabled = false,
 }: {
+  prefix?: string;
+  icon?: LucideIcon;
+  suffix?: string;
   label: string;
-  ariaLabel: string;
   value: number;
   onChange: (value: number) => void;
   min?: number;
   disabled?: boolean;
 }) {
   const [draft, setDraft] = useState(String(round2(value)));
-  const id = useId();
   const focused = useRef(false);
   const cancelled = useRef(false);
   const edit = useRef({ value, onChange });
@@ -329,15 +407,9 @@ function FrameInput({
   }, [value]);
 
   return (
-    <label htmlFor={id} className="flex min-w-0 flex-1 items-center gap-1">
-      <span aria-hidden className="font-mono text-[10px] text-muted-foreground">
-        {label}
-      </span>
-      <Input
-        id={id}
-        type="number"
-        className="h-7 px-1.5"
-        aria-label={ariaLabel}
+    <NumberShell prefix={prefix} icon={icon} suffix={suffix} label={label}>
+      <NumberInput
+        aria-label={label}
         value={draft}
         min={min}
         step={1}
@@ -372,6 +444,6 @@ function FrameInput({
           }
         }}
       />
-    </label>
+    </NumberShell>
   );
 }

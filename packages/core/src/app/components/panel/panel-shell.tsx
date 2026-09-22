@@ -54,7 +54,7 @@ export function PanelShell({ uiAttr, header, banner, footer, children }: PanelSh
         <ScrollArea className="min-h-0 flex-1">
           <div className="flex min-h-full flex-col">
             {children}
-            {footer && <div className="mt-auto border-t border-hairline">{footer}</div>}
+            {footer && <div className="mt-auto">{footer}</div>}
           </div>
         </ScrollArea>
       </div>

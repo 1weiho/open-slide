@@ -1,27 +1,33 @@
 import {
+  ALargeSmall,
   AlignCenter,
   AlignJustify,
   AlignLeft,
   AlignRight,
   Bold,
-  ChevronRight,
   Crop,
   ImageIcon,
   Italic,
   MousePointer2,
   Move,
+  MoveHorizontal,
   Paintbrush,
   PencilLine,
   Shapes,
   Type,
+  UnfoldVertical,
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { IconSwitcherIndicator } from '@/components/icon-switcher-indicator';
-import { Field, NumberField, Section } from '@/components/panel/panel-fields';
+import {
+  CollapsibleSection,
+  ColorField,
+  NumberField,
+  Section,
+} from '@/components/panel/panel-fields';
 import { PanelShell } from '@/components/panel/panel-shell';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -30,11 +36,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { findSlideSource } from '@/lib/inspector/fiber';
@@ -248,6 +251,26 @@ export function InspectorPanel({
     apply(ops);
   };
 
+  const rangeSelected = Boolean(
+    selectedInlineRange && selectedInlineRange.end > selectedInlineRange.start,
+  );
+  const footer =
+    selected && snapshot && !multiple ? (
+      <>
+        <CollapsibleSection title={t.inspector.leaveComment}>
+          <CommentsSection selected={selected} onAdd={add} />
+        </CollapsibleSection>
+        <CollapsibleSection title={t.inspector.sourceSection}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-mono text-[10.5px] text-muted-foreground">
+              &lt;{selected.anchor.tagName.toLowerCase()}&gt; · {selected.line}:{selected.column}
+            </span>
+            <AgentWatchingBadge />
+          </div>
+        </CollapsibleSection>
+      </>
+    ) : undefined;
+
   return (
     <Tabs
       value={tab}
@@ -284,7 +307,7 @@ export function InspectorPanel({
         }
         banner={
           selected && snapshot ? (
-            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-hairline px-3.5 py-3">
+            <div className="flex shrink-0 items-center justify-between gap-3 px-3.5 pt-3.5 pb-1">
               <div className="flex min-w-0 items-center gap-2 text-[12px] font-medium">
                 <ElementIcon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
                 <span className="truncate">{elementLabel}</span>
@@ -315,75 +338,58 @@ export function InspectorPanel({
             </div>
           ) : undefined
         }
+        footer={footer}
       >
         {selected && snapshot && typographySnapshot ? (
           <>
             <TabsContent value="format">
               {textSelected && (
-                <>
-                  <div className="flex flex-col gap-2 px-3.5 pt-3.5">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => startInlineEdit(selected)}
-                    >
-                      <PencilLine data-icon="inline-start" />
-                      {t.inspector.editText}
-                    </Button>
-                    {selectedInlineRange && selectedInlineRange.end > selectedInlineRange.start && (
-                      <p className="text-[11px] leading-relaxed text-muted-foreground">
-                        {t.inspector.textSelectionHint}
-                      </p>
-                    )}
-                  </div>
-                  <Section title={t.inspector.typographySection}>
-                    <FontSizeField snapshot={typographySnapshot} apply={applyTextStyle} />
+                <Section title={t.inspector.typographySection}>
+                  {rangeSelected && (
+                    <p className="text-[11px] leading-relaxed text-muted-foreground">
+                      {t.inspector.textSelectionHint}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-1.5">
                     <FontWeightField snapshot={typographySnapshot} apply={applyTextStyle} />
+                    <FontSizeField snapshot={typographySnapshot} apply={applyTextStyle} />
+                  </div>
+                  <div className="flex items-center gap-2">
                     <StyleToggles snapshot={typographySnapshot} apply={applyTextStyle} />
-                    <ColorField
-                      label={t.inspector.textColor}
-                      value={typographySnapshot.color}
-                      onChange={(value) =>
-                        applyTextStyle([{ kind: 'set-style', key: 'color', value }])
-                      }
-                      clearable={false}
-                    />
                     <TextAlignField snapshot={snapshot} apply={apply} />
-                  </Section>
-                  <Separator />
-                  <Disclosure title={t.inspector.spacingSection}>
-                    <div className="flex flex-col gap-2.5 px-3.5 pb-3.5">
-                      <LineHeightField snapshot={snapshot} apply={apply} />
-                      <LetterSpacingField snapshot={snapshot} apply={apply} />
-                    </div>
-                  </Disclosure>
-                  <Separator />
-                </>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <LineHeightField snapshot={snapshot} apply={apply} />
+                    <LetterSpacingField snapshot={snapshot} apply={apply} />
+                  </div>
+                </Section>
               )}
               {snapshot.imageSrc !== null && (
-                <>
-                  <Section title={t.inspector.imageSection}>
-                    <ImageField src={snapshot.imageSrc} anchor={selected.anchor} />
-                  </Section>
-                  <Separator />
-                </>
+                <Section title={t.inspector.imageSection}>
+                  <ImageField src={snapshot.imageSrc} anchor={selected.anchor} />
+                </Section>
               )}
               {snapshot.placeholder && (
-                <>
-                  <Section title={t.inspector.imagePlaceholderSection}>
-                    <PlaceholderField
-                      slideId={slideId}
-                      hint={snapshot.placeholder.hint}
-                      line={selected.line}
-                      column={selected.column}
-                      applyEdit={applyEdit}
-                    />
-                  </Section>
-                  <Separator />
-                </>
+                <Section title={t.inspector.imagePlaceholderSection}>
+                  <PlaceholderField
+                    slideId={slideId}
+                    hint={snapshot.placeholder.hint}
+                    line={selected.line}
+                    column={selected.column}
+                    applyEdit={applyEdit}
+                  />
+                </Section>
               )}
-              <Section title={t.inspector.appearanceSection}>
+              <Section title={t.inspector.colorSection}>
+                {textSelected && (
+                  <ColorField
+                    label={t.inspector.textColor}
+                    value={typographySnapshot.color}
+                    onChange={(value) =>
+                      applyTextStyle([{ kind: 'set-style', key: 'color', value }])
+                    }
+                  />
+                )}
                 <ColorField
                   label={t.inspector.backgroundColor}
                   value={snapshot.backgroundColor ?? '#ffffff'}
@@ -391,49 +397,40 @@ export function InspectorPanel({
                   onChange={(value) =>
                     apply([{ kind: 'set-style', key: 'backgroundColor', value }])
                   }
-                  onClear={() =>
-                    apply([{ kind: 'set-style', key: 'backgroundColor', value: null }])
+                  onClear={
+                    snapshot.backgroundColor
+                      ? () => apply([{ kind: 'set-style', key: 'backgroundColor', value: null }])
+                      : undefined
                   }
-                  clearable
                 />
               </Section>
               {textSelected && (
-                <>
-                  <Separator />
-                  <Disclosure title={t.inspector.contentSection}>
-                    <div className="px-3.5 pb-3.5">
-                      <ContentField
-                        snapshot={snapshot}
-                        apply={apply}
-                        onFocus={stopInlineEdit}
-                        onSelectionChange={setContentSelection}
-                      />
-                    </div>
-                  </Disclosure>
-                </>
+                <Section
+                  title={t.inspector.contentSection}
+                  action={
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      className="text-muted-foreground hover:text-foreground"
+                      onClick={() => startInlineEdit(selected)}
+                    >
+                      <PencilLine data-icon="inline-start" />
+                      {t.inspector.editText}
+                    </Button>
+                  }
+                >
+                  <ContentField
+                    snapshot={snapshot}
+                    apply={apply}
+                    onFocus={stopInlineEdit}
+                    onSelectionChange={setContentSelection}
+                  />
+                </Section>
               )}
             </TabsContent>
             <TabsContent value="arrange">
               <ArrangePanel />
             </TabsContent>
-            {!multiple && (
-              <div className="mt-auto">
-                <Separator />
-                <Disclosure title={t.inspector.leaveComment}>
-                  <CommentsSection selected={selected} onAdd={add} />
-                </Disclosure>
-                <Separator />
-                <Disclosure title={t.inspector.sourceSection}>
-                  <div className="flex items-center justify-between gap-2 px-3.5 pb-3.5">
-                    <span className="font-mono text-[10.5px] text-muted-foreground">
-                      &lt;{selected.anchor.tagName.toLowerCase()}&gt; · {selected.line}:
-                      {selected.column}
-                    </span>
-                    <AgentWatchingBadge />
-                  </div>
-                </Disclosure>
-              </div>
-            )}
           </>
         ) : (
           <div className="flex flex-col items-center gap-3 px-7 py-16 text-center">
@@ -448,18 +445,6 @@ export function InspectorPanel({
         )}
       </PanelShell>
     </Tabs>
-  );
-}
-
-function Disclosure({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <details className="group/disclosure">
-      <summary className="flex cursor-pointer list-none items-center gap-2 px-3.5 py-3 text-[11px] font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/40 [&::-webkit-details-marker]:hidden">
-        <ChevronRight aria-hidden className="size-3 group-open/disclosure:rotate-90" />
-        {title}
-      </summary>
-      {children}
-    </details>
   );
 }
 
@@ -557,28 +542,20 @@ function FontSizeField({
   snapshot: ElementSnapshot;
   apply: (ops: EditOp[]) => void;
 }) {
-  const set = (px: number) => {
-    apply([{ kind: 'set-style', key: 'fontSize', value: `${Math.round(px)}px` }]);
-  };
   const t = useLocale();
   return (
-    <Field label={t.inspector.sizeLabel}>
-      <Slider
-        min={8}
-        max={200}
-        step={1}
-        value={[snapshot.fontSize]}
-        onValueChange={(v) => set((Array.isArray(v) ? v[0] : v) ?? snapshot.fontSize)}
-        className="flex-1"
-      />
-      <NumberField
-        value={Math.round(snapshot.fontSize)}
-        onChange={set}
-        min={1}
-        max={400}
-        suffix="px"
-      />
-    </Field>
+    <NumberField
+      icon={ALargeSmall}
+      label={t.inspector.sizeLabel}
+      value={Math.round(snapshot.fontSize)}
+      onChange={(px) =>
+        apply([{ kind: 'set-style', key: 'fontSize', value: `${Math.round(px)}px` }])
+      }
+      min={1}
+      max={400}
+      suffix="px"
+      className="w-24"
+    />
   );
 }
 
@@ -603,35 +580,31 @@ function FontWeightField({
   const t = useLocale();
   const weightOptions = getWeightOptions(t);
   return (
-    <Field label={t.inspector.weightLabel}>
-      <Select
-        items={Object.fromEntries(weightOptions.map((opt) => [opt.value, opt.label]))}
-        value={String(snapshot.fontWeight)}
-        onValueChange={(value) => {
-          const n = Number(value);
-          apply([
-            {
-              kind: 'set-style',
-              key: 'fontWeight',
-              value: String(n),
-            },
-          ]);
-        }}
+    <Select
+      items={Object.fromEntries(weightOptions.map((opt) => [opt.value, opt.label]))}
+      value={String(snapshot.fontWeight)}
+      onValueChange={(value) => {
+        apply([{ kind: 'set-style', key: 'fontWeight', value: String(Number(value)) }]);
+      }}
+    >
+      <SelectTrigger
+        size="sm"
+        className="min-w-0 flex-1 text-xs"
+        aria-label={t.inspector.weightLabel}
       >
-        <SelectTrigger size="sm" className="h-8 flex-1 text-xs">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {weightOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-    </Field>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          {weightOptions.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value} className="text-xs">
+              {opt.label}
+              <span className="ml-1.5 font-mono text-[10.5px] opacity-60">{opt.value}</span>
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -643,31 +616,50 @@ function StyleToggles({
   apply: (ops: EditOp[]) => void;
 }) {
   const t = useLocale();
+  const bold = snapshot.fontWeight >= 600;
+  const italic = snapshot.fontStyle === 'italic';
+  const value = [...(bold ? ['bold'] : []), ...(italic ? ['italic'] : [])];
   return (
-    <Field label={t.inspector.styleLabel}>
-      <Toggle
-        size="sm"
-        variant="outline"
-        pressed={snapshot.fontWeight >= 600}
-        onPressedChange={(v) =>
-          apply([{ kind: 'set-style', key: 'fontWeight', value: v ? '700' : '400' }])
+    <ToggleGroup
+      multiple
+      size="sm"
+      variant="outline"
+      value={value}
+      onValueChange={(next) => {
+        const ops: EditOp[] = [];
+        const nextBold = next.includes('bold');
+        const nextItalic = next.includes('italic');
+        if (nextBold !== bold) {
+          ops.push({ kind: 'set-style', key: 'fontWeight', value: nextBold ? '700' : '400' });
         }
+        if (nextItalic !== italic) {
+          ops.push({
+            kind: 'set-style',
+            key: 'fontStyle',
+            value: nextItalic ? 'italic' : 'normal',
+          });
+        }
+        if (ops.length > 0) apply(ops);
+      }}
+      aria-label={t.inspector.styleLabel}
+    >
+      <ToggleGroupItem
+        value="bold"
         aria-label={t.inspector.boldAria}
+        title={t.inspector.boldAria}
+        className="size-7 px-0"
       >
-        <Bold className="size-3.5" />
-      </Toggle>
-      <Toggle
-        size="sm"
-        variant="outline"
-        pressed={snapshot.fontStyle === 'italic'}
-        onPressedChange={(v) =>
-          apply([{ kind: 'set-style', key: 'fontStyle', value: v ? 'italic' : 'normal' }])
-        }
+        <Bold />
+      </ToggleGroupItem>
+      <ToggleGroupItem
+        value="italic"
         aria-label={t.inspector.italicAria}
+        title={t.inspector.italicAria}
+        className="size-7 px-0"
       >
-        <Italic className="size-3.5" />
-      </Toggle>
-    </Field>
+        <Italic />
+      </ToggleGroupItem>
+    </ToggleGroup>
   );
 }
 
@@ -678,23 +670,18 @@ function LineHeightField({
   snapshot: ElementSnapshot;
   apply: (ops: EditOp[]) => void;
 }) {
-  const v = snapshot.lineHeight ?? 1.4;
-  const set = (n: number) => {
-    apply([{ kind: 'set-style', key: 'lineHeight', value: String(round2(n)) }]);
-  };
   const t = useLocale();
   return (
-    <Field label={t.inspector.lineHeightLabel}>
-      <Slider
-        min={0.8}
-        max={3}
-        step={0.05}
-        value={[v]}
-        onValueChange={(next) => set((Array.isArray(next) ? next[0] : next) ?? v)}
-        className="flex-1"
-      />
-      <NumberField value={round2(v)} onChange={set} step={0.05} min={0.5} max={5} />
-    </Field>
+    <NumberField
+      icon={UnfoldVertical}
+      label={t.inspector.lineHeightLabel}
+      value={round2(snapshot.lineHeight ?? 1.4)}
+      onChange={(n) => apply([{ kind: 'set-style', key: 'lineHeight', value: String(round2(n)) }])}
+      step={0.05}
+      min={0.5}
+      max={5}
+      className="basis-0 grow"
+    />
   );
 }
 
@@ -705,37 +692,23 @@ function LetterSpacingField({
   snapshot: ElementSnapshot;
   apply: (ops: EditOp[]) => void;
 }) {
-  const set = (n: number) => {
-    apply([
-      {
-        kind: 'set-style',
-        key: 'letterSpacing',
-        value: n === 0 ? null : `${round2(n)}px`,
-      },
-    ]);
-  };
   const t = useLocale();
   return (
-    <Field label={t.inspector.trackingLabel}>
-      <Slider
-        min={-5}
-        max={20}
-        step={0.1}
-        value={[snapshot.letterSpacing]}
-        onValueChange={(next) =>
-          set((Array.isArray(next) ? next[0] : next) ?? snapshot.letterSpacing)
-        }
-        className="flex-1"
-      />
-      <NumberField
-        value={round2(snapshot.letterSpacing)}
-        onChange={set}
-        step={0.1}
-        min={-20}
-        max={50}
-        suffix="px"
-      />
-    </Field>
+    <NumberField
+      icon={MoveHorizontal}
+      label={t.inspector.trackingLabel}
+      value={round2(snapshot.letterSpacing)}
+      onChange={(n) =>
+        apply([
+          { kind: 'set-style', key: 'letterSpacing', value: n === 0 ? null : `${round2(n)}px` },
+        ])
+      }
+      step={0.1}
+      min={-20}
+      max={50}
+      suffix="px"
+      className="basis-0 grow"
+    />
   );
 }
 
@@ -755,106 +728,23 @@ function TextAlignField({
 }) {
   const t = useLocale();
   return (
-    <Field label={t.inspector.alignLabel}>
-      <ToggleGroup
-        size="sm"
-        variant="outline"
-        value={[snapshot.textAlign]}
-        onValueChange={(value) => {
-          const next = value[0];
-          if (!next) return;
-          apply([
-            {
-              kind: 'set-style',
-              key: 'textAlign',
-              value: next === 'left' ? null : next,
-            },
-          ]);
-        }}
-      >
-        {ALIGN_OPTIONS.map(({ v, icon: Icon }) => (
-          <ToggleGroupItem key={v} value={v} aria-label={v} className="size-8">
-            <Icon className="size-3.5" />
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
-    </Field>
-  );
-}
-
-function ColorField({
-  label,
-  value,
-  dim,
-  onChange,
-  onClear,
-  clearable,
-}: {
-  label: string;
-  value: string;
-  dim?: boolean;
-  onChange: (v: string) => void;
-  onClear?: () => void;
-  clearable: boolean;
-}) {
-  // Buffer the text input so intermediate hex like "#a" doesn't
-  // commit until it parses as a full color.
-  const [draft, setDraft] = useState(value);
-  const tColor = useLocale();
-  useEffect(() => setDraft(value), [value]);
-
-  const commitHex = (hex: string) => {
-    if (/^#[0-9a-fA-F]{6}$/.test(hex)) onChange(hex);
-  };
-
-  return (
-    <Field label={label}>
-      <label className="relative inline-flex size-8 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border bg-background shadow-xs transition-[border-color,scale] duration-150 hover:border-foreground/20 active:scale-[0.96] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring/40">
-        <span
-          className="size-5 rounded-sm"
-          style={{
-            backgroundColor: dim ? 'transparent' : value,
-            backgroundImage: dim
-              ? 'linear-gradient(45deg, #d4d4d4 25%, transparent 25%, transparent 75%, #d4d4d4 75%), linear-gradient(45deg, #d4d4d4 25%, transparent 25%, transparent 75%, #d4d4d4 75%)'
-              : undefined,
-            backgroundSize: dim ? '8px 8px' : undefined,
-            backgroundPosition: dim ? '0 0, 4px 4px' : undefined,
-          }}
-        />
-        <input
-          type="color"
-          aria-label={label}
-          value={value}
-          onChange={(e) => {
-            setDraft(e.target.value);
-            onChange(e.target.value);
-          }}
-          className="absolute inset-0 cursor-pointer opacity-0"
-        />
-      </label>
-      <Input
-        type="text"
-        aria-label={label}
-        value={draft}
-        onChange={(e) => {
-          setDraft(e.target.value);
-          commitHex(e.target.value);
-        }}
-        className="nums h-8 flex-1 font-mono text-[11px] uppercase"
-        spellCheck={false}
-      />
-      {clearable && onClear && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-8 text-muted-foreground hover:text-foreground"
-          onClick={onClear}
-          aria-label={tColor.inspector.clearAria}
-        >
-          <X className="size-3.5" />
-        </Button>
-      )}
-    </Field>
+    <ToggleGroup
+      size="sm"
+      variant="outline"
+      value={[snapshot.textAlign]}
+      onValueChange={(value) => {
+        const next = value[0];
+        if (!next) return;
+        apply([{ kind: 'set-style', key: 'textAlign', value: next === 'left' ? null : next }]);
+      }}
+      aria-label={t.inspector.alignLabel}
+    >
+      {ALIGN_OPTIONS.map(({ v, icon: Icon }) => (
+        <ToggleGroupItem key={v} value={v} aria-label={v} title={v} className="size-7 px-0">
+          <Icon />
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
   );
 }
 
@@ -1052,32 +942,30 @@ function CommentsSection({
   };
 
   return (
-    <div className="px-3.5 pb-3.5">
-      <div className="flex flex-col gap-2">
-        <div ref={wrapRef} className={cn('rounded-[6px]', showCue && 'comment-cue')}>
-          <Textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault();
-                submit();
-              }
-            }}
-            placeholder={t.inspector.commentPlaceholder}
-            className="min-h-16 resize-none text-[12px]"
-          />
-        </div>
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-mono text-[10.5px] text-muted-foreground/70">
-            {t.inspector.commentShortcutHint}
-          </span>
-          <Button size="sm" variant="brand" disabled={submitting || !draft.trim()} onClick={submit}>
-            {t.inspector.addComment}
-          </Button>
-        </div>
+    <>
+      <div ref={wrapRef} className={cn('rounded-[6px]', showCue && 'comment-cue')}>
+        <Textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              submit();
+            }
+          }}
+          placeholder={t.inspector.commentPlaceholder}
+          className="min-h-16 resize-none text-[12px]"
+        />
       </div>
-    </div>
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-mono text-[10.5px] text-muted-foreground/70">
+          {t.inspector.commentShortcutHint}
+        </span>
+        <Button size="sm" variant="brand" disabled={submitting || !draft.trim()} onClick={submit}>
+          {t.inspector.addComment}
+        </Button>
+      </div>
+    </>
   );
 }
 

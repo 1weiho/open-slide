@@ -211,8 +211,6 @@ export type Locale = {
     elementText: string;
     elementImage: string;
     elementShape: string;
-    appearanceSection: string;
-    spacingSection: string;
     sourceSection: string;
     rotateHandle: string;
     resizeHandle: string;
@@ -221,7 +219,6 @@ export type Locale = {
     positionLabel: string;
     positionX: string;
     positionY: string;
-    dimensionsLabel: string;
     widthLabel: string;
     heightLabel: string;
     rotationLabel: string;
@@ -242,10 +239,8 @@ export type Locale = {
     bringForward: string;
     sendBackward: string;
     sendToBack: string;
-    snappingLabel: string;
     smartGuides: string;
     selectParent: string;
-    selectAll: string;
     visualEditorHint: string;
     sharedLayoutHint: string;
     inlineLayoutHint: string;
