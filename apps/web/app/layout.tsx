@@ -3,7 +3,7 @@ import './global.css';
 import { GeistMono } from 'geist/font/mono';
 import { GeistSans } from 'geist/font/sans';
 import type { Metadata, Viewport } from 'next';
-import { appName, gitConfig, siteUrl } from '@/lib/shared';
+import { appName, siteUrl } from '@/lib/shared';
 
 const title = `${appName} — a slide framework built for agents`;
 const description =
@@ -29,8 +29,8 @@ export const metadata: Metadata = {
     'slides as code',
     'developer presentations',
   ],
-  authors: [{ name: gitConfig.user, url: `https://github.com/${gitConfig.user}` }],
-  creator: gitConfig.user,
+  authors: [{ name: '1weiho', url: 'https://github.com/1weiho' }],
+  creator: '1weiho',
   publisher: appName,
   category: 'technology',
   alternates: {

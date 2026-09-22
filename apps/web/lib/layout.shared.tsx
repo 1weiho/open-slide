@@ -19,6 +19,6 @@ export function baseOptions(): BaseLayoutProps {
         </>
       ),
     },
-    githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
+    githubUrl: `https://github.com/${gitConfig.owner}/${gitConfig.repo}`,
   };
 }
