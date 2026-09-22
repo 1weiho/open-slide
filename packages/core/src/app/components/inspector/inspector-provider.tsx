@@ -1392,58 +1392,67 @@ function parsePercent(s: string, fallback: number): number {
   return fallback;
 }
 
-export function InspectToggleButton() {
+export function InspectModeSwitcher() {
   const t = useLocale();
-  const { active, toggle, panelOpen, panelHidden, togglePanel } = useInspector();
+  const { active, toggle } = useInspector();
   if (import.meta.env.PROD) return null;
   return (
-    <div className="flex items-center gap-1" data-inspector-ui>
-      <ToggleGroup
-        size="sm"
-        spacing={1}
-        value={[active ? 'edit' : 'preview']}
-        onValueChange={(value) => {
-          const next = value[0];
-          if (next && (next === 'edit') !== active) toggle();
+    <ToggleGroup
+      size="sm"
+      spacing={1}
+      value={[active ? 'edit' : 'preview']}
+      onValueChange={(value) => {
+        const next = value[0];
+        if (next && (next === 'edit') !== active) toggle();
+      }}
+      aria-label={`${t.inspector.previewMode} / ${t.inspector.editMode}`}
+      data-inspector-ui
+      className="relative isolate h-8 gap-0 rounded-lg border border-border/70 bg-muted/70 p-0.5"
+    >
+      <IconSwitcherIndicator index={active ? 1 : 0} />
+      <ToggleGroupItem
+        value="preview"
+        title={t.inspector.previewMode}
+        aria-label={t.inspector.previewMode}
+        onClick={(event) => {
+          if (event.detail > 0) event.currentTarget.blur();
         }}
-        aria-label={`${t.inspector.previewMode} / ${t.inspector.editMode}`}
-        className="relative isolate h-8 gap-0 rounded-lg border border-border/70 bg-muted/70 p-0.5"
+        className="relative z-10 h-full w-8 rounded-md px-0 text-muted-foreground hover:bg-transparent data-pressed:bg-transparent data-pressed:text-foreground data-pressed:shadow-none"
       >
-        <IconSwitcherIndicator index={active ? 1 : 0} />
-        <ToggleGroupItem
-          value="preview"
-          title={t.inspector.previewMode}
-          aria-label={t.inspector.previewMode}
-          onClick={(event) => {
-            if (event.detail > 0) event.currentTarget.blur();
-          }}
-          className="relative z-10 h-full w-8 rounded-md px-0 text-muted-foreground hover:bg-transparent data-pressed:bg-transparent data-pressed:text-foreground data-pressed:shadow-none"
-        >
-          <Eye />
-        </ToggleGroupItem>
-        <ToggleGroupItem
-          value="edit"
-          title={t.inspector.editMode}
-          aria-label={t.inspector.editMode}
-          onClick={(event) => {
-            if (event.detail > 0) event.currentTarget.blur();
-          }}
-          className="relative z-10 h-full w-8 rounded-md px-0 text-muted-foreground hover:bg-transparent data-pressed:bg-transparent data-pressed:text-foreground data-pressed:shadow-none"
-        >
-          <Pencil />
-        </ToggleGroupItem>
-      </ToggleGroup>
-      <Button
-        size="sm"
-        variant={active && panelOpen && !panelHidden ? 'secondary' : 'ghost'}
-        onClick={togglePanel}
-        aria-pressed={active && panelOpen && !panelHidden}
-        title={t.inspector.format}
-        aria-label={t.inspector.format}
+        <Eye />
+      </ToggleGroupItem>
+      <ToggleGroupItem
+        value="edit"
+        title={t.inspector.editMode}
+        aria-label={t.inspector.editMode}
+        onClick={(event) => {
+          if (event.detail > 0) event.currentTarget.blur();
+        }}
+        className="relative z-10 h-full w-8 rounded-md px-0 text-muted-foreground hover:bg-transparent data-pressed:bg-transparent data-pressed:text-foreground data-pressed:shadow-none"
       >
-        <PanelRight className="size-3.5" />
-        <span className="hidden md:inline">{t.inspector.format}</span>
-      </Button>
-    </div>
+        <Pencil />
+      </ToggleGroupItem>
+    </ToggleGroup>
+  );
+}
+
+export function InspectPanelButton() {
+  const t = useLocale();
+  const { active, panelOpen, panelHidden, togglePanel } = useInspector();
+  if (import.meta.env.PROD) return null;
+  const pressed = active && panelOpen && !panelHidden;
+  return (
+    <Button
+      size="sm"
+      variant={pressed ? 'secondary' : 'ghost'}
+      onClick={togglePanel}
+      aria-pressed={pressed}
+      title={t.inspector.format}
+      aria-label={t.inspector.format}
+      data-inspector-ui
+    >
+      <PanelRight className="size-3.5" />
+      <span className="hidden md:inline">{t.inspector.format}</span>
+    </Button>
   );
 }

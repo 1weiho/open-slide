@@ -33,8 +33,9 @@ import { CommentWidget } from '@/components/inspector/comment-widget';
 import { InlineEditLayer } from '@/components/inspector/inline-text-editor';
 import { InspectOverlay } from '@/components/inspector/inspect-overlay';
 import {
+  InspectModeSwitcher,
   InspectorProvider,
-  InspectToggleButton,
+  InspectPanelButton,
   useInspector,
 } from '@/components/inspector/inspector-provider';
 import { SaveBar } from '@/components/inspector/save-bar';
@@ -665,6 +666,10 @@ export function Slide() {
             </div>
 
             <div className="flex flex-1 items-center justify-end gap-1 md:ml-auto md:flex-none">
+              {view === 'slides' && <InspectModeSwitcher />}
+              {import.meta.env.DEV && view === 'slides' && (
+                <span aria-hidden className="mx-0.5 hidden h-5 w-px bg-hairline md:block" />
+              )}
               {view === 'slides' && (
                 <button
                   type="button"
@@ -750,7 +755,7 @@ export function Slide() {
               {view === 'slides' && (
                 <DesignToggleButton active={designOpen} onToggle={() => setDesignOpen((v) => !v)} />
               )}
-              {view === 'slides' && <InspectToggleButton />}
+              {view === 'slides' && <InspectPanelButton />}
               <span aria-hidden className="mx-0.5 hidden h-5 w-px bg-hairline md:block" />
               {view === 'slides' && (
                 <div className="inline-flex items-stretch">
