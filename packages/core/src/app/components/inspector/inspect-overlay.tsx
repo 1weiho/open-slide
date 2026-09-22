@@ -22,6 +22,7 @@ import {
   captureTransform,
   editableTargets,
   independentTargets,
+  marqueeTargets,
   moveOps,
   previewOps,
   readCanvas,
@@ -297,23 +298,17 @@ export function InspectOverlay() {
           height: Math.abs(delta.y),
         };
         setMarquee(rect);
-        const targets = editableTargets(gesture.canvas, slideId).filter((target) => {
-          if (!canTransform(target, gesture.canvas)) return false;
+        const candidates = editableTargets(gesture.canvas, slideId).flatMap((target) => {
+          if (!canTransform(target, gesture.canvas)) return [];
           const frame = readFrame(target.anchor, gesture.canvas);
-          if (
+          const fullCanvas =
             Math.abs(frame.x) < 1 &&
             Math.abs(frame.y) < 1 &&
             frame.width >= gesture.canvas.width - 1 &&
-            frame.height >= gesture.canvas.height - 1
-          )
-            return false;
-          return (
-            frame.x >= rect.x &&
-            frame.y >= rect.y &&
-            frame.x + frame.width <= rect.x + rect.width &&
-            frame.y + frame.height <= rect.y + rect.height
-          );
+            frame.height >= gesture.canvas.height - 1;
+          return fullCanvas ? [] : [{ target, frame }];
         });
+        const targets = marqueeTargets(rect, candidates);
         gesture.targets = independentTargets(
           [...(gesture.additive ? gesture.previousSelection : []), ...targets].filter(
             (target, index, all) =>

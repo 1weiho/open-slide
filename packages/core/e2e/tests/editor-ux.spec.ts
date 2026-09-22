@@ -192,7 +192,7 @@ test.describe('editor interaction flow', () => {
     await page.getByRole('button', { name: 'Undo', exact: true }).click();
     await expect(headline).toHaveCSS('font-weight', '700');
     await panel.getByRole('combobox').first().click();
-    await page.getByRole('option', { name: 'Regular · 400', exact: true }).click();
+    await page.getByRole('option', { name: 'Regular', exact: true }).click();
     await expect(headline).toHaveCSS('font-weight', '400');
   });
 
@@ -453,7 +453,7 @@ test.describe('editor interaction flow', () => {
     captureBrowserErrors(page);
     const headline = editorCanvas(page).getByText('Alpha page one', { exact: true });
     await headline.click();
-    await panel.getByRole('button', { name: 'Edit text on slide', exact: true }).focus();
+    await panel.getByRole('button', { name: 'Edit on slide', exact: true }).focus();
     await page.keyboard.press('Enter');
     await expect(headline).toHaveAttribute('contenteditable', 'true');
     await expect(editorCanvas(page)).toBeVisible();

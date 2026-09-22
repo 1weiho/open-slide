@@ -446,7 +446,7 @@ export default [Only] satisfies Page[];
     await expectGeometry(headline, { x: before.x, y: before.y });
   });
 
-  test('a marquee selects enclosed elements and dragging moves the group together', async ({
+  test('a marquee selects every element it touches and dragging moves the group together', async ({
     page,
     request,
   }) => {
@@ -457,12 +457,10 @@ export default [Only] satisfies Page[];
     const scale = box.width / 1920;
     await page.mouse.move(box.x + 90 * scale, box.y + 130 * scale);
     await page.mouse.down();
-    await page.mouse.move(box.x + 800 * scale, box.y + 550 * scale, { steps: 8 });
+    await page.mouse.move(box.x + 600 * scale, box.y + 400 * scale, { steps: 8 });
     await page.mouse.up();
     await expect(
-      page
-        .getByRole('tabpanel', { name: 'Arrange', exact: true })
-        .getByText('2 elements selected', { exact: true }),
+      page.locator('aside[data-inspector-ui]').getByText('2 elements selected', { exact: true }),
     ).toBeVisible();
     await first.click({ trial: true });
     const beforeFirst = await geometry(first);
@@ -498,9 +496,7 @@ export default [Only] satisfies Page[];
     );
     await page.mouse.up();
     await expect(
-      page
-        .getByRole('tabpanel', { name: 'Arrange', exact: true })
-        .getByText('3 elements selected', { exact: true }),
+      page.locator('aside[data-inspector-ui]').getByText('3 elements selected', { exact: true }),
     ).toBeVisible();
   });
 
@@ -531,11 +527,10 @@ export default [Only] satisfies Page[];
     await first.click();
     const panel = page.locator('aside[data-inspector-ui]');
     await panel.getByRole('tab', { name: 'Arrange', exact: true }).click();
-    await panel.getByRole('button', { name: 'Select all', exact: true }).click();
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await page.keyboard.press('ControlOrMeta+a');
     await expect(
-      page
-        .getByRole('tabpanel', { name: 'Arrange', exact: true })
-        .getByText('3 elements selected', { exact: true }),
+      page.locator('aside[data-inspector-ui]').getByText('3 elements selected', { exact: true }),
     ).toBeVisible();
     await panel.getByRole('button', { name: 'Distribute horizontally', exact: true }).click();
     await expectGeometry(second, { x: 620, y: 360 });

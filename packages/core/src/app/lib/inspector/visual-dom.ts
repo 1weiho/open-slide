@@ -1,6 +1,12 @@
 import type { SelectedTarget } from '@/components/inspector/inspector-provider';
 import { findSlideSource } from './fiber';
-import { type Point, type Rect, solveResizeDimensions } from './geometry';
+import {
+  type Point,
+  type Rect,
+  rectContains,
+  rectsIntersect,
+  solveResizeDimensions,
+} from './geometry';
 import type { EditOp } from './use-editor';
 
 export type Canvas = {
@@ -69,6 +75,25 @@ export function independentTargets(targets: SelectedTarget[]): SelectedTarget[] 
         (other) => other.anchor !== target.anchor && other.anchor.contains(target.anchor),
       ),
   );
+}
+
+// A partially covered ancestor yields to the children the marquee also
+// touches, so sweeping across a few cards picks the cards, not their wrapper.
+export function marqueeTargets(
+  rect: Rect,
+  candidates: Array<{ target: SelectedTarget; frame: Rect }>,
+): SelectedTarget[] {
+  const hits = candidates.filter(({ frame }) => rectsIntersect(rect, frame));
+  return hits
+    .filter(
+      ({ target, frame }) =>
+        rectContains(rect, frame) ||
+        !hits.some(
+          (other) =>
+            other.target.anchor !== target.anchor && target.anchor.contains(other.target.anchor),
+        ),
+    )
+    .map(({ target }) => target);
 }
 
 export function canTransform(target: SelectedTarget, canvas: Canvas): boolean {

@@ -3,6 +3,8 @@ import {
   alignRects,
   distributeRects,
   type Rect,
+  rectContains,
+  rectsIntersect,
   resizeRect,
   snapMove,
   solveResizeDimensions,
@@ -300,5 +302,23 @@ describe('solveResizeDimensions', () => {
   it('keeps both local dimensions above the minimum when fitting a smaller box', () => {
     const result = solveResizeDimensions(size, rotatedBasis(45), { x: -1000, y: -1000 });
     expect(result).toEqual({ width: 16, height: 8 });
+  });
+});
+
+describe('rectsIntersect', () => {
+  it('detects overlap but not edges that only touch', () => {
+    const marquee: Rect = { x: 90, y: 130, width: 510, height: 270 };
+    expect(rectsIntersect(marquee, { x: 520, y: 360, width: 240, height: 160 })).toBe(true);
+    expect(rectsIntersect(marquee, { x: 600, y: 360, width: 240, height: 160 })).toBe(false);
+    expect(rectsIntersect(marquee, { x: 1120, y: 660, width: 240, height: 160 })).toBe(false);
+  });
+});
+
+describe('rectContains', () => {
+  it('requires the inner rect to sit fully inside the outer rect', () => {
+    const outer: Rect = { x: 0, y: 0, width: 100, height: 100 };
+    expect(rectContains(outer, { x: 10, y: 10, width: 80, height: 80 })).toBe(true);
+    expect(rectContains(outer, { x: 0, y: 0, width: 100, height: 100 })).toBe(true);
+    expect(rectContains(outer, { x: 50, y: 50, width: 60, height: 20 })).toBe(false);
   });
 });

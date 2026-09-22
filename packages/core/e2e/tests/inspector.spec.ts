@@ -41,7 +41,6 @@ test.describe('inspector editing', () => {
       'aria-selected',
       'true',
     );
-    await panel.locator('summary').filter({ hasText: 'Content' }).click();
     await expect(panel.getByPlaceholder('Element text')).toHaveValue('Editable headline');
   });
 
@@ -49,11 +48,6 @@ test.describe('inspector editing', () => {
     await openEditable(page, request, 'insp-save');
     await editorCanvas(page).getByText('Editable headline').click();
 
-    await page
-      .locator('aside[data-inspector-ui]')
-      .locator('summary')
-      .filter({ hasText: 'Content' })
-      .click();
     await page
       .locator('aside[data-inspector-ui]')
       .getByPlaceholder('Element text')
@@ -75,11 +69,6 @@ test.describe('inspector editing', () => {
 
     await page
       .locator('aside[data-inspector-ui]')
-      .locator('summary')
-      .filter({ hasText: 'Content' })
-      .click();
-    await page
-      .locator('aside[data-inspector-ui]')
       .getByPlaceholder('Element text')
       .fill('Discarded text');
     await expect(editorCanvas(page).getByText('Discarded text')).toBeVisible();
@@ -93,11 +82,6 @@ test.describe('inspector editing', () => {
     await openEditable(page, request, 'insp-commit');
     await editorCanvas(page).getByText('Editable body copy').click();
 
-    await page
-      .locator('aside[data-inspector-ui]')
-      .locator('summary')
-      .filter({ hasText: 'Content' })
-      .click();
     await page
       .locator('aside[data-inspector-ui]')
       .getByPlaceholder('Element text')
@@ -142,11 +126,6 @@ test.describe('inspector editing', () => {
   test('undo and redo step through an inspector edit', async ({ page, request }) => {
     await openEditable(page, request, 'insp-undo');
     await editorCanvas(page).getByText('Editable headline').click();
-    await page
-      .locator('aside[data-inspector-ui]')
-      .locator('summary')
-      .filter({ hasText: 'Content' })
-      .click();
     await page.locator('aside[data-inspector-ui]').getByPlaceholder('Element text').fill('Undo me');
     await expect(editorCanvas(page).getByText('Undo me')).toBeVisible();
 

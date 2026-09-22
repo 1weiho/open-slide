@@ -599,7 +599,9 @@ function FontWeightField({
           {weightOptions.map((opt) => (
             <SelectItem key={opt.value} value={opt.value} className="text-xs">
               {opt.label}
-              <span className="ml-1.5 font-mono text-[10.5px] opacity-60">{opt.value}</span>
+              <span aria-hidden className="ml-1.5 font-mono text-[10.5px] opacity-60">
+                {opt.value}
+              </span>
             </SelectItem>
           ))}
         </SelectGroup>
