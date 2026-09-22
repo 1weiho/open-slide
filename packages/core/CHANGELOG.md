@@ -1,5 +1,13 @@
 # @open-slide/core
 
+## 2.0.0-beta.3
+
+### Patch Changes
+
+- [#470](https://github.com/1weiho/open-slide/pull/470) [`2713e38`](https://github.com/1weiho/open-slide/commit/2713e38df2d6d7c560c6c3ba42b9b9dbbc13781e) Thanks [@peelar](https://github.com/peelar)! - Use the active deck title as the browser tab title.
+
+- [#483](https://github.com/1weiho/open-slide/pull/483) [`7343674`](https://github.com/1weiho/open-slide/commit/7343674f8cac5d4b198dbec2357090a464a14627) Thanks [@1weiho](https://github.com/1weiho)! - Export fully rounded (pill-shaped) boxes as rounded rectangles instead of ellipses in editable PPTX output.
+
 ## 2.0.0-beta.2
 
 ### Major Changes
