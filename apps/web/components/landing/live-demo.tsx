@@ -2,6 +2,7 @@
 
 import posthog from 'posthog-js';
 import { useState } from 'react';
+import { Container } from './frame';
 import { InlineSlidePlayer, inlineSlideCount } from './inline-slide-player';
 
 export function LiveDemo() {
@@ -30,26 +31,26 @@ export function LiveDemo() {
   };
 
   return (
-    <section id="demo" className="relative" aria-labelledby="demo-heading">
-      <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 pt-4 sm:pt-8 lg:pt-12 pb-20 sm:pb-32">
+    <section id="demo" aria-labelledby="demo-heading">
+      <Container className="pb-20 sm:pb-28">
         <h2 id="demo-heading" className="sr-only">
           Live demo
         </h2>
         <div
           data-reveal
-          className="floating relative block w-full overflow-hidden rounded-[8px] border border-[color:var(--color-rule)] bg-black"
+          className="relative block w-full overflow-hidden rounded-xl border border-[color:var(--color-rule)] bg-black"
           style={{ aspectRatio: '16 / 9' }}
         >
           <InlineSlidePlayer index={index} onIndexChange={setIndex} />
         </div>
 
-        <div className="mt-6 flex items-center justify-between text-[13px] font-medium text-[color:var(--color-muted)]">
+        <div className="mt-5 flex items-center justify-between text-[13px] font-medium text-[color:var(--color-muted)]">
           <a
             href="https://demo.open-slide.dev/"
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => posthog.capture('view_more_demos_clicked')}
-            className="group inline-flex items-center gap-2 hover:text-[color:var(--color-text)] transition-colors"
+            className="group inline-flex items-center gap-2 transition-colors hover:text-[color:var(--color-text)]"
           >
             View more demos
             <span
@@ -68,7 +69,7 @@ export function LiveDemo() {
               onClick={handlePrev}
               disabled={atStart}
               aria-label="Previous slide"
-              className="pressable px-1.5 py-0.5 text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text)] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-[color:var(--color-text-soft)]"
+              className="pressable px-1.5 py-0.5 text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-[color:var(--color-text-soft)]"
             >
               ←
             </button>
@@ -77,13 +78,13 @@ export function LiveDemo() {
               onClick={handleNext}
               disabled={atEnd}
               aria-label="Next slide"
-              className="pressable px-1.5 py-0.5 text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text)] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-[color:var(--color-text-soft)]"
+              className="pressable px-1.5 py-0.5 text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-[color:var(--color-text-soft)]"
             >
               →
             </button>
           </span>
         </div>
-      </div>
+      </Container>
     </section>
   );
 }

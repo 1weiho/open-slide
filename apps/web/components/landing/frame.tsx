@@ -1,28 +1,28 @@
-export function SectionRule() {
+import type { ReactNode } from 'react';
+
+export function Container({
+  className = '',
+  children,
+}: {
+  className?: string;
+  children: ReactNode;
+}) {
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-[1]">
-      <div className="hair" />
-      <div className="frame-w relative hidden sm:block">
-        <CrossMark className="absolute -top-[6px] -left-[5px]" />
-        <CrossMark className="absolute -top-[6px] -right-[5px]" />
-      </div>
+    <div className={`mx-auto w-full max-w-[1200px] px-6 sm:px-8 ${className}`}>{children}</div>
+  );
+}
+
+export function SectionHeading({ title, lead }: { title: ReactNode; lead?: ReactNode }) {
+  return (
+    <div data-reveal className="mb-12 flex flex-col gap-4 sm:mb-16">
+      <h2 className="max-w-[22ch] text-[28px] font-medium leading-[1.1] tracking-[-0.025em] text-[color:var(--color-text)] sm:text-[36px] lg:text-[44px]">
+        {title}
+      </h2>
+      {lead ? (
+        <p className="max-w-[56ch] text-[16px] leading-[1.6] text-[color:var(--color-text-soft)] sm:text-[17px]">
+          {lead}
+        </p>
+      ) : null}
     </div>
-  );
-}
-
-export function StripeBand() {
-  return (
-    <div
-      aria-hidden
-      className="stripes h-10 border-y border-[color:var(--color-rule-soft)] sm:h-14"
-    />
-  );
-}
-
-function CrossMark({ className }: { className?: string }) {
-  return (
-    <svg aria-hidden width="11" height="11" viewBox="0 0 11 11" fill="none" className={className}>
-      <path d="M5.5 0v11M0 5.5h11" stroke="var(--color-dim)" strokeWidth="1" />
-    </svg>
   );
 }

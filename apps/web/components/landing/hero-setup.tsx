@@ -63,7 +63,7 @@ export function HeroSetup() {
       <div
         role="group"
         aria-label="Choose how to set up open-slide"
-        className="flex items-center text-[14px] sm:text-[15px]"
+        className="flex items-center text-[14px]"
       >
         {setupModes.map((key, index) => (
           <div key={key} className="flex items-center">
@@ -101,7 +101,7 @@ export function HeroSetup() {
         type="button"
         aria-label={option.copyLabel}
         onClick={copySetup}
-        className="group pressable floating flex h-[58px] w-[337px] max-w-full items-center gap-3 rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] px-5 text-left hover:border-[color:var(--color-accent)]/50 sm:h-[68px] sm:px-7"
+        className="group pressable flex h-12 w-[336px] max-w-full items-center gap-3 rounded-lg border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] px-4 text-left hover:border-[color:var(--color-dim)] sm:h-[52px] sm:px-5"
       >
         <span className="relative h-[20px] min-w-0 flex-1 overflow-hidden sm:h-[22px]">
           <AnimatePresence initial={false} custom={direction}>
@@ -117,11 +117,11 @@ export function HeroSetup() {
             >
               <span
                 aria-hidden
-                className="flex w-4 shrink-0 items-center justify-center font-[family-name:var(--font-mono)] text-[17px] text-[color:var(--color-accent)] sm:text-[19px]"
+                className="flex w-4 shrink-0 items-center justify-center font-[family-name:var(--font-mono)] text-[14px] text-[color:var(--color-accent)] sm:text-[15px]"
               >
                 {mode === 'you' ? '$' : '✦'}
               </span>
-              <span className="min-w-0 flex-1 truncate font-[family-name:var(--font-mono)] text-[13px] tracking-[-0.02em] text-[color:var(--color-text)] sm:text-[15px]">
+              <span className="min-w-0 flex-1 truncate font-[family-name:var(--font-mono)] text-[13px] tracking-[-0.01em] text-[color:var(--color-text)] sm:text-[14px]">
                 {option.displayContent}
               </span>
             </motion.span>

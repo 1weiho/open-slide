@@ -1,5 +1,5 @@
 import { FaqItem } from './faq-item';
-import { SectionRule } from './frame';
+import { Container, SectionHeading } from './frame';
 
 export type QA = { q: string; a: string };
 
@@ -32,28 +32,19 @@ export const faqs: QA[] = [
 
 export function FAQ() {
   return (
-    <section id="faq" className="relative">
-      <SectionRule />
-      <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-20 sm:py-32 lg:py-40">
-        <h2
-          data-reveal="blur"
-          className="text-[32px] sm:text-[44px] lg:text-[60px] leading-[1.1] sm:leading-[1.05] tracking-[-0.035em] font-medium max-w-[820px] mb-14 sm:mb-20"
-        >
-          Questions,{' '}
-          <span className="font-[family-name:var(--font-pixel)] text-[color:var(--color-muted)]">
-            answered.
-          </span>
-        </h2>
+    <section id="faq" className="border-t border-[color:var(--color-rule-soft)]">
+      <Container className="py-20 sm:py-28">
+        <SectionHeading title="Questions, answered." />
 
         <dl
           data-reveal
-          className="max-w-[860px] border-y border-[color:var(--color-rule-soft)] divide-y divide-[color:var(--color-rule-soft)]"
+          className="max-w-[760px] divide-y divide-[color:var(--color-rule-soft)] border-y border-[color:var(--color-rule-soft)]"
         >
           {faqs.map((item, idx) => (
             <FaqItem key={item.q} item={item} index={idx} />
           ))}
         </dl>
-      </div>
+      </Container>
     </section>
   );
 }

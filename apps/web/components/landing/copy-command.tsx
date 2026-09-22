@@ -17,15 +17,15 @@ export function CopyCommand({ command }: { command: string }) {
     }
   };
 
-  const height = 'h-[48px] sm:h-[52px]';
+  const height = 'h-12 sm:h-[52px]';
   const pad = 'px-4 sm:px-5';
-  const text = 'text-[13px] sm:text-[15px]';
+  const text = 'text-[13px] sm:text-[14px]';
 
   return (
     <button
       type="button"
       onClick={onCopy}
-      className={`group pressable floating relative inline-flex items-center gap-3 ${height} ${pad} rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] text-[color:var(--color-text)] font-[family-name:var(--font-mono)] ${text} hover:border-[color:var(--color-accent)]/50`}
+      className={`group pressable relative inline-flex items-center gap-3 ${height} ${pad} rounded-lg border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] text-[color:var(--color-text)] font-[family-name:var(--font-mono)] ${text} hover:border-[color:var(--color-dim)]`}
     >
       <span aria-hidden className="text-[color:var(--color-accent)]">
         $
@@ -33,7 +33,7 @@ export function CopyCommand({ command }: { command: string }) {
       <span className="tracking-[-0.01em]">{command}</span>
       <span
         aria-hidden
-        className="ml-1 inline-flex items-center gap-1.5 text-[color:var(--color-muted)] group-hover:text-[color:var(--color-accent)] transition-colors"
+        className="ml-1 inline-flex items-center gap-1.5 text-[color:var(--color-muted)] transition-colors group-hover:text-[color:var(--color-text)]"
       >
         <span className="h-4 w-px bg-[color:var(--color-rule)]" />
         <span className="relative inline-flex h-[14px] w-[14px] items-center justify-center">
