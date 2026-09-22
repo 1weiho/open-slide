@@ -172,6 +172,15 @@ describe('locTagsPlugin', () => {
     // `deep/index.tsx` is not the entry either, and a suffix check would take it.
     expect(transformWithLocTags('/repo/slides/cover/deep/index.tsx')).toBeNull();
   });
+
+  it('normalizes dot segments before matching the deck entry', () => {
+    expectTaggedTransform('/repo/slides/./cover/index.tsx');
+    expectTaggedTransform('/repo/slides/cover/../cover/index.tsx');
+  });
+
+  it('rejects a dot-segment path that escapes the slides root', () => {
+    expect(transformWithLocTags('/repo/slides/../index.tsx')).toBeNull();
+  });
 });
 
 describe('locTagsPlugin on Windows-style paths', () => {
@@ -219,6 +228,16 @@ describe('locTagsPlugin on Windows-style paths', () => {
     expect(
       transformWithMockedResolve('C:\\repo\\slides', 'C:/repo/slides/cover/index.test.tsx'),
     ).toBeNull();
+  });
+
+  it('rejects a dot-segment path that escapes a Windows slidesRoot', () => {
+    expect(
+      transformWithMockedResolve('C:\\repo\\slides', 'C:/repo/slides/../index.tsx'),
+    ).toBeNull();
+  });
+
+  it('tags slide index files under a UNC slidesRoot', () => {
+    expectTagged('\\\\server\\share\\slides', '//server/share/slides/cover/index.tsx');
   });
 
   it('still tags POSIX ids when path.resolve returns a POSIX slidesRoot (regression guard)', () => {
