@@ -1031,10 +1031,9 @@ function buildTextSplice(
   if (prevText === undefined) {
     return { error: 'element has multiple text candidates; missing prevText' };
   }
-  // Trim: JSX collapses surrounding whitespace at render time, so the
-  // DOM `prevText` won't have leading/trailing space the source might.
-  const norm = prevText.trim();
-  const matches = candidates.filter((c) => c.current === norm);
+  const normalize = (text: string) => text.replace(/\s+/g, ' ').trim();
+  const norm = normalize(prevText);
+  const matches = candidates.filter((c) => normalize(c.current) === norm);
   if (matches.length === 0) {
     return { error: 'no text candidate matches the current value' };
   }
