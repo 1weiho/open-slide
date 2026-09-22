@@ -238,6 +238,9 @@ export const ja: Locale = {
     sendBackward: '背面へ移動',
     sendToBack: '最背面へ移動',
     smartGuides: 'スマートガイド',
+    snapThirds: '三分割',
+    snapGrid: 'グリッド',
+    gridSize: 'グリッドサイズ',
     selectParent: '親要素を選択',
     visualEditorHint:
       'Shift クリックで複数選択、⌘A で全選択。矢印キーで 1 px、Shift を押すと 10 px 移動。Alt でスナップを無効化。Shift で移動方向や縦横比を固定。',

@@ -236,6 +236,9 @@ export const zhTW: Locale = {
     sendBackward: '下移一層',
     sendToBack: '移到最下層',
     smartGuides: '智慧對齊線',
+    snapThirds: '三分線',
+    snapGrid: '網格',
+    gridSize: '網格大小',
     selectParent: '選取父層',
     visualEditorHint:
       'Shift 點選可複選，⌘A 全選。方向鍵移動 1 px，按住 Shift 移動 10 px。Alt 暫停吸附。Shift 限制拖曳方向或等比例縮放。',

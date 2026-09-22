@@ -237,6 +237,9 @@ export const en: Locale = {
     sendBackward: 'Send backward',
     sendToBack: 'Send to back',
     smartGuides: 'Smart guides',
+    snapThirds: 'Thirds',
+    snapGrid: 'Grid',
+    gridSize: 'Grid size',
     selectParent: 'Select parent',
     visualEditorHint:
       'Shift-click to select more. ⌘A selects all. Arrows move 1 px; Shift moves 10 px. Alt ignores guides. Shift constrains drag or keeps resize proportions.',

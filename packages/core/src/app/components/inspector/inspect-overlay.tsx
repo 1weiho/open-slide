@@ -7,6 +7,7 @@ import {
   type Rect,
   type ResizeHandle,
   resizeRect,
+  type SnapOptions,
   snapMove,
   unionRects,
 } from '@/lib/inspector/geometry';
@@ -35,6 +36,7 @@ import {
 } from '@/lib/inspector/visual-dom';
 import { isTypingTarget } from '@/lib/keys';
 import { format, useLocale } from '@/lib/use-locale';
+import { cn } from '@/lib/utils';
 import { type SelectedTarget, useInspector } from './inspector-provider';
 
 type Gesture = {
@@ -333,12 +335,18 @@ export function InspectOverlay() {
         const vertical = event.shiftKey && !horizontal;
         if (horizontal) delta.y = 0;
         if (vertical) delta.x = 0;
-        if (visual.snapping && !event.altKey) {
+        const options: SnapOptions = {
+          canvas: gesture.canvas,
+          thirds: visual.thirds,
+          grid: visual.grid.enabled ? visual.grid.size : null,
+        };
+        if ((visual.snapping || options.thirds || options.grid) && !event.altKey) {
           const snapped = snapMove(
             gesture.bounds,
             delta,
-            gesture.candidates,
+            visual.snapping ? gesture.candidates : [],
             6 / gesture.canvas.scale,
+            options,
           );
           delta = { x: vertical ? 0 : snapped.delta.x, y: horizontal ? 0 : snapped.delta.y };
           nextGuides = snapped.guides.filter(
@@ -508,6 +516,9 @@ export function InspectOverlay() {
     committing,
     bufferBatch,
     visual.snapping,
+    visual.thirds,
+    visual.grid.enabled,
+    visual.grid.size,
     cancel,
     openCrop,
   ]);
@@ -603,7 +614,17 @@ export function InspectOverlay() {
           <div
             key={`${guide.axis}:${guide.position}`}
             data-alignment-guide={guide.axis}
-            className="absolute bg-cyan-500"
+            data-guide-kind={guide.kind ?? 'object'}
+            className={cn(
+              'absolute',
+              guide.kind === 'third'
+                ? 'border-fuchsia-500 border-dashed'
+                : guide.kind === 'grid'
+                  ? 'border-amber-500/70 border-dotted'
+                  : 'bg-cyan-500',
+              (guide.kind === 'third' || guide.kind === 'grid') &&
+                (guide.axis === 'x' ? 'border-l' : 'border-t'),
+            )}
             style={
               guide.axis === 'x'
                 ? {

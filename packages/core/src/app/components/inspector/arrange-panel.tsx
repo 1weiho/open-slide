@@ -12,6 +12,8 @@ import {
   BringToFront,
   CircleHelp,
   CornerLeftUp,
+  Grid3x3,
+  Grip,
   type LucideIcon,
   Magnet,
   RotateCw,
@@ -169,25 +171,41 @@ export function ArrangePanel() {
       <Section
         title={t.alignLabel}
         action={
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Toggle
-                  size="sm"
+          <>
+            {visual.grid.enabled && (
+              <div className="-my-0.5 mr-1 w-16">
+                <FrameInput
+                  suffix="px"
+                  label={t.gridSize}
+                  value={visual.grid.size}
+                  min={1}
                   disabled={committing}
-                  pressed={visual.snapping}
-                  onPressedChange={visual.setSnapping}
-                  aria-label={t.smartGuides}
-                  className="size-6 min-w-6 rounded-[5px] px-0 text-muted-foreground/60 hover:bg-transparent hover:text-foreground data-pressed:bg-muted data-pressed:text-foreground"
+                  onChange={(size) => visual.setGrid((grid) => ({ ...grid, size }))}
                 />
-              }
-            >
-              <Magnet />
-            </TooltipTrigger>
-            <TooltipContent side="bottom" align="end">
-              {t.smartGuides}
-            </TooltipContent>
-          </Tooltip>
+              </div>
+            )}
+            <SnapToggle
+              label={t.smartGuides}
+              icon={Magnet}
+              pressed={visual.snapping}
+              disabled={committing}
+              onPressedChange={visual.setSnapping}
+            />
+            <SnapToggle
+              label={t.snapThirds}
+              icon={Grid3x3}
+              pressed={visual.thirds}
+              disabled={committing}
+              onPressedChange={visual.setThirds}
+            />
+            <SnapToggle
+              label={t.snapGrid}
+              icon={Grip}
+              pressed={visual.grid.enabled}
+              disabled={committing}
+              onPressedChange={(enabled) => visual.setGrid((grid) => ({ ...grid, enabled }))}
+            />
+          </>
         }
       >
         {multiple && (
@@ -366,6 +384,42 @@ function HeaderButton({
             aria-label={label}
             disabled={disabled}
             onClick={onClick}
+          />
+        }
+      >
+        <Icon />
+      </TooltipTrigger>
+      <TooltipContent side="bottom" align="end">
+        {label}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function SnapToggle({
+  label,
+  icon: Icon,
+  pressed,
+  disabled,
+  onPressedChange,
+}: {
+  label: string;
+  icon: LucideIcon;
+  pressed: boolean;
+  disabled: boolean;
+  onPressedChange: (pressed: boolean) => void;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Toggle
+            size="sm"
+            disabled={disabled}
+            pressed={pressed}
+            onPressedChange={onPressedChange}
+            aria-label={label}
+            className="size-6 min-w-6 rounded-[5px] px-0 text-muted-foreground/60 hover:bg-transparent hover:text-foreground data-pressed:bg-muted data-pressed:text-foreground"
           />
         }
       >

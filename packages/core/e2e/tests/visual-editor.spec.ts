@@ -405,6 +405,28 @@ export default [Only] satisfies Page[];
     await expect(page.locator('[data-alignment-guide]')).toHaveCount(0);
   });
 
+  test('dragging near a canvas third with Thirds on writes the snapped translate', async ({
+    page,
+    request,
+  }) => {
+    const { third } = await openBlocks(page, request, 'visual-snap-thirds');
+    await third.click();
+    const panel = page.locator('aside[data-inspector-ui]');
+    await panel.getByRole('tab', { name: 'Arrange', exact: true }).click();
+    await panel.getByRole('button', { name: 'Thirds', exact: true }).click();
+    const before = await geometry(third);
+    // The left edge starts at 1120; two thirds of 1920 is 1280, so 163 lands 3px past it.
+    await startDrag(page, third, 163 * before.scale, 0);
+    await expect(page.locator('[data-guide-kind="third"]')).toBeVisible();
+    await page.mouse.up();
+    const saved = page.waitForResponse(
+      (response) => response.url().includes('/__edit') && response.request().method() === 'POST',
+    );
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    expect((await saved).status()).toBe(200);
+    await expect.poll(() => readSlideSource('visual-snap-thirds')).toContain("translate: '160px ");
+  });
+
   test('arrow keys nudge in slide pixels and Shift increases the step', async ({
     page,
     request,
