@@ -1,4 +1,5 @@
 import type { Page, SlideMeta } from '@open-slide/core';
+import { SiblingPage } from './sibling-page';
 
 export const meta: SlideMeta = {
   title: 'Edit Target',
@@ -21,4 +22,6 @@ const Only: Page = () => (
   </div>
 );
 
-export default [Only] satisfies Page[];
+const SiblingFilePage: Page = () => <SiblingPage />;
+
+export default [Only, SiblingFilePage] satisfies Page[];
