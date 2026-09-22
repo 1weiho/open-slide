@@ -18,12 +18,26 @@ Your job: read those markers, perform the described edits, and delete the marker
 ```
 
 - Always sits on its own line as the **first child inside** the JSX element it refers to (i.e. between that element's opening `>` and its other children). The marker is dropped *into* its target, not floated above it.
-- `text` is base64url-encoded JSON: `{"note": "...", "hint"?: "..."}`.
+- `text` is base64url-encoded JSON: `{"note": "...", "hint"?: "...", "intent"?: "..."}`.
 - Detection regex (authoritative — use exactly this):
 
   ```
   /\{\/\*\s*@slide-comment\s+id="(c-[a-f0-9]+)"\s+ts="([^"]+)"\s+text="([A-Za-z0-9_\-]+={0,2})"\s*\*\/\}/g
   ```
+
+## Structured intent
+
+A payload may carry an optional `intent` naming a structural edit on the target element (the enclosing element from step 3). `note` still carries any detail, and keeping the result valid, well-formatted JSX is still your job.
+
+| `intent` | What to do |
+| --- | --- |
+| `delete` | Remove the element and its children. |
+| `duplicate` | Insert a copy right after the element. The copy must not carry any marker: afterwards, remove every marker with that id. |
+| `move-before` | Move the element before the sibling the `note` names (default: its previous sibling). |
+| `move-after` | Move the element after the sibling the `note` names (default: its next sibling). |
+| `wrap` | Wrap the element in a new container as the `note` describes. |
+
+No `intent` means a plain free-text comment. Any other value isn't part of the format: treat the comment as free text. If markers on the same element carry conflicting intents, don't guess: leave them in place and report them as skipped.
 
 ## Procedure
 
@@ -33,8 +47,8 @@ Your job: read those markers, perform the described edits, and delete the marker
 
 2. **Read the file and find all markers.**
    - Run the regex above against the whole file.
-   - For each match, base64url-decode `text` and `JSON.parse` it to get `{ note, hint? }`.
-   - Record each hit as `{ id, lineIndex (0-based), note, hint }`.
+   - For each match, base64url-decode `text` and `JSON.parse` it to get `{ note, hint?, intent? }`.
+   - Record each hit as `{ id, lineIndex (0-based), note, hint, intent }`.
    - If there are no markers, tell the user and stop.
 
 3. **Understand each comment in context.**

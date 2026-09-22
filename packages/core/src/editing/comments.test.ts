@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { b64urlDecode, b64urlEncode, parseMarkers } from './comments.ts';
+import {
+  b64urlDecode,
+  b64urlEncode,
+  COMMENT_INTENTS,
+  encodeCommentPayload,
+  isCommentIntent,
+  markerDeleteRegex,
+  parseMarkers,
+} from './comments.ts';
 
 describe('b64url encoding', () => {
   it('round-trips arbitrary unicode strings', () => {
@@ -68,5 +76,59 @@ describe('parseMarkers', () => {
     const comments = parseMarkers(source);
     expect(comments.map((c) => c.note)).toEqual(['one', 'two']);
     expect(comments.map((c) => c.line)).toEqual([1, 3]);
+  });
+});
+
+const TS = '2026-04-25T00:00:00.000Z';
+const marker = (id: string, text: string) =>
+  `    {/* @slide-comment id="${id}" ts="${TS}" text="${text}" */}`;
+
+describe('comment intent', () => {
+  it('accepts exactly the closed set', () => {
+    for (const intent of COMMENT_INTENTS) expect(isCommentIntent(intent)).toBe(true);
+    for (const bad of ['remove', 'DELETE', '', 'move', 1, null, undefined, {}]) {
+      expect(isCommentIntent(bad)).toBe(false);
+    }
+  });
+
+  it('round-trips every intent through a marker', () => {
+    for (const intent of COMMENT_INTENTS) {
+      const text = encodeCommentPayload({ note: 'n', intent });
+      const [c] = parseMarkers(marker('c-0000beef', text));
+      expect(c).toStrictEqual({ id: 'c-0000beef', line: 1, ts: TS, note: 'n', intent });
+    }
+  });
+
+  it('encodes payloads without intent byte-identically to pre-intent markers', () => {
+    expect(encodeCommentPayload({ note: 'x', hint: undefined, intent: undefined })).toBe(
+      'eyJub3RlIjoieCJ9',
+    );
+    expect(encodeCommentPayload({ note: 'x', hint: 'h' })).toBe('eyJub3RlIjoieCIsImhpbnQiOiJoIn0');
+  });
+
+  it('parses a legacy marker with no intent key unchanged', () => {
+    const [c] = parseMarkers(marker('c-12345678', 'eyJub3RlIjoieCIsImhpbnQiOiJoIn0'));
+    expect(c).toStrictEqual({ id: 'c-12345678', line: 1, ts: TS, note: 'x', hint: 'h' });
+  });
+
+  it('drops an unknown or null intent on read but keeps the comment', () => {
+    for (const intent of ['explode', null]) {
+      const text = b64urlEncode(JSON.stringify({ note: 'keep me', intent }));
+      const [c] = parseMarkers(marker('c-12345678', text));
+      expect(c).toStrictEqual({ id: 'c-12345678', line: 1, ts: TS, note: 'keep me' });
+    }
+  });
+});
+
+describe('markerDeleteRegex', () => {
+  it('matches legacy and intent-bearing markers alike', () => {
+    const legacy = marker('c-aaaaaaaa', b64urlEncode(JSON.stringify({ note: 'a' })));
+    const withIntent = marker(
+      'c-bbbbbbbb',
+      encodeCommentPayload({ note: 'b', hint: 'h', intent: 'move-after' }),
+    );
+    expect(markerDeleteRegex('c-aaaaaaaa').test(legacy)).toBe(true);
+    expect(markerDeleteRegex('c-bbbbbbbb').test(withIntent)).toBe(true);
+    expect(markerDeleteRegex('c-aaaaaaaa').test(withIntent)).toBe(false);
   });
 });

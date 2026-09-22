@@ -5,7 +5,28 @@ import { findJsxAncestors, type JsxContainer, parseSource } from './babel-walk.t
 const MARKER_RE =
   /\{\/\*\s*@slide-comment\s+id="(c-[a-f0-9]+)"\s+ts="([^"]+)"\s+text="([A-Za-z0-9_-]+={0,2})"\s*\*\/\}/;
 
-export type Comment = { id: string; line: number; ts: string; note: string; hint?: string };
+export const COMMENT_INTENTS = [
+  'delete',
+  'duplicate',
+  'move-before',
+  'move-after',
+  'wrap',
+] as const;
+
+export type CommentIntent = (typeof COMMENT_INTENTS)[number];
+
+export function isCommentIntent(value: unknown): value is CommentIntent {
+  return typeof value === 'string' && (COMMENT_INTENTS as readonly string[]).includes(value);
+}
+
+export type Comment = {
+  id: string;
+  line: number;
+  ts: string;
+  note: string;
+  hint?: string;
+  intent?: CommentIntent;
+};
 
 export function b64urlEncode(s: string): string {
   return Buffer.from(s, 'utf8')
@@ -13,6 +34,14 @@ export function b64urlEncode(s: string): string {
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=+$/, '');
+}
+
+export function encodeCommentPayload(payload: {
+  note: string;
+  hint?: string;
+  intent?: CommentIntent;
+}): string {
+  return b64urlEncode(JSON.stringify(payload));
 }
 
 export function b64urlDecode(s: string): string {
@@ -29,8 +58,17 @@ export function parseMarkers(source: string): Comment[] {
     if (!m) continue;
     const [, id, ts, textB64] = m;
     try {
-      const payload = JSON.parse(b64urlDecode(textB64)) as { note: string; hint?: string };
-      comments.push({ id, line: i + 1, ts, note: payload.note, hint: payload.hint });
+      const payload = JSON.parse(b64urlDecode(textB64)) as {
+        note: string;
+        hint?: unknown;
+        intent?: unknown;
+      };
+      const comment: Comment = { id, line: i + 1, ts, note: payload.note };
+      if (typeof payload.hint === 'string') comment.hint = payload.hint;
+      // An unrecognised intent (hand-edited, or from a newer writer) degrades to a
+      // plain note rather than hiding the comment.
+      if (isCommentIntent(payload.intent)) comment.intent = payload.intent;
+      comments.push(comment);
     } catch {}
   }
   return comments;
