@@ -32,15 +32,16 @@ import { HistoryProvider } from '@/components/history-provider';
 import { CommentWidget } from '@/components/inspector/comment-widget';
 import { InlineEditLayer } from '@/components/inspector/inline-text-editor';
 import { InspectOverlay } from '@/components/inspector/inspect-overlay';
-import { InspectorPanel } from '@/components/inspector/inspector-panel';
 import {
+  InspectModeSwitcher,
   InspectorProvider,
-  InspectToggleButton,
+  InspectPanelButton,
   useInspector,
 } from '@/components/inspector/inspector-provider';
 import { SaveBar } from '@/components/inspector/save-bar';
+import { EditorSidebar } from '@/components/panel/editor-sidebar';
 import { DesignProvider } from '@/components/style-panel/design-provider';
-import { DesignPanel, DesignToggleButton } from '@/components/style-panel/style-panel';
+import { DesignToggleButton } from '@/components/style-panel/style-panel';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -53,7 +54,13 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useFolders } from '@/lib/folders';
-import { hasModifier, isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
+import {
+  hasModifier,
+  isBackwardKey,
+  isForwardKey,
+  isShortcutControlTarget,
+  isTypingTarget,
+} from '@/lib/keys';
 import { readLastHomeLocation } from '@/lib/last-home-location';
 import { useAgentSocketConnected } from '@/lib/use-agent-socket';
 import { useClickPageNavigation } from '@/lib/use-click-page-navigation';
@@ -298,7 +305,14 @@ export function Slide() {
     // page-nav handler too would race it and skip <Steps> reveals, so bail out.
     if (playMode || !showSlideUi) return;
     const onKey = (e: KeyboardEvent) => {
-      if (isTypingTarget(e.target)) return;
+      if (
+        isTypingTarget(e.target) ||
+        isShortcutControlTarget(e.target) ||
+        e.isComposing ||
+        e.keyCode === 229 ||
+        e.defaultPrevented
+      )
+        return;
       // Letter shortcuts only fire bare so browser combos (Cmd/Ctrl-P, ⌘F…) stay intact.
       if (hasModifier(e)) return;
       // Toggle overview from either state — the overview's own capture-phase
@@ -595,7 +609,12 @@ export function Slide() {
 
   return (
     <HistoryProvider>
-      <InspectorProvider slideId={slideId} pageIndex={index}>
+      <InspectorProvider
+        slideId={slideId}
+        pageIndex={index}
+        panelHidden={designOpen}
+        onPanelOpen={() => setDesignOpen(false)}
+      >
         <SelectionReporter />
         <div className="flex h-dvh flex-col overflow-hidden bg-sidebar text-foreground">
           {/* Toolbar sits directly on the chrome ground — three zones, mono-folio center */}
@@ -647,6 +666,10 @@ export function Slide() {
             </div>
 
             <div className="flex flex-1 items-center justify-end gap-1 md:ml-auto md:flex-none">
+              {view === 'slides' && <InspectModeSwitcher />}
+              {import.meta.env.DEV && view === 'slides' && (
+                <span aria-hidden className="mx-0.5 hidden h-5 w-px bg-hairline md:block" />
+              )}
               {view === 'slides' && (
                 <button
                   type="button"
@@ -732,7 +755,7 @@ export function Slide() {
               {view === 'slides' && (
                 <DesignToggleButton active={designOpen} onToggle={() => setDesignOpen((v) => !v)} />
               )}
-              {view === 'slides' && <InspectToggleButton />}
+              {view === 'slides' && <InspectPanelButton />}
               <span aria-hidden className="mx-0.5 hidden h-5 w-px bg-hairline md:block" />
               {view === 'slides' && (
                 <div className="inline-flex items-stretch">
@@ -845,8 +868,10 @@ export function Slide() {
                       actions={thumbnailActions}
                     />
                   </div>
-                  <InspectorPanel />
-                  <DesignPanel open={designOpen} onClose={() => setDesignOpen(false)} />
+                  <EditorSidebar
+                    designOpen={designOpen}
+                    onCloseDesign={() => setDesignOpen(false)}
+                  />
                 </div>
                 {import.meta.env.DEV && (
                   <NotesDrawer
