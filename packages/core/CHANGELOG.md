@@ -1,5 +1,13 @@
 # @open-slide/core
 
+## 2.0.0-beta.4
+
+### Minor Changes
+
+- [#451](https://github.com/open-slide/open-slide/pull/451) [`cb4faf6`](https://github.com/open-slide/open-slide/commit/cb4faf612fe1ae95c399f824fe194499325e62f6) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Add Google Fonts search to the asset panel — preview families live and download a chosen weight straight into assets. The asset detail dialog also renders a live font preview with editable sample text for font files.
+
+- [#450](https://github.com/open-slide/open-slide/pull/450) [`8d316ea`](https://github.com/open-slide/open-slide/commit/8d316ea139274fdc3cb557c59c6907fcec316fff) Thanks [@1weiho](https://github.com/1weiho)! - Add visual slide editing with snapping, safe resizing and layer ordering, inline text formatting, a compact Format panel, animated inspector controls, and reliable undo and save recovery.
+
 ## 2.0.0-beta.3
 
 ### Patch Changes
