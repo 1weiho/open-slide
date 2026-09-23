@@ -17,7 +17,7 @@ import {
   UnfoldVertical,
   X,
 } from 'lucide-react';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { IconSwitcherIndicator } from '@/components/icon-switcher-indicator';
 import {
   CollapsibleSection,
@@ -41,7 +41,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { findSlideSource } from '@/lib/inspector/fiber';
 import { hasOnlyInlineTextChildren } from '@/lib/inspector/inline-text';
-import { countLocInstances, inspectorStatus } from '@/lib/inspector/source-location';
+import { inspectorStatus, observeLocInstances } from '@/lib/inspector/source-location';
 import { styleContext } from '@/lib/inspector/text-selection';
 import { useUntracedPick } from '@/lib/inspector/untraced-pick';
 import type { EditOp } from '@/lib/inspector/use-editor';
@@ -118,11 +118,15 @@ export function InspectorPanel({
   const reloadCounter = useReloadCounter();
   const untracedTag = useUntracedPick(slideId);
   const t = useLocale();
-  const instances = useMemo(() => {
-    void opsVersion;
-    void reloadCounter;
-    return selected ? countLocInstances(selected.anchor.closest('[data-osd-canvas]'), selected) : 0;
-  }, [selected, opsVersion, reloadCounter]);
+  const [instances, setInstances] = useState(0);
+  useEffect(() => {
+    const root = selected?.anchor.closest('[data-osd-canvas]');
+    if (!selected || !root) {
+      setInstances(0);
+      return;
+    }
+    return observeLocInstances(root, selected, setInstances);
+  }, [selected]);
   const status = inspectorStatus({ selectionCount: selection.length, untracedTag, instances });
 
   useEffect(() => {

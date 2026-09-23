@@ -18,13 +18,15 @@ const TEXT_SNIPPET_MAX = 120;
 // Normalises like the `path.join` that builds `current.json`'s pagePath.
 export function sourceFilePath(slideId: string, slidesDir = 'slides'): string {
   const dir = slidesDir.replace(/\\/g, '/');
+  const absolute = dir.startsWith('/');
   const parts: string[] = [];
   for (const segment of dir.split('/')) {
     if (!segment || segment === '.') continue;
-    if (segment === '..' && parts.length && parts.at(-1) !== '..') parts.pop();
-    else parts.push(segment);
+    if (segment !== '..') parts.push(segment);
+    else if (parts.length && parts.at(-1) !== '..') parts.pop();
+    else if (!absolute) parts.push(segment);
   }
-  return `${dir.startsWith('/') ? '/' : ''}${[...parts, slideId, 'index.tsx'].join('/')}`;
+  return `${absolute ? '/' : ''}${[...parts, slideId, 'index.tsx'].join('/')}`;
 }
 
 // `data-slide-loc` columns are Babel's 0-based ones; editors, compilers and
@@ -85,4 +87,21 @@ export function countLocInstances(
 ): number {
   if (!root) return 0;
   return root.querySelectorAll(`[data-slide-loc="${target.line}:${target.column}"]`).length;
+}
+
+export function observeLocInstances(
+  root: Node & Pick<ParentNode, 'querySelectorAll'>,
+  target: SourceTarget,
+  onCount: (count: number) => void,
+): () => void {
+  const update = () => onCount(countLocInstances(root, target));
+  update();
+  const observer = new MutationObserver(update);
+  observer.observe(root, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['data-slide-loc'],
+  });
+  return () => observer.disconnect();
 }

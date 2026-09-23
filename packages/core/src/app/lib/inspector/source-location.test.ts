@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   countLocInstances,
   formatAgentSnippet,
   formatSourceLocation,
   inspectorStatus,
+  observeLocInstances,
   summarizeElement,
 } from './source-location.ts';
 
@@ -36,6 +37,15 @@ describe('formatSourceLocation', () => {
     );
     expect(formatSourceLocation('a', { line: 1, column: 0 }, './/slides')).toBe(
       'slides/a/index.tsx:1:1',
+    );
+  });
+
+  it('clamps .. at the root of an absolute slides dir', () => {
+    expect(formatSourceLocation('a', { line: 1, column: 0 }, '/../decks')).toBe(
+      '/decks/a/index.tsx:1:1',
+    );
+    expect(formatSourceLocation('a', { line: 1, column: 0 }, '../decks')).toBe(
+      '../decks/a/index.tsx:1:1',
     );
   });
 });
@@ -137,5 +147,39 @@ describe('countLocInstances', () => {
 
   it('is zero without a root', () => {
     expect(countLocInstances(null, { line: 1, column: 0 })).toBe(0);
+  });
+});
+
+describe('observeLocInstances', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('recounts when the canvas mutates and stops after disconnect', () => {
+    let notify = () => {};
+    const disconnect = vi.fn();
+    const observe = vi.fn();
+    vi.stubGlobal(
+      'MutationObserver',
+      class {
+        constructor(callback: () => void) {
+          notify = callback;
+        }
+        observe = observe;
+        disconnect = disconnect;
+      },
+    );
+    let length = 1;
+    const root = {
+      querySelectorAll: () => ({ length }) as NodeListOf<Element>,
+    } as unknown as Node & Pick<ParentNode, 'querySelectorAll'>;
+    const counts: number[] = [];
+    const stop = observeLocInstances(root, { line: 4, column: 10 }, (count) => counts.push(count));
+    length = 3;
+    notify();
+    expect(counts).toEqual([1, 3]);
+    expect(observe).toHaveBeenCalledWith(root, expect.objectContaining({ subtree: true }));
+    stop();
+    expect(disconnect).toHaveBeenCalled();
   });
 });
