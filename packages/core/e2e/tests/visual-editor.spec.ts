@@ -571,7 +571,7 @@ export default [Only] satisfies Page[];
     await expect.poll(topmost).toBe('Second block');
   });
 
-  test('Reset position removes the drag offset, the full reset also removes layering, and undo restores both', async ({
+  test('Reset position removes the editor move, keeps an unverified zIndex, and undo restores it', async ({
     page,
     request,
   }) => {
@@ -580,6 +580,7 @@ export default [Only] satisfies Page[];
     const panel = page.locator('aside[data-inspector-ui]');
     await panel.getByRole('tab', { name: 'Arrange', exact: true }).click();
     const reset = panel.getByRole('button', { name: 'Reset position', exact: true });
+    const options = panel.getByRole('button', { name: 'Reset options', exact: true });
     await expect(reset).toBeDisabled();
     await first.click({ position: { x: 10, y: 10 } });
     await page.keyboard.press('Shift+ArrowRight');
@@ -591,19 +592,13 @@ export default [Only] satisfies Page[];
     await reset.click();
     await expect.poll(inline).toEqual({ translate: '', zIndex: '2' });
     await expect(reset).toBeDisabled();
-    await panel.getByRole('button', { name: 'Reset options', exact: true }).click();
-    await page
-      .getByRole('menuitem', { name: 'Reset position, size and layer', exact: true })
-      .click();
-    await expect.poll(inline).toEqual({ translate: '', zIndex: '' });
-    await expect(panel.getByRole('button', { name: 'Reset options', exact: true })).toBeDisabled();
+    await expect(options).toBeDisabled();
 
-    await page.getByRole('button', { name: 'Undo', exact: true }).click();
-    await expect.poll(inline).toEqual({ translate: '', zIndex: '2' });
     await page.getByRole('button', { name: 'Undo', exact: true }).click();
     await expect.poll(inline).toEqual({ translate: '10px', zIndex: '2' });
 
     await reset.click({ modifiers: ['Alt'] });
+    await expect.poll(inline).toEqual({ translate: '', zIndex: '2' });
     const saved = page.waitForResponse(
       (response) => response.url().includes('/__edit') && response.request().method() === 'POST',
     );
@@ -611,7 +606,7 @@ export default [Only] satisfies Page[];
     expect((await saved).ok()).toBe(true);
     const source = await readSlideSource('visual-reset-position');
     expect(source).toContain(
-      "<div style={{ position: 'absolute', left: 120, top: 160, width: 240, height: 160, background: '#2a9d8f', padding: 20 }}>First block</div>",
+      "<div style={{ position: 'absolute', left: 120, top: 160, width: 240, height: 160, background: '#2a9d8f', padding: 20, zIndex: '2' }}>First block</div>",
     );
   });
 

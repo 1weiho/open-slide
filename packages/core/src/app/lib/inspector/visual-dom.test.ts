@@ -81,7 +81,7 @@ describe('resetGestureOps', () => {
   it('keeps an authored position and insets unless they match what layering writes', () => {
     expect(
       cleared({ position: 'absolute', top: '120px', left: 'auto', zIndex: '4' }, 'all'),
-    ).toEqual([['zIndex', null]]);
+    ).toEqual([]);
     expect(cleared({ position: 'relative' }, 'all')).toEqual([]);
     expect(
       cleared(
@@ -95,6 +95,32 @@ describe('resetGestureOps', () => {
       ['bottom', null],
       ['left', null],
     ]);
+  });
+
+  it('keeps an authored translate or rotate that is not in the format the editor writes', () => {
+    for (const translate of [
+      '-50% -50%',
+      'calc(100% - 20px) 0px',
+      'var(--shift)',
+      '2em 1em',
+      '10px 20px 5px',
+    ])
+      expect(cleared({ translate }, 'all')).toEqual([]);
+    for (const rotate of ['0.25turn', '1.2rad', 'x 45deg', 'var(--tilt)'])
+      expect(cleared({ rotate }, 'all')).toEqual([]);
+  });
+
+  it('resets the px translate and deg rotate the editor writes, including the one-value form', () => {
+    for (const translate of ['40px 12px', '-3.5px 0.25px', '10px'])
+      expect(cleared({ translate }, 'transform')).toEqual([['translate', null]]);
+    for (const rotate of ['15deg', '-7.5deg', '0deg'])
+      expect(cleared({ rotate }, 'transform')).toEqual([['rotate', null]]);
+  });
+
+  it('keeps an authored zIndex unless it comes with the layer signature', () => {
+    expect(cleared({ zIndex: '10' }, 'all')).toEqual([]);
+    expect(cleared({ position: 'absolute', zIndex: '3' }, 'all')).toEqual([]);
+    expect(cleared(layered, 'all').map(([key]) => key)).toContain('zIndex');
   });
 
   it('returns nothing when no gesture key is present', () => {
@@ -123,17 +149,20 @@ describe('resetGestureOps applied to source', () => {
   });
 
   it('drops the style attribute once every key is a gesture key', () => {
-    const only = src.replace("color: 'red', ", '').replace("width: '320px', ", '');
+    const only = src
+      .replace("color: 'red', ", '')
+      .replace("width: '320px', ", '')
+      .replace(", zIndex: '2'", '');
     const r = applyEdit(only, 2, 0, resetGestureOps(inline, 'all'));
     if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
     expect(r.source).toContain('<div className="card" data-x="1">');
     expect(r.source).toContain('  <p>Keep me</p>');
   });
 
-  it('keeps an authored width on a full clear', () => {
+  it('keeps an authored width and zIndex on a full reset', () => {
     const r = applyEdit(src, 2, 0, resetGestureOps(inline, 'all'));
     if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
-    expect(r.source).toContain(`style={{ color: 'red', width: '320px' }}`);
+    expect(r.source).toContain(`style={{ color: 'red', width: '320px', zIndex: '2' }}`);
   });
 
   it('shadows gesture keys that come from a spread instead of guessing at the spread', () => {

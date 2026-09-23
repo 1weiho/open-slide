@@ -53,8 +53,12 @@ type InlineLayout = Readonly<Record<string, string | undefined>>;
 
 const inlineValue = (inline: InlineLayout, key: string) => inline[key]?.trim() ?? '';
 
-// Size and layer keys are cleared only alongside the signature the editor writes with them, so an
-// authored `width: 240`, `flexShrink: 0` or `position: 'relative'` is not mistaken for a gesture.
+// The source is the only record of a gesture, so ownership is inferred from what the editor writes.
+// Size and layer keys are reset only alongside the signature written with them, so an authored
+// `width: 240`, `flexShrink: 0`, `position: 'relative'` or `zIndex` is not mistaken for a gesture.
+// Translate and rotate carry no companion keys; only the editor's own px/deg format is reset, so an
+// authored `translate: '-50% -50%'` or `rotate: '0.25turn'` survives, while an authored
+// `rotate: '-3deg'` cannot be told apart from a rotate gesture.
 function holds(inline: InlineLayout, styles: Readonly<Record<string, string>>): boolean {
   return Object.entries(styles).every(([key, value]) => inlineValue(inline, key) === value);
 }
@@ -64,8 +68,16 @@ const LAYER_GROUP_SIGNATURE = {
   ...Object.fromEntries(['top', 'right', 'bottom', 'left'].map((key) => [key, LAYER_INSET_VALUE])),
 };
 
+const EDITOR_LENGTH = String.raw`-?\d+(?:\.\d+)?`;
+const EDITOR_TRANSFORM_FORMATS: Record<(typeof TRANSFORM_STYLE_KEYS)[number], RegExp> = {
+  translate: new RegExp(`^${EDITOR_LENGTH}px(?: ${EDITOR_LENGTH}px)?$`),
+  rotate: new RegExp(`^${EDITOR_LENGTH}deg$`),
+};
+
 export function resetGestureOps(inline: InlineLayout, scope: ResetGestureScope): EditOp[] {
-  const keys: string[] = [...TRANSFORM_STYLE_KEYS];
+  const keys: string[] = TRANSFORM_STYLE_KEYS.filter((key) =>
+    EDITOR_TRANSFORM_FORMATS[key].test(inlineValue(inline, key)),
+  );
   if (scope === 'all') {
     if (holds(inline, SIZE_BOUNDS_STYLES))
       keys.push(
@@ -79,8 +91,8 @@ export function resetGestureOps(inline: InlineLayout, scope: ResetGestureScope):
       keys.push(
         ...Object.keys(LAYER_POSITION_STYLE),
         ...LAYER_INSET_KEYS.filter((key) => inlineValue(inline, key) === LAYER_INSET_VALUE),
+        Z_INDEX_KEY,
       );
-    keys.push(Z_INDEX_KEY);
   }
   return keys
     .filter((key) => inlineValue(inline, key))
