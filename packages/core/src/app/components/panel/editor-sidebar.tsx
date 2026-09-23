@@ -3,12 +3,15 @@ import { InspectorPanel } from '@/components/inspector/inspector-panel';
 import { useInspector } from '@/components/inspector/inspector-provider';
 import { useDesignPanelState } from '@/components/style-panel/design-provider';
 import { DesignPanel } from '@/components/style-panel/style-panel';
+import type { DesignSystem } from '@/lib/design';
 import { PANEL_TRANSITION_MS, PANEL_W, usePanelMount } from './panel-shell';
 
 export function EditorSidebar({
+  design,
   designOpen,
   onCloseDesign,
 }: {
+  design?: DesignSystem;
   designOpen: boolean;
   onCloseDesign: () => void;
 }) {
@@ -43,7 +46,7 @@ export function EditorSidebar({
       {(mode ?? lastMode) === 'design' ? (
         <DesignPanel onClose={onCloseDesign} />
       ) : (
-        <InspectorPanel preferredTab={preferredTab} onTabChange={setPreferredTab} />
+        <InspectorPanel preferredTab={preferredTab} onTabChange={setPreferredTab} design={design} />
       )}
     </div>
   );

@@ -40,16 +40,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import type { DesignSystem } from '@/lib/design';
 import { findSlideSource } from '@/lib/inspector/fiber';
 import { hasOnlyInlineTextChildren } from '@/lib/inspector/inline-text';
+import { swatchValue } from '@/lib/inspector/swatch-value';
 import { styleContext } from '@/lib/inspector/text-selection';
 import type { EditOp } from '@/lib/inspector/use-editor';
 import { useAgentSocketConnected } from '@/lib/use-agent-socket';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn, round2 } from '@/lib/utils';
 import type { Locale } from '../../../locale/types';
+import { useDesignPanelState } from '../style-panel/design-provider';
 import { ArrangePanel } from './arrange-panel';
 import { AssetPickerDialog } from './asset-picker-dialog';
+import { DesignTokenSwatches } from './design-token-swatches';
 import { type SelectedTarget, useInspector } from './inspector-provider';
 
 type ElementSnapshot = {
@@ -89,9 +93,11 @@ function resolveSelectedTarget(target: SelectedTarget, slideId: string): Selecte
 export function InspectorPanel({
   preferredTab,
   onTabChange,
+  design,
 }: {
   preferredTab: 'format' | 'arrange';
   onTabChange: (tab: 'format' | 'arrange') => void;
+  design?: DesignSystem;
 }) {
   const {
     togglePanel,
@@ -106,14 +112,18 @@ export function InspectorPanel({
     setSelected,
     bufferOps,
     pendingCount,
+    pendingStyleValue,
     opsVersion,
     add,
     applyEdit,
   } = useInspector();
   const [snapshot, setSnapshot] = useState<ElementSnapshot | null>(null);
+  const styleValue = (target: SelectedTarget, key: 'color' | 'backgroundColor') =>
+    swatchValue(pendingStyleValue(target.line, target.column, key), target.anchor.style[key]);
   const [contentSelection, setContentSelection] = useState<ContentSelection | null>(null);
   const [rangeStylePreview, setRangeStylePreview] = useState<RangeStylePreview | null>(null);
   const reloadCounter = useReloadCounter();
+  const designPanel = useDesignPanelState();
   const t = useLocale();
 
   useEffect(() => {
@@ -166,6 +176,12 @@ export function InspectorPanel({
       : t.inspector.styleLabel;
   const selectedInlineRange =
     inlineEdit?.anchor === selected?.anchor && inlineSelection ? inlineSelection : null;
+  // Only an exported `design` reaches the canvas as `--osd-*` vars.
+  const palette = design
+    ? designPanel.dirty && designPanel.draft
+      ? designPanel.draft.palette
+      : design.palette
+    : null;
   const contentRange =
     !inlineEdit &&
     snapshot &&
@@ -382,11 +398,31 @@ export function InspectorPanel({
               )}
               <Section title={t.inspector.colorSection}>
                 {textSelected && (
-                  <ColorField
-                    label={t.inspector.textColor}
-                    value={typographySnapshot.color}
-                    onChange={(value) =>
-                      applyTextStyle([{ kind: 'set-style', key: 'color', value }])
+                  <>
+                    {palette && !contentRange && !rangeSelected && (
+                      <DesignTokenSwatches
+                        palette={palette}
+                        value={styleValue(selected, 'color')}
+                        onPick={(value) =>
+                          applyTextStyle([{ kind: 'set-style', key: 'color', value }])
+                        }
+                      />
+                    )}
+                    <ColorField
+                      label={t.inspector.textColor}
+                      value={typographySnapshot.color}
+                      onChange={(value) =>
+                        applyTextStyle([{ kind: 'set-style', key: 'color', value }])
+                      }
+                    />
+                  </>
+                )}
+                {palette && (
+                  <DesignTokenSwatches
+                    palette={palette}
+                    value={styleValue(selected, 'backgroundColor')}
+                    onPick={(value) =>
+                      apply([{ kind: 'set-style', key: 'backgroundColor', value }])
                     }
                   />
                 )}

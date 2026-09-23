@@ -1,3 +1,4 @@
+import fs from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import {
   deleteSlide,
@@ -5,7 +6,16 @@ import {
   editorCanvas,
   openSlide,
   readSlideSource,
+  slideSourcePath,
 } from './helpers.ts';
+
+const DESIGN_EXPORT = `export const design = {
+  palette: { bg: '#1a1408', text: '#f5ead2', accent: '#ff3366' },
+  fonts: { display: 'system-ui', body: 'system-ui' },
+  typeScale: { hero: 168, body: 36 },
+  radius: 12,
+};
+`;
 
 test.describe('inspector editing', () => {
   const createdSlides: string[] = [];
@@ -21,9 +31,17 @@ test.describe('inspector editing', () => {
     page: import('@playwright/test').Page,
     request: import('@playwright/test').APIRequestContext,
     slideId: string,
+    prepend = '',
   ) {
     createdSlides.push(slideId);
     await duplicateSlide(request, 'edit-target', slideId);
+    if (prepend) {
+      const file = slideSourcePath(slideId);
+      await fs.writeFile(file, prepend + (await fs.readFile(file, 'utf8')));
+      await expect
+        .poll(async () => (await request.get(`/@fs${file}`)).text(), { timeout: 15_000 })
+        .toContain('export const design');
+    }
     await openSlide(page, slideId);
     await expect(page.locator('[data-inspector-ready]')).toBeVisible();
   }
@@ -96,7 +114,7 @@ test.describe('inspector editing', () => {
   });
 
   test('style toggles restyle the element live and save to disk', async ({ page, request }) => {
-    await openEditable(page, request, 'insp-style');
+    await openEditable(page, request, 'insp-style', DESIGN_EXPORT);
     const headline = editorCanvas(page).getByText('Editable headline');
     await headline.click();
 
@@ -106,6 +124,9 @@ test.describe('inspector editing', () => {
     await bold.click();
     await italic.click();
     await panel.getByRole('button', { name: 'center', exact: true }).click();
+    const accentText = panel.getByRole('button', { name: 'Use design color: Accent' }).first();
+    await accentText.click();
+    await expect(accentText).toHaveAttribute('aria-pressed', 'true');
     await expect(bold).toHaveAttribute('aria-pressed', 'true');
     await expect(italic).toHaveAttribute('aria-pressed', 'true');
     await expect(headline).toHaveCSS('font-weight', '700');
@@ -121,6 +142,16 @@ test.describe('inspector editing', () => {
     const src = await readSlideSource('insp-style');
     expect(src).toContain('fontWeight');
     expect(src).toContain('fontStyle');
+    expect(src).toContain("color: 'var(--osd-accent)'");
+    expect(src).not.toMatch(/color: '#ff3366'/i);
+
+    await openSlide(page, 'insp-style');
+    const reloaded = editorCanvas(page).getByText('Editable headline');
+    await expect(reloaded).toHaveCSS('color', 'rgb(255, 51, 102)');
+    await reloaded.click();
+    await expect(
+      panel.getByRole('button', { name: 'Use design color: Accent' }).first(),
+    ).toHaveAttribute('aria-pressed', 'true');
   });
 
   test('undo and redo step through an inspector edit', async ({ page, request }) => {
