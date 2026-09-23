@@ -236,6 +236,9 @@ export const zhCN: Locale = {
     sendBackward: '下移一层',
     sendToBack: '置于底层',
     smartGuides: '智能参考线',
+    snapThirds: '三分线',
+    snapGrid: '网格',
+    gridSize: '网格大小',
     selectParent: '选择父级',
     visualEditorHint:
       '按住 Shift 点击可多选，⌘A 全选。方向键移动 1 px，按住 Shift 移动 10 px。Alt 暂停吸附。Shift 限制拖动方向或等比例缩放。',

@@ -9,6 +9,15 @@ export type Guide = {
   position: number;
   start: number;
   end: number;
+  kind?: GuideKind;
+};
+
+export type GuideKind = 'object' | 'third' | 'grid';
+
+export type SnapOptions = {
+  canvas: { width: number; height: number };
+  thirds?: boolean;
+  grid?: number | null;
 };
 
 export type ResizeHandle = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
@@ -30,26 +39,49 @@ function anchors(rect: Rect, axis: 'x' | 'y'): number[] {
   return [rect[axis], rect[axis] + size / 2, rect[axis] + size];
 }
 
-function nearestSnap(rect: Rect, targets: Rect[], axis: 'x' | 'y', threshold: number) {
-  let best: { correction: number; position: number } | null = null;
-  for (const target of targets) {
-    for (const position of anchors(target, axis)) {
-      for (const anchor of anchors(rect, axis)) {
-        const correction = position - anchor;
-        const distance = Math.abs(correction);
-        if (distance > threshold) continue;
-        if (
-          !best ||
-          distance < Math.abs(best.correction) ||
-          (distance === Math.abs(best.correction) && correction < best.correction) ||
-          (correction === best.correction && position < best.position)
-        ) {
-          best = { correction, position };
-        }
+export function thirdLines(size: number): number[] {
+  return [size / 3, (size * 2) / 3];
+}
+
+type Snap = { correction: number; position: number; kind: GuideKind };
+
+function snapLines(targets: Rect[], axis: 'x' | 'y', options?: SnapOptions) {
+  const lines = targets.flatMap((target) =>
+    anchors(target, axis).map((position) => ({ position, kind: 'object' as GuideKind })),
+  );
+  if (options?.thirds) {
+    const size = axis === 'x' ? options.canvas.width : options.canvas.height;
+    for (const position of thirdLines(size)) lines.push({ position, kind: 'third' });
+  }
+  return lines;
+}
+
+function nearestSnap(
+  rect: Rect,
+  targets: Rect[],
+  axis: 'x' | 'y',
+  threshold: number,
+  options?: SnapOptions,
+): Snap | null {
+  let best: Snap | null = null;
+  for (const line of snapLines(targets, axis, options)) {
+    for (const anchor of anchors(rect, axis)) {
+      const correction = line.position - anchor;
+      const distance = Math.abs(correction);
+      if (distance > threshold) continue;
+      if (
+        !best ||
+        distance < Math.abs(best.correction) ||
+        (distance === Math.abs(best.correction) && correction < best.correction) ||
+        (correction === best.correction && line.position < best.position)
+      ) {
+        best = { correction, position: line.position, kind: line.kind };
       }
     }
   }
-  return best;
+  if (best || !options?.grid || options.grid <= 0) return best;
+  const position = Math.round(rect[axis] / options.grid) * options.grid;
+  return { correction: position - rect[axis], position, kind: 'grid' };
 }
 
 export function snapMove(
@@ -57,10 +89,11 @@ export function snapMove(
   delta: Point,
   targets: Rect[],
   threshold: number,
+  options?: SnapOptions,
 ): { delta: Point; guides: Guide[] } {
   const moved = { ...rect, x: rect.x + delta.x, y: rect.y + delta.y };
-  const xSnap = nearestSnap(moved, targets, 'x', threshold);
-  const ySnap = nearestSnap(moved, targets, 'y', threshold);
+  const xSnap = nearestSnap(moved, targets, 'x', threshold, options);
+  const ySnap = nearestSnap(moved, targets, 'y', threshold, options);
   const snappedDelta = {
     x: delta.x + (xSnap?.correction ?? 0),
     y: delta.y + (ySnap?.correction ?? 0),
@@ -70,6 +103,11 @@ export function snapMove(
   for (const axis of ['x', 'y'] as const) {
     const snap = axis === 'x' ? xSnap : ySnap;
     if (!snap) continue;
+    if (snap.kind !== 'object' && options) {
+      const end = axis === 'x' ? options.canvas.height : options.canvas.width;
+      guides.push({ axis, position: snap.position, start: 0, end, kind: snap.kind });
+      continue;
+    }
     const aligned = targets.filter((target) =>
       anchors(target, axis).some((anchor) => Math.abs(anchor - snap.position) < 0.000001),
     );

@@ -8,6 +8,7 @@ import {
   resizeRect,
   snapMove,
   solveResizeDimensions,
+  thirdLines,
   unionRects,
 } from './geometry.ts';
 
@@ -77,6 +78,79 @@ describe('snapMove', () => {
         5,
       ),
     ).toEqual({ delta: { x: 10, y: 10 }, guides: [] });
+  });
+});
+
+describe('thirdLines', () => {
+  it('splits a canvas dimension into thirds', () => {
+    expect(thirdLines(1920)).toEqual([640, 1280]);
+    expect(thirdLines(1080)).toEqual([360, 720]);
+  });
+});
+
+describe('snapMove with canvas anchors', () => {
+  const canvas = { width: 1920, height: 1080 };
+  const block: Rect = { x: 120, y: 160, width: 240, height: 160 };
+
+  it('snaps an edge to a canvas third and draws a full-height guide', () => {
+    expect(snapMove(block, { x: 523, y: 0 }, [], 6, { canvas, thirds: true })).toEqual({
+      delta: { x: 520, y: 0 },
+      guides: [{ axis: 'x', position: 640, start: 0, end: 1080, kind: 'third' }],
+    });
+  });
+
+  it('snaps the centre to a horizontal third', () => {
+    const result = snapMove(block, { x: 0, y: 124 }, [], 6, { canvas, thirds: true });
+    expect(result.delta).toEqual({ x: 0, y: 120 });
+    expect(result.guides).toEqual([
+      { axis: 'y', position: 360, start: 0, end: 1920, kind: 'third' },
+    ]);
+  });
+
+  it('ignores thirds unless enabled', () => {
+    expect(snapMove(block, { x: 523, y: 0 }, [], 6, { canvas })).toEqual({
+      delta: { x: 523, y: 0 },
+      guides: [],
+    });
+  });
+
+  it('prefers the nearer of an object anchor and a third', () => {
+    const target: Rect = { x: 645, y: 600, width: 100, height: 100 };
+    expect(snapMove(block, { x: 524, y: 0 }, [target], 6, { canvas, thirds: true }).delta).toEqual({
+      x: 525,
+      y: 0,
+    });
+    expect(snapMove(block, { x: 521, y: 0 }, [target], 6, { canvas, thirds: true }).delta).toEqual({
+      x: 520,
+      y: 0,
+    });
+  });
+
+  it('rounds the leading edge to the grid when nothing else is in reach', () => {
+    expect(snapMove(block, { x: 13, y: -5 }, [], 6, { canvas, grid: 8 })).toEqual({
+      delta: { x: 16, y: -8 },
+      guides: [
+        { axis: 'x', position: 136, start: 0, end: 1080, kind: 'grid' },
+        { axis: 'y', position: 152, start: 0, end: 1920, kind: 'grid' },
+      ],
+    });
+  });
+
+  it('lets objects and thirds win over the grid', () => {
+    const target: Rect = { x: 400, y: 0, width: 50, height: 50 };
+    const result = snapMove(block, { x: 38, y: 0 }, [target], 6, { canvas, grid: 8 });
+    expect(result.delta.x).toBe(40);
+    expect(result.guides.find((guide) => guide.axis === 'x')?.kind).toBeUndefined();
+    expect(
+      snapMove(block, { x: 518, y: 0 }, [], 6, { canvas, thirds: true, grid: 7 }).delta.x,
+    ).toBe(520);
+  });
+
+  it('ignores a non-positive grid size', () => {
+    expect(snapMove(block, { x: 13, y: 5 }, [], 6, { canvas, grid: 0 }).delta).toEqual({
+      x: 13,
+      y: 5,
+    });
   });
 });
 
