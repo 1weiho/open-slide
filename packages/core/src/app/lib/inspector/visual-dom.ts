@@ -47,7 +47,7 @@ export const GESTURE_STYLE_KEYS: readonly string[] = [
   Z_INDEX_KEY,
 ];
 
-export type ClearLayoutScope = 'transform' | 'all';
+export type ResetGestureScope = 'transform' | 'all';
 
 type InlineLayout = Readonly<Record<string, string | undefined>>;
 
@@ -64,7 +64,7 @@ const LAYER_GROUP_SIGNATURE = {
   ...Object.fromEntries(['top', 'right', 'bottom', 'left'].map((key) => [key, LAYER_INSET_VALUE])),
 };
 
-export function clearLayoutOps(inline: InlineLayout, scope: ClearLayoutScope): EditOp[] {
+export function resetGestureOps(inline: InlineLayout, scope: ResetGestureScope): EditOp[] {
   const keys: string[] = [...TRANSFORM_STYLE_KEYS];
   if (scope === 'all') {
     if (holds(inline, SIZE_BOUNDS_STYLES))

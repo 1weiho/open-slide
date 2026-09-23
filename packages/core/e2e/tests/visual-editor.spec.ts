@@ -571,16 +571,16 @@ export default [Only] satisfies Page[];
     await expect.poll(topmost).toBe('Second block');
   });
 
-  test('Clear layout removes the drag offset, Alt-click also removes layering, and undo restores both', async ({
+  test('Reset position removes the drag offset, the full reset also removes layering, and undo restores both', async ({
     page,
     request,
   }) => {
-    const { first } = await openBlocks(page, request, 'visual-clear-layout');
+    const { first } = await openBlocks(page, request, 'visual-reset-position');
     await first.click({ position: { x: 10, y: 10 } });
     const panel = page.locator('aside[data-inspector-ui]');
     await panel.getByRole('tab', { name: 'Arrange', exact: true }).click();
-    const clear = panel.getByRole('button', { name: 'Clear layout', exact: true });
-    await expect(clear).toBeDisabled();
+    const reset = panel.getByRole('button', { name: 'Reset position', exact: true });
+    await expect(reset).toBeDisabled();
     await first.click({ position: { x: 10, y: 10 } });
     await page.keyboard.press('Shift+ArrowRight');
     await panel.getByRole('button', { name: 'Bring to front', exact: true }).click();
@@ -588,28 +588,28 @@ export default [Only] satisfies Page[];
       first.evaluate((node) => ({ translate: node.style.translate, zIndex: node.style.zIndex }));
     await expect.poll(inline).toEqual({ translate: '10px', zIndex: '2' });
 
-    await clear.click();
+    await reset.click();
     await expect.poll(inline).toEqual({ translate: '', zIndex: '2' });
-    await expect(clear).toBeDisabled();
-    await panel.getByRole('button', { name: 'Clear layout options', exact: true }).click();
-    await page.getByRole('menuitem', { name: 'Clear all layout', exact: true }).click();
+    await expect(reset).toBeDisabled();
+    await panel.getByRole('button', { name: 'Reset options', exact: true }).click();
+    await page
+      .getByRole('menuitem', { name: 'Reset position, size and layer', exact: true })
+      .click();
     await expect.poll(inline).toEqual({ translate: '', zIndex: '' });
-    await expect(
-      panel.getByRole('button', { name: 'Clear layout options', exact: true }),
-    ).toBeDisabled();
+    await expect(panel.getByRole('button', { name: 'Reset options', exact: true })).toBeDisabled();
 
     await page.getByRole('button', { name: 'Undo', exact: true }).click();
     await expect.poll(inline).toEqual({ translate: '', zIndex: '2' });
     await page.getByRole('button', { name: 'Undo', exact: true }).click();
     await expect.poll(inline).toEqual({ translate: '10px', zIndex: '2' });
 
-    await clear.click({ modifiers: ['Alt'] });
+    await reset.click({ modifiers: ['Alt'] });
     const saved = page.waitForResponse(
       (response) => response.url().includes('/__edit') && response.request().method() === 'POST',
     );
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     expect((await saved).ok()).toBe(true);
-    const source = await readSlideSource('visual-clear-layout');
+    const source = await readSlideSource('visual-reset-position');
     expect(source).toContain(
       "<div style={{ position: 'absolute', left: 120, top: 160, width: 240, height: 160, background: '#2a9d8f', padding: 20 }}>First block</div>",
     );

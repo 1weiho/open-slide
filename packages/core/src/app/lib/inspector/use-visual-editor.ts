@@ -7,10 +7,8 @@ import { type Alignment, alignRects, distributeRects, unionRects } from './geome
 import type { EditOp } from './use-editor';
 import {
   type Canvas,
-  type ClearLayoutScope,
   canTransform,
   captureTransform,
-  clearLayoutOps,
   editableTargets,
   independentTargets,
   LAYER_INSET_KEYS,
@@ -18,10 +16,12 @@ import {
   LAYER_POSITION_STYLE,
   moveOps,
   previewOps,
+  type ResetGestureScope,
   ROTATE_STYLE_KEY,
   readCanvas,
   readFrame,
   readInlineLayout,
+  resetGestureOps,
   restoreTransform,
   SIZE_BOUNDS_STYLES,
   sizeOps,
@@ -76,13 +76,13 @@ const LAYER_LAYOUT_KEYS = new Set<string>([
   ...LAYER_INSET_KEYS,
 ]);
 
-export function planClearLayout(
+export function planResetGesture(
   selection: SelectedTarget[],
-  scope: ClearLayoutScope,
+  scope: ResetGestureScope,
 ): { edits: VisualEdit[]; keptPosition: boolean } {
   let keptPosition = false;
   const edits = independentTargets(selection).flatMap((target) => {
-    let ops = clearLayoutOps(readInlineLayout(target.anchor), scope);
+    let ops = resetGestureOps(readInlineLayout(target.anchor), scope);
     if (
       ops.some((op) => op.kind === 'set-style' && op.key in LAYER_POSITION_STYLE) &&
       anchorsPositionedDescendants(target.anchor)
@@ -361,16 +361,16 @@ export function useVisualEditor({
     [selection, committing, bufferBatch, slideId, t.inspector.layerLayoutHint],
   );
 
-  const clearLayout = useCallback(
-    (scope: ClearLayoutScope) => {
+  const resetGesture = useCallback(
+    (scope: ResetGestureScope) => {
       if (committing) return;
       const canvas = readCanvas();
       if (!canvas || selection.some((target) => !canTransform(target, canvas))) return;
-      const { edits, keptPosition } = planClearLayout(selection, scope);
-      if (keptPosition) toast.info(t.inspector.clearLayoutKeptPosition);
+      const { edits, keptPosition } = planResetGesture(selection, scope);
+      if (keptPosition) toast.info(t.inspector.resetKeptPosition);
       bufferBatch(edits);
     },
-    [selection, committing, bufferBatch, t.inspector.clearLayoutKeptPosition],
+    [selection, committing, bufferBatch, t.inspector.resetKeptPosition],
   );
 
   const selectParent = useCallback(() => {
@@ -458,10 +458,10 @@ export function useVisualEditor({
       distribute,
       setFrame,
       arrange,
-      clearLayout,
+      resetGesture,
       selectParent,
       selectAll,
     }),
-    [snapping, align, distribute, setFrame, arrange, clearLayout, selectParent, selectAll],
+    [snapping, align, distribute, setFrame, arrange, resetGesture, selectParent, selectAll],
   );
 }

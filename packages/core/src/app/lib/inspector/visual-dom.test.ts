@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { applyEdit } from '../../../editing/edit-ops.ts';
 import {
-  clearLayoutOps,
   GESTURE_STYLE_KEYS,
   LAYER_INSET_KEYS,
+  resetGestureOps,
   SIZE_BOUNDS_STYLES,
   SIZE_CONSTRAINT_STYLES,
 } from './visual-dom.ts';
 
 const cleared = (inline: Record<string, string>, scope: 'transform' | 'all') =>
-  clearLayoutOps(inline, scope).flatMap((op) =>
+  resetGestureOps(inline, scope).flatMap((op) =>
     op.kind === 'set-style' ? [[op.key, op.value] as const] : [],
   );
 
@@ -31,7 +31,7 @@ describe('GESTURE_STYLE_KEYS', () => {
   });
 });
 
-describe('clearLayoutOps', () => {
+describe('resetGestureOps', () => {
   const resized = {
     ...SIZE_CONSTRAINT_STYLES,
     width: '320px',
@@ -98,12 +98,12 @@ describe('clearLayoutOps', () => {
   });
 
   it('returns nothing when no gesture key is present', () => {
-    expect(clearLayoutOps({ color: 'red', translate: '', rotate: '  ' }, 'transform')).toEqual([]);
-    expect(clearLayoutOps({}, 'all')).toEqual([]);
+    expect(resetGestureOps({ color: 'red', translate: '', rotate: '  ' }, 'transform')).toEqual([]);
+    expect(resetGestureOps({}, 'all')).toEqual([]);
   });
 });
 
-describe('clearLayoutOps applied to source', () => {
+describe('resetGestureOps applied to source', () => {
   const src = [
     'export default [() => (',
     "<div className=\"card\" style={{ color: 'red', translate: '40px 12px', rotate: '15deg', width: '320px', zIndex: '2' }} data-x=\"1\">",
@@ -115,7 +115,7 @@ describe('clearLayoutOps applied to source', () => {
   const inline = { translate: '40px 12px', rotate: '15deg', width: '320px', zIndex: '2' };
 
   it('removes translate and rotate and leaves the other lines byte-identical', () => {
-    const r = applyEdit(src, 2, 0, clearLayoutOps(inline, 'transform'));
+    const r = applyEdit(src, 2, 0, resetGestureOps(inline, 'transform'));
     if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
     const lines = src.split('\n');
     lines[1] = `<div className="card" data-x="1" style={{ color: 'red', width: '320px', zIndex: '2' }}>`;
@@ -124,21 +124,21 @@ describe('clearLayoutOps applied to source', () => {
 
   it('drops the style attribute once every key is a gesture key', () => {
     const only = src.replace("color: 'red', ", '').replace("width: '320px', ", '');
-    const r = applyEdit(only, 2, 0, clearLayoutOps(inline, 'all'));
+    const r = applyEdit(only, 2, 0, resetGestureOps(inline, 'all'));
     if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
     expect(r.source).toContain('<div className="card" data-x="1">');
     expect(r.source).toContain('  <p>Keep me</p>');
   });
 
   it('keeps an authored width on a full clear', () => {
-    const r = applyEdit(src, 2, 0, clearLayoutOps(inline, 'all'));
+    const r = applyEdit(src, 2, 0, resetGestureOps(inline, 'all'));
     if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
     expect(r.source).toContain(`style={{ color: 'red', width: '320px' }}`);
   });
 
   it('shadows gesture keys that come from a spread instead of guessing at the spread', () => {
     const spread = src.replace("color: 'red', ", '...base, ');
-    const r = applyEdit(spread, 2, 0, clearLayoutOps({ translate: '40px 12px' }, 'transform'));
+    const r = applyEdit(spread, 2, 0, resetGestureOps({ translate: '40px 12px' }, 'transform'));
     if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
     expect(r.source).toContain('...base');
     expect(r.source).toContain('translate: undefined');

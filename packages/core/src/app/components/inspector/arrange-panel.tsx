@@ -26,8 +26,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { canTransform, readCanvas, readFrame, readRotation } from '@/lib/inspector/visual-dom';
 import { useLocale } from '@/lib/use-locale';
 import { round2 } from '@/lib/utils';
-import { ClearLayoutButton } from './clear-layout-button';
 import { useInspector } from './inspector-provider';
+import { ResetPositionButton } from './reset-position-button';
 
 type Frame = {
   x: number;
@@ -164,7 +164,7 @@ export function ArrangePanel() {
             disabled={multiple || blocked}
             onChange={(rotation) => visual.setFrame({ rotation })}
           />
-          <ClearLayoutButton disabled={blocked} />
+          <ResetPositionButton disabled={blocked} />
         </div>
       </Section>
 
