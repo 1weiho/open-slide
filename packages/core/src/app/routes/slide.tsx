@@ -19,6 +19,7 @@ import {
 import {
   type ReactElement,
   type RefObject,
+  startTransition,
   useCallback,
   useEffect,
   useMemo,
@@ -243,7 +244,6 @@ export function Slide() {
       const at = afterIndex + 1;
       const nextPages = [...before];
       nextPages.splice(at, 0, BlankPage);
-      setPages(nextPages);
       const restore = [...before.map((_, i) => (i < at ? i : i + 1)), -1];
       remapNotesSessionCacheAfterReorder(
         slideId,
@@ -258,7 +258,12 @@ export function Slide() {
           },
           { replace: true },
         );
-      showPage(at);
+      // React Router applies the URL change in a transition; landing the new
+      // pages in the same one keeps the rail from scrolling to the stale index.
+      startTransition(() => {
+        setPages(nextPages);
+        showPage(at);
+      });
 
       try {
         const res = await fetch(`/__slides/${encodeURIComponent(slideId)}/pages`, {
@@ -272,18 +277,20 @@ export function Slide() {
         }
         toast.success(format(t.thumbnailRail.toastAdded, { n: at + 1 }));
       } catch (err) {
-        setPages(before);
         remapNotesSessionCacheAfterReorder(slideId, restore);
-        setSearchParams(
-          (prev) => {
-            const shown = Number(prev.get('p') ?? '1') - 1;
-            if (!Number.isFinite(shown) || shown < at) return prev;
-            const next = new URLSearchParams(prev);
-            next.set('p', String(Math.max(1, shown)));
-            return next;
-          },
-          { replace: true },
-        );
+        startTransition(() => {
+          setPages(before);
+          setSearchParams(
+            (prev) => {
+              const shown = Number(prev.get('p') ?? '1') - 1;
+              if (!Number.isFinite(shown) || shown < at) return prev;
+              const next = new URLSearchParams(prev);
+              next.set('p', String(Math.max(1, shown)));
+              return next;
+            },
+            { replace: true },
+          );
+        });
         toast.error(`${t.thumbnailRail.toastAddFailed}: ${String((err as Error).message ?? err)}`);
       } finally {
         addingPageRef.current = false;
