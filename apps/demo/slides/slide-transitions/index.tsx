@@ -168,7 +168,7 @@ const Family: Page = () => (
     label="dissolve"
     heading={'A family,\nnot a sampler.'}
     pull="Vary the property — never the vocabulary."
-    body="Every transition in this deck shares the same DNA: a 140 ms exit, a 200 ms enter delayed 80 ms, and ease-out on the way in. What changes is only which property gets nudged — opacity, six pixels of Y, three hundredths of scale, a hair of blur. Restraint is the rhythm; difference lives at the edges."
+    body="Every transition in this deck shares the same DNA: the outgoing page holds, the incoming page fades in on top over about 260 ms, ease-out on the way in. What changes is only which property gets nudged — opacity, six pixels of Y, three hundredths of scale, a hair of blur. Restraint is the rhythm; difference lives at the edges."
   />
 );
 
@@ -178,7 +178,7 @@ const ShortDurations: Page = () => (
     label="rise"
     heading={'Two hundred\nmilliseconds.'}
     pull="If you can feel the duration, it is already too long."
-    body="The house default — opacity plus six pixels of vertical rise, exit and enter overlapped. Brisk enough to be invisible, slow enough to read as continuity. Anything past 350 ms drifts into video-editor territory; reserve that range for moments that genuinely transform on screen."
+    body="The house default — opacity plus six pixels of vertical rise over a held outgoing page. Brisk enough to be invisible, slow enough to read as continuity. Anything past 350 ms drifts into video-editor territory; reserve that range for moments that genuinely transform on screen."
   />
 );
 
@@ -294,28 +294,20 @@ const Closing: Page = () => (
 );
 
 // Shared DNA across all six transitions:
-//   - Out-then-in with 80 ms overlap (exit starts immediately, enter delays).
-//   - Exit ~140-180 ms · ease-in.  Enter ~200-280 ms · ease-out.
-//   - Opacity is always one of the animated properties.
+//   - The outgoing page holds; the incoming page fades in on top of it.
+//   - One duration per cut (240-280 ms), ease-out on the way in.
+//   - Opacity is always part of the enter.
 //   - Translate magnitude never exceeds 12px.  Scale never exceeds 3%.
 const EASE_OUT = 'cubic-bezier(0, 0, 0.2, 1)';
 const EASE_IN = 'cubic-bezier(0.4, 0, 1, 1)';
+const HOLD: Keyframe[] = [{ opacity: 1 }, { opacity: 1 }];
 
 // 1 · SETTLE — cover-grade. Rise + soft blur falloff on enter.
 Cover.transition = {
   duration: 280,
-  easing: 'cubic-bezier(0.32, 0.72, 0, 1)',
-  exit: {
-    duration: 160,
-    easing: EASE_IN,
-    keyframes: [
-      { opacity: 1, transform: 'translateY(0)' },
-      { opacity: 0, transform: 'translateY(-6px)' },
-    ],
-  },
+  exit: { duration: 280, easing: EASE_IN, keyframes: HOLD },
   enter: {
     duration: 280,
-    delay: 100,
     easing: EASE_OUT,
     keyframes: [
       { opacity: 0, transform: 'translateY(12px)', filter: 'blur(4px)' },
@@ -327,34 +319,21 @@ Cover.transition = {
 // 2 · DISSOLVE — pure opacity. Apple's safe default. Quietest possible.
 Family.transition = {
   duration: 240,
-  exit: {
-    duration: 200,
-    easing: EASE_IN,
-    keyframes: [{ opacity: 1 }, { opacity: 0 }],
-  },
+  exit: { duration: 240, easing: EASE_IN, keyframes: HOLD },
   enter: {
     duration: 240,
-    delay: 40,
     easing: EASE_OUT,
     keyframes: [{ opacity: 0 }, { opacity: 1 }],
   },
 };
 
-// 3 · RISE — the house quiet. 6 px of Y, exit-then-enter overlap.
+// 3 · RISE — the house quiet. 6 px of Y over a held outgoing page.
 // Exported as the module default so future pages inherit it.
 export const transition: SlideTransition = {
-  duration: 200,
-  exit: {
-    duration: 140,
-    easing: EASE_IN,
-    keyframes: [
-      { opacity: 1, transform: 'translateY(0)' },
-      { opacity: 0, transform: 'translateY(-4px)' },
-    ],
-  },
+  duration: 260,
+  exit: { duration: 260, easing: EASE_IN, keyframes: HOLD },
   enter: {
-    duration: 200,
-    delay: 80,
+    duration: 260,
     easing: EASE_OUT,
     keyframes: [
       { opacity: 0, transform: 'translateY(6px)' },
@@ -364,8 +343,10 @@ export const transition: SlideTransition = {
 };
 
 // 4 · BREATH — section divider. Exit fully, hold 120 ms, then enter.
+// The only member that dips through --osd-bg on purpose, so it opts in.
 Pause.transition = {
   duration: 460,
+  throughBackground: true,
   exit: {
     duration: 180,
     easing: EASE_IN,
@@ -385,17 +366,9 @@ Pause.transition = {
 // 5 · BLOOM — scale only. 0.97 → 1, no translate. Materializes in place.
 SmallMagnitudes.transition = {
   duration: 240,
-  exit: {
-    duration: 160,
-    easing: EASE_IN,
-    keyframes: [
-      { opacity: 1, transform: 'scale(1)' },
-      { opacity: 0, transform: 'scale(1.01)' },
-    ],
-  },
+  exit: { duration: 240, easing: EASE_IN, keyframes: HOLD },
   enter: {
     duration: 240,
-    delay: 80,
     easing: EASE_OUT,
     keyframes: [
       { opacity: 0, transform: 'scale(0.97)' },
@@ -406,18 +379,10 @@ SmallMagnitudes.transition = {
 
 // 6 · FALL — mirrored Rise. Enters from above; the deck settles to a stop.
 Closing.transition = {
-  duration: 200,
-  exit: {
-    duration: 140,
-    easing: EASE_IN,
-    keyframes: [
-      { opacity: 1, transform: 'translateY(0)' },
-      { opacity: 0, transform: 'translateY(4px)' },
-    ],
-  },
+  duration: 260,
+  exit: { duration: 260, easing: EASE_IN, keyframes: HOLD },
   enter: {
-    duration: 200,
-    delay: 80,
+    duration: 260,
     easing: EASE_OUT,
     keyframes: [
       { opacity: 0, transform: 'translateY(-6px)' },

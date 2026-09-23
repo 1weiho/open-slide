@@ -8,10 +8,11 @@ export default defineConfig({
     'locale/index': 'src/locale/index.ts',
   },
   format: 'esm',
-  target: 'node18',
+  fixedExtension: false,
+  target: 'node20',
   platform: 'node',
   clean: true,
   dts: true,
   shims: false,
-  external: ['vite', 'react', 'react-dom', 'react-router-dom'],
+  deps: { neverBundle: ['vite', 'react', 'react-dom', 'react-router-dom'] },
 });

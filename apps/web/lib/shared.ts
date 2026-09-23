@@ -5,7 +5,7 @@ export const docsImageRoute = '/og/docs';
 export const docsContentRoute = '/llms.mdx/docs';
 
 export const gitConfig = {
-  user: '1weiho',
+  owner: 'open-slide',
   repo: 'open-slide',
   branch: 'main',
 };

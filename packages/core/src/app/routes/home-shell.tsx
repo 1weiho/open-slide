@@ -1,5 +1,5 @@
 import { Menu } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { LanguageToggle } from '@/components/language-toggle';
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { GLOBAL_ASSET_SCOPE, useAssets } from '@/lib/assets';
 import { useFolders } from '@/lib/folders';
+import { rememberHomeLocation } from '@/lib/last-home-location';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn, pad2 } from '@/lib/utils';
 import { CommandMenuTrigger } from '../components/command/command-menu';
@@ -63,6 +64,10 @@ export function HomeShell() {
   const t = useLocale();
 
   const selectedId = pathToSelectedId(location.pathname, searchParams);
+
+  useEffect(() => {
+    rememberHomeLocation(location.pathname, location.search);
+  }, [location.pathname, location.search]);
 
   const [commandOpen, setCommandOpen] = useState(false);
   const openCommandMenu = useCallback(() => setCommandOpen(true), []);

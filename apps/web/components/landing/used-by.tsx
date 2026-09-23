@@ -1,7 +1,7 @@
 'use client';
 
 import { type CSSProperties, useState } from 'react';
-import { SectionRule } from './frame';
+import { Container, SectionHeading } from './frame';
 
 const tweetUrl = 'https://x.com/samlambert/status/2066020380092051484?s=20';
 const videoId = 'zxvyO5vnknI';
@@ -30,19 +30,9 @@ const thread: Tweet[] = [
 
 export function UsedBy() {
   return (
-    <section id="used-by" className="relative">
-      <SectionRule />
-      <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-20 sm:py-32 lg:py-40">
-        <h2
-          data-reveal="blur"
-          className="text-[32px] sm:text-[44px] lg:text-[60px] leading-[1.1] sm:leading-[1.05] tracking-[-0.035em] font-medium max-w-[820px] mb-14 sm:mb-20"
-        >
-          Used by people
-          <br />
-          <span className="font-[family-name:var(--font-pixel)] text-[color:var(--color-muted)]">
-            who create engaging slides.
-          </span>
-        </h2>
+    <section id="used-by" className="border-t border-[color:var(--color-rule-soft)]">
+      <Container className="py-20 sm:py-28">
+        <SectionHeading title="Used by people who create engaging slides." />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
           <a
@@ -50,7 +40,7 @@ export function UsedBy() {
             href={tweetUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="floating group relative block rounded-[10px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-6 sm:p-7 transition-[border-color,box-shadow] duration-300 hover:border-[color:var(--color-dim)]"
+            className="group relative block rounded-xl border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-6 transition-colors duration-300 hover:border-[color:var(--color-dim)] sm:p-7"
           >
             <XGlyph className="absolute right-6 top-6 sm:right-7 sm:top-7 size-4 text-[color:var(--color-dim)] transition-colors group-hover:text-[color:var(--color-text)]" />
 
@@ -87,7 +77,7 @@ export function UsedBy() {
           <figure
             data-reveal
             style={{ '--reveal-delay': '120ms' } as CSSProperties}
-            className="floating m-0 overflow-hidden rounded-[10px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]"
+            className="m-0 overflow-hidden rounded-xl border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]"
           >
             <VideoPlayer />
             <figcaption className="flex items-center gap-3.5 border-t border-[color:var(--color-rule-soft)] px-6 py-5">
@@ -121,7 +111,7 @@ export function UsedBy() {
             </figcaption>
           </figure>
         </div>
-      </div>
+      </Container>
     </section>
   );
 }

@@ -4,6 +4,7 @@ import { registerCommentRoutes } from './routes/comments.ts';
 import { type ApiPluginOptions, makeContext } from './routes/context.ts';
 import { registerEditRoutes } from './routes/edit.ts';
 import { registerFolderRoutes } from './routes/folders.ts';
+import { registerGfontsRoutes } from './routes/gfonts.ts';
 import { registerRestartRoutes } from './routes/restart.ts';
 import { registerSlideRoutes } from './routes/slides.ts';
 import { registerSvglRoutes } from './routes/svgl.ts';
@@ -27,6 +28,7 @@ export function apiPlugin(opts: ApiPluginOptions): Plugin {
       registerAssetRoutes(server, ctx);
       registerSvglRoutes(server);
       registerThemeRoutes(server, ctx);
+      registerGfontsRoutes(server);
       registerFolderRoutes(server, ctx);
       registerUpdateRoutes(server, ctx);
       registerRestartRoutes(server);

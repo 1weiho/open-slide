@@ -2,7 +2,7 @@ import { gitConfig } from './shared';
 
 export async function fetchGitHubStars(): Promise<number | null> {
   try {
-    const res = await fetch(`https://api.github.com/repos/${gitConfig.user}/${gitConfig.repo}`, {
+    const res = await fetch(`https://api.github.com/repos/${gitConfig.owner}/${gitConfig.repo}`, {
       next: { revalidate: 3600 },
       headers: { Accept: 'application/vnd.github+json' },
     });

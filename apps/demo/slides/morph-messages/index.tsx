@@ -38,7 +38,7 @@ export const transition: SlideTransition = {
   exit: {
     duration: 288,
     easing: EASE_IN,
-    keyframes: [{ opacity: 1 }, { opacity: 0 }],
+    keyframes: [{ opacity: 1 }, { opacity: 1 }],
   },
   enter: {
     duration: 396,
@@ -54,7 +54,7 @@ const threadTransition: SlideTransition = {
   exit: {
     duration: 224,
     easing: EASE_IN,
-    keyframes: [{ opacity: 1 }, { opacity: 0 }],
+    keyframes: [{ opacity: 1 }, { opacity: 1 }],
   },
   enter: {
     duration: 308,
@@ -68,16 +68,22 @@ const threadTransition: SlideTransition = {
 const muted = '#86868b';
 const grayBubble = '#e9e9eb';
 
-if (typeof document !== 'undefined' && !document.getElementById('morph-messages-styles')) {
-  const style = document.createElement('style');
-  style.id = 'morph-messages-styles';
-  style.textContent = [
-    '@keyframes morph-messages-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }',
-    `@keyframes morph-messages-slide-left { from { transform: translateX(${960 - DIAMOND_X}px); } to { transform: none; } }`,
-    '@keyframes morph-messages-slide-right { from { opacity: 0; transform: translateX(-64px); } to { opacity: 1; transform: none; } }',
-    '@keyframes morph-messages-hero-in { from { opacity: 0; transform: translateY(24px); filter: blur(12px); } to { opacity: 1; transform: none; filter: none; } }',
-  ].join('');
-  document.head.appendChild(style);
+const STYLE_ID = 'morph-messages-styles';
+const STYLE_CSS = [
+  '@keyframes morph-messages-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }',
+  `@keyframes morph-messages-slide-left { from { transform: translateX(${960 - DIAMOND_X}px); } to { transform: none; } }`,
+  '@keyframes morph-messages-slide-right { from { opacity: 0; transform: translateX(-64px); } to { opacity: 1; transform: none; } }',
+  '@keyframes morph-messages-hero-in { from { opacity: 0; transform: translateY(24px); filter: blur(12px); } to { opacity: 1; transform: none; filter: none; } }',
+].join('');
+
+if (typeof document !== 'undefined') {
+  let style = document.getElementById(STYLE_ID);
+  if (!style) {
+    style = document.createElement('style');
+    style.id = STYLE_ID;
+    document.head.appendChild(style);
+  }
+  if (style.textContent !== STYLE_CSS) style.textContent = STYLE_CSS;
 }
 
 const stage: CSSProperties = {

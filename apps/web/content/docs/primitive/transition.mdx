@@ -14,18 +14,11 @@ const Cover: Page = () => <section>…</section>;
 const Agenda: Page = () => <section>…</section>;
 
 export const transition: SlideTransition = {
-  duration: 220,
+  duration: 260,
   exit: {
-    duration: 140,
-    easing: 'cubic-bezier(0.4, 0, 1, 1)',
-    keyframes: [
-      { opacity: 1, transform: 'translateY(0)' },
-      { opacity: 0, transform: 'translateY(-4px)' },
-    ],
+    keyframes: [{ opacity: 1 }, { opacity: 1 }],
   },
   enter: {
-    duration: 220,
-    delay: 80,
     easing: 'cubic-bezier(0, 0, 0.2, 1)',
     keyframes: [
       { opacity: 0, transform: 'translateY(6px)' },
@@ -38,6 +31,12 @@ export default [Cover, Agenda] satisfies Page[];
 ```
 
 `prefers-reduced-motion: reduce` is honored automatically.
+
+The outgoing page stays opaque for the whole cut and the incoming page fades in
+on top of it, so a page with its own background never dips through the deck
+background. The runtime ignores `opacity` in `exit` keyframes unless the
+transition sets `throughBackground: true` — see
+[SlideTransition](/docs/reference/slide-transitions#background).
 
 ## Where it lives
 

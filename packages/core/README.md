@@ -1,6 +1,6 @@
 # @open-slide/core
 
-Runtime and CLI for [open-slide](https://github.com/1weiho/open-slide) — a React-based slide framework where you write slides and the framework handles the Vite/React stack, layout, navigation, hot reload, and fullscreen play mode.
+Runtime and CLI for [open-slide](https://github.com/open-slide/open-slide) — a React-based slide framework where you write slides and the framework handles the Vite/React stack, layout, navigation, hot reload, and fullscreen play mode.
 
 ## Install
 

@@ -71,8 +71,10 @@ test.describe('slide viewer', () => {
     await expect(overview).toBeHidden();
   });
 
-  test('wheel scrolling navigates pages', async ({ page }) => {
+  test('wheel scrolling navigates pages in Preview', async ({ page }) => {
     await openSlide(page, 'alpha');
+    await page.getByTitle('Preview', { exact: true }).click();
+    await expect(page.locator('aside[data-inspector-ui]')).toHaveCount(0);
     await editorCanvas(page).hover();
     await page.mouse.wheel(0, 120);
     await expect(page).toHaveURL(/[?&]p=2/);
@@ -83,10 +85,31 @@ test.describe('slide viewer', () => {
     await expect(page.getByText('Failed to load slide')).toBeVisible();
   });
 
-  test('back link returns to the home browser', async ({ page }) => {
+  test('back button returns to the home browser', async ({ page }) => {
     await openSlide(page, 'alpha');
-    await page.getByRole('link', { name: 'Back to home' }).click();
+    await page.getByRole('button', { name: 'Back to home' }).click();
     await expect(page.locator('li h3')).toHaveCount(4);
+  });
+
+  test('back returns to the previous browser location with its query intact', async ({ page }) => {
+    await page.goto('/?f=draft');
+    await page.waitForFunction(
+      () => sessionStorage.getItem('open-slide:last-home-location') === '/?f=draft',
+    );
+    await page.locator('a[href="/s/alpha"]').first().click();
+    await expect(page).toHaveURL(/\/s\/alpha/);
+    await page.getByRole('button', { name: 'Back to home' }).click();
+    await expect(page).toHaveURL(/[?&]f=draft/);
+  });
+
+  test('back falls back to the last home location, query included', async ({ page }) => {
+    await page.goto('/?f=draft');
+    await page.waitForFunction(
+      () => sessionStorage.getItem('open-slide:last-home-location') === '/?f=draft',
+    );
+    await openSlide(page, 'alpha');
+    await page.getByRole('button', { name: 'Back to home' }).click();
+    await expect(page).toHaveURL(/[?&]f=draft/);
   });
 
   test('steps render fully revealed in the editor', async ({ page }) => {

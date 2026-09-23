@@ -208,7 +208,7 @@ function elementTextMatches(element: t.JSXElement, prevText: string): boolean {
   return textRangeContent(collectTextRangeParts(element)) === prevText;
 }
 
-function findElementForEdit(
+export function findElementForEdit(
   ast: t.File,
   line: number,
   column: number,
@@ -1132,11 +1132,25 @@ export function applyEdit(
   column: number,
   ops: EditOp[],
 ): ApplyEditResult {
-  if (ops.length === 0) return { ok: true, source };
+  const plan = planEdit(source, line, column, ops);
+  if (!plan.ok) return plan;
+  return plan.splices.length ? applySplices(source, plan.splices) : { ok: true, source };
+}
+
+export function planEdit(
+  source: string,
+  line: number,
+  column: number,
+  ops: EditOp[],
+  exactLocation = false,
+): { ok: true; splices: Splice[] } | { ok: false; status: number; error: string } {
+  if (ops.length === 0) return { ok: true, splices: [] };
 
   const ast = parseSource(source);
   if (!ast) return { ok: false, status: 422, error: 'could not parse source' };
-  const element = findElementForEdit(ast, line, column, ops);
+  const element = exactLocation
+    ? findJsxByStart(ast, line, column)
+    : findElementForEdit(ast, line, column, ops);
   if (!element) return { ok: false, status: 422, error: 'no JSX element at location' };
 
   const splices: Splice[] = [];
@@ -1217,7 +1231,5 @@ export function applyEdit(
     }
   }
 
-  if (splices.length === 0) return { ok: true, source };
-
-  return applySplices(source, splices);
+  return { ok: true, splices };
 }

@@ -1,10 +1,18 @@
 import { type ChildProcess, fork } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import chalk from 'chalk';
-import { createServer, mergeConfig } from 'vite';
+import { type BindCLIShortcutsOptions, createServer, mergeConfig, type ViteDevServer } from 'vite';
 import { createViteConfig } from '../vite/config.ts';
 import { DEV_SUPERVISED_ENV, RESTART_EXIT_CODE } from '../vite/routes/restart.ts';
+import {
+  createCliLogger,
+  formatError,
+  printHeader,
+  printShortcutsHint,
+  printUrls,
+  shortcutsEnabled,
+  startupDuration,
+} from './ui.ts';
 
 export interface DevOptions {
   port?: number;
@@ -23,6 +31,7 @@ export async function dev(opts: DevOptions = {}): Promise<void> {
 async function startServer(opts: DevOptions): Promise<void> {
   const base = await createViteConfig({ userCwd: process.cwd() });
   const config = mergeConfig(base, {
+    customLogger: createCliLogger(),
     server: {
       ...(opts.port !== undefined ? { port: opts.port } : {}),
       ...(opts.host !== undefined ? { host: opts.host } : {}),
@@ -31,13 +40,39 @@ async function startServer(opts: DevOptions): Promise<void> {
   });
   const server = await createServer(config);
   await server.listen();
-  server.printUrls();
-  server.bindCLIShortcuts({ print: true });
+
+  printHeader(startupDuration());
+  printUrls(server.resolvedUrls, opts.host);
+  if (shortcutsEnabled()) {
+    printShortcutsHint();
+    server.bindCLIShortcuts({ customShortcuts: devShortcuts(opts) });
+  }
 
   const address = server.httpServer?.address();
   if (process.send && address && typeof address === 'object') {
     process.send({ type: 'open-slide:listening', port: address.port });
   }
+}
+
+// Vite's built-in `r` and `u` print URLs in its own house style; override
+// them so every line on screen stays ours.
+function devShortcuts(opts: DevOptions): BindCLIShortcutsOptions<ViteDevServer>['customShortcuts'] {
+  const showUrls = (server: ViteDevServer) => {
+    console.log('');
+    printUrls(server.resolvedUrls, opts.host);
+  };
+  return [
+    {
+      key: 'r',
+      description: 'restart the server',
+      async action(server) {
+        const before = JSON.stringify(server.resolvedUrls);
+        await server.restart();
+        if (JSON.stringify(server.resolvedUrls) !== before) showUrls(server);
+      },
+    },
+    { key: 'u', description: 'show server url', action: showUrls },
+  ];
 }
 
 // The server runs in a child process so an in-app update can exit with
@@ -56,7 +91,7 @@ function supervise(opts: DevOptions): void {
       env: { ...process.env, [DEV_SUPERVISED_ENV]: '1' },
     });
     child.on('error', (err) => {
-      process.stderr.write(`${chalk.red('error:')} ${err.message}\n`);
+      process.stderr.write(formatError(err.message));
       process.exit(1);
     });
     child.on('message', (message) => {

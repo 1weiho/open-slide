@@ -1,10 +1,11 @@
 import { readFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import * as p from '@clack/prompts';
 import chalk from 'chalk';
 import { Command } from 'commander';
-import prompts from 'prompts';
-import { type InitOptions, init, isDirNonEmpty, sanitizeDirName } from './init.ts';
+import { gitInitAndCommit } from './git.ts';
+import { installDependencies, isDirNonEmpty, sanitizeDirName, scaffold } from './init.ts';
 import { detectPackageManager, PACKAGE_MANAGERS, type PackageManager } from './package-manager.ts';
 
 async function readVersion(): Promise<string> {
@@ -26,9 +27,12 @@ interface InitCliFlags {
   git?: boolean;
 }
 
-function onCancel(): never {
-  process.stdout.write(chalk.dim('\nCancelled.\n'));
-  process.exit(130);
+function unwrap<T>(value: T | symbol): T {
+  if (p.isCancel(value)) {
+    p.cancel('Cancelled.');
+    process.exit(130);
+  }
+  return value as T;
 }
 
 function packageManagerFromFlags(flags: InitCliFlags): PackageManager | undefined {
@@ -40,31 +44,57 @@ function packageManagerFromFlags(flags: InitCliFlags): PackageManager | undefine
 
   if (picks.length > 1) {
     throw new Error(
-      `Only one of --use-npm / --use-pnpm / --use-yarn / --use-bun may be specified (got ${picks.map((p) => `--use-${p}`).join(', ')}).`,
+      `Only one of --use-npm / --use-pnpm / --use-yarn / --use-bun may be specified (got ${picks.map((pm) => `--use-${pm}`).join(', ')}).`,
     );
   }
   return picks[0];
 }
 
+function displayPath(target: string): string {
+  const rel = relative(process.cwd(), target);
+  if (rel === '' || rel.startsWith('..')) return target;
+  return rel;
+}
+
+// A spinner only makes sense on a live terminal; piped output gets a plain
+// step line so logs stay readable.
+function step(label: string, isTTY: boolean) {
+  const spinner = isTTY ? p.spinner() : undefined;
+  if (spinner) spinner.start(label);
+  else p.log.step(label);
+  return {
+    done(message: string) {
+      if (spinner) spinner.stop(message);
+      else p.log.step(message);
+    },
+    fail(message: string) {
+      if (spinner) spinner.error(message);
+      else p.log.error(message);
+    },
+  };
+}
+
+function tail(output: string, lines = 12): string {
+  return output.split('\n').slice(-lines).join('\n');
+}
+
 async function runInit(dirArg: string | undefined, flags: InitCliFlags): Promise<void> {
   const isTTY = Boolean(process.stdin.isTTY && process.stdout.isTTY);
 
-  let dir = dirArg;
-  const name = flags.name;
-  let force = flags.force ?? false;
   let packageManager = packageManagerFromFlags(flags);
+  let dir = dirArg;
+  let force = flags.force ?? false;
+  const install = flags.install !== false;
+  const git = flags.git !== false;
 
   if (isTTY && dir === undefined) {
-    const answers = await prompts(
-      {
-        type: 'text',
-        name: 'dir',
-        message: 'Target directory',
-        initial: '.',
-      },
-      { onCancel },
+    dir = unwrap(
+      await p.text({
+        message: 'Where should we create your workspace?',
+        placeholder: '.',
+        defaultValue: '.',
+      }),
     );
-    dir = answers.dir;
   }
 
   if (dir !== undefined) {
@@ -75,36 +105,32 @@ async function runInit(dirArg: string | undefined, flags: InitCliFlags): Promise
           `Target directory "${dir}" contains characters that break shell commands (spaces, quotes, etc.). Try "${safe}" instead.`,
         );
       }
-      process.stdout.write(
-        `${chalk.yellow('!')} ${chalk.bold(`"${dir}"`)} has characters that confuse shells.\n` +
-          `  Suggested: ${chalk.cyan(`"${safe}"`)}\n`,
+      p.log.warn(`${chalk.bold(`"${dir}"`)} has characters that confuse shells.`);
+      dir = sanitizeDirName(
+        unwrap(
+          await p.text({
+            message: 'Directory name',
+            initialValue: safe,
+            validate: (value) => (value?.trim() ? undefined : 'Enter a directory name.'),
+          }),
+        ),
       );
-      const answers = await prompts(
-        {
-          type: 'text',
-          name: 'dir',
-          message: 'Directory name',
-          initial: safe,
-        },
-        { onCancel },
-      );
-      dir = sanitizeDirName(answers.dir ?? safe);
     }
   }
 
-  if (isTTY && packageManager === undefined && flags.install !== false) {
+  if (isTTY && packageManager === undefined && install) {
     const detected = detectPackageManager();
-    const answers = await prompts(
-      {
-        type: 'select',
-        name: 'packageManager',
+    packageManager = unwrap(
+      await p.select({
         message: 'Package manager',
-        choices: PACKAGE_MANAGERS.map((pm) => ({ title: pm, value: pm })),
-        initial: PACKAGE_MANAGERS.indexOf(detected),
-      },
-      { onCancel },
+        options: PACKAGE_MANAGERS.map((pm) => ({
+          value: pm,
+          label: pm,
+          hint: pm === detected ? 'detected' : undefined,
+        })),
+        initialValue: detected,
+      }),
     );
-    packageManager = answers.packageManager as PackageManager | undefined;
   }
 
   const resolvedDir = dir ?? '.';
@@ -114,31 +140,55 @@ async function runInit(dirArg: string | undefined, flags: InitCliFlags): Promise
     if (!isTTY) {
       throw new Error(`Target ${target} is not empty. Pass --force to scaffold into it anyway.`);
     }
-    const { overwrite } = await prompts(
-      {
-        type: 'confirm',
-        name: 'overwrite',
-        message: `${chalk.yellow(target)} is not empty. Scaffold into it anyway?`,
-        initial: false,
-      },
-      { onCancel },
+    const overwrite = unwrap(
+      await p.confirm({
+        message: `${chalk.yellow(displayPath(target))} is not empty. Scaffold into it anyway?`,
+        initialValue: false,
+      }),
     );
     if (!overwrite) {
-      process.stdout.write(chalk.dim('Aborted.\n'));
+      p.outro(chalk.dim('Nothing written.'));
       return;
     }
     force = true;
   }
 
-  const opts: InitOptions = {
-    dir: resolvedDir,
-    force,
-    name,
-    packageManager: packageManager ?? detectPackageManager(),
-    install: flags.install !== false,
-    git: flags.git !== false,
-  };
-  await init(opts);
+  const pm = packageManager ?? detectPackageManager();
+
+  await scaffold({ target, force, name: flags.name });
+  p.log.step(`Created workspace ${chalk.dim(`in ${displayPath(target)}`)}`);
+
+  let installed = false;
+  if (install) {
+    const task = step(`Installing dependencies with ${pm}`, isTTY);
+    const result = await installDependencies(pm, target);
+    if (result.ok) {
+      installed = true;
+      task.done(`Installed dependencies with ${pm}`);
+    } else {
+      task.fail('Dependency install failed');
+      p.log.message(chalk.dim(tail(result.output)));
+    }
+  }
+
+  if (git) {
+    const result = await gitInitAndCommit(target);
+    if (result.status === 'committed') {
+      p.log.step('Initialized git repository');
+    } else if (result.status === 'failed') {
+      p.log.warn(`Git setup failed ${chalk.dim(`· ${result.message ?? ''}`)}`);
+    } else {
+      p.log.info(`Skipped git init ${chalk.dim(`· ${result.message ?? ''}`)}`);
+    }
+  }
+
+  const next: string[] = [];
+  if (target !== process.cwd()) next.push(`cd ${resolvedDir}`);
+  if (!installed) next.push(`${pm} install`);
+  next.push(pm === 'npm' ? 'npm run dev' : `${pm} dev`);
+  p.note(next.map((line) => chalk.cyan(line)).join('\n'), 'Next steps');
+
+  p.outro(`All set! ${chalk.dim('Docs: https://open-slide.dev/docs')}`);
 }
 
 export async function run(argv: string[]): Promise<void> {
@@ -165,7 +215,13 @@ export async function run(argv: string[]): Promise<void> {
     .option('--no-install', 'skip dependency installation')
     .option('--no-git', 'skip git init and initial commit')
     .action(async (dir: string | undefined, flags: InitCliFlags) => {
-      await runInit(dir, flags);
+      p.intro(`${chalk.inverse.bold(' open-slide ')} ${chalk.dim(`v${version}`)}`);
+      try {
+        await runInit(dir, flags);
+      } catch (err) {
+        p.cancel(err instanceof Error ? err.message : String(err));
+        process.exit(1);
+      }
     });
 
   await program.parseAsync(argv, { from: 'user' });

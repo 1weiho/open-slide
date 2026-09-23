@@ -7,12 +7,31 @@ The default is a system font stack — prefer it. When a deck genuinely needs a 
   ```tsx
   const FONT_HREF = 'https://fonts.googleapis.com/css2?family=...&display=swap';
   const FONT_LINK_ID = 'osd-webfont-q2-roadmap'; // suffix = this slide's folder id
-  if (typeof document !== 'undefined' && !document.getElementById(FONT_LINK_ID)) {
-    const link = document.createElement('link');
-    link.id = FONT_LINK_ID;
-    link.rel = 'stylesheet';
-    link.href = FONT_HREF;
-    document.head.appendChild(link);
+  if (typeof document !== 'undefined') {
+    let link = document.getElementById(FONT_LINK_ID) as HTMLLinkElement | null;
+    if (!link) {
+      link = document.createElement('link');
+      link.id = FONT_LINK_ID;
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+    }
+    if (link.href !== FONT_HREF) link.href = FONT_HREF;
+  }
+  ```
+
+- **Create-or-update, never create-if-missing.** HMR re-runs the module but leaves the previous `<link>` / `<style>` in the document, so an `if (!document.getElementById(id)) { … }` guard skips the new content and edits don't show up until a full reload. The same shape applies to any `<style>` you inject for `@keyframes`:
+
+  ```tsx
+  const STYLE_ID = 'osd-styles-q2-roadmap';
+  const css = `@keyframes rise { from { opacity: 0 } to { opacity: 1 } }`;
+  if (typeof document !== 'undefined') {
+    let style = document.getElementById(STYLE_ID);
+    if (!style) {
+      style = document.createElement('style');
+      style.id = STYLE_ID;
+      document.head.appendChild(style);
+    }
+    if (style.textContent !== css) style.textContent = css;
   }
   ```
 

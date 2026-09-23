@@ -3,7 +3,6 @@ import { Anatomy } from '@/components/landing/anatomy';
 import { Assets } from '@/components/landing/assets';
 import { FAQ, faqs } from '@/components/landing/faq';
 import { Footer } from '@/components/landing/footer';
-import { StripeBand } from '@/components/landing/frame';
 import { GetStarted } from '@/components/landing/get-started';
 import { Hero } from '@/components/landing/hero';
 import { HowItWorks } from '@/components/landing/how-it-works';
@@ -16,7 +15,7 @@ import { UsedBy } from '@/components/landing/used-by';
 import { fetchGitHubStars, formatStarCount } from '@/lib/github';
 import { appName, gitConfig, siteUrl } from '@/lib/shared';
 
-const repoUrl = `https://github.com/${gitConfig.user}/${gitConfig.repo}`;
+const repoUrl = `https://github.com/${gitConfig.owner}/${gitConfig.repo}`;
 const description =
   'A React-first slide framework authored by AI agents. Each page is arbitrary code on a 1920×1080 canvas — versioned, reviewable, yours.';
 
@@ -126,7 +125,6 @@ export default async function HomePage() {
         <Hero />
         <LiveDemo />
         <PromptComposer />
-        <StripeBand />
         <HowItWorks />
         <Anatomy />
         <Inspector />
@@ -134,7 +132,6 @@ export default async function HomePage() {
         <Agents />
         <UsedBy />
         <FAQ />
-        <StripeBand />
         <GetStarted />
       </main>
       <Footer />
