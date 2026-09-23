@@ -22,11 +22,19 @@ test.describe('CodeBlock', () => {
     await openSlide(page, 'code-block');
     const block = editorCanvas(page).locator('pre[data-waitfor]');
     await expect(block.locator('code[data-osd-code-ready]')).toBeAttached({ timeout: 15_000 });
+    await expect(page.locator('[data-inspector-ready]')).toBeVisible();
 
-    await page.keyboard.press('i');
     const keyword = block.locator('span', { hasText: /^def$/ });
     await keyword.click();
-    await expect(page.getByText('<pre>')).toBeVisible();
+    const frame = page.locator('[data-selection-frame]');
+    await expect(frame).toHaveCount(1);
+    const [frameBox, blockBox] = await Promise.all([frame.boundingBox(), block.boundingBox()]);
+    expect(frameBox?.width).toBeCloseTo(blockBox?.width ?? 0, 0);
+    expect(frameBox?.height).toBeCloseTo(blockBox?.height ?? 0, 0);
+
+    const panel = page.locator('aside[data-inspector-ui]');
+    await expect(panel).toBeVisible();
+    await expect(panel.getByPlaceholder('Element text')).toHaveCount(0);
 
     await keyword.dblclick();
     await expect(block.locator('[contenteditable="true"]')).toHaveCount(0);
