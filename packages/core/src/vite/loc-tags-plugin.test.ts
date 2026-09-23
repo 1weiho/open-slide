@@ -181,6 +181,10 @@ describe('locTagsPlugin', () => {
   it('rejects a dot-segment path that escapes the slides root', () => {
     expect(transformWithLocTags('/repo/slides/../index.tsx')).toBeNull();
   });
+
+  it('treats a backslash in a POSIX id as part of the filename', () => {
+    expect(transformWithLocTags('/repo/slides/cover\\index.tsx')).toBeNull();
+  });
 });
 
 describe('locTagsPlugin on Windows-style paths', () => {
@@ -204,6 +208,10 @@ describe('locTagsPlugin on Windows-style paths', () => {
 
   it('tags slide index files with forward-slash ids under a Windows slidesRoot', () => {
     expectTagged('C:\\repo\\slides', 'C:/repo/slides/cover/index.tsx');
+  });
+
+  it('tags backslash-separated ids under a Windows slidesRoot', () => {
+    expectTagged('C:\\repo\\slides', 'C:\\repo\\slides\\cover\\index.tsx');
   });
 
   it('strips HMR ?t= query before matching', () => {

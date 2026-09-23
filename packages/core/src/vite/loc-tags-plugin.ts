@@ -59,17 +59,23 @@ export type LocTagsPluginOptions = {
 // Vite normally hands `id` to plugins with forward slashes, but other plugins or
 // virtual modules can pass through Windows-style paths. Compare both sides in
 // POSIX shape so the match doesn't depend on which separator the caller used.
+// Only drive-letter and UNC paths get their separators converted: on POSIX a
+// backslash is a legal filename character, and `normalizePath` keeps it.
+const WINDOWS_PATH_RE = /^(?:[A-Za-z]:|\\\\)/;
+
+function toPosixPath(p: string): string {
+  return normalizePath(WINDOWS_PATH_RE.test(p) ? p.replace(/\\/g, '/') : p);
+}
+
 function isSlideEntryFile(id: string, slidesRootPosix: string): boolean {
-  const filePath = normalizePath(id.split(/[?#]/)[0].replace(/\\/g, '/'));
+  const filePath = toPosixPath(id.split(/[?#]/)[0]);
   if (!filePath.startsWith(`${slidesRootPosix}/`)) return false;
   const rel = filePath.slice(slidesRootPosix.length + 1);
   return /^[^/]+\/index\.tsx$/.test(rel);
 }
 
 export function locTagsPlugin(opts: LocTagsPluginOptions): Plugin {
-  const slidesRoot = normalizePath(
-    path.resolve(opts.userCwd, opts.slidesDir ?? 'slides').replace(/\\/g, '/'),
-  );
+  const slidesRoot = toPosixPath(path.resolve(opts.userCwd, opts.slidesDir ?? 'slides'));
   return {
     name: 'open-slide:loc-tags',
     apply: 'serve',
