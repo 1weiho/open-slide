@@ -992,6 +992,14 @@ describe('applyEdit / set-text', () => {
     expect(r.source).toContain(expected);
   });
 
+  it('refuses when prevText puts whitespace where the source has none', () => {
+    const src = ['export default [() => (', '<p>ab<b>c</b></p>', ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-text', value: 'a bcX', prevText: 'a bc' }]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.error).toMatch(/no text candidate matches/);
+  });
+
   it('prefers the reused prop over an unrelated element with the same text', () => {
     const src = [
       'const Card = ({ title }: { title: string }) => (',

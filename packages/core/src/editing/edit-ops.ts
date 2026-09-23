@@ -690,6 +690,9 @@ function buildTextContentSplices(
   // source text would drift across whitespace runs and move text out of child
   // elements. Diff in prevText space and map the offsets back instead.
   const offsets = current === prevText ? null : alignCollapsedText(current, prevText);
+  if (current !== prevText && !offsets) {
+    return { error: 'no text candidate matches the current value' };
+  }
   const diff = textDiff(offsets ? prevText : current, value);
   if (diff.start === diff.end && diff.value === '') return [];
   const start = offsets ? offsets[diff.start] : diff.start;
