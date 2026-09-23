@@ -424,7 +424,13 @@ export default [Only] satisfies Page[];
     );
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     expect((await saved).status()).toBe(200);
-    await expect.poll(() => readSlideSource('visual-snap-thirds')).toContain("translate: '160px ");
+    await expect
+      .poll(async () =>
+        (await readSlideSource('visual-snap-thirds'))
+          .split('\n')
+          .find((line) => line.includes('>Third block<')),
+      )
+      .toContain("translate: '160px ");
   });
 
   test('arrow keys nudge in slide pixels and Shift increases the step', async ({
