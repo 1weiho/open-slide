@@ -117,6 +117,11 @@ export function InspectorPanel({
     applyEdit,
   } = useInspector();
   const [snapshot, setSnapshot] = useState<ElementSnapshot | null>(null);
+  // Computed styles resolve var() to a colour, so the saved token is read from the inline style.
+  const styleValue = (target: SelectedTarget, key: 'color' | 'backgroundColor') => {
+    const pending = pendingStyleValue(target.line, target.column, key);
+    return pending === undefined ? target.anchor.style[key] : pending;
+  };
   const [contentSelection, setContentSelection] = useState<ContentSelection | null>(null);
   const [rangeStylePreview, setRangeStylePreview] = useState<RangeStylePreview | null>(null);
   const reloadCounter = useReloadCounter();
@@ -399,7 +404,7 @@ export function InspectorPanel({
                     {palette && !contentRange && !rangeSelected && (
                       <DesignTokenSwatches
                         palette={palette}
-                        pendingValue={pendingStyleValue(selected.line, selected.column, 'color')}
+                        value={styleValue(selected, 'color')}
                         onPick={(value) =>
                           applyTextStyle([{ kind: 'set-style', key: 'color', value }])
                         }
@@ -417,11 +422,7 @@ export function InspectorPanel({
                 {palette && (
                   <DesignTokenSwatches
                     palette={palette}
-                    pendingValue={pendingStyleValue(
-                      selected.line,
-                      selected.column,
-                      'backgroundColor',
-                    )}
+                    value={styleValue(selected, 'backgroundColor')}
                     onPick={(value) =>
                       apply([{ kind: 'set-style', key: 'backgroundColor', value }])
                     }

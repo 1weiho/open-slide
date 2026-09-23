@@ -146,10 +146,12 @@ test.describe('inspector editing', () => {
     expect(src).not.toMatch(/color: '#ff3366'/i);
 
     await openSlide(page, 'insp-style');
-    await expect(editorCanvas(page).getByText('Editable headline')).toHaveCSS(
-      'color',
-      'rgb(255, 51, 102)',
-    );
+    const reloaded = editorCanvas(page).getByText('Editable headline');
+    await expect(reloaded).toHaveCSS('color', 'rgb(255, 51, 102)');
+    await reloaded.click();
+    await expect(
+      panel.getByRole('button', { name: 'Use design color: Accent' }).first(),
+    ).toHaveAttribute('aria-pressed', 'true');
   });
 
   test('undo and redo step through an inspector edit', async ({ page, request }) => {

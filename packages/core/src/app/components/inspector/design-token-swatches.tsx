@@ -5,11 +5,11 @@ const PALETTE_TOKENS = ['bg', 'text', 'accent'] as const;
 
 export function DesignTokenSwatches({
   palette,
-  pendingValue,
+  value,
   onPick,
 }: {
   palette: DesignPalette;
-  pendingValue?: string | null;
+  value?: string | null;
   onPick: (value: string) => void;
 }) {
   const t = useLocale();
@@ -32,7 +32,7 @@ export function DesignTokenSwatches({
               type="button"
               title={label}
               aria-label={label}
-              aria-pressed={pendingValue === tokenVar}
+              aria-pressed={value === tokenVar}
               onClick={() => onPick(tokenVar)}
               className="size-5 cursor-pointer rounded-[3px] border border-border transition-[scale,box-shadow] duration-150 hover:border-foreground/20 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 aria-pressed:ring-2 aria-pressed:ring-foreground/70 aria-pressed:ring-offset-1 aria-pressed:ring-offset-background"
               style={{ backgroundColor: palette[token] }}
