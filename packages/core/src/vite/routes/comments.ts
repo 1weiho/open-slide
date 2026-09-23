@@ -60,10 +60,12 @@ export function registerCommentRoutes(server: ViteDevServer, ctx: ApiContext): v
         if (!body.text || typeof body.text !== 'string') {
           return json(res, 400, { error: 'missing text' });
         }
-        const hint = body.hint ?? undefined;
+        const hint = body.hint;
         if (hint !== undefined && typeof hint !== 'string') {
           return json(res, 400, { error: 'invalid hint' });
         }
+        // An intent is machine-set, so a null from a client that always sends the
+        // key means "none"; a hint is free text and must be a string when present.
         const intent = body.intent ?? undefined;
         if (intent !== undefined && !isCommentIntent(intent)) {
           return json(res, 400, {
