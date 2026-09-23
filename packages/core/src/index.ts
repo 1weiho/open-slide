@@ -1,7 +1,10 @@
+export type { CodeBlockProps } from './app/components/code-block.tsx';
+export { CodeBlock } from './app/components/code-block.tsx';
 export type { ImagePlaceholderProps } from './app/components/image-placeholder.tsx';
 export { ImagePlaceholder } from './app/components/image-placeholder.tsx';
 export type { MorphElementProps } from './app/components/morph-element.tsx';
 export { MorphElement } from './app/components/morph-element.tsx';
+export type { CodeBlockLang } from './app/lib/code-highlight.ts';
 export type {
   DesignFonts,
   DesignPalette,

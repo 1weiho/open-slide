@@ -1,4 +1,4 @@
 {
   "title": "Primitive",
-  "pages": ["page", "transition", "step", "morph-element"]
+  "pages": ["page", "transition", "step", "morph-element", "code-block"]
 }
