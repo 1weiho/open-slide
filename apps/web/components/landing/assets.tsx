@@ -10,7 +10,7 @@ import {
   useTransform,
 } from 'motion/react';
 import { type CSSProperties, type ReactNode, useEffect, useRef } from 'react';
-import { SectionRule } from './frame';
+import { Container, SectionHeading } from './frame';
 
 type AssetMock = { name: string; size: string; logo: string; themed?: boolean; unused?: boolean };
 
@@ -61,19 +61,12 @@ const callouts: { eyebrow: string; title: string; body: ReactNode }[] = [
 
 export function Assets() {
   return (
-    <section id="assets" className="relative">
-      <SectionRule />
-      <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-20 sm:py-32 lg:py-40">
-        <h2
-          data-reveal="blur"
-          className="text-[32px] sm:text-[44px] lg:text-[60px] leading-[1.1] sm:leading-[1.05] tracking-[-0.035em] font-medium max-w-[820px] mb-14 sm:mb-20"
-        >
-          Drop in images.
-          <br />
-          <span className="font-[family-name:var(--font-pixel)] text-[color:var(--color-muted)]">
-            Pull in logos.
-          </span>
-        </h2>
+    <section id="assets" className="border-t border-[color:var(--color-rule-soft)]">
+      <Container className="py-20 sm:py-28">
+        <SectionHeading
+          title="Drop in images. Pull in logos."
+          lead="Manage every asset from the same pane the inspector uses, and search 1500+ brand logos without leaving the editor."
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* asset manager mock */}
@@ -85,7 +78,7 @@ export function Assets() {
           <div
             data-reveal
             style={{ '--reveal-delay': '120ms' } as CSSProperties}
-            className="floating lg:col-span-4 flex flex-col gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[8px] overflow-hidden"
+            className="flex flex-col gap-px overflow-hidden rounded-xl border border-[color:var(--color-rule)] bg-[color:var(--color-rule)] lg:col-span-4"
           >
             {callouts.map((c, i) => (
               <div
@@ -95,7 +88,7 @@ export function Assets() {
                 className="bg-[color:var(--color-panel)] p-6 sm:p-7 lg:p-8 flex flex-col gap-3"
               >
                 <span className="caption">{c.eyebrow}</span>
-                <h3 className="text-[22px] lg:text-[24px] font-medium tracking-[-0.025em] leading-[1.2]">
+                <h3 className="text-[19px] font-medium leading-[1.25] tracking-[-0.02em] lg:text-[20px]">
                   {c.title}
                 </h3>
                 <p className="text-[14px] leading-[1.6] text-[color:var(--color-text-soft)] max-w-[40ch]">
@@ -105,7 +98,7 @@ export function Assets() {
             ))}
           </div>
         </div>
-      </div>
+      </Container>
     </section>
   );
 }
@@ -207,7 +200,7 @@ function AssetManagerMock() {
   return (
     <div
       ref={ref}
-      className="floating relative rounded-[8px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden select-none"
+      className="relative select-none overflow-hidden rounded-xl border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]"
     >
       {/* window header */}
       <div className="flex items-center px-4 sm:px-5 h-10 sm:h-11 border-b border-[color:var(--color-rule-soft)] font-[family-name:var(--font-mono)] text-[12px] text-[color:var(--color-muted)]">
@@ -558,7 +551,7 @@ function AssetManagerMock() {
 
 function AssetCard({ asset }: { asset: AssetMock }) {
   return (
-    <div className="group rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden flex flex-col [box-shadow:var(--shadow-edge)] transition-shadow duration-300 hover:[box-shadow:var(--shadow-floating)]">
+    <div className="group rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden flex flex-col">
       <div
         className="h-[80px] sm:h-[120px] flex items-center justify-center border-b border-[color:var(--color-rule-soft)]"
         style={{
@@ -626,7 +619,7 @@ function AssetCard({ asset }: { asset: AssetMock }) {
 
 function HeroAssetCard() {
   return (
-    <div className="group flex h-full flex-col overflow-hidden rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] [box-shadow:var(--shadow-edge)] transition-shadow duration-300 hover:[box-shadow:var(--shadow-floating)]">
+    <div className="group flex h-full flex-col overflow-hidden rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]">
       <div
         className="flex min-h-0 flex-1 items-center justify-center border-b border-[color:var(--color-rule-soft)]"
         style={{

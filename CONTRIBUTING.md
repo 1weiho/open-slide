@@ -8,7 +8,7 @@ If you're authoring slides inside a scaffolded project, you don't need this file
 
 - **Report a bug** via the [bug report template](./.github/ISSUE_TEMPLATE/bug_report.yml). Include a minimal reproduction.
 - **Propose a feature** via the [feature request template](./.github/ISSUE_TEMPLATE/feature_request.yml). Describe the problem before the solution.
-- **Ask a question or share what you're building** in [GitHub Discussions](https://github.com/1weiho/open-slide/discussions).
+- **Ask a question or share what you're building** in [GitHub Discussions](https://github.com/open-slide/open-slide/discussions).
 - **Send a pull request** — see below.
 
 For non-trivial changes, please open an issue or discussion first so we can align on direction before you invest the time.
@@ -33,7 +33,7 @@ pnpm + Turbo monorepo.
 ## Getting set up
 
 ```bash
-git clone https://github.com/1weiho/open-slide.git
+git clone https://github.com/open-slide/open-slide.git
 cd open-slide
 pnpm install
 ```
@@ -114,4 +114,4 @@ Releases are cut by the maintainer via `pnpm release`, which builds `@open-slide
 
 ## Questions
 
-Open a [discussion](https://github.com/1weiho/open-slide/discussions) — happy to help.
+Open a [discussion](https://github.com/open-slide/open-slide/discussions) — happy to help.

@@ -59,6 +59,9 @@ export function InlineSlidePlayer({ index, onIndexChange }: Props) {
   return (
     <div
       ref={rootRef}
+      role="group"
+      // biome-ignore lint/a11y/noNoninteractiveTabindex: the player owns arrow-key navigation, so it must be reachable by keyboard
+      tabIndex={0}
       onKeyDown={onKeyDown}
       aria-roledescription="slide player"
       aria-label={`Slide ${index + 1} of ${count}`}

@@ -1,6 +1,6 @@
 {
   "name": "@open-slide/core",
-  "version": "2.0.0-beta.1",
+  "version": "2.0.0-beta.5",
   "description": "Runtime and CLI for open-slide — write slides in slides/, we handle the rest.",
   "type": "module",
   "exports": {
@@ -55,11 +55,11 @@
   "homepage": "https://open-slide.dev",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/1weiho/open-slide.git",
+    "url": "git+https://github.com/open-slide/open-slide.git",
     "directory": "packages/core"
   },
   "bugs": {
-    "url": "https://github.com/1weiho/open-slide/issues"
+    "url": "https://github.com/open-slide/open-slide/issues"
   },
   "publishConfig": {
     "access": "public"
@@ -73,7 +73,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@fontsource-variable/geist": "^5.2.8",
     "@tailwindcss/vite": "^4.3.3",
-    "@vitejs/plugin-react": "^6.1.0",
+    "@vitejs/plugin-react": "^6.1.1",
     "chalk": "^6.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -100,7 +100,7 @@
   },
   "devDependencies": {
     "@playwright/test": "~1.62.1",
-    "@types/node": "^26.2.0",
+    "@types/node": "^26.6.2",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
     "tsdown": "^0.22.14",

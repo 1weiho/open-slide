@@ -1,6 +1,6 @@
 {
   "name": "@open-slide/cli",
-  "version": "2.0.0-beta.1",
+  "version": "2.0.0-beta.3",
   "description": "Scaffold an open-slide workspace with Claude Code skills preconfigured.",
   "type": "module",
   "bin": {
@@ -34,11 +34,11 @@
   "homepage": "https://open-slide.dev",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/1weiho/open-slide.git",
+    "url": "git+https://github.com/open-slide/open-slide.git",
     "directory": "packages/cli"
   },
   "bugs": {
-    "url": "https://github.com/1weiho/open-slide/issues"
+    "url": "https://github.com/open-slide/open-slide/issues"
   },
   "publishConfig": {
     "access": "public"
@@ -49,7 +49,7 @@
     "commander": "^15.0.0"
   },
   "devDependencies": {
-    "@types/node": "^26.2.0",
+    "@types/node": "^26.6.2",
     "tsdown": "^0.22.14",
     "typescript": "^7.0.2"
   }

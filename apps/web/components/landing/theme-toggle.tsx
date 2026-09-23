@@ -29,7 +29,7 @@ export function ThemeToggle() {
     <div
       role="radiogroup"
       aria-label="Theme"
-      className="inline-flex items-center gap-0.5 h-8 p-0.5 rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]/60"
+      className="inline-flex h-8 items-center gap-0.5 rounded-full bg-[color:var(--color-panel-hi)] p-0.5"
     >
       {OPTIONS.map((opt) => {
         const active = current === opt.value;
@@ -45,7 +45,7 @@ export function ThemeToggle() {
             className={
               'pressable inline-flex items-center justify-center h-7 w-7 rounded-full ' +
               (active
-                ? 'bg-[color:var(--color-panel-hi)] text-[color:var(--color-text)] shadow-[inset_0_0_0_1px_var(--color-rule)]'
+                ? 'bg-[color:var(--color-panel)] text-[color:var(--color-text)] shadow-[var(--shadow-edge)]'
                 : 'text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]')
             }
           >

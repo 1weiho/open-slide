@@ -1,40 +1,54 @@
 import {
+  ALargeSmall,
   AlignCenter,
   AlignJustify,
   AlignLeft,
   AlignRight,
   Bold,
   Crop,
-  Crosshair,
   ImageIcon,
   Italic,
+  MousePointer2,
+  Move,
+  MoveHorizontal,
+  Paintbrush,
+  PencilLine,
+  Shapes,
+  Type,
+  UnfoldVertical,
   X,
 } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Field, NumberField, Section } from '@/components/panel/panel-fields';
-import { PANEL_TRANSITION_MS, PanelShell, useAnimatedOpen } from '@/components/panel/panel-shell';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { IconSwitcherIndicator } from '@/components/icon-switcher-indicator';
+import {
+  CollapsibleSection,
+  ColorField,
+  NumberField,
+  Section,
+} from '@/components/panel/panel-fields';
+import { PanelShell } from '@/components/panel/panel-shell';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Slider } from '@/components/ui/slider';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { findSlideSource } from '@/lib/inspector/fiber';
 import { hasOnlyInlineTextChildren } from '@/lib/inspector/inline-text';
+import { styleContext } from '@/lib/inspector/text-selection';
 import type { EditOp } from '@/lib/inspector/use-editor';
 import { useAgentSocketConnected } from '@/lib/use-agent-socket';
-import { useLocale } from '@/lib/use-locale';
+import { format, useLocale } from '@/lib/use-locale';
 import { cn, round2 } from '@/lib/utils';
 import type { Locale } from '../../../locale/types';
+import { ArrangePanel } from './arrange-panel';
 import { AssetPickerDialog } from './asset-picker-dialog';
 import { type SelectedTarget, useInspector } from './inspector-provider';
 
@@ -72,11 +86,23 @@ function resolveSelectedTarget(target: SelectedTarget, slideId: string): Selecte
   return { line: hit.line, column: hit.column, anchor: hit.anchor };
 }
 
-export function InspectorPanel() {
+export function InspectorPanel({
+  preferredTab,
+  onTabChange,
+}: {
+  preferredTab: 'format' | 'arrange';
+  onTabChange: (tab: 'format' | 'arrange') => void;
+}) {
   const {
-    active,
+    togglePanel,
+    inlineEdit,
+    inlineSelection,
+    startInlineEdit,
+    stopInlineEdit,
+    applyInlineStyle,
     slideId,
     selected,
+    selection,
     setSelected,
     bufferOps,
     pendingCount,
@@ -96,7 +122,7 @@ export function InspectorPanel() {
     setRangeStylePreview(null);
   }, [selected]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     void reloadCounter;
     void pendingCount;
     void opsVersion;
@@ -104,42 +130,10 @@ export function InspectorPanel() {
       setSnapshot(null);
       return;
     }
-    let anchor = selected.anchor;
-    if (!anchor.isConnected) {
-      const next = findElementByLine(slideId, selected.line, selected.column);
-      if (next) {
-        anchor = next;
-        setSelected({ ...selected, anchor: next });
-      } else {
-        return;
-      }
-    }
+    const anchor = selected.anchor;
+    if (!anchor.isConnected) return;
     setSnapshot(readSnapshot(anchor));
-  }, [selected, setSelected, slideId, reloadCounter, pendingCount, opsVersion]);
-
-  // Freeze slide animations while editing so commits don't replay motion.
-  useEffect(() => {
-    if (!active) return;
-    const root = document.querySelector<HTMLElement>('[data-inspector-root]');
-    if (!root) return;
-    const styleEl = document.createElement('style');
-    styleEl.textContent = EDITING_FREEZE_CSS;
-    document.head.appendChild(styleEl);
-    root.dataset.inspectorEditing = 'true';
-    return () => {
-      let cleaned = false;
-      const finish = () => {
-        if (cleaned) return;
-        cleaned = true;
-        styleEl.remove();
-        delete root.dataset.inspectorEditing;
-        import.meta.hot?.off('vite:afterUpdate', finish);
-        clearTimeout(timer);
-      };
-      const timer = setTimeout(finish, 1500);
-      import.meta.hot?.on('vite:afterUpdate', finish);
-    };
-  }, [active]);
+  }, [selected, reloadCounter, pendingCount, opsVersion]);
 
   const apply = useCallback(
     (ops: EditOp[]) => {
@@ -152,45 +146,60 @@ export function InspectorPanel() {
     [selected, setSelected, slideId, bufferOps],
   );
 
-  // `pinned` keeps the last selection rendered through the close-out
-  // animation so the panel's contents don't blank out before it collapses.
-  const targetOpen = active && !!selected && !!snapshot;
-  const [pinned, setPinned] = useState<{ s: SelectedTarget; n: ElementSnapshot } | null>(null);
-  const animVisible = useAnimatedOpen(targetOpen && !!pinned);
-
-  useEffect(() => {
-    if (selected && snapshot) setPinned({ s: selected, n: snapshot });
-  }, [selected, snapshot]);
-
-  useEffect(() => {
-    if (!targetOpen && pinned) {
-      const t = setTimeout(() => setPinned(null), PANEL_TRANSITION_MS);
-      return () => clearTimeout(t);
-    }
-  }, [targetOpen, pinned]);
-
-  if (!pinned) return null;
-  const { s: pinSelected, n: pinSnapshot } = pinned;
+  const multiple = selection.length > 1;
+  const tab = multiple ? 'arrange' : inlineEdit ? 'format' : preferredTab;
+  const textSelected = selected && snapshot?.text !== null && snapshot?.text !== undefined;
+  const imageSelected = Boolean(snapshot?.imageSrc || snapshot?.placeholder);
+  const elementLabel = multiple
+    ? format(t.inspector.selectionCount, { count: selection.length })
+    : textSelected
+      ? t.inspector.elementText
+      : imageSelected
+        ? t.inspector.elementImage
+        : t.inspector.elementShape;
+  const ElementIcon = textSelected ? Type : imageSelected ? ImageIcon : Shapes;
+  const FormatIcon = textSelected ? Type : imageSelected ? ImageIcon : Paintbrush;
+  const formatLabel = textSelected
+    ? t.inspector.elementText
+    : imageSelected
+      ? t.inspector.elementImage
+      : t.inspector.styleLabel;
+  const selectedInlineRange =
+    inlineEdit?.anchor === selected?.anchor && inlineSelection ? inlineSelection : null;
   const contentRange =
-    pinSnapshot.text !== null && contentSelection && contentSelection.end > contentSelection.start
+    !inlineEdit &&
+    snapshot &&
+    snapshot.text !== null &&
+    contentSelection &&
+    contentSelection.end > contentSelection.start
       ? contentSelection
       : null;
   const rangePreviewApplies =
     contentRange &&
     rangeStylePreview &&
-    rangeStylePreview.anchor === pinSelected.anchor &&
+    rangeStylePreview.anchor === selected?.anchor &&
     rangeStylePreview.start === contentRange.start &&
     rangeStylePreview.end === contentRange.end;
-  const typographySnapshot = rangePreviewApplies
-    ? { ...pinSnapshot, ...rangeStylePreview.values }
-    : pinSnapshot;
+  const rangeSnapshot =
+    selected && selectedInlineRange && snapshot
+      ? { ...snapshot, ...readTypography(styleContext(selected.anchor, selectedInlineRange)) }
+      : snapshot;
+  const typographySnapshot =
+    rangePreviewApplies && rangeSnapshot
+      ? { ...rangeSnapshot, ...rangeStylePreview.values }
+      : rangeSnapshot;
   const applyTextStyle = (ops: EditOp[]) => {
+    if (!selected || !snapshot) return;
+    if (applyInlineStyle(ops)) {
+      if (selected.anchor.isConnected) setSnapshot(readSnapshot(selected.anchor));
+      return;
+    }
     const styleOps = ops.flatMap((op) => (op.kind === 'set-style' ? [op] : []));
-    const target = resolveSelectedTarget(pinSelected, slideId);
-    if (target !== pinSelected) setSelected(target);
+    const target = resolveSelectedTarget(selected, slideId);
+    if (target !== selected) setSelected(target);
     if (
       contentRange &&
-      pinSnapshot.text !== null &&
+      snapshot.text !== null &&
       styleOps.length === 1 &&
       styleOps.length === ops.length &&
       styleOps.every((op) => INLINE_CONTENT_STYLE_KEYS.has(op.key))
@@ -205,7 +214,7 @@ export function InspectorPanel() {
           end: contentRange.end,
           key: op.key,
           value: op.value,
-          prevText: pinSnapshot.text ?? undefined,
+          prevText: snapshot.text ?? undefined,
         })),
       );
       setRangeStylePreview((current) => ({
@@ -225,7 +234,7 @@ export function InspectorPanel() {
       return;
     }
     if (
-      pinSnapshot.text !== null &&
+      snapshot.text !== null &&
       styleOps.length > 0 &&
       styleOps.length === ops.length &&
       styleOps.every((op) => INLINE_CONTENT_STYLE_KEYS.has(op.key))
@@ -234,7 +243,7 @@ export function InspectorPanel() {
         target.line,
         target.column,
         target.anchor,
-        styleOps.map((op) => ({ ...op, prevText: pinSnapshot.text ?? undefined })),
+        styleOps.map((op) => ({ ...op, prevText: snapshot.text ?? undefined })),
       );
       if (target.anchor.isConnected) setSnapshot(readSnapshot(target.anchor));
       return;
@@ -242,119 +251,202 @@ export function InspectorPanel() {
     apply(ops);
   };
 
-  return (
-    <PanelShell
-      uiAttr="inspector"
-      animVisible={animVisible}
-      header={
-        <>
-          <div className="flex min-w-0 items-center gap-2">
-            <Crosshair className="size-3.5 text-muted-foreground" />
-            <span className="font-heading text-[12px] font-semibold tracking-tight">
-              {t.inspector.inspect}
+  const rangeSelected = Boolean(
+    selectedInlineRange && selectedInlineRange.end > selectedInlineRange.start,
+  );
+  const footer =
+    selected && snapshot && !multiple ? (
+      <>
+        <CollapsibleSection title={t.inspector.leaveComment}>
+          <CommentsSection selected={selected} onAdd={add} />
+        </CollapsibleSection>
+        <CollapsibleSection title={t.inspector.sourceSection}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-mono text-[10.5px] text-muted-foreground">
+              &lt;{selected.anchor.tagName.toLowerCase()}&gt; · {selected.line}:{selected.column}
             </span>
-            <span aria-hidden className="h-3 w-px bg-hairline" />
-            <span className="rounded-[3px] border border-hairline bg-card px-1.5 py-px font-mono text-[10.5px] text-foreground/85">
-              &lt;{pinSelected.anchor.tagName.toLowerCase()}&gt;
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
             <AgentWatchingBadge />
+          </div>
+        </CollapsibleSection>
+      </>
+    ) : undefined;
+
+  return (
+    <Tabs
+      value={tab}
+      onValueChange={(value) => {
+        if (value === 'arrange') stopInlineEdit();
+        if (value === 'format' || value === 'arrange') onTabChange(value);
+      }}
+      className="h-full shrink-0 gap-0"
+      onPointerDownCapture={(event) => {
+        if (!inlineEdit || !(event.target instanceof Element)) return;
+        const button = event.target.closest('button');
+        if (button && !button.matches('[aria-haspopup], [role="tab"]')) event.preventDefault();
+      }}
+    >
+      <PanelShell
+        uiAttr="inspector"
+        header={
+          <>
+            <div className="flex min-w-0 items-center gap-2">
+              <Paintbrush className="size-3.5 text-muted-foreground" />
+              <span className="font-heading text-[12px] font-semibold tracking-tight">
+                {t.inspector.format}
+              </span>
+            </div>
             <Button
               variant="ghost"
               size="icon-sm"
-              className="text-muted-foreground hover:text-foreground"
-              onClick={() => setSelected(null)}
-              aria-label={t.inspector.deselect}
+              onClick={togglePanel}
+              aria-label={t.inspector.closeFormatPanel}
             >
-              <X className="size-3.5" />
+              <X />
             </Button>
+          </>
+        }
+        banner={
+          selected && snapshot ? (
+            <div className="flex shrink-0 items-center justify-between gap-3 px-3.5 pt-3.5 pb-1">
+              <div className="flex min-w-0 items-center gap-2 text-[12px] font-medium">
+                <ElementIcon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+                <span className="truncate">{elementLabel}</span>
+              </div>
+              <TabsList
+                className="relative isolate shrink-0 rounded-lg group-data-[orientation=horizontal]/tabs:h-8"
+                aria-label={t.inspector.format}
+              >
+                <IconSwitcherIndicator index={tab === 'arrange' ? 1 : 0} />
+                <TabsTrigger
+                  value="format"
+                  disabled={multiple}
+                  title={formatLabel}
+                  className="z-10 h-full w-8 flex-none rounded-md px-0 data-active:bg-transparent data-active:shadow-none dark:data-active:bg-transparent"
+                >
+                  <FormatIcon aria-hidden />
+                  <span className="sr-only">{formatLabel}</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="arrange"
+                  title={t.inspector.arrangeSection}
+                  className="z-10 h-full w-8 flex-none rounded-md px-0 data-active:bg-transparent data-active:shadow-none dark:data-active:bg-transparent"
+                >
+                  <Move aria-hidden />
+                  <span className="sr-only">{t.inspector.arrangeSection}</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
+          ) : undefined
+        }
+        footer={footer}
+      >
+        {selected && snapshot && typographySnapshot ? (
+          <>
+            <TabsContent value="format">
+              {textSelected && (
+                <Section title={t.inspector.typographySection}>
+                  {rangeSelected && (
+                    <p className="text-[11px] leading-relaxed text-muted-foreground">
+                      {t.inspector.textSelectionHint}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-1.5">
+                    <FontWeightField snapshot={typographySnapshot} apply={applyTextStyle} />
+                    <FontSizeField snapshot={typographySnapshot} apply={applyTextStyle} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <StyleToggles snapshot={typographySnapshot} apply={applyTextStyle} />
+                    <TextAlignField snapshot={snapshot} apply={apply} />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <LineHeightField snapshot={snapshot} apply={apply} />
+                    <LetterSpacingField snapshot={snapshot} apply={apply} />
+                  </div>
+                </Section>
+              )}
+              {snapshot.imageSrc !== null && (
+                <Section title={t.inspector.imageSection}>
+                  <ImageField src={snapshot.imageSrc} anchor={selected.anchor} />
+                </Section>
+              )}
+              {snapshot.placeholder && (
+                <Section title={t.inspector.imagePlaceholderSection}>
+                  <PlaceholderField
+                    slideId={slideId}
+                    hint={snapshot.placeholder.hint}
+                    line={selected.line}
+                    column={selected.column}
+                    applyEdit={applyEdit}
+                  />
+                </Section>
+              )}
+              <Section title={t.inspector.colorSection}>
+                {textSelected && (
+                  <ColorField
+                    label={t.inspector.textColor}
+                    value={typographySnapshot.color}
+                    onChange={(value) =>
+                      applyTextStyle([{ kind: 'set-style', key: 'color', value }])
+                    }
+                  />
+                )}
+                <ColorField
+                  label={t.inspector.backgroundColor}
+                  value={snapshot.backgroundColor ?? '#ffffff'}
+                  dim={!snapshot.backgroundColor}
+                  onChange={(value) =>
+                    apply([{ kind: 'set-style', key: 'backgroundColor', value }])
+                  }
+                  onClear={
+                    snapshot.backgroundColor
+                      ? () => apply([{ kind: 'set-style', key: 'backgroundColor', value: null }])
+                      : undefined
+                  }
+                />
+              </Section>
+              {textSelected && (
+                <Section
+                  title={t.inspector.contentSection}
+                  action={
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      className="text-muted-foreground hover:text-foreground"
+                      onClick={() => startInlineEdit(selected)}
+                    >
+                      <PencilLine data-icon="inline-start" />
+                      {t.inspector.editText}
+                    </Button>
+                  }
+                >
+                  <ContentField
+                    snapshot={snapshot}
+                    apply={apply}
+                    onFocus={stopInlineEdit}
+                    onSelectionChange={setContentSelection}
+                  />
+                </Section>
+              )}
+            </TabsContent>
+            <TabsContent value="arrange">
+              <ArrangePanel />
+            </TabsContent>
+          </>
+        ) : (
+          <div className="flex flex-col items-center gap-3 px-7 py-16 text-center">
+            <MousePointer2 aria-hidden className="size-8 text-muted-foreground/50" />
+            <div className="flex flex-col gap-1.5">
+              <h2 className="text-[13px] font-medium">{t.inspector.emptySelectionTitle}</h2>
+              <p className="text-[12px] leading-relaxed text-muted-foreground">
+                {t.inspector.emptySelectionHint}
+              </p>
+            </div>
           </div>
-        </>
-      }
-      footer={<CommentsSection selected={pinSelected} onAdd={add} />}
-    >
-      {pinSnapshot.text !== null && (
-        <>
-          <Section title={t.inspector.contentSection}>
-            <ContentField
-              snapshot={pinSnapshot}
-              apply={apply}
-              onSelectionChange={setContentSelection}
-            />
-          </Section>
-          <Separator />
-        </>
-      )}
-
-      <Section title={t.inspector.typographySection}>
-        <FontSizeField snapshot={typographySnapshot} apply={applyTextStyle} />
-        <FontWeightField snapshot={typographySnapshot} apply={applyTextStyle} />
-        <StyleToggles snapshot={typographySnapshot} apply={applyTextStyle} />
-        <LineHeightField snapshot={pinSnapshot} apply={apply} />
-        <LetterSpacingField snapshot={pinSnapshot} apply={apply} />
-        <TextAlignField snapshot={pinSnapshot} apply={apply} />
-      </Section>
-
-      <Separator />
-
-      <Section title={t.inspector.colorSection}>
-        <ColorField
-          label={t.inspector.textColor}
-          value={typographySnapshot.color}
-          onChange={(v) => applyTextStyle([{ kind: 'set-style', key: 'color', value: v }])}
-          clearable={false}
-        />
-        <ColorField
-          label={t.inspector.backgroundColor}
-          value={pinSnapshot.backgroundColor ?? '#ffffff'}
-          dim={!pinSnapshot.backgroundColor}
-          onChange={(v) => apply([{ kind: 'set-style', key: 'backgroundColor', value: v }])}
-          onClear={() => apply([{ kind: 'set-style', key: 'backgroundColor', value: null }])}
-          clearable
-        />
-      </Section>
-
-      {pinSnapshot.imageSrc !== null && (
-        <>
-          <Separator />
-          <Section title={t.inspector.imageSection}>
-            <ImageField src={pinSnapshot.imageSrc} anchor={pinSelected.anchor} />
-          </Section>
-        </>
-      )}
-
-      {pinSnapshot.placeholder && (
-        <>
-          <Separator />
-          <Section title={t.inspector.imagePlaceholderSection}>
-            <PlaceholderField
-              slideId={slideId}
-              hint={pinSnapshot.placeholder.hint}
-              line={pinSelected.line}
-              column={pinSelected.column}
-              applyEdit={applyEdit}
-            />
-          </Section>
-        </>
-      )}
-    </PanelShell>
+        )}
+      </PanelShell>
+    </Tabs>
   );
 }
-
-const EDITING_FREEZE_CSS = `
-[data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *),
-[data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *)::before,
-[data-inspector-editing] *:not([data-inspector-ui], [data-inspector-ui] *)::after {
-  animation-duration: 1ms !important;
-  animation-delay: 0s !important;
-  animation-iteration-count: 1 !important;
-  animation-fill-mode: forwards !important;
-  transition: none !important;
-  view-transition-name: none !important;
-  cursor: pointer !important;
-}
-`;
 
 const INLINE_CONTENT_STYLE_KEYS = new Set([
   'fontSize',
@@ -384,10 +476,12 @@ function stylePreviewFromOps(ops: Array<Extract<EditOp, { kind: 'set-style' }>>)
 function ContentField({
   snapshot,
   apply,
+  onFocus,
   onSelectionChange,
 }: {
   snapshot: ElementSnapshot;
   apply: (ops: EditOp[]) => void;
+  onFocus: () => void;
   onSelectionChange?: (selection: ContentSelection | null) => void;
 }) {
   // Mirror the value locally and skip syncs during IME composition;
@@ -409,6 +503,8 @@ function ContentField({
 
   return (
     <Textarea
+      aria-label={t.inspector.elementTextPlaceholder}
+      onFocus={onFocus}
       value={local}
       onCompositionStart={() => {
         composingRef.current = true;
@@ -446,28 +542,20 @@ function FontSizeField({
   snapshot: ElementSnapshot;
   apply: (ops: EditOp[]) => void;
 }) {
-  const set = (px: number) => {
-    apply([{ kind: 'set-style', key: 'fontSize', value: `${Math.round(px)}px` }]);
-  };
   const t = useLocale();
   return (
-    <Field label={t.inspector.sizeLabel}>
-      <Slider
-        min={8}
-        max={200}
-        step={1}
-        value={[snapshot.fontSize]}
-        onValueChange={(v) => set((Array.isArray(v) ? v[0] : v) ?? snapshot.fontSize)}
-        className="flex-1"
-      />
-      <NumberField
-        value={Math.round(snapshot.fontSize)}
-        onChange={set}
-        min={1}
-        max={400}
-        suffix="px"
-      />
-    </Field>
+    <NumberField
+      icon={ALargeSmall}
+      label={t.inspector.sizeLabel}
+      value={Math.round(snapshot.fontSize)}
+      onChange={(px) =>
+        apply([{ kind: 'set-style', key: 'fontSize', value: `${Math.round(px)}px` }])
+      }
+      min={1}
+      max={400}
+      suffix="px"
+      className="w-24"
+    />
   );
 }
 
@@ -492,33 +580,33 @@ function FontWeightField({
   const t = useLocale();
   const weightOptions = getWeightOptions(t);
   return (
-    <Field label={t.inspector.weightLabel}>
-      <Select
-        items={Object.fromEntries(weightOptions.map((opt) => [opt.value, opt.label]))}
-        value={String(snapshot.fontWeight)}
-        onValueChange={(value) => {
-          const n = Number(value);
-          apply([
-            {
-              kind: 'set-style',
-              key: 'fontWeight',
-              value: n === 400 ? null : value,
-            },
-          ]);
-        }}
+    <Select
+      items={Object.fromEntries(weightOptions.map((opt) => [opt.value, opt.label]))}
+      value={String(snapshot.fontWeight)}
+      onValueChange={(value) => {
+        apply([{ kind: 'set-style', key: 'fontWeight', value: String(Number(value)) }]);
+      }}
+    >
+      <SelectTrigger
+        size="sm"
+        className="min-w-0 flex-1 text-xs"
+        aria-label={t.inspector.weightLabel}
       >
-        <SelectTrigger size="sm" className="h-8 flex-1 text-xs">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
           {weightOptions.map((opt) => (
             <SelectItem key={opt.value} value={opt.value} className="text-xs">
               {opt.label}
+              <span aria-hidden className="ml-1.5 font-mono text-[10.5px] opacity-60">
+                {opt.value}
+              </span>
             </SelectItem>
           ))}
-        </SelectContent>
-      </Select>
-    </Field>
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -530,31 +618,50 @@ function StyleToggles({
   apply: (ops: EditOp[]) => void;
 }) {
   const t = useLocale();
+  const bold = snapshot.fontWeight >= 600;
+  const italic = snapshot.fontStyle === 'italic';
+  const value = [...(bold ? ['bold'] : []), ...(italic ? ['italic'] : [])];
   return (
-    <Field label={t.inspector.styleLabel}>
-      <Toggle
-        size="sm"
-        variant="outline"
-        pressed={snapshot.fontWeight >= 600}
-        onPressedChange={(v) =>
-          apply([{ kind: 'set-style', key: 'fontWeight', value: v ? '700' : null }])
+    <ToggleGroup
+      multiple
+      size="sm"
+      variant="outline"
+      value={value}
+      onValueChange={(next) => {
+        const ops: EditOp[] = [];
+        const nextBold = next.includes('bold');
+        const nextItalic = next.includes('italic');
+        if (nextBold !== bold) {
+          ops.push({ kind: 'set-style', key: 'fontWeight', value: nextBold ? '700' : '400' });
         }
+        if (nextItalic !== italic) {
+          ops.push({
+            kind: 'set-style',
+            key: 'fontStyle',
+            value: nextItalic ? 'italic' : 'normal',
+          });
+        }
+        if (ops.length > 0) apply(ops);
+      }}
+      aria-label={t.inspector.styleLabel}
+    >
+      <ToggleGroupItem
+        value="bold"
         aria-label={t.inspector.boldAria}
+        title={t.inspector.boldAria}
+        className="size-7 px-0"
       >
-        <Bold className="size-3.5" />
-      </Toggle>
-      <Toggle
-        size="sm"
-        variant="outline"
-        pressed={snapshot.fontStyle === 'italic'}
-        onPressedChange={(v) =>
-          apply([{ kind: 'set-style', key: 'fontStyle', value: v ? 'italic' : null }])
-        }
+        <Bold />
+      </ToggleGroupItem>
+      <ToggleGroupItem
+        value="italic"
         aria-label={t.inspector.italicAria}
+        title={t.inspector.italicAria}
+        className="size-7 px-0"
       >
-        <Italic className="size-3.5" />
-      </Toggle>
-    </Field>
+        <Italic />
+      </ToggleGroupItem>
+    </ToggleGroup>
   );
 }
 
@@ -565,23 +672,18 @@ function LineHeightField({
   snapshot: ElementSnapshot;
   apply: (ops: EditOp[]) => void;
 }) {
-  const v = snapshot.lineHeight ?? 1.4;
-  const set = (n: number) => {
-    apply([{ kind: 'set-style', key: 'lineHeight', value: String(round2(n)) }]);
-  };
   const t = useLocale();
   return (
-    <Field label={t.inspector.lineHeightLabel}>
-      <Slider
-        min={0.8}
-        max={3}
-        step={0.05}
-        value={[v]}
-        onValueChange={(next) => set((Array.isArray(next) ? next[0] : next) ?? v)}
-        className="flex-1"
-      />
-      <NumberField value={round2(v)} onChange={set} step={0.05} min={0.5} max={5} />
-    </Field>
+    <NumberField
+      icon={UnfoldVertical}
+      label={t.inspector.lineHeightLabel}
+      value={round2(snapshot.lineHeight ?? 1.4)}
+      onChange={(n) => apply([{ kind: 'set-style', key: 'lineHeight', value: String(round2(n)) }])}
+      step={0.05}
+      min={0.5}
+      max={5}
+      className="basis-0 grow"
+    />
   );
 }
 
@@ -592,37 +694,23 @@ function LetterSpacingField({
   snapshot: ElementSnapshot;
   apply: (ops: EditOp[]) => void;
 }) {
-  const set = (n: number) => {
-    apply([
-      {
-        kind: 'set-style',
-        key: 'letterSpacing',
-        value: n === 0 ? null : `${round2(n)}px`,
-      },
-    ]);
-  };
   const t = useLocale();
   return (
-    <Field label={t.inspector.trackingLabel}>
-      <Slider
-        min={-5}
-        max={20}
-        step={0.1}
-        value={[snapshot.letterSpacing]}
-        onValueChange={(next) =>
-          set((Array.isArray(next) ? next[0] : next) ?? snapshot.letterSpacing)
-        }
-        className="flex-1"
-      />
-      <NumberField
-        value={round2(snapshot.letterSpacing)}
-        onChange={set}
-        step={0.1}
-        min={-20}
-        max={50}
-        suffix="px"
-      />
-    </Field>
+    <NumberField
+      icon={MoveHorizontal}
+      label={t.inspector.trackingLabel}
+      value={round2(snapshot.letterSpacing)}
+      onChange={(n) =>
+        apply([
+          { kind: 'set-style', key: 'letterSpacing', value: n === 0 ? null : `${round2(n)}px` },
+        ])
+      }
+      step={0.1}
+      min={-20}
+      max={50}
+      suffix="px"
+      className="basis-0 grow"
+    />
   );
 }
 
@@ -642,104 +730,23 @@ function TextAlignField({
 }) {
   const t = useLocale();
   return (
-    <Field label={t.inspector.alignLabel}>
-      <ToggleGroup
-        size="sm"
-        variant="outline"
-        value={[snapshot.textAlign]}
-        onValueChange={(value) => {
-          const next = value[0];
-          if (!next) return;
-          apply([
-            {
-              kind: 'set-style',
-              key: 'textAlign',
-              value: next === 'left' ? null : next,
-            },
-          ]);
-        }}
-      >
-        {ALIGN_OPTIONS.map(({ v, icon: Icon }) => (
-          <ToggleGroupItem key={v} value={v} aria-label={v} className="size-8">
-            <Icon className="size-3.5" />
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
-    </Field>
-  );
-}
-
-function ColorField({
-  label,
-  value,
-  dim,
-  onChange,
-  onClear,
-  clearable,
-}: {
-  label: string;
-  value: string;
-  dim?: boolean;
-  onChange: (v: string) => void;
-  onClear?: () => void;
-  clearable: boolean;
-}) {
-  // Buffer the text input so intermediate hex like "#a" doesn't
-  // commit until it parses as a full color.
-  const [draft, setDraft] = useState(value);
-  const tColor = useLocale();
-  useEffect(() => setDraft(value), [value]);
-
-  const commitHex = (hex: string) => {
-    if (/^#[0-9a-fA-F]{6}$/.test(hex)) onChange(hex);
-  };
-
-  return (
-    <Field label={label}>
-      <label className="relative inline-flex size-8 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border bg-background shadow-xs transition-[border-color,scale] duration-150 hover:border-foreground/20 active:scale-[0.96] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring/40">
-        <span
-          className="size-5 rounded-sm"
-          style={{
-            backgroundColor: dim ? 'transparent' : value,
-            backgroundImage: dim
-              ? 'linear-gradient(45deg, #d4d4d4 25%, transparent 25%, transparent 75%, #d4d4d4 75%), linear-gradient(45deg, #d4d4d4 25%, transparent 25%, transparent 75%, #d4d4d4 75%)'
-              : undefined,
-            backgroundSize: dim ? '8px 8px' : undefined,
-            backgroundPosition: dim ? '0 0, 4px 4px' : undefined,
-          }}
-        />
-        <input
-          type="color"
-          value={value}
-          onChange={(e) => {
-            setDraft(e.target.value);
-            onChange(e.target.value);
-          }}
-          className="absolute inset-0 cursor-pointer opacity-0"
-        />
-      </label>
-      <Input
-        type="text"
-        value={draft}
-        onChange={(e) => {
-          setDraft(e.target.value);
-          commitHex(e.target.value);
-        }}
-        className="nums h-8 flex-1 font-mono text-[11px] uppercase"
-        spellCheck={false}
-      />
-      {clearable && onClear && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-8 text-muted-foreground hover:text-foreground"
-          onClick={onClear}
-          aria-label={tColor.inspector.clearAria}
-        >
-          <X className="size-3.5" />
-        </Button>
-      )}
-    </Field>
+    <ToggleGroup
+      size="sm"
+      variant="outline"
+      value={[snapshot.textAlign]}
+      onValueChange={(value) => {
+        const next = value[0];
+        if (!next) return;
+        apply([{ kind: 'set-style', key: 'textAlign', value: next === 'left' ? null : next }]);
+      }}
+      aria-label={t.inspector.alignLabel}
+    >
+      {ALIGN_OPTIONS.map(({ v, icon: Icon }) => (
+        <ToggleGroupItem key={v} value={v} aria-label={v} title={v} className="size-7 px-0">
+          <Icon />
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
   );
 }
 
@@ -748,7 +755,7 @@ function ImageField({ src, anchor }: { src: string; anchor: HTMLElement }) {
   const { openCrop, openReplace } = useInspector();
   const isImage = anchor.tagName === 'IMG';
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-2">
       <div className="flex items-center gap-3">
         <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:8px_8px]">
           <img
@@ -807,7 +814,7 @@ function PlaceholderField({
   const [submitting, setSubmitting] = useState(false);
   const t = useLocale();
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-2">
       <p className="text-[11px] leading-relaxed text-muted-foreground">
         {t.inspector.placeholderHintLabel}{' '}
         <span className="font-medium text-foreground">{hint}</span>
@@ -916,6 +923,8 @@ function CommentsSection({
       const ta = wrapRef.current?.querySelector('textarea');
       if (!ta) return;
       e.preventDefault();
+      const details = ta.closest('details');
+      if (details) details.open = true;
       ta.focus({ preventScroll: true });
     };
     window.addEventListener('keydown', onKey);
@@ -935,38 +944,42 @@ function CommentsSection({
   };
 
   return (
-    <Section title={t.inspector.leaveComment}>
-      <div className="flex flex-col gap-2">
-        <div ref={wrapRef} className={cn('rounded-[6px]', showCue && 'comment-cue')}>
-          <Textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault();
-                submit();
-              }
-            }}
-            placeholder={t.inspector.commentPlaceholder}
-            className="min-h-16 resize-none text-[12px]"
-          />
-        </div>
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-mono text-[10.5px] text-muted-foreground/70">
-            {t.inspector.commentShortcutHint}
-          </span>
-          <Button size="sm" variant="brand" disabled={submitting || !draft.trim()} onClick={submit}>
-            {t.inspector.addComment}
-          </Button>
-        </div>
+    <>
+      <div ref={wrapRef} className={cn('rounded-[6px]', showCue && 'comment-cue')}>
+        <Textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              submit();
+            }
+          }}
+          placeholder={t.inspector.commentPlaceholder}
+          className="min-h-16 resize-none text-[12px]"
+        />
       </div>
-    </Section>
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-mono text-[10.5px] text-muted-foreground/70">
+          {t.inspector.commentShortcutHint}
+        </span>
+        <Button size="sm" variant="brand" disabled={submitting || !draft.trim()} onClick={submit}>
+          {t.inspector.addComment}
+        </Button>
+      </div>
+    </>
   );
 }
 
 function readSnapshot(el: HTMLElement): ElementSnapshot {
   const cs = getComputedStyle(el);
-  const text = hasOnlyInlineTextChildren(el) ? readEditableText(el) : null;
+  const text =
+    el.tagName !== 'IMG' &&
+    el.dataset.slidePlaceholder === undefined &&
+    hasOnlyInlineTextChildren(el) &&
+    (el.textContent?.trim() || /^(H[1-6]|P|SPAN|LABEL|BLOCKQUOTE|LI|PRE|CODE)$/.test(el.tagName))
+      ? readEditableText(el)
+      : null;
   const imageSrc =
     el.tagName === 'IMG'
       ? (el as HTMLImageElement).currentSrc || (el as HTMLImageElement).src || null
@@ -982,10 +995,7 @@ function readSnapshot(el: HTMLElement): ElementSnapshot {
       : null;
 
   return {
-    fontSize: parseFloat(cs.fontSize) || 16,
-    fontWeight: parseInt(cs.fontWeight, 10) || 400,
-    fontStyle: cs.fontStyle === 'italic' ? 'italic' : 'normal',
-    color: rgbToHex(cs.color) ?? '#000000',
+    ...readTypography(el),
     backgroundColor: isTransparent(cs.backgroundColor) ? null : rgbToHex(cs.backgroundColor),
     textAlign: normalizeTextAlign(cs.textAlign),
     lineHeight: parseLineHeight(cs.lineHeight, parseFloat(cs.fontSize) || 16),
@@ -993,6 +1003,16 @@ function readSnapshot(el: HTMLElement): ElementSnapshot {
     text,
     imageSrc,
     placeholder,
+  };
+}
+
+function readTypography(el: HTMLElement) {
+  const cs = getComputedStyle(el);
+  return {
+    fontSize: parseFloat(cs.fontSize) || 16,
+    fontWeight: parseInt(cs.fontWeight, 10) || 400,
+    fontStyle: cs.fontStyle === 'italic' ? ('italic' as const) : ('normal' as const),
+    color: rgbToHex(cs.color) ?? '#000000',
   };
 }
 
@@ -1069,19 +1089,6 @@ function parseLetterSpacing(value: string): number {
   if (!value || value === 'normal') return 0;
   const n = parseFloat(value);
   return Number.isFinite(n) ? round2(n) : 0;
-}
-
-function findElementByLine(slideId: string, line: number, column: number): HTMLElement | null {
-  const root = document.querySelector('[data-inspector-root]');
-  if (!root) return null;
-  const tagged = root.querySelector<HTMLElement>(`[data-slide-loc="${line}:${column}"]`);
-  if (tagged) return tagged;
-  const candidates = root.querySelectorAll<HTMLElement>('*');
-  for (const el of candidates) {
-    const hit = findSlideSource(el, slideId, { hostOnly: true });
-    if (hit && hit.line === line) return hit.anchor;
-  }
-  return null;
 }
 
 function useReloadCounter(): number {

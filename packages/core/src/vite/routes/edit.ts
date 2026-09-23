@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import type { ViteDevServer } from 'vite';
+import { applyEditBatch, type BatchEdit } from '../../editing/batch-edit.ts';
 import { applyEdit, type EditOp } from '../../editing/edit-ops.ts';
 import { applyRevertAsset } from '../../editing/revert-asset.ts';
 import { validateMutationRequest } from '../../http/request-guard.ts';
@@ -24,7 +25,7 @@ type EditBody = {
 
 type EditBatchBody = {
   slideId?: string;
-  edits?: Array<{ line?: number; column?: number; ops?: EditOp[] }>;
+  edits?: BatchEdit[];
 };
 
 export function registerEditRoutes(server: ViteDevServer, ctx: ApiContext): void {
@@ -90,24 +91,9 @@ export function registerEditRoutes(server: ViteDevServer, ctx: ApiContext): void
         const source = await readSlideSource(file);
         if (source === null) return json(res, 404, { error: 'slide not found' });
 
-        let next = source;
-        const original = source;
-        const results: Array<{ ok: boolean; error?: string }> = [];
-        for (const edit of body.edits) {
-          if (!edit.line || edit.line < 1 || !Array.isArray(edit.ops)) {
-            results.push({ ok: false, error: 'invalid edit' });
-            continue;
-          }
-          const r = applyEdit(next, edit.line, edit.column ?? 0, edit.ops);
-          if (r.ok) {
-            next = r.source;
-            results.push({ ok: true });
-          } else {
-            results.push({ ok: false, error: r.error });
-          }
-        }
-        const changed = next !== original;
-        if (changed) await fs.writeFile(file, next, 'utf8');
+        const { source: updated, results } = applyEditBatch(source, body.edits);
+        const changed = updated !== source;
+        if (changed) await fs.writeFile(file, updated, 'utf8');
         return json(res, 200, { ok: true, changed, results });
       }
 

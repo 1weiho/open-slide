@@ -161,7 +161,8 @@ test.describe('editable PPTX UI', () => {
 
     await page.getByRole('button', { name: 'Download' }).click();
     for (const label of labels) {
-      await expect(page.getByRole('menuitem', { name: label })).toBeVisible();
+      await expect(page.getByRole('menuitem', { name: label, exact: true })).toHaveCount(1);
+      await expect(page.getByRole('menuitem', { name: label, exact: true })).toBeVisible();
     }
     await page.keyboard.press('Escape');
 
@@ -169,7 +170,8 @@ test.describe('editable PPTX UI', () => {
     const input = page.getByPlaceholder('Search this deck or run a command');
     await input.fill('export');
     for (const label of labels) {
-      await expect(page.getByRole('option', { name: label })).toBeVisible();
+      await expect(page.getByRole('option', { name: label, exact: true })).toHaveCount(1);
+      await expect(page.getByRole('option', { name: label, exact: true })).toBeVisible();
     }
   });
 

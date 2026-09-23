@@ -116,6 +116,7 @@ export type Locale = {
     exportAsImagePptx: string;
     exportAsPptx: string;
     pdfExportFailed: string;
+    pptxExportFailed: string;
     imagePptxExportFailed: string;
     pdfExportSafariUnsupported: string;
     present: string;
@@ -199,6 +200,51 @@ export type Locale = {
   };
 
   inspector: {
+    format: string;
+    editMode: string;
+    previewMode: string;
+    closeFormatPanel: string;
+    editText: string;
+    emptySelectionTitle: string;
+    emptySelectionHint: string;
+    textSelectionHint: string;
+    elementText: string;
+    elementImage: string;
+    elementShape: string;
+    sourceSection: string;
+    rotateHandle: string;
+    resizeHandle: string;
+    arrangeSection: string;
+    selectionCount: string;
+    positionLabel: string;
+    positionX: string;
+    positionY: string;
+    widthLabel: string;
+    heightLabel: string;
+    rotationLabel: string;
+    alignToLabel: string;
+    alignToSelection: string;
+    alignToSlide: string;
+    alignLeft: string;
+    alignCenter: string;
+    alignRight: string;
+    alignTop: string;
+    alignMiddle: string;
+    alignBottom: string;
+    distributeLabel: string;
+    distributeHorizontal: string;
+    distributeVertical: string;
+    layerLabel: string;
+    bringToFront: string;
+    bringForward: string;
+    sendBackward: string;
+    sendToBack: string;
+    smartGuides: string;
+    selectParent: string;
+    visualEditorHint: string;
+    sharedLayoutHint: string;
+    inlineLayoutHint: string;
+    layerLayoutHint: string;
     inspect: string;
     deselect: string;
     agentWatching: string;
@@ -324,6 +370,7 @@ export type Locale = {
     noMatchingAssetsHint: string;
     clearFilters: string;
     searchLogos: string;
+    searchFonts: string;
     upload: string;
     dropToUpload: string;
     loading: string;
@@ -369,6 +416,19 @@ export type Locale = {
     logoSearchEmptyHintSuffix: string;
     logoVariantLight: string;
     logoVariantDark: string;
+    fontSearchTitle: string;
+    fontSearchPoweredByPrefix: string;
+    fontSearchPlaceholder: string;
+    fontSearchPreviewPlaceholder: string;
+    fontSearchErrorTitle: string;
+    fontSearchErrorBody: string;
+    /** template: 'No fonts for "{query}"' */
+    fontSearchNoResults: string;
+    fontSearchEmpty: string;
+    fontSearchEmptyHintPrefix: string;
+    fontSearchEmptyHintSuffix: string;
+    fontWeightLabel: string;
+    fontPreviewSample: string;
     /** template: "Upload failed ({status})" */
     toastUploadFailed: string;
     /** template: "Replaced {name}" */
@@ -386,6 +446,7 @@ export type Locale = {
     /** template: "Deleted {name}" */
     toastDeleted: string;
     toastDownloadFailed: string;
+    toastFontDownloadFailed: string;
     toastSearchFailed: string;
   };
 
