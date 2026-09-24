@@ -32,13 +32,13 @@ export const faqs: QA[] = [
 
 export function FAQ() {
   return (
-    <section id="faq" className="border-t border-[color:var(--color-rule-soft)]">
-      <Container className="py-20 sm:py-28">
-        <SectionHeading title="Questions, answered." />
+    <section id="faq">
+      <Container className="pb-24 sm:pb-32">
+        <SectionHeading eyebrow="FAQ" title="Questions, answered." />
 
         <dl
           data-reveal
-          className="max-w-[760px] divide-y divide-[color:var(--color-rule-soft)] border-y border-[color:var(--color-rule-soft)]"
+          className="mx-auto max-w-[760px] divide-y divide-[color:var(--color-rule-soft)] border-y border-[color:var(--color-rule-soft)]"
         >
           {faqs.map((item, idx) => (
             <FaqItem key={item.q} item={item} index={idx} />

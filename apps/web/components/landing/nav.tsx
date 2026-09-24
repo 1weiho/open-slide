@@ -3,12 +3,16 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import posthog from 'posthog-js';
+import { ButtonLink } from './button';
 import { ThemeToggle } from './theme-toggle';
+
+const linkClass =
+  'rounded-full px-3 py-1.5 text-[13.5px] font-medium text-[color:var(--color-text-soft)] transition-colors hover:bg-[color:var(--color-panel-hi)] hover:text-[color:var(--color-text)]';
 
 export function Nav({ githubStars }: { githubStars?: string | null }) {
   return (
     <header className="sticky top-0 z-40 border-b border-[color:var(--color-rule-soft)] bg-[color:var(--color-ink)]/80 backdrop-blur-md">
-      <div className="mx-auto flex h-14 w-full max-w-[1200px] items-center justify-between px-6 sm:px-8">
+      <div className="relative mx-auto flex h-[60px] w-full max-w-[1200px] items-center justify-between px-6 sm:px-8">
         <Link
           href="/"
           className="flex items-center gap-2.5 text-[14px] font-medium tracking-[-0.01em]"
@@ -24,11 +28,8 @@ export function Nav({ githubStars }: { githubStars?: string | null }) {
           <span className="text-[color:var(--color-text)]">open-slide</span>
         </Link>
 
-        <nav className="flex items-center gap-5 text-[14px] font-medium">
-          <Link
-            href="/docs"
-            className="hidden text-[color:var(--color-muted)] transition-colors hover:text-[color:var(--color-text)] md:inline"
-          >
+        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-0.5 md:flex">
+          <Link href="/docs" className={linkClass}>
             Docs
           </Link>
           <a
@@ -36,7 +37,7 @@ export function Nav({ githubStars }: { githubStars?: string | null }) {
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => posthog.capture('nav_external_link_clicked', { label: 'demo' })}
-            className="hidden text-[color:var(--color-muted)] transition-colors hover:text-[color:var(--color-text)] md:inline"
+            className={linkClass}
           >
             Demo
           </a>
@@ -45,26 +46,24 @@ export function Nav({ githubStars }: { githubStars?: string | null }) {
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => posthog.capture('nav_external_link_clicked', { label: 'github' })}
-            className="hidden items-center gap-1.5 text-[color:var(--color-muted)] transition-colors hover:text-[color:var(--color-text)] md:inline-flex"
+            className={`${linkClass} inline-flex items-center gap-2`}
           >
             <span>GitHub</span>
             {githubStars ? (
               <span
                 aria-label={`${githubStars} GitHub stars`}
-                className="font-[family-name:var(--font-mono)] text-[11px] text-[color:var(--color-dim)]"
+                className="font-[family-name:var(--font-mono)] text-[11px] text-[color:var(--color-muted)]"
               >
                 ★ {githubStars}
               </span>
             ) : null}
           </a>
-          <ThemeToggle />
-          <Link
-            href="/docs"
-            className="pressable hidden h-8 items-center rounded-full bg-[color:var(--color-text)] px-3.5 text-[13px] font-medium text-[color:var(--color-ink)] hover:opacity-80 sm:inline-flex"
-          >
-            Get started
-          </Link>
         </nav>
+
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <ButtonLink href="/docs">Get started</ButtonLink>
+        </div>
       </div>
     </header>
   );

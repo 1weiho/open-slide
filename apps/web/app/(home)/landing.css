@@ -16,6 +16,9 @@
 
   --shadow-edge: 0 0 0 0.5px oklch(0 0 0 / 0.06), 0 1px 0 oklch(0 0 0 / 0.025);
   --shadow-floating: 0 1px 2px oklch(0 0 0 / 0.04), 0 8px 24px -8px oklch(0 0 0 / 0.1);
+  --shadow-lift:
+    0 1px 2px oklch(0 0 0 / 0.04), 0 12px 32px -12px oklch(0 0 0 / 0.12),
+    0 32px 64px -24px oklch(0 0 0 / 0.14);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -35,7 +38,7 @@
 html.dark .os-landing {
   --color-ink: oklch(0.145 0 0);
   --color-panel: oklch(0.165 0 0);
-  --color-panel-hi: oklch(0.21 0 0);
+  --color-panel-hi: oklch(0.2 0 0);
   --color-rule: oklch(1 0 0 / 0.1);
   --color-rule-soft: oklch(1 0 0 / 0.06);
   --color-text: oklch(0.93 0 0);
@@ -50,6 +53,7 @@ html.dark .os-landing {
 
   --shadow-edge: 0 0 0 0.5px oklch(0 0 0 / 0.2);
   --shadow-floating: 0 1px 2px oklch(0 0 0 / 0.3), 0 8px 24px -8px oklch(0 0 0 / 0.5);
+  --shadow-lift: 0 1px 2px oklch(0 0 0 / 0.4), 0 24px 64px -24px oklch(0 0 0 / 0.7);
 }
 
 .os-landing ::selection {
@@ -64,6 +68,14 @@ html.dark .os-landing {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-muted);
+}
+
+.os-landing .eyebrow {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--color-accent);
 }
 
 .os-landing .floating {
@@ -93,8 +105,6 @@ html.dark .os-landing {
   opacity: 0;
   transform: translateY(12px);
 }
-/* Cells inside seamed grids (gap-px over the rule color) fade in place —
-   translating them would smear the hairline seams. */
 .os-landing [data-reveal="fade"].reveal-hidden {
   transform: none;
 }

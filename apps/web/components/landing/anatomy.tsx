@@ -1,7 +1,6 @@
 'use client';
 
-import { type CSSProperties, useEffect, useState } from 'react';
-import { Container, SectionHeading } from './frame';
+import { useEffect, useState } from 'react';
 
 type Variant = {
   word: string;
@@ -56,7 +55,7 @@ function buildCode({ accent, word, subtitle }: Variant): string[] {
 
 const CHANGING_LINES = new Set([2, 3, 4]);
 
-export function Anatomy() {
+export function AnatomyVisual() {
   const [i, setI] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setI((v) => (v + 1) % variants.length), CYCLE_MS);
@@ -67,76 +66,61 @@ export function Anatomy() {
   const lines = buildCode(v);
 
   return (
-    <section id="anatomy" className="border-t border-[color:var(--color-rule-soft)]">
-      <Container className="py-20 sm:py-28">
-        <SectionHeading
-          title="A slide is a file. Just React, nothing else."
-          lead="No DSL, no template language. Each page is a React component on a fixed 1920×1080 canvas, so anything you can write in code, you can put on a slide."
-        />
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-          {/* code pane */}
-          <div data-reveal className="lg:col-span-7">
-            <div className="relative overflow-hidden rounded-xl border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]">
-              <div className="flex items-center justify-between px-4 sm:px-5 h-10 sm:h-11 border-b border-[color:var(--color-rule-soft)] font-[family-name:var(--font-mono)] text-[12px] text-[color:var(--color-muted)]">
-                <div className="flex items-center gap-3">
-                  <span
-                    className="h-2.5 w-2.5 rounded-full transition-colors duration-500"
-                    style={{ background: v.accent }}
-                  />
-                  <span>slides/hello/index.tsx</span>
-                </div>
-                <span className="tracking-[0.08em] uppercase">tsx · {lines.length} lines</span>
-              </div>
-              <pre className="p-4 sm:p-6 text-[12px] sm:text-[13.5px] leading-[1.65] sm:leading-[1.75] overflow-x-auto font-[family-name:var(--font-mono)]">
-                <code>
-                  {lines.map((line, idx) => {
-                    const changing = CHANGING_LINES.has(idx);
-                    return (
-                      <div
-                        key={changing ? `${idx}-${i}` : idx}
-                        className={`-mx-2 px-2 rounded-[3px] ${changing ? 'code-pulse' : ''}`}
-                        // highlight output is escaped + whitelisted spans — safe markup
-                        dangerouslySetInnerHTML={{
-                          __html: highlight(line) || '&nbsp;',
-                        }}
-                      />
-                    );
-                  })}
-                </code>
-              </pre>
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+      <div className="lg:col-span-7">
+        <div className="relative overflow-hidden rounded-xl border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]">
+          <div className="flex h-10 items-center justify-between border-b border-[color:var(--color-rule-soft)] px-4 font-[family-name:var(--font-mono)] text-[12px] text-[color:var(--color-muted)] sm:h-11 sm:px-5">
+            <div className="flex items-center gap-3">
+              <span
+                className="h-2.5 w-2.5 rounded-full transition-colors duration-500"
+                style={{ background: v.accent }}
+              />
+              <span>slides/hello/index.tsx</span>
             </div>
+            <span className="tracking-[0.08em] uppercase">tsx · {lines.length} lines</span>
+          </div>
+          <pre className="overflow-x-auto p-4 font-[family-name:var(--font-mono)] text-[12px] leading-[1.65] sm:p-6 sm:text-[13.5px] sm:leading-[1.75]">
+            <code>
+              {lines.map((line, idx) => {
+                const changing = CHANGING_LINES.has(idx);
+                return (
+                  <div
+                    key={changing ? `${idx}-${i}` : idx}
+                    className={`-mx-2 rounded-[3px] px-2 ${changing ? 'code-pulse' : ''}`}
+                    // highlight output is escaped + whitelisted spans — safe markup
+                    dangerouslySetInnerHTML={{
+                      __html: highlight(line) || '&nbsp;',
+                    }}
+                  />
+                );
+              })}
+            </code>
+          </pre>
+        </div>
+      </div>
+
+      <div className="lg:col-span-5">
+        <div className="relative flex h-full flex-col rounded-xl border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-4 sm:p-5">
+          <div className="mb-4 flex items-center justify-between font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.08em] text-[color:var(--color-muted)]">
+            <span>rendered output</span>
+            <span className="flex items-center gap-2">
+              <span
+                className="h-1.5 w-1.5 rounded-full transition-colors duration-500"
+                style={{ background: v.accent }}
+              />
+              live
+            </span>
           </div>
 
-          {/* preview pane */}
           <div
-            data-reveal
-            style={{ '--reveal-delay': '120ms' } as CSSProperties}
-            className="lg:col-span-5"
+            className="relative my-auto overflow-hidden rounded-[6px] border border-[color:var(--color-rule)]"
+            style={{ aspectRatio: '16 / 9', containerType: 'inline-size' }}
           >
-            <div className="relative rounded-xl border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-4 sm:p-5">
-              <div className="flex items-center justify-between font-[family-name:var(--font-mono)] text-[11px] tracking-[0.08em] uppercase text-[color:var(--color-muted)] mb-4">
-                <span>rendered output</span>
-                <span className="flex items-center gap-2">
-                  <span
-                    className="h-1.5 w-1.5 rounded-full transition-colors duration-500"
-                    style={{ background: v.accent }}
-                  />
-                  live
-                </span>
-              </div>
-
-              <div
-                className="relative rounded-[6px] overflow-hidden border border-[color:var(--color-rule)]"
-                style={{ aspectRatio: '16 / 9', containerType: 'inline-size' }}
-              >
-                <SlidePreview variant={v} index={i} />
-              </div>
-            </div>
+            <SlidePreview variant={v} index={i} />
           </div>
         </div>
-      </Container>
-    </section>
+      </div>
+    </div>
   );
 }
 

@@ -4,8 +4,8 @@ import { VercelOssBadge } from './vercel-oss-badge';
 
 export function Footer() {
   return (
-    <footer className="border-t border-[color:var(--color-rule)]">
-      <Container className="grid grid-cols-12 gap-x-6 gap-y-10 py-12 sm:py-16">
+    <footer className="border-t border-[color:var(--color-rule-soft)]">
+      <Container className="grid grid-cols-12 gap-x-6 gap-y-10 py-14 sm:py-16">
         <div className="col-span-12 flex flex-col gap-4 lg:col-span-6">
           <div className="flex items-center gap-2.5 text-[14px] font-medium">
             <Image
@@ -28,6 +28,7 @@ export function Footer() {
           title="Product"
           links={[
             ['Live demo', '#demo'],
+            ['Features', '#features'],
             ['Docs', '/docs'],
             ['FAQ', '#faq'],
           ]}

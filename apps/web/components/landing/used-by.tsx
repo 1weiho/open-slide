@@ -30,27 +30,27 @@ const thread: Tweet[] = [
 
 export function UsedBy() {
   return (
-    <section id="used-by" className="border-t border-[color:var(--color-rule-soft)]">
-      <Container className="py-20 sm:py-28">
-        <SectionHeading title="Used by people who create engaging slides." />
+    <section id="used-by">
+      <Container className="pb-24 sm:pb-32">
+        <SectionHeading eyebrow="In the wild" title="Used by people who create engaging slides." />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <a
             data-reveal
             href={tweetUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="group relative block rounded-xl border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-6 transition-colors duration-300 hover:border-[color:var(--color-dim)] sm:p-7"
+            className="group relative flex flex-col justify-center rounded-2xl border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-6 transition-colors duration-300 hover:border-[color:var(--color-dim)] sm:p-8"
           >
-            <XGlyph className="absolute right-6 top-6 sm:right-7 sm:top-7 size-4 text-[color:var(--color-dim)] transition-colors group-hover:text-[color:var(--color-text)]" />
+            <XGlyph className="absolute right-6 top-6 size-4 text-[color:var(--color-dim)] transition-colors group-hover:text-[color:var(--color-text)] sm:right-7 sm:top-7" />
 
             <div className="relative flex flex-col">
               <span
                 aria-hidden
-                className="absolute left-5 top-5 bottom-5 w-px -translate-x-1/2 bg-[color:var(--color-rule)]"
+                className="absolute bottom-5 left-5 top-5 w-px -translate-x-1/2 bg-[color:var(--color-rule)]"
               />
               {thread.map((t) => (
-                <div key={t.handle} className="relative flex gap-3 pb-5 last:pb-0">
+                <div key={t.handle} className="relative flex gap-3.5 pb-6 last:pb-0">
                   <img
                     src={t.avatar}
                     alt=""
@@ -65,7 +65,7 @@ export function UsedBy() {
                         {t.handle}
                       </span>
                     </div>
-                    <p className="text-[16px] leading-[1.5] text-[color:var(--color-text-soft)]">
+                    <p className="text-[17px] leading-[1.5] text-[color:var(--color-text-soft)]">
                       {t.body}
                     </p>
                   </div>
@@ -77,7 +77,7 @@ export function UsedBy() {
           <figure
             data-reveal
             style={{ '--reveal-delay': '120ms' } as CSSProperties}
-            className="m-0 overflow-hidden rounded-xl border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]"
+            className="m-0 overflow-hidden rounded-2xl border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]"
           >
             <VideoPlayer />
             <figcaption className="flex items-center gap-3.5 border-t border-[color:var(--color-rule-soft)] px-6 py-5">

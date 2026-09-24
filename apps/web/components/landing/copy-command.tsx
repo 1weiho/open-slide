@@ -1,49 +1,62 @@
 'use client';
 
 import posthog from 'posthog-js';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { writeToClipboard } from './clipboard';
 
-export function CopyCommand({ command }: { command: string }) {
+const sizes = {
+  md: 'h-9 pl-3.5 pr-2.5 text-[12.5px]',
+  lg: 'h-11 pl-4 pr-3 text-[13.5px]',
+} as const;
+
+export function CopyCommand({
+  command,
+  location,
+  size = 'md',
+}: {
+  command: string;
+  location: string;
+  size?: keyof typeof sizes;
+}) {
   const [copied, setCopied] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  useEffect(() => () => clearTimeout(timer.current), []);
 
   const onCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(command);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-      posthog.capture('command_copied', { command });
-    } catch {
-      /* ignore */
-    }
+    if (!(await writeToClipboard(command))) return;
+    clearTimeout(timer.current);
+    setCopied(true);
+    timer.current = setTimeout(() => setCopied(false), 1500);
+    posthog.capture('command_copied', { command, location });
   };
-
-  const height = 'h-12 sm:h-[52px]';
-  const pad = 'px-4 sm:px-5';
-  const text = 'text-[13px] sm:text-[14px]';
 
   return (
     <button
       type="button"
       onClick={onCopy}
-      className={`group pressable relative inline-flex items-center gap-3 ${height} ${pad} rounded-lg border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] text-[color:var(--color-text)] font-[family-name:var(--font-mono)] ${text} hover:border-[color:var(--color-dim)]`}
+      aria-label={`Copy ${command}`}
+      className={`group pressable inline-flex max-w-full items-center gap-2.5 rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] font-[family-name:var(--font-mono)] text-[color:var(--color-text)] hover:border-[color:var(--color-dim)] ${sizes[size]}`}
     >
       <span aria-hidden className="text-[color:var(--color-accent)]">
         $
       </span>
-      <span className="tracking-[-0.01em]">{command}</span>
+      <span className="truncate tracking-[-0.01em]">{command}</span>
       <span
         aria-hidden
-        className="ml-1 inline-flex items-center gap-1.5 text-[color:var(--color-muted)] transition-colors group-hover:text-[color:var(--color-text)]"
+        className="ml-0.5 inline-flex size-6 items-center justify-center rounded-full text-[color:var(--color-muted)] transition-colors group-hover:bg-[color:var(--color-panel-hi)] group-hover:text-[color:var(--color-text)]"
       >
-        <span className="h-4 w-px bg-[color:var(--color-rule)]" />
-        <span className="relative inline-flex h-[14px] w-[14px] items-center justify-center">
+        <span className="relative inline-flex size-[14px] items-center justify-center">
           <CopyGlyph
-            className={`absolute inset-0 transition-opacity duration-200 ${copied ? 'opacity-0' : 'opacity-100'}`}
+            className={`absolute inset-0 transition-all duration-200 ${copied ? 'scale-75 opacity-0' : 'scale-100 opacity-100'}`}
           />
           <CheckGlyph
-            className={`absolute inset-0 text-[color:var(--color-mint)] transition-opacity duration-200 ${copied ? 'opacity-100' : 'opacity-0'}`}
+            className={`absolute inset-0 text-[color:var(--color-mint)] transition-all duration-200 ${copied ? 'scale-100 opacity-100' : 'scale-75 opacity-0'}`}
           />
         </span>
+      </span>
+      <span className="sr-only" aria-live="polite">
+        {copied ? 'Copied' : ''}
       </span>
     </button>
   );
@@ -52,11 +65,11 @@ export function CopyCommand({ command }: { command: string }) {
 function CopyGlyph({ className }: { className?: string }) {
   return (
     <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" className={className}>
-      <rect x="7" y="7" width="12" height="13" rx="2" stroke="currentColor" strokeWidth="1.5" />
+      <rect x="7" y="7" width="12" height="13" rx="2" stroke="currentColor" strokeWidth="1.6" />
       <path
         d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"
         stroke="currentColor"
-        strokeWidth="1.5"
+        strokeWidth="1.6"
         strokeLinecap="round"
       />
     </svg>

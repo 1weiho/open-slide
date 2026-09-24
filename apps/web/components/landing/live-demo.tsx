@@ -5,6 +5,9 @@ import { useState } from 'react';
 import { Container } from './frame';
 import { InlineSlidePlayer, inlineSlideCount } from './inline-slide-player';
 
+const navButtonClass =
+  'pressable inline-flex size-8 items-center justify-center rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] text-[color:var(--color-text-soft)] hover:border-[color:var(--color-dim)] hover:text-[color:var(--color-text)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-[color:var(--color-rule)] disabled:hover:text-[color:var(--color-text-soft)]';
+
 export function LiveDemo() {
   const [index, setIndex] = useState(0);
   const count = inlineSlideCount;
@@ -31,26 +34,26 @@ export function LiveDemo() {
   };
 
   return (
-    <section id="demo" aria-labelledby="demo-heading">
-      <Container className="pb-20 sm:pb-28">
+    <div id="demo" aria-labelledby="demo-heading">
+      <Container className="pt-14 pb-8 sm:pt-16 sm:pb-12">
         <h2 id="demo-heading" className="sr-only">
           Live demo
         </h2>
         <div
           data-reveal
-          className="relative block w-full overflow-hidden rounded-xl border border-[color:var(--color-rule)] bg-black"
+          className="relative block w-full overflow-hidden rounded-2xl border border-[color:var(--color-rule)] bg-black shadow-[var(--shadow-lift)]"
           style={{ aspectRatio: '16 / 9' }}
         >
           <InlineSlidePlayer index={index} onIndexChange={setIndex} />
         </div>
 
-        <div className="mt-5 flex items-center justify-between text-[13px] font-medium text-[color:var(--color-muted)]">
+        <div className="mt-4 flex items-center justify-between text-[13px] font-medium text-[color:var(--color-muted)]">
           <a
             href="https://demo.open-slide.dev/"
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => posthog.capture('view_more_demos_clicked')}
-            className="group inline-flex items-center gap-2 transition-colors hover:text-[color:var(--color-text)]"
+            className="group inline-flex items-center gap-1.5 transition-colors hover:text-[color:var(--color-text)]"
           >
             View more demos
             <span
@@ -60,8 +63,8 @@ export function LiveDemo() {
               ↗
             </span>
           </a>
-          <span className="flex items-center gap-3">
-            <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.08em] text-[color:var(--color-text-soft)]">
+          <span className="flex items-center gap-2">
+            <span className="mr-1 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.08em] text-[color:var(--color-text-soft)]">
               {String(index + 1).padStart(2, '0')} / {String(count).padStart(2, '0')}
             </span>
             <button
@@ -69,22 +72,42 @@ export function LiveDemo() {
               onClick={handlePrev}
               disabled={atStart}
               aria-label="Previous slide"
-              className="pressable px-1.5 py-0.5 text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-[color:var(--color-text-soft)]"
+              className={navButtonClass}
             >
-              ←
+              <ArrowGlyph direction="left" />
             </button>
             <button
               type="button"
               onClick={handleNext}
               disabled={atEnd}
               aria-label="Next slide"
-              className="pressable px-1.5 py-0.5 text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-[color:var(--color-text-soft)]"
+              className={navButtonClass}
             >
-              →
+              <ArrowGlyph direction="right" />
             </button>
           </span>
         </div>
       </Container>
-    </section>
+    </div>
+  );
+}
+
+function ArrowGlyph({ direction }: { direction: 'left' | 'right' }) {
+  return (
+    <svg
+      aria-hidden
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={direction === 'left' ? 'rotate-180' : undefined}
+    >
+      <path d="M5 12h14" />
+      <path d="m13 6 6 6-6 6" />
+    </svg>
   );
 }

@@ -9,97 +9,13 @@ import {
   useReducedMotion,
   useTransform,
 } from 'motion/react';
-import { type CSSProperties, type ReactNode, useEffect, useRef } from 'react';
-import { Container, SectionHeading } from './frame';
-
-export function Inspector() {
-  return (
-    <section id="inspector" className="border-t border-[color:var(--color-rule-soft)]">
-      <Container className="py-20 sm:py-28">
-        <SectionHeading
-          title="Talk to the agent. Or just tap the canvas."
-          lead="Leave a comment for the agent to apply, or click any element and edit it in place. Both paths write back to the same source file."
-        />
-
-        <div
-          data-reveal
-          className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-[color:var(--color-rule)] bg-[color:var(--color-rule)] lg:grid-cols-2"
-        >
-          <FeatureCell
-            num="01"
-            kicker="agent applies"
-            title="Drop a comment. The agent rewrites the file."
-            body={
-              <>
-                Click any block, leave a note. The inspector pins it as a{' '}
-                <span className="font-[family-name:var(--font-mono)] text-[color:var(--color-accent-soft)]">
-                  @slide-comment
-                </span>{' '}
-                marker in your source. Run{' '}
-                <span className="font-[family-name:var(--font-mono)] text-[color:var(--color-accent-soft)]">
-                  /apply-comments
-                </span>{' '}
-                — the agent edits exactly what you flagged and clears the marker.
-              </>
-            }
-            visual={<AgentApplyVisual />}
-          />
-          <FeatureCell
-            num="02"
-            kicker="visual editor"
-            title="Click. Tweak. Save."
-            body="Toggle inspect, click any element. Change text, font, weight, color, or swap an image — right on the canvas. Edits buffer in memory until you hit Save, so one batch lands as a single HMR write."
-            visual={<VisualEditorVisual />}
-          />
-        </div>
-      </Container>
-    </section>
-  );
-}
-
-function FeatureCell({
-  num,
-  kicker,
-  title,
-  body,
-  visual,
-}: {
-  num: string;
-  kicker: string;
-  title: string;
-  body: ReactNode;
-  visual: ReactNode;
-}) {
-  const delay = num === '01' ? '0ms' : '90ms';
-  return (
-    <div
-      data-reveal="fade"
-      style={{ '--reveal-delay': delay } as CSSProperties}
-      className="group relative flex flex-col gap-8 bg-[color:var(--color-panel)] p-7 sm:p-8 lg:p-10"
-    >
-      <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.08em] uppercase text-[color:var(--color-muted)]">
-        {num} · {kicker}
-      </span>
-
-      <div>
-        <h3 className="max-w-[28ch] text-[20px] font-medium leading-[1.25] tracking-[-0.02em] sm:text-[22px]">
-          {title}
-        </h3>
-        <p className="mt-3 max-w-[44ch] text-[15px] leading-[1.6] text-[color:var(--color-text-soft)]">
-          {body}
-        </p>
-      </div>
-
-      <div className="mt-auto">{visual}</div>
-    </div>
-  );
-}
+import { type ReactNode, useEffect, useRef } from 'react';
 
 const AGENT_LOOP_DURATION = 10;
 const COMMENT_TEXT = 'use the accent color on this title';
 const EASE_OUT: Easing = [0.23, 1, 0.32, 1];
 
-function AgentApplyVisual() {
+export function AgentApplyVisual() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { amount: 0.3 });
   const reduced = useReducedMotion();
@@ -449,7 +365,7 @@ function ApplyingDots({ active }: { active: boolean }) {
   );
 }
 
-function VisualEditorVisual() {
+export function VisualEditorVisual() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { amount: 0.3 });
   const reduced = useReducedMotion();

@@ -9,8 +9,7 @@ import {
   useReducedMotion,
   useTransform,
 } from 'motion/react';
-import { type CSSProperties, type ReactNode, useEffect, useRef } from 'react';
-import { Container, SectionHeading } from './frame';
+import { useEffect, useRef } from 'react';
 
 type AssetMock = { name: string; size: string; logo: string; themed?: boolean; unused?: boolean };
 
@@ -29,87 +28,13 @@ const svglResults: { name: string; category: string; logo: string; themed?: bool
   { name: 'Zeabur', category: 'Cloud', logo: 'zeabur', themed: true },
 ];
 
-const callouts: { eyebrow: string; title: string; body: ReactNode }[] = [
-  {
-    eyebrow: 'drop · rename · replace',
-    title: 'In-place file management.',
-    body: 'Drag images straight into the deck. Rename and replace from the same pane the inspector uses to swap an element’s src.',
-  },
-  {
-    eyebrow: 'svgl · 1500+ logos',
-    title: 'Brand logos, no dance.',
-    body: (
-      <>
-        Search{' '}
-        <a
-          href="https://svgl.app/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-[family-name:var(--font-mono)] text-[color:var(--color-accent-soft)] underline-offset-4 hover:underline"
-        >
-          svgl
-        </a>{' '}
-        from inside the editor. Pick a result and the SVG lands in your assets folder, ready to{' '}
-        <code className="font-[family-name:var(--font-mono)] text-[color:var(--color-text)]">
-          import
-        </code>
-        .
-      </>
-    ),
-  },
-];
-
-export function Assets() {
-  return (
-    <section id="assets" className="border-t border-[color:var(--color-rule-soft)]">
-      <Container className="py-20 sm:py-28">
-        <SectionHeading
-          title="Drop in images. Pull in logos."
-          lead="Manage every asset from the same pane the inspector uses, and search 1500+ brand logos without leaving the editor."
-        />
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-          {/* asset manager mock */}
-          <div data-reveal className="lg:col-span-8">
-            <AssetManagerMock />
-          </div>
-
-          {/* side callouts */}
-          <div
-            data-reveal
-            style={{ '--reveal-delay': '120ms' } as CSSProperties}
-            className="flex flex-col gap-px overflow-hidden rounded-xl border border-[color:var(--color-rule)] bg-[color:var(--color-rule)] lg:col-span-4"
-          >
-            {callouts.map((c, i) => (
-              <div
-                key={c.eyebrow}
-                data-reveal="fade"
-                style={{ '--reveal-delay': `${120 + i * 90}ms` } as CSSProperties}
-                className="bg-[color:var(--color-panel)] p-6 sm:p-7 lg:p-8 flex flex-col gap-3"
-              >
-                <span className="caption">{c.eyebrow}</span>
-                <h3 className="text-[19px] font-medium leading-[1.25] tracking-[-0.02em] lg:text-[20px]">
-                  {c.title}
-                </h3>
-                <p className="text-[14px] leading-[1.6] text-[color:var(--color-text-soft)] max-w-[40ch]">
-                  {c.body}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Container>
-    </section>
-  );
-}
-
 /* One 14s story: click "Search logos" → dialog opens with three results →
    type "vercel", the rest filter out → close via ✕ → drag a file in → toast. */
 const ASSET_LOOP_DURATION = 14;
 const SVGL_QUERY = 'vercel';
 const EASE_OUT: Easing = [0.23, 1, 0.32, 1];
 
-function AssetManagerMock() {
+export function AssetManagerMock() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { amount: 0.3 });
   const reduced = useReducedMotion();
