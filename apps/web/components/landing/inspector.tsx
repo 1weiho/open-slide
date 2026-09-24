@@ -1,19 +1,70 @@
 'use client';
 
 import {
+  ALargeSmall,
+  AlignCenter,
+  AlignJustify,
+  AlignLeft,
+  AlignRight,
+  Bold,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Italic,
+  type LucideIcon,
+  MessageSquare,
+  Move,
+  MoveHorizontal,
+  Paintbrush,
+  PencilLine,
+  Redo2,
+  Save,
+  Type,
+  Undo2,
+  UnfoldVertical,
+  X,
+} from 'lucide-react';
+import {
   animate,
-  type Easing,
+  type MotionValue,
   motion,
   useInView,
   useMotionValue,
+  useMotionValueEvent,
   useReducedMotion,
   useTransform,
 } from 'motion/react';
-import { type ReactNode, useEffect, useRef } from 'react';
+import { type CSSProperties, type ReactNode, type Ref, useEffect, useRef, useState } from 'react';
 
-const AGENT_LOOP_DURATION = 10;
-const COMMENT_TEXT = 'use the accent color on this title';
-const EASE_OUT: Easing = [0.23, 1, 0.32, 1];
+/* The mock is a 760px-wide editor window scaled to the card. `--u` is one
+   virtual pixel; overriding Tailwind's `--spacing` makes every spacing
+   utility scale with it, so the panel can reuse core's real class values. */
+const EDITOR_W = 760;
+const SLIDE_SCALE = 0.204;
+
+const mockVars = {
+  '--u': `calc(100cqw / ${EDITOR_W})`,
+  '--spacing': 'calc(4 * var(--u))',
+  '--m-muted': 'color-mix(in oklab, var(--color-text) 5%, var(--color-panel))',
+  '--m-brand-soft': 'color-mix(in oklab, var(--color-accent) 12%, transparent)',
+} as CSSProperties;
+
+const u = (n: number) => `calc(${n} * var(--u))`;
+
+const COMMENT_TEXT = 'Use the accent color on this title';
+const AGENT_LOOP = 12;
+
+type AgentPhase = 'idle' | 'typing' | 'typed' | 'pressed' | 'queued' | 'applied';
+
+function agentPhaseAt(t: number): AgentPhase {
+  if (t < 0.08) return 'idle';
+  if (t < 0.3) return 'typing';
+  if (t < 0.36) return 'typed';
+  if (t < 0.38) return 'pressed';
+  if (t < 0.5) return 'queued';
+  if (t < 0.92) return 'applied';
+  return 'idle';
+}
 
 export function AgentApplyVisual() {
   const ref = useRef<HTMLDivElement>(null);
@@ -21,348 +72,96 @@ export function AgentApplyVisual() {
   const reduced = useReducedMotion();
   const active = inView && !reduced;
 
-  const typingProgress = useMotionValue(1);
-  const commentText = useTransform(typingProgress, (p) =>
-    COMMENT_TEXT.slice(0, Math.max(0, Math.round(p * COMMENT_TEXT.length))),
-  );
+  const clock = useMotionValue(0.6);
+  const [phase, setPhase] = useState<AgentPhase>('applied');
 
   useEffect(() => {
     if (!active) {
-      typingProgress.set(1);
+      clock.set(0.6);
+      setPhase('applied');
       return;
     }
-    typingProgress.set(0);
-    const controls = animate(typingProgress, [0, 0, 1, 1, 0, 0], {
-      duration: AGENT_LOOP_DURATION,
-      times: [0, 0.3, 0.52, 0.78, 0.82, 1],
-      ease: 'linear',
-      repeat: Infinity,
-    });
+    clock.set(0);
+    const controls = animate(clock, 1, { duration: AGENT_LOOP, ease: 'linear', repeat: Infinity });
     return () => controls.stop();
-  }, [active, typingProgress]);
+  }, [active, clock]);
 
-  const loopTransition = (times: number[], ease: Easing | Easing[] = 'easeInOut') =>
-    active
-      ? {
-          duration: AGENT_LOOP_DURATION,
-          times,
-          ease,
-          repeat: Infinity,
-        }
-      : undefined;
+  useMotionValueEvent(clock, 'change', (t) => {
+    const next = agentPhaseAt(t);
+    setPhase((current) => (current === next ? current : next));
+  });
 
-  return (
-    <div
-      ref={ref}
-      className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden select-none"
-    >
-      <div
-        className="relative aspect-[16/9] grid grid-cols-[1fr_42%]"
-        style={{ containerType: 'inline-size' }}
-      >
-        {/* canvas */}
-        <div className="relative overflow-hidden cursor-crosshair">
-          <div className="absolute inset-0 px-[5cqw] py-[5cqw] flex flex-col justify-center gap-[1.4cqw]">
-            <span className="font-[family-name:var(--font-mono)] text-[1.3cqw] tracking-[0.18em] uppercase text-[color:var(--color-muted)]">
-              cover
-            </span>
-            <div className="relative inline-flex w-fit">
-              <motion.span
-                aria-hidden
-                className="absolute -inset-[0.6cqw] border-2 border-[#3b82f6] bg-[#3b82f6]/10 pointer-events-none"
-                animate={
-                  active
-                    ? {
-                        opacity: [0, 0, 1, 1, 0, 0],
-                        scale: [0.92, 0.92, 1, 1, 0.97, 0.97],
-                      }
-                    : { opacity: 1, scale: 1 }
-                }
-                transition={loopTransition(
-                  [0, 0.115, 0.135, 0.9, 0.935, 1],
-                  ['linear', EASE_OUT, 'linear', EASE_OUT, 'linear'],
-                )}
-              />
-              <motion.span
-                className="relative font-[family-name:var(--font-sans)] font-semibold tracking-[-0.035em] leading-[1.0]"
-                style={{ fontSize: '6.4cqw' }}
-                animate={
-                  active
-                    ? {
-                        color: [
-                          'var(--color-text)',
-                          'var(--color-text)',
-                          'var(--color-accent)',
-                          'var(--color-accent)',
-                          'var(--color-text)',
-                          'var(--color-text)',
-                        ],
-                        backgroundColor: [
-                          'transparent',
-                          'transparent',
-                          'color-mix(in oklab, var(--color-accent) 14%, transparent)',
-                          'transparent',
-                          'transparent',
-                          'transparent',
-                        ],
-                      }
-                    : { color: 'var(--color-text)', backgroundColor: 'transparent' }
-                }
-                transition={
-                  active
-                    ? {
-                        color: {
-                          duration: AGENT_LOOP_DURATION,
-                          times: [0, 0.7, 0.735, 0.92, 0.955, 1],
-                          ease: 'easeInOut',
-                          repeat: Infinity,
-                        },
-                        backgroundColor: {
-                          duration: AGENT_LOOP_DURATION,
-                          times: [0, 0.7, 0.725, 0.85, 0.92, 1],
-                          ease: 'easeOut',
-                          repeat: Infinity,
-                        },
-                      }
-                    : undefined
-                }
-              >
-                Q2 Launch
-              </motion.span>
-            </div>
-            <span
-              className="font-[family-name:var(--font-sans)] text-[color:var(--color-text-soft)] max-w-[80%]"
-              style={{ fontSize: '1.5cqw', lineHeight: 1.4 }}
-            >
-              What we're shipping, why it matters.
-            </span>
-          </div>
-
-          {/* crosshair cursor — flies in, clicks Q2 Launch, fades */}
-          <motion.svg
-            aria-hidden
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#3b82f6"
-            strokeWidth={1.6}
-            strokeLinecap="round"
-            className="absolute pointer-events-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)]"
-            style={{
-              left: '7cqw',
-              top: 'calc(50% - 1.5cqw)',
-              width: '3cqw',
-              height: '3cqw',
-            }}
-            animate={
-              active
-                ? {
-                    opacity: [0, 0, 1, 1, 1, 0, 0],
-                    x: ['14cqw', '14cqw', '0cqw', '0cqw', '0cqw', '0cqw', '0cqw'],
-                    y: ['7cqw', '7cqw', '0cqw', '0cqw', '0cqw', '0cqw', '0cqw'],
-                    scale: [1, 1, 1, 0.78, 1, 1, 1],
-                  }
-                : { opacity: 0 }
-            }
-            transition={loopTransition(
-              [0, 0.02, 0.1, 0.115, 0.13, 0.16, 1],
-              [EASE_OUT, EASE_OUT, 'easeOut', 'easeOut', 'easeOut', 'linear'],
-            )}
-          >
-            <title>cursor</title>
-            <line x1="12" y1="2" x2="12" y2="9" />
-            <line x1="12" y1="15" x2="12" y2="22" />
-            <line x1="2" y1="12" x2="9" y2="12" />
-            <line x1="15" y1="12" x2="22" y2="12" />
-            <circle cx="12" cy="12" r="2.5" fill="#3b82f6" fillOpacity={0.25} />
-          </motion.svg>
-
-          {/* click ripple — confirms the press before the panel answers */}
-          <motion.span
-            aria-hidden
-            className="absolute pointer-events-none rounded-full border-2 border-[#3b82f6]"
-            style={{
-              left: '5.5cqw',
-              top: 'calc(50% - 3cqw)',
-              width: '6cqw',
-              height: '6cqw',
-            }}
-            animate={
-              active
-                ? { opacity: [0, 0, 0.55, 0, 0], scale: [0.3, 0.3, 0.55, 1, 1] }
-                : { opacity: 0 }
-            }
-            transition={loopTransition(
-              [0, 0.113, 0.125, 0.165, 1],
-              ['linear', 'easeOut', 'easeOut', 'linear'],
-            )}
-          />
-
-          {/* "Agent applying..." status pill — appears after submit, fades before style change settles */}
-          <motion.div
-            className="absolute right-[1.5cqw] bottom-[1.5cqw] inline-flex items-center gap-[0.55cqw] rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] font-[family-name:var(--font-sans)] text-[color:var(--color-text)] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.18)]"
-            style={{ padding: '0.55cqw 0.9cqw', fontSize: '1.05cqw' }}
-            animate={
-              active
-                ? {
-                    opacity: [0, 0, 1, 1, 0, 0],
-                    y: ['40%', '40%', '0%', '0%', '40%', '40%'],
-                  }
-                : { opacity: 0, y: '40%' }
-            }
-            transition={loopTransition(
-              [0, 0.56, 0.585, 0.78, 0.8, 1],
-              ['linear', EASE_OUT, 'linear', EASE_OUT, 'linear'],
-            )}
-          >
-            <SpinnerGlyph active={active} />
-            <span style={{ color: 'var(--color-muted)' }}>Agent applying</span>
-            <ApplyingDots active={active} />
-          </motion.div>
-        </div>
-
-        {/* InspectorPanel — slides in from the right after click */}
-        <motion.div
-          className="border-l border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] flex flex-col overflow-hidden"
-          animate={active ? { x: ['100%', '100%', '0%', '0%', '100%', '100%'] } : { x: '0%' }}
-          transition={loopTransition(
-            [0, 0.13, 0.157, 0.9, 0.927, 1],
-            ['linear', EASE_OUT, 'linear', EASE_OUT, 'linear'],
-          )}
-        >
-          <PanelHeader />
-
-          <PanelSection label="Content">
-            <PanelTextarea value="Q2 Launch" />
-          </PanelSection>
-
-          <PanelDivider />
-
-          <PanelSection label="Leave a comment">
-            <motion.div
-              className="relative rounded-[4px] border bg-[color:var(--color-panel)]"
-              style={{
-                fontSize: '1.1cqw',
-                padding: '0.7cqw 0.8cqw',
-                minHeight: '3.4cqw',
-                lineHeight: 1.4,
-              }}
-              animate={
-                active
-                  ? {
-                      borderColor: [
-                        'var(--color-rule)',
-                        'var(--color-rule)',
-                        'var(--color-accent)',
-                        'var(--color-accent)',
-                        'var(--color-rule)',
-                        'var(--color-rule)',
-                      ],
-                      boxShadow: [
-                        '0 0 0 0 transparent',
-                        '0 0 0 0 transparent',
-                        '0 0 0 0.25cqw color-mix(in oklab, var(--color-accent) 16%, transparent)',
-                        '0 0 0 0.25cqw color-mix(in oklab, var(--color-accent) 16%, transparent)',
-                        '0 0 0 0 transparent',
-                        '0 0 0 0 transparent',
-                      ],
-                    }
-                  : {
-                      borderColor: 'var(--color-rule)',
-                      boxShadow: '0 0 0 0 transparent',
-                    }
-              }
-              transition={loopTransition([0, 0.25, 0.275, 0.78, 0.805, 1], 'easeOut')}
-            >
-              <motion.span
-                aria-hidden
-                className="absolute pointer-events-none text-[color:var(--color-muted)]"
-                style={{ left: '0.8cqw', top: '0.7cqw' }}
-                animate={active ? { opacity: [1, 1, 0, 0, 1, 1] } : { opacity: 0 }}
-                transition={loopTransition([0, 0.28, 0.3, 0.78, 0.82, 1])}
-              >
-                Add a note...
-              </motion.span>
-              <motion.span className="text-[color:var(--color-text)]">{commentText}</motion.span>
-              <motion.span
-                aria-hidden
-                className="inline-block align-[-0.15em] bg-[color:var(--color-text)]"
-                style={{
-                  width: '0.12cqw',
-                  height: '1.3cqw',
-                  marginLeft: '0.15cqw',
-                }}
-                animate={active ? { opacity: [0, 0, 1, 1, 0, 0] } : { opacity: 0 }}
-                transition={loopTransition([0, 0.28, 0.3, 0.54, 0.56, 1])}
-              />
-            </motion.div>
-            <div className="flex items-center justify-between" style={{ marginTop: '0.7cqw' }}>
-              <span
-                className="font-[family-name:var(--font-mono)] text-[color:var(--color-dim)]"
-                style={{ fontSize: '0.95cqw' }}
-              >
-                Cmd + Enter to submit
-              </span>
-              <motion.span
-                className="inline-flex items-center font-[family-name:var(--font-sans)] font-medium text-[color:var(--color-brand-foreground,white)] rounded-[4px] bg-[color:var(--color-accent)] transition-opacity hover:opacity-90"
-                style={{ fontSize: '1.1cqw', padding: '0.45cqw 0.9cqw' }}
-                animate={active ? { scale: [1, 1, 0.94, 1, 1] } : { scale: 1 }}
-                transition={loopTransition([0, 0.53, 0.545, 0.57, 1], 'easeOut')}
-              >
-                Add comment
-              </motion.span>
-            </div>
-          </PanelSection>
-        </motion.div>
-      </div>
-    </div>
+  const typingProgress = useTransform(clock, [0.08, 0.3], [0, 1], { clamp: true });
+  const commentText = useTransform(typingProgress, (p) =>
+    COMMENT_TEXT.slice(0, Math.round(p * COMMENT_TEXT.length)),
   );
-}
 
-function SpinnerGlyph({ active }: { active: boolean }) {
-  return (
-    <motion.svg
-      aria-hidden
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="var(--color-accent)"
-      strokeWidth={2.2}
-      strokeLinecap="round"
-      style={{ width: '1.3cqw', height: '1.3cqw' }}
-      animate={active ? { rotate: 360 } : { rotate: 0 }}
-      transition={active ? { duration: 1.1, repeat: Infinity, ease: 'linear' } : undefined}
-    >
-      <title>spinner</title>
-      <path d="M21 12a9 9 0 1 1-9-9" />
-    </motion.svg>
-  );
-}
+  const draftVisible = phase === 'typing' || phase === 'typed' || phase === 'pressed';
+  const applied = phase === 'applied';
+  const count = phase === 'queued' ? 1 : 0;
 
-function ApplyingDots({ active }: { active: boolean }) {
   return (
-    <span
-      className="inline-flex items-end gap-[0.15cqw] text-[color:var(--color-muted)]"
-      style={{ width: '1.8cqw' }}
-    >
-      {[0, 1, 2].map((i) => (
-        <motion.span
-          key={i}
-          className="inline-block rounded-full bg-current"
-          style={{ width: '0.32cqw', height: '0.32cqw' }}
-          animate={active ? { opacity: [0.25, 1, 0.25] } : { opacity: 0.5 }}
-          transition={
-            active
-              ? {
-                  duration: 1.1,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                  delay: i * 0.18,
-                }
-              : undefined
-          }
+    <EditorFrame ref={ref}>
+      <Canvas>
+        <Slide
+          titleColor={applied ? 'var(--color-accent)' : 'var(--color-text)'}
+          selected={phase !== 'idle'}
         />
-      ))}
-    </span>
+        <CommentFab count={count} />
+      </Canvas>
+
+      <Panel>
+        <Section title="Typography">
+          <TypographyRows size="160" />
+        </Section>
+
+        <div className="mt-auto">
+          <Collapsible title="Comment" open>
+            <TextareaMock placeholder="Describe a change for the agent…" focused={draftVisible}>
+              {draftVisible ? <motion.span>{commentText}</motion.span> : null}
+            </TextareaMock>
+            <div className="flex items-center justify-between gap-2">
+              <span
+                className="font-[family-name:var(--font-mono)] text-[color:var(--color-muted)]/70"
+                style={{ fontSize: u(10.5) }}
+              >
+                ⌘/ to focus · ⌘↵ to add
+              </span>
+              <BrandButton disabled={!draftVisible} pressed={phase === 'pressed'}>
+                Add comment
+              </BrandButton>
+            </div>
+          </Collapsible>
+          <Collapsible title="Source" open>
+            <div className="flex items-center justify-between gap-2">
+              <span
+                className="font-[family-name:var(--font-mono)] text-[color:var(--color-muted)]"
+                style={{ fontSize: u(10.5) }}
+              >
+                &lt;h1&gt; · 12:7
+              </span>
+              <AgentBadge />
+            </div>
+          </Collapsible>
+        </div>
+      </Panel>
+    </EditorFrame>
   );
+}
+
+const EDIT_LOOP = 7;
+const SIZE_FROM = 160;
+const SIZE_TO = 200;
+
+type EditPhase = 'idle' | 'dirty' | 'pressed' | 'saving' | 'saved' | 'hidden';
+
+function editPhaseAt(t: number): EditPhase {
+  if (t < 0.14) return 'idle';
+  if (t < 0.55) return 'dirty';
+  if (t < 0.58) return 'pressed';
+  if (t < 0.66) return 'saving';
+  if (t < 0.86) return 'saved';
+  return 'hidden';
 }
 
 export function VisualEditorVisual() {
@@ -371,451 +170,548 @@ export function VisualEditorVisual() {
   const reduced = useReducedMotion();
   const active = inView && !reduced;
 
-  const progress = useMotionValue(0.38);
-  const fontSize = useTransform(progress, [0.38, 0.65], ['6.4cqw', '7.6cqw']);
-  const barWidth = useTransform(progress, (p) => `${p * 100}%`);
-  const thumbLeft = useTransform(progress, (p) => `calc(${p * 100}% - 0.55cqw)`);
-  const sizeNum = useTransform(progress, [0.38, 0.65], [88, 104]);
-  const sizeLabel = useTransform(sizeNum, (v) => `${Math.round(v)}px`);
+  const clock = useMotionValue(0.4);
+  const [phase, setPhase] = useState<EditPhase>('dirty');
 
   useEffect(() => {
     if (!active) {
-      progress.set(0.38);
+      clock.set(0.4);
+      setPhase('dirty');
       return;
     }
-    const controls = animate(progress, [0.38, 0.65, 0.65, 0.38, 0.38], {
-      duration: 6,
-      times: [0, 0.2, 0.5, 0.7, 1],
-      ease: 'easeInOut',
-      repeat: Infinity,
-    });
+    clock.set(0);
+    const controls = animate(clock, 1, { duration: EDIT_LOOP, ease: 'linear', repeat: Infinity });
     return () => controls.stop();
-  }, [active, progress]);
+  }, [active, clock]);
 
+  useMotionValueEvent(clock, 'change', (t) => {
+    const next = editPhaseAt(t);
+    setPhase((current) => (current === next ? current : next));
+  });
+
+  const size = useTransform(
+    clock,
+    [0, 0.12, 0.32, 0.93, 0.98, 1],
+    [SIZE_FROM, SIZE_FROM, SIZE_TO, SIZE_TO, SIZE_FROM, SIZE_FROM],
+    { clamp: true },
+  );
+  const sizeLabel = useTransform(size, (v) => String(Math.round(v)));
+  const titleSize = useTransform(size, (v) => u(v * SLIDE_SCALE));
+
+  const cardVisible = phase !== 'idle' && phase !== 'hidden';
+
+  return (
+    <EditorFrame ref={ref}>
+      <Canvas>
+        <Slide titleColor="var(--color-accent)" titleSize={titleSize} selected />
+        <SaveCardMock visible={cardVisible} phase={phase} />
+      </Canvas>
+
+      <Panel>
+        <Section title="Typography">
+          <TypographyRows size={sizeLabel} />
+        </Section>
+        <Section title="Color">
+          <ColorRow label="Text" value="#DE3B3D" />
+          <ColorRow label="Background" value="#FFFFFF" dim />
+        </Section>
+        <Section
+          title="Content"
+          action={
+            <span
+              className="inline-flex h-6 items-center gap-1 rounded-[calc(5*var(--u))] px-2 font-medium text-[color:var(--color-muted)]"
+              style={{ fontSize: u(11.5) }}
+            >
+              <PencilLine className="size-3.5" />
+              Edit on slide
+            </span>
+          }
+        >
+          <TextareaMock>Q2 Launch</TextareaMock>
+        </Section>
+        <div className="mt-auto">
+          <Collapsible title="Comment" />
+          <Collapsible title="Source" />
+        </div>
+      </Panel>
+    </EditorFrame>
+  );
+}
+
+function EditorFrame({ ref, children }: { ref: Ref<HTMLDivElement>; children: ReactNode }) {
   return (
     <div
       ref={ref}
-      className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden select-none"
+      className="relative select-none overflow-hidden rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]"
+      style={{ containerType: 'inline-size' }}
     >
       <div
-        className="relative aspect-[16/9] grid grid-cols-[1fr_42%]"
-        style={{ containerType: 'inline-size' }}
+        className="relative grid aspect-[3/2] grid-cols-[1fr_calc(320*var(--u))] font-[family-name:var(--font-sans)] text-[color:var(--color-text)]"
+        style={{ ...mockVars, letterSpacing: '-0.005em' }}
       >
-        {/* canvas */}
-        <div className="relative overflow-hidden cursor-crosshair">
-          <div className="absolute inset-0 px-[5cqw] py-[5cqw] flex flex-col justify-center gap-[1.4cqw]">
-            <span className="font-[family-name:var(--font-mono)] text-[1.3cqw] tracking-[0.18em] uppercase text-[color:var(--color-muted)]">
-              cover
-            </span>
-            <div className="relative inline-flex w-fit">
-              <span
-                aria-hidden
-                className="absolute -inset-[0.6cqw] border-2 border-[#3b82f6] bg-[#3b82f6]/10 pointer-events-none"
-              />
-              <motion.span
-                className="relative font-[family-name:var(--font-sans)] font-semibold tracking-[-0.035em] leading-[1.0] text-[color:var(--color-accent)]"
-                style={{ fontSize }}
-              >
-                Q2 Launch
-              </motion.span>
-            </div>
-            <span
-              className="font-[family-name:var(--font-sans)] text-[color:var(--color-text-soft)] max-w-[80%]"
-              style={{ fontSize: '1.5cqw', lineHeight: 1.4 }}
-            >
-              What we're shipping, why it matters.
-            </span>
-          </div>
-
-          {/* SaveBar — matches core/SaveCard layout */}
-          <div className="absolute left-1/2 -translate-x-1/2" style={{ bottom: '3cqw' }}>
-            <div
-              className="inline-flex items-center gap-[0.4cqw] whitespace-nowrap rounded-[8px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)]/95 backdrop-blur-md shadow-[0_8px_24px_-12px_rgba(0,0,0,0.18)]"
-              style={{ padding: '0.35cqw 0.35cqw 0.35cqw 0.5cqw' }}
-            >
-              <SaveBarIconBtn glyph={<UndoGlyph />} />
-              <SaveBarIconBtn glyph={<RedoGlyph />} dim />
-              <span
-                aria-hidden
-                className="bg-[color:var(--color-rule)]"
-                style={{ width: '1px', height: '1.6cqw', margin: '0 0.2cqw' }}
-              />
-              <span
-                className="inline-flex items-center gap-[0.5cqw] font-[family-name:var(--font-sans)] font-medium text-[color:var(--color-text)]"
-                style={{ padding: '0 0.7cqw', fontSize: '1.25cqw' }}
-              >
-                <motion.span
-                  className="rounded-full bg-[color:var(--color-accent)]"
-                  style={{ width: '0.7cqw', height: '0.7cqw' }}
-                  animate={
-                    active
-                      ? {
-                          boxShadow: [
-                            '0 0 0 0.3cqw color-mix(in oklab, var(--color-accent) 18%, transparent)',
-                            '0 0 0 0.55cqw color-mix(in oklab, var(--color-accent) 6%, transparent)',
-                            '0 0 0 0.3cqw color-mix(in oklab, var(--color-accent) 18%, transparent)',
-                          ],
-                        }
-                      : {
-                          boxShadow:
-                            '0 0 0 0.3cqw color-mix(in oklab, var(--color-accent) 18%, transparent)',
-                        }
-                  }
-                  transition={
-                    active ? { duration: 2.2, repeat: Infinity, ease: 'easeInOut' } : undefined
-                  }
-                />
-                <span>1 unsaved change</span>
-              </span>
-              <span
-                className="rounded-[4px] font-[family-name:var(--font-sans)] text-[color:var(--color-muted)] transition-colors hover:text-[color:var(--color-text)]"
-                style={{ fontSize: '1.2cqw', padding: '0.4cqw 0.8cqw' }}
-              >
-                Discard
-              </span>
-              <span
-                className="inline-flex items-center gap-[0.4cqw] font-[family-name:var(--font-sans)] font-medium text-[color:var(--color-brand-foreground,white)] rounded-[4px] bg-[color:var(--color-accent)] transition-opacity hover:opacity-90"
-                style={{ fontSize: '1.2cqw', padding: '0.45cqw 0.9cqw' }}
-              >
-                <SaveGlyph />
-                Save
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* InspectorPanel */}
-        <div className="border-l border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] flex flex-col overflow-hidden">
-          <PanelHeader />
-
-          <PanelSection label="Content">
-            <PanelTextarea value="Q2 Launch" />
-          </PanelSection>
-
-          <PanelDivider />
-
-          <PanelSection label="Typography">
-            <PanelRow label="Size">
-              <div className="flex-1 h-[0.5cqw] rounded-full bg-[color:var(--color-panel)] relative">
-                <motion.div
-                  className="absolute left-0 top-0 bottom-0 rounded-full bg-[color:var(--color-accent)]"
-                  style={{ width: barWidth }}
-                />
-                <motion.div
-                  className="absolute top-1/2 rounded-full bg-[color:var(--color-text)] border border-[color:var(--color-accent)]"
-                  style={{
-                    width: '1.1cqw',
-                    height: '1.1cqw',
-                    left: thumbLeft,
-                    y: '-50%',
-                  }}
-                  animate={active ? { scale: [1, 1.3, 1.3, 1, 1, 1.3, 1.3, 1, 1] } : { scale: 1 }}
-                  transition={
-                    active
-                      ? {
-                          duration: 6,
-                          times: [0, 0.03, 0.17, 0.23, 0.47, 0.53, 0.67, 0.73, 1],
-                          ease: 'easeOut',
-                          repeat: Infinity,
-                        }
-                      : undefined
-                  }
-                />
-              </div>
-              <motion.span
-                className="flex-1 rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] text-[color:var(--color-text)] font-[family-name:var(--font-mono)] transition-colors hover:border-[color:var(--color-dim)]"
-                style={{ fontSize: '1.05cqw', padding: '0.4cqw 0.6cqw' }}
-              >
-                {sizeLabel}
-              </motion.span>
-            </PanelRow>
-            <PanelRow label="Weight">
-              <PanelSelect value="Semibold · 600" />
-            </PanelRow>
-            <PanelRow label="Style">
-              <div className="flex items-center gap-[0.4cqw]">
-                <PanelToggle glyph={<BoldGlyph />} pressed />
-                <PanelToggle glyph={<ItalicGlyph />} />
-              </div>
-            </PanelRow>
-          </PanelSection>
-
-          <PanelDivider />
-
-          <PanelSection label="Color">
-            <PanelRow label="Text">
-              <PanelSwatch color="var(--color-accent)" />
-              <PanelInput value="#DE3B3D" />
-            </PanelRow>
-          </PanelSection>
-        </div>
+        {children}
       </div>
     </div>
   );
 }
 
-function PanelHeader() {
+function Canvas({ children }: { children: ReactNode }) {
+  return (
+    <div className="relative overflow-hidden bg-[color:var(--color-panel-hi)]">{children}</div>
+  );
+}
+
+function Slide({
+  titleColor,
+  titleSize,
+  selected,
+}: {
+  titleColor: string;
+  titleSize?: MotionValue<string>;
+  selected: boolean;
+}) {
   return (
     <div
-      className="border-b border-[color:var(--color-rule)] flex items-center justify-between"
-      style={{ padding: '1.2cqw 1.6cqw' }}
+      className="absolute left-1/2 top-1/2 flex aspect-video -translate-x-1/2 -translate-y-1/2 flex-col justify-center gap-3.5 bg-[color:var(--color-panel)] px-9 shadow-[var(--shadow-edge)]"
+      style={{ width: `calc(100% - ${u(48)})` }}
     >
-      <div className="flex items-center gap-[0.6cqw]">
-        <svg
-          aria-hidden
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          className="text-[color:var(--color-muted)]"
-          style={{ width: '1.2cqw', height: '1.2cqw' }}
-        >
-          <circle cx="12" cy="12" r="8" />
-          <line x1="22" y1="12" x2="18" y2="12" />
-          <line x1="6" y1="12" x2="2" y2="12" />
-          <line x1="12" y1="6" x2="12" y2="2" />
-          <line x1="12" y1="22" x2="12" y2="18" />
-        </svg>
-        <span
-          className="font-[family-name:var(--font-sans)] font-semibold tracking-tight text-[color:var(--color-text)]"
-          style={{ fontSize: '1.25cqw' }}
-        >
-          Inspect
-        </span>
-        <span
-          aria-hidden
-          className="bg-[color:var(--color-rule)]"
-          style={{ width: '1px', height: '1.4cqw' }}
-        />
-        <span
-          className="rounded-[3px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] font-[family-name:var(--font-mono)] text-[color:var(--color-text)]"
-          style={{ padding: '0.1cqw 0.5cqw', fontSize: '1cqw' }}
-        >
-          &lt;h1&gt;
-        </span>
-      </div>
       <span
-        className="inline-flex items-center justify-center rounded-[4px] text-[color:var(--color-dim)] transition-colors hover:bg-[color:var(--color-panel)] hover:text-[color:var(--color-text)]"
-        style={{ width: '2cqw', height: '2cqw' }}
+        className="font-[family-name:var(--font-mono)] uppercase text-[color:var(--color-muted)]"
+        style={{ fontSize: u(6), letterSpacing: '0.18em' }}
       >
-        ✕
+        cover
+      </span>
+      <div className="relative w-fit">
+        <motion.span
+          className="block font-semibold leading-none"
+          style={{
+            fontSize: titleSize ?? u(SIZE_FROM * SLIDE_SCALE),
+            letterSpacing: '-0.035em',
+            color: titleColor,
+            transition: 'color 600ms ease',
+          }}
+        >
+          Q2 Launch
+        </motion.span>
+        <SelectionFrame visible={selected} />
+      </div>
+      <span className="text-[color:var(--color-text-soft)]" style={{ fontSize: u(7.5) }}>
+        What we're shipping, why it matters.
       </span>
     </div>
   );
 }
 
-function PanelSection({ label, children }: { label: string; children: ReactNode }) {
+const HANDLES = [
+  [0, 0],
+  [0.5, 0],
+  [1, 0],
+  [1, 0.5],
+  [1, 1],
+  [0.5, 1],
+  [0, 1],
+  [0, 0.5],
+];
+
+function SelectionFrame({ visible }: { visible: boolean }) {
   return (
-    <div className="flex flex-col gap-[0.9cqw]" style={{ padding: '1.2cqw 1.6cqw' }}>
-      <div className="flex items-center gap-[0.8cqw]">
+    <motion.div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 border border-blue-500"
+      initial={false}
+      animate={visible ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.96 }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+    >
+      <span className="absolute -top-5 left-1/2 h-5 w-px bg-blue-500" />
+      <span className="absolute -top-6 left-1/2 size-2.5 -translate-x-1/2 rounded-full border border-blue-500 bg-[color:var(--color-panel)] shadow-sm" />
+      {HANDLES.map(([x, y]) => (
         <span
-          className="font-[family-name:var(--font-sans)] font-medium uppercase text-[color:var(--color-muted)]"
-          style={{ fontSize: '0.9cqw', letterSpacing: '0.08em' }}
-        >
-          {label}
-        </span>
-        <span aria-hidden className="h-px flex-1 bg-[color:var(--color-rule-soft)]" />
+          key={`${x}-${y}`}
+          className="absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-[2px] border border-blue-500 bg-[color:var(--color-panel)] shadow-sm"
+          style={{ left: `${x * 100}%`, top: `${y * 100}%` }}
+        />
+      ))}
+    </motion.div>
+  );
+}
+
+function Panel({ children }: { children: ReactNode }) {
+  return (
+    <aside className="flex min-h-0 flex-col overflow-hidden border-l border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)]">
+      <header className="flex h-9 shrink-0 items-center justify-between gap-2 border-b border-[color:var(--color-rule)] px-3">
+        <div className="flex items-center gap-2">
+          <Paintbrush className="size-3.5 text-[color:var(--color-muted)]" />
+          <span className="font-semibold tracking-tight" style={{ fontSize: u(12) }}>
+            Format
+          </span>
+        </div>
+        <GhostIcon icon={X} />
+      </header>
+
+      <div className="flex shrink-0 items-center justify-between gap-3 px-3.5 pt-3.5 pb-1">
+        <div className="flex items-center gap-2 font-medium" style={{ fontSize: u(12) }}>
+          <Type className="size-4 text-[color:var(--color-muted)]" />
+          <span>Text</span>
+        </div>
+        <div className="relative isolate flex h-8 items-center rounded-lg bg-[color:var(--m-muted)] p-[2px] ring-1 ring-inset ring-[color:var(--color-rule)]/60">
+          <span
+            aria-hidden
+            className="absolute inset-y-0.5 left-0.5 w-8 rounded-md bg-[color:var(--color-panel)] shadow-[var(--shadow-edge)]"
+          />
+          <span className="relative z-10 flex h-full w-8 items-center justify-center text-[color:var(--color-text)]">
+            <Type className="size-3.5" />
+          </span>
+          <span className="relative z-10 flex h-full w-8 items-center justify-center text-[color:var(--color-text)]/55">
+            <Move className="size-3.5" />
+          </span>
+        </div>
       </div>
+
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
+    </aside>
+  );
+}
+
+function Eyebrow({ children }: { children: ReactNode }) {
+  return (
+    <span
+      className="font-medium uppercase text-[color:var(--color-muted)]"
+      style={{ fontSize: u(11), letterSpacing: '0.08em' }}
+    >
       {children}
+    </span>
+  );
+}
+
+function Section({
+  title,
+  action,
+  children,
+}: {
+  title: string;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="px-3.5 py-4">
+      <div className="mb-2.5 flex items-center justify-between gap-2">
+        <Eyebrow>{title}</Eyebrow>
+        {action ? <span className="-my-1 flex items-center">{action}</span> : null}
+      </div>
+      <div className="flex flex-col gap-2.5">{children}</div>
+    </section>
+  );
+}
+
+function Collapsible({
+  title,
+  open = false,
+  children,
+}: {
+  title: string;
+  open?: boolean;
+  children?: ReactNode;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-2 px-3.5 py-4">
+        <Eyebrow>{title}</Eyebrow>
+        <ChevronRight
+          className={`size-3 text-[color:var(--color-muted)] ${open ? 'rotate-90' : ''}`}
+        />
+      </div>
+      {open ? <div className="-mt-1.5 flex flex-col gap-2.5 px-3.5 pb-4">{children}</div> : null}
     </div>
   );
 }
 
-function PanelDivider() {
-  return <div className="h-px bg-[color:var(--color-rule)]" />;
+function TypographyRows({ size }: { size: string | MotionValue<string> }) {
+  return (
+    <>
+      <div className="flex items-center gap-1.5">
+        <div
+          className="flex h-7 min-w-0 flex-1 items-center justify-between gap-2 rounded-[calc(5*var(--u))] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] px-2.5"
+          style={{ fontSize: u(12) }}
+        >
+          <span className="truncate">Semibold · 600</span>
+          <ChevronDown className="size-3.5 opacity-50" />
+        </div>
+        <NumberShell icon={ALargeSmall} suffix="px" className="w-24">
+          <motion.span>{size}</motion.span>
+        </NumberShell>
+      </div>
+      <div className="flex items-center gap-2">
+        <ToggleGroup items={[{ icon: Bold, pressed: true }, { icon: Italic }]} />
+        <ToggleGroup
+          items={[
+            { icon: AlignLeft, pressed: true },
+            { icon: AlignCenter },
+            { icon: AlignRight },
+            { icon: AlignJustify },
+          ]}
+        />
+      </div>
+      <div className="flex items-center gap-1.5">
+        <NumberShell icon={UnfoldVertical} className="basis-0 grow">
+          1.1
+        </NumberShell>
+        <NumberShell icon={MoveHorizontal} suffix="px" className="basis-0 grow">
+          -5.6
+        </NumberShell>
+      </div>
+    </>
+  );
 }
 
-function PanelRow({ label, children }: { label: string; children: ReactNode }) {
+function NumberShell({
+  icon: Icon,
+  suffix,
+  className = '',
+  children,
+}: {
+  icon: LucideIcon;
+  suffix?: string;
+  className?: string;
+  children: ReactNode;
+}) {
   return (
-    <div className="grid grid-cols-[34%_1fr] items-center gap-[0.7cqw]">
+    <div
+      className={`flex h-7 shrink-0 items-center rounded-[calc(5*var(--u))] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] pl-2 pr-1.5 ${className}`}
+    >
+      <Icon className="size-3.5 shrink-0 text-[color:var(--color-muted)]" />
       <span
-        className="font-[family-name:var(--font-sans)] text-[color:var(--color-muted)]"
-        style={{ fontSize: '1.1cqw' }}
+        className="nums min-w-0 flex-1 px-2 text-right font-[family-name:var(--font-mono)]"
+        style={{ fontSize: u(11) }}
       >
+        {children}
+      </span>
+      {suffix ? (
+        <span
+          className="font-[family-name:var(--font-mono)] uppercase text-[color:var(--color-muted)]/80"
+          style={{ fontSize: u(9.5), letterSpacing: '0.06em' }}
+        >
+          {suffix}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function ToggleGroup({ items }: { items: { icon: LucideIcon; pressed?: boolean }[] }) {
+  return (
+    <div className="flex w-fit items-center">
+      {items.map(({ icon: Icon, pressed }, i) => (
+        <span
+          key={Icon.displayName ?? i}
+          className={`inline-flex size-7 items-center justify-center border border-[color:var(--color-rule)] ${
+            i > 0 ? 'border-l-0' : 'rounded-l-[calc(5*var(--u))]'
+          } ${i === items.length - 1 ? 'rounded-r-[calc(5*var(--u))]' : ''} ${
+            pressed
+              ? 'border-[color:var(--color-text)] bg-[color:var(--color-text)] text-[color:var(--color-panel)]'
+              : 'bg-[color:var(--color-panel)] text-[color:var(--color-text)]/75'
+          }`}
+        >
+          <Icon className="size-3.5" />
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function ColorRow({ label, value, dim = false }: { label: string; value: string; dim?: boolean }) {
+  return (
+    <div className="grid grid-cols-[calc(68*var(--u))_1fr] items-center gap-3">
+      <span className="text-[color:var(--color-muted)]" style={{ fontSize: u(11) }}>
         {label}
       </span>
-      <div className="flex items-center gap-[0.5cqw]">{children}</div>
+      <div className="flex min-w-0 items-center gap-1.5">
+        <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-[calc(5*var(--u))] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]">
+          <span
+            className="size-4 rounded-[calc(3*var(--u))]"
+            style={
+              dim
+                ? {
+                    backgroundImage:
+                      'repeating-conic-gradient(var(--m-muted) 0 25%, transparent 0 50%)',
+                    backgroundSize: `${u(8)} ${u(8)}`,
+                  }
+                : { backgroundColor: value }
+            }
+          />
+        </span>
+        <span
+          className="nums flex h-7 flex-1 items-center rounded-[calc(5*var(--u))] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] px-2 font-[family-name:var(--font-mono)] uppercase"
+          style={{ fontSize: u(11) }}
+        >
+          {value}
+        </span>
+      </div>
     </div>
   );
 }
 
-function PanelInput({ value }: { value: string }) {
+function TextareaMock({
+  placeholder,
+  focused = false,
+  children,
+}: {
+  placeholder?: string;
+  focused?: boolean;
+  children?: ReactNode;
+}) {
+  const empty = children === null || children === undefined;
+  return (
+    <div
+      className={`flex min-h-16 w-full whitespace-pre rounded-[calc(6*var(--u))] border bg-[color:var(--color-panel)] px-2.5 py-2 leading-relaxed transition-[border-color,box-shadow] ${
+        focused
+          ? 'border-[color:var(--color-text)]/40 shadow-[0_0_0_calc(2*var(--u))_var(--m-brand-soft)]'
+          : 'border-[color:var(--color-rule)]'
+      }`}
+      style={{ fontSize: u(12) }}
+    >
+      {empty ? (
+        <span className="text-[color:var(--color-muted)]/70">{placeholder}</span>
+      ) : (
+        <span className="flex items-start">
+          {children}
+          {focused ? (
+            <span className="ml-px inline-block w-px animate-pulse self-stretch bg-[color:var(--color-text)]" />
+          ) : null}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function BrandButton({
+  disabled = false,
+  pressed = false,
+  children,
+}: {
+  disabled?: boolean;
+  pressed?: boolean;
+  children: ReactNode;
+}) {
   return (
     <span
-      className="flex-1 rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] font-[family-name:var(--font-mono)] uppercase text-[color:var(--color-text)] transition-colors hover:border-[color:var(--color-dim)]"
-      style={{ fontSize: '1.05cqw', padding: '0.4cqw 0.6cqw' }}
+      className={`inline-flex h-7 items-center gap-1.5 rounded-[calc(5*var(--u))] bg-[color:var(--color-accent)] px-2.5 font-medium text-white shadow-[inset_0_1px_0_oklch(1_0_0/0.18)] transition-[opacity,transform] duration-150 ${
+        disabled ? 'opacity-45' : ''
+      } ${pressed ? 'scale-95' : ''}`}
+      style={{ fontSize: u(12) }}
     >
-      {value}
+      {children}
     </span>
   );
 }
 
-function PanelSelect({ value }: { value: string }) {
+function GhostIcon({ icon: Icon, dim = false }: { icon: LucideIcon; dim?: boolean }) {
   return (
     <span
-      className="flex-1 inline-flex items-center justify-between rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] font-[family-name:var(--font-sans)] text-[color:var(--color-text)] transition-colors hover:border-[color:var(--color-dim)]"
-      style={{ fontSize: '1.05cqw', padding: '0.4cqw 0.6cqw' }}
+      className={`inline-flex size-7 items-center justify-center rounded-[calc(5*var(--u))] text-[color:var(--color-muted)] ${dim ? 'opacity-45' : ''}`}
     >
-      <span>{value}</span>
-      <span className="text-[color:var(--color-muted)]" style={{ fontSize: '1cqw' }}>
-        ▾
+      <Icon className="size-3.5" />
+    </span>
+  );
+}
+
+function AgentBadge() {
+  return (
+    <span
+      className="flex shrink-0 items-center gap-1.5 rounded-[calc(3*var(--u))] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] px-1.5 py-px text-[color:var(--color-text)]/85"
+      style={{ fontSize: u(10.5) }}
+    >
+      <span className="relative flex size-1.5 items-center justify-center">
+        <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-60 motion-reduce:animate-none" />
+        <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
       </span>
+      Agent is watching
     </span>
   );
 }
 
-function PanelToggle({ glyph, pressed = false }: { glyph: ReactNode; pressed?: boolean }) {
+function CommentFab({ count }: { count: number }) {
   return (
-    <span
-      className={`inline-flex items-center justify-center rounded-[4px] border transition-colors ${
-        pressed
-          ? 'border-[color:var(--color-rule)] bg-[color:var(--color-panel)] text-[color:var(--color-text)]'
-          : 'border-[color:var(--color-rule)] bg-transparent text-[color:var(--color-muted)] hover:bg-[color:var(--color-panel)] hover:text-[color:var(--color-text)]'
-      }`}
-      style={{ width: '2.4cqw', height: '2.4cqw' }}
+    <div
+      className="absolute right-4 bottom-4 flex items-center gap-2 rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] px-3 py-2 font-medium shadow-[var(--shadow-floating)]"
+      style={{ fontSize: u(12) }}
     >
-      {glyph}
-    </span>
+      <MessageSquare className="size-4" />
+      <span className="nums">{count}</span>
+    </div>
   );
 }
 
-function PanelSwatch({ color }: { color: string }) {
+function SaveCardMock({ visible, phase }: { visible: boolean; phase: EditPhase }) {
+  const saved = phase === 'saved';
+  const saving = phase === 'saving';
   return (
-    <span
-      className="inline-flex items-center justify-center rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] transition-colors hover:border-[color:var(--color-dim)]"
-      style={{ width: '2.4cqw', height: '2.4cqw' }}
+    <motion.div
+      className="pointer-events-none absolute bottom-6 left-1/2"
+      initial={false}
+      animate={
+        visible
+          ? { opacity: 1, y: 0, scale: 1, x: '-50%' }
+          : { opacity: 0, y: 8, scale: 0.98, x: '-50%' }
+      }
+      transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
     >
-      <span
-        className="rounded-[2px]"
-        style={{
-          width: '1.5cqw',
-          height: '1.5cqw',
-          backgroundColor: color,
-        }}
-      />
-    </span>
-  );
-}
-
-function PanelTextarea({ value }: { value: string }) {
-  return (
-    <span
-      className="block rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] font-[family-name:var(--font-sans)] text-[color:var(--color-text)] transition-colors hover:border-[color:var(--color-dim)]"
-      style={{
-        fontSize: '1.1cqw',
-        padding: '0.7cqw 0.7cqw',
-        minHeight: '3.6cqw',
-        lineHeight: 1.4,
-      }}
-    >
-      {value}
-    </span>
-  );
-}
-
-function SaveBarIconBtn({ glyph, dim = false }: { glyph: ReactNode; dim?: boolean }) {
-  return (
-    <span
-      className={`inline-flex items-center justify-center rounded-[4px] transition-colors ${
-        dim
-          ? 'text-[color:var(--color-dim)]'
-          : 'text-[color:var(--color-muted)] hover:bg-[color:var(--color-panel)] hover:text-[color:var(--color-text)]'
-      }`}
-      style={{ width: '2cqw', height: '2cqw' }}
-    >
-      {glyph}
-    </span>
-  );
-}
-
-function UndoGlyph() {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ width: '1.2cqw', height: '1.2cqw' }}
-    >
-      <path d="M9 14 4 9l5-5" />
-      <path d="M4 9h11a5 5 0 0 1 0 10h-4" />
-    </svg>
-  );
-}
-
-function RedoGlyph() {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ width: '1.2cqw', height: '1.2cqw' }}
-    >
-      <path d="m15 14 5-5-5-5" />
-      <path d="M20 9H9a5 5 0 0 0 0 10h4" />
-    </svg>
-  );
-}
-
-function SaveGlyph() {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ width: '1.1cqw', height: '1.1cqw' }}
-    >
-      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-      <path d="M17 21v-8H7v8M7 3v5h8" />
-    </svg>
-  );
-}
-
-function BoldGlyph() {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ width: '1.2cqw', height: '1.2cqw' }}
-    >
-      <path d="M6 4h7a4 4 0 0 1 0 8H6z" />
-      <path d="M6 12h8a4 4 0 0 1 0 8H6z" />
-    </svg>
-  );
-}
-
-function ItalicGlyph() {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ width: '1.2cqw', height: '1.2cqw' }}
-    >
-      <line x1="19" y1="4" x2="10" y2="4" />
-      <line x1="14" y1="20" x2="5" y2="20" />
-      <line x1="15" y1="4" x2="9" y2="20" />
-    </svg>
+      <div className="flex h-9 items-center gap-1 whitespace-nowrap rounded-[calc(8*var(--u))] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]/95 py-0.5 pr-0.5 pl-1 shadow-[var(--shadow-floating)] backdrop-blur-md">
+        {!saved ? (
+          <div className="flex items-center">
+            <GhostIcon icon={Undo2} />
+            <GhostIcon icon={Redo2} dim />
+            <span aria-hidden className="ml-1 mr-0.5 h-4 w-px bg-[color:var(--color-rule)]" />
+          </div>
+        ) : null}
+        {saved ? (
+          <span
+            className="flex items-center gap-1.5 px-2.5 font-medium text-[color:var(--color-text)]"
+            style={{ fontSize: u(12) }}
+          >
+            <Check className="size-3.5 shrink-0 text-[color:var(--color-mint)]" strokeWidth={2.5} />
+            Saved
+          </span>
+        ) : (
+          <span
+            className="inline-flex items-center gap-1.5 px-2.5 font-medium text-[color:var(--color-text)]"
+            style={{ fontSize: u(12) }}
+          >
+            <span
+              aria-hidden
+              className="size-1.5 shrink-0 rounded-full bg-[color:var(--color-accent)] shadow-[0_0_0_calc(3*var(--u))_var(--m-brand-soft)]"
+            />
+            <span className="nums">1 unsaved change</span>
+          </span>
+        )}
+        {!saved && !saving ? (
+          <span
+            className="inline-flex h-7 items-center rounded-[calc(5*var(--u))] px-2.5 font-medium text-[color:var(--color-muted)]"
+            style={{ fontSize: u(12) }}
+          >
+            Discard
+          </span>
+        ) : null}
+        {!saved ? (
+          <span
+            className={`inline-flex h-7 items-center gap-1.5 rounded-[calc(5*var(--u))] bg-[color:var(--color-accent)] px-3 font-medium text-white shadow-[inset_0_1px_0_oklch(1_0_0/0.18)] transition-transform duration-150 ${
+              phase === 'pressed' ? 'scale-95' : ''
+            }`}
+            style={{ fontSize: u(12) }}
+          >
+            {saving ? (
+              <>
+                <span className="size-3.5 animate-spin rounded-full border-[1.5px] border-white/40 border-t-white" />
+                Saving
+              </>
+            ) : (
+              <>
+                <Save className="size-3.5" />
+                Save
+              </>
+            )}
+          </span>
+        ) : null}
+      </div>
+    </motion.div>
   );
 }

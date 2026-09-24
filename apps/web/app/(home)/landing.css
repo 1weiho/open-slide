@@ -82,6 +82,10 @@ html.dark .os-landing {
   box-shadow: var(--shadow-floating);
 }
 
+.os-landing .nums {
+  font-variant-numeric: tabular-nums;
+}
+
 @keyframes os-rise {
   from {
     opacity: 0;
