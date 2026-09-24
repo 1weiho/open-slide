@@ -1,39 +1,12 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { AgentList } from './agents';
+import { AgentLogos } from './agents';
 import { AnatomyVisual } from './anatomy';
 import { AssetManagerMock } from './assets';
 import { Container, SectionHeading } from './frame';
 import { AgentApplyVisual, VisualEditorVisual } from './inspector';
 import { PromptComposer } from './prompt-composer';
 
-const mono = 'font-[family-name:var(--font-mono)] text-[color:var(--color-accent-soft)]';
-
-const assetCallouts: { eyebrow: string; title: string; body: ReactNode }[] = [
-  {
-    eyebrow: 'drop · rename · replace',
-    title: 'In-place file management.',
-    body: 'Drag images straight into the deck. Rename and replace from the same pane the inspector uses to swap an element’s src.',
-  },
-  {
-    eyebrow: 'svgl · 1500+ logos',
-    title: 'Brand logos, no dance.',
-    body: (
-      <>
-        Search{' '}
-        <a
-          href="https://svgl.app/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`${mono} underline-offset-4 hover:underline`}
-        >
-          svgl
-        </a>{' '}
-        from inside the editor. Pick a result and the SVG lands in your assets folder, ready to
-        import.
-      </>
-    ),
-  },
-];
+const mono = 'font-[family-name:var(--font-mono)] text-[13px] text-[color:var(--color-text)]';
 
 export function Features() {
   return (
@@ -49,13 +22,13 @@ export function Features() {
           <FeatureCard
             wide
             title="A slide is a file."
-            body="Each page is a React component on a 1920×1080 canvas. Anything you can write in code, you can put on a slide. Versioned in your repo, reviewable in pull requests."
+            body="Each page is a React component on a 1920×1080 canvas. Anything you can write in code, you can put on a slide."
             visual={<AnatomyVisual />}
           />
 
           <FeatureCard
             delay={80}
-            title="Describe the deck. Your agent writes it."
+            title="Prompt to deck."
             body={
               <>
                 One <span className={mono}>/create-slide</span> prompt drafts pages as real
@@ -68,18 +41,16 @@ export function Features() {
           <FeatureCard
             delay={160}
             title="Bring your own agent."
-            body="No proprietary protocol. Slides are plain .tsx files, so any tool that reads and writes React already works."
-            visual={<AgentList />}
+            body="Slides are plain .tsx files, so any tool that reads and writes React already works."
+            visual={<AgentLogos />}
           />
 
           <FeatureCard
-            title="Drop a comment. The agent rewrites the file."
+            title="Comment. The agent applies."
             body={
               <>
-                Click any block, leave a note. The inspector pins it as a{' '}
-                <span className={mono}>@slide-comment</span> marker in your source. Run{' '}
-                <span className={mono}>/apply-comments</span> and the agent edits exactly what you
-                flagged.
+                Leave a note on any element. Run <span className={mono}>/apply-comments</span> and
+                the agent edits exactly what you flagged.
               </>
             }
             visual={<AgentApplyVisual />}
@@ -88,28 +59,16 @@ export function Features() {
           <FeatureCard
             delay={80}
             title="Click. Tweak. Save."
-            body="Toggle inspect, click any element. Change text, font, weight, color, or swap an image right on the canvas. One Save lands the batch as a single write."
+            body="Select any element and change text, type, or color on the canvas. One Save lands the batch as a single write."
             visual={<VisualEditorVisual />}
           />
 
           <FeatureCard
             wide
             title="Drop in images. Pull in logos."
-            body="Manage every asset from the same pane the inspector uses, and search 1500+ brand logos without leaving the editor."
-            aside={
-              <dl className="grid gap-5 sm:grid-cols-2">
-                {assetCallouts.map((c) => (
-                  <div key={c.eyebrow} className="flex flex-col gap-1.5">
-                    <dt className="caption">{c.eyebrow}</dt>
-                    <dd className="text-[14px] leading-[1.6] text-[color:var(--color-text-soft)]">
-                      <span className="font-medium text-[color:var(--color-text)]">{c.title}</span>{' '}
-                      {c.body}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            }
+            body="Manage assets from the same pane the inspector uses, and search 1500+ brand logos from svgl without leaving the editor."
             visual={<AssetManagerMock />}
+            visualClassName="max-w-[880px]"
           />
         </div>
       </Container>
@@ -121,14 +80,14 @@ function FeatureCard({
   title,
   body,
   visual,
-  aside,
+  visualClassName = '',
   wide = false,
   delay = 0,
 }: {
   title: string;
   body: ReactNode;
   visual: ReactNode;
-  aside?: ReactNode;
+  visualClassName?: string;
   wide?: boolean;
   delay?: number;
 }) {
@@ -136,25 +95,25 @@ function FeatureCard({
     <article
       data-reveal
       style={{ '--reveal-delay': `${delay}ms` } as CSSProperties}
-      className={`flex flex-col gap-7 rounded-2xl border border-[color:var(--color-rule-soft)] bg-[color:var(--color-panel-hi)] p-6 sm:p-8 ${
+      className={`group flex flex-col overflow-hidden rounded-2xl border border-[color:var(--color-rule-soft)] bg-[color:var(--color-panel)] transition-colors duration-300 hover:border-[color:var(--color-rule)] ${
         wide ? 'lg:col-span-2' : ''
       }`}
     >
-      <header
-        className={`flex flex-col gap-2 ${aside ? 'lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start lg:gap-10' : ''}`}
-      >
-        <div className="flex flex-col gap-2">
-          <h3 className="text-[20px] font-medium leading-[1.25] tracking-[-0.02em] sm:text-[22px]">
-            {title}
-          </h3>
-          <p className="max-w-[52ch] text-pretty text-[15px] leading-[1.6] text-[color:var(--color-text-soft)]">
-            {body}
-          </p>
+      <div className="flex flex-1 items-center justify-center bg-[color:var(--color-panel-hi)] p-6 sm:p-8">
+        <div
+          className={`w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-0.5 ${visualClassName}`}
+        >
+          {visual}
         </div>
-        {aside ? <div className="mt-4 lg:mt-1">{aside}</div> : null}
-      </header>
-
-      <div className="mt-auto">{visual}</div>
+      </div>
+      <div className="flex flex-col gap-1.5 px-6 py-5 sm:px-7 sm:py-6">
+        <h3 className="text-[17px] font-medium leading-[1.3] tracking-[-0.015em] text-[color:var(--color-text)]">
+          {title}
+        </h3>
+        <p className="max-w-[56ch] text-pretty text-[14.5px] leading-[1.55] text-[color:var(--color-muted)]">
+          {body}
+        </p>
+      </div>
     </article>
   );
 }

@@ -68,7 +68,7 @@ export function AnatomyVisual() {
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
       <div className="lg:col-span-7">
-        <div className="relative overflow-hidden rounded-xl border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]">
+        <div className="relative overflow-hidden rounded-lg bg-[color:var(--color-panel)] shadow-[var(--shadow-window)]">
           <div className="flex h-10 items-center justify-between border-b border-[color:var(--color-rule-soft)] px-4 font-[family-name:var(--font-mono)] text-[12px] text-[color:var(--color-muted)] sm:h-11 sm:px-5">
             <div className="flex items-center gap-3">
               <span
@@ -100,14 +100,20 @@ export function AnatomyVisual() {
       </div>
 
       <div className="lg:col-span-5">
-        <div className="relative flex h-full flex-col rounded-xl border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-4 sm:p-5">
+        <div className="relative flex h-full flex-col rounded-lg bg-[color:var(--color-panel)] shadow-[var(--shadow-window)] p-4 sm:p-5">
           <div className="mb-4 flex items-center justify-between font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.08em] text-[color:var(--color-muted)]">
             <span>rendered output</span>
             <span className="flex items-center gap-2">
-              <span
-                className="h-1.5 w-1.5 rounded-full transition-colors duration-500"
-                style={{ background: v.accent }}
-              />
+              <span className="relative flex size-1.5 items-center justify-center">
+                <span
+                  className="absolute inline-flex size-full animate-ping rounded-full opacity-60 transition-colors duration-500 motion-reduce:animate-none"
+                  style={{ background: v.accent }}
+                />
+                <span
+                  className="relative inline-flex size-1.5 rounded-full transition-colors duration-500"
+                  style={{ background: v.accent }}
+                />
+              </span>
               live
             </span>
           </div>

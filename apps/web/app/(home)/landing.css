@@ -19,6 +19,9 @@
   --shadow-lift:
     0 1px 2px oklch(0 0 0 / 0.04), 0 12px 32px -12px oklch(0 0 0 / 0.12),
     0 32px 64px -24px oklch(0 0 0 / 0.14);
+  --shadow-window:
+    0 0 0 0.5px oklch(0 0 0 / 0.08), 0 1px 2px oklch(0 0 0 / 0.04),
+    0 12px 32px -12px oklch(0 0 0 / 0.12);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -54,6 +57,7 @@ html.dark .os-landing {
   --shadow-edge: 0 0 0 0.5px oklch(0 0 0 / 0.2);
   --shadow-floating: 0 1px 2px oklch(0 0 0 / 0.3), 0 8px 24px -8px oklch(0 0 0 / 0.5);
   --shadow-lift: 0 1px 2px oklch(0 0 0 / 0.4), 0 24px 64px -24px oklch(0 0 0 / 0.7);
+  --shadow-window: 0 0 0 0.5px oklch(1 0 0 / 0.12), 0 12px 32px -12px oklch(0 0 0 / 0.6);
 }
 
 .os-landing ::selection {

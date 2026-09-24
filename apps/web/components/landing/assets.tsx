@@ -125,7 +125,7 @@ export function AssetManagerMock() {
   return (
     <div
       ref={ref}
-      className="relative select-none overflow-hidden rounded-xl border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]"
+      className="relative select-none overflow-hidden rounded-lg bg-[color:var(--color-panel)] shadow-[var(--shadow-window)]"
     >
       {/* window header */}
       <div className="flex items-center px-4 sm:px-5 h-10 sm:h-11 border-b border-[color:var(--color-rule-soft)] font-[family-name:var(--font-mono)] text-[12px] text-[color:var(--color-muted)]">

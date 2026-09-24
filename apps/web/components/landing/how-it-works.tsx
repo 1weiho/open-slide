@@ -83,9 +83,9 @@ export function HowItWorks() {
               key={s.num}
               data-reveal
               style={{ '--reveal-delay': `${i * 80}ms` } as CSSProperties}
-              className="flex flex-col gap-6 rounded-2xl border border-[color:var(--color-rule-soft)] bg-[color:var(--color-panel-hi)] p-6 sm:p-7"
+              className="flex flex-col gap-6 rounded-2xl border border-[color:var(--color-rule-soft)] bg-[color:var(--color-panel)] p-6 transition-colors duration-300 hover:border-[color:var(--color-rule)] sm:p-7"
             >
-              <span className="inline-flex size-7 items-center justify-center rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] font-[family-name:var(--font-mono)] text-[11px] text-[color:var(--color-text-soft)]">
+              <span className="inline-flex size-7 items-center justify-center rounded-full bg-[color:var(--color-panel-hi)] font-[family-name:var(--font-mono)] text-[11px] text-[color:var(--color-text-soft)]">
                 {s.num}
               </span>
 
@@ -93,12 +93,12 @@ export function HowItWorks() {
                 <h3 className="text-[18px] font-medium leading-[1.3] tracking-[-0.02em] sm:text-[19px]">
                   {s.title}
                 </h3>
-                <p className="mt-2 max-w-[36ch] text-[15px] leading-[1.6] text-[color:var(--color-text-soft)]">
+                <p className="mt-2 max-w-[36ch] text-[14.5px] leading-[1.6] text-[color:var(--color-muted)]">
                   {s.body}
                 </p>
               </div>
 
-              <div className="mt-auto rounded-xl border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] px-4 py-3.5 font-[family-name:var(--font-mono)] text-[13px]">
+              <div className="mt-auto rounded-xl bg-[color:var(--color-panel-hi)] px-4 py-3.5 font-[family-name:var(--font-mono)] text-[13px]">
                 <div className="flex items-center gap-2">
                   <span className="text-[color:var(--color-accent)]">{s.code.prompt}</span>
                   <span className="truncate text-[color:var(--color-text)]">

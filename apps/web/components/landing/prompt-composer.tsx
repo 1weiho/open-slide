@@ -47,7 +47,7 @@ export function PromptComposer() {
   return (
     <div
       ref={ref}
-      className="rounded-xl border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]"
+      className="rounded-lg bg-[color:var(--color-panel)] shadow-[var(--shadow-window)]"
     >
       <div className="flex min-h-[96px] items-center px-5 py-5 sm:min-h-[108px]">
         <div className="flex h-[50px] w-full flex-wrap content-center items-center gap-x-2 gap-y-1 font-[family-name:var(--font-mono)] text-[14px] leading-[1.55] tracking-[-0.02em] sm:h-[30px] sm:flex-nowrap sm:text-[15px]">
@@ -69,6 +69,16 @@ export function PromptComposer() {
                 className="absolute inset-0 flex items-center text-[color:var(--color-text)]"
               >
                 {prompt}
+                <motion.span
+                  aria-hidden
+                  className="ml-px inline-block h-[1.1em] w-[1.5px] bg-[color:var(--color-text)]"
+                  animate={reduceMotion || !isInView ? { opacity: 1 } : { opacity: [1, 1, 0, 0] }}
+                  transition={
+                    reduceMotion || !isInView
+                      ? { duration: 0 }
+                      : { duration: 1.1, times: [0, 0.5, 0.5, 1], repeat: Infinity }
+                  }
+                />
               </motion.span>
             </AnimatePresence>
           </span>

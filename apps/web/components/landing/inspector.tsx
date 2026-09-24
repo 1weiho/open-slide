@@ -242,7 +242,7 @@ function EditorFrame({ ref, children }: { ref: Ref<HTMLDivElement>; children: Re
   return (
     <div
       ref={ref}
-      className="relative select-none overflow-hidden rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]"
+      className="relative select-none overflow-hidden rounded-lg bg-[color:var(--color-panel)] shadow-[var(--shadow-window)]"
       style={{ containerType: 'inline-size' }}
     >
       <div
