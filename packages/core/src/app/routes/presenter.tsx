@@ -24,6 +24,7 @@ import { hasModifier, isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/
 import { useDocumentTitle } from '@/lib/use-document-title';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn, pad2 } from '@/lib/utils';
+import { NoteMarkdown } from '../components/note-markdown';
 import {
   type PresenterState,
   usePresenterChannel,
@@ -591,11 +592,11 @@ function SpeakerNotes({ note }: { note: string | undefined }) {
         </div>
       </div>
       <div
-        className="min-h-0 flex-1 overflow-y-auto rounded-[6px] border border-border bg-card p-3 leading-relaxed whitespace-pre-wrap text-card-foreground"
+        className="min-h-0 flex-1 overflow-y-auto rounded-[6px] border border-border bg-card p-3 leading-relaxed text-card-foreground"
         style={{ fontSize: NOTES_FONT_SIZES[sizeIndex] }}
       >
         {note?.trim() ? (
-          note
+          <NoteMarkdown text={note} />
         ) : (
           <span className="text-muted-foreground">
             {t.presenter.noNotesPrefix}

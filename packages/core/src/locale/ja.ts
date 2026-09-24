@@ -520,7 +520,7 @@ export const ja: Locale = {
   notesDrawer: {
     toggle: '発表者ノート',
     pageLabel: '{n} / {total} ページ',
-    placeholder: 'このスライドの発表者ノートを記入…',
+    placeholder: 'このスライドの発表者ノートを記入（Markdown 対応）…',
     statusSaving: '保存中…',
     statusSaved: '保存済み',
     statusError: '保存に失敗しました: {msg}',
