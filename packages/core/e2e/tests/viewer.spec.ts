@@ -165,7 +165,7 @@ test.describe('slide viewer', () => {
       const saved = page.waitForResponse(
         (res) => res.url().includes('/__notes') && res.request().method() === 'PUT',
       );
-      await page.getByPlaceholder('Write speaker notes for this slide…').fill('Drawer note text');
+      await page.getByPlaceholder('Write speaker notes for this slide (Markdown supported)…').fill('Drawer note text');
       expect((await saved).status()).toBe(200);
       await expect.poll(() => readSlideSource('notes-ui')).toContain('Drawer note text');
     } finally {
