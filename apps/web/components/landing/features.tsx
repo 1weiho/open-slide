@@ -84,14 +84,12 @@ function FeatureCard({
     <article
       data-reveal
       style={{ '--reveal-delay': `${delay}ms` } as CSSProperties}
-      className={`group flex flex-col overflow-hidden rounded-2xl border border-[color:var(--color-rule-soft)] bg-[color:var(--color-panel)] transition-colors duration-300 hover:border-[color:var(--color-rule)] ${
+      className={`flex flex-col overflow-hidden rounded-2xl border border-[color:var(--color-rule-soft)] bg-[color:var(--color-panel)] transition-colors duration-300 hover:border-[color:var(--color-rule)] ${
         wide ? 'lg:col-span-2' : ''
       }`}
     >
       <div className="flex flex-1 items-center justify-center bg-[color:var(--color-panel-hi)] p-6 sm:p-8">
-        <div className="w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-0.5">
-          {visual}
-        </div>
+        <div className="w-full">{visual}</div>
       </div>
       <div className="flex flex-col gap-1.5 px-6 py-5 sm:px-7 sm:py-6">
         <h3 className="text-[17px] font-medium leading-[1.3] tracking-[-0.015em] text-[color:var(--color-text)]">
