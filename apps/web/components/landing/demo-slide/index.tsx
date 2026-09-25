@@ -4378,7 +4378,7 @@ const CommentPage: Page = () => (
         count={<Roll from="0" to="1" delay={3.55} />}
         panel={<CommentPanel delay={4.1} />}
       />
-      <Cursor className="gs cm-cursor" left={1679} top={603} press={[3.4]} />
+      <Cursor className="gs cm-cursor" left={1679} top={545} press={[3.4]} />
     </Editor>
   </Frame>
 );
@@ -5115,7 +5115,7 @@ const ExportPage: Page = () => (
           </MenuItem>
           <MenuItem icon="file-image">Export as image PPTX</MenuItem>
         </div>
-        <Cursor className="gs ex-cursor" left={300} top={128} press={[1.7]} />
+        <Cursor className="gs ex-cursor" left={330} top={128} press={[1.7]} />
         <Toast delay={2.1} />
       </Editor>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 32, height: '100%' }}>
