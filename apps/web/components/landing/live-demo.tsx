@@ -41,7 +41,7 @@ export function LiveDemo() {
         </h2>
         <div
           data-reveal
-          className="relative block w-full overflow-hidden rounded-2xl border border-[color:var(--color-rule)] bg-black shadow-[var(--shadow-lift)]"
+          className="relative block w-full overflow-hidden rounded-2xl border border-[color:var(--color-rule)] bg-white shadow-[var(--shadow-lift)]"
           style={{ aspectRatio: '16 / 9' }}
         >
           <InlineSlidePlayer index={index} onIndexChange={setIndex} />
