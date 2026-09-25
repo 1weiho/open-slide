@@ -964,7 +964,7 @@ const Typed = ({
   const steps = `steps(${text.length}, end)`;
   return (
     <span style={{ position: 'relative', display: 'inline-block', whiteSpace: 'pre', color }}>
-      <span style={{ visibility: 'hidden' }}>{text}</span>
+      <span style={{ visibility: 'hidden' }}>{text || '\u200b'}</span>
       <span
         className="gs gs-type"
         style={{
