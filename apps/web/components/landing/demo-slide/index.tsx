@@ -84,6 +84,7 @@ const shadow = {
 const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
 const EASE_OUT = 'cubic-bezier(0, 0, 0.2, 1)';
 const EASE_IN_OUT = 'cubic-bezier(0.4, 0, 0.2, 1)';
+const MORPH_MS = 700;
 
 const S = 1.6;
 const u = (n: number) => n * S;
@@ -213,11 +214,41 @@ const css = `
   .dp-range { width: 79.2%; animation-name: dp-range; animation-duration: 0.6s; animation-timing-function: ${EASE_IN_OUT}; animation-delay: 1.8s; }
   .dp-thumb { left: 79.2%; animation-name: dp-thumb; animation-duration: 0.6s; animation-timing-function: ${EASE_IN_OUT}; animation-delay: 1.8s; }
 
-  @keyframes mo-a { 0%, 44% { opacity: 1; transform: none; } 50%, 94% { opacity: 0; transform: translateY(-4px); } 94.1% { opacity: 0; transform: translateY(6px); } 100% { opacity: 1; transform: none; } }
-  @keyframes mo-b { 0%, 44% { opacity: 0; transform: translateY(6px); } 50%, 94% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-4px); } }
-  .mo-a { animation-name: mo-a; }
-  .mo-b { opacity: 0; animation-name: mo-b; }
-  .mo-a, .mo-b { animation-duration: 3.2s; animation-iteration-count: infinite; animation-timing-function: ${EASE_OUT}; }
+  @keyframes st-row-1 { 0%, 6% { opacity: 0; } 9%, 92% { opacity: 1; } 96%, 100% { opacity: 0; } }
+  @keyframes st-row-2 { 0%, 31% { opacity: 0; } 34%, 92% { opacity: 1; } 96%, 100% { opacity: 0; } }
+  @keyframes st-row-3 { 0%, 56% { opacity: 0; } 59%, 92% { opacity: 1; } 96%, 100% { opacity: 0; } }
+  @keyframes st-key {
+    0%, 3.5%, 6.5%, 28.5%, 31.5%, 53.5%, 56.5%, 100% { transform: none; background: #fff; }
+    5%, 30%, 55% { transform: scale(0.9); background: ${ink.muted2}; }
+  }
+  .st-row-1, .st-row-2, .st-row-3 { animation-duration: 6.4s; animation-iteration-count: infinite; animation-timing-function: ${EASE_OUT}; }
+  .st-row-1 { animation-name: st-row-1; }
+  .st-row-2 { animation-name: st-row-2; }
+  .st-row-3 { animation-name: st-row-3; }
+  .st-key { animation-name: st-key; animation-duration: 6.4s; animation-iteration-count: infinite; animation-timing-function: ${EASE_OUT}; }
+
+  @keyframes tr-a { 0%, 40% { opacity: 1; transform: none; } 43.5%, 92% { opacity: 0; transform: translateY(-4px); } 92.1% { opacity: 0; transform: translateY(6px); } 97%, 100% { opacity: 1; transform: none; } }
+  @keyframes tr-b { 0%, 42% { opacity: 0; transform: translateY(6px); } 47%, 90% { opacity: 1; transform: none; } 93.5%, 100% { opacity: 0; transform: translateY(-4px); } }
+  @keyframes tr-key {
+    0%, 38.5%, 41.5%, 88.5%, 91.5%, 100% { transform: none; background: #fff; }
+    40%, 90% { transform: scale(0.9); background: ${ink.muted2}; }
+  }
+  .tr-a { animation-name: tr-a; }
+  .tr-b { opacity: 0; animation-name: tr-b; }
+  .tr-key { animation-name: tr-key; }
+  .tr-a, .tr-b, .tr-key { animation-duration: 4s; animation-iteration-count: infinite; animation-timing-function: ${EASE_OUT}; }
+
+  @keyframes mo-ghost {
+    0% { left: 96px; top: 154px; width: 64px; height: 64px; border-radius: 16px; opacity: 0; }
+    3%, 14% { left: 96px; top: 154px; width: 64px; height: 64px; border-radius: 16px; opacity: 1; }
+    29%, 58% { left: 272px; top: 106px; width: 160px; height: 160px; border-radius: 40px; opacity: 1; }
+    73%, 97% { left: 96px; top: 154px; width: 64px; height: 64px; border-radius: 16px; opacity: 1; }
+    100% { left: 96px; top: 154px; width: 64px; height: 64px; border-radius: 16px; opacity: 0; }
+  }
+  @keyframes mo-mark { 0%, 14% { opacity: 1; } 14.1%, 72.9% { opacity: 0; } 73%, 100% { opacity: 1; } }
+  .mo-ghost { opacity: 0; animation-name: mo-ghost; animation-timing-function: ${EASE_IN_OUT}; }
+  .mo-mark { animation-name: mo-mark; animation-timing-function: linear; }
+  .mo-ghost, .mo-mark { animation-duration: 4.8s; animation-delay: ${MORPH_MS + 200}ms; animation-iteration-count: infinite; }
 
   @keyframes pr-laser { 0% { transform: translate(-360px, -20px); } 100% { transform: translate(0, 0); } }
   @keyframes pr-progress { from { transform: scaleX(0.1667); } }
@@ -4780,12 +4811,15 @@ const StepRow = ({
   n,
   children,
   first = false,
+  className,
 }: {
   n: string;
   children: ReactNode;
   first?: boolean;
+  className?: string;
 }) => (
   <div
+    className={className}
     style={{
       display: 'flex',
       alignItems: 'center',
@@ -4801,7 +4835,40 @@ const StepRow = ({
   </div>
 );
 
-const MiniTransitionPage = ({ className, label }: { className: string; label: string }) => (
+const KeyCap = ({ className }: { className: string }) => (
+  <span
+    className={className}
+    style={{
+      position: 'absolute',
+      right: 24,
+      bottom: 20,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: 48,
+      height: 40,
+      borderRadius: 8,
+      border: `1px solid ${ink.rule}`,
+      background: '#fff',
+      boxShadow: shadow.edge,
+      color: ink.soft,
+    }}
+  >
+    <Icon name="arrow-right" size={11} stroke={2.2} />
+  </span>
+);
+
+const MiniTransitionPage = ({
+  className,
+  label,
+  title,
+  bar,
+}: {
+  className: string;
+  label: string;
+  title: string;
+  bar: number;
+}) => (
   <div
     className={className}
     style={{
@@ -4839,9 +4906,9 @@ const MiniTransitionPage = ({ className, label }: { className: string; label: st
         lineHeight: 1,
       }}
     >
-      Next thought.
+      {title}
     </div>
-    <div style={{ marginTop: 16, height: 6, width: 120, borderRadius: 3, background: ink.rule }} />
+    <div style={{ marginTop: 16, height: 6, width: bar, borderRadius: 3, background: ink.rule }} />
   </div>
 );
 
@@ -4849,7 +4916,7 @@ const MotionPage: Page = () => (
   <Frame
     eyebrow="Toolbox"
     title="Motion, in three primitives."
-    lead="Stepped reveals, one house transition, and shared-element morphs. All declared in the file. Press → to reveal the steps."
+    lead="Stepped reveals, one house transition, and shared-element morphs. All declared in the file."
     mark={false}
   >
     <div
@@ -4860,60 +4927,83 @@ const MotionPage: Page = () => (
         copy="Each → reveals the next beat. Jumping in shows the page complete."
         delay={0.2}
       >
-        <div style={{ padding: '48px 0' }}>
-          <Steps>
-            <Step>
-              <StepRow n="01" first>
-                Set the stage.
-              </StepRow>
-            </Step>
-            <Step>
-              <StepRow n="02">Layer the consequence.</StepRow>
-            </Step>
-            <Step>
-              <StepRow n="03">Land the turn.</StepRow>
-            </Step>
-          </Steps>
+        <div style={{ padding: '32px 0' }}>
+          <StepRow n="01" first className="gs st-row-1">
+            Set the stage.
+          </StepRow>
+          <StepRow n="02" className="gs st-row-2">
+            Layer the consequence.
+          </StepRow>
+          <StepRow n="03" className="gs st-row-3">
+            Land the turn.
+          </StepRow>
         </div>
+        <KeyCap className="gs st-key" />
       </MotionCol>
       <MotionCol
         label="SlideTransition"
         copy="One DNA per deck: 6 px rise, 200 ms, ease-out. This deck uses it."
         delay={0.3}
       >
-        <MiniTransitionPage className="gs mo-a" label="Page 01" />
-        <MiniTransitionPage className="gs mo-b" label="Page 02" />
+        <MiniTransitionPage className="gs tr-a" label="Page 01" title="Next thought." bar={120} />
+        <MiniTransitionPage className="gs tr-b" label="Page 02" title="Then the turn." bar={80} />
+        <KeyCap className="gs tr-key" />
       </MotionCol>
       <MotionCol
         label="MorphElement"
-        copy="The mark from the eyebrow glided here. Same id on both pages."
+        copy="Same id on two pages, and the object glides between them. The eyebrow mark just did."
         delay={0.4}
       >
         <div
           style={{
             position: 'absolute',
-            left: 196,
-            top: 118,
-            width: 136,
-            height: 136,
-            borderRadius: 34,
+            left: 88,
+            top: 146,
+            width: 80,
+            height: 80,
+            borderRadius: 22,
+            border: `2px dashed ${ink.rule}`,
+            boxSizing: 'border-box',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            left: 264,
+            top: 98,
+            width: 176,
+            height: 176,
+            borderRadius: 46,
             border: `2px dashed ${ink.rule}`,
             boxSizing: 'border-box',
           }}
         />
         <MorphElement id="mark">
           <div
+            className="gs mo-mark"
             style={{
               position: 'absolute',
-              left: 204,
-              top: 126,
-              width: 120,
-              height: 120,
-              borderRadius: 28,
+              left: 96,
+              top: 154,
+              width: 64,
+              height: 64,
+              borderRadius: 16,
               background: ink.accent,
             }}
           />
         </MorphElement>
+        <div
+          className="gs mo-ghost"
+          style={{
+            position: 'absolute',
+            left: 96,
+            top: 154,
+            width: 64,
+            height: 64,
+            borderRadius: 16,
+            background: ink.accent,
+          }}
+        />
       </MotionCol>
     </div>
   </Frame>
@@ -5370,11 +5460,23 @@ const RecapPage: Page = () => {
           gap: 40,
         }}
       >
-        <RecapStep n="01" title="Init" caption="npx @open-slide/cli init" delay={0.25} />
-        <RecapStep n="02" title="Prompt" caption="/create-slide" delay={0.32} />
-        <RecapStep n="03" title="Edit" caption="click · tweak · save" delay={0.39} />
-        <RecapStep n="04" title="Comment" caption="/apply-comments" delay={0.46} />
-        <RecapStep n="05" title="Present" caption="F · fullscreen" delay={0.53} />
+        <Steps>
+          <Step>
+            <RecapStep n="01" title="Init" caption="npx @open-slide/cli init" delay={0.25} />
+          </Step>
+          <Step>
+            <RecapStep n="02" title="Prompt" caption="/create-slide" delay={0.32} />
+          </Step>
+          <Step>
+            <RecapStep n="03" title="Edit" caption="click · tweak · save" delay={0.39} />
+          </Step>
+          <Step>
+            <RecapStep n="04" title="Comment" caption="/apply-comments" delay={0.46} />
+          </Step>
+          <Step>
+            <RecapStep n="05" title="Present" caption="F · fullscreen" delay={0.53} />
+          </Step>
+        </Steps>
       </div>
       <p
         className="gs gs-rise"
