@@ -206,3 +206,30 @@ html.dark .os-landing .agent-mono {
   outline-offset: 3px;
   border-radius: 6px;
 }
+
+@keyframes os-pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(1.5%);
+  }
+}
+.os-landing .page-enter {
+  animation: os-pageEnter 260ms cubic-bezier(0, 0, 0.2, 1) both;
+}
+
+@keyframes os-keyPress {
+  45% {
+    transform: translateY(1px) scale(0.93);
+    background-color: #f0f0f0;
+  }
+}
+.os-landing .key-press {
+  animation: os-keyPress 240ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .os-landing .page-enter,
+  .os-landing .key-press {
+    animation: none;
+  }
+}

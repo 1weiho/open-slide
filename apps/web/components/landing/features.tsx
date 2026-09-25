@@ -1,8 +1,8 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { AgentLogos } from './agents';
-import { AnatomyVisual } from './anatomy';
 import { Container, SectionHeading } from './frame';
 import { AgentApplyVisual, VisualEditorVisual } from './inspector';
+import { PrimitivesVisual } from './primitives';
 import { PromptComposer } from './prompt-composer';
 
 const mono = 'font-[family-name:var(--font-mono)] text-[13px] text-[color:var(--color-text)]';
@@ -21,8 +21,8 @@ export function Features() {
           <FeatureCard
             wide
             title="A slide is a file."
-            body="Each page is a React component on a 1920×1080 canvas. Anything you can write in code, you can put on a slide."
-            visual={<AnatomyVisual />}
+            body="Each page is a React component on a 1920×1080 canvas. Steps, transitions, and morphs are plain exports in the same file."
+            visual={<PrimitivesVisual />}
           />
 
           <FeatureCard
