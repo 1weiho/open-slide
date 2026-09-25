@@ -1,0 +1,16 @@
+{
+  "name": "launch-video",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "preview": "node scripts/serve.mjs",
+    "soundtrack": "node audio/synth.mjs",
+    "stills": "node scripts/render.mjs --stills",
+    "render": "node audio/synth.mjs && node scripts/render.mjs",
+    "render:draft": "node audio/synth.mjs && node scripts/render.mjs --fps 30 --samples 1 --scale 0.5 --out out/draft.mp4"
+  },
+  "devDependencies": {
+    "@playwright/test": "~1.62.1"
+  }
+}
