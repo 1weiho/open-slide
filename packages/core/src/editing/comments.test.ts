@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { b64urlDecode, b64urlEncode, parseMarkers } from './comments.ts';
+import { b64urlDecode, b64urlEncode, deleteMarker, parseMarkers } from './comments.ts';
 
 describe('b64url encoding', () => {
   it('round-trips arbitrary unicode strings', () => {
@@ -68,5 +68,68 @@ describe('parseMarkers', () => {
     const comments = parseMarkers(source);
     expect(comments.map((c) => c.note)).toEqual(['one', 'two']);
     expect(comments.map((c) => c.line)).toEqual([1, 3]);
+  });
+});
+
+describe('deleteMarker', () => {
+  it('deletes a standalone marker line without touching neighbouring content', () => {
+    const payload = b64urlEncode(JSON.stringify({ note: 'tighten this' }));
+    const ts = '2026-04-25T00:00:00.000Z';
+    const id = 'c-deadbeef';
+    const source = [
+      'export default [() => (',
+      '  <div>',
+      `    {/* @slide-comment id="${id}" ts="${ts}" text="${payload}" */}`,
+      '    hi',
+      '  </div>',
+      ')];',
+    ].join('\n');
+
+    const next = deleteMarker(source, id);
+    expect(next).toBe(
+      ['export default [() => (', '  <div>', '    hi', '  </div>', ')];'].join('\n'),
+    );
+  });
+
+  it('removes only the marker token when it shares a line with real JSX (the {children}</div> regression)', () => {
+    const payload = b64urlEncode(JSON.stringify({ note: 'make red' }));
+    const ts = '2026-04-25T00:00:00.000Z';
+    const id = 'c-cafef00d';
+    // Mirrors what /__comments/add actually produces: the marker is spliced in
+    // right after the element's opening `>`, with a leading newline but no
+    // trailing one, so the pre-existing tail of that line rides along on the
+    // marker's new line.
+    const source = [
+      'export default [() => (',
+      '  <div>',
+      `    {/* @slide-comment id="${id}" ts="${ts}" text="${payload}" */}{children}</div>`,
+      ')];',
+    ].join('\n');
+
+    const next = deleteMarker(source, id);
+    expect(next).not.toBeNull();
+    expect(next).toContain('{children}</div>');
+    expect(next).not.toContain('@slide-comment');
+  });
+
+  it('deletes only the targeted id, leaving other markers in place', () => {
+    const p1 = b64urlEncode(JSON.stringify({ note: 'one' }));
+    const p2 = b64urlEncode(JSON.stringify({ note: 'two' }));
+    const source = [
+      `{/* @slide-comment id="c-aaaaaaaa" ts="2026-04-25T00:00:00.000Z" text="${p1}" */}`,
+      'const x = 1;',
+      `{/* @slide-comment id="c-bbbbbbbb" ts="2026-04-25T00:00:00.000Z" text="${p2}" */}`,
+    ].join('\n');
+
+    const next = deleteMarker(source, 'c-aaaaaaaa');
+    expect(next).not.toBeNull();
+    expect(next).not.toContain('c-aaaaaaaa');
+    expect(next).toContain('c-bbbbbbbb');
+    expect(next).toContain('const x = 1;');
+  });
+
+  it('returns null for an unknown marker id and leaves the source untouched', () => {
+    const source = 'export default [() => (<div>hi</div>)];';
+    expect(deleteMarker(source, 'c-00000000')).toBeNull();
   });
 });

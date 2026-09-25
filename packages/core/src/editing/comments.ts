@@ -46,6 +46,29 @@ export function markerDeleteRegex(id: string): RegExp {
   );
 }
 
+// Deletes only the marker token identified by `id`, never the physical line it
+// sits on. A marker is inserted with a leading newline but no trailing one
+// (see `planInsertion`/the `/add` route), so it can share a source line with
+// real content that follows it — e.g. `{/* @slide-comment ... */}{children}</div>`.
+// Removing the whole line there deletes `{children}</div>` along with the
+// marker. If stripping the marker leaves the line blank, the line itself is
+// dropped so no stray empty line remains; otherwise the rest of the line,
+// including any content before or after the marker, is preserved untouched.
+// Returns null when no marker with this id exists, leaving `source` unchanged.
+export function deleteMarker(source: string, id: string): string | null {
+  const idRe = markerDeleteRegex(id);
+  const lines = source.split('\n');
+  const hit = lines.findIndex((l) => idRe.test(l));
+  if (hit === -1) return null;
+  const stripped = lines[hit].replace(idRe, '');
+  if (stripped.trim() === '') {
+    lines.splice(hit, 1);
+  } else {
+    lines[hit] = stripped;
+  }
+  return lines.join('\n');
+}
+
 // We always splice the marker as the first child of a JSX container.
 // A JSX-comment-like token outside JSX context (e.g. as the body of
 // `() => ( <Foo/> )`) is parsed as an empty object literal and breaks
