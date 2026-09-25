@@ -572,10 +572,10 @@ function TextareaMock({
       {empty ? (
         <span className="text-[color:var(--color-muted)]/70">{placeholder}</span>
       ) : (
-        <span className="flex items-start">
+        <span>
           {children}
           {focused ? (
-            <span className="ml-px inline-block w-px animate-pulse self-stretch bg-[color:var(--color-text)]" />
+            <span className="ml-px inline-block h-[1.15em] w-px animate-pulse bg-[color:var(--color-text)] align-[-0.2em]" />
           ) : null}
         </span>
       )}
