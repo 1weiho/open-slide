@@ -22,16 +22,9 @@ const assets: AssetMock[] = [
   { name: 'zeabur-dark.svg', size: '4.7 KB', logo: 'zeabur', themed: true },
 ];
 
-const svglResults: { name: string; category: string; logo: string; themed?: boolean }[] = [
-  { name: 'Vercel', category: 'Software', logo: 'vercel', themed: true },
-  { name: 'Cloudflare', category: 'Cloud', logo: 'cloudflare' },
-  { name: 'Zeabur', category: 'Cloud', logo: 'zeabur', themed: true },
-];
-
-/* One 14s story: click "Search logos" → dialog opens with three results →
-   type "vercel", the rest filter out → close via ✕ → drag a file in → toast. */
-const ASSET_LOOP_DURATION = 14;
-const SVGL_QUERY = 'vercel';
+/* One 8s story: a file is dragged in → drop zone lights up → hero.png lands
+   in slot 1 → upload toast. */
+const ASSET_LOOP_DURATION = 8;
 const EASE_OUT: Easing = [0.23, 1, 0.32, 1];
 
 export function AssetManagerMock() {
@@ -39,28 +32,6 @@ export function AssetManagerMock() {
   const inView = useInView(ref, { amount: 0.3 });
   const reduced = useReducedMotion();
   const active = inView && !reduced;
-
-  // Placeholder and result filtering derive from the typing clock, so they
-  // can never drift out of sync with the text: placeholder dies with the
-  // first keystroke, non-matches stay gone until the query resets — which
-  // only happens after the dialog is already hidden.
-  const typingProgress = useMotionValue(1);
-  const dialogPhase = useMotionValue(1);
-  // The leading zero-width space keeps the line box alive when the query is
-  // empty — without it the row collapses to caret height and the absolutely
-  // positioned placeholder drifts out of alignment.
-  const queryText = useTransform(
-    typingProgress,
-    (p) => `\u200B${SVGL_QUERY.slice(0, Math.max(0, Math.round(p * SVGL_QUERY.length)))}`,
-  );
-  const placeholderOpacity = useTransform(typingProgress, [0, 0.06], [1, 0]);
-  const nonMatchOpacity = useTransform(typingProgress, [0, 0.12], [1, 0]);
-  const nonMatchScale = useTransform(typingProgress, [0, 0.12], [1, 0.95]);
-  const dialogScale = useTransform(dialogPhase, [0, 1], [0.96, 1]);
-  const dialogY = useTransform(dialogPhase, [0, 1], [6, 0]);
-  const dialogVisibility = useTransform(dialogPhase, (v) =>
-    v < 0.01 ? ('hidden' as const) : ('visible' as const),
-  );
 
   // The dropped file becomes real state: hero.png inserts at slot 1, every
   // card shifts back one slot (the last one is pushed out of the visible
@@ -79,38 +50,18 @@ export function AssetManagerMock() {
 
   useEffect(() => {
     if (!active) {
-      typingProgress.set(1);
-      dialogPhase.set(1);
       heroPhase.set(0);
       return;
     }
-    typingProgress.set(0);
-    dialogPhase.set(0);
     heroPhase.set(0);
-    const typing = animate(typingProgress, [0, 0, 1, 1, 0, 0], {
-      duration: ASSET_LOOP_DURATION,
-      times: [0, 0.18, 0.26, 0.56, 0.6, 1],
-      ease: 'linear',
-      repeat: Infinity,
-    });
-    const dialog = animate(dialogPhase, [0, 0, 1, 1, 0, 0], {
-      duration: ASSET_LOOP_DURATION,
-      times: [0, 0.13, 0.157, 0.52, 0.542, 1],
-      ease: ['linear', EASE_OUT, 'linear', EASE_OUT, 'linear'],
-      repeat: Infinity,
-    });
     const hero = animate(heroPhase, [0, 0, 1, 1, 0], {
       duration: ASSET_LOOP_DURATION,
-      times: [0, 0.73, 0.765, 0.985, 1],
+      times: [0, 0.378, 0.439, 0.95, 1],
       ease: ['linear', EASE_OUT, 'linear', 'easeOut'],
       repeat: Infinity,
     });
-    return () => {
-      typing.stop();
-      dialog.stop();
-      hero.stop();
-    };
-  }, [active, typingProgress, dialogPhase, heroPhase]);
+    return () => hero.stop();
+  }, [active, heroPhase]);
 
   const loopTransition = (times: number[], ease: Easing | Easing[] = 'easeInOut') =>
     active
@@ -161,36 +112,6 @@ export function AssetManagerMock() {
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          <motion.span
-            className="relative inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] px-2.5 font-[family-name:var(--font-sans)] text-[12.5px] font-medium text-[color:var(--color-text)] transition-colors hover:border-[color:var(--color-dim)] hover:bg-[color:var(--color-panel-hi)]"
-            animate={active ? { scale: [1, 1, 0.94, 1, 1] } : { scale: 1 }}
-            transition={loopTransition([0, 0.11, 0.125, 0.148, 1], 'easeOut')}
-          >
-            <SearchGlyph />
-            <span className="hidden sm:inline">Search logos</span>
-
-            {/* guided cursor — flies in and presses the button */}
-            <motion.span
-              aria-hidden
-              className="absolute left-1/2 top-1/2 z-10 pointer-events-none"
-              animate={
-                active
-                  ? {
-                      opacity: [0, 0, 1, 1, 1, 0, 0],
-                      x: [-170, -170, 0, 0, 0, 0, 0],
-                      y: [150, 150, 0, 0, 0, 0, 0],
-                      scale: [1, 1, 1, 0.8, 1, 1, 1],
-                    }
-                  : { opacity: 0 }
-              }
-              transition={loopTransition(
-                [0, 0.045, 0.105, 0.12, 0.15, 0.19, 1],
-                [EASE_OUT, EASE_OUT, 'easeOut', 'easeOut', 'easeOut', 'linear'],
-              )}
-            >
-              <PointerGlyph className="w-[15px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]" />
-            </motion.span>
-          </motion.span>
           <span className="pressable inline-flex h-8 items-center gap-1.5 rounded-[5px] bg-[color:var(--color-text)] px-3 font-[family-name:var(--font-sans)] text-[12.5px] font-medium text-[color:var(--color-ink)] shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_1px_0_rgba(0,0,0,0.12)] hover:opacity-90">
             <UploadGlyph />
             Upload
@@ -224,7 +145,7 @@ export function AssetManagerMock() {
                     aria-hidden
                     className="absolute -inset-px rounded-[7px] ring-2 ring-[color:var(--color-accent)]/40 pointer-events-none"
                     animate={active ? { opacity: [0, 0, 1, 0, 0] } : { opacity: 0 }}
-                    transition={loopTransition([0, 0.735, 0.78, 0.88, 1], 'easeOut')}
+                    transition={loopTransition([0, 0.386, 0.465, 0.64, 1], 'easeOut')}
                   />
                 </motion.div>
               </div>
@@ -260,7 +181,7 @@ export function AssetManagerMock() {
               : { opacity: 0 }
           }
           transition={loopTransition(
-            [0, 0.6, 0.665, 0.715, 0.73, 0.755, 1],
+            [0, 0.15, 0.264, 0.351, 0.378, 0.421, 1],
             [EASE_OUT, EASE_OUT, 'linear', 'easeOut', 'easeOut', 'linear'],
           )}
         >
@@ -294,7 +215,7 @@ export function AssetManagerMock() {
               : { opacity: 0 }
           }
           transition={loopTransition(
-            [0, 0.6, 0.665, 0.73, 0.75, 0.775, 1],
+            [0, 0.15, 0.264, 0.378, 0.413, 0.456, 1],
             [EASE_OUT, EASE_OUT, 'linear', 'linear', 'easeOut', 'linear'],
           )}
         >
@@ -307,7 +228,7 @@ export function AssetManagerMock() {
           className="absolute inset-0 pointer-events-none"
           animate={active ? { opacity: [0, 0, 1, 1, 0, 0] } : { opacity: 0 }}
           transition={loopTransition(
-            [0, 0.625, 0.65, 0.725, 0.75, 1],
+            [0, 0.194, 0.238, 0.369, 0.413, 1],
             ['linear', 'easeOut', 'linear', 'easeOut', 'linear'],
           )}
         >
@@ -325,7 +246,7 @@ export function AssetManagerMock() {
               : { opacity: 0, y: '40%' }
           }
           transition={loopTransition(
-            [0, 0.63, 0.655, 0.725, 0.75, 1],
+            [0, 0.203, 0.246, 0.369, 0.413, 1],
             ['linear', EASE_OUT, 'linear', EASE_OUT, 'linear'],
           )}
         >
@@ -345,7 +266,7 @@ export function AssetManagerMock() {
               : { opacity: 0, y: '60%' }
           }
           transition={loopTransition(
-            [0, 0.75, 0.772, 0.92, 0.945, 1],
+            [0, 0.413, 0.451, 0.71, 0.754, 1],
             ['linear', EASE_OUT, 'linear', EASE_OUT, 'linear'],
           )}
         >
@@ -353,120 +274,6 @@ export function AssetManagerMock() {
             <CheckGlyph />
             Uploaded{' '}
             <span className="font-[family-name:var(--font-mono)] text-[11px]">hero.png</span>
-          </div>
-        </motion.div>
-
-        {/* svgl Logo Search dialog — opens from the button, closes via ✕ */}
-        <motion.div
-          className="floating absolute right-3 sm:right-5 bottom-3 sm:bottom-5 w-[80%] sm:w-[64%] max-w-[420px] rounded-[8px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-4"
-          style={{
-            transformOrigin: 'top right',
-            opacity: dialogPhase,
-            scale: dialogScale,
-            y: dialogY,
-            visibility: dialogVisibility,
-          }}
-        >
-          <div className="flex items-center justify-between mb-1">
-            <span className="font-[family-name:var(--font-sans)] text-[13px] font-medium text-[color:var(--color-text)]">
-              Logo search
-            </span>
-            <motion.span
-              className="relative inline-flex size-5 items-center justify-center rounded-[4px] text-[12px] text-[color:var(--color-dim)] transition-colors hover:bg-[color:var(--color-panel-hi)] hover:text-[color:var(--color-text)]"
-              animate={active ? { scale: [1, 1, 0.85, 1, 1] } : { scale: 1 }}
-              transition={loopTransition([0, 0.497, 0.512, 0.535, 1], 'easeOut')}
-            >
-              ✕{/* guided cursor — walks up to close the dialog */}
-              <motion.span
-                aria-hidden
-                className="absolute left-1/2 top-1/2 z-10 pointer-events-none"
-                animate={
-                  active
-                    ? {
-                        opacity: [0, 0, 1, 1, 1, 0, 0],
-                        x: [-70, -70, 0, 0, 0, 0, 0],
-                        y: [60, 60, 0, 0, 0, 0, 0],
-                        scale: [1, 1, 1, 0.8, 1, 1, 1],
-                      }
-                    : { opacity: 0 }
-                }
-                transition={loopTransition(
-                  [0, 0.43, 0.478, 0.5, 0.517, 0.545, 1],
-                  [EASE_OUT, EASE_OUT, 'easeOut', 'easeOut', 'easeOut', 'linear'],
-                )}
-              >
-                <PointerGlyph className="w-[15px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]" />
-              </motion.span>
-            </motion.span>
-          </div>
-          <div className="mb-3 font-[family-name:var(--font-sans)] text-[11px] text-[color:var(--color-muted)]">
-            Powered by svgl.app
-          </div>
-          <div className="flex items-center gap-2 rounded-[6px] border border-[color:var(--color-dim)] bg-[color:var(--color-panel)] px-3 py-2 mb-3 font-[family-name:var(--font-mono)] text-[13px] text-[color:var(--color-text)] ring-2 ring-[color:var(--color-text)]/10">
-            <span className="text-[color:var(--color-muted)]">
-              <SearchGlyph />
-            </span>
-            <span className="relative inline-flex items-baseline">
-              <motion.span
-                aria-hidden
-                className="absolute left-0 whitespace-nowrap text-[color:var(--color-muted)]"
-                style={{ opacity: placeholderOpacity }}
-              >
-                Search logos...
-              </motion.span>
-              <motion.span>{queryText}</motion.span>
-              <span className="caret" aria-hidden />
-            </span>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {svglResults.map((r, idx) => (
-              <motion.div
-                key={r.name}
-                className="group/logo relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-2 flex flex-col items-center gap-1.5 transition-[border-color,box-shadow,transform] duration-200 hover:border-[color:var(--color-dim)] hover:-translate-y-px hover:[box-shadow:var(--shadow-edge)]"
-                style={idx > 0 ? { opacity: nonMatchOpacity, scale: nonMatchScale } : undefined}
-              >
-                <div
-                  className="flex h-9 w-full items-center justify-center rounded-[4px]"
-                  style={{
-                    background:
-                      'repeating-conic-gradient(color-mix(in srgb, var(--color-rule) 55%, transparent) 0 25%, transparent 0 50%) 0 0 / 12px 12px',
-                  }}
-                >
-                  {r.themed ? (
-                    <>
-                      <img
-                        src={`/assets/${r.logo}-dark.svg`}
-                        alt={r.name}
-                        className="h-6 w-auto object-contain logo-dark"
-                      />
-                      <img
-                        src={`/assets/${r.logo}-light.svg`}
-                        alt=""
-                        aria-hidden
-                        className="h-6 w-auto object-contain logo-light"
-                      />
-                    </>
-                  ) : (
-                    <img
-                      src={`/assets/${r.logo}.svg`}
-                      alt={r.name}
-                      className="h-6 w-auto object-contain"
-                    />
-                  )}
-                </div>
-                <div className="w-full text-center">
-                  <div className="font-[family-name:var(--font-sans)] text-[10.5px] font-medium text-[color:var(--color-text)] truncate">
-                    {r.name}
-                  </div>
-                  <div className="font-[family-name:var(--font-sans)] text-[9px] text-[color:var(--color-muted)] truncate">
-                    {r.category}
-                  </div>
-                </div>
-                <span className="absolute right-1 top-1 rounded-[4px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] px-1.5 py-0.5 font-[family-name:var(--font-sans)] text-[9px] font-medium text-[color:var(--color-text)] opacity-0 transition-opacity group-hover/logo:opacity-100">
-                  Add
-                </span>
-              </motion.div>
-            ))}
           </div>
         </motion.div>
       </div>
@@ -584,23 +391,6 @@ function PointerGlyph({ className }: { className?: string }) {
         stroke="var(--color-ink)"
         strokeWidth={1.4}
       />
-    </svg>
-  );
-}
-
-function SearchGlyph() {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      className="size-3.5"
-    >
-      <circle cx="11" cy="11" r="7" />
-      <line x1="21" y1="21" x2="16.5" y2="16.5" />
     </svg>
   );
 }

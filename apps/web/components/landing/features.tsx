@@ -65,8 +65,8 @@ export function Features() {
 
           <FeatureCard
             wide
-            title="Drop in images. Pull in logos."
-            body="Manage assets from the same pane the inspector uses, and search 1500+ brand logos from svgl without leaving the editor."
+            title="Drop in images."
+            body="Drag files straight into the deck, then rename and replace them from the same pane the inspector uses."
             visual={<AssetManagerMock />}
             visualClassName="max-w-[880px]"
           />
