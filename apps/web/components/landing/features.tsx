@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { AgentLogos } from './agents';
 import { Container, SectionHeading } from './frame';
 import { AgentApplyVisual, VisualEditorVisual } from './inspector';
@@ -26,7 +26,6 @@ export function Features() {
           />
 
           <FeatureCard
-            delay={80}
             title="Prompt to deck."
             body={
               <>
@@ -38,7 +37,6 @@ export function Features() {
           />
 
           <FeatureCard
-            delay={160}
             title="Bring your own agent."
             body="Slides are plain .tsx files, so any tool that reads and writes React already works."
             visual={<AgentLogos />}
@@ -56,7 +54,6 @@ export function Features() {
           />
 
           <FeatureCard
-            delay={80}
             title="Click. Tweak. Save."
             body="Select any element and change text, type, or color on the canvas. One Save lands the batch as a single write."
             visual={<VisualEditorVisual />}
@@ -72,18 +69,15 @@ function FeatureCard({
   body,
   visual,
   wide = false,
-  delay = 0,
 }: {
   title: string;
   body: ReactNode;
   visual: ReactNode;
   wide?: boolean;
-  delay?: number;
 }) {
   return (
     <article
       data-reveal
-      style={{ '--reveal-delay': `${delay}ms` } as CSSProperties}
       className={`flex flex-col overflow-hidden rounded-2xl border border-[color:var(--color-rule-soft)] bg-[color:var(--color-panel)] transition-colors duration-300 hover:border-[color:var(--color-rule)] ${
         wide ? 'lg:col-span-2' : ''
       }`}

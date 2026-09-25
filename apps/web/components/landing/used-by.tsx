@@ -1,6 +1,6 @@
 'use client';
 
-import { type CSSProperties, useState } from 'react';
+import { useState } from 'react';
 import { Container, SectionHeading } from './frame';
 
 const tweetUrl = 'https://x.com/samlambert/status/2066020380092051484?s=20';
@@ -76,7 +76,6 @@ export function UsedBy() {
 
           <figure
             data-reveal
-            style={{ '--reveal-delay': '120ms' } as CSSProperties}
             className="m-0 overflow-hidden rounded-2xl border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] lg:col-span-3"
           >
             <VideoPlayer />
@@ -152,7 +151,7 @@ function VideoPlayer() {
       />
       <span
         aria-hidden
-        className="absolute left-1/2 top-1/2 flex size-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-black shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4)] backdrop-blur transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] group-active/play:scale-95"
+        className="absolute left-1/2 top-1/2 flex size-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-black shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4)] backdrop-blur transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover/play:scale-[1.06] group-active/play:scale-95"
       >
         <svg viewBox="0 0 24 24" fill="currentColor" className="size-6 translate-x-[1px]">
           <path d="M6 4.5 20 12 6 19.5 Z" />

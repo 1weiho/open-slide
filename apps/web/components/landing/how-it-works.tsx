@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { AgentIconList } from './agent-icon-list';
 import { Container, SectionHeading } from './frame';
 
@@ -78,11 +78,10 @@ export function HowItWorks() {
         />
 
         <ol className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          {steps.map((s, i) => (
+          {steps.map((s) => (
             <li
               key={s.num}
               data-reveal
-              style={{ '--reveal-delay': `${i * 80}ms` } as CSSProperties}
               className="flex flex-col gap-6 rounded-2xl border border-[color:var(--color-rule-soft)] bg-[color:var(--color-panel)] p-6 transition-colors duration-300 hover:border-[color:var(--color-rule)] sm:p-7"
             >
               <span className="inline-flex size-7 items-center justify-center rounded-full bg-[color:var(--color-panel-hi)] font-[family-name:var(--font-mono)] text-[11px] text-[color:var(--color-text-soft)]">

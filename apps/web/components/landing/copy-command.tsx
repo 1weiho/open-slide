@@ -48,10 +48,10 @@ export function CopyCommand({
       >
         <span className="relative inline-flex size-[14px] items-center justify-center">
           <CopyGlyph
-            className={`absolute inset-0 transition-all duration-200 ${copied ? 'scale-75 opacity-0' : 'scale-100 opacity-100'}`}
+            className={`absolute inset-0 transition-[opacity,scale,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] ${copied ? 'scale-50 opacity-0 blur-[2px]' : 'scale-100 opacity-100 blur-0'}`}
           />
           <CheckGlyph
-            className={`absolute inset-0 text-[color:var(--color-mint)] transition-all duration-200 ${copied ? 'scale-100 opacity-100' : 'scale-75 opacity-0'}`}
+            className={`absolute inset-0 text-[color:var(--color-mint)] transition-[opacity,scale,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] ${copied ? 'scale-100 opacity-100 blur-0' : 'scale-50 opacity-0 blur-[2px]'}`}
           />
         </span>
       </span>

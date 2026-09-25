@@ -37,7 +37,7 @@ export function FAQ() {
         <SectionHeading eyebrow="FAQ" title="Questions, answered." />
 
         <dl
-          data-reveal
+          data-reveal="stagger"
           className="mx-auto max-w-[760px] divide-y divide-[color:var(--color-rule-soft)] border-y border-[color:var(--color-rule-soft)]"
         >
           {faqs.map((item, idx) => (

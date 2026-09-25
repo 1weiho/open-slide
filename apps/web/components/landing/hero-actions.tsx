@@ -39,7 +39,10 @@ export function HeroActions() {
         className="group inline-flex items-center gap-1.5 text-[13px] text-[color:var(--color-muted)] transition-colors hover:text-[color:var(--color-text)]"
       >
         <span>Using an agent?</span>
-        <span className="font-medium text-[color:var(--color-text-soft)] underline decoration-[color:var(--color-rule)] underline-offset-4 transition-colors group-hover:text-[color:var(--color-text)] group-hover:decoration-[color:var(--color-dim)]">
+        <span
+          key={copied ? 'copied' : 'idle'}
+          className="swap-in font-medium text-[color:var(--color-text-soft)] underline decoration-[color:var(--color-rule)] underline-offset-4 transition-colors group-hover:text-[color:var(--color-text)] group-hover:decoration-[color:var(--color-dim)]"
+        >
           {copied ? 'Prompt copied' : 'Copy the setup prompt instead'}
         </span>
         <span className="sr-only" aria-live="polite">

@@ -1,7 +1,7 @@
 'use client';
 
 import posthog from 'posthog-js';
-import { useState } from 'react';
+import { type CSSProperties, useState } from 'react';
 import { Container } from './frame';
 import { InlineSlidePlayer, inlineSlideCount } from './inline-slide-player';
 
@@ -10,14 +10,21 @@ const navButtonClass =
 
 export function LiveDemo() {
   const [index, setIndex] = useState(0);
+  const [direction, setDirection] = useState<1 | -1>(1);
   const count = inlineSlideCount;
   const clamp = (i: number) => Math.max(0, Math.min(count - 1, i));
   const atStart = index === 0;
   const atEnd = index === count - 1;
 
+  const goTo = (next: number) => {
+    if (next === index) return;
+    setDirection(next > index ? 1 : -1);
+    setIndex(next);
+  };
+
   const handlePrev = () => {
     const next = clamp(index - 1);
-    setIndex(next);
+    goTo(next);
     posthog.capture('demo_slide_navigated', {
       direction: 'prev',
       slide_index: next,
@@ -26,7 +33,7 @@ export function LiveDemo() {
 
   const handleNext = () => {
     const next = clamp(index + 1);
-    setIndex(next);
+    goTo(next);
     posthog.capture('demo_slide_navigated', {
       direction: 'next',
       slide_index: next,
@@ -41,13 +48,16 @@ export function LiveDemo() {
         </h2>
         <div
           data-reveal
-          className="relative block w-full overflow-hidden rounded-2xl border border-[color:var(--color-rule)] bg-white shadow-[var(--shadow-lift)]"
-          style={{ aspectRatio: '16 / 9' }}
+          className="rise-frame relative block w-full overflow-hidden rounded-2xl border border-[color:var(--color-rule)] bg-white shadow-[var(--shadow-lift)]"
+          style={{ aspectRatio: '16 / 9', animationDelay: '560ms' }}
         >
-          <InlineSlidePlayer index={index} onIndexChange={setIndex} />
+          <InlineSlidePlayer index={index} onIndexChange={goTo} />
         </div>
 
-        <div className="mt-4 flex items-center justify-between text-[13px] font-medium text-[color:var(--color-muted)]">
+        <div
+          className="rise mt-4 flex items-center justify-between text-[13px] font-medium text-[color:var(--color-muted)]"
+          style={{ animationDelay: '760ms' }}
+        >
           <a
             href="https://demo.open-slide.dev/"
             target="_blank"
@@ -64,8 +74,17 @@ export function LiveDemo() {
             </span>
           </a>
           <span className="flex items-center gap-2">
-            <span className="mr-1 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.08em] text-[color:var(--color-text-soft)]">
-              {String(index + 1).padStart(2, '0')} / {String(count).padStart(2, '0')}
+            <span className="nums mr-1 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.08em] text-[color:var(--color-text-soft)]">
+              <span className="inline-flex overflow-hidden align-bottom">
+                <span
+                  key={index}
+                  className={index === 0 && direction === 1 ? undefined : 'swap-in'}
+                  style={{ '--swap-y': `${direction * 70}%` } as CSSProperties}
+                >
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+              </span>{' '}
+              / {String(count).padStart(2, '0')}
             </span>
             <button
               type="button"

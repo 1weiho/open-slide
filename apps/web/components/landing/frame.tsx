@@ -23,7 +23,7 @@ export function SectionHeading({
 }) {
   return (
     <div
-      data-reveal
+      data-reveal="stagger"
       className="mx-auto mb-12 flex max-w-[720px] flex-col items-center gap-4 text-center sm:mb-16"
     >
       {eyebrow ? <span className="eyebrow">{eyebrow}</span> : null}

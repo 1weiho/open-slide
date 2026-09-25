@@ -1,5 +1,6 @@
 'use client';
 
+import { motion, useReducedMotion } from 'motion/react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 
@@ -18,19 +19,32 @@ const OPTIONS: Option[] = [
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const current = mounted ? (theme ?? 'system') : 'system';
+  const activeIndex = OPTIONS.findIndex((opt) => opt.value === current);
 
   return (
     <div
       role="radiogroup"
       aria-label="Theme"
-      className="inline-flex h-8 items-center gap-0.5 rounded-full bg-[color:var(--color-panel-hi)] p-0.5"
+      className="relative inline-flex h-8 items-center gap-0.5 rounded-full bg-[color:var(--color-panel-hi)] p-0.5"
     >
+      {mounted && activeIndex >= 0 ? (
+        // Driven by motion rather than a CSS transition: the theme provider
+        // suppresses all transitions for the frame the theme flips.
+        <motion.span
+          aria-hidden
+          initial={false}
+          animate={{ transform: `translateX(${activeIndex * 30}px)` }}
+          transition={reduceMotion ? { duration: 0 } : { duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+          className="absolute top-0.5 left-0.5 size-7 rounded-full bg-[color:var(--color-panel)] shadow-[var(--shadow-edge)]"
+        />
+      ) : null}
       {OPTIONS.map((opt) => {
         const active = current === opt.value;
         return (
@@ -43,9 +57,9 @@ export function ThemeToggle() {
             title={opt.label}
             onClick={() => setTheme(opt.value)}
             className={
-              'pressable inline-flex items-center justify-center h-7 w-7 rounded-full ' +
+              'pressable relative inline-flex items-center justify-center h-7 w-7 rounded-full ' +
               (active
-                ? 'bg-[color:var(--color-panel)] text-[color:var(--color-text)] shadow-[var(--shadow-edge)]'
+                ? 'text-[color:var(--color-text)]'
                 : 'text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]')
             }
           >

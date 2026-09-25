@@ -27,6 +27,7 @@
   --font-mono: var(--font-geist-mono);
 
   --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 
   background: var(--color-ink);
   color: var(--color-text);
@@ -86,6 +87,15 @@ html.dark .os-landing {
   box-shadow: var(--shadow-floating);
 }
 
+.os-landing section[id] {
+  scroll-margin-top: 60px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.os-landing) {
+    scroll-behavior: smooth;
+  }
+}
+
 .os-landing .nums {
   font-variant-numeric: tabular-nums;
 }
@@ -93,34 +103,84 @@ html.dark .os-landing {
 @keyframes os-rise {
   from {
     opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+    transform: translateY(var(--rise-y, 12px));
+    filter: blur(var(--rise-blur, 6px));
   }
 }
 /* backwards (not both): the last keyframe matches natural styles, and a
    forwards fill would pin transform and block hover/press feedback. */
 .os-landing .rise {
-  animation: os-rise 700ms var(--ease-out-strong) backwards;
+  animation: os-rise 1000ms var(--ease-out-expo) backwards;
+}
+.os-landing .rise-word {
+  display: inline-block;
+  --rise-y: 0.3em;
+  --rise-blur: 10px;
+}
+
+@keyframes os-riseFrame {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.97);
+  }
+}
+.os-landing .rise-frame {
+  animation: os-riseFrame 1400ms var(--ease-out-expo) backwards;
 }
 
 /* Scroll reveals — ScrollReveal only marks elements still below the fold
    as .reveal-hidden, so content never flashes and non-JS visitors see
    everything. Removing the class transitions back to natural styles. */
-.os-landing [data-reveal].reveal-hidden {
+.os-landing [data-reveal].reveal-hidden,
+.os-landing [data-reveal="stagger"].reveal-hidden > * {
   opacity: 0;
-  transform: translateY(12px);
+  transform: translateY(16px);
+  filter: blur(4px);
+}
+.os-landing [data-reveal="stagger"].reveal-hidden {
+  opacity: 1;
+  transform: none;
+  filter: none;
 }
 .os-landing [data-reveal="fade"].reveal-hidden {
   transform: none;
 }
-.os-landing [data-reveal].reveal-shown {
+.os-landing [data-reveal].reveal-shown,
+.os-landing [data-reveal="stagger"].reveal-shown > * {
   transition:
-    opacity 600ms var(--ease-out-strong),
-    transform 600ms var(--ease-out-strong);
-  transition-delay: var(--reveal-delay, 0ms);
+    opacity 900ms var(--ease-out-expo),
+    transform 900ms var(--ease-out-expo),
+    filter 900ms var(--ease-out-expo);
+  transition-delay: calc(var(--reveal-delay, 0ms) + var(--stagger-i, 0) * 70ms);
+}
+.os-landing [data-reveal="stagger"] > :nth-child(2) {
+  --stagger-i: 1;
+}
+.os-landing [data-reveal="stagger"] > :nth-child(3) {
+  --stagger-i: 2;
+}
+.os-landing [data-reveal="stagger"] > :nth-child(4) {
+  --stagger-i: 3;
+}
+.os-landing [data-reveal="stagger"] > :nth-child(5) {
+  --stagger-i: 4;
+}
+.os-landing [data-reveal="stagger"] > :nth-child(n + 6) {
+  --stagger-i: 5;
+}
+
+/* Keyed swap for text or glyphs that change in place — remounting the
+   node replays it, and the blur hides the crossfade seam. */
+@keyframes os-swap {
+  from {
+    opacity: 0;
+    transform: translateY(var(--swap-y, 4px));
+    filter: blur(2px);
+  }
+}
+.os-landing .swap-in {
+  display: inline-block;
+  animation: os-swap 320ms var(--ease-out-strong) backwards;
 }
 
 /* Press feedback for anything clickable. Transition list covers the hover
@@ -139,7 +199,9 @@ html.dark .os-landing {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .os-landing .rise {
+  .os-landing .rise,
+  .os-landing .rise-frame,
+  .os-landing .swap-in {
     animation: none;
   }
   .os-landing .pressable:active {
