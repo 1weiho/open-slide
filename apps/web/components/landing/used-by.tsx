@@ -34,13 +34,13 @@ export function UsedBy() {
       <Container className="pb-24 sm:pb-32">
         <SectionHeading eyebrow="In the wild" title="Used by people who create engaging slides." />
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
           <a
             data-reveal
             href={tweetUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="group relative flex flex-col justify-center rounded-2xl border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-6 transition-colors duration-300 hover:border-[color:var(--color-dim)] sm:p-8"
+            className="group relative block rounded-2xl border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-6 transition-colors duration-300 hover:border-[color:var(--color-dim)] sm:p-8"
           >
             <XGlyph className="absolute right-6 top-6 size-4 text-[color:var(--color-dim)] transition-colors group-hover:text-[color:var(--color-text)] sm:right-7 sm:top-7" />
 
