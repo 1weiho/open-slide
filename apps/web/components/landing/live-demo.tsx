@@ -41,7 +41,7 @@ export function LiveDemo() {
   };
 
   return (
-    <div id="demo" aria-labelledby="demo-heading">
+    <section id="demo" aria-labelledby="demo-heading">
       <Container className="pt-14 pb-8 sm:pt-16 sm:pb-12">
         <h2 id="demo-heading" className="sr-only">
           Live demo
@@ -74,7 +74,13 @@ export function LiveDemo() {
             </span>
           </a>
           <span className="flex items-center gap-2">
-            <span className="nums mr-1 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.08em] text-[color:var(--color-text-soft)]">
+            <span className="sr-only" aria-live="polite">
+              Slide {index + 1} of {count}
+            </span>
+            <span
+              aria-hidden
+              className="nums mr-1 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.08em] text-[color:var(--color-text-soft)]"
+            >
               <span className="inline-flex overflow-hidden align-bottom">
                 <span
                   key={index}
@@ -107,7 +113,7 @@ export function LiveDemo() {
           </span>
         </div>
       </Container>
-    </div>
+    </section>
   );
 }
 

@@ -21,6 +21,8 @@ function copyWithExecCommand(content: string): boolean {
   textArea.select();
   try {
     return document.execCommand('copy');
+  } catch {
+    return false;
   } finally {
     textArea.remove();
   }
