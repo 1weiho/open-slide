@@ -1,7 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { AgentLogos } from './agents';
 import { AnatomyVisual } from './anatomy';
-import { AssetManagerMock } from './assets';
 import { Container, SectionHeading } from './frame';
 import { AgentApplyVisual, VisualEditorVisual } from './inspector';
 import { PromptComposer } from './prompt-composer';
@@ -62,14 +61,6 @@ export function Features() {
             body="Select any element and change text, type, or color on the canvas. One Save lands the batch as a single write."
             visual={<VisualEditorVisual />}
           />
-
-          <FeatureCard
-            wide
-            title="Drop in images."
-            body="Drag files straight into the deck, then rename and replace them from the same pane the inspector uses."
-            visual={<AssetManagerMock />}
-            visualClassName="max-w-[880px]"
-          />
         </div>
       </Container>
     </section>
@@ -80,14 +71,12 @@ function FeatureCard({
   title,
   body,
   visual,
-  visualClassName = '',
   wide = false,
   delay = 0,
 }: {
   title: string;
   body: ReactNode;
   visual: ReactNode;
-  visualClassName?: string;
   wide?: boolean;
   delay?: number;
 }) {
@@ -100,9 +89,7 @@ function FeatureCard({
       }`}
     >
       <div className="flex flex-1 items-center justify-center bg-[color:var(--color-panel-hi)] p-6 sm:p-8">
-        <div
-          className={`w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-0.5 ${visualClassName}`}
-        >
+        <div className="w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-0.5">
           {visual}
         </div>
       </div>
