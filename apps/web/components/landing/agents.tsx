@@ -15,7 +15,7 @@ const agents: Agent[] = [
     url: 'https://github.com/google-gemini/gemini-cli',
     colored: true,
   },
-  { name: 'OpenCode', file: 'opencode-light', url: 'https://opencode.ai' },
+  { name: 'OpenCode', file: 'opencode-mono', url: 'https://opencode.ai' },
   { name: 'Windsurf', file: 'windsurf-light', url: 'https://windsurf.com' },
   { name: 'Zed', file: 'zed-light', url: 'https://zed.dev' },
 ];
