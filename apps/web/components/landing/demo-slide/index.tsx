@@ -16,34 +16,6 @@ const useSlidePageNumber = () => {
   return { current: index + 1, total };
 };
 
-// Vite returns a URL string for asset imports; Next.js/Turbopack returns an
-// object like { src, width, height }. Normalize to a string so the slide
-// source works under both bundlers without per-bundler config.
-type AssetImport = string | { src: string };
-const url = (a: AssetImport): string => (typeof a === 'string' ? a : a.src);
-
-import claudeLogoImport from './assets/claude.svg';
-import cloudflareLogoImport from './assets/cloudflare.svg';
-import codexLogoImport from './assets/codex.svg';
-import cursorLogoImport from './assets/cursor.svg';
-import geminiLogoImport from './assets/gemini.svg';
-import opencodeLogoImport from './assets/opencode.svg';
-import vercelLogoImport from './assets/vercel.svg';
-import windsurfLogoImport from './assets/windsurf.svg';
-import zeaburLogoImport from './assets/zeabur.svg';
-import zedLogoImport from './assets/zed.svg';
-
-const claudeLogo = url(claudeLogoImport);
-const cloudflareLogo = url(cloudflareLogoImport);
-const codexLogo = url(codexLogoImport);
-const cursorLogo = url(cursorLogoImport);
-const geminiLogo = url(geminiLogoImport);
-const opencodeLogo = url(opencodeLogoImport);
-const vercelLogo = url(vercelLogoImport);
-const windsurfLogo = url(windsurfLogoImport);
-const zeaburLogo = url(zeaburLogoImport);
-const zedLogo = url(zedLogoImport);
-
 const ink = {
   text: '#0a0a0a',
   soft: '#404040',
@@ -2987,15 +2959,68 @@ const CommentPanel = ({ delay }: { delay: number }) => (
   </div>
 );
 
+const PreviewMark = () => (
+  <div style={{ width: '36%', aspectRatio: '1 / 1', borderRadius: u(8), background: ink.accent }} />
+);
+
+const PreviewDot = () => (
+  <div style={{ width: '36%', aspectRatio: '1 / 1', borderRadius: '50%', background: ink.text }} />
+);
+
+const PreviewBars = () => (
+  <div style={{ width: '44%', height: '40%', display: 'flex', alignItems: 'flex-end', gap: u(6) }}>
+    {[45, 75, 100].map((h, i) => (
+      <div
+        key={h}
+        style={{
+          flex: 1,
+          height: `${h}%`,
+          borderRadius: u(2),
+          background: i === 2 ? ink.accent : ink.text,
+        }}
+      />
+    ))}
+  </div>
+);
+
+const PreviewGlyph = () => (
+  <span
+    style={{ fontFamily: font.sans, fontSize: u(40), fontWeight: 500, letterSpacing: '-0.02em' }}
+  >
+    Aa
+  </span>
+);
+
+const PreviewCover = () => (
+  <div
+    style={{
+      width: '64%',
+      aspectRatio: '16 / 9',
+      borderRadius: u(3),
+      background: '#fff',
+      boxShadow: shadow.edge,
+      padding: '8%',
+      boxSizing: 'border-box',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'flex-end',
+      gap: u(4),
+    }}
+  >
+    <div style={{ width: '70%', height: u(5), borderRadius: u(1), background: ink.text }} />
+    <div style={{ width: '40%', height: u(3), borderRadius: u(1), background: ink.accent }} />
+  </div>
+);
+
 const AssetCard = ({
-  src,
+  preview,
   name,
   size,
   date = 'Sep 24',
   className,
   delay = 0,
 }: {
-  src: string;
+  preview: ReactNode;
   name: string;
   size: string;
   date?: string;
@@ -3026,7 +3051,7 @@ const AssetCard = ({
         backgroundSize: `${u(14)}px ${u(14)}px`,
       }}
     >
-      <img src={src} alt="" style={{ width: '44%', height: '44%', objectFit: 'contain' }} />
+      {preview}
     </div>
     <div
       style={{
@@ -3174,45 +3199,51 @@ const AssetsView = () => (
       }}
     >
       <AssetCard
-        src={claudeLogo}
-        name="claude.svg"
-        size="2.0 KB"
+        preview={<PreviewMark />}
+        name="mark.svg"
+        size="0.2 KB"
         className="gs gs-rise-sm"
         delay={0.3}
       />
       <AssetCard
-        src={codexLogo}
-        name="codex.svg"
-        size="1.4 KB"
+        preview={<PreviewGlyph />}
+        name="Geist.woff2"
+        size="68 KB"
         className="gs gs-rise-sm"
         delay={0.36}
       />
       <AssetCard
-        src={geminiLogo}
-        name="gemini.svg"
-        size="3.8 KB"
+        preview={<PreviewBars />}
+        name="chart.svg"
+        size="0.4 KB"
         className="gs gs-rise-sm"
         delay={0.42}
       />
       <AssetCard
-        src={cursorLogo}
-        name="cursor.svg"
-        size="0.8 KB"
+        preview={<PreviewDot />}
+        name="dot.svg"
+        size="0.1 KB"
         className="gs gs-rise-sm"
         delay={0.48}
       />
       <AssetCard
-        src={opencodeLogo}
-        name="opencode.svg"
-        size="0.3 KB"
+        preview={<Icon name="arrow-right" size={40} stroke={1.5} />}
+        name="arrow.svg"
+        size="0.2 KB"
         className="gs gs-rise-sm"
         delay={0.54}
       />
-      <AssetCard src={zedLogo} name="zed.svg" size="0.7 KB" className="gs gs-rise-sm" delay={0.6} />
       <AssetCard
-        src={vercelLogo}
-        name="vercel.svg"
-        size="0.2 KB"
+        preview={<Icon name="grid-2x2" size={40} stroke={1.5} />}
+        name="grid.svg"
+        size="0.3 KB"
+        className="gs gs-rise-sm"
+        delay={0.6}
+      />
+      <AssetCard
+        preview={<PreviewCover />}
+        name="cover.png"
+        size="24 KB"
         date="just now"
         className="gs gs-rise-sm"
         delay={2.55}
@@ -3291,7 +3322,7 @@ const AssetsView = () => (
         }}
       >
         <Icon name="file-image" size={14} style={{ color: ink.muted }} />
-        vercel.svg
+        cover.png
       </div>
     </div>
     <Cursor className="gs as-drag" left={1180} top={300} />
@@ -3318,7 +3349,7 @@ const AssetsView = () => (
       }}
     >
       <Icon name="check" size={14} stroke={2.5} style={{ color: ink.mint, marginTop: u(2) }} />
-      <span style={{ fontSize: u(12.5), fontWeight: 500 }}>Uploaded vercel.svg</span>
+      <span style={{ fontSize: u(12.5), fontWeight: 500 }}>Uploaded cover.png</span>
     </div>
   </div>
 );
@@ -3690,56 +3721,6 @@ const Toast = ({ delay }: { delay: number }) => (
   </div>
 );
 
-const LogoTile = ({
-  src,
-  name,
-  delay,
-  logoHeight = 68,
-}: {
-  src: string;
-  name: string;
-  delay: number;
-  logoHeight?: number;
-}) => (
-  <div
-    className="gs gs-rise"
-    style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      gap: 28,
-      padding: '40px 16px 36px',
-      animationDelay: `${delay}s`,
-    }}
-  >
-    <div style={{ height: 80, display: 'flex', alignItems: 'center' }}>
-      <img
-        src={src}
-        alt=""
-        style={{
-          height: logoHeight,
-          width: 'auto',
-          maxWidth: 160,
-          objectFit: 'contain',
-          filter: 'brightness(0)',
-          opacity: 0.78,
-        }}
-      />
-    </div>
-    <div
-      style={{
-        fontSize: 24,
-        fontWeight: 500,
-        color: ink.text,
-        letterSpacing: '-0.01em',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {name}
-    </div>
-  </div>
-);
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Pages
 
@@ -4071,17 +4052,9 @@ const InitPage: Page = () => (
   </Frame>
 );
 
-const AgentLogoRow = () => (
-  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 18 }}>
-    <img src={claudeLogo} alt="" style={{ height: 22, filter: 'brightness(0)', opacity: 0.7 }} />
-    <img src={codexLogo} alt="" style={{ height: 22, filter: 'brightness(0)', opacity: 0.7 }} />
-    <img src={cursorLogo} alt="" style={{ height: 22, filter: 'brightness(0)', opacity: 0.7 }} />
-    <img src={geminiLogo} alt="" style={{ height: 22, filter: 'brightness(0)', opacity: 0.7 }} />
-    <span
-      style={{ fontFamily: font.mono, fontSize: 15, letterSpacing: '0.08em', color: ink.muted }}
-    >
-      …
-    </span>
+const AgentNameRow = () => (
+  <span style={{ fontFamily: font.mono, fontSize: 15, color: ink.muted, whiteSpace: 'nowrap' }}>
+    Claude Code · Codex · Cursor · Gemini …
   </span>
 );
 
@@ -4137,7 +4110,7 @@ const PromptPage: Page = () => (
               justifyContent: 'space-between',
             }}
           >
-            <AgentLogoRow />
+            <AgentNameRow />
             <span
               style={{
                 fontFamily: font.mono,
@@ -5158,10 +5131,6 @@ const MenuItem = ({
   </div>
 );
 
-const HostTile = ({ src, name, delay }: { src: string; name: string; delay: number }) => (
-  <LogoTile src={src} name={name} delay={delay} logoHeight={44} />
-);
-
 const ExportPage: Page = () => (
   <Frame
     eyebrow="Ship"
@@ -5208,8 +5177,13 @@ const ExportPage: Page = () => (
         <Cursor className="gs ex-cursor" left={330} top={128} press={[1.7]} />
         <Toast delay={2.1} />
       </Editor>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 32, height: '100%' }}>
-        <Window className="gs gs-rise" title="~/my-deck — zsh" delay={0.3} style={{ height: 268 }}>
+      <div style={{ height: '100%' }}>
+        <Window
+          className="gs gs-rise"
+          title="~/my-deck — zsh"
+          delay={0.3}
+          style={{ height: '100%' }}
+        >
           <div style={term}>
             <Line delay={0} className="gs">
               <Prompt />
@@ -5228,63 +5202,6 @@ const ExportPage: Page = () => (
             </Line>
           </div>
         </Window>
-        <div
-          className="gs gs-rise"
-          style={{
-            flex: 1,
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            alignItems: 'center',
-            borderRadius: 12,
-            background: '#fff',
-            boxShadow: shadow.window,
-            animationDelay: '0.4s',
-          }}
-        >
-          <HostTile src={vercelLogo} name="Vercel" delay={0.6} />
-          <HostTile src={cloudflareLogo} name="Cloudflare" delay={0.7} />
-          <HostTile src={zeaburLogo} name="Zeabur" delay={0.8} />
-        </div>
-      </div>
-    </div>
-  </Frame>
-);
-
-const AgentsPage: Page = () => (
-  <Frame
-    eyebrow="Why open-slide"
-    title="Bring your own agent."
-    lead="Slides are plain .tsx files, so any tool that reads and writes React already works. No SDK, no lock-in."
-  >
-    <div
-      style={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        gap: 64,
-      }}
-    >
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', alignItems: 'center' }}>
-        <LogoTile src={claudeLogo} name="Claude Code" delay={0.2} />
-        <LogoTile src={codexLogo} name="Codex" delay={0.26} />
-        <LogoTile src={cursorLogo} name="Cursor" delay={0.32} />
-        <LogoTile src={geminiLogo} name="Gemini CLI" delay={0.38} />
-        <LogoTile src={opencodeLogo} name="OpenCode" delay={0.44} />
-        <LogoTile src={windsurfLogo} name="Windsurf" delay={0.5} />
-        <LogoTile src={zedLogo} name="Zed" delay={0.56} />
-      </div>
-      <div
-        className="gs gs-fade"
-        style={{
-          textAlign: 'center',
-          fontFamily: font.mono,
-          fontSize: 22,
-          color: ink.muted,
-          animationDelay: '0.9s',
-        }}
-      >
-        …and anything else that can write files.
       </div>
     </div>
   </Frame>
@@ -5325,6 +5242,58 @@ const Commit = ({
     {head && <span style={{ color: ink.mint }}>{head} </span>}
     <span style={{ color: ink.text }}>{msg}</span>
   </Line>
+);
+
+const TreeRow = ({
+  depth = 0,
+  last = false,
+  name,
+  note,
+  hot = false,
+  delay,
+}: {
+  depth?: number;
+  last?: boolean;
+  name: string;
+  note?: string;
+  hot?: boolean;
+  delay: number;
+}) => (
+  <Line delay={delay}>
+    {depth > 0 && <Dim>{last ? '└─ ' : '├─ '}</Dim>}
+    <span style={{ color: hot ? ink.accent : ink.text }}>{name}</span>
+    {note && <Dim>{`  ${note}`}</Dim>}
+  </Line>
+);
+
+const AgentsPage: Page = () => (
+  <Frame
+    eyebrow="Why open-slide"
+    title="Bring your own agent."
+    lead="Every workspace ships with agent rules and skills. Slides are plain .tsx, so no SDK, no lock-in."
+  >
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 520px', gap: 64, height: '100%' }}>
+      <Window className="gs gs-rise" title="~/my-deck" delay={0.2} style={{ height: '100%' }}>
+        <div style={term}>
+          <TreeRow name="AGENTS.md" note="house rules" hot delay={0.4} />
+          <TreeRow name="CLAUDE.md" delay={0.46} />
+          <TreeRow name=".agents/skills/" delay={0.52} />
+          <TreeRow depth={1} name="create-slide" hot delay={0.58} />
+          <TreeRow depth={1} name="slide-authoring" delay={0.64} />
+          <TreeRow depth={1} name="apply-comments" delay={0.7} />
+          <TreeRow depth={1} last name="create-theme" delay={0.76} />
+          <TreeRow name=".claude/skills/" note="→ .agents/skills" delay={0.82} />
+          <TreeRow name="slides/" delay={0.88} />
+          <TreeRow name="themes/" delay={0.94} />
+        </div>
+      </Window>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <GitRow label="AGENTS.md" caption="Rules any agent picks up." delay={0.4} />
+        <GitRow label="Built-in skills" caption="Draft, edit, theme, apply comments." delay={0.5} />
+        <GitRow label="Plain React" caption="If it edits code, it edits slides." delay={0.6} />
+      </div>
+    </div>
+  </Frame>
 );
 
 const GitPage: Page = () => (
