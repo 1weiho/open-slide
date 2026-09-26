@@ -240,6 +240,15 @@ export type Locale = {
     sendBackward: string;
     sendToBack: string;
     smartGuides: string;
+    resetPosition: string;
+    resetPositionAria: string;
+    resetOptions: string;
+    resetPositionOnly: string;
+    resetAll: string;
+    resetHint: string;
+    resetAllOnly: string;
+    resetNothing: string;
+    resetKeptPosition: string;
     selectParent: string;
     visualEditorHint: string;
     sharedLayoutHint: string;

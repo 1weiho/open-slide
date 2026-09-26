@@ -11,13 +11,22 @@ import {
   captureTransform,
   editableTargets,
   independentTargets,
+  LAYER_INSET_KEYS,
+  LAYER_INSET_VALUE,
+  LAYER_POSITION_STYLE,
   moveOps,
   previewOps,
+  type ResetGestureScope,
+  ROTATE_STYLE_KEY,
   readCanvas,
   readFrame,
+  readInlineLayout,
+  resetGestureOps,
   restoreTransform,
+  SIZE_BOUNDS_STYLES,
   sizeOps,
   styleOp,
+  Z_INDEX_KEY,
 } from './visual-dom';
 
 export type VisualEdit = SelectedTarget & { ops: EditOp[] };
@@ -48,24 +57,42 @@ function layerOps(node: HTMLElement, level: number): EditOp[] {
   return [
     ...(position === 'static' && !isFlexOrGridItem(node)
       ? [
-          styleOp('position', 'relative'),
-          ...[
-            'inset',
-            'insetInline',
-            'insetBlock',
-            'insetInlineStart',
-            'insetInlineEnd',
-            'insetBlockStart',
-            'insetBlockEnd',
-            'top',
-            'right',
-            'bottom',
-            'left',
-          ].map((key) => styleOp(key, 'auto')),
+          ...Object.entries(LAYER_POSITION_STYLE).map(([key, value]) => styleOp(key, value)),
+          ...LAYER_INSET_KEYS.map((key) => styleOp(key, LAYER_INSET_VALUE)),
         ]
       : []),
-    styleOp('zIndex', String(level)),
+    styleOp(Z_INDEX_KEY, String(level)),
   ];
+}
+
+function anchorsPositionedDescendants(node: HTMLElement): boolean {
+  return Array.from(node.querySelectorAll<HTMLElement>('*')).some(
+    (child) => child.offsetParent === node && getComputedStyle(child).position === 'absolute',
+  );
+}
+
+const LAYER_LAYOUT_KEYS = new Set<string>([
+  ...Object.keys(LAYER_POSITION_STYLE),
+  ...LAYER_INSET_KEYS,
+]);
+
+export function planResetGesture(
+  selection: SelectedTarget[],
+  scope: ResetGestureScope,
+): { edits: VisualEdit[]; keptPosition: boolean } {
+  let keptPosition = false;
+  const edits = independentTargets(selection).flatMap((target) => {
+    let ops = resetGestureOps(readInlineLayout(target.anchor), scope);
+    if (
+      ops.some((op) => op.kind === 'set-style' && op.key in LAYER_POSITION_STYLE) &&
+      anchorsPositionedDescendants(target.anchor)
+    ) {
+      keptPosition = true;
+      ops = ops.filter((op) => op.kind !== 'set-style' || !LAYER_LAYOUT_KEYS.has(op.key));
+    }
+    return ops.length ? [{ ...target, ops }] : [];
+  });
+  return { edits, keptPosition };
 }
 
 function preserveLayerLayout(
@@ -75,7 +102,7 @@ function preserveLayerLayout(
 ): VisualEdit[] | null {
   const descendants = new Set<HTMLElement>();
   for (const edit of edits) {
-    if (!edit.ops.some((op) => op.kind === 'set-style' && op.key === 'position')) continue;
+    if (!edit.ops.some((op) => op.kind === 'set-style' && op.key in LAYER_POSITION_STYLE)) continue;
     for (const node of edit.anchor.querySelectorAll<HTMLElement>('*')) {
       if (getComputedStyle(node).position !== 'absolute') continue;
       if (node.offsetParent && edit.anchor.contains(node.offsetParent)) continue;
@@ -100,10 +127,7 @@ function preserveLayerLayout(
       if (!resized && Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) return [];
       const dimensions = resized
         ? [
-            styleOp('minWidth', '0px'),
-            styleOp('minHeight', '0px'),
-            styleOp('maxWidth', 'none'),
-            styleOp('maxHeight', 'none'),
+            ...Object.entries(SIZE_BOUNDS_STYLES).map(([key, value]) => styleOp(key, value)),
             styleOp('width', `${original.width}px`),
             styleOp('height', `${original.height}px`),
           ]
@@ -254,7 +278,8 @@ export function useVisualEditor({
                   canvas,
                 )
               : [];
-        if (patch.rotation !== undefined) ops.push(styleOp('rotate', `${patch.rotation}deg`));
+        if (patch.rotation !== undefined)
+          ops.push(styleOp(ROTATE_STYLE_KEY, `${patch.rotation}deg`));
         restoreTransform(snapshot);
         bufferBatch([{ ...snapshot.target, ops }]);
       }
@@ -334,6 +359,18 @@ export function useVisualEditor({
       else toast.error(t.inspector.layerLayoutHint);
     },
     [selection, committing, bufferBatch, slideId, t.inspector.layerLayoutHint],
+  );
+
+  const resetGesture = useCallback(
+    (scope: ResetGestureScope) => {
+      if (committing) return;
+      const canvas = readCanvas();
+      if (!canvas || selection.some((target) => !canTransform(target, canvas))) return;
+      const { edits, keptPosition } = planResetGesture(selection, scope);
+      if (keptPosition) toast.info(t.inspector.resetKeptPosition);
+      bufferBatch(edits);
+    },
+    [selection, committing, bufferBatch, t.inspector.resetKeptPosition],
   );
 
   const selectParent = useCallback(() => {
@@ -421,9 +458,10 @@ export function useVisualEditor({
       distribute,
       setFrame,
       arrange,
+      resetGesture,
       selectParent,
       selectAll,
     }),
-    [snapping, align, distribute, setFrame, arrange, selectParent, selectAll],
+    [snapping, align, distribute, setFrame, arrange, resetGesture, selectParent, selectAll],
   );
 }

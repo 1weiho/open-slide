@@ -238,6 +238,19 @@ export const ja: Locale = {
     sendBackward: '背面へ移動',
     sendToBack: '最背面へ移動',
     smartGuides: 'スマートガイド',
+    resetPosition: 'リセット',
+    resetPositionAria: '位置をリセット',
+    resetOptions: 'リセットのオプション',
+    resetPositionOnly: '位置と回転をリセット',
+    resetAll: '位置・サイズ・重なり順をリセット',
+    resetHint:
+      'ソース上の位置に戻し、回転を解除します。Alt キーを押しながらクリックすると、サイズと重なり順もリセットします。',
+    resetAllOnly:
+      'リセットする移動や回転はありません。メニューからサイズと重なり順をリセットできます。',
+    resetNothing:
+      'リセットする項目はありません。エディターが設定した移動、回転、サイズ、重なり順がありません。',
+    resetKeptPosition:
+      '内側の要素がこの要素を基準に配置されているため、position: relative を残しました。',
     selectParent: '親要素を選択',
     visualEditorHint:
       'Shift クリックで複数選択、⌘A で全選択。矢印キーで 1 px、Shift を押すと 10 px 移動。Alt でスナップを無効化。Shift で移動方向や縦横比を固定。',

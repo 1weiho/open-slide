@@ -27,6 +27,7 @@ import { canTransform, readCanvas, readFrame, readRotation } from '@/lib/inspect
 import { useLocale } from '@/lib/use-locale';
 import { round2 } from '@/lib/utils';
 import { useInspector } from './inspector-provider';
+import { ResetPositionButton } from './reset-position-button';
 
 type Frame = {
   x: number;
@@ -163,6 +164,7 @@ export function ArrangePanel() {
             disabled={multiple || blocked}
             onChange={(rotation) => visual.setFrame({ rotation })}
           />
+          <ResetPositionButton disabled={blocked} />
         </div>
       </Section>
 
