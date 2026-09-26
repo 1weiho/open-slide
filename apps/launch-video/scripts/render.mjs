@@ -45,7 +45,6 @@ const browser = await chromium.launch({
 async function openPage() {
   const page = await browser.newPage({
     viewport: { width: 1920, height: 1080 },
-    deviceScaleFactor: scale,
   });
   page.on('pageerror', (e) => console.error('[page]', e.message));
   page.on('console', (m) => m.type() === 'warning' && console.warn('[page]', m.text()));
@@ -57,8 +56,11 @@ async function openPage() {
 
 async function capture({ page, cdp }, t, format = 'jpeg') {
   await page.evaluate((time) => window.__seek(time), t);
+  // The clip scale sets the output resolution (vector re-raster, not an
+  // upscale); the page's deviceScaleFactor doesn't reach raw CDP captures.
   const shot = await cdp.send('Page.captureScreenshot', {
     format,
+    clip: { x: 0, y: 0, width: 1920, height: 1080, scale },
     ...(format === 'jpeg' ? { quality: Number(opts.quality) } : {}),
   });
   return Buffer.from(shot.data, 'base64');

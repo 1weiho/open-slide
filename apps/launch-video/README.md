@@ -16,7 +16,7 @@ pnpm --filter launch-video stills 12.5,30  # PNG stills at the given seconds →
 
 Rendering needs `ffmpeg` built with libx264 on `PATH`, or set `FFMPEG`. It uses Playwright's Chromium, or set `CHROMIUM_PATH`. The first run downloads the Google Fonts it uses into `out/fonts`.
 
-Useful `render` flags: `--from/--to` (seconds), `--fps`, `--samples` (motion-blur sub-frames), `--shutter`, `--workers`, `--scale`, `--crf`, `--grain`.
+Useful `render` flags: `--from/--to` (seconds), `--fps`, `--samples` (motion-blur sub-frames), `--shutter`, `--workers`, `--scale` (`2` renders 3840 × 2160), `--crf`, `--grain`.
 
 ## Layout
 
