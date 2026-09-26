@@ -1,11 +1,11 @@
 ---
 name: launch-video
-description: Build a new open-slide launch film in apps/launch-video from just a feature name. Researches the feature in the repo, scaffolds films/<id>, storyboards it, writes the scenes, score, and sound cues, and verifies with rendered stills. Use when asked for a launch video, launch film, trailer, teaser, or promo clip for an open-slide feature or release.
+description: Build a new open-slide launch film in apps/marketing/launch-video from just a feature name. Researches the feature in the repo, scaffolds films/<id>, storyboards it, writes the scenes, score, and sound cues, and verifies with rendered stills. Use when asked for a launch video, launch film, trailer, teaser, or promo clip for an open-slide feature or release.
 ---
 
 # Launch video
 
-The user names a feature ("make a launch video for comments"). You deliver a finished film in `apps/launch-video/films/<id>/` that previews in the studio and renders to MP4, with its soundtrack. Work autonomously. Ask only if the repo has no trace of the feature.
+The user names a feature ("make a launch video for comments"). You deliver a finished film in `apps/marketing/launch-video/films/<id>/` that previews in the studio and renders to MP4, with its soundtrack. Work autonomously. Ask only if the repo has no trace of the feature.
 
 Read [reference.md](reference.md) before writing scenes. It lists every helper, UI mock, sound effect, and instrument. For craft, `films/open-slide-2/scenes/` is the reference film: `hook.js` (cursor + selection on a dark stage), `editor.js` (full editor walkthrough), `pptx.js` (export flow), `ui.js` (home + command menu), `finale.js` (feature wall + lockup).
 
