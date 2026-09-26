@@ -3,15 +3,14 @@ import { h, set } from './lib/dom.js';
 import { bezier, clamp } from './lib/ease.js';
 import { noise1 } from './lib/rand.js';
 import { H } from './theme.js';
-import { CARD, HITS, TRANSITIONS } from './timeline.js';
 
 const cardEase = bezier(0.76, 0, 0.24, 1);
 
 // Returns how far `name` is through a hand-off at time T, as the incoming
 // card (`rise`) or the scene receding behind it (`recede`).
-function handoff(name, T) {
-  for (const tr of TRANSITIONS) {
-    const p = clamp((T - (tr.t - CARD / 2)) / CARD);
+function handoff(film, name, T) {
+  for (const tr of film.transitions) {
+    const p = clamp((T - (tr.t - film.card / 2)) / film.card);
     if (p <= 0 || p >= 1) continue;
     if (tr.to === name) return { rise: cardEase(p) };
     if (tr.from === name) return { recede: cardEase(p) };
@@ -19,10 +18,10 @@ function handoff(name, T) {
   return null;
 }
 
-export function createEngine(stage, scenes) {
+export function createEngine(stage, film) {
   const shaker = h('div', { class: 'shaker' });
   stage.append(shaker);
-  const mounted = scenes.map((scene, i) => {
+  const mounted = film.scenes.map((scene, i) => {
     const root = h('div', { class: 'scene', 'data-scene': scene.name });
     root.style.zIndex = String(scene.z ?? i + 1);
     shaker.append(root);
@@ -54,7 +53,7 @@ export function createEngine(stage, scenes) {
       }
       if (!active) continue;
       m.scene.update(m.state, T - a, T);
-      const ho = handoff(m.scene.name, T);
+      const ho = handoff(film, m.scene.name, T);
       if (ho?.rise != null) {
         const e = ho.rise;
         set(m.root, {
@@ -80,7 +79,7 @@ export function createEngine(stage, scenes) {
 
     let shake = 0;
     let fl = 0;
-    for (const hit of HITS) {
+    for (const hit of film.hits) {
       shake += impulse(T, hit.t, 0.18) * hit.amount;
       fl += impulse(T, hit.t, 0.045) * (hit.flash ?? 0);
     }

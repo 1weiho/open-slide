@@ -1,11 +1,11 @@
-import { arc, envelope, prog, tween } from '../lib/anim.js';
-import { h, set, split, text } from '../lib/dom.js';
-import { clamp, glide, inCubic, inExpo, lerp, snap, swift } from '../lib/ease.js';
-import { defineScene, rectIn } from '../lib/scene.js';
-import { C, FONT } from '../theme.js';
+import { arc, envelope, prog, tween } from '#lib/anim.js';
+import { h, set, split, text } from '#lib/dom.js';
+import { clamp, glide, inCubic, inExpo, lerp, snap, swift } from '#lib/ease.js';
+import { defineScene, rectIn } from '#lib/scene.js';
+import { C, FONT } from '#theme';
+import { cursor } from '#ui/cursor.js';
+import { guides, selection } from '#ui/selection.js';
 import { SPANS } from '../timeline.js';
-import { cursor } from '../ui/cursor.js';
-import { guides, selection } from '../ui/selection.js';
 
 const T = {
   line1: 0.45,

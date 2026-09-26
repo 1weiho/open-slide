@@ -1,6 +1,9 @@
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
+import { renderSoundtrack } from '../audio/synth.mjs';
+import { FILM_ID, filmOut, listFilms, loadFilm } from './films.mjs';
+import { ensureFilmFonts, ensureFonts } from './fonts.mjs';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -16,18 +19,14 @@ const TYPES = {
   '.woff2': 'font/woff2',
 };
 
-// Intermediates that older versions of the render script left in out/.
-const LEGACY_SCRATCH = new Set(['segments', 'video-only.mp4']);
-
-// Every finished render under out/, newest first, with its settings sidecar
-// when the render script wrote one.
-function listRenders(root) {
-  const out = path.join(root, 'out');
+// Every finished render under out/<film>/, newest first, with its settings
+// sidecar when the render script wrote one.
+function listRenders(root, id) {
   const renders = [];
   const walk = (dir) => {
     if (!fs.existsSync(dir)) return;
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      if (entry.name.startsWith('.') || LEGACY_SCRATCH.has(entry.name)) continue;
+      if (entry.name.startsWith('.')) continue;
       const file = path.join(dir, entry.name);
       if (entry.isDirectory()) walk(file);
       else if (entry.name.endsWith('.mp4')) {
@@ -43,12 +42,12 @@ function listRenders(root) {
       }
     }
   };
-  walk(out);
+  walk(filmOut(id));
   renders.sort((a, b) => b.mtime - a.mtime);
 
   let active = null;
   try {
-    const file = path.join(out, '.work/progress.json');
+    const file = path.join(root, 'out/.work', id, 'progress.json');
     if (Date.now() - fs.statSync(file).mtimeMs < 20_000) {
       active = JSON.parse(fs.readFileSync(file, 'utf8'));
     }
@@ -91,12 +90,28 @@ function sendFile(req, res, file) {
 // `/@repo/...` reads brand assets from the monorepo instead of copying them here.
 export function serve(root, port = 0) {
   const repo = path.resolve(root, '../..');
-  const server = http.createServer((req, res) => {
+  const json = (res, body) => {
+    res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+    res.end(JSON.stringify(body));
+  };
+  const server = http.createServer(async (req, res) => {
     const pathname = decodeURIComponent(new URL(req.url, 'http://x').pathname);
-    if (pathname === '/api/renders') {
-      res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
-      res.end(JSON.stringify(listRenders(root)));
-      return;
+    if (pathname === '/api/films') return json(res, listFilms());
+    const api = /^\/api\/films\/([^/]+)\/renders$/.exec(pathname);
+    if (api && listFilms().includes(api[1])) return json(res, listRenders(root, api[1]));
+    // Fonts and soundtracks are made on first request so a new film previews
+    // without a restart or a manual `soundtrack` run.
+    const fonts = /^\/out\/fonts\/([^/]+)\/fonts\.css$/.exec(pathname);
+    const wav = /^\/out\/([^/]+)\/soundtrack\.wav$/.exec(pathname);
+    if ((fonts || wav) && !fs.existsSync(path.join(root, pathname))) {
+      try {
+        if (fonts?.[1] === '_base') await ensureFonts();
+        else if (fonts && FILM_ID.test(fonts[1])) await ensureFilmFonts(await loadFilm(fonts[1]));
+        else if (wav && listFilms().includes(wav[1]))
+          await renderSoundtrack(await loadFilm(wav[1]));
+      } catch (e) {
+        console.error(e.message);
+      }
     }
     const base = pathname.startsWith('/@repo/') ? repo : root;
     const rel = pathname.startsWith('/@repo/') ? pathname.slice('/@repo'.length) : pathname;
@@ -111,7 +126,6 @@ export function serve(root, port = 0) {
 }
 
 if (process.argv[1] === import.meta.filename) {
-  const { ensureFonts } = await import('./fonts.mjs');
   await ensureFonts();
   const root = path.resolve(import.meta.dirname, '..');
   const server = await serve(root, Number(process.env.PORT ?? 5180));

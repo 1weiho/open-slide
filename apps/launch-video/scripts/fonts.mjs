@@ -1,21 +1,27 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { FONT_CSS } from '../src/theme.js';
+import { fontCss } from '../src/theme.js';
+import { loadFilm, root } from './films.mjs';
 
-// Headless renders shouldn't depend on network access, so the Google Fonts
-// stylesheet and its latin woff2 files are cached under out/fonts.
-const root = path.resolve(import.meta.dirname, '..');
-const dir = path.join(root, 'out/fonts');
+// Headless renders shouldn't depend on network access, so each film's Google
+// Fonts stylesheet and its latin woff2 files are cached under out/fonts/<key>.
+// `_base` holds just Geist for the studio.
 const UA =
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36';
 
-export async function ensureFonts({ force = false } = {}) {
+export async function ensureFonts(key = '_base', fonts = [], { force = false } = {}) {
+  const dir = path.join(root, 'out/fonts', key);
   const cssFile = path.join(dir, 'fonts.css');
-  if (!force && fs.existsSync(cssFile)) return cssFile;
+  const source = fontCss(fonts);
+  const header = `/* source: ${source} */\n`;
+  if (!force && fs.existsSync(cssFile) && fs.readFileSync(cssFile, 'utf8').startsWith(header)) {
+    return cssFile;
+  }
+  fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(dir, { recursive: true });
-  const css = await (await fetch(FONT_CSS, { headers: { 'user-agent': UA } })).text();
+  const css = await (await fetch(source, { headers: { 'user-agent': UA } })).text();
   const blocks = css.split('/* ').filter((b) => /^latin(-ext)? \*\//.test(b));
-  let out = '';
+  let out = header;
   let n = 0;
   for (const block of blocks) {
     const url = block.match(/url\((https:[^)]+)\)/)?.[1];
@@ -30,6 +36,9 @@ export async function ensureFonts({ force = false } = {}) {
   return cssFile;
 }
 
+export const ensureFilmFonts = (film, opts) => ensureFonts(film.id, film.fonts, opts);
+
 if (process.argv[1] === import.meta.filename) {
-  await ensureFonts({ force: true });
+  const film = await loadFilm(process.argv[2]);
+  await ensureFilmFonts(film, { force: true });
 }

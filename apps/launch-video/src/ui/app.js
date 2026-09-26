@@ -518,7 +518,9 @@ function textToolbar() {
   return { el, chip, colorBtn };
 }
 
-export function slideViewer() {
+// `slide` is any object whose `root` is a 1920 × 1080 element; defaults to
+// the demo deck page from launch-slide.js.
+export function slideViewer({ slide = launchSlide() } = {}) {
   const bg = h('div', {
     style: `position:absolute;left:0;top:0;width:${WIN.w}px;height:${WIN.h}px;border-radius:14px;background:${P.chrome};box-shadow:0 0 0 1px rgb(0 0 0 / 0.08), 0 50px 120px -30px rgb(0 0 0 / 0.45), 0 20px 50px -20px rgb(0 0 0 / 0.3)`,
   });
@@ -543,7 +545,6 @@ export function slideViewer() {
   const panel = formatPanel();
   chrome.append(bar, tb.el, rl.el, card, notes, panel.el);
 
-  const slide = launchSlide();
   const slideShadow = h('div', {
     style: `position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;border-radius:12px;box-shadow:0 0 0 1px rgb(0 0 0 / 0.06), 0 8px 40px -4px rgb(0 0 0 / 0.14)`,
   });

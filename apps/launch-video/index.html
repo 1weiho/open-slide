@@ -2,9 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>open-slide 2.0 — launch film</title>
+    <title>open-slide films</title>
     <link id="fonts" rel="stylesheet" />
     <link rel="stylesheet" href="./src/styles.css" />
+    <!-- Mirrors "imports" in package.json so film code resolves the same in Node. -->
+    <script type="importmap">
+      { "imports": { "#lib/": "/src/lib/", "#ui/": "/src/ui/", "#theme": "/src/theme.js" } }
+    </script>
   </head>
   <body>
     <div id="viewport">

@@ -1,10 +1,10 @@
-import { impulse, keys, prog, tween } from '../lib/anim.js';
-import { attr, h, set, split } from '../lib/dom.js';
-import { clamp, inQuad, outBack, outExpo, snap, swift } from '../lib/ease.js';
-import { defineScene } from '../lib/scene.js';
-import { C, FONT } from '../theme.js';
+import { impulse, keys, prog, tween } from '#lib/anim.js';
+import { attr, h, set, split } from '#lib/dom.js';
+import { clamp, inQuad, outBack, outExpo, snap, swift } from '#lib/ease.js';
+import { defineScene } from '#lib/scene.js';
+import { C, FONT } from '#theme';
+import { logoMark } from '#ui/logo.js';
 import { SPANS } from '../timeline.js';
-import { logoMark } from '../ui/logo.js';
 
 const LAND = [7.2, 7.12, 7.04, 6.95];
 const FLIGHT = 0.78;

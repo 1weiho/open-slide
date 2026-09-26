@@ -1,12 +1,13 @@
-import { envelope, prog } from '../lib/anim.js';
-import { h, set, split, text } from '../lib/dom.js';
-import { clamp, inCubic, outBack, outExpo, snap, swift } from '../lib/ease.js';
-import { route } from '../lib/route.js';
-import { defineScene, rectIn } from '../lib/scene.js';
-import { C, FONT, LIGHT as P, SHADOW, SPECIMENS } from '../theme.js';
+import { envelope, prog } from '#lib/anim.js';
+import { h, set, split, text } from '#lib/dom.js';
+import { clamp, inCubic, outBack, outExpo, snap, swift } from '#lib/ease.js';
+import { route } from '#lib/route.js';
+import { defineScene, rectIn } from '#lib/scene.js';
+import { C, FONT, LIGHT as P, SHADOW } from '#theme';
+import { cursor } from '#ui/cursor.js';
+import { icon } from '#ui/icons.js';
+import { SPECIMENS } from '../specimens.js';
 import { SPANS } from '../timeline.js';
-import { cursor } from '../ui/cursor.js';
-import { icon } from '../ui/icons.js';
 
 const T = {
   dialog: 54.3,

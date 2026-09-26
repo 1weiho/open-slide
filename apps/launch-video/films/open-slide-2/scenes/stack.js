@@ -1,9 +1,9 @@
-import { prog } from '../lib/anim.js';
-import { h, set } from '../lib/dom.js';
-import { clamp, outExpo, swift } from '../lib/ease.js';
-import { typeOn } from '../lib/fx.js';
-import { defineScene } from '../lib/scene.js';
-import { C, FONT } from '../theme.js';
+import { prog } from '#lib/anim.js';
+import { h, set } from '#lib/dom.js';
+import { clamp, outExpo, swift } from '#lib/ease.js';
+import { typeOn } from '#lib/fx.js';
+import { defineScene } from '#lib/scene.js';
+import { C, FONT } from '#theme';
 import { SPANS } from '../timeline.js';
 
 const SLAMS = [

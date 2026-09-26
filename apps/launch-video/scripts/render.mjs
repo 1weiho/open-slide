@@ -4,45 +4,67 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { chromium } from '@playwright/test';
-import { ensureFonts } from './fonts.mjs';
+import { renderSoundtrack } from '../audio/synth.mjs';
+import { filmOut, loadFilm, root } from './films.mjs';
+import { ensureFilmFonts } from './fonts.mjs';
 import { serve } from './serve.mjs';
 
-const root = path.resolve(import.meta.dirname, '..');
 // `pnpm <script> -- --flag` forwards the bare `--`, which parseArgs would
 // read as the end of options.
-const { values: opts } = parseArgs({
+const { values: flags, positionals } = parseArgs({
   args: process.argv.slice(2).filter((a) => a !== '--'),
+  allowPositionals: true,
   options: {
-    fps: { type: 'string', default: '60' },
-    samples: { type: 'string', default: '4' },
-    shutter: { type: 'string', default: '0.5' },
-    from: { type: 'string', default: '0' },
+    fps: { type: 'string' },
+    samples: { type: 'string' },
+    shutter: { type: 'string' },
+    from: { type: 'string' },
     to: { type: 'string' },
-    workers: { type: 'string', default: '4' },
-    scale: { type: 'string', default: '1' },
-    quality: { type: 'string', default: '94' },
-    crf: { type: 'string', default: '16' },
-    grain: { type: 'string', default: '3' },
-    name: { type: 'string', default: 'open-slide-2' },
+    workers: { type: 'string' },
+    scale: { type: 'string' },
+    quality: { type: 'string' },
+    crf: { type: 'string' },
+    grain: { type: 'string' },
+    name: { type: 'string' },
     out: { type: 'string' },
-    stills: { type: 'string' },
+    stills: { type: 'boolean', default: false },
+    draft: { type: 'boolean', default: false },
     'no-audio': { type: 'boolean', default: false },
   },
 });
+
+// Positionals: the film id, and for --stills a comma list of seconds.
+const times = positionals.find((p) => /^[\d.,]+$/.test(p));
+const film = await loadFilm(positionals.find((p) => p !== times));
+const DEFAULTS = {
+  fps: '60',
+  samples: '4',
+  shutter: '0.5',
+  from: '0',
+  workers: '4',
+  scale: '1',
+  quality: '94',
+  crf: '16',
+  grain: '3',
+  name: film.id,
+};
+const DRAFT = { fps: '30', samples: '1', scale: '0.5', name: `${film.id}-draft` };
+const opts = { ...DEFAULTS, ...(flags.draft ? DRAFT : {}) };
+for (const [k, v] of Object.entries(flags)) if (v !== undefined) opts[k] = v;
 
 const FFMPEG = process.env.FFMPEG || 'ffmpeg';
 const fps = Number(opts.fps);
 const samples = Math.max(1, Number(opts.samples));
 const shutter = Number(opts.shutter);
 const scale = Number(opts.scale);
-const outDir = path.join(root, 'out');
-const workDir = path.join(outDir, '.work');
+const outDir = filmOut(film.id);
+const workDir = path.join(root, 'out/.work', film.id);
 const progressFile = path.join(workDir, 'progress.json');
 fs.mkdirSync(workDir, { recursive: true });
 
-await ensureFonts();
+await ensureFilmFonts(film);
 const server = await serve(root);
-const url = `http://127.0.0.1:${server.address().port}/index.html?render`;
+const url = `http://127.0.0.1:${server.address().port}/index.html?render&film=${film.id}`;
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH || undefined,
   args: ['--force-color-profile=srgb', '--disable-lcd-text', '--font-render-hinting=none'],
@@ -73,10 +95,11 @@ async function capture({ page, cdp }, t, format = 'jpeg') {
 }
 
 if (opts.stills) {
-  const dir = path.join(outDir, 'stills');
+  if (!times) throw new Error('--stills needs a comma list of seconds, e.g. 12.5,30');
+  const dir = opts.out ? path.resolve(root, opts.out) : path.join(outDir, 'stills');
   fs.mkdirSync(dir, { recursive: true });
   const worker = await openPage();
-  for (const t of opts.stills.split(',').map(Number)) {
+  for (const t of times.split(',').map(Number)) {
     const file = path.join(dir, `t${t.toFixed(2).padStart(6, '0')}.png`);
     fs.writeFileSync(file, await capture(worker, t, 'png'));
     console.log(file);
@@ -86,14 +109,8 @@ if (opts.stills) {
   process.exit(0);
 }
 
-const duration = await (async () => {
-  const w = await openPage();
-  const d = await w.page.evaluate(() => window.__duration);
-  await w.page.close();
-  return d;
-})();
 const t0 = Number(opts.from);
-const t1 = opts.to ? Number(opts.to) : duration;
+const t1 = opts.to ? Number(opts.to) : film.duration;
 const firstFrame = Math.round(t0 * fps);
 const frameCount = Math.round((t1 - t0) * fps);
 const workers = Math.min(Number(opts.workers), frameCount);
@@ -117,7 +134,9 @@ const stamp = (() => {
   const p = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
 })();
-const outFile = path.resolve(root, opts.out ?? `out/renders/${opts.name}-${stamp}.mp4`);
+const outFile = opts.out
+  ? path.resolve(root, opts.out)
+  : path.join(outDir, 'renders', `${opts.name}-${stamp}.mp4`);
 const size = { width: Math.round(1920 * scale), height: Math.round(1080 * scale) };
 
 let done = 0;
@@ -235,8 +254,8 @@ await run([
 ]);
 
 fs.mkdirSync(path.dirname(outFile), { recursive: true });
-const wav = path.join(outDir, 'soundtrack.wav');
-const withAudio = !opts['no-audio'] && fs.existsSync(wav);
+const withAudio = !opts['no-audio'];
+const wav = withAudio ? await renderSoundtrack(film) : null;
 if (withAudio) {
   await run([
     '-y',
@@ -270,7 +289,8 @@ fs.writeFileSync(
   outFile.replace(/\.mp4$/, '.json'),
   `${JSON.stringify(
     {
-      title: 'open-slide 2.0 launch film',
+      film: film.id,
+      title: film.title,
       name: opts.name,
       createdAt: new Date().toISOString(),
       ...size,

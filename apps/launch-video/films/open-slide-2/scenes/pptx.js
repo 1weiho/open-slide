@@ -1,15 +1,15 @@
-import { envelope, keys, prog } from '../lib/anim.js';
-import { h, set, split, text } from '../lib/dom.js';
-import { clamp, glide, inCubic, lerp, outBack, outExpo, snap, spring, swift } from '../lib/ease.js';
-import { scramble } from '../lib/fx.js';
-import { route } from '../lib/route.js';
-import { defineScene, rectIn } from '../lib/scene.js';
-import { C, FONT } from '../theme.js';
+import { envelope, keys, prog } from '#lib/anim.js';
+import { h, set, split, text } from '#lib/dom.js';
+import { clamp, glide, inCubic, lerp, outBack, outExpo, snap, spring, swift } from '#lib/ease.js';
+import { scramble } from '#lib/fx.js';
+import { route } from '#lib/route.js';
+import { defineScene, rectIn } from '#lib/scene.js';
+import { C, FONT } from '#theme';
+import { cursor } from '#ui/cursor.js';
+import { downloadMenu, exportToast, fileTile, toolbarFragment } from '#ui/export.js';
+import { icon } from '#ui/icons.js';
+import { LAYOUT, launchSlide } from '#ui/launch-slide.js';
 import { SPANS } from '../timeline.js';
-import { cursor } from '../ui/cursor.js';
-import { downloadMenu, exportToast, fileTile, toolbarFragment } from '../ui/export.js';
-import { icon } from '../ui/icons.js';
-import { LAYOUT, launchSlide } from '../ui/launch-slide.js';
 
 const T = {
   tag: 28.35,

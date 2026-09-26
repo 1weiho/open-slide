@@ -1,11 +1,10 @@
 import { h } from '../lib/dom.js';
 import { icon } from '../ui/icons.js';
 
-const POSTER_T = 8.4;
 const POLL_MS = 2500;
-const RENDER_CMD = 'pnpm --filter launch-video render';
+const renderCmd = (id) => `pnpm --filter launch-video render ${id}`;
 
-const state = { renders: [], active: null, signature: '' };
+const state = { films: [], film: null, renders: [], active: null, signature: '' };
 const cards = new Map();
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -17,9 +16,9 @@ const resLabel = (height) => (height >= 2160 ? '4K' : height >= 1440 ? '1440p' :
 const isDraft = (r) => r.meta?.samples === 1 || /draft/.test(r.id);
 const displayName = (r) => r.meta?.name ?? fileName(r.id).replace(/\.mp4$/, '');
 
-// Poster on the logo slam; partial renders (--from/--to) fall back to their midpoint.
+// Poster at the film's `poster` second; partial renders (--from/--to) fall back to their midpoint.
 function posterTime(r, duration = r.meta?.duration) {
-  const t = POSTER_T - (r.meta?.from ?? 0);
+  const t = (state.film?.poster ?? 0) - (r.meta?.from ?? 0);
   if (duration && (t < 0 || t > duration)) return duration / 2;
   return t;
 }
@@ -64,11 +63,12 @@ const navComposition = h(
   'Composition',
 );
 navRenders.onclick = () => {
-  location.hash = '#/renders';
+  location.hash = `#/${state.film.id}/renders`;
 };
 navComposition.onclick = () => {
-  location.hash = '#/composition';
+  location.hash = `#/${state.film.id}/composition`;
 };
+const filmList = h('div', { class: 'film-list' });
 
 const side = h(
   'aside',
@@ -83,41 +83,45 @@ const side = h(
   navRenders,
   navComposition,
   h('div', { class: 'eyebrow', text: 'Films' }),
-  h('div', { class: 'film-row' }, h('i'), 'open-slide 2.0 launch'),
+  filmList,
   h(
     'div',
     { class: 'side-foot' },
     h('span', { class: 'live-dot' }),
-    h('span', { class: 'mono', text: 'watching out/renders' }),
+    h('span', { class: 'mono', text: 'watching out/' }),
   ),
 );
 
 const count = h('span', { class: 'count mono' });
+const heading = h('h1');
+const cmdText = h('span');
 const cmd = h(
   'button',
   { class: 'cmd', title: 'Copy render command' },
   h('b', { text: '$' }),
-  h('span', { text: RENDER_CMD }),
+  cmdText,
 );
-cmd.onclick = () => copy(RENDER_CMD, cmd, 'Copied to clipboard');
+cmd.onclick = () => copy(renderCmd(state.film.id), cmd, 'Copied to clipboard');
 const grid = h('div', { class: 'grid' });
+const emptyCmd = h('code', { class: 'mono' });
 const empty = h(
   'div',
   { class: 'empty', hidden: true },
   icon('film', { size: 28, stroke: 1.5 }),
   h('h2', { text: 'No renders yet' }),
   h('div', {}, 'Every render lands here with its settings. Start one with'),
-  h('code', { class: 'mono', text: RENDER_CMD }),
+  emptyCmd,
 );
 const rendersView = h(
   'section',
   { class: 'view renders' },
-  h('div', { class: 'head' }, icon('film', { size: 18 }), h('h1', { text: 'Renders' }), count, cmd),
+  h('div', { class: 'head' }, icon('film', { size: 18 }), heading, count, cmd),
   empty,
   grid,
 );
 
 let iframe = null;
+let iframeFilm = null;
 const compositionView = h('section', { class: 'view composition', hidden: true });
 
 const main = h('main', { class: 'main' }, rendersView, compositionView);
@@ -208,7 +212,7 @@ function makeCard(r) {
   };
   video.addEventListener('loadedmetadata', () => card.update(card.render, card.latest));
   el.addEventListener('click', () => {
-    location.hash = `#/renders/${encodeURIComponent(r.id)}`;
+    location.hash = `#/${state.film.id}/renders/${encodeURIComponent(r.id)}`;
   });
   return card;
 }
@@ -280,8 +284,9 @@ function renderGrid() {
 }
 
 async function refresh() {
+  if (!state.film) return;
   try {
-    const res = await fetch('/api/renders', { cache: 'no-store' });
+    const res = await fetch(`/api/films/${state.film.id}/renders`, { cache: 'no-store' });
     const data = await res.json();
     const signature = JSON.stringify([data.renders.map((r) => [r.id, r.mtime]), data.active]);
     if (signature === state.signature) return;
@@ -302,7 +307,7 @@ const player = h(
   details,
 );
 player.addEventListener('click', (e) => {
-  if (e.target === player) location.hash = '#/renders';
+  if (e.target === player) location.hash = `#/${state.film.id}/renders`;
 });
 document.body.append(player);
 
@@ -321,7 +326,7 @@ function showPlayer(r) {
   const created = new Date(m.createdAt ? Date.parse(m.createdAt) : r.mtime);
   const close = h('button', { class: 'nav-row', title: 'Close (Esc)' }, icon('x', { size: 16 }));
   close.onclick = () => {
-    location.hash = '#/renders';
+    location.hash = `#/${state.film.id}/renders`;
   };
   const download = h(
     'a',
@@ -394,19 +399,57 @@ function hidePlayer() {
 }
 
 function currentRoute() {
-  const [, view = 'renders', id] = location.hash.split('/');
-  return { view, render: id ? decodeURIComponent(id) : null };
+  const [, film, view = 'renders', id] = location.hash.split('/');
+  return { film, view, render: id ? decodeURIComponent(id) : null };
+}
+
+function selectFilm(film) {
+  state.film = film;
+  state.renders = [];
+  state.active = null;
+  state.signature = '';
+  for (const card of cards.values()) {
+    card.video.removeAttribute('src');
+    card.el.remove();
+  }
+  cards.clear();
+  heading.textContent = film.title;
+  cmdText.textContent = renderCmd(film.id);
+  emptyCmd.textContent = renderCmd(film.id);
+  document.title = `${film.title} — open-slide films`;
+  for (const row of filmList.children) {
+    row.setAttribute('aria-current', row.dataset.film === film.id ? 'page' : 'false');
+  }
+  grid.replaceChildren();
+  empty.hidden = true;
+  refresh();
 }
 
 function route() {
-  const { view, render } = currentRoute();
+  const { film: id, view, render } = currentRoute();
+  const film = state.films.find((f) => f.id === id);
+  if (!film) {
+    const fallback =
+      state.films.find((f) => f.id === localStorage.getItem('film')) ?? state.films[0];
+    if (fallback) location.replace(`#/${fallback.id}/renders`);
+    return;
+  }
+  if (state.film !== film) {
+    localStorage.setItem('film', film.id);
+    selectFilm(film);
+  }
   const isComp = view === 'composition';
   rendersView.hidden = isComp;
   compositionView.hidden = !isComp;
   navRenders.setAttribute('aria-current', isComp ? 'false' : 'page');
   navComposition.setAttribute('aria-current', isComp ? 'page' : 'false');
-  if (isComp && !iframe) {
-    iframe = h('iframe', { src: `/index.html?t=${POSTER_T}`, title: 'Composition preview' });
+  if (isComp && iframeFilm !== film.id) {
+    iframe?.remove();
+    iframe = h('iframe', {
+      src: `/index.html?film=${film.id}&t=${film.poster}`,
+      title: 'Composition preview',
+    });
+    iframeFilm = film.id;
     compositionView.append(iframe);
   }
   const r = render && state.renders.find((x) => x.id === render);
@@ -417,16 +460,41 @@ function route() {
 addEventListener('hashchange', route);
 addEventListener('keydown', (e) => {
   if (player.hidden) return;
-  if (e.key === 'Escape') location.hash = '#/renders';
+  if (e.key === 'Escape') location.hash = `#/${state.film.id}/renders`;
   if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
     e.preventDefault();
     const i = state.renders.findIndex((r) => r.id === playerVideo.dataset.id);
     const next = state.renders[i + (e.key === 'ArrowRight' ? 1 : -1)];
-    if (next) location.hash = `#/renders/${encodeURIComponent(next.id)}`;
+    if (next) location.hash = `#/${state.film.id}/renders/${encodeURIComponent(next.id)}`;
   }
 });
 
-await refresh();
+// A film that fails to import (mid-edit, say) still gets a row, titled by its id.
+async function loadFilms() {
+  const ids = await (await fetch('/api/films', { cache: 'no-store' })).json();
+  return Promise.all(
+    ids.map(async (id) => {
+      try {
+        const { default: film } = await import(`/films/${id}/film.js`);
+        return { id, title: film.title, poster: film.poster };
+      } catch (e) {
+        console.error(e);
+        return { id, title: id, poster: 0 };
+      }
+    }),
+  );
+}
+
+state.films = await loadFilms();
+filmList.replaceChildren(
+  ...state.films.map((f) => {
+    const row = h('button', { class: 'film-row', 'data-film': f.id }, h('i'), f.title);
+    row.onclick = () => {
+      location.hash = `#/${f.id}/renders`;
+    };
+    return row;
+  }),
+);
 route();
 setInterval(() => {
   if (!document.hidden) refresh();

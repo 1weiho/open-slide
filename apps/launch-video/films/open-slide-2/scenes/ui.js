@@ -1,12 +1,12 @@
-import { envelope, keys, prog } from '../lib/anim.js';
-import { h, set } from '../lib/dom.js';
-import { clamp, glide, inCubic, outExpo, snap, swift } from '../lib/ease.js';
-import { route } from '../lib/route.js';
-import { defineScene, rectIn } from '../lib/scene.js';
-import { C, FONT } from '../theme.js';
+import { envelope, keys, prog } from '#lib/anim.js';
+import { h, set } from '#lib/dom.js';
+import { clamp, glide, inCubic, outExpo, snap, swift } from '#lib/ease.js';
+import { route } from '#lib/route.js';
+import { defineScene, rectIn } from '#lib/scene.js';
+import { C, FONT } from '#theme';
+import { cursor } from '#ui/cursor.js';
+import { commandMenu, HOME, homeView } from '#ui/home.js';
 import { SPANS } from '../timeline.js';
-import { cursor } from '../ui/cursor.js';
-import { commandMenu, HOME, homeView } from '../ui/home.js';
 
 const WX = 160;
 const WY = 70;

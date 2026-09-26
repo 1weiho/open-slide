@@ -1,12 +1,12 @@
-import { envelope, impulse, keys, prog } from '../lib/anim.js';
-import { attr, h, set, split } from '../lib/dom.js';
-import { clamp, glide, inCubic, inQuad, outExpo, snap, swift } from '../lib/ease.js';
-import { hash } from '../lib/rand.js';
-import { defineScene } from '../lib/scene.js';
-import { C, FONT } from '../theme.js';
+import { envelope, impulse, keys, prog } from '#lib/anim.js';
+import { attr, h, set, split } from '#lib/dom.js';
+import { clamp, glide, inCubic, inQuad, outExpo, snap, swift } from '#lib/ease.js';
+import { hash } from '#lib/rand.js';
+import { defineScene } from '#lib/scene.js';
+import { C, FONT } from '#theme';
+import { icon } from '#ui/icons.js';
+import { logoMark } from '#ui/logo.js';
 import { SPANS } from '../timeline.js';
-import { icon } from '../ui/icons.js';
-import { logoMark } from '../ui/logo.js';
 
 const FEATURES = [
   ['square-mouse-pointer', 'Visual editor', 'Select, drag, resize'],

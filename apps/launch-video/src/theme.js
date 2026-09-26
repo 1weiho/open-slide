@@ -65,39 +65,39 @@ export const FONT = {
   mono: "'Geist Mono', ui-monospace, monospace",
 };
 
-export const SPECIMENS = [
-  { family: 'Instrument Serif', category: 'Serif', weight: 400 },
-  { family: 'Space Grotesk', category: 'Sans Serif', weight: 600 },
-  { family: 'Playfair Display', category: 'Serif', weight: 800 },
-  { family: 'Bricolage Grotesque', category: 'Sans Serif', weight: 700 },
-  { family: 'Fraunces', category: 'Serif', weight: 600 },
-  { family: 'Syne', category: 'Sans Serif', weight: 800 },
-  { family: 'Unbounded', category: 'Display', weight: 700 },
-  { family: 'DM Serif Display', category: 'Serif', weight: 400 },
-  { family: 'JetBrains Mono', category: 'Monospace', weight: 700 },
-  { family: 'Bebas Neue', category: 'Display', weight: 400 },
-  { family: 'Caveat', category: 'Handwriting', weight: 700 },
-  { family: 'Archivo Black', category: 'Sans Serif', weight: 400 },
-  { family: 'Young Serif', category: 'Serif', weight: 400 },
-  { family: 'Rubik Mono One', category: 'Display', weight: 400 },
-  { family: 'Sora', category: 'Sans Serif', weight: 700 },
-  { family: 'Instrument Serif', category: 'Serif', weight: 400, italic: true },
-];
-
-export const FONT_LOADS = [
+const BASE_LOADS = [
   ...[300, 400, 500, 600, 700, 800, 900].map((w) => `${w} 40px Geist`),
   ...[400, 500, 600, 700].map((w) => `${w} 40px "Geist Mono"`),
-  ...SPECIMENS.map((s) => `${s.italic ? 'italic ' : ''}${s.weight} 40px "${s.family}"`),
 ];
 
-export const FONT_CSS = (() => {
-  const fams = new Map();
-  fams.set('Geist', 'wght@100..900');
-  fams.set('Geist Mono', 'wght@100..900');
-  for (const s of SPECIMENS) {
-    if (s.family === 'Instrument Serif') fams.set(s.family, 'ital@0;1');
-    else if (!fams.has(s.family)) fams.set(s.family, `wght@${s.weight}`);
+// `fonts` lists a film's extra Google Fonts as { family, weight, italic? }.
+export const fontLoads = (fonts = []) => [
+  ...BASE_LOADS,
+  ...fonts.map((f) => `${f.italic ? 'italic ' : ''}${f.weight ?? 400} 40px "${f.family}"`),
+];
+
+export function fontCss(fonts = []) {
+  const extra = new Map();
+  for (const f of fonts) {
+    const e = extra.get(f.family) ?? { weights: new Set(), italic: false };
+    e.weights.add(f.weight ?? 400);
+    e.italic ||= !!f.italic;
+    extra.set(f.family, e);
   }
-  const q = [...fams].map(([f, a]) => `family=${f.replace(/ /g, '+')}:${a}`).join('&');
+  const fams = [
+    ['Geist', 'wght@100..900'],
+    ['Geist Mono', 'wght@100..900'],
+  ];
+  for (const [family, e] of extra) {
+    if (family === 'Geist' || family === 'Geist Mono') continue;
+    const ws = [...e.weights].sort((a, b) => a - b);
+    fams.push([
+      family,
+      e.italic
+        ? `ital,wght@${[...ws.map((w) => `0,${w}`), ...ws.map((w) => `1,${w}`)].join(';')}`
+        : `wght@${ws.join(';')}`,
+    ]);
+  }
+  const q = fams.map(([f, a]) => `family=${f.replace(/ /g, '+')}:${a}`).join('&');
   return `https://fonts.googleapis.com/css2?${q}&display=block`;
-})();
+}
