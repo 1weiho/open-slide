@@ -1,10 +1,10 @@
 import path from 'node:path';
 import * as t from '@babel/types';
-import type { Plugin } from 'vite';
+import { normalizePath, type Plugin } from 'vite';
 import { tryParse, walkJsx } from '../editing/babel-walk.ts';
 
 // Inject `data-slide-loc="<line>:<col>"` onto every host JSX element in
-// slide source files so the inspector can map a click straight to a
+// deck entry files so the inspector can map a click straight to a
 // source location, sidestepping HMR-stale `_debugSource` on fibers.
 
 // Capitalized components that explicitly forward `data-slide-loc` to a
@@ -53,21 +53,29 @@ export type LocTagsPluginOptions = {
   slidesDir?: string;
 };
 
-// Vite normally hands `id` to plugins with forward slashes, but other
-// plugins or virtual modules can pass through Windows-style paths.
-// Compare both sides in POSIX shape so the match doesn't depend on
-// which separator the caller happened to use.
-function isSlideSourceFile(id: string, slidesRootPosix: string): boolean {
-  const filePath = id.split(/[?#]/)[0].replace(/\\/g, '/');
+// Tags may only name files the current edit route can write: a tag is a bare
+// `line:column` and `/__edit` always writes `<slidesDir>/<id>/index.tsx`.
+//
+// Vite normally hands `id` to plugins with forward slashes, but other plugins or
+// virtual modules can pass through Windows-style paths. Compare both sides in
+// POSIX shape so the match doesn't depend on which separator the caller used.
+// Only drive-letter and UNC paths get their separators converted: on POSIX a
+// backslash is a legal filename character, and `normalizePath` keeps it.
+const WINDOWS_PATH_RE = /^(?:[A-Za-z]:|\\\\)/;
+
+function toPosixPath(p: string): string {
+  return normalizePath(WINDOWS_PATH_RE.test(p) ? p.replace(/\\/g, '/') : p);
+}
+
+function isSlideEntryFile(id: string, slidesRootPosix: string): boolean {
+  const filePath = toPosixPath(id.split(/[?#]/)[0]);
   if (!filePath.startsWith(`${slidesRootPosix}/`)) return false;
-  if (!filePath.endsWith('.tsx')) return false;
-  if (filePath.endsWith('.d.ts') || filePath.endsWith('.test.tsx')) return false;
   const rel = filePath.slice(slidesRootPosix.length + 1);
-  return rel.includes('/');
+  return /^[^/]+\/index\.tsx$/.test(rel);
 }
 
 export function locTagsPlugin(opts: LocTagsPluginOptions): Plugin {
-  const slidesRoot = path.resolve(opts.userCwd, opts.slidesDir ?? 'slides').replace(/\\/g, '/');
+  const slidesRoot = toPosixPath(path.resolve(opts.userCwd, opts.slidesDir ?? 'slides'));
   return {
     name: 'open-slide:loc-tags',
     apply: 'serve',
@@ -75,7 +83,7 @@ export function locTagsPlugin(opts: LocTagsPluginOptions): Plugin {
     // sees our injected attributes.
     enforce: 'pre',
     transform(code, id) {
-      if (!isSlideSourceFile(id, slidesRoot)) return null;
+      if (!isSlideEntryFile(id, slidesRoot)) return null;
       const next = injectLocTags(code);
       if (next === null) return null;
       return { code: next, map: null };

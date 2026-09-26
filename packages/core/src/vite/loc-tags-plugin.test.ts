@@ -137,16 +137,23 @@ describe('locTagsPlugin', () => {
     expectTaggedTransform('/repo/slides/cover/index.tsx');
   });
 
-  it('tags shared slide source files', () => {
-    expectTaggedTransform('/repo/slides/cover/shared.tsx');
+  it('strips query and hash suffixes before matching', () => {
+    expectTaggedTransform('/repo/slides/cover/index.tsx?t=1700000000000');
+    expectTaggedTransform('/repo/slides/cover/index.tsx#hmr');
+    expect(transformWithLocTags('/repo/slides/cover/shared.tsx?t=1700000000000')).toBeNull();
   });
 
-  it('tags numbered slide source files', () => {
-    expectTaggedTransform('/repo/slides/cover/01-Cover.tsx');
+  // `/__edit` only writes the deck entry, so tags outside it would target the wrong file.
+  it('skips sibling slide source files, which /__edit cannot write to', () => {
+    expect(transformWithLocTags('/repo/slides/cover/shared.tsx')).toBeNull();
   });
 
-  it('tags slide source files in nested folders', () => {
-    expectTaggedTransform('/repo/slides/cover/components/Card.tsx');
+  it('skips numbered slide source files', () => {
+    expect(transformWithLocTags('/repo/slides/cover/01-Cover.tsx')).toBeNull();
+  });
+
+  it('skips slide source files in nested folders', () => {
+    expect(transformWithLocTags('/repo/slides/cover/components/Card.tsx')).toBeNull();
   });
 
   it('skips tsx files directly under the slides directory', () => {
@@ -159,6 +166,24 @@ describe('locTagsPlugin', () => {
 
   it('skips colocated test files', () => {
     expect(transformWithLocTags('/repo/slides/cover/index.test.tsx')).toBeNull();
+  });
+
+  it('skips a file that merely ends in index.tsx', () => {
+    // `deep/index.tsx` is not the entry either, and a suffix check would take it.
+    expect(transformWithLocTags('/repo/slides/cover/deep/index.tsx')).toBeNull();
+  });
+
+  it('normalizes dot segments before matching the deck entry', () => {
+    expectTaggedTransform('/repo/slides/./cover/index.tsx');
+    expectTaggedTransform('/repo/slides/cover/../cover/index.tsx');
+  });
+
+  it('rejects a dot-segment path that escapes the slides root', () => {
+    expect(transformWithLocTags('/repo/slides/../index.tsx')).toBeNull();
+  });
+
+  it('treats a backslash in a POSIX id as part of the filename', () => {
+    expect(transformWithLocTags('/repo/slides/cover\\index.tsx')).toBeNull();
   });
 });
 
@@ -185,12 +210,18 @@ describe('locTagsPlugin on Windows-style paths', () => {
     expectTagged('C:\\repo\\slides', 'C:/repo/slides/cover/index.tsx');
   });
 
+  it('tags backslash-separated ids under a Windows slidesRoot', () => {
+    expectTagged('C:\\repo\\slides', 'C:\\repo\\slides\\cover\\index.tsx');
+  });
+
   it('strips HMR ?t= query before matching', () => {
     expectTagged('C:\\repo\\slides', 'C:/repo/slides/cover/index.tsx?t=1700000000000');
   });
 
-  it('tags nested slide source files under a Windows slidesRoot', () => {
-    expectTagged('C:\\repo\\slides', 'C:/repo/slides/cover/components/Card.tsx');
+  it('skips nested slide source files under a Windows slidesRoot', () => {
+    expect(
+      transformWithMockedResolve('C:\\repo\\slides', 'C:/repo/slides/cover/components/Card.tsx'),
+    ).toBeNull();
   });
 
   it('skips tsx files directly under the Windows slides directory', () => {
@@ -205,6 +236,16 @@ describe('locTagsPlugin on Windows-style paths', () => {
     expect(
       transformWithMockedResolve('C:\\repo\\slides', 'C:/repo/slides/cover/index.test.tsx'),
     ).toBeNull();
+  });
+
+  it('rejects a dot-segment path that escapes a Windows slidesRoot', () => {
+    expect(
+      transformWithMockedResolve('C:\\repo\\slides', 'C:/repo/slides/../index.tsx'),
+    ).toBeNull();
+  });
+
+  it('tags slide index files under a UNC slidesRoot', () => {
+    expectTagged('\\\\server\\share\\slides', '//server/share/slides/cover/index.tsx');
   });
 
   it('still tags POSIX ids when path.resolve returns a POSIX slidesRoot (regression guard)', () => {
