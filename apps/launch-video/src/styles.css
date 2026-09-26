@@ -1,0 +1,133 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: #000;
+  overflow: hidden;
+}
+
+body {
+  font-family: "Geist", system-ui, sans-serif;
+  font-feature-settings:
+    "ss01" on,
+    "cv11" on,
+    "calt" on;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+  color: #f2f2f2;
+}
+
+#viewport {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+#stage {
+  position: relative;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  background: #050505;
+  transform-origin: 50% 50%;
+  flex: none;
+}
+
+.render #viewport {
+  position: static;
+  display: block;
+}
+
+.shaker,
+.scene,
+.post,
+.fill {
+  position: absolute;
+  inset: 0;
+}
+
+.scene {
+  overflow: hidden;
+}
+
+.abs {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.post {
+  pointer-events: none;
+}
+
+.flash {
+  background: #fff;
+  opacity: 0;
+  z-index: 900;
+  mix-blend-mode: normal;
+}
+
+.vignette {
+  z-index: 901;
+  background: radial-gradient(120% 90% at 50% 50%, transparent 55%, rgb(0 0 0 / 0.28) 100%);
+}
+
+.mono {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-feature-settings: "tnum" on;
+}
+
+.nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.preserve {
+  transform-style: preserve-3d;
+}
+
+.ico {
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+}
+
+#scrubber {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font:
+    12px "Geist Mono",
+    ui-monospace,
+    monospace;
+  color: #ddd;
+  z-index: 10;
+}
+
+#scrubber input[type="range"] {
+  flex: 1;
+}
+
+#scrubber button {
+  font: inherit;
+  background: #222;
+  color: #eee;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+}

@@ -1,0 +1,18 @@
+export const SPECIMENS = [
+  { family: 'Instrument Serif', category: 'Serif', weight: 400 },
+  { family: 'Space Grotesk', category: 'Sans Serif', weight: 600 },
+  { family: 'Playfair Display', category: 'Serif', weight: 800 },
+  { family: 'Bricolage Grotesque', category: 'Sans Serif', weight: 700 },
+  { family: 'Fraunces', category: 'Serif', weight: 600 },
+  { family: 'Syne', category: 'Sans Serif', weight: 800 },
+  { family: 'Unbounded', category: 'Display', weight: 700 },
+  { family: 'DM Serif Display', category: 'Serif', weight: 400 },
+  { family: 'JetBrains Mono', category: 'Monospace', weight: 700 },
+  { family: 'Bebas Neue', category: 'Display', weight: 400 },
+  { family: 'Caveat', category: 'Handwriting', weight: 700 },
+  { family: 'Archivo Black', category: 'Sans Serif', weight: 400 },
+  { family: 'Young Serif', category: 'Serif', weight: 400 },
+  { family: 'Rubik Mono One', category: 'Display', weight: 400 },
+  { family: 'Sora', category: 'Sans Serif', weight: 700 },
+  { family: 'Instrument Serif', category: 'Serif', weight: 400, italic: true },
+];

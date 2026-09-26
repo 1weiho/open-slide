@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>open-slide films</title>
+    <link id="fonts" rel="stylesheet" />
+    <link rel="stylesheet" href="./src/styles.css" />
+    <!-- Mirrors "imports" in package.json so film code resolves the same in Node. -->
+    <script type="importmap">
+      { "imports": { "#lib/": "/src/lib/", "#ui/": "/src/ui/", "#theme": "/src/theme.js" } }
+    </script>
+  </head>
+  <body>
+    <div id="viewport">
+      <div id="stage"></div>
+    </div>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "name": "launch-video",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "imports": {
+    "#lib/*": "./src/lib/*",
+    "#ui/*": "./src/ui/*",
+    "#theme": "./src/theme.js"
+  },
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "new": "node scripts/new-film.mjs",
+    "soundtrack": "node audio/synth.mjs",
+    "stills": "node scripts/render.mjs --stills",
+    "snapshot": "node scripts/snapshot.mjs",
+    "render": "node scripts/render.mjs",
+    "render:draft": "node scripts/render.mjs --draft"
+  },
+  "devDependencies": {
+    "@playwright/test": "~1.62.1"
+  }
+}
