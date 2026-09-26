@@ -16,13 +16,13 @@ export function Hero() {
       <Container className="pt-20 sm:pt-28 lg:pt-32">
         <div className="mx-auto flex max-w-[840px] flex-col items-center gap-6 text-center sm:gap-8">
           <a
-            href="https://x.com/1weiho/status/2078505891247329700"
+            href="https://x.com/1weiho/status/2103873490730549558"
             target="_blank"
             rel="noopener noreferrer"
             className="group rise pressable inline-flex h-8 items-center gap-2 rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] pl-2.5 pr-3 text-[13px] font-medium text-[color:var(--color-text-soft)] hover:border-[color:var(--color-dim)] hover:text-[color:var(--color-text)]"
           >
             <span aria-hidden className="size-1.5 rounded-full bg-[color:var(--color-accent)]" />
-            Introducing Morph Transition
+            Introducing open-slide 2.0
             <span
               aria-hidden
               className="text-[color:var(--color-muted)] transition-transform duration-200 group-hover:translate-x-0.5"
