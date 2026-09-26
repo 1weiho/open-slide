@@ -833,9 +833,9 @@ const providers = [
   'Replicate',
   'Ollama',
   'OpenRouter',
+  'LLMGateway',
   'Cerebras',
   'Hugging Face',
-  '+ more',
 ];
 
 const Providers: Page = () => (
@@ -907,7 +907,7 @@ const Providers: Page = () => (
             background: palette.surface,
             fontSize: 28,
             fontWeight: 500,
-            color: p === '+ more' ? 'var(--osd-accent)' : palette.textSoft,
+            color: palette.textSoft,
             textAlign: 'center',
             letterSpacing: '-0.01em',
           }}
