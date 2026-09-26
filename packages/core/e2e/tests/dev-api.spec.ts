@@ -158,6 +158,13 @@ test.describe('dev server http api', () => {
     expect(list.comments).toHaveLength(1);
     expect(list.comments[0]?.note).toBe('Make this pop');
 
+    for (const bad of [{ intent: 'explode' }, { hint: null }, { hint: 42 }]) {
+      const rejected = await request.post('/__comments/add', {
+        data: { slideId: 'api-comments', line, text: 'x', ...bad },
+      });
+      expect(rejected.status()).toBe(400);
+    }
+
     const removed = await request.delete(`/__comments/${comment.id}?slideId=api-comments`);
     expect(removed.ok()).toBe(true);
     expect(await readSlideSource('api-comments')).not.toContain('@slide-comment');

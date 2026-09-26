@@ -1,8 +1,10 @@
 import fs from 'node:fs/promises';
 import type { ViteDevServer } from 'vite';
 import {
-  b64urlEncode,
+  COMMENT_INTENTS,
+  encodeCommentPayload,
   findInsertion,
+  isCommentIntent,
   markerDeleteRegex,
   newCommentId,
   offsetToLine,
@@ -18,7 +20,7 @@ import {
 } from './context.ts';
 
 // GET    /__comments        list markers for ?slideId=…
-// POST   /__comments/add    add marker { slideId, line, column?, text, hint? }
+// POST   /__comments/add    add marker { slideId, line, column?, text, hint?, intent? }
 // DELETE /__comments/:id    remove marker
 
 type AddCommentBody = {
@@ -26,7 +28,8 @@ type AddCommentBody = {
   line?: number;
   column?: number;
   text?: string;
-  hint?: string;
+  hint?: unknown;
+  intent?: unknown;
 };
 
 export function registerCommentRoutes(server: ViteDevServer, ctx: ApiContext): void {
@@ -57,6 +60,18 @@ export function registerCommentRoutes(server: ViteDevServer, ctx: ApiContext): v
         if (!body.text || typeof body.text !== 'string') {
           return json(res, 400, { error: 'missing text' });
         }
+        const hint = body.hint;
+        if (hint !== undefined && typeof hint !== 'string') {
+          return json(res, 400, { error: 'invalid hint' });
+        }
+        // An intent is machine-set, so a null from a client that always sends the
+        // key means "none"; a hint is free text and must be a string when present.
+        const intent = body.intent ?? undefined;
+        if (intent !== undefined && !isCommentIntent(intent)) {
+          return json(res, 400, {
+            error: `invalid intent; expected one of ${COMMENT_INTENTS.join(', ')}`,
+          });
+        }
 
         const source = await readSlideSource(file);
         if (source === null) return json(res, 404, { error: 'slide not found' });
@@ -72,7 +87,7 @@ export function registerCommentRoutes(server: ViteDevServer, ctx: ApiContext): v
 
         const id = newCommentId();
         const ts = new Date().toISOString();
-        const payload = b64urlEncode(JSON.stringify({ note: body.text, hint: body.hint }));
+        const payload = encodeCommentPayload({ note: body.text, hint, intent });
         const marker = `\n${plan.indent}{/* @slide-comment id="${id}" ts="${ts}" text="${payload}" */}`;
 
         const next = source.slice(0, plan.offset) + marker + source.slice(plan.offset);
