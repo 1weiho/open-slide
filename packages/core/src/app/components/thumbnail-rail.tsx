@@ -22,6 +22,7 @@ import {
   Grid2x2,
   ListOrdered,
   type LucideIcon,
+  Plus,
   Sparkles,
   Trash2,
 } from 'lucide-react';
@@ -54,6 +55,7 @@ import {
 type Orientation = 'vertical' | 'horizontal';
 
 export type ThumbnailActions = {
+  onAddAfter: (index: number) => void;
   onDuplicate: (index: number) => void;
   onDelete: (index: number) => void;
 };
@@ -307,6 +309,20 @@ export function ThumbnailRail({
         onCurrentPositionChange={setCurrentPosition}
         renderThumb={renderThumb}
       />
+      {actions && (
+        <button
+          type="button"
+          onClick={() => actions.onAddAfter(pages.length - 1)}
+          className={cn(
+            'flex h-9 w-full items-center justify-center gap-1.5 rounded-[6px] border border-dashed border-hairline text-[12px] text-muted-foreground outline-none',
+            'motion-safe:transition-colors hover:border-foreground/25 hover:bg-muted/60 hover:text-foreground',
+            'focus-visible:ring-1 focus-visible:ring-brand',
+          )}
+        >
+          <Plus className="size-3.5" strokeWidth={1.75} />
+          {t.thumbnailRail.addPage}
+        </button>
+      )}
     </aside>
   );
 
@@ -850,6 +866,10 @@ function ThumbContextMenu({
     <ContextMenu>
       <ContextMenuTrigger aria-label={ariaLabel} render={children as React.ReactElement} />
       <ContextMenuContent className="min-w-[180px]">
+        <ContextMenuItem onClick={() => actions.onAddAfter(index)}>
+          <Plus />
+          {t.thumbnailRail.addPageAfter}
+        </ContextMenuItem>
         <ContextMenuItem onClick={() => actions.onDuplicate(index)}>
           <Copy />
           {t.thumbnailRail.duplicatePage}

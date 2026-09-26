@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  addPageToDefaultExportInSource,
   duplicateNotesElementInSource,
   duplicatePageInDefaultExportInSource,
   duplicateSlideDir,
@@ -512,5 +513,225 @@ describe('duplicateNotesElementInSource', () => {
   it('returns null when notes is not an array literal', () => {
     const source = `export const notes = "oops";\nexport default [A];\n`;
     expect(duplicateNotesElementInSource(source, 0)).toBeNull();
+  });
+});
+
+describe('addPageToDefaultExportInSource', () => {
+  const deck = [
+    "import type { Page } from '@open-slide/core';",
+    '',
+    'const One: Page = () => <div>one</div>;',
+    '',
+    'const Two: Page = () => <div>two</div>; // second',
+    '',
+    'export default [One, Two] satisfies Page[];',
+    '',
+  ].join('\n');
+
+  function added(source: string, afterIndex: number) {
+    const result = addPageToDefaultExportInSource(source, afterIndex);
+    if (!result.ok) throw new Error(result.error);
+    return result;
+  }
+
+  it('appends a blank page after the last page declaration', () => {
+    const result = added(deck, 1);
+    expect(result.index).toBe(2);
+    expect(result.name).toBe('Page3');
+    expect(result.source).toBe(
+      [
+        "import type { Page } from '@open-slide/core';",
+        '',
+        'const One: Page = () => <div>one</div>;',
+        '',
+        'const Two: Page = () => <div>two</div>; // second',
+        '',
+        "const Page3: Page = () => <div style={{ width: '100%', height: '100%' }} />;",
+        '',
+        'export default [One, Two, Page3] satisfies Page[];',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('inserts in the middle next to the previous page declaration', () => {
+    const result = added(deck, 0);
+    expect(result.index).toBe(1);
+    expect(result.name).toBe('Page2');
+    expect(result.source).toContain(
+      "const One: Page = () => <div>one</div>;\n\nconst Page2: Page = () => <div style={{ width: '100%', height: '100%' }} />;\n\nconst Two",
+    );
+    expect(result.source).toContain('export default [One, Page2, Two] satisfies Page[];');
+  });
+
+  it('inserts at the front before the first page declaration', () => {
+    const result = added(deck, -1);
+    expect(result.index).toBe(0);
+    expect(result.source).toContain(
+      "const Page1: Page = () => <div style={{ width: '100%', height: '100%' }} />;\n\nconst One",
+    );
+    expect(result.source).toContain('export default [Page1, One, Two] satisfies Page[];');
+  });
+
+  it('follows a numbered naming pattern, zero padding included', () => {
+    const numbered = [
+      'const Slide01 = () => <div />;',
+      'const Slide02 = () => <div />;',
+      'export default [Slide01, Slide02];',
+    ].join('\n');
+    const result = added(numbered, 0);
+    expect(result.name).toBe('Slide03');
+    expect(result.source).toContain('export default [Slide01, Slide03, Slide02];');
+    expect(result.source).toContain(
+      "const Slide03 = () => <div style={{ width: '100%', height: '100%' }} />;",
+    );
+  });
+
+  it('skips names already used anywhere in the file', () => {
+    const colliding = [
+      "import type { Page } from '@open-slide/core';",
+      "import { Page3 } from './parts';",
+      'const Page4 = 1;',
+      'const One: Page = () => <Page3 n={Page4} />;',
+      'const Two: Page = () => <div />;',
+      'export default [One, Two];',
+    ].join('\n');
+    expect(added(colliding, 1).name).toBe('Page5');
+  });
+
+  it('keeps a multiline array layout and trailing comma', () => {
+    const multiline = [
+      'const A = () => <div />;',
+      'const B = () => <div />;',
+      'export default [',
+      '  A,',
+      '  B,',
+      '];',
+    ].join('\n');
+    expect(added(multiline, 1).source).toContain('export default [\n  A,\n  B,\n  Page3,\n];');
+    expect(added(multiline, 0).source).toContain('export default [\n  A,\n  Page2,\n  B,\n];');
+  });
+
+  it('never copies comments from existing gaps into the new separator', () => {
+    const commented = [
+      'const A = () => <div />;',
+      'const B = () => <div />;',
+      "export const notes = ['a', // A",
+      "  'b', // B",
+      '];',
+      'export default [',
+      '  A,',
+      '  // Part two',
+      '  B,',
+      '];',
+    ].join('\n');
+    const end = added(commented, 1).source;
+    expect(end).toContain('export default [\n  A,\n  // Part two\n  B,\n  Page3,\n];');
+    const front = added(commented, -1).source;
+    expect(front).toContain('export default [\n  Page1,\n  A,\n  // Part two\n  B,\n];');
+    expect(front).toContain("export const notes = [undefined,\n  'a', // A\n  'b', // B\n];");
+  });
+
+  it('adds the first page to an empty deck', () => {
+    const empty =
+      "import type { Page } from '@open-slide/core';\n\nexport default [] satisfies Page[];\n";
+    const result = added(empty, -1);
+    expect(result.source).toBe(
+      "import type { Page } from '@open-slide/core';\n\nconst Page1: Page = () => <div style={{ width: '100%', height: '100%' }} />;\n\nexport default [Page1] satisfies Page[];\n",
+    );
+  });
+
+  it('keeps the notes array aligned by inserting an empty slot', () => {
+    const withNotes = [
+      'const A = () => <div />;',
+      'const B = () => <div />;',
+      "export const notes: (string | undefined)[] = ['a', 'b'];",
+      'export default [A, B];',
+    ].join('\n');
+    const result = added(withNotes, 0);
+    expect(result.source).toContain(
+      "export const notes: (string | undefined)[] = ['a', undefined, 'b'];",
+    );
+    expect(result.source).toContain('export default [A, Page2, B];');
+  });
+
+  it('leaves notes untouched when they end before the insertion point', () => {
+    const withNotes = [
+      'const A = () => <div />;',
+      'const B = () => <div />;',
+      "export const notes = ['a'];",
+      'export default [A, B];',
+    ].join('\n');
+    expect(added(withNotes, 0).source).toContain("export const notes = ['a'];");
+    expect(added(withNotes, -1).source).toContain("export const notes = [undefined, 'a'];");
+  });
+
+  it('declares before export default when pages are inline', () => {
+    const inline = 'export default [() => <div />];\n';
+    expect(added(inline, 0).source).toBe(
+      "const Page2 = () => <div style={{ width: '100%', height: '100%' }} />;\n\nexport default [() => <div />, Page2];\n",
+    );
+  });
+
+  it('preserves CRLF line endings', () => {
+    const crlf = 'const A = () => <div />;\r\nexport default [A];\r\n';
+    expect(added(crlf, 0).source).toBe(
+      "const A = () => <div />;\r\n\r\nconst Page2 = () => <div style={{ width: '100%', height: '100%' }} />;\r\nexport default [A, Page2];\r\n",
+    );
+  });
+
+  it('refuses when the default export is not an array literal', () => {
+    const result = addPageToDefaultExportInSource('const pages = [];\nexport default pages;\n', -1);
+    expect(result).toMatchObject({ ok: false, status: 422 });
+  });
+
+  it('refuses spreads, out-of-range indexes, and non-array notes', () => {
+    expect(addPageToDefaultExportInSource('export default [...more];', 0).ok).toBe(false);
+    expect(addPageToDefaultExportInSource(deck, 2).ok).toBe(false);
+    expect(addPageToDefaultExportInSource(deck, -2).ok).toBe(false);
+    expect(addPageToDefaultExportInSource(deck, 0.5).ok).toBe(false);
+    const badNotes =
+      'const A = () => <div />;\nexport const notes = makeNotes();\nexport default [A];';
+    expect(addPageToDefaultExportInSource(badNotes, 0).ok).toBe(false);
+  });
+
+  it('refuses a source that does not parse', () => {
+    expect(addPageToDefaultExportInSource('export default [A,,', 0).ok).toBe(false);
+  });
+
+  it('keeps a same-line trailing comment with the statement it follows', () => {
+    const source = [
+      "import type { Page } from '@open-slide/core';",
+      '',
+      'const A: Page = () => <div />; // cover',
+      '// second',
+      'const B: Page = () => <div />;',
+      '',
+      'export default [B, A];',
+      '',
+    ].join('\n');
+    expect(added(source, -1).source).toContain(
+      [
+        'const A: Page = () => <div />; // cover',
+        "const Page1: Page = () => <div style={{ width: '100%', height: '100%' }} />;",
+        '',
+        '// second',
+        'const B: Page = () => <div />;',
+      ].join('\n'),
+    );
+  });
+
+  it('annotates with Page only when it is imported from @open-slide/core', () => {
+    const source = [
+      "import { Page } from './layout';",
+      '',
+      'const A = () => <Page />;',
+      '',
+      'export default [A];',
+      '',
+    ].join('\n');
+    expect(added(source, 0).source).toContain(
+      "const Page2 = () => <div style={{ width: '100%', height: '100%' }} />;",
+    );
   });
 });

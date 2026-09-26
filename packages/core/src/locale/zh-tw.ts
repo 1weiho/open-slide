@@ -432,6 +432,10 @@ export const zhTW: Locale = {
   thumbnailRail: {
     pages: '頁面',
     goToPageAria: '前往第 {n} 頁',
+    addPage: '新增頁面',
+    addPageAfter: '在後面新增頁面',
+    toastAdded: '已新增第 {n} 頁',
+    toastAddFailed: '無法新增頁面',
     duplicatePage: '複製',
     deletePage: '刪除',
     pageActionsAria: '第 {n} 頁的操作',
