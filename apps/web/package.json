@@ -12,9 +12,9 @@
     "format": "biome format --write"
   },
   "dependencies": {
-    "fumadocs-core": "16.8.5",
+    "fumadocs-core": "16.15.12",
     "fumadocs-mdx": "14.3.2",
-    "fumadocs-ui": "16.8.5",
+    "fumadocs-ui": "16.15.12",
     "geist": "^1.7.2",
     "lucide-react": "^1.25.0",
     "motion": "^12.38.0",
