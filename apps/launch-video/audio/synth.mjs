@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { SCENES } from '../src/scenes/index.js';
-import { BAR, BEAT, DURATION } from '../src/timeline.js';
+import { BAR, BEAT, DURATION, TRANSITIONS } from '../src/timeline.js';
 import {
   Biquad,
   Bus,
@@ -491,10 +491,16 @@ const SFX = {
       { gain: g * 0.7 },
     );
   },
-  wipe(t, g) {
-    SFX.whoosh(t + 0.2, g * 1.1, { dur: 0.8 });
+  card(t, g) {
+    SFX.whoosh(t - 0.12, g * 0.9, { dur: 0.8 });
     const s = new Sine();
-    sfx.voice(t + 0.15, 0.4, (x) => s.run(70 - 30 * x) * Math.exp(-x / 0.12), { gain: g * 0.5 });
+    const lp = new Biquad('lp', 500);
+    sfx.voice(
+      t + 0.36,
+      0.35,
+      (x) => s.run(78 - 30 * x) * Math.exp(-x / 0.1) + lp.run(N()) * Math.exp(-x / 0.03) * 0.3,
+      { gain: g * 0.45 },
+    );
   },
   riser(t, g, o = {}) {
     const dur = o.dur ?? 2;
@@ -661,6 +667,10 @@ const SFX = {
 function sfxPass() {
   let seed = 1;
   let count = 0;
+  for (const tr of TRANSITIONS) {
+    SFX.card(tr.t, 1);
+    count++;
+  }
   for (const scene of SCENES) {
     for (const [t, type, gain = 1, opts] of scene.sfx) {
       const fn = SFX[type];

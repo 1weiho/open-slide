@@ -35,7 +35,6 @@ const T = {
   word: 70.2,
   cmd: 70.85,
   url: 71.2,
-  thanks: 71.7,
   sheen: 72.6,
   fade: 76.6,
 };
@@ -152,12 +151,6 @@ export default defineScene({
       text: 'open-slide.dev',
       style: `position:absolute;left:0;right:0;top:846px;text-align:center;font-family:${FONT.sans};font-size:44px;font-weight:600;letter-spacing:-0.02em;color:#f6f6f6`,
     });
-    const thanks = h('div', {
-      class: 'mono',
-      text: 'Thanks @1weiho · @ridemountainpig · @peelar · @benben6515 & every contributor',
-      style:
-        'position:absolute;left:0;right:0;top:940px;text-align:center;font-size:21px;letter-spacing:0.04em;color:rgb(255 255 255 / 0.45)',
-    });
     const sparks = Array.from({ length: 36 }, (_, i) => {
       const el = h('div', {
         style: `position:absolute;left:960px;top:432px;width:${3 + (i % 3)}px;height:${3 + (i % 3)}px;border-radius:50%;background:${i % 4 === 0 ? '#fff' : C.brand};opacity:0`,
@@ -170,7 +163,7 @@ export default defineScene({
       };
     });
     const black = h('div', { class: 'fill', style: 'background:#000;opacity:0;z-index:50' });
-    root.append(wall, cool, bloom, lockup, ...sparks.map((sp) => sp.el), cmd, url, thanks, black);
+    root.append(wall, cool, bloom, lockup, ...sparks.map((sp) => sp.el), cmd, url, black);
 
     return {
       wall,
@@ -183,7 +176,6 @@ export default defineScene({
       lockup,
       cmd,
       url,
-      thanks,
       sparks,
       black,
       lw: lockup.offsetWidth,
@@ -252,7 +244,6 @@ export default defineScene({
     set(s.cmd, { opacity: cp, transform: `translate(${-s.cw / 2}px, ${(1 - cp) * 26}px)` });
     const up = prog(Tm, T.url, 0.6, outExpo);
     set(s.url, { opacity: up, transform: `translateY(${(1 - up) * 20}px)` });
-    set(s.thanks, { opacity: prog(Tm, T.thanks, 0.8) });
     set(s.bloom, { opacity: post ? 0.3 + impulse(Tm, HIT, 0.4) * 0.7 : burst * 0.6 });
     set(s.cool, { opacity: post ? 0.8 : 0 });
     s.sparks.forEach((sp) => {

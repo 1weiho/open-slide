@@ -1,7 +1,23 @@
 import { impulse } from './lib/anim.js';
 import { h, set } from './lib/dom.js';
+import { bezier, clamp } from './lib/ease.js';
 import { noise1 } from './lib/rand.js';
-import { HITS } from './timeline.js';
+import { H } from './theme.js';
+import { CARD, HITS, TRANSITIONS } from './timeline.js';
+
+const cardEase = bezier(0.76, 0, 0.24, 1);
+
+// Returns how far `name` is through a hand-off at time T, as the incoming
+// card (`rise`) or the scene receding behind it (`recede`).
+function handoff(name, T) {
+  for (const tr of TRANSITIONS) {
+    const p = clamp((T - (tr.t - CARD / 2)) / CARD);
+    if (p <= 0 || p >= 1) continue;
+    if (tr.to === name) return { rise: cardEase(p) };
+    if (tr.from === name) return { recede: cardEase(p) };
+  }
+  return null;
+}
 
 export function createEngine(stage, scenes) {
   const shaker = h('div', { class: 'shaker' });
@@ -11,8 +27,15 @@ export function createEngine(stage, scenes) {
     root.style.zIndex = String(scene.z ?? i + 1);
     shaker.append(root);
     const state = scene.build(root);
+    const dim = h('div', { class: 'post', style: 'background:#000;opacity:0;z-index:1000' });
+    const edge = h('div', {
+      class: 'post',
+      style:
+        'z-index:1001;opacity:0;box-shadow:inset 0 1.5px 0 rgb(255 255 255 / 0.22), inset 0 0 0 1px rgb(255 255 255 / 0.1)',
+    });
+    root.append(dim, edge);
     root.style.display = 'none';
-    return { scene, root, state, visible: false };
+    return { scene, root, dim, edge, state, visible: false };
   });
 
   // Film grain is added by ffmpeg at encode time, after motion blur, so it
@@ -29,7 +52,30 @@ export function createEngine(stage, scenes) {
         m.root.style.display = active ? '' : 'none';
         m.visible = active;
       }
-      if (active) m.scene.update(m.state, T - a, T);
+      if (!active) continue;
+      m.scene.update(m.state, T - a, T);
+      const ho = handoff(m.scene.name, T);
+      if (ho?.rise != null) {
+        const e = ho.rise;
+        set(m.root, {
+          transform: `translateY(${(1 - e) * H}px) scale(${0.9 + 0.1 * e})`,
+          clipPath: `inset(0 round ${(1 - e) * 48}px)`,
+        });
+        set(m.dim, { opacity: 0 });
+        set(m.edge, { opacity: 1 - e, borderRadius: `${(1 - e) * 48}px` });
+      } else if (ho?.recede != null) {
+        const e = ho.recede;
+        set(m.root, {
+          transform: `translateY(${-e * 40}px) scale(${1 - 0.08 * e})`,
+          clipPath: `inset(0 round ${e * 48}px)`,
+        });
+        set(m.dim, { opacity: 0.7 * e });
+        set(m.edge, { opacity: 0 });
+      } else {
+        set(m.root, { transform: 'none', clipPath: 'none' });
+        set(m.dim, { opacity: 0 });
+        set(m.edge, { opacity: 0 });
+      }
     }
 
     let shake = 0;

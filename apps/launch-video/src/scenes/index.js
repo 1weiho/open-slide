@@ -6,6 +6,5 @@ import logo from './logo.js';
 import pptx from './pptx.js';
 import stack from './stack.js';
 import ui from './ui.js';
-import wipes from './wipes.js';
 
-export const SCENES = [hook, logo, editor, pptx, ui, fonts, stack, finale, wipes];
+export const SCENES = [hook, logo, editor, pptx, ui, fonts, stack, finale];

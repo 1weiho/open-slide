@@ -22,7 +22,7 @@ Useful `render` flags: `--from/--to` (seconds), `--fps`, `--samples` (motion-blu
 
 | Path | What |
 | --- | --- |
-| `src/timeline.js` | Scene spans, chevron wipes, and the big hits that drive camera shake. |
+| `src/timeline.js` | Scene spans, card hand-offs between chapters, and the big hits that drive camera shake. |
 | `src/scenes/*` | One file per chapter. Each exports `build(root)`, `update(state, t)`, and its `sfx` cues. |
 | `src/ui/*` | Recreations of the v2 viewer, editor, and home UI, built from core's tokens and Lucide icons. |
 | `audio/synth.mjs` | Offline synth: a 120 BPM arrangement, plus sound effects read from every scene's `sfx` list. |
