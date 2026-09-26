@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>open-slide cover</title>
+<style>
+  @font-face { font-family: 'Geist'; src: url(/fonts/geist.woff2) format('woff2'); font-weight: 100 900; }
+  @font-face { font-family: 'Geist Mono'; src: url(/fonts/geist-mono.woff2) format('woff2'); font-weight: 100 900; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100vw; height: 100vh; background: #030304; overflow: hidden; }
+  .frame { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+  .abs { position: absolute; inset: 0; }
+
+  .stage { position: absolute; inset: 0; perspective: 1150px; perspective-origin: 70% 40%; }
+  .plane { position: absolute; left: 0; top: 0; transform-style: preserve-3d; }
+  .card {
+    position: absolute; width: var(--w); height: calc(var(--w) * 0.5625);
+    border-radius: 6px; overflow: hidden; background: #fff;
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.06), 0 30px 60px -20px rgb(0 0 0 / 0.9);
+  }
+  .card.focus {
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.2), 0 40px 90px -10px rgb(0 0 0 / 0.95), 0 0 80px rgb(220 230 255 / 0.18);
+  }
+  .card img { width: 100%; height: 100%; display: block; }
+
+  .haze {
+    background: radial-gradient(30% 45% at 74% 44%, oklch(0.85 0.03 250 / 0.12), transparent 70%);
+    mix-blend-mode: screen;
+  }
+  .bloom {
+    background: radial-gradient(20% 26% at 71% 46%, rgb(235 240 255 / 0.22), transparent 70%);
+    mix-blend-mode: screen; filter: blur(10px);
+  }
+  .beam {
+    left: 700px; top: -120px; width: 620px; height: 760px;
+    clip-path: polygon(40% 0, 60% 0, 100% 100%, 0 100%);
+    background: linear-gradient(180deg, oklch(0.95 0.02 250 / 0.14), oklch(0.9 0.03 250 / 0.03) 75%, transparent);
+    filter: blur(26px);
+    transform: rotate(-12deg);
+    mix-blend-mode: screen;
+  }
+  .accent {
+    background: radial-gradient(22% 30% at 88% 88%, oklch(0.6 0.21 25 / 0.22), transparent 70%);
+    mix-blend-mode: screen;
+  }
+  .dust i { position: absolute; border-radius: 50%; background: #e8eeff; }
+
+  .shade {
+    background:
+      linear-gradient(90deg, #030304 0%, rgb(3 3 4 / 0.96) 30%, rgb(3 3 4 / 0.55) 46%, transparent 62%),
+      linear-gradient(0deg, rgb(3 3 4 / 0.7), transparent 30%),
+      linear-gradient(180deg, rgb(3 3 4 / 0.55), transparent 22%),
+      radial-gradient(120% 120% at 70% 45%, transparent 50%, rgb(0 0 0 / 0.7) 100%);
+  }
+  .grain { opacity: 0.1; mix-blend-mode: overlay; }
+
+  .copy {
+    position: absolute; left: 88px; top: 0; bottom: 0; width: 520px;
+    font-family: 'Geist', system-ui, sans-serif;
+  }
+  .title {
+    position: absolute; top: 214px; left: -4px;
+    font-size: 88px; font-weight: 600; letter-spacing: -0.055em; line-height: 1;
+    color: #f5f5f6;
+  }
+  .tagline {
+    position: absolute; top: 326px; left: 0;
+    font-size: 25px; font-weight: 400; letter-spacing: -0.015em; line-height: 1.36;
+    color: rgb(255 255 255 / 0.56);
+  }
+  .cmd {
+    position: absolute; bottom: 72px; left: 0;
+    font-family: 'Geist Mono', monospace; font-size: 15px;
+    color: rgb(255 255 255 / 0.5);
+  }
+  .cmd span { color: #e5484a; margin-right: 10px; }
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="stage"><div class="plane" id="plane"></div></div>
+  <div class="abs haze"></div>
+  <div class="abs bloom"></div>
+  <div class="abs beam"></div>
+  <div class="abs accent"></div>
+  <div class="abs dust" id="dust"></div>
+  <div class="abs shade"></div>
+  <svg class="abs grain" width="100%" height="100%" aria-hidden="true">
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" /><feColorMatrix type="saturate" values="0" /></filter>
+    <rect width="100%" height="100%" filter="url(#grain)" />
+  </svg>
+  <div class="copy" id="copy">
+    <div class="title">open-slide</div>
+    <div class="tagline">The slide framework<br />built for agents.</div>
+    <div class="cmd"><span>$</span>npx @open-slide/cli init</div>
+  </div>
+</div>
+
+<script>
+  // Page numbers of the getting-started template deck; render.mjs screenshots each one on request.
+  const WALL = [
+    [6, 16, 12, 9, 3],
+    [2, 8, 5, 10, 16],
+    [3, 13, 11, 14, 7],
+    [17, 12, 9, 6, 15],
+    [4, 18, 2, 10, 1],
+  ];
+  const FOCUS = [2, 2];
+  const CARD_W = 330;
+  const GAP = 26;
+
+  // Tuned at 1280×640; other sizes keep the wall anchored to the right edge and the copy centered.
+  const dw = innerWidth - 1280;
+  const dh = innerHeight - 640;
+  document.getElementById('copy').style.transform = `translateY(${dh / 2}px)`;
+
+  const plane = document.getElementById('plane');
+  plane.style.transform = `translate(${930 + dw * 0.75}px, ${300 + dh / 2}px) rotateX(16deg) rotateY(-36deg) rotateZ(5deg)`;
+  plane.style.setProperty('--w', `${CARD_W}px`);
+  const cardH = CARD_W * 0.5625;
+  for (const [r, row] of WALL.entries()) {
+    for (const [c, n] of row.entries()) {
+      const dx = c - FOCUS[1];
+      const dy = r - FOCUS[0];
+      const d = Math.hypot(dx, dy * 1.25);
+      const card = document.createElement('div');
+      card.className = d === 0 ? 'card focus' : 'card';
+      card.style.left = `${dx * (CARD_W + GAP) - CARD_W / 2}px`;
+      card.style.top = `${dy * (cardH + GAP) - cardH / 2}px`;
+      card.style.filter = `brightness(${Math.max(0.08, 1 - d * 0.46).toFixed(2)}) blur(${(Math.max(0, d - 0.6) * 2.2).toFixed(2)}px)`;
+      if (d === 0) card.style.transform = 'translateZ(50px)';
+      const img = document.createElement('img');
+      img.src = `/shots/${n}.png`;
+      img.alt = '';
+      card.append(img);
+      plane.append(card);
+    }
+  }
+
+  let seed = 11;
+  const rnd = () => {
+    seed = (seed * 16807) % 2147483647;
+    return seed / 2147483647;
+  };
+  const dust = document.getElementById('dust');
+  for (let i = 0; i < 45; i++) {
+    const x = innerWidth / 2 + (rnd() * innerWidth) / 2;
+    const y = rnd() * innerHeight;
+    const big = rnd() < 0.15;
+    const r = big ? 3 + rnd() * 6 : 0.6 + rnd() * 1.2;
+    const speck = document.createElement('i');
+    speck.style.cssText = `left:${x}px;top:${y}px;width:${r * 2}px;height:${r * 2}px;opacity:${big ? 0.06 + rnd() * 0.08 : 0.15 + rnd() * 0.4};filter:blur(${big ? 2 + rnd() * 3 : 0.3}px)`;
+    dust.append(speck);
+  }
+</script>
+</body>
+</html>
