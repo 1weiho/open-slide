@@ -91,6 +91,12 @@ pnpm check    # type-checks all packages
 pnpm lint     # lints via biome
 ```
 
+## Star history
+
+If open-slide is useful to you, please [star the repo on GitHub](https://github.com/1weiho/open-slide) — it helps other people find the project.
+
+[![Star History Chart](https://star-history.dera.page/svg?repos=1weiho/open-slide&type=Date)](https://star-history.dera.page/#1weiho/open-slide&Date)
+
 ## Support
 
 If open-slide has been useful to you, consider supporting development:
