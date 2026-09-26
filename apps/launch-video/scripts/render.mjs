@@ -8,7 +8,10 @@ import { ensureFonts } from './fonts.mjs';
 import { serve } from './serve.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
+// `pnpm <script> -- --flag` forwards the bare `--`, which parseArgs would
+// read as the end of options.
 const { values: opts } = parseArgs({
+  args: process.argv.slice(2).filter((a) => a !== '--'),
   options: {
     fps: { type: 'string', default: '60' },
     samples: { type: 'string', default: '4' },
