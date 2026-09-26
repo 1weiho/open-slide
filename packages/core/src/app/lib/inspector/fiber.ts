@@ -11,11 +11,14 @@ export type FindSlideSourceOptions = {
   hostOnly?: boolean;
 };
 
+type DebugSource = { fileName?: string; lineNumber?: number; columnNumber?: number };
+
 type FiberLike = {
   return: FiberLike | null;
   stateNode?: unknown;
-  _debugSource?: { fileName?: string; lineNumber?: number; columnNumber?: number };
-  memoizedProps?: { __source?: { fileName?: string; lineNumber?: number; columnNumber?: number } };
+  _debugSource?: DebugSource;
+  _debugOwner?: FiberLike | null;
+  memoizedProps?: { __source?: DebugSource };
 };
 
 function getFiber(el: Element): FiberLike | null {
@@ -82,4 +85,45 @@ export function findSlideSource(
     fiber = fiber.return;
   }
   return null;
+}
+
+// An element built from a component resolves to that component's own JSX, so a comment would annotate
+// the primitive instead of the slide file's invocation of it. `_debugOwner` is the component that
+// created an element; the outermost owner sourced from the slide file is that invocation. Elements the
+// page wrote directly are owned by the page component, whose source is elsewhere, so this returns null
+// and the caller keeps the host location.
+//
+// React records lines from the code the bundler handed it, which the dev transform's preamble shifts,
+// so they don't match the file. The loc-tags plugin stamped the true line onto host elements, so
+// comparing a tag with the same element's fiber gives the shift for this file.
+export function findCommentSource(el: HTMLElement, slideId: string): SlideSourceHit | null {
+  const needle = `/slides/${slideId}/index.tsx`;
+  const shift = lineShift(el);
+  let fiber = getFiber(el);
+  let hit: SlideSourceHit | null = null;
+  while (fiber) {
+    const owner = fiber._debugOwner;
+    const src = owner?._debugSource;
+    if (src?.fileName && src.lineNumber && normalizeDebugFileName(src.fileName).endsWith(needle)) {
+      hit = { line: src.lineNumber - shift, column: src.columnNumber ?? 0, anchor: el };
+    } else if (owner && hit) {
+      break;
+    }
+    fiber = fiber.return;
+  }
+  return hit;
+}
+
+function lineShift(el: HTMLElement): number {
+  let node: HTMLElement | null = el;
+  while (node) {
+    const tag = node.dataset?.slideLoc;
+    const line = getFiber(node)?._debugSource?.lineNumber;
+    if (tag && line) {
+      const tagged = Number(tag.split(':')[0]);
+      if (Number.isFinite(tagged)) return line - tagged;
+    }
+    node = node.parentElement;
+  }
+  return 0;
 }

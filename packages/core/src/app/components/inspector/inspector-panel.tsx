@@ -40,7 +40,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { findSlideSource } from '@/lib/inspector/fiber';
+import { findCommentSource, findSlideSource } from '@/lib/inspector/fiber';
 import { hasOnlyInlineTextChildren } from '@/lib/inspector/inline-text';
 import { styleContext } from '@/lib/inspector/text-selection';
 import type { EditOp } from '@/lib/inspector/use-editor';
@@ -258,7 +258,7 @@ export function InspectorPanel({
     selected && snapshot && !multiple ? (
       <>
         <CollapsibleSection title={t.inspector.leaveComment}>
-          <CommentsSection selected={selected} onAdd={add} />
+          <CommentsSection selected={selected} slideId={slideId} onAdd={add} />
         </CollapsibleSection>
         <CollapsibleSection title={t.inspector.sourceSection}>
           <div className="flex items-center justify-between gap-2">
@@ -900,9 +900,11 @@ let commentCuePlayed = false;
 
 function CommentsSection({
   selected,
+  slideId,
   onAdd,
 }: {
-  selected: { line: number; column: number };
+  selected: SelectedTarget;
+  slideId: string;
   onAdd: (line: number, column: number, text: string) => Promise<void>;
 }) {
   const [draft, setDraft] = useState('');
@@ -936,7 +938,8 @@ function CommentsSection({
     if (!trimmed) return;
     setSubmitting(true);
     try {
-      await onAdd(selected.line, selected.column, trimmed);
+      const hit = findCommentSource(selected.anchor, slideId);
+      await onAdd(hit?.line ?? selected.line, hit?.column ?? selected.column, trimmed);
       setDraft('');
     } finally {
       setSubmitting(false);
