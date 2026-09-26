@@ -1,5 +1,11 @@
 # @open-slide/cli
 
+## 2.0.0-beta.4
+
+### Patch Changes
+
+- [#500](https://github.com/open-slide/open-slide/pull/500) [`52a9427`](https://github.com/open-slide/open-slide/commit/52a9427fed5710880c054ba58f8459267c201c3b) Thanks [@1weiho](https://github.com/1weiho)! - Redesign the getting-started deck: light minimal look with no bundled logos, editor mocks that mirror the current UI, and pages for arrange, design tokens, motion, present, and export.
+
 ## 2.0.0-beta.3
 
 ### Patch Changes
