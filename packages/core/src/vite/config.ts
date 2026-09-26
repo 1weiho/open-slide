@@ -114,6 +114,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
         'tailwind-merge',
         'class-variance-authority',
         'emoji-picker-react',
+        'pptxgenjs',
       ],
       // The app source ships inside node_modules/@open-slide/core/src/app, so
       // Vite's dep scanner traverses it as if it were a third-party dep and

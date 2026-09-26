@@ -28,8 +28,8 @@ export type SlideCommandHandlers = {
   onToggleDesignPanel: () => void;
   onExportHtml: () => void;
   onExportPdf: () => void;
-  onExportPptx: () => void;
   onExportImagePptx: () => void;
+  onExportEditablePptx: () => void;
   onGoToPage: (index: number) => void;
 };
 
@@ -135,20 +135,20 @@ export function SlideCommandMenu({
             run: handlers.onExportPdf,
           },
           {
-            id: 'export-pptx',
-            label: t.slide.exportAsPptx,
-            icon: <Presentation />,
-            keywords: ['export', 'pptx', 'powerpoint', 'download', 'editable'],
-            disabled: exporting,
-            run: handlers.onExportPptx,
-          },
-          {
             id: 'export-image-pptx',
             label: t.slide.exportAsImagePptx,
             icon: <FileImage />,
             keywords: ['export', 'pptx', 'powerpoint', 'download'],
             disabled: exporting,
             run: handlers.onExportImagePptx,
+          },
+          {
+            id: 'export-editable-pptx',
+            label: t.slide.exportAsPptx,
+            icon: <Presentation />,
+            keywords: ['export', 'editable', 'pptx', 'powerpoint', 'download'],
+            disabled: exporting,
+            run: handlers.onExportEditablePptx,
           },
         ]
       : [];

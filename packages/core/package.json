@@ -85,6 +85,7 @@
     "html-to-image": "^1.11.13",
     "lucide-react": "^1.25.0",
     "next-themes": "^0.4.6",
+    "pptxgenjs": "4.0.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-image-crop": "^11.0.10",

@@ -70,7 +70,11 @@ import { format, useLocale } from '@/lib/use-locale';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
 import { SlideCommandMenu } from '../components/command/slide-command-menu';
-import { PdfProgressToast, PptxProgressToast } from '../components/export-progress-toast';
+import {
+  EditablePptxProgressToast,
+  PdfProgressToast,
+  PptxProgressToast,
+} from '../components/export-progress-toast';
 import { NotesDrawer } from '../components/notes-drawer';
 import { OverviewGrid } from '../components/overview-grid';
 import { openPresenterWindow, Player } from '../components/player';
@@ -78,14 +82,17 @@ import { SlideCanvas } from '../components/slide-canvas';
 import { isDeckWarmed, markDeckWarmed, SlidePreloadLayer } from '../components/slide-preload-layer';
 import { SlideTransitionLayer } from '../components/slide-transition-layer';
 import { type ThumbnailActions, ThumbnailRail } from '../components/thumbnail-rail';
+import { downloadBlob } from '../lib/dom';
 import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf, isSafari, type PdfExportProgress } from '../lib/export-pdf';
-import {
-  exportSlideAsImagePptx,
-  exportSlideAsPptx,
-  type PptxExportProgress,
-} from '../lib/export-pptx';
+import { exportSlideAsImagePptx, type PptxExportProgress } from '../lib/export-pptx';
 import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
+import {
+  EditablePptxError,
+  type EditablePptxProgress,
+  type EditablePptxReport,
+  type PptxDiagnostic,
+} from '../lib/pptx/model';
 import type { SlideModule } from '../lib/sdk';
 import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
 import { useSlideModule } from '../lib/use-slide-module';
@@ -93,6 +100,14 @@ import { useSlideModule } from '../lib/use-slide-module';
 const { showSlideUi, showSlideBrowser, allowHtmlDownload } = config.build;
 
 const noop = () => {};
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AbortError';
+}
+
+function errorMessage(error: unknown): string | undefined {
+  return error instanceof Error && error.message ? error.message : undefined;
+}
 
 export function Slide() {
   const { slideId = '' } = useParams();
@@ -122,6 +137,8 @@ export function Slide() {
     index: number;
   } | null>(null);
   const [exporting, setExporting] = useState(false);
+  const editableExportControllerRef = useRef<AbortController | null>(null);
+  const editableExportRunRef = useRef(0);
   const [linkCopied, setLinkCopied] = useState(false);
   const linkCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [designOpen, setDesignOpen] = useState(false);
@@ -138,6 +155,19 @@ export function Slide() {
       if (linkCopiedTimerRef.current) clearTimeout(linkCopiedTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    return () => {
+      editableExportRunRef.current += 1;
+      const controller = editableExportControllerRef.current;
+      if (controller) {
+        controller.abort();
+        editableExportControllerRef.current = null;
+        setExporting(false);
+      }
+      toast.dismiss(`editable-pptx-export-${slideId}`);
+    };
+  }, [slideId]);
   const { renameSlide } = useFolders();
   const slideViewportRef = useRef<HTMLElement>(null);
   const t = useLocale();
@@ -563,17 +593,6 @@ export function Slide() {
     });
   };
 
-  const exportPptx = async () => {
-    if (!slide || exporting) return;
-    await runProgressExport<PptxExportProgress>({
-      kind: 'pptx',
-      initial: { phase: 'processing', current: 0, total: pages.length, percent: 0 },
-      failedMessage: t.slide.pptxExportFailed,
-      renderToast: (progress) => <PptxProgressToast progress={progress} />,
-      run: (onProgress) => exportSlideAsPptx(slide, slideId, onProgress),
-    });
-  };
-
   const exportImagePptx = async () => {
     if (!slide || exporting) return;
     await runProgressExport<PptxExportProgress>({
@@ -583,6 +602,142 @@ export function Slide() {
       renderToast: (progress) => <PptxProgressToast progress={progress} />,
       run: (onProgress) => exportSlideAsImagePptx(slide, slideId, onProgress),
     });
+  };
+
+  const exportEditablePptx = async () => {
+    if (!slide || exporting || editableExportControllerRef.current) return;
+
+    const controller = new AbortController();
+    const runId = editableExportRunRef.current + 1;
+    editableExportRunRef.current = runId;
+    editableExportControllerRef.current = controller;
+    const toastId = `editable-pptx-export-${slideId}`;
+    const total = pages.length;
+    let lastProgress: EditablePptxProgress = {
+      phase: 'preparing',
+      current: 0,
+      total,
+      percent: 0,
+    };
+    let diagnosticsExpanded = false;
+
+    const isCurrentToast = () => editableExportRunRef.current === runId;
+    const isCurrentRun = () =>
+      isCurrentToast() && editableExportControllerRef.current === controller;
+    const isLive = () => isCurrentRun() && !controller.signal.aborted;
+    const downloadReport = (
+      report: EditablePptxReport | { slideId: string; diagnostics: PptxDiagnostic[] },
+    ) => {
+      downloadBlob(
+        new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }),
+        `${slideId}-editable-report.json`,
+      );
+    };
+    const retry = () => {
+      toast.dismiss(toastId);
+      void exportEditablePptx();
+    };
+    const show = (
+      progress: EditablePptxProgress,
+      status: 'active' | 'success' | 'failed' | 'cancelled',
+      diagnostics: PptxDiagnostic[] = [],
+      errorMessage?: string,
+      report?: EditablePptxReport,
+    ) => {
+      if (!isCurrentToast()) return;
+      toast.custom(
+        (id) => (
+          <EditablePptxProgressToast
+            progress={progress}
+            status={status}
+            diagnostics={diagnostics}
+            report={report}
+            errorMessage={errorMessage}
+            onCancel={status === 'active' ? () => controller.abort() : undefined}
+            onRetry={status === 'active' ? undefined : retry}
+            onDownloadDiagnostics={
+              report !== undefined || diagnostics.length > 0
+                ? () => downloadReport(report ?? { slideId, diagnostics })
+                : undefined
+            }
+            diagnosticsExpanded={diagnosticsExpanded}
+            onToggleDiagnostics={
+              report?.quality !== undefined || diagnostics.length > 0
+                ? () => {
+                    diagnosticsExpanded = !diagnosticsExpanded;
+                    show(progress, status, diagnostics, errorMessage, report);
+                  }
+                : undefined
+            }
+            onDismiss={status === 'active' ? undefined : () => toast.dismiss(id)}
+          />
+        ),
+        { id: toastId, duration: Infinity },
+      );
+    };
+    const updateProgress = (progress: EditablePptxProgress) => {
+      lastProgress = progress;
+      if (isLive()) show(progress, 'active');
+    };
+
+    setExporting(true);
+    show(lastProgress, 'active');
+    try {
+      const { exportSlideAsEditablePptx } = await import('../lib/export-editable-pptx');
+      if (!isCurrentRun()) return;
+      if (controller.signal.aborted) {
+        show(lastProgress, 'cancelled');
+        return;
+      }
+      const result = await exportSlideAsEditablePptx(slide, slideId, {
+        signal: controller.signal,
+        onProgress: updateProgress,
+      });
+
+      if (!isCurrentRun()) return;
+      if (controller.signal.aborted) {
+        show(lastProgress, 'cancelled');
+        return;
+      }
+
+      const diagnostics = result.report.diagnostics ?? [];
+      if (diagnostics.some((diagnostic) => diagnostic.severity === 'error')) {
+        show(lastProgress, 'failed', diagnostics, undefined, result.report);
+        return;
+      }
+
+      if (!(result.blob instanceof Blob) || result.blob.size === 0) {
+        throw new Error('The generated PowerPoint file was empty.');
+      }
+      if (!isLive()) return;
+      downloadBlob(result.blob, `${slideId}-editable.pptx`);
+      show(
+        { phase: 'generated', current: total, total, percent: 100 },
+        'success',
+        diagnostics,
+        undefined,
+        result.report,
+      );
+    } catch (error) {
+      if (!isCurrentRun()) return;
+      const cancelled = controller.signal.aborted || isAbortError(error);
+      if (cancelled) {
+        show(lastProgress, 'cancelled');
+      } else {
+        const diagnostics = error instanceof EditablePptxError ? error.diagnostics : [];
+        show(
+          lastProgress,
+          'failed',
+          diagnostics,
+          diagnostics.length > 0 ? undefined : errorMessage(error),
+        );
+      }
+    } finally {
+      if (isCurrentRun()) {
+        editableExportControllerRef.current = null;
+        setExporting(false);
+      }
+    }
   };
 
   const exportMenuItems = (
@@ -596,7 +751,7 @@ export function Slide() {
         {t.slide.exportAsPdf}
       </DropdownMenuItem>
       <DropdownMenuSeparator />
-      <DropdownMenuItem disabled={exporting} onClick={exportPptx}>
+      <DropdownMenuItem disabled={exporting} onClick={exportEditablePptx}>
         <Presentation />
         {t.slide.exportAsPptx}
       </DropdownMenuItem>
@@ -914,8 +1069,8 @@ export function Slide() {
                 onToggleDesignPanel: () => setDesignOpen((v) => !v),
                 onExportHtml: exportHtml,
                 onExportPdf: exportPdf,
-                onExportPptx: exportPptx,
                 onExportImagePptx: exportImagePptx,
+                onExportEditablePptx: exportEditablePptx,
                 onGoToPage: goTo,
               }}
             />

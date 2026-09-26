@@ -1,7 +1,8 @@
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import { expect, type Page, test } from '@playwright/test';
 import { strFromU8, unzipSync } from 'fflate';
-import { openSlide } from './helpers.ts';
+import { coreRoot, openSlide, slideSourcePath } from './helpers.ts';
 
 async function exportDeck(page: Page, label: string): Promise<Record<string, Uint8Array>> {
   await page.getByRole('button', { name: 'Download' }).click();
@@ -14,9 +15,24 @@ async function exportDeck(page: Page, label: string): Promise<Record<string, Uin
 }
 
 test.describe('pptx export', () => {
-  test('writes native text boxes, backgrounds and speaker notes', async ({ page }) => {
+  test('native exporter API writes text boxes, backgrounds and speaker notes', async ({ page }) => {
     await openSlide(page, 'alpha');
-    const parts = await exportDeck(page, 'Export as PPTX');
+    const download = page.waitForEvent('download');
+    await page.evaluate(
+      async ({ exporterUrl, moduleUrl }) => {
+        const { exportSlideAsPptx } = await import(exporterUrl);
+        const slide = await import(moduleUrl);
+        await exportSlideAsPptx(slide, 'alpha');
+      },
+      {
+        exporterUrl: `/@fs/${path.join(coreRoot, 'src/app/lib/export-pptx.ts')}`,
+        moduleUrl: `/@fs/${slideSourcePath('alpha')}`,
+      },
+    );
+    const file = await download;
+    expect(file.suggestedFilename()).toBe('alpha.pptx');
+    const filePath = await file.path();
+    const parts = unzipSync(new Uint8Array(await fs.readFile(filePath)));
 
     expect(Object.keys(parts).filter((n) => /^ppt\/slides\/slide\d+\.xml$/.test(n))).toHaveLength(
       3,
