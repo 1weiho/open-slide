@@ -1,4 +1,4 @@
-<img width="1280" height="640" alt="open-slide github cover" src="https://github.com/user-attachments/assets/02f5e6d7-12a7-4a8e-88e7-ae8770a96584" />
+<img width="1280" height="640" alt="open-slide github cover" src="https://github.com/user-attachments/assets/da535284-f7a9-4834-b281-f9ac6fe416e8" />
 
 <br />
 <br />
