@@ -510,7 +510,7 @@ export const zhCN: Locale = {
   notesDrawer: {
     toggle: '演讲备注',
     pageLabel: '第 {n} / {total} 页',
-    placeholder: '为这一页撰写演讲备注…',
+    placeholder: '为这一页撰写演讲备注（支持 Markdown）…',
     statusSaving: '保存中…',
     statusSaved: '已保存',
     statusError: '保存失败：{msg}',

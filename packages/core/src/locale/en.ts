@@ -513,7 +513,7 @@ export const en: Locale = {
   notesDrawer: {
     toggle: 'Notes',
     pageLabel: 'page {n}/{total}',
-    placeholder: 'Write speaker notes for this slide…',
+    placeholder: 'Write speaker notes for this slide (Markdown supported)…',
     statusSaving: 'Saving…',
     statusSaved: 'Saved',
     statusError: 'Save failed: {msg}',
