@@ -137,16 +137,30 @@ describe('locTagsPlugin', () => {
     expectTaggedTransform('/repo/slides/cover/index.tsx');
   });
 
-  it('tags shared slide source files', () => {
-    expectTaggedTransform('/repo/slides/cover/shared.tsx');
+  /**
+   * These three used to be tagged, and that was the bug. A tag is a bare
+   * `line:column`; `/__edit` always writes to `slides/<id>/index.tsx`. So a tag
+   * minted in a sibling file sent the inspector a position in a file it would
+   * never open, and `findInnermostJsxElement`'s containment fallback then edited
+   * whichever unrelated element in the entry happened to span it. A real deck hit
+   * this: an 8196-line `_shared/*.tsx` behind a 5827-line `index.tsx` meant every
+   * click on the imported pages had a live target to corrupt.
+   *
+   * Not tagging them is the graceful path, not a lost capability: nothing here was
+   * ever editable, and `findSlideSource` falls through to its fiber lookup, which
+   * accepts a `_debugSource` only from `/slides/<id>/index.tsx` and so reports the
+   * element as not targetable.
+   */
+  it('skips sibling slide source files, which /__edit cannot write to', () => {
+    expect(transformWithLocTags('/repo/slides/cover/shared.tsx')).toBeNull();
   });
 
-  it('tags numbered slide source files', () => {
-    expectTaggedTransform('/repo/slides/cover/01-Cover.tsx');
+  it('skips numbered slide source files', () => {
+    expect(transformWithLocTags('/repo/slides/cover/01-Cover.tsx')).toBeNull();
   });
 
-  it('tags slide source files in nested folders', () => {
-    expectTaggedTransform('/repo/slides/cover/components/Card.tsx');
+  it('skips slide source files in nested folders', () => {
+    expect(transformWithLocTags('/repo/slides/cover/components/Card.tsx')).toBeNull();
   });
 
   it('skips tsx files directly under the slides directory', () => {
@@ -159,6 +173,11 @@ describe('locTagsPlugin', () => {
 
   it('skips colocated test files', () => {
     expect(transformWithLocTags('/repo/slides/cover/index.test.tsx')).toBeNull();
+  });
+
+  it('skips a file that merely ends in index.tsx', () => {
+    // `deep/index.tsx` is not the entry either, and a suffix check would take it.
+    expect(transformWithLocTags('/repo/slides/cover/deep/index.tsx')).toBeNull();
   });
 });
 
@@ -189,8 +208,10 @@ describe('locTagsPlugin on Windows-style paths', () => {
     expectTagged('C:\\repo\\slides', 'C:/repo/slides/cover/index.tsx?t=1700000000000');
   });
 
-  it('tags nested slide source files under a Windows slidesRoot', () => {
-    expectTagged('C:\\repo\\slides', 'C:/repo/slides/cover/components/Card.tsx');
+  it('skips nested slide source files under a Windows slidesRoot', () => {
+    expect(
+      transformWithMockedResolve('C:\\repo\\slides', 'C:/repo/slides/cover/components/Card.tsx'),
+    ).toBeNull();
   });
 
   it('skips tsx files directly under the Windows slides directory', () => {

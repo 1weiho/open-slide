@@ -53,17 +53,26 @@ export type LocTagsPluginOptions = {
   slidesDir?: string;
 };
 
-// Vite normally hands `id` to plugins with forward slashes, but other
-// plugins or virtual modules can pass through Windows-style paths.
-// Compare both sides in POSIX shape so the match doesn't depend on
-// which separator the caller happened to use.
-function isSlideSourceFile(id: string, slidesRootPosix: string): boolean {
+// Only the deck entry, `<slidesDir>/<id>/index.tsx`. A tag carries a bare
+// `line:column`, and `/__edit` resolves every write to the entry file, so a tag
+// minted in a sibling or nested `.tsx` describes a position in a file nobody
+// will open: `findInnermostJsxElement` falls back to any element whose span
+// covers that position, which in a long entry is some unrelated element on
+// another page, edited silently. `findSlideSource`'s fiber fallback already
+// encodes this invariant — it accepts a `_debugSource` only when its `fileName`
+// ends in `/slides/<id>/index.tsx` — and its comment assumes imported component
+// files are untransformed. They were not, and the tag path runs first, so the
+// guard never got a say. Untagged JSX now reaches that fallback and is correctly
+// reported as not targetable.
+//
+// Vite normally hands `id` to plugins with forward slashes, but other plugins or
+// virtual modules can pass through Windows-style paths. Compare both sides in
+// POSIX shape so the match doesn't depend on which separator the caller used.
+function isSlideEntryFile(id: string, slidesRootPosix: string): boolean {
   const filePath = id.split(/[?#]/)[0].replace(/\\/g, '/');
   if (!filePath.startsWith(`${slidesRootPosix}/`)) return false;
-  if (!filePath.endsWith('.tsx')) return false;
-  if (filePath.endsWith('.d.ts') || filePath.endsWith('.test.tsx')) return false;
   const rel = filePath.slice(slidesRootPosix.length + 1);
-  return rel.includes('/');
+  return /^[^/]+\/index\.tsx$/.test(rel);
 }
 
 export function locTagsPlugin(opts: LocTagsPluginOptions): Plugin {
@@ -75,7 +84,7 @@ export function locTagsPlugin(opts: LocTagsPluginOptions): Plugin {
     // sees our injected attributes.
     enforce: 'pre',
     transform(code, id) {
-      if (!isSlideSourceFile(id, slidesRoot)) return null;
+      if (!isSlideEntryFile(id, slidesRoot)) return null;
       const next = injectLocTags(code);
       if (next === null) return null;
       return { code: next, map: null };
