@@ -735,6 +735,43 @@ describe('applyEdit / set-text', () => {
     expect(r.source).toContain('<div>{children}</div>');
   });
 
+  it('falls through to call sites for a {children} slot mixed with other children', () => {
+    // The `<div>` mixes a nested `{label}` span with the `{children}` slot, so the
+    // `{children}` pass-through is not the element's only child. With no prevText the edit
+    // targets the host element directly, which must still resolve to the call site instead
+    // of failing with "no editable text".
+    const src = [
+      'const Row = ({ label, children }) => (',
+      '  <div><span>{label}</span>{children}</div>',
+      ');',
+      'export default [() => (',
+      '  <Row label="L">Hello</Row>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 2, [{ kind: 'set-text', value: 'Goodbye' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('<Row label="L">Goodbye</Row>');
+    expect(r.source).toContain('<div><span>{label}</span>{children}</div>');
+  });
+
+  it('routes a mixed-children prop pass-through to the matching call site', () => {
+    // The `<div>` mixes a `{children}` slot with a `{title}` prop pass-through; editing the
+    // `{title}` text resolves to the `title="..."` literal at the call site.
+    const src = [
+      'const Banner = ({ title, children }: { title: string; children: unknown }) => (',
+      '  <div>{children}{title}</div>',
+      ');',
+      'export default [() => (',
+      '  <Banner title="Hello">body</Banner>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 2, [{ kind: 'set-text', value: 'Goodbye', prevText: 'Hello' }]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('<Banner title="Goodbye">body</Banner>');
+  });
+
   it('disambiguates between sibling call sites of a children-slot component', () => {
     const src = [
       'const Eyebrow = ({ children }) => (',
