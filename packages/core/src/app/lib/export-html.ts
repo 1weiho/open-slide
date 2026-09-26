@@ -274,14 +274,40 @@ html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-f
 (function () {
   var pages = document.querySelectorAll('.os-page');
   var idx = 0;
+  var shown = 0;
   var frame = document.getElementById('os-frame');
   var cur = document.getElementById('os-cur');
   function fit() {
     var s = Math.min(window.innerWidth / ${CANVAS_WIDTH}, window.innerHeight / ${CANVAS_HEIGHT});
     frame.style.transform = 'scale(' + s + ')';
   }
-  function go(i) {
+  // Pages authored with <Steps>/<Step> render every step into the markup, so the file still
+  // reads with scripting off. This walks them one keypress at a time, the way the player does:
+  // arrive forward and the page starts unrevealed, arrive backward and it is already complete.
+  function stepsOf(page) {
+    return page ? page.querySelectorAll('[data-osd-step]') : [];
+  }
+  function setStep(el, revealed, animate) {
+    var transition = el.style.transition;
+    if (!animate) el.style.transition = 'none';
+    el.setAttribute('data-osd-step', revealed ? 'revealed' : 'pending');
+    el.style.opacity = revealed ? '1' : '0';
+    el.style.visibility = revealed ? 'visible' : 'hidden';
+    if (!animate) {
+      void el.offsetWidth;
+      el.style.transition = transition;
+    }
+  }
+  function paintSteps(animate) {
+    var els = stepsOf(pages[idx]);
+    for (var i = 0; i < els.length; i++) setStep(els[i], i < shown, animate);
+  }
+  function go(i, revealAll) {
+    var from = idx;
     idx = Math.max(0, Math.min(pages.length - 1, i));
+    if (revealAll) shown = stepsOf(pages[idx]).length;
+    else if (idx > from) shown = 0;
+    else if (idx < from) shown = stepsOf(pages[idx]).length;
     pages.forEach(function (p, n) {
       p.hidden = n !== idx;
       p.querySelectorAll('video').forEach(function (video) {
@@ -293,14 +319,31 @@ html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-f
         }
       });
     });
+    paintSteps(false);
     cur.textContent = String(idx + 1);
+  }
+  function next() {
+    if (shown < stepsOf(pages[idx]).length) {
+      shown += 1;
+      paintSteps(true);
+      return;
+    }
+    go(idx + 1);
+  }
+  function prev() {
+    if (shown > 0) {
+      shown -= 1;
+      paintSteps(true);
+      return;
+    }
+    go(idx - 1);
   }
   window.addEventListener('resize', fit);
   window.addEventListener('keydown', function (e) {
-    if (['ArrowRight','ArrowDown','PageDown',' '].indexOf(e.key) >= 0) { e.preventDefault(); go(idx + 1); }
-    else if (['ArrowLeft','ArrowUp','PageUp'].indexOf(e.key) >= 0) { e.preventDefault(); go(idx - 1); }
-    else if (e.key === 'Home') { e.preventDefault(); go(0); }
-    else if (e.key === 'End') { e.preventDefault(); go(pages.length - 1); }
+    if (['ArrowRight','ArrowDown','PageDown',' '].indexOf(e.key) >= 0) { e.preventDefault(); next(); }
+    else if (['ArrowLeft','ArrowUp','PageUp'].indexOf(e.key) >= 0) { e.preventDefault(); prev(); }
+    else if (e.key === 'Home') { e.preventDefault(); go(0, true); }
+    else if (e.key === 'End') { e.preventDefault(); go(pages.length - 1, true); }
   });
   fit();
   go(0);
