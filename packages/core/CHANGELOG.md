@@ -1,5 +1,15 @@
 # @open-slide/core
 
+## 2.0.0-beta.6
+
+### Minor Changes
+
+- [#498](https://github.com/open-slide/open-slide/pull/498) [`db59662`](https://github.com/open-slide/open-slide/commit/db596625fa8ff164051c17687a197eed43763839) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Render speaker notes as Markdown in presenter view — bold, italic, inline code, headings, and lists.
+
+### Patch Changes
+
+- [#499](https://github.com/open-slide/open-slide/pull/499) [`5249335`](https://github.com/open-slide/open-slide/commit/524933530f1be71ee78be0571b8d92df4d6f121a) Thanks [@dadofsambonzuki](https://github.com/dadofsambonzuki)! - Carry `<Steps>` builds into the HTML export: pressing forward reveals one step at a time, the way the player does, instead of showing every step at once.
+
 ## 2.0.0-beta.5
 
 ### Patch Changes
