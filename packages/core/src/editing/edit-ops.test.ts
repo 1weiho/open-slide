@@ -811,6 +811,240 @@ describe('applyEdit / set-text', () => {
     expect(r.source).toContain('<Card title="Edited" />');
   });
 
+  const cards = (...titles: string[]) =>
+    [
+      'const Card = ({ title }: { title: string }) => (',
+      '  <h2>{title}</h2>',
+      ');',
+      'export default [() => (',
+      '  <section>',
+      ...titles.map((title) => `    <Card title={${JSON.stringify(title)}} />`),
+      '  </section>',
+      ')];',
+    ].join('\n');
+  // What `readEditableText` reports outside `white-space: pre*`.
+  const rendered = (value: string) => value.replace(/[ \t\n\r\f]+/g, ' ');
+
+  it.each(['  Alpha   Beta  ', 'Alpha\tBeta', 'Alpha\n    Beta'])(
+    'matches collapsed whitespace in a reused prop: %j',
+    (title) => {
+      const r = applyEdit(cards(title, 'Other'), 2, 2, [
+        { kind: 'set-text', value: 'Edited', prevText: rendered(title) },
+      ]);
+      if (!r.ok) throw new Error(r.error);
+      expect(r.source).toContain('<Card title="Edited" />');
+      expect(r.source).toContain('<Card title={"Other"} />');
+      expect(r.source).toContain('<h2>{title}</h2>');
+    },
+  );
+
+  it.each([
+    [' Alpha', '  Alpha'],
+    ['Alpha ', 'Alpha  '],
+  ])('refuses %j next to %j instead of guessing from a single edge space', (first, second) => {
+    const r = applyEdit(cards(first, second), 2, 2, [
+      { kind: 'set-text', value: 'Edited', prevText: rendered(second) },
+    ]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.error).toMatch(/cannot disambiguate/);
+  });
+
+  // Deliberate trade: the DOM collapses both literals to the same text, so
+  // refusing is safer than guessing and silently rewriting the wrong call site.
+  it('refuses reused props that only differ by collapsible whitespace', () => {
+    const src = [
+      'const Card = ({ title }: { title: string }) => (',
+      '  <h2>{title}</h2>',
+      ');',
+      'export default [() => (',
+      '  <section><Card title="Alpha Beta" /><Card title="Alpha  Beta" /></section>',
+      ')];',
+    ].join('\n');
+    const r = applyEdit(src, 2, 2, [{ kind: 'set-text', value: 'Edited', prevText: 'Alpha Beta' }]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.error).toMatch(/cannot disambiguate/);
+  });
+
+  it('prefers an exact match when prevText keeps preserved whitespace', () => {
+    const src = [
+      'const Block = ({ text }: { text: string }) => (',
+      "  <pre style={{ whiteSpace: 'pre-wrap' }}>{text}</pre>",
+      ');',
+      'export default [() => (',
+      '  <section>',
+      '    <Block text={"a\\nb"} />',
+      '    <Block text="a b" />',
+      '  </section>',
+      ')];',
+    ].join('\n');
+    const r = applyEdit(src, 2, 2, [{ kind: 'set-text', value: 'Edited', prevText: 'a\nb' }]);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.source).toContain('<Block text="Edited" />');
+    expect(r.source).toContain('<Block text="a b" />');
+  });
+
+  it('never falls back to collapsed matching for preserved whitespace', () => {
+    const pre = (...texts: string[]) =>
+      [
+        'const Block = ({ text }: { text: string }) => (',
+        "  <pre style={{ whiteSpace: 'pre-wrap' }}>{text}</pre>",
+        ');',
+        'export default [() => (',
+        '  <section>',
+        ...texts.map((text) => `    <Block text={${JSON.stringify(text)}} />`),
+        '  </section>',
+        ')];',
+      ].join('\n');
+    const ambiguous = applyEdit(pre('a\nb', 'a\nb', 'a b'), 2, 2, [
+      { kind: 'set-text', value: 'Edited', prevText: 'a\nb' },
+    ]);
+    expect(ambiguous.ok).toBe(false);
+    if (ambiguous.ok) throw new Error('expected failure');
+    expect(ambiguous.error).toMatch(/cannot disambiguate/);
+
+    const missing = applyEdit(pre('a b', 'c'), 2, 2, [
+      { kind: 'set-text', value: 'Edited', prevText: 'a  b' },
+    ]);
+    expect(missing.ok).toBe(false);
+  });
+
+  it('still falls back from a stale column that lands inside computed text', () => {
+    const before = 'const W = ({ name }) => (<div><b>{name}</b> and <i>Static</i></div>);';
+    const after = before.replace('<b>', "<b style={{ color: 'red' }}>");
+    const src = [after, 'export default [() => <W name="Bob" />];'].join('\n');
+    const r = applyEdit(src, 1, before.indexOf('<i>'), [
+      { kind: 'set-text', value: 'Edited', prevText: 'Static' },
+    ]);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.source).toContain('<i>Edited</i>');
+    expect(r.source).toContain('<W name="Bob" />');
+  });
+
+  it('matches a children call site that starts with a NBSP', () => {
+    const src = [
+      'const Wrap = ({ children }: { children: string }) => (',
+      '  <h2>{children}</h2>',
+      ');',
+      'export default [() => (',
+      '  <section>',
+      '    <Wrap> Alpha</Wrap>',
+      '    <Wrap>Beta</Wrap>',
+      '  </section>',
+      ')];',
+    ].join('\n');
+    const r = applyEdit(src, 2, 2, [{ kind: 'set-text', value: 'Edited', prevText: ' Alpha' }]);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.source).toContain('<Wrap>Edited</Wrap>');
+    expect(r.source).toContain('<Wrap>Beta</Wrap>');
+  });
+
+  it('refuses a range style on own text whose source has a whitespace run', () => {
+    const src = ['export default [() => (', '<p>Hello  world and more</p>', ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-text-range-style',
+        start: 0,
+        end: 'Hello'.length,
+        key: 'color',
+        value: 'red',
+        prevText: 'Hello world and more',
+      },
+    ]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.error).toMatch(/no text candidate matches/);
+  });
+
+  it.each([
+    ['<p>Hello  <b>world</b></p>', 'Hello world', '<p>Hello  <b>worldX</b></p>'],
+    ['<p>\n  Hello   there <b>x</b>\n</p>', 'Hello there x', 'Hello   there <b>xX</b>'],
+  ])('keeps the located element when its own text collapses to prevText: %j', (p, text, edited) => {
+    const src = ['export default [() => (', '<div>', p, `<h2>${text}</h2>`, '</div>', ')];'].join(
+      '\n',
+    );
+    const r = applyEdit(src, 3, 0, [{ kind: 'set-text', value: `${text}X`, prevText: text }]);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.source).toContain(`<h2>${text}</h2>`);
+    expect(r.source).toContain(edited);
+  });
+
+  it('edits across a collapsed whitespace run without moving text out of children', () => {
+    const src = ['export default [() => (', '<p>Hello  <b>big</b> world</p>', ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [
+      { kind: 'set-text', value: 'Hi big world', prevText: 'Hello big world' },
+    ]);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.source).toContain('<b>big</b> world</p>');
+    expect(r.source).toContain('Hi');
+    expect(r.source).not.toContain('Hello');
+  });
+
+  it.each([
+    ['Hello world', "<p>{''}Hello\n    world</p>"],
+    ['X Hello world', "<p>{'X '}Hello\n    world</p>"],
+    [' Hello worldX', '<p>{" "}Hello worldX</p>'],
+  ])('diffs own text split across literals: %j', (value, expected) => {
+    const src = ['export default [() => (', '<p>{" "}Hello', '    world</p>', ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-text', value, prevText: ' Hello world' }]);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.source).toContain(expected);
+  });
+
+  it('refuses when prevText puts whitespace where the source has none', () => {
+    const src = ['export default [() => (', '<p>ab<b>c</b></p>', ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [{ kind: 'set-text', value: 'a bcX', prevText: 'a bc' }]);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected failure');
+    expect(r.error).toMatch(/no text candidate matches/);
+  });
+
+  it('prefers the reused prop over an unrelated element with the same text', () => {
+    const src = [
+      'const Card = ({ title }: { title: string }) => (',
+      '  <h2>{title}</h2>',
+      ');',
+      'export default [() => (',
+      '  <section>',
+      '    <Card title="Alpha" />',
+      '    <Card title="Beta" />',
+      '    <p>Alpha</p>',
+      '  </section>',
+      ')];',
+    ].join('\n');
+    const r = applyEdit(src, 2, 2, [{ kind: 'set-text', value: 'Edited', prevText: 'Alpha' }]);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.source).toContain('<Card title="Edited" />');
+    expect(r.source).toContain('<p>Alpha</p>');
+  });
+
+  it('restyles the shared element for a range style on a whitespace-padded reused prop', () => {
+    const src = [
+      'const Card = ({ title }: { title: string }) => (',
+      '  <h2>{title}</h2>',
+      ');',
+      'export default [() => (',
+      '  <section>',
+      '    <Card title="  Alpha   Beta  " />',
+      '    <Card title="Other" />',
+      '  </section>',
+      ')];',
+    ].join('\n');
+    const r = applyEdit(src, 2, 2, [
+      {
+        kind: 'set-text-range-style',
+        start: 1,
+        end: 1 + 'Alpha Beta'.length,
+        key: 'color',
+        value: 'red',
+        prevText: rendered('  Alpha   Beta  '),
+      },
+    ]);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.source).toContain("<h2 style={{ color: 'red' }}>{title}</h2>");
+  });
+
   it('escapes a prop value that needs an expression container', () => {
     const src = [
       'const Card = ({ label }: { label: string }) => (',

@@ -205,7 +205,9 @@ function hasOnlyTextOps(ops: EditOp[]): boolean {
 }
 
 function elementTextMatches(element: t.JSXElement, prevText: string): boolean {
-  return textRangeContent(collectTextRangeParts(element)) === prevText;
+  const current = textRangeContent(collectTextRangeParts(element));
+  if (current === prevText) return true;
+  return !PRESERVED_WHITESPACE.test(prevText) && collapseText(current) === collapseText(prevText);
 }
 
 export function findElementForEdit(
@@ -346,6 +348,9 @@ type TextCandidate = {
   // against the client-supplied `prevText` when there's more than one.
   current: string;
   splice: (value: string) => Splice;
+  // A call site whose children mix text with markup, standing in for its
+  // whole rendered text. It only counts towards ambiguity and is never spliced.
+  shadow?: true;
 };
 
 type JsxParent = t.JSXElement | t.JSXFragment;
@@ -439,12 +444,19 @@ function isJsxBrElement(node: t.Node): node is t.JSXElement {
   return t.isJSXIdentifier(name) && name.name.toLowerCase() === 'br';
 }
 
+// Single-line JSX text compiles verbatim, edge spaces and tabs included;
+// multi-line text loses the whitespace at its edges.
+function jsxTextCandidate(child: t.JSXText): string {
+  const value = child.value;
+  return /[\n\r]/.test(value) ? value.trim() : value;
+}
+
 function collectTextCandidates(element: JsxParent, out: TextCandidate[]): void {
   const meaningful = meaningfulChildren(element);
   const isSole = meaningful.length === 1;
   for (const child of meaningful) {
     if (t.isJSXText(child)) {
-      const current = child.value.trim();
+      const current = jsxTextCandidate(child);
       if (!current) continue;
       out.push({
         current,
@@ -558,6 +570,16 @@ function compactText(value: string): string {
   return value.replace(/\s+/g, '');
 }
 
+// Only the characters CSS collapses under `white-space: normal`; NBSP and
+// U+3000 render as-is, so literals that differ by them are distinct text.
+// Whitespace the client collapses before sending prevText; a run or a
+// non-space character survives only where the DOM preserved it.
+const PRESERVED_WHITESPACE = /\s{2,}|[^\S ]/;
+
+function collapseText(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
 function textMatchesExpected(current: string, expected: string): boolean {
   return current === expected || compactText(current) === compactText(expected);
 }
@@ -664,9 +686,41 @@ function buildTextContentSplices(
   if (!textMatchesExpected(current, prevText)) {
     return { error: 'no text candidate matches the current value' };
   }
-  const diff = textDiff(current, value);
+  // `value` shares prevText's collapsed coordinates, so diffing it against the
+  // source text would drift across whitespace runs and move text out of child
+  // elements. Diff in prevText space and map the offsets back instead.
+  const offsets = current === prevText ? null : alignCollapsedText(current, prevText);
+  if (current !== prevText && !offsets) {
+    return { error: 'no text candidate matches the current value' };
+  }
+  const diff = textDiff(offsets ? prevText : current, value);
   if (diff.start === diff.end && diff.value === '') return [];
-  return buildTextRangeReplaceSplices(parts, diff.start, diff.end, diff.value);
+  const start = offsets ? offsets[diff.start] : diff.start;
+  const end = offsets ? offsets[diff.end] : diff.end;
+  return buildTextRangeReplaceSplices(parts, start, end, diff.value);
+}
+
+// Maps each offset in `collapsed` (whitespace runs shown as one space) to the
+// matching offset in `source`, or null when the two differ beyond that.
+function alignCollapsedText(source: string, collapsed: string): number[] | null {
+  const isCollapsible = (ch: string | undefined) => ch !== undefined && /\s/.test(ch);
+  const offsets: number[] = [];
+  let i = 0;
+  for (let j = 0; j < collapsed.length; j++) {
+    if (isCollapsible(collapsed[j])) {
+      if (!isCollapsible(source[i])) return null;
+      offsets.push(i);
+      while (isCollapsible(source[i])) i++;
+      continue;
+    }
+    while (isCollapsible(source[i])) i++;
+    if (source[i] !== collapsed[j]) return null;
+    offsets.push(i);
+    i++;
+  }
+  offsets.push(i);
+  while (isCollapsible(source[i])) i++;
+  return i === source.length ? offsets : null;
 }
 
 function buildTextRangeStyleSplices(
@@ -688,7 +742,9 @@ function buildTextRangeStyleSplices(
   if (!current) return { error: 'element has no editable text' };
   if (end > current.length) return { error: 'text range is out of bounds' };
   if (prevText !== undefined && renderedText !== prevText) {
-    if (elementTextCandidateMatches(ast, element, prevText)) {
+    // Styling the whole element is only right when its text comes from a call
+    // site; its own static text must be wrapped, never restyled wholesale.
+    if (!hasOwnText(element) && elementTextCandidateMatches(ast, element, prevText)) {
       const result = buildStyleSplice(source, element, [op]);
       if (result && 'error' in result) return result;
       return result ? [result] : [];
@@ -825,7 +881,16 @@ function collectCallSiteCandidates(ast: t.Node, componentName: string): TextCand
     if (!t.isJSXElement(n)) return;
     const elName = n.openingElement.name;
     if (t.isJSXIdentifier(elName) && elName.name === componentName) {
-      collectTextCandidates(n, out);
+      const own: TextCandidate[] = [];
+      collectTextCandidates(n, own);
+      out.push(...own);
+      const whole = collapseText(textRangeContent(collectTextRangeParts(n)));
+      if (
+        meaningfulChildren(n).length > 1 &&
+        !own.some((candidate) => collapseText(candidate.current) === whole)
+      ) {
+        out.push({ current: whole, splice: () => ({ from: 0, to: 0, text: '' }), shadow: true });
+      }
     }
   });
   return out;
@@ -988,6 +1053,12 @@ function collectArrayMapCandidates(ast: t.Node, element: t.JSXElement): TextCand
   return out;
 }
 
+function hasOwnText(element: t.JSXElement): boolean {
+  const own: TextCandidate[] = [];
+  collectTextCandidates(element, own);
+  return own.length > 0;
+}
+
 function collectElementTextCandidates(ast: t.File, element: t.JSXElement): TextCandidate[] {
   const candidates: TextCandidate[] = [];
   collectTextCandidates(element, candidates);
@@ -1000,7 +1071,7 @@ function collectElementTextCandidates(ast: t.File, element: t.JSXElement): TextC
       candidates.push(...collectPropCallSiteCandidates(ast, enclosing.name, passthrough));
     }
   }
-  if (candidates.length === 0) {
+  if (candidates.every((candidate) => candidate.shadow)) {
     candidates.push(...collectArrayMapCandidates(ast, element));
   }
   return candidates;
@@ -1011,8 +1082,22 @@ function elementTextCandidateMatches(
   element: t.JSXElement,
   prevText: string,
 ): boolean {
-  const norm = prevText.trim();
-  return collectElementTextCandidates(ast, element).some((candidate) => candidate.current === norm);
+  return matchTextCandidates(collectElementTextCandidates(ast, element), prevText).some(
+    (candidate) => !candidate.shadow,
+  );
+}
+
+// The client collapses whitespace runs outside `white-space: pre*`, so a run,
+// a tab or a newline (from preserved whitespace or a `<br>`) in prevText means
+// the text was not collapsed and only an exact literal can be the source.
+// Otherwise prevText is equally consistent with every literal that collapses
+// to it, and an exact hit proves nothing.
+function matchTextCandidates(candidates: TextCandidate[], prevText: string): TextCandidate[] {
+  if (PRESERVED_WHITESPACE.test(prevText)) {
+    return candidates.filter((candidate) => candidate.current === prevText);
+  }
+  const normalized = collapseText(prevText);
+  return candidates.filter((candidate) => collapseText(candidate.current) === normalized);
 }
 
 function buildTextSplice(
@@ -1022,7 +1107,7 @@ function buildTextSplice(
   prevText?: string,
 ): Splice | { error: string } {
   const candidates = collectElementTextCandidates(ast, element);
-  if (candidates.length === 0) {
+  if (candidates.every((candidate) => candidate.shadow)) {
     return { error: 'element has no editable text' };
   }
   if (candidates.length === 1) {
@@ -1031,16 +1116,19 @@ function buildTextSplice(
   if (prevText === undefined) {
     return { error: 'element has multiple text candidates; missing prevText' };
   }
-  // Trim: JSX collapses surrounding whitespace at render time, so the
-  // DOM `prevText` won't have leading/trailing space the source might.
-  const norm = prevText.trim();
-  const matches = candidates.filter((c) => c.current === norm);
+  // prevText is the element's whole text here, so one of its own literals can
+  // only collapse-match it by swallowing siblings; own text keeps exact matching
+  // and anything else is left to the caller's diff.
+  const matches = hasOwnText(element)
+    ? candidates.filter((candidate) => candidate.current === prevText)
+    : matchTextCandidates(candidates, prevText);
   if (matches.length === 0) {
     return { error: 'no text candidate matches the current value' };
   }
   if (matches.length > 1) {
     return { error: 'multiple text candidates share the same value; cannot disambiguate' };
   }
+  if (matches[0].shadow) return { error: 'no text candidate matches the current value' };
   return matches[0].splice(value);
 }
 
