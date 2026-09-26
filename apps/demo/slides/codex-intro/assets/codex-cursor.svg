@@ -1,0 +1,46 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="125" y1="117" x2="914" y2="902" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#08a9f0"/>
+      <stop offset="0.32" stop-color="#58b6ff"/>
+      <stop offset="0.67" stop-color="#f2c9ff"/>
+      <stop offset="1" stop-color="#ffc6ae"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="351" y1="184" x2="705" y2="806" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0057ff"/>
+      <stop offset="0.46" stop-color="#2c65ff"/>
+      <stop offset="0.78" stop-color="#d625d1"/>
+      <stop offset="1" stop-color="#5a62ff"/>
+    </linearGradient>
+    <linearGradient id="fill" x1="356" y1="246" x2="611" y2="813" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00f4ee"/>
+      <stop offset="0.38" stop-color="#9edcff"/>
+      <stop offset="0.74" stop-color="#f2e8ff"/>
+      <stop offset="1" stop-color="#fffdfa"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="130" y="154" width="790" height="760" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="22" stdDeviation="26" flood-color="#5e62ff" flood-opacity="0.2"/>
+    </filter>
+    <filter id="inner-glow" x="206" y="198" width="644" height="654" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="26"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <path
+    d="M321 192C238 171 174 252 204 334L374 802C409 898 542 909 593 820L654 690C667 664 686 643 712 630L813 581C901 539 903 415 816 371L350 205C341 200 331 195 321 192Z"
+    fill="url(#edge)"
+    filter="url(#soft-shadow)"
+  />
+  <path
+    d="M332 211C263 194 210 262 235 331L401 789C430 869 541 879 584 805L643 678C658 647 681 623 712 608L801 565C875 530 877 426 804 390L344 226C340 222 336 214 332 211Z"
+    fill="url(#fill)"
+  />
+  <path
+    d="M332 211C263 194 210 262 235 331L401 789C430 869 541 879 584 805L643 678C658 647 681 623 712 608L801 565C875 530 877 426 804 390L344 226C340 222 336 214 332 211Z"
+    fill="white"
+    opacity="0.45"
+  />
+  <g filter="url(#inner-glow)" opacity="0.9">
+    <path d="M242 303C239 249 291 207 343 226L795 389C850 415 861 490 817 533L723 586C684 606 650 640 630 680L574 797C536 859 447 855 419 790L246 330C243 322 242 313 242 303Z" fill="#ffffff"/>
+  </g>
+</svg>
