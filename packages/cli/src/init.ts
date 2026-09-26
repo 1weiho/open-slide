@@ -31,7 +31,7 @@ export function sanitizeDirName(value: string): string {
 export async function isDirNonEmpty(target: string): Promise<boolean> {
   if (!existsSync(target)) return false;
   const entries = await readdir(target);
-  return entries.some((e) => !e.startsWith('.'));
+  return entries.some((e) => e !== '.git');
 }
 
 declare const __CORE_VERSION_AT_BUILD__: string;
