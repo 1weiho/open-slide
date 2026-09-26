@@ -1,5 +1,23 @@
 # @open-slide/cli
 
+## 2.0.0
+
+### Major Changes
+
+- [#420](https://github.com/open-slide/open-slide/pull/420) [`5ed5ea0`](https://github.com/open-slide/open-slide/commit/5ed5ea02758ebc1cacbd15187d6fe470d03cffdb) Thanks [@1weiho](https://github.com/1weiho)! - Scaffold workspaces on React 19 without a `vite` devDependency — `vercel.json` and `netlify.toml` now declare the build command and output directory instead of relying on framework detection.
+
+### Patch Changes
+
+- [#437](https://github.com/open-slide/open-slide/pull/437) [`edbe17f`](https://github.com/open-slide/open-slide/commit/edbe17ff1bbad21d5bab12a2526cbd585a75f98c) Thanks [@1weiho](https://github.com/1weiho)! - Redesign the `init` flow with guided prompts, a dependency-install spinner, and a next-steps card.
+
+- [#500](https://github.com/open-slide/open-slide/pull/500) [`52a9427`](https://github.com/open-slide/open-slide/commit/52a9427fed5710880c054ba58f8459267c201c3b) Thanks [@1weiho](https://github.com/1weiho)! - Redesign the getting-started deck: light minimal look with no bundled logos, editor mocks that mirror the current UI, and pages for arrange, design tokens, motion, present, and export.
+
+- [#490](https://github.com/open-slide/open-slide/pull/490) [`a47edb0`](https://github.com/open-slide/open-slide/commit/a47edb00919f5c85017add6035d1a653228f8266) Thanks [@1weiho](https://github.com/1weiho)! - Point repository and issue URLs at the open-slide/open-slide GitHub org.
+
+- [#426](https://github.com/open-slide/open-slide/pull/426) [`ba5af02`](https://github.com/open-slide/open-slide/commit/ba5af021b603805ad542939156ff2caa58c6d6bf) Thanks [@1weiho](https://github.com/1weiho)! - Teach the authoring skills and agent guide to write speech scripts into the built-in `notes` export instead of separate markdown files.
+
+- [#457](https://github.com/open-slide/open-slide/pull/457) [`7df6d47`](https://github.com/open-slide/open-slide/commit/7df6d476ab9defb8f918ab6e84b749581e8eeceb) Thanks [@1weiho](https://github.com/1weiho)! - Rewrite the transition family around a held exit and a fade-in enter, and make the webfont/style injection snippet update on HMR instead of skipping.
+
 ## 2.0.0-beta.4
 
 ### Patch Changes
