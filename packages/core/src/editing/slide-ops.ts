@@ -2,7 +2,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { parse as babelParse } from '@babel/parser';
 
-export const SLIDE_ID_RE = /^[a-z0-9_-]+$/i;
+// Letters (any script, including CJK) + digits + hyphen/underscore. Rejects
+// spaces, dots, path separators, and other punctuation so ids stay safe for
+// filesystem joins and `/__slides/:id` URL segments. Path traversal is still
+// blocked by the resolve+prefix checks below.
+export const SLIDE_ID_RE = /^[\p{L}\p{N}_-]+$/u;
 
 type MetaTitleRead =
   | { kind: 'found'; title: string }
