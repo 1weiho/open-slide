@@ -43,7 +43,13 @@ importers:
         specifier: ^19.2.5
         version: 19.2.5(@types/react@19.2.18)
 
-  apps/launch-video:
+  apps/marketing/cover:
+    devDependencies:
+      '@playwright/test':
+        specifier: ~1.62.1
+        version: 1.62.1
+
+  apps/marketing/launch-video:
     devDependencies:
       '@playwright/test':
         specifier: ~1.62.1
@@ -88,9 +94,6 @@ importers:
       '@biomejs/biome':
         specifier: ^2.5.7
         version: 2.5.7
-      '@playwright/test':
-        specifier: ~1.62.1
-        version: 1.62.1
       '@tailwindcss/postcss':
         specifier: ^4.2.4
         version: 4.2.4

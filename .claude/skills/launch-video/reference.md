@@ -1,6 +1,6 @@
 # launch-video reference
 
-Paths are relative to `apps/launch-video/`. Film code imports shared modules through `#lib/…`, `#ui/…`, and `#theme`. The same specifiers work in the browser (import map in `index.html`) and in Node (`imports` in `package.json`). Read the source for full return shapes. This is a map, not a spec.
+Paths are relative to `apps/marketing/launch-video/`. Film code imports shared modules through `#lib/…`, `#ui/…`, and `#theme`. The same specifiers work in the browser (import map in `index.html`) and in Node (`imports` in `package.json`). Read the source for full return shapes. This is a map, not a spec.
 
 ## Film
 

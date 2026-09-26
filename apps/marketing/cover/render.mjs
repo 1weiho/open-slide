@@ -3,12 +3,12 @@ import { cpSync, mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
-import { prepareScratchProject } from '../../../../packages/core/e2e/scratch.mjs';
+import { prepareScratchProject } from '../../../packages/core/e2e/scratch.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const web = path.resolve(here, '../..');
-const repo = path.resolve(web, '../..');
-const out = path.join(here, '.out');
+const repo = path.resolve(here, '../../..');
+const web = path.join(repo, 'apps/web');
+const out = path.join(here, 'out');
 const fonts = path.join(web, 'node_modules/geist/dist/fonts');
 
 const TARGETS = [
@@ -16,7 +16,7 @@ const TARGETS = [
   { file: path.join(out, 'readme-cover.png'), width: 1280, height: 640 },
 ];
 
-const project = prepareScratchProject('web-cover');
+const project = prepareScratchProject('cover');
 cpSync(
   path.join(repo, 'packages/cli/template/slides/getting-started'),
   path.join(project, 'slides/getting-started'),

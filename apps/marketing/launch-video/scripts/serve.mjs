@@ -89,7 +89,7 @@ function sendFile(req, res, file) {
 
 // `/@repo/...` reads brand assets from the monorepo instead of copying them here.
 export function serve(root, port = 0) {
-  const repo = path.resolve(root, '../..');
+  const repo = path.resolve(root, '../../..');
   const json = (res, body) => {
     res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
     res.end(JSON.stringify(body));

@@ -7,6 +7,5 @@ dist
 .turbo
 packages/cli/template/.agents/skills
 packages/core/e2e/.scratch
-apps/web/scripts/cover/.out
 playwright-report
 test-results

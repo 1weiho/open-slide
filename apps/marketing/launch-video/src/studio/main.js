@@ -340,7 +340,7 @@ function showPlayer(r) {
     icon('copy', { size: 14 }),
     h('span', { text: 'Copy path' }),
   );
-  copyPath.onclick = () => copy(`apps/launch-video/${r.id}`, copyPath, 'Copied');
+  copyPath.onclick = () => copy(`apps/marketing/launch-video/${r.id}`, copyPath, 'Copied');
   details.replaceChildren(
     h(
       'div',

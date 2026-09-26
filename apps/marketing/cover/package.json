@@ -1,0 +1,12 @@
+{
+  "name": "cover",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "render": "node render.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "~1.62.1"
+  }
+}

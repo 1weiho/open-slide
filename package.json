@@ -8,6 +8,7 @@
     "dev:web": "turbo run dev --filter=web",
     "dev:demo": "turbo run dev --filter=demo",
     "dev:video": "turbo run dev --filter=launch-video",
+    "cover": "pnpm --filter cover render",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "format": "biome format --write .",
