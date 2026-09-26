@@ -1,6 +1,7 @@
-import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Link2 } from 'lucide-react';
 import { Fragment, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn, pad2 } from '@/lib/utils';
@@ -75,12 +76,27 @@ export function ThemeDetail({ themeId, onBack }: { themeId: string; onBack: () =
 
   const Current = pages[pageIndex];
 
+  const handleCopyUrl = async () => {
+    const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+    const shareUrl = `${window.location.origin}${base}/themes/${encodeURIComponent(theme.id)}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success(t.themes.copyUrlSuccess);
+    } catch {
+      toast.error(t.themes.copyUrlFailed);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 md:gap-8">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2">
           <ChevronLeft className="size-4" />
           {t.themes.backToGallery}
+        </Button>
+        <Button variant="outline" size="sm" onClick={handleCopyUrl} className="ml-auto">
+          <Link2 className="size-4" />
+          {t.themes.copyUrl}
         </Button>
       </div>
 

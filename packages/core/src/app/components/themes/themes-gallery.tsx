@@ -1,9 +1,33 @@
-import { Palette } from 'lucide-react';
+import { MoreHorizontal, Palette, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { format, useLocale } from '@/lib/use-locale';
 import { SlidePageProvider } from '../../lib/page-context';
 import { loadThemeDemo, type Theme, type ThemeDemoModule, themes } from '../../lib/themes';
 import { SlideCanvas } from '../slide-canvas';
+
+async function deleteThemeReq(id: string): Promise<void> {
+  const res = await fetch(`/__themes/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? `HTTP ${res.status}`);
+  }
+}
 
 export function ThemesGallery({ onOpen }: { onOpen: (id: string) => void }) {
   const t = useLocale();
@@ -17,7 +41,7 @@ export function ThemesGallery({ onOpen }: { onOpen: (id: string) => void }) {
       {themes.map((theme, i) => (
         <li
           key={theme.id}
-          className="rise-in"
+          className="group relative rise-in"
           style={{ animationDelay: `${Math.min(i, 11) * 30}ms` }}
         >
           <ThemeCard
@@ -25,9 +49,91 @@ export function ThemesGallery({ onOpen }: { onOpen: (id: string) => void }) {
             onOpen={() => onOpen(theme.id)}
             ariaLabel={format(t.themes.openThemeAria, { name: theme.name })}
           />
+          {import.meta.env.DEV ? <ThemeCardMenu theme={theme} /> : null}
         </li>
       ))}
     </ul>
+  );
+}
+
+function ThemeCardMenu({ theme }: { theme: Theme }) {
+  const t = useLocale();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <button
+              type="button"
+              aria-label={t.themes.themeActions}
+              className="absolute right-2 top-2 grid size-7 place-items-center rounded-[6px] border border-hairline bg-card/90 text-muted-foreground opacity-0 shadow-edge backdrop-blur transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100 aria-expanded:opacity-100"
+            >
+              <MoreHorizontal className="size-4" />
+            </button>
+          }
+        />
+        <DropdownMenuContent align="end" className="min-w-[140px]">
+          <DropdownMenuItem variant="destructive" onClick={() => setConfirmOpen(true)}>
+            <Trash2 />
+            {t.common.delete}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <DeleteThemeDialog theme={theme} open={confirmOpen} onOpenChange={setConfirmOpen} />
+    </>
+  );
+}
+
+function DeleteThemeDialog({
+  theme,
+  open,
+  onOpenChange,
+}: {
+  theme: Theme;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const t = useLocale();
+  const [busy, setBusy] = useState(false);
+  const [descPrefix, descSuffix] = t.themes.deleteDialogDescription.split('{name}');
+
+  const confirm = async () => {
+    setBusy(true);
+    try {
+      await deleteThemeReq(theme.id);
+      toast.success(format(t.themes.deleteSuccess, { name: theme.name }));
+      onOpenChange(false);
+    } catch {
+      toast.error(t.themes.deleteFailed);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(next) => !busy && onOpenChange(next)}>
+      <DialogContent>
+        <DialogHeader>
+          <span className="eyebrow text-destructive/80">{t.themes.deleteEyebrow}</span>
+          <DialogTitle>{t.themes.deleteDialogTitle}</DialogTitle>
+          <DialogDescription>
+            {descPrefix}
+            <span className="font-medium text-foreground">{theme.name}</span>
+            {descSuffix}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} disabled={busy}>
+            {t.common.cancel}
+          </Button>
+          <Button variant="destructive" size="sm" onClick={confirm} disabled={busy}>
+            {t.common.delete}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
