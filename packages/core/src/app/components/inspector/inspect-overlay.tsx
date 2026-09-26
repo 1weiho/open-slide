@@ -15,6 +15,7 @@ import {
   pickElement,
   pickInspectorTarget,
 } from '@/lib/inspector/pick-target';
+import { setUntracedPick } from '@/lib/inspector/untraced-pick';
 import type { VisualEdit } from '@/lib/inspector/use-visual-editor';
 import {
   type Canvas,
@@ -97,6 +98,10 @@ export function InspectOverlay() {
   const [canvasFrame, setCanvasFrame] = useState<ScreenRect | null>(null);
   const [scale, setScale] = useState(1);
   const displayed = localTargets ?? selection;
+
+  useEffect(() => {
+    if (!active || selection.length) setUntracedPick(null);
+  }, [active, selection]);
 
   useEffect(() => {
     if (!active) return;
@@ -211,6 +216,11 @@ export function InspectOverlay() {
       if (!canvas) return;
       if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       let hit = handle ? selected : targetAt(event);
+      if (!handle) {
+        const picked = hit || event.shiftKey ? null : pickElement(event.clientX, event.clientY);
+        const untraced = picked?.parentElement?.closest('[data-osd-canvas]') ? picked : null;
+        setUntracedPick(untraced ? { slideId, element: untraced } : null);
+      }
       if (hit && !handle && !event.metaKey && !event.ctrlKey) {
         const hitAnchor = hit.anchor;
         const ancestor = selection.find((target) => target.anchor.contains(hitAnchor));
@@ -410,6 +420,7 @@ export function InspectOverlay() {
       update(event);
       for (const snapshot of gesture.snapshots) restoreTransform(snapshot);
       if (gesture.moved && gesture.edits.length) bufferBatch(gesture.edits);
+      if (gesture.moved) setUntracedPick(null);
       setSelection(gesture.moved ? gesture.targets : gesture.clickSelection);
       clearGesture(false);
     };
@@ -475,6 +486,7 @@ export function InspectOverlay() {
         clearGesture(true);
       } else if (selection.length) setSelection([]);
       else cancel();
+      setUntracedPick(null);
     };
     window.addEventListener('pointerdown', onDown, true);
     window.addEventListener('pointermove', onMove, true);
