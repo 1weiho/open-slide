@@ -103,6 +103,7 @@ export function ThumbnailRail({
   const virtualListRef = useRef<HTMLDivElement | null>(null);
   const verticalViewportRef = useRef<HTMLElement | null>(null);
   const focusCurrentAfterScrollRef = useRef(false);
+  const focusAfterArrowRef = useRef(false);
   const [currentPosition, setCurrentPosition] = useState<ThumbnailOffscreenDirection>(null);
   const t = useLocale();
 
@@ -172,6 +173,32 @@ export function ThumbnailRail({
     return () => cancelAnimationFrame(frame);
   }, [currentPosition]);
 
+  useLayoutEffect(() => {
+    if (!focusAfterArrowRef.current || !activeRef.current) return;
+    activeRef.current.focus({ preventScroll: true });
+    focusAfterArrowRef.current = false;
+  });
+
+  const onThumbnailArrowKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+      if (event.altKey || event.ctrlKey || event.metaKey || event.nativeEvent.isComposing) return;
+      const direction =
+        event.key === 'ArrowRight' || event.key === 'ArrowDown'
+          ? 1
+          : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+            ? -1
+            : 0;
+      if (!direction) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const next = Math.min(Math.max(index + direction, 0), pages.length - 1);
+      if (next === index) return;
+      focusAfterArrowRef.current = true;
+      onSelect(next);
+    },
+    [onSelect, pages.length],
+  );
+
   const renderThumb = useCallback(
     (PageComp: Page, i: number) => {
       const active = i === current;
@@ -195,6 +222,7 @@ export function ThumbnailRail({
           active={active}
           activeRef={active ? activeRef : undefined}
           onSelect={() => onSelect(i)}
+          onArrowKeyDown={(event) => onThumbnailArrowKeyDown(event, i)}
           ariaLabel={format(t.thumbnailRail.goToPageAria, { n: i + 1 })}
         >
           {inner}
@@ -204,6 +232,7 @@ export function ThumbnailRail({
           type="button"
           ref={active ? activeRef : undefined}
           onClick={() => onSelect(i)}
+          onKeyDown={(event) => onThumbnailArrowKeyDown(event, i)}
           aria-label={format(t.thumbnailRail.goToPageAria, { n: i + 1 })}
           aria-current={active ? 'page' : undefined}
           className={thumbButtonClass(active)}
@@ -235,6 +264,7 @@ export function ThumbnailRail({
       moduleTransition,
       onReorder,
       onSelect,
+      onThumbnailArrowKeyDown,
       pages.length,
       scale,
       thumbWidth,
@@ -256,6 +286,7 @@ export function ThumbnailRail({
             actions={actions}
             activeRef={activeRef}
             onSelect={onSelect}
+            onArrowKeyDown={onThumbnailArrowKeyDown}
             scale={scale}
             thumbWidth={horizontalWidth}
           />
@@ -411,6 +442,7 @@ function HorizontalVirtualThumbList({
   actions,
   activeRef,
   onSelect,
+  onArrowKeyDown,
   scale,
   thumbWidth,
 }: {
@@ -420,6 +452,7 @@ function HorizontalVirtualThumbList({
   actions?: ThumbnailActions;
   activeRef: React.MutableRefObject<HTMLButtonElement | null>;
   onSelect: (index: number) => void;
+  onArrowKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => void;
   scale: number;
   thumbWidth: number;
 }) {
@@ -498,6 +531,7 @@ function HorizontalVirtualThumbList({
         type="button"
         ref={active ? activeRef : undefined}
         onClick={() => onSelect(i)}
+        onKeyDown={(event) => onArrowKeyDown(event, i)}
         aria-label={format(t.thumbnailRail.goToPageAria, { n: i + 1 })}
         aria-current={active ? 'page' : undefined}
         className={cn(
@@ -921,6 +955,7 @@ function SortableThumb({
   active,
   activeRef,
   onSelect,
+  onArrowKeyDown,
   ariaLabel,
   children,
   ...rest
@@ -929,6 +964,7 @@ function SortableThumb({
   active: boolean;
   activeRef: React.MutableRefObject<HTMLButtonElement | null> | undefined;
   onSelect: () => void;
+  onArrowKeyDown: React.KeyboardEventHandler<HTMLButtonElement>;
   ariaLabel: string;
   children: React.ReactNode;
 } & Omit<
@@ -953,6 +989,7 @@ function SortableThumb({
       ref={setRef}
       type="button"
       onClick={onSelect}
+      onKeyDownCapture={isDragging ? undefined : onArrowKeyDown}
       aria-label={ariaLabel}
       aria-current={active ? 'page' : undefined}
       style={{
