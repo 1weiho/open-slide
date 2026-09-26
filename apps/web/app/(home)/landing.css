@@ -16,11 +16,18 @@
 
   --shadow-edge: 0 0 0 0.5px oklch(0 0 0 / 0.06), 0 1px 0 oklch(0 0 0 / 0.025);
   --shadow-floating: 0 1px 2px oklch(0 0 0 / 0.04), 0 8px 24px -8px oklch(0 0 0 / 0.1);
+  --shadow-lift:
+    0 1px 2px oklch(0 0 0 / 0.04), 0 12px 32px -12px oklch(0 0 0 / 0.12),
+    0 32px 64px -24px oklch(0 0 0 / 0.14);
+  --shadow-window:
+    0 0 0 0.5px oklch(0 0 0 / 0.08), 0 1px 2px oklch(0 0 0 / 0.04),
+    0 12px 32px -12px oklch(0 0 0 / 0.12);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
   --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 
   background: var(--color-ink);
   color: var(--color-text);
@@ -35,7 +42,7 @@
 html.dark .os-landing {
   --color-ink: oklch(0.145 0 0);
   --color-panel: oklch(0.165 0 0);
-  --color-panel-hi: oklch(0.21 0 0);
+  --color-panel-hi: oklch(0.2 0 0);
   --color-rule: oklch(1 0 0 / 0.1);
   --color-rule-soft: oklch(1 0 0 / 0.06);
   --color-text: oklch(0.93 0 0);
@@ -50,6 +57,8 @@ html.dark .os-landing {
 
   --shadow-edge: 0 0 0 0.5px oklch(0 0 0 / 0.2);
   --shadow-floating: 0 1px 2px oklch(0 0 0 / 0.3), 0 8px 24px -8px oklch(0 0 0 / 0.5);
+  --shadow-lift: 0 1px 2px oklch(0 0 0 / 0.4), 0 24px 64px -24px oklch(0 0 0 / 0.7);
+  --shadow-window: 0 0 0 0.5px oklch(1 0 0 / 0.12), 0 12px 32px -12px oklch(0 0 0 / 0.6);
 }
 
 .os-landing ::selection {
@@ -66,43 +75,112 @@ html.dark .os-landing {
   color: var(--color-muted);
 }
 
+.os-landing .eyebrow {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--color-accent);
+}
+
 .os-landing .floating {
   box-shadow: var(--shadow-floating);
+}
+
+.os-landing section[id] {
+  scroll-margin-top: 60px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.os-landing) {
+    scroll-behavior: smooth;
+  }
+}
+
+.os-landing .nums {
+  font-variant-numeric: tabular-nums;
 }
 
 @keyframes os-rise {
   from {
     opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+    transform: translateY(var(--rise-y, 12px));
+    filter: blur(var(--rise-blur, 6px));
   }
 }
 /* backwards (not both): the last keyframe matches natural styles, and a
    forwards fill would pin transform and block hover/press feedback. */
 .os-landing .rise {
-  animation: os-rise 700ms var(--ease-out-strong) backwards;
+  animation: os-rise 1000ms var(--ease-out-expo) backwards;
+}
+.os-landing .rise-word {
+  display: inline-block;
+  --rise-y: 0.3em;
+  --rise-blur: 10px;
+}
+
+@keyframes os-riseFrame {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.97);
+  }
+}
+.os-landing .rise-frame {
+  animation: os-riseFrame 1400ms var(--ease-out-expo) backwards;
 }
 
 /* Scroll reveals — ScrollReveal only marks elements still below the fold
    as .reveal-hidden, so content never flashes and non-JS visitors see
    everything. Removing the class transitions back to natural styles. */
-.os-landing [data-reveal].reveal-hidden {
+.os-landing [data-reveal].reveal-hidden,
+.os-landing [data-reveal="stagger"].reveal-hidden > * {
   opacity: 0;
-  transform: translateY(12px);
+  transform: translateY(16px);
+  filter: blur(4px);
 }
-/* Cells inside seamed grids (gap-px over the rule color) fade in place —
-   translating them would smear the hairline seams. */
+.os-landing [data-reveal="stagger"].reveal-hidden {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
 .os-landing [data-reveal="fade"].reveal-hidden {
   transform: none;
 }
-.os-landing [data-reveal].reveal-shown {
+.os-landing [data-reveal].reveal-shown,
+.os-landing [data-reveal="stagger"].reveal-shown > * {
   transition:
-    opacity 600ms var(--ease-out-strong),
-    transform 600ms var(--ease-out-strong);
-  transition-delay: var(--reveal-delay, 0ms);
+    opacity 900ms var(--ease-out-expo),
+    transform 900ms var(--ease-out-expo),
+    filter 900ms var(--ease-out-expo);
+  transition-delay: calc(var(--reveal-delay, 0ms) + var(--stagger-i, 0) * 70ms);
+}
+.os-landing [data-reveal="stagger"] > :nth-child(2) {
+  --stagger-i: 1;
+}
+.os-landing [data-reveal="stagger"] > :nth-child(3) {
+  --stagger-i: 2;
+}
+.os-landing [data-reveal="stagger"] > :nth-child(4) {
+  --stagger-i: 3;
+}
+.os-landing [data-reveal="stagger"] > :nth-child(5) {
+  --stagger-i: 4;
+}
+.os-landing [data-reveal="stagger"] > :nth-child(n + 6) {
+  --stagger-i: 5;
+}
+
+/* Keyed swap for text or glyphs that change in place — remounting the
+   node replays it, and the blur hides the crossfade seam. */
+@keyframes os-swap {
+  from {
+    opacity: 0;
+    transform: translateY(var(--swap-y, 4px));
+    filter: blur(2px);
+  }
+}
+.os-landing .swap-in {
+  display: inline-block;
+  animation: os-swap 320ms var(--ease-out-strong) backwards;
 }
 
 /* Press feedback for anything clickable. Transition list covers the hover
@@ -121,7 +199,9 @@ html.dark .os-landing {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .os-landing .rise {
+  .os-landing .rise,
+  .os-landing .rise-frame,
+  .os-landing .swap-in {
     animation: none;
   }
   .os-landing .pressable:active {
@@ -187,4 +267,31 @@ html.dark .os-landing .agent-mono {
   outline: 2px solid var(--color-accent);
   outline-offset: 3px;
   border-radius: 6px;
+}
+
+@keyframes os-pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(1.5%);
+  }
+}
+.os-landing .page-enter {
+  animation: os-pageEnter 260ms cubic-bezier(0, 0, 0.2, 1) both;
+}
+
+@keyframes os-keyPress {
+  45% {
+    transform: translateY(1px) scale(0.93);
+    background-color: #f0f0f0;
+  }
+}
+.os-landing .key-press {
+  animation: os-keyPress 240ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .os-landing .page-enter,
+  .os-landing .key-press {
+    animation: none;
+  }
 }

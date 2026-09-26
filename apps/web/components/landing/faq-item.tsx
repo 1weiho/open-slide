@@ -64,9 +64,16 @@ export function FaqItem({ item, index }: { item: QA; index: number }) {
             }
             className="overflow-hidden"
           >
-            <p className="max-w-[60ch] pb-5 text-[15px] leading-[1.65] text-[color:var(--color-text-soft)]">
+            <motion.p
+              initial={
+                reduceMotion ? false : { transform: 'translateY(-6px)', filter: 'blur(4px)' }
+              }
+              animate={{ transform: 'translateY(0px)', filter: 'blur(0px)' }}
+              transition={{ duration: 0.45, ease: EASE_OUT_STRONG }}
+              className="max-w-[60ch] pb-5 text-[15px] leading-[1.65] text-[color:var(--color-text-soft)]"
+            >
               {item.a}
-            </p>
+            </motion.p>
           </motion.dd>
         )}
       </AnimatePresence>
