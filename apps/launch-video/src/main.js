@@ -28,10 +28,10 @@ async function decodeImages(root) {
 }
 
 function fitPreview(stage) {
+  Object.assign(stage.style, { position: 'absolute', left: '50%', top: 'calc(50% - 22px)' });
   const fit = () => {
     const s = Math.min(innerWidth / W, (innerHeight - 56) / H);
-    stage.style.transform = `scale(${s})`;
-    stage.style.marginBottom = '44px';
+    stage.style.transform = `translate(-50%, -50%) scale(${s})`;
   };
   addEventListener('resize', fit);
   fit();

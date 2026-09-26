@@ -14,6 +14,7 @@ pnpm + Turbo monorepo.
 | `packages/cli` | `@open-slide/cli` | `npx @open-slide/cli init` scaffolder + project template. |
 | `apps/demo` | private | Local consumer of `@open-slide/core` via `workspace:*`. Dogfood target — run `pnpm dev` here to exercise the framework. |
 | `apps/web` | private | Marketing site (Next.js). |
+| `apps/launch-video` | private | open-slide 2.0 launch film and its render studio (`pnpm dev:video`). |
 
 Shared config: `biome.json`, `turbo.json`, `pnpm-workspace.yaml`, `tsconfig` per package.
 

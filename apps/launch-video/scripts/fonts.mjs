@@ -30,6 +30,6 @@ export async function ensureFonts({ force = false } = {}) {
   return cssFile;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] === import.meta.filename) {
   await ensureFonts({ force: true });
 }

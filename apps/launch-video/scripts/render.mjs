@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { once } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -23,7 +23,8 @@ const { values: opts } = parseArgs({
     quality: { type: 'string', default: '94' },
     crf: { type: 'string', default: '16' },
     grain: { type: 'string', default: '3' },
-    out: { type: 'string', default: 'out/open-slide-2.mp4' },
+    name: { type: 'string', default: 'open-slide-2' },
+    out: { type: 'string' },
     stills: { type: 'string' },
     'no-audio': { type: 'boolean', default: false },
   },
@@ -35,7 +36,9 @@ const samples = Math.max(1, Number(opts.samples));
 const shutter = Number(opts.shutter);
 const scale = Number(opts.scale);
 const outDir = path.join(root, 'out');
-fs.mkdirSync(outDir, { recursive: true });
+const workDir = path.join(outDir, '.work');
+const progressFile = path.join(workDir, 'progress.json');
+fs.mkdirSync(workDir, { recursive: true });
 
 await ensureFonts();
 const server = await serve(root);
@@ -95,7 +98,7 @@ const firstFrame = Math.round(t0 * fps);
 const frameCount = Math.round((t1 - t0) * fps);
 const workers = Math.min(Number(opts.workers), frameCount);
 const chunk = Math.ceil(frameCount / workers);
-const segDir = path.join(outDir, 'segments');
+const segDir = path.join(workDir, 'segments');
 fs.rmSync(segDir, { recursive: true, force: true });
 fs.mkdirSync(segDir, { recursive: true });
 
@@ -109,14 +112,39 @@ filters.push('scale=in_color_matrix=bt601:in_range=full:out_color_matrix=bt709:o
 filters.push(`noise=c0s=${opts.grain}:c0f=t+u`);
 filters.push('format=yuv420p');
 
+const stamp = (() => {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+})();
+const outFile = path.resolve(root, opts.out ?? `out/renders/${opts.name}-${stamp}.mp4`);
+const size = { width: Math.round(1920 * scale), height: Math.round(1080 * scale) };
+
 let done = 0;
+let lastProgressWrite = 0;
 const started = Date.now();
+// The studio (`pnpm dev`) polls this file to show renders in flight.
+process.on('exit', () => fs.rmSync(progressFile, { force: true }));
 function report() {
   const elapsed = (Date.now() - started) / 1000;
   const rate = done / elapsed;
   const eta = (frameCount - done) / rate;
   process.stdout.write(
     `\r  frames ${done}/${frameCount}  ${rate.toFixed(1)} fps  eta ${Math.round(eta)}s   `,
+  );
+  if (Date.now() - lastProgressWrite < 1000) return;
+  lastProgressWrite = Date.now();
+  fs.writeFileSync(
+    progressFile,
+    JSON.stringify({
+      name: path.basename(outFile),
+      frames: done,
+      total: frameCount,
+      fps: rate,
+      eta,
+      startedAt: started,
+      ...size,
+    }),
   );
 }
 
@@ -190,7 +218,7 @@ server.close();
 
 const list = path.join(segDir, 'list.txt');
 fs.writeFileSync(list, segments.map((s) => `file '${s}'`).join('\n'));
-const silent = path.join(outDir, 'video-only.mp4');
+const silent = path.join(workDir, 'video-only.mp4');
 await run([
   '-y',
   '-loglevel',
@@ -206,9 +234,10 @@ await run([
   silent,
 ]);
 
-const outFile = path.resolve(root, opts.out);
+fs.mkdirSync(path.dirname(outFile), { recursive: true });
 const wav = path.join(outDir, 'soundtrack.wav');
-if (!opts['no-audio'] && fs.existsSync(wav)) {
+const withAudio = !opts['no-audio'] && fs.existsSync(wav);
+if (withAudio) {
   await run([
     '-y',
     '-loglevel',
@@ -237,7 +266,44 @@ if (!opts['no-audio'] && fs.existsSync(wav)) {
 } else {
   fs.copyFileSync(silent, outFile);
 }
+fs.writeFileSync(
+  outFile.replace(/\.mp4$/, '.json'),
+  `${JSON.stringify(
+    {
+      title: 'open-slide 2.0 launch film',
+      name: opts.name,
+      createdAt: new Date().toISOString(),
+      ...size,
+      fps,
+      samples,
+      shutter,
+      scale,
+      crf: Number(opts.crf),
+      grain: Number(opts.grain),
+      from: t0,
+      to: t1,
+      duration: t1 - t0,
+      audio: withAudio,
+      renderSeconds: Math.round((Date.now() - started) / 1000),
+      git: gitInfo(),
+    },
+    null,
+    2,
+  )}\n`,
+);
 console.log(`wrote ${path.relative(process.cwd(), outFile)}`);
+
+function gitInfo() {
+  try {
+    const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
+    return {
+      commit: git('rev-parse', '--short', 'HEAD'),
+      dirty: git('status', '--porcelain', '--', '.') !== '',
+    };
+  } catch {
+    return null;
+  }
+}
 
 async function run(args) {
   const p = spawn(FFMPEG, args, { stdio: 'inherit' });
